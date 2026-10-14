@@ -63,7 +63,7 @@
 
 /* A technician with no city takes no bookings until ops set one: said in words, in oxblood, in its column. */
 .city.noCity {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
   white-space: nowrap;
 }
 
@@ -113,7 +113,7 @@
 
 /* A technician who runs over the length their visits were planned for, in the oxblood the board letters it in. */
 .over {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 /* What the average is of, when the phone timed fewer jobs than were finished. */
@@ -340,7 +340,7 @@
   gap: var(--sp-8);
   margin-top: var(--sp-16);
   padding-left: var(--sp-16);
-  border-left: var(--rule-strong) solid var(--error-on-paper);
+  border-left: var(--rule-strong) solid var(--status-warning);
 }
 
 .strandedTitle {
@@ -423,7 +423,7 @@
   margin-left: var(--sp-8);
   font-size: var(--fs-13);
   font-weight: var(--weight-medium);
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .counted {

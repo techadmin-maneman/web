@@ -7,6 +7,7 @@
   border-bottom: var(--hairline) solid var(--paper-line);
   font-size: var(--fs-14);
   line-height: var(--lh-160);
+  color: var(--status-done);
 }
 
 .rows {

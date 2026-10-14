@@ -175,8 +175,10 @@
   --on-surface-muted: var(--text-muted);
   --border-subtle: var(--paper-line);
   --border-control: var(--paper-control);
-  --status-error: var(--error-on-paper);
+  --status-error: var(--error-on-paper); /* something went wrong, or was refused */
+  --status-warning: var(--error-on-paper); /* something to act on: overdue, late, low, below its target, stranded */
   --status-saved: var(--text);
+  --status-done: var(--text); /* finished, and nothing to do: as calm as the words around it */
   --status-note: var(--text-muted);
 }
 
@@ -187,6 +189,8 @@
   --border-subtle: var(--ink-line);
   --border-control: var(--ink-line-strong);
   --status-error: var(--error-on-ink);
+  --status-warning: var(--error-on-ink);
   --status-saved: var(--paper);
+  --status-done: var(--paper);
   --status-note: var(--ink-muted);
 }

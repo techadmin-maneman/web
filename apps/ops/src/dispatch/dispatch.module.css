@@ -145,7 +145,7 @@
 
 /* The day the week turns on, which the board letters in brass so the peak reads without a chart. */
 .peak {
-  color: var(--brass-text);
+  color: var(--status-attention);
 }
 
 .zone {
@@ -183,7 +183,7 @@
  * shared label's muted ink whichever stylesheet loads last.
  */
 .awayMark.stranded {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 /* ---- One job on the board ------------------------------------------------ */
@@ -385,7 +385,7 @@
 }
 
 .refusal {
-  color: var(--error-on-paper);
+  color: var(--status-error);
 }
 
 /* ---- The unassigned tray ------------------------------------------------- */
@@ -483,7 +483,7 @@
  */
 .trayOffered,
 .trayWas {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .trayTop + .trayLine {
@@ -582,7 +582,7 @@
   gap: var(--sp-8);
   margin-top: var(--sp-16);
   padding-left: var(--sp-16);
-  border-left: var(--rule-strong) solid var(--error-on-paper);
+  border-left: var(--rule-strong) solid var(--status-warning);
 }
 
 .untoldLine {
@@ -693,7 +693,7 @@
 
 /* A drive longer than the gap the board left: ops move a visit, or call ahead. */
 .legTight {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .dayMap {

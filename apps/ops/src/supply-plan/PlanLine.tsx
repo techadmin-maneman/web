@@ -54,7 +54,7 @@ function Reject({
       </Field>
       <FormActions>
         <Button
-          variant="destructive"
+          variant="danger"
           size="small"
           disabled={reason.trim() === ""}
           onClick={() =>

@@ -49,21 +49,21 @@
 
 /* Held past the Tasks board's allowance, in oxblood, as the Tasks board marks a task that has run over. */
 .late {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 /* The rules the grant met, in oxblood behind one rule, as the board marks them. */
 .signals {
   margin: var(--sp-8) 0 0;
   padding: 0 0 0 var(--sp-16);
-  border-left: var(--rule-strong) solid var(--error-on-paper);
+  border-left: var(--rule-strong) solid var(--status-warning);
   list-style: none;
 }
 
 .signal {
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .actions {

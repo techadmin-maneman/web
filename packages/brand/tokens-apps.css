@@ -11,6 +11,8 @@
   --text-quiet: #4a453c; /* a window's hours beside its name, on white */
   --paper-shade: #ded7c8; /* loading blocks; a full window; leave and replacement cells */
   --brass-text: #7a5b24; /* brass for small text on paper: "Prepaid", the busiest day */
+  /* Something to look at, not yet to act on: brass on paper, gilt on the ink. */
+  --status-attention: var(--brass-text);
 
   /*
    * WhatsApp's own colours, never ours: only where a board draws a message as WhatsApp will show it, so the
@@ -34,4 +36,8 @@
   --skeleton-label: 120px; /* the loading state's label */
   --skeleton-card: 150px; /* and its card */
   --tracking-number: 0.04em; /* a mobile number, spaced for reading */
+}
+
+[data-ground="ink"] {
+  --status-attention: var(--gilt);
 }

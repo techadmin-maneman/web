@@ -113,12 +113,12 @@
 }
 
 .overdue {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .failed {
   font-size: var(--fs-13);
-  color: var(--error-on-paper);
+  color: var(--status-error);
 }
 
 /* The Care team: a member's leave as a short list, and the forms that set their days off and add leave. */

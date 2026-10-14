@@ -197,14 +197,14 @@
   gap: var(--sp-16);
   padding: var(--sp-8) var(--sp-24);
   border-bottom: var(--hairline) solid var(--paper-line);
-  border-left: var(--rule-strong) solid var(--error-on-paper);
+  border-left: var(--rule-strong) solid var(--status-warning);
   background: var(--paper-light);
 }
 
 .lapsedLine {
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 /*

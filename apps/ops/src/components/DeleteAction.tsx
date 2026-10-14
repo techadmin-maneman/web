@@ -63,7 +63,7 @@ export function DeleteAction<Body>({
           <p className={styles.warning}>{copy.warning(name)}</p>
           <div className={styles.actions}>
             <Button
-              variant="danger"
+              variant="destructive"
               size="small"
               className={styles.quiet}
               disabled={sending}

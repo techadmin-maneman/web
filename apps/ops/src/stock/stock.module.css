@@ -36,12 +36,12 @@
   margin-left: var(--sp-8);
   font-size: var(--fs-13);
   font-weight: var(--weight-medium);
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 /* Less than nothing: a delivery or a count is missing, and the figure says so in the same oxblood. */
 .below {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .counted {

@@ -22,9 +22,9 @@ export const BUTTON_VARIANTS = [
   "outline",
   /** Any other action on ink: a lighter ink edge, with paper words. */
   "outlineOnInk",
-  /** An action that takes something away, on paper: oxblood edge and words. */
+  /** An action that takes something away that can be put back or made again, on paper: oxblood edge and words. */
   "danger",
-  /** The one that cannot be undone, as the console's deletion: oxblood, with paper words. */
+  /** One that cannot be undone, as deleting, erasing or refunding: oxblood, with paper words. */
   "destructive",
 ] as const;
 

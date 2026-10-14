@@ -30,7 +30,7 @@
 /* The one figure the board sets in oxblood: how many have run over. */
 .overdue {
   font-size: var(--fs-14);
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 /* ---- The board, by department --------------------------------------------- */
@@ -237,7 +237,7 @@ a.subject {
 
 .error {
   font-size: var(--fs-14);
-  color: var(--error-on-paper);
+  color: var(--status-error);
 }
 
 /* What copying or sending a payment link came to; empty until then. */
