@@ -19,11 +19,11 @@ import { checkTurnstile, visitorOf } from "./visitor.ts";
 /** The number, the Turnstile check and the daily limits, the same for both pages. */
 async function checkPerson(c: Context<AppEnv>, mobile: string, token: string, name: string): Promise<Checked> {
   const mobileE164 = toE164(mobile);
-  if (mobileE164 === null) return { ok: false, status: 400, code: "invalid_request", fields: ["mobile"] };
+  if (mobileE164 === null) return { ok: false, code: "invalid_request", fields: ["mobile"] };
   const visitor = await visitorOf(c);
   const turnstile = await checkTurnstile(c, token, visitor);
-  if (turnstile === "rejected") return { ok: false, status: 403, code: "turnstile_failed" };
-  if (turnstile === "unavailable") return { ok: false, status: 503, code: "unavailable" };
+  if (turnstile === "rejected") return { ok: false, code: "turnstile_failed" };
+  if (turnstile === "unavailable") return { ok: false, code: "unavailable" };
   const { settings, environment } = c.var.config;
   const at = { now: c.var.deps.now(), settings };
   const db = c.env.DB;
@@ -32,7 +32,7 @@ async function checkPerson(c: Context<AppEnv>, mobile: string, token: string, na
   const within =
     (skipsAddressLimits(environment, testRecord) || (await takeOne(db, "booking:ip", visitor.ipHash, at))) &&
     (await takeOne(db, "booking:mobile", await mobileHashOf(settings.ipHashSalt, mobileE164), at));
-  if (!within) return { ok: false, status: 429, code: "rate_limited" };
+  if (!within) return { ok: false, code: "rate_limited" };
   return { ok: true, mobile: mobileE164, ipHash: visitor.ipHash };
 }
 

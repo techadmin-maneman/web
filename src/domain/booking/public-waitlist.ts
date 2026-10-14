@@ -13,6 +13,7 @@ import { clientCodeOf, type AnyInvite } from "../referrals/channels.ts";
 import { personWithMobile, formPerson } from "./form-person.ts";
 import {
   type FormRequest,
+  type FormRefusalCode,
   type Refusal,
   queueMessage,
   applyInvite,
@@ -77,10 +78,10 @@ function launchAlertRule(knownId: string | null): ConsentRule {
 export async function joinTheWaitlist(
   form: FormRequest,
   request: WaitlistRequest,
-): Promise<Listed | Refusal<400 | 403 | 422 | 429 | 503>> {
+): Promise<Listed | Refusal<FormRefusalCode | "not_bookable">> {
   const { db, now } = form;
   const pincode = await pincodeOf(db, request.pincode);
-  if (pincode?.served === 1) return { ok: false, status: 422, code: "not_bookable" };
+  if (pincode?.served === 1) return { ok: false, code: "not_bookable" };
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
 

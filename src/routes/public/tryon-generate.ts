@@ -18,7 +18,7 @@ import { FAILURE_CODES, FAILURE_REASONS, HAIR_COLORS, JOB_STATES } from "../../c
 import { alertCeilingReached, takeFromCeiling } from "../../domain/platform/ceilings.ts";
 import { takeOne } from "../../domain/sign-in/rate-limit.ts";
 import { failJob, loadJob, type JobRow, type RenderChoice } from "../../domain/try-on/tryon.ts";
-import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
 import { setLookCookie } from "../../http/look-cookie.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { visitorOf } from "../../http/visitor.ts";
@@ -92,7 +92,7 @@ export function registerTryonGenerate(app: App): void {
   app.openapi(generateRoute, async (c) => {
     const request = c.req.valid("json");
     const { settings } = c.var.config;
-    const { deps, requestId } = c.var;
+    const { deps } = c.var;
     const db = c.env.DB;
     const now = deps.now();
 
@@ -111,7 +111,7 @@ export function registerTryonGenerate(app: App): void {
     const choice = { stage: job.stage, preset: preset.id };
     const outcome = job.state === "awaiting_upload" ? await startFirstLook(c, job, choice) : sameLookAgain(job, choice);
 
-    if ("error" in outcome) return c.json(errorBody(outcome.error, requestId), outcome.status);
+    if ("error" in outcome) return refuse(c, outcome.error);
     return c.json(outcome, 202);
   });
 
@@ -128,13 +128,12 @@ export function statusOf(job: Pick<JobRow, "id" | "state" | "failure_code" | "fa
   return job.failure_reason === null ? failed : { ...failed, failure_reason: job.failure_reason };
 }
 
-type Outcome =
-  JobStatus | { readonly error: "upload_missing" | "look_limit_reached" | "busy"; readonly status: 403 | 409 | 503 };
+type Outcome = JobStatus | { readonly error: "upload_missing" | "look_limit_reached" | "busy" };
 
 async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderChoice): Promise<Outcome> {
   const db = c.env.DB;
   const now = c.var.deps.now();
-  if (job.uploaded_at === null) return { error: "upload_missing", status: 409 };
+  if (job.uploaded_at === null) return { error: "upload_missing" };
 
   // One look per number: another of its jobs asked for since its claim's window opened refuses this one, in the
   // statement that queues it, so jobs claimed together cannot each start one.
@@ -152,7 +151,7 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
   if (queued === null) {
     // A second request queued it first, or another of the number's jobs has its look.
     const current = await loadJob(db, job.id);
-    if (current?.state === "awaiting_upload") return { error: "look_limit_reached", status: 403 };
+    if (current?.state === "awaiting_upload") return { error: "look_limit_reached" };
     return statusOf(current ?? job);
   }
 
@@ -160,7 +159,7 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
   if (!(await takeFromCeiling(db, "render", at))) {
     await failJob({ db, jobId: job.id, code: "busy", detail: null, now });
     await alertCeilingReached(db, c.var.deps.alert, "render", at);
-    return { error: "busy", status: 503 };
+    return { error: "busy" };
   }
 
   await enqueueRender(c, job.id);
@@ -171,7 +170,7 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
 
 /** A job already asked for: the same look returns it; any other is refused. */
 function sameLookAgain(job: JobRow, choice: RenderChoice): Outcome {
-  return job.preset === choice.preset ? statusOf(job) : { error: "look_limit_reached", status: 403 };
+  return job.preset === choice.preset ? statusOf(job) : { error: "look_limit_reached" };
 }
 
 async function enqueueRender(c: Context<AppEnv>, jobId: string): Promise<void> {

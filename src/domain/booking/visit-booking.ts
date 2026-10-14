@@ -86,10 +86,8 @@ export interface Sale {
 
 /** Why a booking was refused, as the route answers it. */
 type Refusal =
-  | { readonly status: 400; readonly code: "invalid_request"; readonly fields: readonly string[] }
-  | { readonly status: 404; readonly code: "not_found" }
-  | { readonly status: 409; readonly code: "already_booked" }
-  | { readonly status: 422; readonly code: "not_bookable" | "no_product" | "code_not_applicable" };
+  | { readonly code: "invalid_request"; readonly fields: readonly string[] }
+  | { readonly code: "not_found" | "already_booked" | "not_bookable" | "no_product" | "code_not_applicable" };
 
 type Refused = { readonly ok: false; readonly refusal: Refusal };
 
@@ -214,28 +212,28 @@ export async function saleFor(
   inputs: OpsInputs,
   now: Date,
 ): Promise<{ ok: true; sale: Sale } | Refused> {
-  if (!(await isClient(db, asked.personId))) return refused({ status: 404, code: "not_found" });
+  if (!(await isClient(db, asked.personId))) return refused({ code: "not_found" });
   if (asked.oneVisit && asked.kind !== "first_fit") {
-    return refused({ status: 400, code: "invalid_request", fields: ["one_visit"] });
+    return refused({ code: "invalid_request", fields: ["one_visit"] });
   }
   if (asked.oneVisit && !(ONE_VISIT_WINDOWS as readonly BookingWindow[]).includes(asked.window)) {
-    return refused({ status: 400, code: "invalid_request", fields: ["window"] });
+    return refused({ code: "invalid_request", fields: ["window"] });
   }
   const { opens, last } = bookableRange(now, inputs);
-  if (asked.date < opens || asked.date > last) return refused({ status: 422, code: "not_bookable" });
-  if (await alreadyToCome(db, asked, now)) return refused({ status: 409, code: "already_booked" });
+  if (asked.date < opens || asked.date > last) return refused({ code: "not_bookable" });
+  if (await alreadyToCome(db, asked, now)) return refused({ code: "already_booked" });
 
   const [wears, city] = await Promise.all([replacementWears(db, asked), cityOfPerson(db, asked.personId)]);
   const service = await bookableService(db, { kind: asked.kind, tier: asked.tier, on: asked.date, wears, city });
-  if (service === null) return refused({ status: 422, code: await noServiceRefusal(db, asked) });
+  if (service === null) return refused({ code: await noServiceRefusal(db, asked) });
   if (asked.covers !== undefined) {
     const covers = await remakeAsked(db, asked);
-    if (covers === false) return refused({ status: 400, code: "invalid_request", fields: ["covers"] });
+    if (covers === false) return refused({ code: "invalid_request", fields: ["covers"] });
     return { ok: true, sale: remakeSale(service, covers) };
   }
   const onCredit = !asked.oneVisit && (await paysByCredit(db, asked.personId, asked.kind, now));
   const code = await codeFor(db, asked, { onCredit, priceExGst: service.price.amount_ex_gst }, now);
-  if (code === false) return refused({ status: 422, code: "code_not_applicable" });
+  if (code === false) return refused({ code: "code_not_applicable" });
 
   const price = asked.oneVisit ? nothingPaid(service.price) : discounted(service.price, code?.amountOff ?? 0);
   const lateFeeItem = asked.oneVisit ? undefined : LATE_FEES[asked.kind];

@@ -199,8 +199,7 @@ export const ErrorResponseSchema = z
           .strict()
           .optional()
           .openapi({
-            description:
-              "superseded, to a technician's phone, for a job given to another technician: whom, and when.",
+            description: "superseded, to a technician's phone, for a job given to another technician: whom, and when.",
           }),
         earliest_at: z.iso.datetime().optional().openapi({
           description:

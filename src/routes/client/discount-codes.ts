@@ -12,7 +12,7 @@ import type { Entered, Removed } from "../../domain/money/discount-code-uses.ts"
 import { clientOf } from "../../http/client-session.ts";
 import { mayCheckCode } from "../../http/code-checks.ts";
 import type { App } from "../../http/context.ts";
-import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
+import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { selfServeRoute } from "../../http/session-routes.ts";
 import { HoldSchema } from "../schemas/booking.ts";
@@ -62,26 +62,26 @@ const removeRoute = selfServeRoute({
 
 /** A refusal of entering a code, as the route answers it; null when it was applied. */
 function refusalOf(entered: Entered) {
-  if (entered.kind === "not_found") return { code: "not_found", status: 404 } as const;
-  if (entered.kind === "not_applicable") return { code: "code_not_applicable", status: 422 } as const;
-  if (entered.kind === "already_discounted") return { code: "already_discounted", status: 409 } as const;
-  if (entered.kind === "expired") return { code: "hold_expired", status: 409 } as const;
-  if (entered.kind === "price_settled") return { code: "price_settled", status: 409 } as const;
+  if (entered.kind === "not_found") return { code: "not_found" } as const;
+  if (entered.kind === "not_applicable") return { code: "code_not_applicable" } as const;
+  if (entered.kind === "already_discounted") return { code: "already_discounted" } as const;
+  if (entered.kind === "expired") return { code: "hold_expired" } as const;
+  if (entered.kind === "price_settled") return { code: "price_settled" } as const;
   return null;
 }
 
 /** A refusal of taking the code off, as the route answers it; null when it came off. */
 function removalRefusalOf(removed: Removed) {
-  if (removed === "not_found" || removed === "none") return { code: "not_found", status: 404 } as const;
-  if (removed === "expired") return { code: "hold_expired", status: 409 } as const;
-  if (removed === "price_settled") return { code: "price_settled", status: 409 } as const;
+  if (removed === "not_found" || removed === "none") return { code: "not_found" } as const;
+  if (removed === "expired") return { code: "hold_expired" } as const;
+  if (removed === "price_settled") return { code: "price_settled" } as const;
   return null;
 }
 
 export function registerClientDiscountCodes(app: App): void {
   app.openapi(enterRoute, async (c) => {
     const { subjectId: personId } = clientOf(c);
-    const { requestId, log, deps } = c.var;
+    const { log, deps } = c.var;
     if (!(await mayCheckCode(c, personId))) return refuse(c, "rate_limited");
     const { id } = c.req.valid("param");
     const now = deps.now();
@@ -89,7 +89,7 @@ export function registerClientDiscountCodes(app: App): void {
     const entered = await enterOnHold(c.env.DB, deps.payments, entry, now);
     if (entered.kind === "not_applicable") log.info("discount_code_refused", { hold_id: id, reason: entered.reason });
     const refused = refusalOf(entered);
-    if (refused !== null) return c.json(errorBody(refused.code, requestId), refused.status);
+    if (refused !== null) return refuse(c, refused.code);
     log.info("discount_code_applied", { hold_id: id });
     const held = await clientHold(c.env.DB, id, personId, now);
     if (held === null) return refuse(c, "not_found");
@@ -98,12 +98,12 @@ export function registerClientDiscountCodes(app: App): void {
 
   app.openapi(removeRoute, async (c) => {
     const { subjectId: personId } = clientOf(c);
-    const { requestId, deps } = c.var;
+    const { deps } = c.var;
     const { id } = c.req.valid("param");
     const now = deps.now();
     const removed = await removeFromHold(c.env.DB, deps.payments, { holdId: id, personId }, now);
     const refused = removalRefusalOf(removed);
-    if (refused !== null) return c.json(errorBody(refused.code, requestId), refused.status);
+    if (refused !== null) return refuse(c, refused.code);
     const held = await clientHold(c.env.DB, id, personId, now);
     if (held === null) return refuse(c, "not_found");
     return c.json(held, 200);

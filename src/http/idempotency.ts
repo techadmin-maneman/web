@@ -6,7 +6,7 @@ import { z } from "@hono/zod-openapi";
 import type { Context, MiddlewareHandler } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { AppEnv } from "./context.ts";
-import { errorBody, refuse, type ErrorCode } from "./errors.ts";
+import { refuse, type ErrorCode } from "./errors.ts";
 import type { Logger } from "../log.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
@@ -165,10 +165,9 @@ export async function onceForKey<O extends Outcome>(
   return { kind: "ran", outcome };
 }
 
-/** A keyed handler's refusal: its status, its code and the fields it names. */
+/** A keyed handler's refusal: its code, which carries its status (ERROR_STATUS), and the fields it names. */
 interface KeyedRefusal {
   readonly ok: false;
-  readonly status: ContentfulStatusCode;
   readonly code: ErrorCode;
   readonly fields?: readonly string[];
 }
@@ -183,8 +182,8 @@ export function answerKeyed<Body, Refused extends KeyedRefusal>(
   if (run.kind === "key_reused") return refuse(c, "idempotency_key_reused");
   const { outcome } = run;
   if (outcome.ok) return c.json(outcome.body, 201);
-  // Narrowed from the union, the refusal loses its own statuses; it is the Refused it was.
-  return c.json(errorBody(outcome.code, c.var.requestId, outcome.fields), outcome.status as Refused["status"]);
+  // Narrowed from the union, the refusal loses its own codes; it is the Refused it was.
+  return refuse(c, outcome.code as Refused["code"], outcome.fields);
 }
 
 /**

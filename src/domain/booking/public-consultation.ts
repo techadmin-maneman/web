@@ -174,16 +174,16 @@ async function checkRequest(
     oneVisit ? offeredProducts(db, request.date) : [],
   ]);
   if (pincode?.served !== 1 || request.date < first || request.date > addDays(first, BOOKING_DAYS - 1)) {
-    return { ok: false, status: 422, code: "not_bookable" };
+    return { ok: false, code: "not_bookable" };
   }
   // The first fit's three hours do not fit in the evening (src/policy/one-visit.ts), which the form does not offer.
   if (!planStartsIn(request.plan, request.window)) {
-    return { ok: false, status: 400, code: "invalid_request", fields: ["window"] };
+    return { ok: false, code: "invalid_request", fields: ["window"] };
   }
-  if (oneVisit && products.length === 0) return { ok: false, status: 422, code: "no_product" };
+  if (oneVisit && products.length === 0) return { ok: false, code: "no_product" };
   // The technician goes to the address, so it must be where the pincode said we come.
   if (request.address.pincode !== request.pincode) {
-    return { ok: false, status: 400, code: "invalid_request", fields: ["address.pincode"] };
+    return { ok: false, code: "invalid_request", fields: ["address.pincode"] };
   }
   return { ok: true, pincode };
 }
@@ -281,7 +281,7 @@ async function holdOrRequest(
     now,
     holdSeconds: HOLD_SECONDS,
   });
-  if (hold === null) return { ok: false, status: 409, code: "taken" };
+  if (hold === null) return { ok: false, code: "taken" };
   return { ok: true, holdId: hold.id };
 }
 
@@ -338,7 +338,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   if (!checked.ok) return checked;
   // Nothing is looked up or written for a number the plan needs proved until its code was entered.
   if (bookingNeedsProof(request.plan) && !(await form.provedNumber(request.numberCodeId, checked.mobile))) {
-    return { ok: false, status: 403, code: "number_not_proved" };
+    return { ok: false, code: "number_not_proved" };
   }
 
   // A slot is held and booked only while self-serve booking is on and the day offers what was asked for;
@@ -431,7 +431,7 @@ async function answerAsForANewNumber(
   const code = await oneVisitCode(form, request, null, oneVisit);
   if (code?.ok === false) return code;
   const state = await newNumbersState(form, request);
-  if (state === "taken") return { ok: false, status: 409, code: "taken" };
+  if (state === "taken") return { ok: false, code: "taken" };
 
   await tellPrivately(form, known.personId, known.notBooked);
   form.log.info("consultation_not_booked", { reason: known.notBooked, state, one_visit: oneVisit });
@@ -502,7 +502,7 @@ async function oneVisitCode(
   if (asked === null) return null;
   const notApplicable = asked.fromInvite
     ? null
-    : ({ ok: false, status: 422, code: "code_not_applicable", fields: ["discount_code"] } as const);
+    : ({ ok: false, code: "code_not_applicable", fields: ["discount_code"] } as const);
   if (!oneVisit) {
     if (!asked.fromInvite) form.log.info("discount_code_refused", { reason: "not_covered" });
     return notApplicable;

@@ -274,10 +274,9 @@ const isClientInReach = async (c: Context<AppEnv>, client: string): Promise<bool
 
 /** A booking outside the caller's cities: a client or a technician elsewhere is not found, as anything elsewhere is. */
 async function refusedElsewhere(c: Context<AppEnv>, asked: VisitAsked) {
-  if (!(await withinRouteReach(c, "client", asked.personId))) return { code: "not_found", status: 404 } as const;
+  if (!(await withinRouteReach(c, "client", asked.personId))) return { code: "not_found" } as const;
   if (asked.technicianId === undefined) return null;
-  if (!(await withinRouteReach(c, "technician", asked.technicianId)))
-    return { code: "not_found", status: 404 } as const;
+  if (!(await withinRouteReach(c, "technician", asked.technicianId))) return { code: "not_found" } as const;
   return null;
 }
 
@@ -329,13 +328,12 @@ export function registerOpsVisits(app: App): void {
     const db = c.env.DB;
     const now = c.var.deps.now();
     const elsewhere = await refusedElsewhere(c, asked);
-    if (elsewhere !== null) return c.json(errorBody(elsewhere.code, c.var.requestId), elsewhere.status);
+    if (elsewhere !== null) return refuse(c, elsewhere.code);
     const inputs = await opsInputs(c);
     const checked = await saleFor(db, asked, inputs, now);
     if (!checked.ok) {
       const { refusal } = checked;
-      if (refusal.status === 400) return c.json(errorBody(refusal.code, c.var.requestId, [...refusal.fields]), 400);
-      return c.json(errorBody(refusal.code, c.var.requestId), refusal.status);
+      return refuse(c, refusal.code, "fields" in refusal ? refusal.fields : undefined);
     }
     const { sale } = checked;
     const closesAt = sale.pays === "link" ? await linkClosesAt(db, asked, now, inputs.paymentLinks) : null;
