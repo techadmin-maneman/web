@@ -92,7 +92,7 @@ function StatementTable({ lines }: { lines: readonly Line[] }) {
               </tr>
             )),
             <tr key={`${technician.id}-total`} className={own.total}>
-              <th scope="row" colSpan={5}>
+              <th scope="row" colSpan={copy.columns.length - 1}>
                 {technician.unpriced ? copy.totalUnpriced(technician.name) : copy.total(technician.name)}
               </th>
               <td className={own.figure}>{rupees(technician.total)}</td>

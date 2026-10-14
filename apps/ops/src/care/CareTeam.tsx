@@ -19,9 +19,9 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type CareMember } from "./care-api.ts";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
+import { ActionRow } from "../components/ActionRow.tsx";
 
 const copy = care.team;
-const COLUMNS = 7;
 
 type Leave = CareMember["leave"][number];
 
@@ -335,14 +335,12 @@ function MemberRows(props: {
         </td>
       </tr>
       {acting !== null && (
-        <tr className={own.acting}>
-          <td colSpan={COLUMNS}>
-            {acting === "name" && <NameForm member={member} onDone={done} onCancel={cancel} />}
-            {acting === "days" && <DaysOffForm member={member} onDone={done} onCancel={cancel} />}
-            {acting === "leave" && <LeaveForm member={member} onDone={done} onCancel={cancel} />}
-            {acting === "move" && <MoveAllForm member={member} team={props.team} onDone={done} onCancel={cancel} />}
-          </td>
-        </tr>
+        <ActionRow className={own.acting}>
+          {acting === "name" && <NameForm member={member} onDone={done} onCancel={cancel} />}
+          {acting === "days" && <DaysOffForm member={member} onDone={done} onCancel={cancel} />}
+          {acting === "leave" && <LeaveForm member={member} onDone={done} onCancel={cancel} />}
+          {acting === "move" && <MoveAllForm member={member} team={props.team} onDone={done} onCancel={cancel} />}
+        </ActionRow>
       )}
     </>
   );

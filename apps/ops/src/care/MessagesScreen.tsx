@@ -23,9 +23,9 @@ import { Thread, whenOf, whoOf } from "./Thread.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
 import { phoneWords } from "../lib/phone.ts";
+import { ActionRow } from "../components/ActionRow.tsx";
 
 const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed", "all"];
-const COLUMNS = 7;
 
 /** How often the list is read again while it is in view, for new chats and the clients' replies. */
 const LIST_EVERY_MS = 20_000;
@@ -150,17 +150,15 @@ function ConversationRows(props: {
         </td>
       </tr>
       {props.open && (
-        <tr className={own.acting}>
-          <td colSpan={COLUMNS}>
-            <Thread
-              conversation={conversation}
-              onClose={() => {
-                props.onOpen(null);
-              }}
-              onChanged={props.onChanged}
-            />
-          </td>
-        </tr>
+        <ActionRow className={own.acting}>
+          <Thread
+            conversation={conversation}
+            onClose={() => {
+              props.onOpen(null);
+            }}
+            onChanged={props.onChanged}
+          />
+        </ActionRow>
       )}
     </>
   );

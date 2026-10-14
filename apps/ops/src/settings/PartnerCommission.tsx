@@ -25,11 +25,10 @@ import { monthCsv, statementCsv } from "./partner-commission-csv.ts";
 import { PayoutForm } from "./PayoutForm.tsx";
 import styles from "../components/forms.module.css";
 import own from "./partner-commission.module.css";
+import { ActionRow } from "../components/ActionRow.tsx";
 
 const copy = partnerCommission;
 const columns = copy.columns;
-
-const COLUMNS = 8;
 
 /** An amount, or a dash for none; one below nothing with a minus before it. */
 function amountOf(paise: number): string {
@@ -110,35 +109,33 @@ function ActingRow({ statement, book, acting, onAct, onDone }: { statement: Part
     onAct(null);
   };
   return (
-    <tr className={own.acting}>
-      <td colSpan={COLUMNS}>
-        {acting.kind === "pay" ? (
-          <PayoutForm
-            statement={statement}
-            month={book.month}
-            monthName={fullMonth(book.month)}
-            today={book.today}
-            maxAmount={book.max_amount}
-            onDone={(next) => {
-              onDone(next, copy.done.recorded);
+    <ActionRow className={own.acting}>
+      {acting.kind === "pay" ? (
+        <PayoutForm
+          statement={statement}
+          month={book.month}
+          monthName={fullMonth(book.month)}
+          today={book.today}
+          maxAmount={book.max_amount}
+          onDone={(next) => {
+            onDone(next, copy.done.recorded);
+          }}
+          onCancel={cancel}
+        />
+      ) : (
+        <div className={own.ask}>
+          <DeleteAction
+            name={copy.paymentTo(statement.name, fullMonth(book.month))}
+            send={() => api.deletePartnerPayout(statement.channel_id, book.month)}
+            refusal={(refused) => errorText(copy.errors, { code: refused, fields: [] })}
+            onDeleted={(next) => {
+              onDone(next, copy.done.deleted);
             }}
             onCancel={cancel}
           />
-        ) : (
-          <div className={own.ask}>
-            <DeleteAction
-              name={copy.paymentTo(statement.name, fullMonth(book.month))}
-              send={() => api.deletePartnerPayout(statement.channel_id, book.month)}
-              refusal={(refused) => errorText(copy.errors, { code: refused, fields: [] })}
-              onDeleted={(next) => {
-                onDone(next, copy.done.deleted);
-              }}
-              onCancel={cancel}
-            />
-          </div>
-        )}
-      </td>
-    </tr>
+        </div>
+      )}
+    </ActionRow>
   );
 }
 

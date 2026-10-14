@@ -24,11 +24,10 @@ import { PartnerForm } from "./PartnerForm.tsx";
 import { partnerQr } from "./partner-qr.ts";
 import styles from "../components/forms.module.css";
 import own from "./partners.module.css";
+import { ActionRow } from "../components/ActionRow.tsx";
 
 /** The site the partner's link opens: the environment's own. */
 const SITE = new URL(BOOKING_URL[import.meta.env.MM_ENV]);
-
-const COLUMNS = 10;
 
 /** What is open beneath a partner's row. */
 type Acting = { readonly id: string; readonly kind: "edit" | "pause" } | null;
@@ -117,22 +116,20 @@ function ActingRow({ partner, list, acting, onAct, onDone }: { partner: Partner 
     onAct(null);
   };
   return (
-    <tr className={own.acting}>
-      <td colSpan={COLUMNS}>
-        {acting.kind === "edit" ? (
-          <PartnerForm
-            partner={partner}
-            limits={list.limits}
-            onDone={(next) => {
-              onDone(next, copy.done.saved);
-            }}
-            onCancel={cancel}
-          />
-        ) : (
-          <PauseCheck partner={partner} onDone={onDone} onBack={cancel} />
-        )}
-      </td>
-    </tr>
+    <ActionRow className={own.acting}>
+      {acting.kind === "edit" ? (
+        <PartnerForm
+          partner={partner}
+          limits={list.limits}
+          onDone={(next) => {
+            onDone(next, copy.done.saved);
+          }}
+          onCancel={cancel}
+        />
+      ) : (
+        <PauseCheck partner={partner} onDone={onDone} onBack={cancel} />
+      )}
+    </ActionRow>
   );
 }
 

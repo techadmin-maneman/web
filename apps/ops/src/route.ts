@@ -130,11 +130,14 @@ export type Route =
   | { readonly page: "technicians"; readonly technicianId: string | null; readonly tab: TechnicianTab };
 
 const TASKS: Route = { page: "tasks" };
-const CLIENT_PATH =
-  /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|referrals|consents|photos|history))?)?$/;
-const SETTINGS_PATH = /^\/settings(?:\/(blackouts|job-sheet))?$/;
-const AREAS_PATH = /^\/areas(?:\/(served))?$/;
-const TECHNICIAN_PATH = /^\/technicians(?:\/([0-9a-f-]{36})(?:\/(week|leave|phones|kit))?)?$/;
+/** A path's tab, one of `tabs`, as a pattern's group; the tabs are words, so none needs escaping. */
+const oneOf = (tabs: readonly string[]): string => `(${tabs.join("|")})`;
+const ID = "([0-9a-f-]{36})";
+const CLIENT_PATH = new RegExp(`^/clients(?:/${ID}(?:/${oneOf(CLIENT_TABS)})?)?$`);
+// Rules and Waiting have their sections' own paths.
+const SETTINGS_PATH = new RegExp(`^/settings(?:/${oneOf(SETTINGS_TABS.slice(1))})?$`);
+const AREAS_PATH = new RegExp(`^/areas(?:/${oneOf(AREA_TABS.slice(1))})?$`);
+const TECHNICIAN_PATH = new RegExp(`^/technicians(?:/${ID}(?:/${oneOf(TECHNICIAN_TABS)})?)?$`);
 
 /**
  * Pages that moved, so a link or bookmark to one still lands: Settings tabs now in their own departments, the

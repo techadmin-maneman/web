@@ -19,6 +19,7 @@ import { PayRates } from "./PayRates.tsx";
 import { PayStatement } from "./PayStatement.tsx";
 import styles from "../components/forms.module.css";
 import own from "./technician-pay.module.css";
+import { ActionRow } from "../components/ActionRow.tsx";
 
 const copy = technicianPay.technicians;
 
@@ -32,8 +33,6 @@ interface RowProps {
   readonly onAct: (acting: string | null) => void;
   readonly onDone: (pay: Pay) => void;
 }
-
-const COLUMNS = 4;
 
 function TechnicianRows({ technician, pay, maySet, acting, onAct, onDone }: { technician: PayTechnician } & RowProps) {
   const grade = pay.grades.find((each) => each.id === technician.grade_id)?.name ?? copy.noGrade;
@@ -59,18 +58,16 @@ function TechnicianRows({ technician, pay, maySet, acting, onAct, onDone }: { te
         </td>
       </tr>
       {acting === technician.id && (
-        <tr className={own.acting}>
-          <td colSpan={COLUMNS}>
-            <GradeOfForm
-              technician={technician}
-              pay={pay}
-              onDone={onDone}
-              onCancel={() => {
-                onAct(null);
-              }}
-            />
-          </td>
-        </tr>
+        <ActionRow className={own.acting}>
+          <GradeOfForm
+            technician={technician}
+            pay={pay}
+            onDone={onDone}
+            onCancel={() => {
+              onAct(null);
+            }}
+          />
+        </ActionRow>
       )}
     </>
   );

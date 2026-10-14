@@ -24,8 +24,7 @@ import { WordHistory } from "./WordHistory.tsx";
 import { LastPublished, PublishCheck } from "./WordsPublish.tsx";
 import styles from "../components/forms.module.css";
 import own from "./words.module.css";
-
-const COLUMNS = 4;
+import { ActionRow } from "../components/ActionRow.tsx";
 
 /** What is open beneath a line's row: its form, opened with a wording, or its history. */
 type Acting =
@@ -79,22 +78,20 @@ function ActingRow({ word, ...row }: { word: Word } & RowProps) {
     onAct(null);
   };
   return (
-    <tr className={own.acting}>
-      <td colSpan={COLUMNS}>
-        {acting.kind === "edit" ? (
-          <WordForm word={word} start={acting.start} messages={row.messages} onDone={row.onDone} onCancel={close} />
-        ) : (
-          <WordHistory
-            word={word}
-            mayChange={row.mayChange}
-            onUse={(text) => {
-              onAct({ key: word.key, kind: "edit", start: text });
-            }}
-            onClose={close}
-          />
-        )}
-      </td>
-    </tr>
+    <ActionRow className={own.acting}>
+      {acting.kind === "edit" ? (
+        <WordForm word={word} start={acting.start} messages={row.messages} onDone={row.onDone} onCancel={close} />
+      ) : (
+        <WordHistory
+          word={word}
+          mayChange={row.mayChange}
+          onUse={(text) => {
+            onAct({ key: word.key, kind: "edit", start: text });
+          }}
+          onClose={close}
+        />
+      )}
+    </ActionRow>
   );
 }
 
