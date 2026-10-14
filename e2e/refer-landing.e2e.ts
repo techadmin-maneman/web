@@ -503,7 +503,7 @@ test("a keyboard user sees which day, window and agreement has focus", async ({ 
 
   await page.keyboard.press("Tab"); // Change the pincode
   await page.keyboard.press("Tab"); // what to book (ADR 0086)
-  await expect(page.getByRole("radio", { name: "Consultation · an hour" })).toBeFocused();
+  await expect(page.getByRole("radio", { name: "Consultation · 1 hour" })).toBeFocused();
   expect(await outlineOf(page, "label")).toBe("solid 2px");
   await page.keyboard.press("Tab"); // the date strip
   await expect(
@@ -672,8 +672,8 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
 
   const plan = page.getByRole("group", { name: referralCopy.referral.consultation.plan.legend });
-  await expect(plan.getByRole("radio", { name: "Consultation · an hour" })).toBeChecked();
-  await plan.getByRole("radio", { name: "Consultation and fit · three hours" }).check();
+  await expect(plan.getByRole("radio", { name: "Consultation · 1 hour" })).toBeChecked();
+  await plan.getByRole("radio", { name: "Consultation and fit · 3 hours" }).check();
   await expect(
     plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./),
   ).toBeVisible();

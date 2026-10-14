@@ -136,19 +136,19 @@ describe("content", () => {
     expect(VISIT_BLOCKS.first_fit.minutes).toBe(180);
     const published = JSON.stringify({ ...site, ...BLOCKS, testimonials: null }) + JSON.stringify(referral);
     expect(published).not.toMatch(/forty minutes|about an hour|one hour|ninety minutes · at your table/i);
-    expect(site.discretionBand.text).toMatch(/^Three hours at your own table/);
+    expect(site.discretionBand.text).toMatch(/^3 hours at your own table/);
     expect(site.howItWorks.steps.map((step) => step.meta)).toEqual([
-      "An hour · free",
-      "Three hours · at your home",
-      "Every month · ninety minutes",
+      "1 hour · free",
+      "3 hours · at your home",
+      "Every month · 90 minutes",
     ]);
-    expect(site.faq.items[2]?.a).toMatch(/About ninety minutes, at your home\.$/);
-    expect(site.closing.title).toBe("The consultation takes an hour and costs nothing.");
-    expect(referral.consultation.body).toBe("An hour, and free. Or have your fit in the same visit.");
+    expect(site.faq.items[2]?.a).toMatch(/About 90 minutes, at your home\.$/);
+    expect(site.closing.title).toBe("The consultation takes 1 hour and costs nothing.");
+    expect(referral.consultation.body).toBe("1 hour, and free. Or have your fit in the same visit.");
     expect(referral.howItWorks.steps.map((step) => step.body)).toEqual([
-      "An hour. A scalp template and a colour match.",
-      "Three hours. You’re wearing it by the end.",
-      "Lifted, cleaned, re-bonded, trimmed. Ninety minutes.",
+      "1 hour. A scalp template and a colour match.",
+      "3 hours. You’re wearing it by the end.",
+      "Lifted, cleaned, re-bonded, trimmed. 90 minutes.",
     ]);
   });
 
@@ -253,8 +253,8 @@ describe("the second copy round", () => {
 
   it("says how long each choice on the booking form takes", () => {
     expect(referral.consultation.plan.options.map((option) => option.label)).toEqual([
-      "Consultation · an hour",
-      "Consultation and fit · three hours",
+      "Consultation · 1 hour",
+      "Consultation and fit · 3 hours",
     ]);
   });
 

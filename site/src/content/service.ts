@@ -9,22 +9,17 @@ import type { VisitType } from "@rules/config/visit-types.ts";
 
 export const serviceArea = SERVICE_AREA;
 
-/** Minutes, in words. A new length in VISIT_BLOCKS needs its words here, or the build stops. */
-const MINUTES_IN_WORDS: Readonly<Record<number, string>> = {
-  60: "an hour",
-  90: "ninety minutes",
-  135: "two and a quarter hours",
-  180: "three hours",
-};
-
+/** A visit's length in figures, as a sentence says it: "1 hour", "90 minutes", "2 hours 15 minutes". */
 function lengthOf(type: VisitType): string {
   const { minutes } = VISIT_BLOCKS[type];
-  const words = MINUTES_IN_WORDS[minutes];
-  if (words === undefined) throw new Error(`site/src/content/service.ts has no words for ${String(minutes)} minutes`);
-  return words;
+  if (minutes < 120 && minutes % 60 !== 0) return `${String(minutes)} minutes`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  const whole = `${String(hours)} ${hours === 1 ? "hour" : "hours"}`;
+  return rest === 0 ? whole : `${whole} ${String(rest)} minutes`;
 }
 
-/** How long each visit takes, in lower case: "an hour". */
+/** How long each visit takes: "1 hour". */
 export const visitLength = {
   consultation: lengthOf("consultation"),
   service: lengthOf("service"),

@@ -49,10 +49,3 @@ export function invoiceState(visit: VisitDetail, now: number): InvoiceState {
   return since > INVOICE_USUAL_MS ? "delayed" : "generating";
 }
 
-/** 85 → "1 h 25 m", as the visit's record writes a duration. */
-export function duration(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  if (hours === 0) return `${String(rest)} m`;
-  return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} m`;
-}

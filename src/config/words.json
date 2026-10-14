@@ -753,7 +753,7 @@
     "surface": "site",
     "group": "Home",
     "where": "discretionBand",
-    "text": "Three hours at your own table, and nobody else need ever know."
+    "text": "3 hours at your own table, and nobody else need ever know."
   },
   {
     "key": "site:home/howItWorks.title",
@@ -781,7 +781,7 @@
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "An hour · free"
+    "text": "1 hour · free"
   },
   {
     "key": "site:home/howItWorks.steps.1.title",
@@ -802,7 +802,7 @@
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "Three hours · at your home"
+    "text": "3 hours · at your home"
   },
   {
     "key": "site:home/howItWorks.steps.2.title",
@@ -823,7 +823,7 @@
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "Every month · ninety minutes"
+    "text": "Every month · 90 minutes"
   },
   {
     "key": "site:home/range.title",
@@ -1663,7 +1663,7 @@
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "The technician lifts the hair system, cleans the adhesive off the base and your scalp, checks the knots, re-bonds it and trims the hair to match your own growth. About ninety minutes, at your home."
+    "text": "The technician lifts the hair system, cleans the adhesive off the base and your scalp, checks the knots, re-bonds it and trims the hair to match your own growth. About 90 minutes, at your home."
   },
   {
     "key": "site:home/faq.items.3.q",
@@ -1768,7 +1768,7 @@
     "surface": "site",
     "group": "Home",
     "where": "closing",
-    "text": "The consultation takes an hour and costs nothing."
+    "text": "The consultation takes 1 hour and costs nothing."
   },
   {
     "key": "site:home/closing.book",
@@ -1803,7 +1803,7 @@
     "surface": "site",
     "group": "Book",
     "where": "booking",
-    "text": "Your technician measures your scalp and matches your colour: an hour, free. Or add the fit and wear your hair system the same day."
+    "text": "Your technician measures your scalp and matches your colour: 1 hour, free. Or add the fit and wear your hair system the same day."
   },
   {
     "key": "site:pages/booking.introWaitlist",
@@ -2062,7 +2062,7 @@
     "surface": "site",
     "group": "Page titles",
     "where": "pageDescriptions",
-    "text": "Your technician measures your scalp and matches your colour: an hour, free. Or add the fit and wear your hair system the same day."
+    "text": "Your technician measures your scalp and matches your colour: 1 hour, free. Or add the fit and wear your hair system the same day."
   },
   {
     "key": "site:pages/pageDescriptions.privacy",
@@ -3483,7 +3483,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "About once a month, your technician comes back to lift the hair system, clean the base and your scalp, bond it again and refresh the cut. It takes ninety minutes, and keeps it looking like the day it was fitted."
+    "text": "About once a month, your technician comes back to lift the hair system, clean the base and your scalp, bond it again and refresh the cut. It takes 90 minutes, and keeps it looking like the day it was fitted."
   },
   {
     "key": "site:guides/guides.3.sections.2.heading",
@@ -3980,7 +3980,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "An hour. A scalp template and a colour match."
+    "text": "1 hour. A scalp template and a colour match."
   },
   {
     "key": "site:referral/referral.howItWorks.steps.1.title",
@@ -3994,7 +3994,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Three hours. You’re wearing it by the end."
+    "text": "3 hours. You’re wearing it by the end."
   },
   {
     "key": "site:referral/referral.howItWorks.steps.2.title",
@@ -4008,7 +4008,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Lifted, cleaned, re-bonded, trimmed. Ninety minutes."
+    "text": "Lifted, cleaned, re-bonded, trimmed. 90 minutes."
   },
   {
     "key": "site:referral/referral.pincode.title",
@@ -4099,7 +4099,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "An hour, and free. Or have your fit in the same visit."
+    "text": "1 hour, and free. Or have your fit in the same visit."
   },
   {
     "key": "site:referral/referral.consultation.forPincode",
@@ -4197,14 +4197,14 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Consultation · an hour"
+    "text": "Consultation · 1 hour"
   },
   {
     "key": "site:referral/referral.consultation.plan.options.1.label",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Consultation and fit · three hours"
+    "text": "Consultation and fit · 3 hours"
   },
   {
     "key": "site:referral/referral.consultation.plan.note",
@@ -4645,14 +4645,14 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "An hour at home, and free. Nothing is fitted."
+    "text": "1 hour at home, and free. Nothing is fitted."
   },
   {
     "key": "site:referral/referral.booked.ready.oneVisit",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Three hours at home. You pay once fitted, by a link to your phone."
+    "text": "3 hours at home. You pay once fitted, by a link to your phone."
   },
   {
     "key": "site:referral/referral.booked.calendar.label",
@@ -4953,21 +4953,21 @@
     "surface": "site",
     "group": "Every page",
     "where": "visitLength",
-    "text": "an hour"
+    "text": "1 hour"
   },
   {
     "key": "site:service/visitLength.service",
     "surface": "site",
     "group": "Every page",
     "where": "visitLength",
-    "text": "ninety minutes"
+    "text": "90 minutes"
   },
   {
     "key": "site:service/visitLength.firstFit",
     "surface": "site",
     "group": "Every page",
     "where": "visitLength",
-    "text": "three hours"
+    "text": "3 hours"
   },
   {
     "key": "message:tryon_result_v1",

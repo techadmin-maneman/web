@@ -82,14 +82,11 @@ export const OTHER_VISIT = "Visit";
 // A consultation and fit in one visit, as the site and the technician's phone call it.
 export const ONE_VISIT = "Consultation and fit";
 
-/** How long a visit takes: "3 hours", "1 hour 30 minutes". */
+/** How long a visit takes, or took: "3 hr", "1 hr 30 min", "45 min". */
 export function visitLength(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  const parts = [
-    hours === 0 ? "" : `${String(hours)} ${hours === 1 ? "hour" : "hours"}`,
-    rest === 0 ? "" : `${String(rest)} minutes`,
-  ];
+  const parts = [hours === 0 ? "" : `${String(hours)} hr`, rest === 0 ? "" : `${String(rest)} min`];
   return parts.filter((part) => part !== "").join(" ");
 }
 

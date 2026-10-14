@@ -19,12 +19,12 @@ import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
-import { messages, ONE_VISIT, payments, visits } from "../content.ts";
+import { messages, ONE_VISIT, payments, visitLength, visits } from "../content.ts";
 import { AddToCalendar } from "../components/AddToCalendar.tsx";
 import { OpenDocument } from "../components/OpenDocument.tsx";
 import { Shell } from "../components/Shell.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
-import { duration, invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
+import { invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { firstNameOf } from "@rules/lib/names.ts";
 import { Loading } from "../states/Loading.tsx";
@@ -156,7 +156,7 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
       <dl className={styles.facts}>
         {visit.technician !== null && <Fact name={copy.technician} value={visit.technician.name} />}
         {visit.duration_minutes !== null && (
-          <Fact name={copy.duration} value={duration(visit.duration_minutes)} numeric />
+          <Fact name={copy.duration} value={visitLength(visit.duration_minutes)} numeric />
         )}
         <Fact name={copy.type} value={visitTitle(visit)} />
         {visit.what_was_done !== null && visit.what_was_done.length > 0 && (
