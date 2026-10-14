@@ -10,7 +10,7 @@ import {
   WAREHOUSE_ALERT_BYTES,
   type NightGiven,
 } from "../domain/analytics/nightly.ts";
-import { readOpsInputs } from "../domain/ops/ops-settings.ts";
+import { readOpsInputs } from "../domain/platform/ops-settings.ts";
 import { failureReason } from "../log.ts";
 import type { TableMeta, WarehouseProvider } from "../providers/warehouse/index.ts";
 import { STEP_RETRIES, type Steps, type WorkflowRun } from "./steps.ts";

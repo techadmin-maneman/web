@@ -16,7 +16,7 @@ import {
   createCachedOpsInputs,
   readOpsInputs,
   SETTINGS_TTL_MS,
-} from "../../../src/domain/ops/ops-settings.ts";
+} from "../../../src/domain/platform/ops-settings.ts";
 import { NEXT_VISIT_DAYS } from "../../../src/policy/next-visit.ts";
 import { appFor, captureLogs, countRowsRead, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { POST, type Setting } from "./ops-settings-fixtures.ts";

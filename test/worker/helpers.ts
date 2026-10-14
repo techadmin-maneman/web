@@ -3,7 +3,9 @@ import { env } from "cloudflare:workers";
 import { vi, type MockInstance } from "vitest";
 import { createApp } from "../../src/app.ts";
 import type { App } from "../../src/http/context.ts";
+import { NOW } from "./clock.ts";
 import { outsideContract } from "./contract.ts";
+import { anAddress } from "./fixtures/index.ts";
 import {
   EXPECTED_DATABASE_NAME,
   SURFACE_HOSTS,
@@ -14,7 +16,7 @@ import {
 import type { RazorpaySettings, Settings } from "../../src/config/settings.ts";
 import { saltedHash } from "../../src/lib/hash.ts";
 import type { Dependencies } from "../../src/dependencies.ts";
-import { createAlertOnce, createResolveAlert } from "../../src/domain/ops/alerts.ts";
+import { createAlertOnce, createResolveAlert } from "../../src/domain/platform/alerts.ts";
 import { erasePerson, personWithMobile, type ErasureSummary } from "../../src/domain/privacy/erasure.ts";
 import { mobileHashOf } from "../../src/domain/clients/number-codes.ts";
 import { CODE_TTL_MS } from "../../src/policy/one-time-code.ts";
@@ -194,17 +196,14 @@ export async function provedNumberCode(mobileE164: string, now: Date = NOW): Pro
  * served, unless the test set it up otherwise first: no slot is held at an address we do not come to.
  */
 export async function savedAddress(personId: string, pincode = "122018"): Promise<void> {
-  await env.DB.batch([
-    env.DB.prepare(
-      `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at)
-       VALUES (?1, 'Sector 65', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')
-       ON CONFLICT (pincode) DO NOTHING`,
-    ).bind(pincode),
-    env.DB.prepare(
-      `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode)
-       VALUES (?1, ?2, ?3, 'House 4417, Tower C', 'Sector 65', 'Gurgaon', ?4)`,
-    ).bind(crypto.randomUUID(), personId, NOW.toISOString(), pincode),
-  ]);
+  await env.DB.prepare(
+    `INSERT INTO serviceable_pincodes (pincode, area, city, served, launched_at)
+     VALUES (?1, 'Sector 65', 'Gurgaon', 1, '2026-09-01T18:30:00.000Z')
+     ON CONFLICT (pincode) DO NOTHING`,
+  )
+    .bind(pincode)
+    .run();
+  await anAddress(personId, { pincode });
 }
 
 // ---------------------------------------------------------------------------
@@ -256,7 +255,7 @@ export const turnstilePasses: Handler = () => json({ success: true, hostname: SU
 // App and dependencies
 // ---------------------------------------------------------------------------
 
-export const NOW = new Date("2026-09-21T06:30:00Z"); // 12:00 on Monday 21 September in India
+export { NOW };
 
 export interface SentCode {
   readonly channel: CodeChannel;

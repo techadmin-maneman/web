@@ -7,8 +7,8 @@
 // Failure rates read with Operations VIEW; the value at risk with MANAGE in the caller's places, since it values stock.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { placesWithin } from "../../domain/field/stock-places.ts";
-import { expiryRisk, failureRates, type FailureGroup } from "../../domain/field/stock-quality.ts";
+import { placesWithin } from "../../domain/inventory/stock-places.ts";
+import { expiryRisk, failureRates, type FailureGroup } from "../../domain/inventory/stock-quality.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse } from "../../http/errors.ts";

@@ -57,8 +57,9 @@ import {
 import { PriceSchema } from "../schemas/booking.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
-import { wornProduct } from "../../domain/field/stock-gap.ts";
+import { wornProduct } from "../../domain/inventory/stock-gap.ts";
 import { replacementFor } from "../../policy/services.ts";
+import { cityOfPerson } from "../../domain/cities/cities.ts";
 
 const MeSchema = z
   .object({
@@ -373,7 +374,7 @@ export function registerClientMe(app: App): void {
         isFitted(db, personId),
         formBookingOf(c, personId, today),
         bookableTypes(db, personId),
-        servicesOnDay(db, tomorrow),
+        cityOfPerson(db, personId).then((city) => servicesOnDay(db, tomorrow, city)),
         homeFactsOf(c, personId, now),
         pendingInviteOf(db, personId, now, nameOnInvite),
         owedPayments(db, personId),

@@ -10,7 +10,7 @@
 import { NAMING_NOTICES, type ToldNotice } from "../../config/notices.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
 import { firstNameOf } from "../../lib/names.ts";
-import { auditStatementIfWritten, type AuditEntry } from "../ops/audit.ts";
+import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import { insertRow } from "../../lib/sql.ts";
 
 /** No 0, O, 1 or I: a code is read aloud and typed. */

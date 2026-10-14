@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { recordUtilisation } from "../../../src/domain/dispatch/dispatch-utilisation.ts";
 import { appFor, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
+import { keepUpVisits } from "../fixtures/index.ts";
 import {
   ROHIT,
   VIKRAM,
@@ -326,7 +327,13 @@ describe("the board's version", () => {
           NOW.toISOString(),
         ),
       ],
-      ["visit cancelled", write("UPDATE appointments SET status = 'cancelled' WHERE id = ?1", FIT)],
+      [
+        "visit cancelled",
+        async () => {
+          await write("UPDATE appointments SET status = 'cancelled' WHERE id = ?1", FIT)();
+          await keepUpVisits();
+        },
+      ],
     ];
 
     const unmoved: string[] = [];

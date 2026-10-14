@@ -12,7 +12,7 @@ import { clientRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
-import { auditStatementIfWritten, recordAudit } from "../../domain/ops/audit.ts";
+import { auditStatementIfWritten, recordAudit } from "../../domain/platform/audit.ts";
 import { readPersonData } from "../../domain/privacy/data-export.ts";
 import { openGrievanceInWords } from "../../domain/ops/grievances.ts";
 import { myDataPage } from "../../domain/privacy/my-data-page.ts";
@@ -141,7 +141,7 @@ export function registerClientData(app: App): void {
            RETURNING id`,
         )
         .bind(id, session.subjectId, text, now.toISOString()),
-      // Recorded only if the grievance above was, in the same batch (src/domain/ops/audit.ts).
+      // Recorded only if the grievance above was, in the same batch (src/domain/platform/audit.ts).
       auditStatementIfWritten(
         db,
         {

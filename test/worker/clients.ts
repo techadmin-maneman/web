@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { openSession } from "../../src/domain/sign-in/sessions.ts";
+import { aPerson, aTechnician } from "./fixtures/index.ts";
 import { appFor, fakeDependencies, NOW, request, savedAddress, type TestDependencies } from "./helpers.ts";
 
 /** The technician most booking tests are fitted by. */
@@ -11,11 +12,7 @@ export const IMRAN = "t1";
 
 /** A technician in Gurgaon, where the clients below live: a visit goes only to a technician in its own city (ADR 0117). */
 export async function technician(id = IMRAN, name = "Imran Qureshi", initials = "IQ"): Promise<void> {
-  await env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city, fits_trained) VALUES (?1, ?1, ?2, ?3, 1, ?4, 'Gurgaon', 1)",
-  )
-    .bind(id, name, initials, NOW.toISOString())
-    .run();
+  await aTechnician({ id, name, initials });
 }
 
 /** An active technician in every city we hold, so a pincode anywhere may begin serving (ADR 0117). */
@@ -30,9 +27,7 @@ export async function aTechnicianInEveryCity(): Promise<void> {
 
 /** A client with a saved address in Gurgaon, as booking asks for one before anything is held. */
 export async function client(id: string, mobile = "+919810000001", name = "Rohit Malhotra"): Promise<void> {
-  await env.DB.prepare("INSERT INTO people (id, created_at, mobile_e164, name) VALUES (?1, ?2, ?3, ?4)")
-    .bind(id, NOW.toISOString(), mobile, name)
-    .run();
+  await aPerson({ id, mobile_e164: mobile, name });
   await savedAddress(id);
 }
 

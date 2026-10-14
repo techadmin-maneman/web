@@ -5,7 +5,7 @@
 import type { MessagingSettings } from "../../config/settings.ts";
 import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
 import type { MessagingProvider, SendResult } from "../../providers/messaging/index.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 /** What a chat was about, as Care close it. */
 export const CLOSE_REASONS = [

@@ -15,6 +15,7 @@ import { releaseDeclined } from "../money/discount-code-visits.ts";
 import { pieceBodyOf } from "../field/job-event-bodies.ts";
 import { eventsOf } from "../field/job-events.ts";
 import { sendPaymentLink, type LinkDeps, type LinkSent } from "../money/payment-links.ts";
+import { boardMoved, visitUpkeep } from "./visit-upkeep.ts";
 
 /** The client's decision, from the piece step's body; null for a body that records neither. */
 function decisionOf(body: unknown): Decision | null {
@@ -57,13 +58,14 @@ export async function closeOneVisit(
         .prepare("UPDATE appointments SET one_visit = 'declined', type = 'consultation', tier = ?2 WHERE id = ?1")
         .bind(job.id, STANDARD_TIER),
       ...releaseDeclined(db, job.id, now),
+      ...visitUpkeep(db, { visits: [job.id] }),
     ]);
     return null;
   }
-  await db
-    .prepare("UPDATE appointments SET one_visit = 'fitted', tier = ?2 WHERE id = ?1")
-    .bind(job.id, decision.product)
-    .run();
+  await db.batch([
+    db.prepare("UPDATE appointments SET one_visit = 'fitted', tier = ?2 WHERE id = ?1").bind(job.id, decision.product),
+    boardMoved(db),
+  ]);
   const visit = {
     appointmentId: job.id,
     personId: job.personId,

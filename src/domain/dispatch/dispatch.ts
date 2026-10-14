@@ -31,7 +31,7 @@ import {
   type MoveRefusal,
 } from "../../policy/dispatch.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { bookedMinutes, claimsOf, loadBlackouts, occupancy } from "../booking/occupancy.ts";
 import { breaksRotation, visitsOfClient } from "../booking/technician-rotation.ts";
 import { releaseDeadHolds } from "../booking/hold-slot.ts";
@@ -53,6 +53,7 @@ import {
   landingOf,
 } from "./dispatch-landing.ts";
 import { roomTechnicians, whyNotThem } from "./technician-fit.ts";
+import { visitUpkeep } from "../visits/visit-upkeep.ts";
 
 export interface MoveInput {
   readonly appointmentId: string;
@@ -252,6 +253,7 @@ async function writeMove(db: D1Database, deps: MoveDeps, move: PlannedMove, now:
       movedVisit(db, move, at),
       releasingClaims(db, move.id),
       ...checkInCleared(db, move, now),
+      ...visitUpkeep(db, { visits: [move.job.id] }),
     ]);
   } catch (error) {
     if (failedUniqueOn(error, "slot_claims")) return { kind: "refused", reason: "clash" };
@@ -483,7 +485,7 @@ export async function dispatchRoomFor(
 /**
  * Ops called the client about a move they had not heard of, which closes its
  * task. Recorded once, and only for a move still untold: false for any other.
- * The audit entry goes in the same batch (src/domain/ops/audit.ts).
+ * The audit entry goes in the same batch (src/domain/platform/audit.ts).
  */
 export async function recordToldByPhone(
   db: D1Database,

@@ -142,6 +142,7 @@ Cloudflare dashboard → Manage Account → Account API Tokens → Create Token 
 - Name `mm-ci-<env>`.
 - Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>`, `mm-ops-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
 - Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
+- Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also read and write production's database, and production's staging's; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - Optional, production's token: Account → **Account Analytics → Read**. With it, the canary's soak judges the new version on real visitors' errors as well as the smoke's (`docs/decisions/0006-deployment-pipeline.md`); without it the soak says so and the smoke checks stand alone.
 - Optional, production's token: Account → **Workers Observability → Edit** (Cloudflare asks for Edit to run a query, which changes nothing). With it, the soak also fails a release whose busy routes read more rows from D1 a request than their ceilings in `scripts/lib/usage-budget.ts`, or whose Home or job card is slower at p95 than its budget in `scripts/lib/soak.ts`; without it the soak says it could not read them.
@@ -457,7 +458,7 @@ Our own database is the record of visits (docs/decisions/0110-field-work-without
 7. **Each service's item.** A visit is invoiced on its service's Books item, at the price book's price on the day (docs/decisions/0073-prices-from-the-price-book.md). Once an hour the cron's `books_items` job matches each service offered today to its item: the one kept on it, else the active one Books holds under its name.
    - **With the push on,** an item Books lacks is made, and one that differs is written with the console's name, today's price and the SAC code, a few a pass. Ops hear, as `books_item:<kind>/<tier>`, only of one still unsettled an hour on.
    - **With the push off,** ops are told of each at once, and set the item in Books by hand as the alert says.
-   - `BOOKS_ITEM_PUSH` in `src/config/environments.ts` names the one environment that writes, since staging and production share one Books organisation: staging today. **Only the owner moves it to production,** once production's price book holds the owner's prices.
+   - `BOOKS_ITEM_PUSH` in `src/config/environments.ts` is each environment's own switch, for its own organisation: staging's is on. **Only the owner switches production's on,** once production's price book holds the owner's prices.
    - An invoice carries its own name and price, so an item that differs never changes what a client is billed.
 
 8. **Discounts at line-item level.** A discount code on a visit is written onto its draft invoice as the visit line's discount, before tax (docs/decisions/0108-discount-codes.md). In Books: Settings → Preferences → Invoices (or General, "Do you give discounts?"), choose discounts at line-item level, before tax. Until it is set, and until the first discounted visit is invoiced on staging, a draft Books will not discount is held and ops told (`docs/open-points.md`, item 181).
@@ -468,6 +469,11 @@ Our own database is the record of visits (docs/decisions/0110-field-work-without
    - A token made before `ZohoBooks.bills.ALL` was in step 1 cannot make bills: Books refuses each, and ops are told. Make a new code with step 1's scopes, exchange it, and set `ZOHO_BOOKS_REFRESH_TOKEN` again (step 4).
    - A claim settled as a credit becomes a vendor credit on the same account (docs/decisions/0171-vendor-credits.md).
    - Freight, duty and clearing are billed by the forwarder or broker, and entered in Books by hand.
+
+10. **Staging's own organisation** (docs/decisions/0200-staging-tenants-of-its-own.md). Staging and production never share a Books organisation: the config check refuses the release that would. Before production's Books goes on:
+    - In Books, as the owner, add an organisation for staging (or open Zoho's sandbox of the real one), with the custom field of step 3, the bank account of step 6, the discount setting of step 8 and the two accounts of step 9.
+    - Set staging's `ZOHO_BOOKS_ORG_ID` and `BOOKS_REFUND_ACCOUNT_ID` in `wrangler.jsonc`, and its pair in `BOOKS_BILL_ACCOUNTS`, to the new organisation's. Mint staging's refresh token in it (step 1).
+    - Delete staging's records from the real organisation (step 8, "Staging's records in the org"). Production then takes the real organisation.
 
 ## 11c. Razorpay
 
@@ -531,6 +537,7 @@ Evolution reports each message as delivered and read to `POST /api/hooks/evoluti
 The WhatsApp Business Platform, which sends from the business's own number with templates WhatsApp approves (ADR 0114). Built, and off until the number is ready: each environment's `MESSAGING_PROVIDER` stays `evolution` until step 4.
 
 1. **The number.** In MSG91 (WhatsApp → Numbers), connect the office WhatsApp Business number to the business's Meta account. The number can no longer be used in the WhatsApp app on a phone.
+   Staging sends from a number of its own, which production never uses (docs/decisions/0200-staging-tenants-of-its-own.md): a second number on the same Meta account, or, while staging stays on Evolution, an instance of its own that serves no other app.
 2. **The templates.** `node scripts/ops/whatsapp-templates.ts --origin https://maneman.in` (or `https://staging.maneman.in` for a staging number) prints each one: submit it in MSG91 (WhatsApp → Templates) under the same name, category and language, with its image header and buttons. A button's address is the origin followed by `{{1}}`. Wait until every one is approved; a text missing approval is refused, and its message fails.
 3. **The secrets,** for the environment: `W secret put MSG91_AUTH_KEY --env <env>` with MSG91's API key, and `W secret put MSG91_INTEGRATED_NUMBER --env <env>` with the number and its country code, as `919810000000`.
 4. **The switch.** A pull request sets `MESSAGING_PROVIDER` to `"msg91"` in that environment's vars. Once deployed, sign in with a code, and check one booking's confirmation arrives. A refused key alerts as the bridge being down; a refused template fails its message with MSG91's reason in `outbound_messages.last_error`.

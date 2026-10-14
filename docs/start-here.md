@@ -37,7 +37,7 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/booking/`): `availability`, `open-windows`, `asked-windows`, `occupancy`, `slot-times`,
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
-  `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`,
+  `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`, `site-notices`,
   `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
   `waitlist`, `services`, `remakes`
 - **Rules** (`src/policy/`): `booking`, `slot-times`, `site-booking`, `moving-a-visit`, `prepayment`, `services`,
@@ -53,7 +53,9 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/visits/`): `visit-status`, `visit-times`, `visit-changes`, `visit-cancel`, `visit-facts`,
   `visit-begun`, `client-visits`, `client-history`, `check-ins`, `next-visit`, `follow-ups`, `consultation-recap`, `one-visit`,
-  `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation)
+  `hand-close`, `lost-reasons` (why a client is not going ahead after a consultation), `open-proposals`, `visit-upkeep` (what a write to a
+  visit keeps up beside it),
+  `no-show-notes`
 - **Rules** (`src/policy/`): `check-in`, `next-visit`, `follow-ups`, `one-visit`
 - **Routes** (`src/routes/`): `client/visits`, `ops/visits`, `ops/visit-changes`, `ops/visit-lost-reason`
 - **Screens:** `apps/app/src/visits/`, `apps/ops/src/clients/`
@@ -62,8 +64,8 @@ this map, or when the map names something that no longer exists.
 
 ### Dispatch
 
-- **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `open-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
-  `technician-work`, `leave`, `blackouts`, `cities`, `day-route`, `nearest`
+- **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
+  `technician-work`, `leave`, `blackouts`, `day-route`, `nearest`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
 - **Vendor** (`src/providers/`): `routes/`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/dispatch-day`, `ops/blackouts`, `ops/technicians`,
@@ -82,22 +84,53 @@ this map, or when the map names something that no longer exists.
 
 ### The technician's work in the field
 
-- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`, `job-record`, `job-use`, `piece-use`,
-  `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`, `pieces`, `stock`, `stock-places`, `stock-lots`, `stock-transit`, `stock-units`, `stock-view`, `piece-returns`, `kit`, `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`, `returned-pieces`, `custom-orders`, `custom-order-po`, `stock-photos`, `supplier-scorecard`, `stock-match`, `stock-risks`, `forecast`, `forecast-layers`, `forecast-accuracy`, `supply-plan`, `supply-plan-lines`, `kit-check`, `kit-week`, `demand-events`, `cycle-counts`, `count-tasks`, `count-labels`, `stock-usage`, `recalls`, `recall-notice`, `stock-quality`, `stock-watch`, `stock-demand`, `stock-gap`, `low-stock`,
-  `consumables`, `hair-systems`
-- **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`, `stock`
-- **Data** (`src/config/`): `job-sheet`, `pieces`, `consumables`
-- **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/stock`, `ops/stock.places`, `ops/stock.transit`, `ops/stock.read`, `ops/stock.units`, `ops/stock.schemas`, `ops/suppliers`, `ops/purchasing`, `ops/purchasing.receipts`, `ops/purchasing.claims`, `ops/purchasing.photos`, `ops/purchasing.scorecard`, `ops/stock-match`, `ops/custom-orders`, `client/custom-orders`, `ops/stock-forecast`, `ops/supply-plan`, `ops/demand-events`, `ops/count-tasks`, `ops/stock-usage`, `ops/recalls`, `ops/stock-quality`, `ops/consumables`,
-  `ops/hair-systems`, `ops/job-sheet`
-- **Screens:** `apps/tech/src/`, `apps/ops/src/stock/`
-- **Tests:** `test/worker/field/`, `test/worker/ops/stock-places.test.ts`,
-  `test/worker/ops/hair-systems.test.ts`, `e2e/tech/`, `e2e/ops/stock.e2e.ts`,
-  `e2e/ops/consumables.e2e.ts`,
-  `e2e/ops/job-sheet.e2e.ts`
+- **Database work** (`src/domain/field/`): `tech-jobs`, `job-card`, `workable-job`, `job-events`, `job-event-bodies`,
+  `job-record`, `job-use`, `job-sheet-settings`, `tech-photos`, `visit-photos`, `photo-views`
+- **Rules** (`src/policy/`): `in-job-steps`, `piece-step`, `job-visibility`, `phone-clock`
+- **Data** (`src/config/`): `job-sheet`, `pieces`
+- **Routes** (`src/routes/`): `tech/`, `ops/field`, `ops/client-pieces`, `ops/job-sheet`
+- **Screens:** `apps/tech/src/`
+- **Tests:** `test/worker/field/`, `e2e/tech/`, `e2e/ops/job-sheet.e2e.ts`
+
+### Inventory: what we hold, where, and what it is
+
+- **Database work** (`src/domain/inventory/`): `stock`, `stock-places`, `stock-lots`, `stock-units`, `stock-transit`,
+  `stock-view`, `stock-photos`, `stock-match`, `stock-risks`, `stock-usage`, `stock-quality`, `stock-watch`,
+  `stock-gap`, `low-stock`, `pieces`, `piece-use`, `piece-returns`, `returned-pieces`, `kit`, `kit-check`, `kit-week`,
+  `cycle-counts`, `count-tasks`, `count-labels`, `recalls`, `recall-notice`, `consumables`, `hair-systems`
+- **Rules** (`src/policy/`): `stock`
+- **Data** (`src/config/`): `consumables`
+- **Routes** (`src/routes/`): `ops/stock`, `ops/stock.places`, `ops/stock.transit`, `ops/stock.read`, `ops/stock.units`,
+  `ops/stock.schemas`, `ops/stock-match`, `ops/count-tasks`, `ops/stock-usage`, `ops/recalls`, `ops/stock-quality`,
+  `ops/consumables`, `ops/hair-systems`
+- **Screens:** `apps/ops/src/stock/`
+- **Tests:** `test/worker/ops/stock-places.test.ts`, `test/worker/ops/hair-systems.test.ts`, `e2e/ops/stock.e2e.ts`,
+  `e2e/ops/consumables.e2e.ts`
+
+### Purchasing: suppliers, orders and the supply plan
+
+- **Database work** (`src/domain/purchasing/`): `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`,
+  `supplier-scorecard`, `custom-orders`, `custom-order-po`, `forecast`, `forecast-layers`, `forecast-accuracy`,
+  `supply-plan`, `supply-plan-lines`, `demand-events`, `stock-demand`
+- **Routes** (`src/routes/`): `ops/suppliers`, `ops/purchasing`, `ops/purchasing.receipts`, `ops/purchasing.claims`,
+  `ops/purchasing.photos`, `ops/purchasing.scorecard`, `ops/custom-orders`, `client/custom-orders`,
+  `ops/stock-forecast`, `ops/supply-plan`, `ops/demand-events`
+- **Screens:** `apps/ops/src/stock/`
+- **Tests:** `test/worker/ops/`, `e2e/ops/stock.e2e.ts`
+
+### Cities, their GST and what a city sets apart
+
+- **Database work** (`src/domain/cities/`): `cities` (each city, its state and zone, where a visit, a pincode or a
+  client is), `city-changes` (a city added, changed or renamed), `city-rules` (the rules a city sets for itself),
+  `gst-registrations` (a state's registration, and what supplies a visit)
+- **Rules** (`src/policy/`): `city-settings`
+- **Data** (`src/config/`): `gst`
+- **Routes** (`src/routes/`): `ops/cities`
+- **Tests:** `test/worker/ops/cities.test.ts`, `test/node/policy/gst.test.ts`
 
 ### No-shows and disputes
 
-- **Database work** (`src/domain/no-shows/`): `no-shows`, `no-show-notes`, `no-show-disputes`, `no-show-rulings`,
+- **Database work** (`src/domain/no-shows/`): `no-shows`, `no-show-disputes`, `no-show-rulings`,
   `ruling-claims`, `after-a-ruling`
 - **Rules** (`src/policy/`): `no-show`
 - **Routes** (`src/routes/`): `client/disputes`, `ops/disputes`, `ops/no-shows`, `ops/no-show-rulings`
@@ -110,7 +143,8 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/money/`): `payments`, `payment-links`, `payment-links-paid`, `client-payments`,
   `client-billing`, `refunds`, `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
   `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `discount-code-figures`, `requested-codes`,
-  `day-money`, `one-visit-money`, `price-book`, `razorpay-catch-up`, `custom-order-links`, `custom-order-refunds`,
+  `day-money`, `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `city-prices`,
+  `razorpay-catch-up`, `custom-order-links`, `custom-order-refunds`,
   `payment-refunds`
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
   `fraud-holds`
@@ -232,10 +266,9 @@ this map, or when the map names something that no longer exists.
 
 ### Ops' own work
 
-- **Database work** (`src/domain/ops/`): `alerts`, `needs-a-hand`, `tasks`, `task-facts` (what each task turns on),
-  `task-reach` (whose cities each is in), `task-closures`, `task-owners`,
-  `grievances`, `ops-settings`, `site-notices`, `audit`, `activity`, `staff`, `task-spans` (when each task opened and
-  closed), `targets` (each month's plan, city by city)
+- **Database work** (`src/domain/ops/`): `needs-a-hand`, `tasks`, `task-facts` (what each task turns on),
+  `task-reach` (whose cities each is in), `task-closures`, `task-owners`, `grievances`, `activity`, `staff`,
+  `task-spans` (when each task opened and closed), `targets` (each month's plan, city by city)
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `grievances`, `ops-settings`, `console-routes`, `access`,
   `decision-reasons`
 - **Routes** (`src/routes/`): `ops/alerts`, `ops/tasks`, `ops/grievances`, `ops/settings`, `ops/staff`,
@@ -258,7 +291,8 @@ this map, or when the map names something that no longer exists.
 
 ### The platform
 
-- **Database work** (`src/domain/platform/`): `cron-runs`, `backups`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
+- **Database work** (`src/domain/platform/`): `audit` (the audit log every write adds to), `alerts`, `ops-settings`
+  (the Rules every module reads), `cron-runs`, `backups`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
   `enqueue`
 - **Rules** (`src/policy/`): `database-size`, `storage-share`, `launch`, `staging-test-records`
 - **Jobs:** `src/scheduled/`, `src/queues/consumer`

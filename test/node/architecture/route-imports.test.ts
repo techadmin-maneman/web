@@ -44,13 +44,18 @@ function filesUnder(directory: string): string[] {
 
 const IMPORT = /^(?:import|export)\s+(?:type\s+)?[^;]*?from\s+"(\.[^"]+)";/gms;
 
-const reaching = filesUnder("src/routes").flatMap((from) =>
-  [...readFileSync(from, "utf8").matchAll(IMPORT)]
-    .map((match) => normalize(join(dirname(from), match[1] ?? "")))
-    .filter((to) => to.startsWith("src/routes/") && !to.startsWith("src/routes/schemas/"))
-    .filter((to) => moduleOf(to) !== moduleOf(from) && !(SHARED_WITHIN.get(to) ?? []).includes(from))
-    .map((to) => `${from} -> ${to}`),
-);
+/** A surface's list of the routes it registers, which imports each of them and is none itself. */
+const REGISTRIES = new Set(["src/routes/ops/routes.ts"]);
+
+const reaching = filesUnder("src/routes")
+  .filter((from) => !REGISTRIES.has(from))
+  .flatMap((from) =>
+    [...readFileSync(from, "utf8").matchAll(IMPORT)]
+      .map((match) => normalize(join(dirname(from), match[1] ?? "")))
+      .filter((to) => to.startsWith("src/routes/") && !to.startsWith("src/routes/schemas/"))
+      .filter((to) => moduleOf(to) !== moduleOf(from) && !(SHARED_WITHIN.get(to) ?? []).includes(from))
+      .map((to) => `${from} -> ${to}`),
+  );
 
 describe("a route module", () => {
   it("imports of other routes only their shared schemas", () => {

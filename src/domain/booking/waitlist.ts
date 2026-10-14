@@ -9,7 +9,7 @@ import { indiaInstant } from "../../lib/india-time.ts";
 import type { PlacesReached } from "../../policy/access.ts";
 import { launchDateAfter } from "../../policy/launch.ts";
 import { namedArea } from "../clients/area-names.ts";
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { consentGiven, latestConsentSql } from "../privacy/consents.ts";
 import { joinPacedLine } from "../messages/paced-line.ts";
 import { reachBinding, withinReach } from "../clients/places.ts";

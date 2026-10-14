@@ -15,6 +15,12 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO leads (id, person_id, created_at, source, city, request_id) VALUES ('l1', 'p2', '${AT}', 'form', 'Gurgaon', 'r1')`,
   `INSERT INTO visit_blackouts (date, reason) VALUES ('2026-10-02', 'Gandhi Jayanti')`,
   `INSERT INTO city_blackouts (date, city, reason) VALUES ('2026-10-03', 'Gurgaon', 'Local holiday')`,
+  `INSERT INTO city_prices (item, tier, city, amount_ex_gst, gst_percent, valid_from)
+     VALUES ('service', 'standard', 'Mumbai', 400000, 18, '2026-10-01')`,
+  `INSERT INTO city_settings (city, key, value, updated_by, updated_at)
+     VALUES ('Mumbai', 'checkin_radius_m', '400', 'ops@localhost', '2026-09-20T06:00:00.000Z')`,
+  `INSERT INTO gst_registrations (state_code, gstin, books_branch_id, added_by, added_at)
+     VALUES ('MH', '27AAACM1234A1Z1', NULL, 'ops@localhost', '2026-09-20T06:00:00.000Z')`,
   `INSERT INTO counters (scope, key, window_start, count) VALUES ('otp_send', 'a-hash', '${AT}', 1)`,
   `INSERT INTO idempotency (key, route, request_hash, created_at) VALUES ('k1', 'POST /api/holds', 'h-hash', '${AT}')`,
   `INSERT INTO zoho_token (id, access_token, expires_at) VALUES (1, 'old-token', '${AT}')`,

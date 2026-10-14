@@ -24,7 +24,7 @@ import {
   auditStatementIfStamped,
   type AuditActor,
   type AuditEntry,
-} from "../ops/audit.ts";
+} from "../platform/audit.ts";
 import { keepingItsTime } from "../booking/hold-stages.ts";
 
 /** A code's row. */

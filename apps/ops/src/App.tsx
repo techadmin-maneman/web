@@ -44,6 +44,7 @@ const PartnerCommissionScreen = lazyScreen(() =>
   import("./settings/PanelScreens.tsx").then((module) => module.PartnerCommissionScreen),
 );
 const StaffScreen = lazyScreen(() => import("./settings/PanelScreens.tsx").then((module) => module.StaffScreen));
+const CitiesScreen = lazyScreen(() => import("./cities/CitiesScreen.tsx").then((module) => module.CitiesScreen));
 // The queues ops open now and then load when opened, keeping the console's first load within its budget.
 const TechniciansScreen = lazyScreen(() =>
   import("./technicians/TechniciansScreen.tsx").then((module) => module.TechniciansScreen),
@@ -121,6 +122,7 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   spend: SpendScreen,
   targets: TargetsScreen,
   staff: StaffScreen,
+  cities: CitiesScreen,
   activity: ActivityScreen,
 };
 

@@ -90,6 +90,8 @@ export interface NewBooksInvoice {
   readonly date: string;
   /** The GST code of the visit's state; null while GST is off in Books, which then refuses one. */
   readonly placeOfSupply: string | null;
+  /** The Books branch of the registration that supplies the visit; null for the organisation's own. */
+  readonly branchId: string | null;
   readonly line: {
     readonly itemId: string;
     readonly name: string;

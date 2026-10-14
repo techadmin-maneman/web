@@ -16,7 +16,7 @@ import type { Plan } from "../policy/one-visit.ts";
 import type { CrmLead, LeadSource } from "../providers/crm/index.ts";
 import { CRM_ORG_HAS_CARE_FIELDS, LAST_CONTACT_REASONS } from "../config/crm.ts";
 import { indiaDate } from "../lib/india-time.ts";
-import { resolveAlertStatement } from "../domain/ops/alerts.ts";
+import { resolveAlertStatement } from "../domain/platform/alerts.ts";
 import { leadNotice } from "../domain/leads/lead-notice.ts";
 import { crmErasureKey, crmLeadKey } from "../policy/alerts.ts";
 import { backoffSeconds, DONE, runConsumer, type Settle } from "./consumer.ts";

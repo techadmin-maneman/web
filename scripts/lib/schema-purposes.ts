@@ -16,7 +16,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   checklist_items:
     "Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).",
   cities:
-    "The cities the site's first booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).",
+    "Our cities, each a row ops edit at Admin › Cities: its state for GST, its zone, whether it is served and offered. A lead, a pincode, a technician and a stock place name one, and a zone groups them for staff access (ADR 0109, ADR 0198).",
   consents:
     "What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).",
   consultation_requests:
@@ -226,6 +226,10 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   visit_pay_rates:
     "What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).",
   city_blackouts: "Days on which no visit is offered in one city alone (ADR 0119).",
+  city_prices: "A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).",
+  city_settings: "A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).",
+  gst_registrations:
+    "A state's own GST registration, which supplies the visits in it, and its Books branch (ADR 0198).",
   visit_changes:
     "Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).",
   visits:

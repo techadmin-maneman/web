@@ -7,13 +7,14 @@
 // it (src/policy/consents.ts). The sweeper queues any whose queue message was lost. Writing a message, whether it
 // is still worth sending, and the day-before reminders are here; its text is ./visit-message-text.ts.
 
-import { addDays, indiaDate, indiaInstant, indiaTime } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { DAY_BEFORE_REMINDER_HOUR } from "../../policy/job-visibility.ts";
 import type { MessageKind } from "../../config/message-kinds.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import { queueMessage } from "./queued-messages.ts";
-import { readOpsInputs } from "../ops/ops-settings.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
+import { reminderHourCame, type ReminderHours } from "../cities/city-rules.ts";
 
 export const VISIT_MESSAGE_KINDS = [
   "consultation_confirmation",
@@ -217,9 +218,10 @@ async function laterMoveTold(db: D1Database, appointmentId: string, writtenAt: D
 export async function queueReminders(
   db: D1Database,
   now: Date,
-  hour: number = DAY_BEFORE_REMINDER_HOUR,
+  hour: ReminderHours = DAY_BEFORE_REMINDER_HOUR,
 ): Promise<string[]> {
-  if (indiaTime(now) < remindersFrom(hour)) return [];
+  const came = reminderHourCame("a.service_city", 5, hour, now);
+  if (came === null) return [];
   const today = indiaDate(now);
   const tomorrow = addDays(today, 1);
   // A reminder written today is about tomorrow (reminderDay); one from an earlier day was about an earlier day.
@@ -231,6 +233,7 @@ export async function queueReminders(
          AND a.deleted_at IS NULL AND a.person_id IS NOT NULL AND a.type IS NOT NULL
          AND NOT EXISTS (SELECT 1 FROM outbound_messages m
            WHERE m.subject_id = a.id AND m.kind = 'visit_reminder' AND m.created_at >= ?3)
+         AND ${came.sql}
        ORDER BY a.window_start LIMIT ?4`,
     )
     .bind(
@@ -238,6 +241,7 @@ export async function queueReminders(
       indiaInstant(addDays(tomorrow, 1), "00:00").toISOString(),
       writtenToday.toISOString(),
       REMINDERS_PER_PASS,
+      ...came.values,
     )
     .all<{ id: string; person_id: string }>();
   const messages = results.map((visit) =>

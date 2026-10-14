@@ -18,7 +18,7 @@ import {
   type JobSheetItem,
 } from "../../config/job-sheet.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { freshCode } from "../../lib/slug.ts";
 
 /** One list as it stands. */

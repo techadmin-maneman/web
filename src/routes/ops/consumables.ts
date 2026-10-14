@@ -28,9 +28,9 @@ import {
   servicesForUse,
   setExpectedUse,
   type Consumable,
-} from "../../domain/field/consumables.ts";
-import { hairSystemSpecs, type HairSystemSpec } from "../../domain/field/hair-systems.ts";
-import { closeStaleLowStock } from "../../domain/field/low-stock.ts";
+} from "../../domain/inventory/consumables.ts";
+import { hairSystemSpecs, type HairSystemSpec } from "../../domain/inventory/hair-systems.ts";
+import { closeStaleLowStock } from "../../domain/inventory/low-stock.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

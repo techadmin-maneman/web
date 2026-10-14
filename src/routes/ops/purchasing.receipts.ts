@@ -6,9 +6,9 @@
 // Receiving with Operations ACT, closing with MANAGE. Each answers the whole of GET /api/purchase-orders.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { closeOrder } from "../../domain/field/purchase-orders.ts";
-import { receiveOrder } from "../../domain/field/receipts.ts";
-import { MAX_LABELLED } from "../../domain/field/stock-units.ts";
+import { closeOrder } from "../../domain/purchasing/purchase-orders.ts";
+import { receiveOrder } from "../../domain/purchasing/receipts.ts";
+import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

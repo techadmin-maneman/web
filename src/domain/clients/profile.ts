@@ -1,7 +1,7 @@
 // The client's profile: the address a visit goes to, and where the five consents
 // they switch in the app stand. Consents are written in src/domain/privacy/consents.ts.
 
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { CONSENT_PURPOSES, type ConsentPurpose, type ConsentSource } from "../../policy/consents.ts";
 import { STREET_MAX, zohoText } from "../../lib/zoho-text.ts";
 

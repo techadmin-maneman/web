@@ -1,21 +1,21 @@
 // A custom order's payment link (docs/decisions/0174-custom-orders.md): the whole price, asked of Razorpay once the
 // order is raised and texted to the client, under the order's ID as its reference; and, once Razorpay says it is paid,
 // the payment recorded as the client's, the order marked paid and its purchase order drafted
-// (src/domain/field/custom-order-po.ts). Nothing goes to the supplier before then.
+// (src/domain/purchasing/custom-order-po.ts). Nothing goes to the supplier before then.
 
 import { onAllowlist } from "../../config/settings.ts";
 import { failureReason } from "../../log.ts";
 import { paymentLinkClosesAt } from "../../policy/one-visit.ts";
-import { readOpsInputs } from "../ops/ops-settings.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../../providers/payments/razorpay.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
 import { serviceOf } from "../booking/services.ts";
-import { draftCustomOrderPo } from "../field/custom-order-po.ts";
-import { paymentsTab } from "../ops/alerts.ts";
+import { draftCustomOrderPo } from "../purchasing/custom-order-po.ts";
+import { paymentsTab } from "../platform/alerts.ts";
 import type { LinkDeps } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
 import { rupees } from "@maneman/web-kit/money";
-import type { AlertOnce } from "../ops/alerts.ts";
+import type { AlertOnce } from "../platform/alerts.ts";
 
 export type CustomLinkSent = "sent" | "already_sent" | "unavailable";
 

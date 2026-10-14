@@ -1,4 +1,4 @@
-// Usage against expected, and shrinkage (src/domain/field/stock-usage.ts, src/routes/ops/stock-usage.ts;
+// Usage against expected, and shrinkage (src/domain/inventory/stock-usage.ts, src/routes/ops/stock-usage.ts;
 // docs/decisions/0186-usage-and-shrinkage.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a technician's consumables are set beside what their visits were expected to use, valued at cost,

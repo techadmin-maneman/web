@@ -30,7 +30,7 @@ export const MESSAGE_KINDS = [
   "referral_rejected", // to either side: ops refused a held grant
   "credits_expiring", // free service visits run out: a month before their last day, and a week before
   "launch_alert", // the person's pincode went live
-  // The site's booking form, for a number we know (src/domain/ops/site-notices.ts): what the page tells no one.
+  // The site's booking form, for a number we know (src/domain/booking/site-notices.ts): what the page tells no one.
   "consultation_exists",
   "book_in_app",
   "address_on_account",
@@ -38,7 +38,7 @@ export const MESSAGE_KINDS = [
   // Ops kept the account the client asked us to delete, with their reason (src/domain/privacy/deletion.ts).
   "deletion_rejected",
   "concern_answered", // ops answered a concern the client raised about their data (src/routes/ops/grievances.ts)
-  "recall_notice", // a lot the client wears was recalled: replaced free (src/domain/field/recalls.ts)
+  "recall_notice", // a lot the client wears was recalled: replaced free (src/domain/inventory/recalls.ts)
   // What follows a visit (src/domain/visits/follow-ups.ts): the technician's recommendation after a consultation,
   // the care guide after a fit or a replacement, and the two check-ins after it.
   "consultation_follow_up",

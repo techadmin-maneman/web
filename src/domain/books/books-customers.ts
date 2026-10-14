@@ -2,8 +2,9 @@
 // ID in its "MM person ID" field, so a write whose answer never came lands on the same customer. Never written for an
 // erased person: their customer still holds the ID, and a write would refill it.
 
-import { placeOfSupply, stateOf, type GstRegistration } from "../../config/gst.ts";
+import { placeOfSupply, type GstRegistration } from "../../config/gst.ts";
 import type { BooksProvider, NewBooksCustomer } from "../../providers/books/index.ts";
+import { cityStates } from "../cities/cities.ts";
 import { currentAddress, streetOf, type SavedAddress } from "../clients/profile.ts";
 
 interface PersonRow {
@@ -38,21 +39,25 @@ async function customerFrom(
   person: PersonRow,
   gst: GstRegistration,
 ): Promise<NewBooksCustomer> {
-  const saved = await currentAddress(db, personId);
+  const [saved, states] = await Promise.all([currentAddress(db, personId), cityStates(db)]);
+  const city = saved?.city ?? person.last_city;
   return {
     personId,
     name: person.name,
     mobile: person.mobile_e164,
     email: person.email,
-    stateCode: placeOfSupply(saved?.city ?? person.last_city, gst),
-    address: billingAddressOf(saved),
+    stateCode: placeOfSupply(city === null ? null : (states.get(city)?.code ?? null), gst),
+    address: billingAddressOf(saved, states),
   };
 }
 
 /** The address the client saved, as the customer's billing address; null where they have saved none. */
-function billingAddressOf(saved: SavedAddress | null): NewBooksCustomer["address"] {
+function billingAddressOf(
+  saved: SavedAddress | null,
+  states: Awaited<ReturnType<typeof cityStates>>,
+): NewBooksCustomer["address"] {
   if (saved === null) return null;
-  return { ...streetOf(saved), city: saved.city, state: stateOf(saved.city)?.name ?? null, pincode: saved.pincode };
+  return { ...streetOf(saved), city: saved.city, state: states.get(saved.city)?.name ?? null, pincode: saved.pincode };
 }
 
 /**

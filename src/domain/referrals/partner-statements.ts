@@ -4,7 +4,7 @@
 // is one batch with its audit entry, which keeps the month and the amount.
 
 import { addMonths, indiaDate, indiaInstant, monthOf } from "../../lib/india-time.ts";
-import { auditStatementIfDeleted, auditStatementIfWritten, type AuditActor } from "../ops/audit.ts";
+import { auditStatementIfDeleted, auditStatementIfWritten, type AuditActor } from "../platform/audit.ts";
 
 /**
  * Paise a partner, `c`, is owed: what its fitted friends earned, less what refunds took back, which leaves a friend

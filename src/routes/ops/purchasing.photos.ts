@@ -5,7 +5,7 @@
 // Storing with Operations ACT, reading with VIEW.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { MAX_STOCK_PHOTO_BYTES, stockPhoto, storeStockPhoto } from "../../domain/field/stock-photos.ts";
+import { MAX_STOCK_PHOTO_BYTES, stockPhoto, storeStockPhoto } from "../../domain/inventory/stock-photos.ts";
 import { mayUpload } from "../../domain/platform/storage-meter.ts";
 import { cappedBody } from "../../http/capped-body.ts";
 import type { App } from "../../http/context.ts";

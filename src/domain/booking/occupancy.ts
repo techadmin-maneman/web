@@ -11,7 +11,7 @@ import { unitAt } from "../../policy/slot-times.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { minutesBetween } from "../../lib/durations.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
-import { fitCode } from "../field/stock-gap.ts";
+import { fitCode } from "../inventory/stock-gap.ts";
 
 /** What one technician's day already holds. */
 export interface Day {

@@ -5,8 +5,14 @@ import { cycleDaysFor, type Cycles } from "../../config/pieces.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import type { JobEventKind } from "../../policy/in-job-steps.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
-import { failedPieceStatement, fittedPieceStatement, pieceStepOf, replacedPiecesStatement } from "./pieces.ts";
+import {
+  failedPieceStatement,
+  fittedPieceStatement,
+  pieceStepOf,
+  replacedPiecesStatement,
+} from "../inventory/pieces.ts";
 import { closeVisit, moveVisit } from "../visits/visit-status.ts";
+import { visitUpkeep } from "../visits/visit-upkeep.ts";
 
 export interface LandingStep {
   readonly visit: { readonly id: string; readonly personId: string | null };
@@ -24,9 +30,9 @@ export async function jobRecordOf(db: D1Database, step: LandingStep): Promise<D1
   const at = step.now.toISOString();
   switch (step.kind) {
     case "check_in":
-      return [moveVisit(db, step.visit.id, "check_in", at)];
+      return [moveVisit(db, step.visit.id, "check_in", at), ...visitUpkeep(db, { visits: [step.visit.id] })];
     case "start":
-      return [moveVisit(db, step.visit.id, "start", at)];
+      return [moveVisit(db, step.visit.id, "start", at), ...visitUpkeep(db, { visits: [step.visit.id] })];
     case "outcome":
       return closingStatements(db, step);
     case "piece":
@@ -53,6 +59,7 @@ async function closingStatements(db: D1Database, step: LandingStep): Promise<D1P
   return [
     moveVisit(db, step.visit.id, outcome, at),
     closeVisit({ db, appointmentId: step.visit.id, outcome, times, partialReason: reason, lostReason, at }),
+    ...visitUpkeep(db, { visits: [step.visit.id] }),
   ];
 }
 

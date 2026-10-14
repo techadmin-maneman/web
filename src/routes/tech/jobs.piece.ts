@@ -1,14 +1,14 @@
 // The piece step's body (./jobs.steps.ts): on a one visit, the product the client chose or that they decided
 // against it; on any other job that takes one, the piece fitted or the one that failed. A hair system it names must be
-// one of ours, since it comes out of the technician's kit (src/domain/field/piece-use.ts). A label one of the kit's
+// one of ours, since it comes out of the technician's kit (src/domain/inventory/piece-use.ts). A label one of the kit's
 // units carries names the hair system and its lot itself, and an expired one is refused
 // (docs/decisions/0163-pieces-scanned-from-the-kit.md).
 
 import { z } from "@hono/zod-openapi";
 import { PieceRequestSchema } from "../../domain/field/job-event-bodies.ts";
 import { offeredProducts } from "../../domain/booking/services.ts";
-import { isHairSystem } from "../../domain/field/hair-systems.ts";
-import { kitUnit } from "../../domain/field/stock-units.ts";
+import { isHairSystem } from "../../domain/inventory/hair-systems.ts";
+import { kitUnit } from "../../domain/inventory/stock-units.ts";
 import { type WorkableJob } from "../../domain/field/workable-job.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { indiaDate } from "../../lib/india-time.ts";

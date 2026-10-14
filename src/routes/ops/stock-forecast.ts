@@ -7,8 +7,8 @@
 // Read with Operations VIEW.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { latestForecast } from "../../domain/field/forecast.ts";
-import { forecastAccuracy } from "../../domain/field/forecast-accuracy.ts";
+import { latestForecast } from "../../domain/purchasing/forecast.ts";
+import { forecastAccuracy } from "../../domain/purchasing/forecast-accuracy.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

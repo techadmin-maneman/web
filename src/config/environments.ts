@@ -15,10 +15,10 @@ export function isEnvironmentName(value: unknown): value is EnvironmentName {
 }
 
 /**
- * Whether the hourly item check makes and writes Books' items from the console's services and the price book
- * (src/domain/books/books-items.ts). Staging and production share one Books organisation, so only one writes: staging until
- * production takes over in the release that launches it, which switches staging off. A constant, kept with the code
- * that reads it; it may be a Worker var when it next changes (docs/decisions/0194-the-build-on-workers-paid.md).
+ * Whether the hourly item check makes and writes Books' items, in the environment's own organisation, from the
+ * console's services and the price book (src/domain/books/books-items.ts). Staging and production never share an
+ * organisation (docs/decisions/0200-staging-tenants-of-its-own.md): production writes once its price book holds the
+ * owner's prices. A constant, kept with the code that reads it (docs/decisions/0194-the-build-on-workers-paid.md).
  */
 export const BOOKS_ITEM_PUSH: Readonly<Record<EnvironmentName, boolean>> = {
   local: false,
@@ -28,8 +28,9 @@ export const BOOKS_ITEM_PUSH: Readonly<Record<EnvironmentName, boolean>> = {
 
 /**
  * The Books accounts a receipt's bill posts to (src/domain/books/books-bills.ts): a hair system's lines to Cost of Goods
- * Sold, a consumable's to Raw Materials and Consumables. Staging and production share one Books organisation, so one
- * pair. A constant rather than Worker vars, for the same limit as BOOKS_ITEM_PUSH's. None locally, where no bill is made.
+ * Sold, a consumable's to Raw Materials and Consumables, in each environment's own organisation. Production's are the
+ * real organisation's; staging's are those of its own once it has one (docs/provisioning.md, step 11b). A constant
+ * rather than Worker vars, for the same limit as BOOKS_ITEM_PUSH's. None locally, where no bill is made.
  */
 export const BOOKS_BILL_ACCOUNTS: Readonly<
   Record<EnvironmentName, { readonly hairSystems: string; readonly consumables: string } | null>

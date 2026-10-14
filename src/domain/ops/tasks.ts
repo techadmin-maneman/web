@@ -28,7 +28,7 @@ import { dueAt, type Slas, type TaskGroup } from "../../policy/tasks.ts";
 import { CARE_HOURS, type CareHours } from "../../policy/care-hours.ts";
 import { CARE_QUEUES, overdueChats } from "../care/chat-tasks.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
-import { STOCK_RISKS_OPEN } from "../field/stock-risks.ts";
+import { STOCK_RISKS_OPEN } from "../inventory/stock-risks.ts";
 import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import type { SqlValue } from "../../lib/sql.ts";
 import { REFUND_OWED_FAILED, REFUND_OWED_LET_GO } from "../money/payment-refunds.ts";
@@ -233,7 +233,7 @@ const QUEUES: readonly Queue[] = [
      AND pe.erased_at IS NULL
    GROUP BY pe.id`,
   },
-  // A fit booked ahead whose hair system its city does not hold, found each hour (../field/stock-risks.ts).
+  // A fit booked ahead whose hair system its city does not hold, found each hour (../inventory/stock-risks.ts).
   { sql: STOCK_RISKS_OPEN },
   // A grant is read only while it is held.
   {

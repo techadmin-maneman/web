@@ -3,7 +3,7 @@
 // look (src/domain/ops/tasks.ts): its owner is kept apart, keyed by the task's group
 // and the id of the row it is read from, which no later task reuses.
 
-import { auditStatement, type AuditEntry } from "./audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import type { TaskGroup } from "../../policy/tasks.ts";
 
 /** A task by what the board names it with: its group, and the id of the row it is read from. */

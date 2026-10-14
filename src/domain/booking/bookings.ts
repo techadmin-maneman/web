@@ -4,7 +4,7 @@
 
 import { carePersonStatement } from "../care/care-people.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
-import { paymentsTab } from "../ops/alerts.ts";
+import { paymentsTab } from "../platform/alerts.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "../money/credits.ts";
 import { graceEndOf } from "./hold-stages.ts";
 import { retakeSlot } from "./hold-slot.ts";
@@ -25,8 +25,9 @@ import {
 } from "./booked-hold.ts";
 import { moveInPlace, replacesBegunVisit, moveRefused, retireReplaced } from "./move-in-place.ts";
 import { giveBack, giveBackUnkept } from "./give-back.ts";
-import { tellOfStockGap } from "../field/stock-gap.ts";
+import { tellOfStockGap } from "../inventory/stock-gap.ts";
 import { isAFitting } from "../../config/visit-types.ts";
+import { visitUpkeep } from "../visits/visit-upkeep.ts";
 
 type Started = { readonly kind: "free" } | { readonly kind: "pay"; readonly orderId: string };
 
@@ -329,6 +330,7 @@ async function writeNewBooking({
       )
       .bind(visit.id, at, hold.person_id, hold.type, hold.one_visit),
     ...creditRedeem(db, hold, now),
+    ...visitUpkeep(db, { visits: [visit.id] }),
   ]);
   const booked = await bookingHoldRow(db, hold.id);
   if (booked === null) return;

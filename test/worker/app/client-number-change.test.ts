@@ -17,6 +17,7 @@ import {
   type TestDependencies,
 } from "../helpers.ts";
 import { ORIGIN, OLD, NEW, servedPincode, auditActions } from "./client-profile-fixtures.ts";
+import { aPerson, aVisit } from "../fixtures/index.ts";
 
 let deps: TestDependencies;
 
@@ -258,16 +259,9 @@ describe("a number change", () => {
     const { body } = await start();
     await verify(body.request_id, "old", codeTo(OLD));
     await verify(body.request_id, "new", codeTo(NEW));
-    await env.DB.batch([
-      env.DB.prepare(
-        "INSERT INTO people (id, created_at, mobile_e164, name, contactable) VALUES ('p2', ?1, ?2, 'Someone', 1)",
-      ).bind(NOW.toISOString(), NEW),
-      // A visit makes them a client.
-      env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
-         VALUES ('v2', 'v2', 'p2', 'consultation', 'completed', ?1, ?1)`,
-      ).bind(NOW.toISOString()),
-    ]);
+    await aPerson({ id: "p2", mobile_e164: NEW, name: "Someone", contactable: 1 });
+    // A visit makes them a client.
+    await aVisit({ id: "v2", person_id: "p2", type: "consultation", status: "completed" });
     const waiting = await (await send(ops, "GET", "/api/number-changes")).json<{ changes: unknown[] }>();
     expect(waiting.changes).toEqual([
       expect.objectContaining({ new_number_held_by: { name: "Someone", client: true } }),

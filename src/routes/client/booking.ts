@@ -160,7 +160,7 @@ export function registerClientBooking(app: App): void {
     const moveKind = moves?.kind ?? null;
     const [service, sold, useCredit, served, atCheckout] = await Promise.all([
       move === null ? offered : movedService(c, move.terms.visit),
-      soldAs(c, { type, date, move: move?.terms ?? null, kind: moveKind }, inputs),
+      soldAs(c, { type, date, move: move?.terms ?? null, kind: moveKind, personId }, inputs),
       creditPays(c.env.DB, { personId, type, moveKind }, now),
       isFullAddress(address) ? isServed(c.env.DB, address.pincode) : false,
       // A client back from Checkout without paying who picks the same window again gets their hold back, whose order a

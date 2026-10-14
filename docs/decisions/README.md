@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0198.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0201.
 
 ## By topic
 
@@ -39,6 +39,9 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0194](0194-the-build-on-workers-paid.md) The build on Workers Paid
 - [0195](0195-the-cron-a-job-at-a-time.md) The cron a job at a time
 - [0196](0196-long-work-in-workflows.md) Long work in Workflows
+- [0198](0198-cities-as-data.md) Cities as data
+- [0199](0199-derived-state-in-the-domain.md) Derived state in the domain
+- [0200](0200-staging-tenants-of-its-own.md) Staging's tenants of its own
 
 ### Booking and visits
 
@@ -259,7 +262,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0022](0022-site-departures-from-v2.md) | Where the site departs from v2 or the front-end prompt | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md), [0103](0103-the-home-pages-first-copy-round.md), [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
 | [0023](0023-launch-hardening.md) | Launch hardening: headers, analytics, budgets | 2026-09-22 | accepted |  |
 | [0024](0024-the-browsers-own-look.md) | The browser's own look: an optional gate, and a look shown again | 2026-09-22 | accepted, on the owner's review of 22 September 2026 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
-| [0025](0025-phase-2-conflicts-register.md) | Phase 2: the conflicts register | 2026-09-22 | accepted, and kept up to date |  |
+| [0025](0025-phase-2-conflicts-register.md) | Phase 2: the conflicts register | 2026-09-22 | accepted, and kept up to date | [0200](0200-staging-tenants-of-its-own.md) |
 | [0026](0026-hosts-and-surfaces.md) | Hosts and surfaces | 2026-09-22 | accepted |  |
 | [0027](0027-referral-landing.md) | The referral landing: a Worker beside the site's assets | 2026-09-22 | accepted | [0073](0073-prices-from-the-price-book.md) |
 | [0028](0028-photographs-from-the-app.md) | Photographs from the technician app | 2026-09-23 | accepted | [0093](0093-the-storage-meter.md) |
@@ -341,11 +344,11 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
 | [0107](0107-referral-rewards-in-the-console.md) | What a referral earns, set in the console, each side apart | 2026-10-01 | accepted, on the owner's ruling of 1 October 2026 |  |
 | [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
-| [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
+| [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 | [0198](0198-cities-as-data.md) |
 | [0110](0110-field-work-without-fsm.md) | Field work without Zoho FSM | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
 | [0111](0111-a-technician-never-takes-two-visits-in-a-row.md) | A technician never takes two visits in a row | 2026-10-05 | accepted, on the owner's ruling of 5 October 2026 | [0118](0118-booking-never-dead-ends.md) |
 | [0112](0112-workers-paid.md) | Workers Paid | 2026-10-06 | accepted, on the owner's purchase of 6 October 2026 |  |
-| [0113](0113-fsms-columns-go.md) | FSM's columns go | 2026-10-06 | accepted |  |
+| [0113](0113-fsms-columns-go.md) | FSM's columns go | 2026-10-06 | accepted | [0199](0199-derived-state-in-the-domain.md) |
 | [0114](0114-whatsapp-business-platform-through-msg91.md) | The WhatsApp Business Platform through MSG91 | 2026-10-11 | accepted | [0197](0197-one-inbound-port.md) |
 | [0115](0115-a-move-to-another-day-waits-for-the-client.md) | A move to another day waits for the client | 2026-10-11 | accepted |  |
 | [0116](0116-book-asks-for-the-name-and-number-first.md) | /book asks for the name and number first | 2026-10-11 | accepted |  |
@@ -430,3 +433,6 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0195](0195-the-cron-a-job-at-a-time.md) | The cron a job at a time | 2026-10-13 | accepted |  |
 | [0196](0196-long-work-in-workflows.md) | Long work in Workflows | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 |  |
 | [0197](0197-one-inbound-port.md) | One inbound port | 2026-10-13 | accepted, on the owner's ruling of 13 October 2026 |  |
+| [0198](0198-cities-as-data.md) | Cities as data | 2026-10-14 | accepted |  |
+| [0199](0199-derived-state-in-the-domain.md) | Derived state in the domain | 2026-10-14 | accepted |  |
+| [0200](0200-staging-tenants-of-its-own.md) | Staging's tenants of its own | 2026-10-14 | accepted |  |

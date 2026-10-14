@@ -3,6 +3,7 @@
 import type { VisitType } from "../../config/visit-types.ts";
 import type { AppointmentStatus } from "../visits/visit-status.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
+import { rulesFrom, type CityRules } from "../cities/city-rules.ts";
 
 /** The job the technician may write to now: their own, live, and of a type we know. */
 export interface WorkableJob {
@@ -15,12 +16,19 @@ export interface WorkableJob {
   readonly status: AppointmentStatus;
   readonly windowStart: Date;
   readonly technicianId: string;
+  /** The city it is in. */
+  readonly city: string | null;
+  /** The rules its city sets for itself (src/domain/cities/city-rules.ts), read with the job. */
+  readonly cityRules: CityRules;
 }
 
 export async function workableJob(db: D1Database, jobId: string): Promise<WorkableJob | null> {
   const row = await db
     .prepare(
-      `SELECT id, person_id, type, one_visit, fsm_id, status, window_start, technician_id FROM appointments
+      `SELECT id, person_id, type, one_visit, fsm_id, status, window_start, technician_id, service_city,
+         (SELECT json_group_object(s.key, json(s.value)) FROM city_settings s WHERE s.city = appointments.service_city)
+           AS city_rules
+       FROM appointments
        WHERE id = ?1 AND deleted_at IS NULL AND type IS NOT NULL AND window_start IS NOT NULL`,
     )
     .bind(jobId)
@@ -33,6 +41,8 @@ export async function workableJob(db: D1Database, jobId: string): Promise<Workab
       status: AppointmentStatus;
       window_start: string;
       technician_id: string | null;
+      service_city: string | null;
+      city_rules: string | null;
     }>();
   const technicianId = row?.technician_id ?? null;
   if (row === null || technicianId === null) return null;
@@ -45,5 +55,7 @@ export async function workableJob(db: D1Database, jobId: string): Promise<Workab
     status: row.status,
     windowStart: new Date(row.window_start),
     technicianId,
+    city: row.service_city,
+    cityRules: rulesFrom(row.city_rules),
   };
 }

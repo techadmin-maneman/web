@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createAlertOnce, createResolveAlert } from "../../../src/domain/ops/alerts.ts";
+import { createAlertOnce, createResolveAlert } from "../../../src/domain/platform/alerts.ts";
 import { CALLS_PER_RECORD, syncBooks, type BooksSyncSummary } from "../../../src/domain/books/books-sync.ts";
 import type { BooksSyncOptions } from "../../../src/domain/books/books-pass.ts";
 import { createCallBudget, type CallBudget } from "../../../src/lib/call-budget.ts";

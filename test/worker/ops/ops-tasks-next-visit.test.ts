@@ -12,6 +12,7 @@ import type { App } from "../../../src/http/context.ts";
 import { NEXT_VISIT_DAYS } from "../../../src/policy/next-visit.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { PERSON, REFERRED, VISIT, REQUEST, CONSULTATION, person, consultationRequest } from "./ops-tasks-fixtures.ts";
+import { keepUpVisits } from "../fixtures/index.ts";
 
 let ops: App;
 
@@ -27,7 +28,10 @@ interface Body {
   }[];
 }
 
-const tasks = async (): Promise<Body> => (await request(ops, "/api/tasks")).json<Body>();
+const tasks = async (): Promise<Body> => {
+  await keepUpVisits();
+  return (await request(ops, "/api/tasks")).json<Body>();
+};
 
 // A visit these fixtures leave with no technician, or open from a day past, is on the board too; each has its own test
 // (test/worker/ops/tasks-open-visits.test.ts).
@@ -74,6 +78,7 @@ describe("GET /api/tasks, the next visit", () => {
     )
       .bind(JSON.stringify({ ...NEXT_VISIT_DAYS, ...days }), NOW.toISOString())
       .run();
+    await keepUpVisits();
     return (await request(appFor("local", fakeDependencies(), {}, "ops"), "/api/tasks")).json<Body>();
   }
 

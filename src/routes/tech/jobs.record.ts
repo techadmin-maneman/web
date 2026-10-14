@@ -17,7 +17,7 @@ import {
   type Superseding,
 } from "../../domain/field/job-events.ts";
 import { jobRecordOf, type LandingStep } from "../../domain/field/job-record.ts";
-import { type PieceField } from "../../domain/field/pieces.ts";
+import { type PieceField } from "../../domain/inventory/pieces.ts";
 import { progressOf } from "../../domain/field/job-card.ts";
 import { workableJob, type WorkableJob } from "../../domain/field/workable-job.ts";
 import { errorBody, type ErrorResponse, refuse } from "../../http/errors.ts";
@@ -26,6 +26,7 @@ import { timeOfUuidV7 } from "../../lib/uuidv7.ts";
 import { type JobEventKind } from "../../policy/in-job-steps.ts";
 import { noShowWaitEnds } from "../../policy/no-show.ts";
 import { boundedPhoneTime } from "../../policy/phone-clock.ts";
+import { inputsIn } from "../../domain/cities/city-rules.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 
 import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, AcceptedSchema, CheckInSchema } from "./jobs.schemas.ts";
@@ -223,7 +224,7 @@ export async function checkInReplayed(
   job: WorkableJob,
   event: JobEvent,
 ): Promise<z.infer<typeof CheckInSchema>> {
-  const { noShowWaitMin, checkinRadiusM } = await opsInputs(c);
+  const { noShowWaitMin, checkinRadiusM } = inputsIn(await opsInputs(c), job.cityRules);
   const accepted = await acceptedOf(c, job, event, true);
   const arrival = await arrivalOfEvent(c.env.DB, event.id);
   if (arrival === null) {

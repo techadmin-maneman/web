@@ -25,9 +25,9 @@ import {
   submitRecounts,
   type CountTask,
   type Stepped,
-} from "../../domain/field/count-tasks.ts";
-import { countClasses, setCountClass, startCount } from "../../domain/field/cycle-counts.ts";
-import { allPlaces, isPlaceWithin, placeById, placesWithin } from "../../domain/field/stock-places.ts";
+} from "../../domain/inventory/count-tasks.ts";
+import { countClasses, setCountClass, startCount } from "../../domain/inventory/cycle-counts.ts";
+import { allPlaces, isPlaceWithin, placeById, placesWithin } from "../../domain/inventory/stock-places.ts";
 import { actorOf } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -36,7 +36,7 @@ import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { MAX_NOTE } from "../../config/consumables.ts";
-import { MAX_LABELLED } from "../../domain/field/stock-units.ts";
+import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
 import { COUNT_CLASSES } from "../../policy/cycle-counts.ts";
 
 /** How long a done task stays on the list. */

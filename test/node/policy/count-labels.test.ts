@@ -1,8 +1,8 @@
-// Hair systems counted by their labels (src/domain/field/count-labels.ts): what a count's labels found against the
+// Hair systems counted by their labels (src/domain/inventory/count-labels.ts): what a count's labels found against the
 // place, the fields a count's lines get wrong, and the labels as a count line keeps them.
 
 import { describe, expect, it } from "vitest";
-import { labelColumns, labelFields, labelsFound, labelsOf } from "../../../src/domain/field/count-labels.ts";
+import { labelColumns, labelFields, labelsFound, labelsOf } from "../../../src/domain/inventory/count-labels.ts";
 
 const HELD = new Map([["hs-1", new Set(["MM-ESS-0000041-R", "MM-ESS-0000042-S"])]]);
 

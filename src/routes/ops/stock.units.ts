@@ -10,8 +10,8 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { auditStatement } from "../../domain/ops/audit.ts";
-import { isPlaceWithin, placesWithin } from "../../domain/field/stock-places.ts";
+import { auditStatement } from "../../domain/platform/audit.ts";
+import { isPlaceWithin, placesWithin } from "../../domain/inventory/stock-places.ts";
 import {
   hairSystemProduct,
   heldUnits,
@@ -20,7 +20,7 @@ import {
   MAX_LABELLED,
   UNIT_STATES,
   unitFound,
-} from "../../domain/field/stock-units.ts";
+} from "../../domain/inventory/stock-units.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

@@ -6,14 +6,14 @@
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { FITTED } from "../clients/fitted.ts";
-import { openProposalJson, openProposalOf } from "../dispatch/open-proposals.ts";
+import { openProposalJson, openProposalOf } from "./open-proposals.ts";
 import { signToken } from "../../lib/signed-token.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import { namesMoreThanItsKind } from "../../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
 import { tickedItemsOf } from "../field/job-event-bodies.ts";
 import { jobSheet } from "../field/job-sheet-settings.ts";
-import { noShowNotes, type NoShowNote } from "../no-shows/no-show-notes.ts";
+import { noShowNotes, type NoShowNote } from "./no-show-notes.ts";
 import { oneVisitPrice, type OneVisitPrice } from "../money/one-visit-money.ts";
 import { priceOf } from "../money/price-book.ts";
 import { currentAddress } from "../clients/profile.ts";
@@ -303,7 +303,11 @@ type InvoiceHeld = "credit" | "checking";
 async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boolean> {
   if (row.status !== "completed") return false;
   if (row.type === null) return true;
-  const price = await priceOf(db, row.type, indiaDate(new Date(row.window_start)), row.tier ?? STANDARD_TIER);
+  const price = await priceOf(db, row.type, {
+    on: indiaDate(new Date(row.window_start)),
+    tier: row.tier ?? STANDARD_TIER,
+    city: row.service_city,
+  });
   return price === null || price.amount_ex_gst > 0;
 }
 

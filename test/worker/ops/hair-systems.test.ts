@@ -1,4 +1,4 @@
-// Hair systems in stock (src/domain/field/hair-systems.ts, src/domain/field/piece-use.ts;
+// Hair systems in stock (src/domain/inventory/hair-systems.ts, src/domain/inventory/piece-use.ts;
 // docs/decisions/0156-hair-systems-in-stock.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: ops add a stock code for a spec, named from it, and no two share one; the job card lists the

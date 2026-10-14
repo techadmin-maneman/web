@@ -305,6 +305,7 @@ describe("the stand-ins", () => {
       reference: "appointment-1",
       date: "2026-10-02",
       placeOfSupply: null,
+      branchId: null,
       line: { itemId: "stub-item-1", name: "First fit", description: "First fit", rate: 200_000, discount: 15_000 },
     };
     books.loseAnswer("createInvoice");
@@ -336,6 +337,7 @@ describe("the stand-ins", () => {
       reference: "a-1",
       date: "2026-10-02",
       placeOfSupply: null,
+      branchId: null,
       line,
     });
     expect(await books.eraseCustomer(unused)).toBe("deleted");

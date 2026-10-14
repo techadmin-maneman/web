@@ -1,4 +1,4 @@
-// Suppliers (src/routes/ops/suppliers.ts, src/domain/field/suppliers.ts; docs/decisions/0165-suppliers.md). NOW is
+// Suppliers (src/routes/ops/suppliers.ts, src/domain/purchasing/suppliers.ts; docs/decisions/0165-suppliers.md). NOW is
 // Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a supplier is added, changed and retired, never under another's name; what it supplies of a stock

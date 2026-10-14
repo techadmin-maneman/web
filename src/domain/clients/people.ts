@@ -33,3 +33,17 @@ export function personByMobile(db: D1Database, person: TypedPerson): D1PreparedS
       : "ON CONFLICT (mobile_e164) DO NOTHING",
   );
 }
+
+/**
+ * When each person `whose` selects became a client: stamped the first time a visit of theirs is on the books, and
+ * never again. `whose` is SQL over ?1, which `list` binds, as a visit's write names the people it moved.
+ */
+export function becameClients(db: D1Database, whose: string, list: string): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE people SET client_since = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+       WHERE id IN (${whose}) AND client_since IS NULL
+         AND EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = people.id)`,
+    )
+    .bind(list);
+}

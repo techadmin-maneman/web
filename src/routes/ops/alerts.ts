@@ -13,8 +13,8 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { callerAccess, permits } from "../../http/staff-access.ts";
 import { markDone, openAlert, openAlerts, sendAgain, type OpenAlert } from "../../domain/ops/needs-a-hand.ts";
-import type { AuditAction, AuditEntry } from "../../domain/ops/audit.ts";
-import { namedForTheConsole } from "../../domain/field/low-stock.ts";
+import type { AuditAction, AuditEntry } from "../../domain/platform/audit.ts";
+import { namedForTheConsole } from "../../domain/inventory/low-stock.ts";
 import { maySendAgain } from "../../policy/alerts.ts";
 import { alertNeed, markDoneNeed, callerMeetsNeed } from "../../policy/console-routes.ts";
 

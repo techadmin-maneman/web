@@ -8,7 +8,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
-import { listCities } from "../../domain/dispatch/cities.ts";
+import { listCities } from "../../domain/cities/cities.ts";
 import { reachBinding, withinReach } from "../../domain/clients/places.ts";
 import { launchedPincode, pincodeOf, pincodesWithNoTechnician } from "../../domain/clients/service-area.ts";
 import { launchPincode, launchPreview, waitlistByPincode } from "../../domain/booking/waitlist.ts";

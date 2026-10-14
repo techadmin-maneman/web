@@ -5,7 +5,7 @@
 import { HOUR_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
-import type { AlertOnce } from "../ops/alerts.ts";
+import type { AlertOnce } from "../platform/alerts.ts";
 
 /** How many records of each kind a pass takes at most; the next run takes the rest. */
 export const PER_PASS = 5;

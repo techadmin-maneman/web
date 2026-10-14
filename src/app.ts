@@ -8,7 +8,7 @@ import type { Surface } from "./config/environments.ts";
 import { productionDependencies, type DependencyFactory } from "./dependencies.ts";
 import { auditCall } from "./http/audit.ts";
 import { createCachedIdentityCheck, type IdentityCheck, type StaticConfig } from "./guard.ts";
-import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/ops/ops-settings.ts";
+import { createCachedOpsInputs, type ReadOpsInputs } from "./domain/platform/ops-settings.ts";
 import { requireAccess } from "./http/access.ts";
 import { requireStaffAccess } from "./http/staff-access.ts";
 import { REQUEST_ID_HEADER, type App, type AppEnv } from "./http/context.ts";
@@ -31,88 +31,12 @@ import { registerClientNotes } from "./routes/client/notes.ts";
 import { registerClientCustomOrders } from "./routes/client/custom-orders.ts";
 import { registerClientData } from "./routes/client/data.ts";
 import { registerClientDiscountCodes } from "./routes/client/discount-codes.ts";
-import { registerOpsDiscountCodes } from "./routes/ops/discount-codes.ts";
 import { registerTechDiscountCodes } from "./routes/tech/discount-codes.ts";
 import { registerTechKit } from "./routes/tech/kit.ts";
 import { registerClientDisputes } from "./routes/client/disputes.ts";
 import { registerClientMoveProposals } from "./routes/client/move-proposals.ts";
 import { registerClientErrors } from "./routes/client-errors.ts";
 import { registerClientRefer } from "./routes/client/refer.ts";
-import { registerOpsBlackouts } from "./routes/ops/blackouts.ts";
-import { registerOpsClientAddress } from "./routes/ops/client-address.ts";
-import { registerOpsClientConsents } from "./routes/ops/client-consents.ts";
-import { registerOpsClientPhotos } from "./routes/ops/client-photos.ts";
-import { registerOpsClientRecord } from "./routes/ops/client-record.ts";
-import { registerOpsClientReferral } from "./routes/ops/client-referral.ts";
-import { registerOpsClients } from "./routes/ops/clients.ts";
-import { registerOpsConsumables } from "./routes/ops/consumables.ts";
-import { registerOpsHairSystems } from "./routes/ops/hair-systems.ts";
-import { registerOpsCredits } from "./routes/ops/credits.ts";
-import { registerOpsDispatch } from "./routes/ops/dispatch.ts";
-import { registerOpsDispatchDay } from "./routes/ops/dispatch-day.ts";
-import { registerOpsDispatchMoves } from "./routes/ops/dispatch-moves.ts";
-import { registerOpsDisputes } from "./routes/ops/disputes.ts";
-import { registerOpsErasure } from "./routes/ops/erasure.ts";
-import { registerOpsField } from "./routes/ops/field.ts";
-import { registerOpsNoShows } from "./routes/ops/no-shows.ts";
-import { registerOpsClientPieces } from "./routes/ops/client-pieces.ts";
-import { registerOpsTechnicianLeave } from "./routes/ops/technician-leave.ts";
-import { registerOpsTechnicianPhones } from "./routes/ops/technician-phones.ts";
-import { registerOpsActivity } from "./routes/ops/activity.ts";
-import { registerOpsGrievances } from "./routes/ops/grievances.ts";
-import { registerOpsHairProfile } from "./routes/ops/hair-profile.ts";
-import { registerOpsStockMatch } from "./routes/ops/stock-match.ts";
-import { registerOpsCustomOrders } from "./routes/ops/custom-orders.ts";
-import { registerOpsForecast } from "./routes/ops/stock-forecast.ts";
-import { registerOpsSupplyPlan } from "./routes/ops/supply-plan.ts";
-import { registerOpsDemandEvents } from "./routes/ops/demand-events.ts";
-import { registerOpsCountTasks } from "./routes/ops/count-tasks.ts";
-import { registerOpsStockUsage } from "./routes/ops/stock-usage.ts";
-import { registerOpsRecalls } from "./routes/ops/recalls.ts";
-import { registerOpsStockQuality } from "./routes/ops/stock-quality.ts";
-import { registerOpsJobSheet } from "./routes/ops/job-sheet.ts";
-import { registerOpsPaymentLinks } from "./routes/ops/payment-links.ts";
-import { registerOpsNoShowRulings } from "./routes/ops/no-show-rulings.ts";
-import { registerOpsPayments } from "./routes/ops/payments.ts";
-import { registerOpsPaymentRefunds } from "./routes/ops/payment-refunds.ts";
-import { registerOpsReferrals } from "./routes/ops/referrals.ts";
-import { registerOpsPartnerStatements } from "./routes/ops/partner-statements.ts";
-import { registerOpsCarePeople } from "./routes/ops/care-people.ts";
-import { registerOpsCareRota } from "./routes/ops/care-rota.ts";
-import { registerOpsCityMatters } from "./routes/ops/city-matters.ts";
-import { registerOpsStrangers } from "./routes/ops/strangers.ts";
-import { registerOpsQuickReplies } from "./routes/ops/quick-replies.ts";
-import { registerOpsSpend } from "./routes/ops/spend.ts";
-import { registerOpsStandardCosts } from "./routes/ops/standard-costs.ts";
-import { registerOpsTargets } from "./routes/ops/targets.ts";
-import { registerOpsVisitLostReason } from "./routes/ops/visit-lost-reason.ts";
-import { registerOpsRemedies } from "./routes/ops/remedies.ts";
-import { registerOpsCareNumbers } from "./routes/ops/care-numbers.ts";
-import { registerOpsConversations } from "./routes/ops/conversations.ts";
-import { registerOpsReferralChannels } from "./routes/ops/referral-channels.ts";
-import { registerOpsWords } from "./routes/ops/words.ts";
-import { registerOpsTasks } from "./routes/ops/tasks.ts";
-import { registerOpsAlerts } from "./routes/ops/alerts.ts";
-import { registerOpsTechnicians } from "./routes/ops/technicians.ts";
-import { registerOpsTechnicianPay } from "./routes/ops/technician-pay.ts";
-import { registerOpsServices } from "./routes/ops/services.ts";
-import { registerOpsSettings } from "./routes/ops/settings.ts";
-import { registerOpsPrices } from "./routes/ops/prices.ts";
-import { registerOpsServiceArea } from "./routes/ops/service-area.ts";
-import { registerOpsSlotTimes } from "./routes/ops/slot-times.ts";
-import { registerOpsStaff } from "./routes/ops/staff.ts";
-import { registerOpsStock } from "./routes/ops/stock.ts";
-import { registerOpsStockPlaces } from "./routes/ops/stock.places.ts";
-import { registerOpsStockTransit } from "./routes/ops/stock.transit.ts";
-import { registerOpsStockDemand } from "./routes/ops/stock.read.ts";
-import { registerOpsStockUnits } from "./routes/ops/stock.units.ts";
-import { registerOpsSuppliers } from "./routes/ops/suppliers.ts";
-import { registerOpsPurchasing } from "./routes/ops/purchasing.ts";
-import { registerOpsClaims } from "./routes/ops/purchasing.claims.ts";
-import { registerOpsStockPhotos } from "./routes/ops/purchasing.photos.ts";
-import { registerOpsScorecard } from "./routes/ops/purchasing.scorecard.ts";
-import { registerOpsReceipts } from "./routes/ops/purchasing.receipts.ts";
-import { registerOpsWaitlist } from "./routes/ops/waitlist.ts";
 import { registerConsultations } from "./routes/public/consultations.ts";
 import { registerBuildingSuggestions } from "./routes/public/building-suggestions.ts";
 import { registerLead } from "./routes/public/lead.ts";
@@ -126,12 +50,8 @@ import { registerEvolutionHook } from "./routes/hooks/evolution.ts";
 import { registerMsg91Hook } from "./routes/hooks/msg91.ts";
 import { registerRazorpayHook } from "./routes/hooks/razorpay.ts";
 import { registerStopMessages } from "./routes/public/stop-messages.ts";
+import { OPS_ROUTES } from "./routes/ops/routes.ts";
 import { registerHealth } from "./routes/health.ts";
-import { registerOpsProfile } from "./routes/ops/profile.ts";
-import { registerOpsStorage } from "./routes/ops/storage.ts";
-import { registerOpsVisitChanges } from "./routes/ops/visit-changes.ts";
-import { registerOpsVisits } from "./routes/ops/visits.ts";
-import { registerOpsWhoami } from "./routes/ops/whoami.ts";
 import { registerPublishedPrices } from "./routes/public/published-prices.ts";
 import { registerServedCities } from "./routes/public/served-cities.ts";
 import { registerSiteWords } from "./routes/public/site-words.ts";
@@ -206,127 +126,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientRefer,
     registerClientData,
   ],
-  ops: [
-    registerHealth,
-    registerClientErrors,
-    registerOpsClients,
-    registerOpsClientRecord,
-    registerOpsClientPhotos,
-    registerOpsClientConsents,
-    registerOpsCredits,
-    // A visit ops book for a client: at once, or by a payment link.
-    registerOpsVisits,
-    // A visit ops cancel for a client, or close by hand for a technician whose phone was lost.
-    registerOpsVisitChanges,
-    registerOpsClientReferral,
-    // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
-    registerOpsClientAddress,
-    // A client's hair profile (docs/decisions/0106-a-clients-hair-profile.md).
-    registerOpsHairProfile,
-    // The stock code a client's profile matches, and where its pieces are (docs/decisions/0173-matching-a-client-to-stock.md).
-    registerOpsStockMatch,
-    // Custom orders, paid in full before they are ordered (docs/decisions/0174-custom-orders.md).
-    registerOpsCustomOrders,
-    // The demand forecast (docs/decisions/0179-demand-forecast.md).
-    registerOpsForecast,
-    // The supply plan drafted from it (docs/decisions/0180-supply-plan.md).
-    registerOpsSupplyPlan,
-    // The events calendar the forecast reads (docs/decisions/0182-the-events-calendar.md).
-    registerOpsDemandEvents,
-    // Cycle counts, blind, with recounts and sign-off (docs/decisions/0185-cycle-counts.md).
-    registerOpsCountTasks,
-    // Usage against expected, and shrinkage (docs/decisions/0186-usage-and-shrinkage.md).
-    registerOpsStockUsage,
-    // Recalls: a lot blocked everywhere, and who wears it (docs/decisions/0187-recalls.md).
-    registerOpsRecalls,
-    // Failure rates and value at risk (docs/decisions/0188-failure-rates-and-value-at-risk.md).
-    registerOpsStockQuality,
-    // Erasing a client from their page, the day they ask.
-    registerOpsErasure,
-    registerOpsProfile,
-    registerOpsReferrals,
-    // Partners who send us clients on their own code (docs/decisions/0123-partner-referral-channels.md).
-    registerOpsPartnerStatements,
-    registerOpsConversations,
-    registerOpsCarePeople,
-    registerOpsCareRota,
-    registerOpsCityMatters,
-    registerOpsStrangers,
-    registerOpsQuickReplies,
-    registerOpsSpend,
-    registerOpsStandardCosts,
-    registerOpsTargets,
-    registerOpsVisitLostReason,
-    registerOpsRemedies,
-    registerOpsCareNumbers,
-    registerOpsReferralChannels,
-    registerOpsWords,
-    registerOpsGrievances,
-    registerOpsActivity,
-    registerOpsWaitlist,
-    registerOpsDispatch,
-    registerOpsDispatchDay,
-    registerOpsDispatchMoves,
-    registerOpsNoShows,
-    registerOpsClientPieces,
-    registerOpsField,
-    registerOpsTechnicianLeave,
-    registerOpsTechnicianPhones,
-    registerOpsNoShowRulings,
-    registerOpsDisputes,
-    registerOpsTasks,
-    // The alerts on Tasks' "Needs a hand".
-    registerOpsAlerts,
-    registerOpsPayments,
-    registerOpsPaymentRefunds,
-    // A one visit's payment link texted to the client again.
-    registerOpsPaymentLinks,
-    registerOpsTechnicians,
-    // What technicians are paid for each visit (docs/decisions/0122-technician-pay-per-visit.md).
-    registerOpsTechnicianPay,
-    registerOpsSettings,
-    registerOpsPrices,
-    registerOpsServiceArea,
-    // The day's half-slot times, from a day nothing is booked or bookable on (docs/decisions/0102-window-times.md).
-    registerOpsSlotTimes,
-    // The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md).
-    registerOpsBlackouts,
-    // The services clients book (docs/decisions/0085-services-ops-can-edit.md).
-    registerOpsServices,
-    // The consumables, the job sheet and the stock (docs/decisions/0087-consumables-and-stock.md).
-    registerOpsConsumables,
-    // A hair system's stock code (docs/decisions/0156-hair-systems-in-stock.md).
-    registerOpsHairSystems,
-    registerOpsJobSheet,
-    registerOpsStock,
-    // Where stock is kept, as a tree (docs/decisions/0155-the-stock-place-tree.md).
-    registerOpsStockPlaces,
-    // Transfers in transit (docs/decisions/0158-transfers-in-transit.md).
-    registerOpsStockTransit,
-    // What the weeks ahead will use (docs/decisions/0160-demand-and-opening-counts.md).
-    registerOpsStockDemand,
-    // Pieces as units, and labels (docs/decisions/0161-pieces-as-units.md).
-    registerOpsStockUnits,
-    // Suppliers, and what each supplies (docs/decisions/0165-suppliers.md).
-    registerOpsSuppliers,
-    // Purchase orders (docs/decisions/0166-purchase-orders.md).
-    registerOpsPurchasing,
-    // Receipts against them, with landed cost (docs/decisions/0167-receipts-and-landed-cost.md).
-    registerOpsReceipts,
-    // Claims on suppliers, and returned pieces settled (docs/decisions/0169-supplier-claims.md).
-    registerOpsClaims,
-    // Photographs of stock: a write-off's, and a claim's (docs/decisions/0170-stock-photos.md).
-    registerOpsStockPhotos,
-    // Each supplier's scorecard (docs/decisions/0172-supplier-scorecard.md).
-    registerOpsScorecard,
-    // What the photographs and cards hold in R2 (docs/decisions/0093-the-storage-meter.md).
-    registerOpsStorage,
-    registerOpsWhoami,
-    // Discount codes, and a code on a client's visit (docs/decisions/0108-discount-codes.md).
-    registerOpsDiscountCodes,
-    // Who may do what in the console.
-    registerOpsStaff,
-  ],
+  ops: OPS_ROUTES,
   tech: [
     registerHealth,
     registerClientErrors,

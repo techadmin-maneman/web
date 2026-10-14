@@ -30,6 +30,7 @@ import {
   grievance,
   erasureRequest,
 } from "./ops-tasks-fixtures.ts";
+import { keepUpVisits } from "../fixtures/index.ts";
 
 const PIECE = "33333333-3333-4333-8333-333333333331";
 
@@ -49,7 +50,10 @@ interface Body {
   }[];
 }
 
-const tasks = async (): Promise<Body> => (await request(ops, "/api/tasks")).json<Body>();
+const tasks = async (): Promise<Body> => {
+  await keepUpVisits();
+  return (await request(ops, "/api/tasks")).json<Body>();
+};
 
 const groupNames = (body: Body) => body.groups.map((each) => each.group);
 

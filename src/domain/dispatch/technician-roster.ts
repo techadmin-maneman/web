@@ -13,9 +13,15 @@
 
 import type { VisitType } from "../../config/visit-types.ts";
 import { initialsOf } from "../../lib/names.ts";
-import { auditStatement, auditStatementIfDeleted, auditStatementIfWritten, type AuditEntry } from "../ops/audit.ts";
+import {
+  auditStatement,
+  auditStatementIfDeleted,
+  auditStatementIfWritten,
+  type AuditEntry,
+} from "../platform/audit.ts";
 import { visitBegun } from "../visits/visit-begun.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
+import { boardMoved } from "../visits/visit-upkeep.ts";
 
 /** A technician as the console lists them. */
 export interface RosterTechnician {
@@ -213,6 +219,7 @@ export async function deactivateTechnician(
          WHERE a.id IN (SELECT value FROM json_each(?3)) AND ${STILL_TO_COME}`,
       )
       .bind(technicianId, at, visitIds),
+    boardMoved(db),
     auditStatement(db, { ...audit, detail: { visits_unassigned: visits.length } }, now),
   ]);
   return visits;

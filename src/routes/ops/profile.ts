@@ -12,7 +12,7 @@ import type { Context } from "hono";
 import { afterResponse } from "../../http/after-response.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
-import { type AuditAction, type AuditEntry } from "../../domain/ops/audit.ts";
+import { type AuditAction, type AuditEntry } from "../../domain/platform/audit.ts";
 import {
   decideDeletion,
   deletionDoneMessage,

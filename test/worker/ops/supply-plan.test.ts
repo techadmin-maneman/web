@@ -1,4 +1,4 @@
-// The supply plan (src/domain/field/supply-plan.ts, supply-plan-lines.ts, src/routes/ops/supply-plan.ts;
+// The supply plan (src/domain/purchasing/supply-plan.ts, supply-plan-lines.ts, src/routes/ops/supply-plan.ts;
 // docs/decisions/0180-supply-plan.md). NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a city short of an item borrows first from a city with spare, then from the warehouse, and what is
@@ -7,7 +7,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { draftPlan } from "../../../src/domain/field/supply-plan.ts";
+import { draftPlan } from "../../../src/domain/purchasing/supply-plan.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { working, type Working } from "../job-fixtures.ts";
 

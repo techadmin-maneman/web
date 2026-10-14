@@ -20,7 +20,7 @@ import {
   periodRefusal,
   removeBlackouts,
 } from "../../domain/dispatch/blackouts.ts";
-import { listCities } from "../../domain/dispatch/cities.ts";
+import { listCities } from "../../domain/cities/cities.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";

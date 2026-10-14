@@ -341,6 +341,27 @@ function checkNoSharedResources(config: JsonObject): string[] {
   return problems;
 }
 
+/**
+ * The vars that name a vendor's tenant: the Books organisation and its refund account, and the Razorpay account. Staging
+ * and production never share one, so nothing staging does can reach production's books or payments.
+ */
+export const TENANT_VARS = ["ZOHO_BOOKS_ORG_ID", "BOOKS_REFUND_ACCOUNT_ID", "RAZORPAY_KEY_ID"] as const;
+
+function checkOwnTenants(config: JsonObject): string[] {
+  const [staging, production] = REMOTE_ENVIRONMENTS.map((environment) => environmentBlock(config, environment));
+  if (staging === undefined || production === undefined) return [];
+  const varOf = (block: JsonObject, name: string) => {
+    const vars = read(block, "vars");
+    return isObject(vars) ? stringField(vars, name) : undefined;
+  };
+  return TENANT_VARS.flatMap((name) => {
+    const value = varOf(staging, name);
+    return value !== undefined && value !== "" && value === varOf(production, name)
+      ? [`env.staging and env.production share ${name} "${value}": staging needs a tenant of its own`]
+      : [];
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Entry points
 // ---------------------------------------------------------------------------
@@ -380,6 +401,7 @@ export function checkApiConfig(config: JsonObject, options: CheckOptions = {}): 
   }
 
   problems.push(...checkNoSharedResources(config));
+  problems.push(...checkOwnTenants(config));
   return problems;
 }
 

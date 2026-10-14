@@ -4,7 +4,7 @@
 
 import type { Surface } from "../../config/environments.ts";
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
-import type { AuditAction, AuditActor } from "./audit.ts";
+import type { AuditAction, AuditActor } from "../platform/audit.ts";
 
 /** How many entries a page holds. */
 const ACTIVITY_PAGE = 50;

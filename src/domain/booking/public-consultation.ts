@@ -12,7 +12,7 @@ import { type NotBookedFromSite, notBookedFromSite, typedAddress } from "../../p
 import { type Address, currentAddress, firstAddressStatement } from "../clients/profile.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import { pincodeOf, type Pincode } from "../clients/service-area.ts";
-import { siteNotice, type SiteNoticeKind } from "../ops/site-notices.ts";
+import { siteNotice, type SiteNoticeKind } from "./site-notices.ts";
 import { type OneVisitCode, useOnNewHold, codeOnHold, checkForOneVisit } from "../money/discount-code-holds.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
 import type { InviteState } from "../referrals/referrals.ts";
@@ -345,7 +345,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   // otherwise booking goes through WhatsApp, and what the person asked for waits for ops.
   const [knownId, visit] = await Promise.all([
     personWithMobile(db, checked.mobile),
-    form.selfServeBooking ? siteVisit(db, request.plan, request.date) : null,
+    form.selfServeBooking ? siteVisit(db, request.plan, request.date, request.pincode) : null,
   ]);
   const saved = knownId === null ? null : await currentAddress(db, knownId);
   const savedPincode = saved === null ? null : await pincodeOf(db, saved.pincode);
@@ -456,7 +456,7 @@ async function newNumbersState(
   form: FormRequest,
   request: ConsultationRequest,
 ): Promise<"booked" | "requested" | "taken"> {
-  const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date) : null;
+  const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date, request.pincode) : null;
   if (visit === null) return "requested";
   const length = { minutes: visit.service.minutes, fitting: request.plan === "one_visit" ? ONE_VISIT_FIT : null };
   const [day] = await availability({

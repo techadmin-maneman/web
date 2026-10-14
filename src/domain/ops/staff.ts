@@ -15,7 +15,7 @@ import {
   type ZoneOfCity,
 } from "../../policy/access.ts";
 import type { AccessIdentity } from "../../providers/cloudflare-access.ts";
-import { auditStatement, type AuditActor } from "./audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { isOneOf } from "../../lib/one-of.ts";
 
 interface StaffMember extends StaffEntry {

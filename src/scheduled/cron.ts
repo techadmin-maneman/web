@@ -19,17 +19,17 @@ import { raiseBooksInvoices } from "../domain/books/books-invoices.ts";
 import { checkBooksItems } from "../domain/books/books-items.ts";
 import { syncBooks } from "../domain/books/books-sync.ts";
 import type { BooksSyncOptions } from "../domain/books/books-pass.ts";
-import { closeStaleLowStock } from "../domain/field/low-stock.ts";
+import { closeStaleLowStock } from "../domain/inventory/low-stock.ts";
 import { settleOwedRefunds } from "../domain/money/cancel-refunds.ts";
 import { settleOwedNoShowRefunds } from "../domain/no-shows/after-a-ruling.ts";
-import { retellUndelivered } from "../domain/ops/alerts.ts";
-import { tellOfExpiring, tellOfOverdue } from "../domain/field/stock-watch.ts";
-import { refreshStockRisks } from "../domain/field/stock-risks.ts";
-import { measureLastForecast } from "../domain/field/forecast-accuracy.ts";
-import { runForecastIfDue } from "../domain/field/forecast.ts";
-import { draftPlan } from "../domain/field/supply-plan.ts";
-import { checkTomorrowsKits } from "../domain/field/kit-check.ts";
-import { raiseCountTasks } from "../domain/field/cycle-counts.ts";
+import { retellUndelivered } from "../domain/platform/alerts.ts";
+import { tellOfExpiring, tellOfOverdue } from "../domain/inventory/stock-watch.ts";
+import { refreshStockRisks } from "../domain/inventory/stock-risks.ts";
+import { measureLastForecast } from "../domain/purchasing/forecast-accuracy.ts";
+import { runForecastIfDue } from "../domain/purchasing/forecast.ts";
+import { draftPlan } from "../domain/purchasing/supply-plan.ts";
+import { checkTomorrowsKits } from "../domain/inventory/kit-check.ts";
+import { raiseCountTasks } from "../domain/inventory/cycle-counts.ts";
 import { classDaysOf } from "../policy/cycle-counts.ts";
 import { jobsLastWell } from "../domain/platform/cron-runs.ts";
 import { alertAgedDeletions } from "../domain/privacy/deletion.ts";
@@ -39,7 +39,7 @@ import { tellOfNewGrievances } from "../domain/ops/grievances.ts";
 import { queueCreditReminders } from "../domain/money/credit-reminders.ts";
 import { queueNextServiceReminders } from "../domain/visits/next-visit.ts";
 import { sendUnsentLinks } from "../domain/money/payment-links.ts";
-import type { OpsInputs } from "../domain/ops/ops-settings.ts";
+import type { OpsInputs } from "../domain/platform/ops-settings.ts";
 import { readDatabaseBytes, tellOfDatabaseSize, tellOfStorage } from "../domain/platform/storage-meter.ts";
 import { queueReminders } from "../domain/messages/visit-messages.ts";
 import type { StaticConfig } from "../guard.ts";
@@ -70,6 +70,7 @@ import { startOrFollow } from "../workflows/steps.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
+import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -85,13 +86,13 @@ export interface CronContext {
   readonly slot?: { readonly start: Date; readonly date: string } | undefined;
 }
 
-/** The fits booked ahead with no hair system in reach, kept as tasks each hour (src/domain/field/stock-risks.ts). */
+/** The fits booked ahead with no hair system in reach, kept as tasks each hour (src/domain/inventory/stock-risks.ts). */
 async function stockRisksJob({ env, deps, inputs }: CronContext): Promise<void> {
   const now = deps.now();
   await refreshStockRisks(env.DB, indiaDate(now), now, (await inputs()).stockWatch.demand_days);
 }
 
-/** How right the last forecast was, once its first period has passed (src/domain/field/forecast-accuracy.ts). */
+/** How right the last forecast was, once its first period has passed (src/domain/purchasing/forecast-accuracy.ts). */
 const forecastAccuracyJob = ({ env, deps }: CronContext) =>
   measureLastForecast(env.DB, deps.now(), indiaDate(deps.now()));
 
@@ -103,15 +104,15 @@ async function forecastJob({ env, deps, inputs }: CronContext): Promise<void> {
   if (run !== null) await draftPlan(env.DB, run, now, given.planningPeriodDays);
 }
 
-/** Each evening hour: tomorrow's kits, and their top-ups (src/domain/field/kit-check.ts). */
+/** Each evening hour: tomorrow's kits, and their top-ups (src/domain/inventory/kit-check.ts). */
 const kitCheckJob = async ({ env, deps, inputs }: CronContext) =>
   checkTomorrowsKits(env.DB, deps.now(), deps.alertOnce, (await inputs()).kitCheck);
 
-/** The morning's cycle counts (src/domain/field/cycle-counts.ts). */
+/** The morning's cycle counts (src/domain/inventory/cycle-counts.ts). */
 const cycleCountsJob = async ({ env, deps, inputs, slot }: CronContext) =>
   raiseCountTasks(env.DB, slot?.date ?? indiaDate(deps.now()), deps.now(), classDaysOf((await inputs()).cycleCounts));
 
-/** The morning's stock that expires soon, and transfers long on their way (src/domain/field/stock-watch.ts). */
+/** The morning's stock that expires soon, and transfers long on their way (src/domain/inventory/stock-watch.ts). */
 const expiringStockJob = async ({ env, deps, inputs, slot }: CronContext) =>
   tellOfExpiring(env.DB, deps, slot?.date ?? indiaDate(deps.now()), (await inputs()).stockWatch.expiry_warning_days);
 const overdueTransfersJob = async ({ env, deps, inputs }: CronContext) =>
@@ -211,7 +212,7 @@ async function booksErasuresJob({ env, deps, log, budget }: CronContext): Promis
   if (erased > 0) log.info("books_customers_erased", { count: erased });
 }
 
-/** An alert whose first telling the chat did not take, told again (src/domain/ops/alerts.ts). */
+/** An alert whose first telling the chat did not take, told again (src/domain/platform/alerts.ts). */
 async function alertsRetoldJob({ env, deps, config, log }: CronContext): Promise<void> {
   const told = await retellUndelivered({
     db: env.DB,
@@ -269,9 +270,14 @@ async function referralsJob({ env, deps, log, inputs }: CronContext): Promise<vo
   await queueMessages({ env, log }, messages, "referrals");
 }
 
+/** The reminder hour, with the hours of the cities that set their own (src/domain/cities/city-rules.ts). */
+async function hoursOf(db: D1Database, national: number): Promise<ReminderHours> {
+  return { national, cities: await cityReminderHours(db) };
+}
+
 async function remindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const now = deps.now();
-  const reminders = await queueReminders(env.DB, now, (await inputs()).reminderHour);
+  const reminders = await queueReminders(env.DB, now, await hoursOf(env.DB, (await inputs()).reminderHour));
   await queueMessages({ env, log }, reminders, "reminders");
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
@@ -279,7 +285,7 @@ async function remindersJob({ env, deps, log, inputs }: CronContext): Promise<vo
 async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const now = deps.now();
   const { nextVisitDays, reminderHour } = await inputs();
-  const reminders = await queueNextServiceReminders(env.DB, now, nextVisitDays, reminderHour);
+  const reminders = await queueNextServiceReminders(env.DB, now, nextVisitDays, await hoursOf(env.DB, reminderHour));
   await queueMessages({ env, log }, reminders, "next-service-reminders");
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
@@ -287,7 +293,8 @@ async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext):
 /** What follows a visit, once a visit, from the reminder hour (src/domain/visits/follow-ups.ts). */
 async function followUpsJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const { checkInDays, reminderHour } = await inputs();
-  await queueMessages({ env, log }, await queueFollowUps(env.DB, deps.now(), checkInDays, reminderHour), "follow-ups");
+  const followUps = await queueFollowUps(env.DB, deps.now(), checkInDays, await hoursOf(env.DB, reminderHour));
+  await queueMessages({ env, log }, followUps, "follow-ups");
 }
 
 async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {

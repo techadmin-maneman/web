@@ -1,5 +1,5 @@
-// The piece step scanned from the kit (src/routes/tech/jobs.piece.ts, src/domain/field/piece-use.ts,
-// src/domain/field/piece-returns.ts; docs/decisions/0163-pieces-scanned-from-the-kit.md). NOW is Monday 21 September
+// The piece step scanned from the kit (src/routes/tech/jobs.piece.ts, src/domain/inventory/piece-use.ts,
+// src/domain/inventory/piece-returns.ts; docs/decisions/0163-pieces-scanned-from-the-kit.md). NOW is Monday 21 September
 // 2026, 12 noon in India.
 //
 // What these hold: the job card lists each kit hair system's labelled pieces; a label one of them carries names its

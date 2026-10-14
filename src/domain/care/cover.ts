@@ -3,7 +3,7 @@
 // member covering each one who is off (src/policy/care-cover.ts). Each change to days off is audited.
 
 import { coversOf, isOff, type OffDays } from "../../policy/care-cover.ts";
-import { auditStatement, type AuditAction, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditAction, type AuditActor } from "../platform/audit.ts";
 import { careTeam } from "./care-people.ts";
 
 interface Leave {

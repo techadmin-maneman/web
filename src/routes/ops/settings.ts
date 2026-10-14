@@ -20,7 +20,7 @@
 // src/routes/ops/services.ts's (docs/decisions/0085-services-ops-can-edit.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { setOpsSetting, settingStates } from "../../domain/ops/ops-settings.ts";
+import { setOpsSetting, settingStates } from "../../domain/platform/ops-settings.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

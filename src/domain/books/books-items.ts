@@ -19,7 +19,7 @@ import {
   type BooksItemDetails,
   type BooksProvider,
 } from "../../providers/books/index.ts";
-import type { AlertOnce, ResolveAlert } from "../ops/alerts.ts";
+import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
 import { offeredAmong, servicesOnDay, type PricedService, type ServiceOnDay } from "../booking/services.ts";
 
 /** How many items one pass may make or write over. Each is a call from the cron run's budget; the rest wait. */

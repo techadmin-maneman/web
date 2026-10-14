@@ -3,7 +3,7 @@
 // one taken off is kept, and leaves the figures.
 
 import type { SpendChannel } from "../../policy/channels.ts";
-import { auditStatement, type AuditActor } from "../ops/audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 export interface SpendEntry {
   readonly id: string;

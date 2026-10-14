@@ -8,7 +8,7 @@ import { closedIfSentBy } from "../../policy/one-visit.ts";
 import type { RazorpayPaymentLink, RazorpayPayment } from "../../providers/payments/razorpay.ts";
 import { serviceOf } from "../booking/services.ts";
 import type { Composed } from "../messages/visit-message-text.ts";
-import { paymentsTab } from "../ops/alerts.ts";
+import { paymentsTab } from "../platform/alerts.ts";
 import { type LinkDeps, hairSystemName } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
 

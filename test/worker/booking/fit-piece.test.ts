@@ -2,13 +2,13 @@
 // visit's city, only those whose kit, or their city's stockroom, holds a piece of the client's exact spec; and any of
 // them where none does, so the fit can still be booked and the evening's kit check tells ops what is short. And ops are
 // told at the booking of a fit with no piece of its client's spec in reach, too soon for any supplier to deliver one
-// (src/domain/field/stock-gap.ts).
+// (src/domain/inventory/stock-gap.ts).
 // NOW is Monday 21 September 2026, 12 noon in India.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { techniciansFor } from "../../../src/domain/booking/occupancy.ts";
-import { tellOfStockGap } from "../../../src/domain/field/stock-gap.ts";
+import { tellOfStockGap } from "../../../src/domain/inventory/stock-gap.ts";
 import { NOW, markDatabase } from "../helpers.ts";
 import { IMRAN, SAMEER, working, type Working } from "../job-fixtures.ts";
 import { pincode } from "../site/consultations-fixtures.ts";

@@ -21,7 +21,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import type { RateLimitScope } from "../../policy/rate-limits.ts";
 import { markReached, SHARE_BYTES, UNUSUAL_DAILY_GROWTH_BYTES } from "../../policy/storage-share.ts";
 import { takeOne, type CountedAt } from "../sign-in/rate-limit.ts";
-import type { AlertOnce } from "../ops/alerts.ts";
+import type { AlertOnce } from "./alerts.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;

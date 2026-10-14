@@ -12,7 +12,20 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 
 /** "child.column -> parent": how the rows pointing at a deleted row are dealt with first. */
+/** A city's row goes only in a rename, after every row naming it has moved to the new one. */
+const RENAMED = "src/domain/cities/cities.ts moves it to the city's new name before the old row goes";
+
 const HANDLED: Readonly<Record<string, string>> = {
+  // A city renamed (docs/decisions/0198-cities-as-data.md).
+  "leads.city -> cities": RENAMED,
+  "technicians.city -> cities": RENAMED,
+  "city_blackouts.city -> cities": RENAMED,
+  "visit_pay_rates.city -> cities": RENAMED,
+  "spend_entries.city -> cities": RENAMED,
+  "targets.city -> cities": RENAMED,
+  "stock_places.city -> cities": RENAMED,
+  "city_prices.city -> cities": RENAMED,
+  "city_settings.city -> cities": RENAMED,
   // A pay grade goes only once nothing uses it (docs/decisions/0122-technician-pay-per-visit.md).
   "technicians.pay_grade_id -> pay_grades":
     "src/domain/field/technician-pay.ts deletes a grade only while no technician holds it",
@@ -67,30 +80,33 @@ const HANDLED: Readonly<Record<string, string>> = {
     "src/domain/dispatch/technician-roster.ts: the key itself refuses the batch, and nothing is deleted",
   // A consumable added by mistake goes with what services were set to use of it, and never once its stock has moved.
   "consumable_usage.consumable_code -> consumables":
-    "src/domain/field/consumables.ts deletes each service's use of it first",
-  "hair_systems.code -> consumables": "src/domain/field/consumables.ts deletes a hair system's spec first",
-  "stock_movements.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
-  "stock_balances.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
+    "src/domain/inventory/consumables.ts deletes each service's use of it first",
+  "hair_systems.code -> consumables": "src/domain/inventory/consumables.ts deletes a hair system's spec first",
+  "stock_movements.consumable_code -> consumables":
+    "src/domain/inventory/consumables.ts refuses to delete one it names",
+  "stock_balances.consumable_code -> consumables": "src/domain/inventory/consumables.ts refuses to delete one it names",
   "stock_transfers.consumable_code -> consumables":
-    "src/domain/field/consumables.ts refuses to delete one a movement names, and a transfer comes only with one",
+    "src/domain/inventory/consumables.ts refuses to delete one a movement names, and a transfer comes only with one",
   "po_lines.consumable_code -> consumables":
-    "src/domain/field/consumables.ts refuses to delete one an order names: the foreign key refuses its batch, answered in_use",
+    "src/domain/inventory/consumables.ts refuses to delete one an order names: the foreign key refuses its batch, answered in_use",
   "count_lines.consumable_code -> consumables":
-    "src/domain/field/consumables.ts refuses to delete one a count line names: the foreign key refuses its batch, answered in_use",
+    "src/domain/inventory/consumables.ts refuses to delete one a count line names: the foreign key refuses its batch, answered in_use",
   "plan_lines.consumable_code -> consumables":
-    "src/domain/field/consumables.ts refuses to delete one a plan line names: the foreign key refuses its batch, answered in_use",
-  "forecast_lines.run_id -> forecast_runs": "src/domain/field/forecast.ts deletes an old run's lines before the run",
+    "src/domain/inventory/consumables.ts refuses to delete one a plan line names: the foreign key refuses its batch, answered in_use",
+  "forecast_lines.run_id -> forecast_runs":
+    "src/domain/purchasing/forecast.ts deletes an old run's lines before the run",
   "custom_orders.consumable_code -> consumables":
-    "src/domain/field/consumables.ts refuses to delete one an order names, and a custom order's code is named by its order's line",
+    "src/domain/inventory/consumables.ts refuses to delete one an order names, and a custom order's code is named by its order's line",
   "supplier_claims.consumable_code -> consumables":
-    "src/domain/field/consumables.ts refuses to delete one an order names, and a claim comes only from an order's line",
+    "src/domain/inventory/consumables.ts refuses to delete one an order names, and a claim comes only from an order's line",
   "supplier_items.consumable_code -> consumables":
-    "src/domain/field/consumables.ts refuses to delete one a supplier lists: the foreign key refuses its batch, answered in_use",
+    "src/domain/inventory/consumables.ts refuses to delete one a supplier lists: the foreign key refuses its batch, answered in_use",
   "stock_units.consumable_code -> consumables":
-    "src/domain/field/consumables.ts refuses to delete one a movement names, and a unit comes only with stock that moved",
+    "src/domain/inventory/consumables.ts refuses to delete one a movement names, and a unit comes only with stock that moved",
   "stock_lots.consumable_code -> consumables":
-    "src/domain/field/consumables.ts refuses to delete one a movement names, and a lot comes only with a delivery",
-  "consumables_used.consumable_code -> consumables": "src/domain/field/consumables.ts refuses to delete one it names",
+    "src/domain/inventory/consumables.ts refuses to delete one a movement names, and a lot comes only with a delivery",
+  "consumables_used.consumable_code -> consumables":
+    "src/domain/inventory/consumables.ts refuses to delete one it names",
   // A discount code made by mistake, and never once a booking has taken it.
   "discount_code_uses.code_id -> discount_codes":
     "src/domain/money/discount-codes.ts refuses to delete a code a use names",

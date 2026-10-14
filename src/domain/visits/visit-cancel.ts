@@ -4,10 +4,12 @@
 import type { Logger } from "../../log.ts";
 import { visitMessageOnChange } from "../messages/visit-messages.ts";
 import { type RefundDeps, type OwedRefund, refundAtOnce, type Canceller } from "../money/cancel-refunds.ts";
-import { type AuditEntry, auditStatementIfWritten } from "../ops/audit.ts";
+import { restoreCreditIf } from "../money/credits.ts";
+import { type AuditEntry, auditStatementIfWritten } from "../platform/audit.ts";
 import { visitBegun } from "./visit-begun.ts";
 import type { ChangeTerms } from "./visit-changes.ts";
 import { STEPS } from "./visit-status.ts";
+import { visitUpkeep } from "./visit-upkeep.ts";
 
 /** A cancel ops make in the console: who made it, their reason, the terms they chose, and its audit entry. */
 export interface OpsCancel {
@@ -142,21 +144,11 @@ function claimCancel(db: D1Database, terms: ChangeTerms, change: CancelOf, now: 
 function restoredCredit(db: D1Database, terms: ChangeTerms, change: CancelOf, now: Date): D1PreparedStatement[] {
   if (terms.credit?.outcome !== "restored") return [];
   return [
-    db
-      .prepare(
-        `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-         SELECT ?1, ?2, 'restore', 1, ?3, 'appointment', ?4, ?5
-         WHERE NOT EXISTS (SELECT 1 FROM credit_ledger WHERE grant_id = ?3 AND kind = 'clawback')
-           AND EXISTS (SELECT 1 FROM visit_changes WHERE id = ?6)`,
-      )
-      .bind(
-        crypto.randomUUID(),
-        terms.visit.personId,
-        terms.credit.grantId,
-        terms.visit.id,
-        now.toISOString(),
-        change.changeId,
-      ),
+    restoreCreditIf(
+      db,
+      { personId: terms.visit.personId, grantId: terms.credit.grantId, appointmentId: terms.visit.id, now },
+      { sql: "EXISTS (SELECT 1 FROM visit_changes WHERE id = ?1)", values: [change.changeId] },
+    ),
   ];
 }
 
@@ -185,6 +177,7 @@ async function writeCancel(db: D1Database, terms: ChangeTerms, change: CancelOf,
     message.statement,
     ...restoredCredit(db, terms, change, now),
     ...auditedCancel(db, change, now),
+    ...visitUpkeep(db, { visits: [visit.id] }),
   ]);
   return claimed?.meta.changes === 1 ? message.id : null;
 }

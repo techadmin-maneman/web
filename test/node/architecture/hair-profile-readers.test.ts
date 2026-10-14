@@ -17,10 +17,16 @@ const naming = (pattern: RegExp) => sourceFiles("src").filter((file) => pattern.
 
 describe("the hair profile's table", () => {
   it("is read and written in its own domain file alone", () => {
-    // The audit log names it too, only to write a correction's entry once its row is there, and the map of personal
-    // data, to say what the export and the erasure do with it. Neither reads a column of it.
+    // The audit log names it too, only to write a correction's entry once its row is there; the map of personal data,
+    // to say what the export and the erasure do with it; and the row types written from the migrations, which name
+    // every table. None reads a column of it.
     expect(naming(/\bhair_profiles\b/).sort()).toEqual(
-      ["src/domain/ops/audit.ts", "src/domain/clients/hair-profiles.ts", "src/policy/personal-data.ts"].sort(),
+      [
+        "src/domain/platform/audit.ts",
+        "src/domain/clients/hair-profiles.ts",
+        "src/lib/rows.ts",
+        "src/policy/personal-data.ts",
+      ].sort(),
     );
   });
 
@@ -35,12 +41,12 @@ describe("the hair profile's table", () => {
         "src/domain/privacy/data-export.ts",
         "src/domain/privacy/erasure-statements.ts",
         "src/domain/field/job-card.ts",
-        "src/domain/field/custom-orders.ts",
-        "src/domain/field/forecast-layers.ts",
-        "src/domain/field/kit-check.ts",
-        "src/domain/field/stock-demand.ts",
-        "src/domain/field/stock-gap.ts",
-        "src/domain/field/stock-match.ts",
+        "src/domain/purchasing/custom-orders.ts",
+        "src/domain/purchasing/forecast-layers.ts",
+        "src/domain/inventory/kit-check.ts",
+        "src/domain/purchasing/stock-demand.ts",
+        "src/domain/inventory/stock-gap.ts",
+        "src/domain/inventory/stock-match.ts",
         "src/domain/visits/consultation-recap.ts",
         "src/domain/visits/next-visit.ts",
         "src/routes/ops/hair-profile.ts",

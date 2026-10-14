@@ -24,15 +24,16 @@ import type { CallBudget } from "../../lib/call-budget.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import { paymentLinkClosesAt } from "../../policy/one-visit.ts";
-import { readOpsInputs } from "../ops/ops-settings.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
-import { paymentsTab, type AlertOnce, type ResolveAlert } from "../ops/alerts.ts";
+import { paymentsTab, type AlertOnce, type ResolveAlert } from "../platform/alerts.ts";
 import { codeAsRead, priceAfterCode } from "./discount-code-uses.ts";
 import { referenceLink } from "./payments.ts";
 import { priceOf } from "./price-book.ts";
 import { serviceOf } from "../booking/services.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
+import { cityOfVisit } from "../cities/cities.ts";
 
 /** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
 export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free";
@@ -110,7 +111,11 @@ async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<L
   for (let tries = 0; tries < LINK_TRIES; tries += 1) {
     const existing = await current();
     if (existing !== null) return { kind: "link", row: existing };
-    const listed = await priceOf(db, "first_fit", visit.day, visit.tier);
+    const listed = await priceOf(db, "first_fit", {
+      on: visit.day,
+      tier: visit.tier,
+      city: await cityOfVisit(db, visit.appointmentId),
+    });
     if (listed === null) return { kind: "unpriced" };
     const after = await priceAfterCode(db, visit.appointmentId, listed);
     if (after.price.amount === 0) {

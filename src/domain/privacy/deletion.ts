@@ -8,8 +8,8 @@ import { DELETION_DECIDED_WITHIN_DAYS, erasureRefusal, type ErasureRefusal } fro
 import { deletionWaitingKey } from "../../policy/alerts.ts";
 import { DECISION_SHOWN_DAYS } from "../../policy/decision-reasons.ts";
 import type { OutboundMessage } from "../../providers/messaging/index.ts";
-import { resolveAlertStatement, type AlertOnce } from "../ops/alerts.ts";
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { resolveAlertStatement, type AlertOnce } from "../platform/alerts.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import {
   eraseAndQueue,
   erasureBlockers,

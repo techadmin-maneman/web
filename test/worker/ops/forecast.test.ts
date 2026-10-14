@@ -1,4 +1,4 @@
-// The demand forecast (src/domain/field/forecast.ts, src/domain/field/forecast-layers.ts, src/routes/ops/stock-forecast.ts;
+// The demand forecast (src/domain/purchasing/forecast.ts, src/domain/purchasing/forecast-layers.ts, src/routes/ops/stock-forecast.ts;
 // docs/decisions/0179-demand-forecast.md). NOW is Monday 21 September 2026, 12 noon in India; the periods here are
 // seven days, four of them.
 //
@@ -9,7 +9,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { runForecastIfDue } from "../../../src/domain/field/forecast.ts";
+import { runForecastIfDue } from "../../../src/domain/purchasing/forecast.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, working, type Working } from "../job-fixtures.ts";
 import { FORECAST_ASSUMPTIONS } from "../../../src/policy/forecast.ts";

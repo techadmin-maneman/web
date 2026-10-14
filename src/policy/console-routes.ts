@@ -227,6 +227,16 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
 
   // Admin: the settings, and staff and access.
   "GET /api/settings": need("admin", "view"),
+  // Our cities (docs/decisions/0198-cities-as-data.md): Admin's, but for their prices and GST registrations, Finance's.
+  "GET /api/cities": need("admin", "view"),
+  "POST /api/cities": need("admin", "manage"),
+  "PATCH /api/cities/{name}": need("admin", "manage"),
+  "PATCH /api/cities/{name}/rules/{rule}": need("admin", "manage"),
+  "DELETE /api/cities/{name}/rules/{rule}": need("admin", "manage"),
+  "POST /api/cities/{name}/prices": need("finance", "manage"),
+  "DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}": need("finance", "manage"),
+  "POST /api/gst-registrations": need("finance", "manage"),
+  "DELETE /api/gst-registrations/{state_code}": need("finance", "manage"),
   "POST /api/settings/{name}": need("admin", "manage"),
   "GET /api/slot-times": need("admin", "view"),
   "POST /api/slot-times": need("admin", "manage"),

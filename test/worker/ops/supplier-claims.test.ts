@@ -1,5 +1,5 @@
-// Claims on suppliers and returned pieces (src/routes/ops/purchasing.claims.ts, src/domain/field/supplier-claims.ts,
-// src/domain/field/returned-pieces.ts; docs/decisions/0169-supplier-claims.md). NOW is Monday 21 September 2026, 12
+// Claims on suppliers and returned pieces (src/routes/ops/purchasing.claims.ts, src/domain/purchasing/supplier-claims.ts,
+// src/domain/inventory/returned-pieces.ts; docs/decisions/0169-supplier-claims.md). NOW is Monday 21 September 2026, 12
 // noon in India, when the order arrives.
 //
 // What these hold: what arrives damaged or fails its check is claimed with its receipt, at the order's price; a claim

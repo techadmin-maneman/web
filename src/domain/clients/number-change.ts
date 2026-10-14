@@ -4,7 +4,7 @@
 import type { PlacesReached } from "../../policy/access.ts";
 import { DECISION_SHOWN_DAYS } from "../../policy/decision-reasons.ts";
 import { newLoginCode } from "../../policy/one-time-code.ts";
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { verifyCode, type Verification } from "../sign-in/login.ts";
 import { createChallenge, type Challenge, type ChallengePurpose } from "../sign-in/one-time-codes.ts";
 import { reachBinding, withinReach } from "./places.ts";
@@ -120,7 +120,7 @@ export async function startNumberChange(
     sessionId: string;
     newMobileE164: string;
     pepper: string;
-    /** The request's audit entry, written with the change it names (src/domain/ops/audit.ts). */
+    /** The request's audit entry, written with the change it names (src/domain/platform/audit.ts). */
     audit: AuditEntry;
     now: Date;
     /** The code each number gets in place of a random one, where there is one (knownCode). */
@@ -304,7 +304,7 @@ export async function decideNumberChange(
        WHERE id = ?1 AND state = 'awaiting_ops'`,
     )
     .bind(change.id, options.decision === "confirm" ? "confirmed" : "rejected", at, options.staff, options.reason);
-  // The decision's audit entry goes in the same batch as the decision (src/domain/ops/audit.ts).
+  // The decision's audit entry goes in the same batch as the decision (src/domain/platform/audit.ts).
   const audit = auditStatement(db, options.audit, options.now);
   const decided = { personId: change.personId };
   if (options.decision === "reject") {

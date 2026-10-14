@@ -27,7 +27,7 @@ import { closeTask } from "../../domain/ops/task-closures.ts";
 import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../../domain/ops/task-owners.ts";
 import { outstandingTasks, overdueCount, READ_CAP, type Task } from "../../domain/ops/tasks.ts";
 import { tasksWithin } from "../../domain/ops/task-reach.ts";
-import { lowStockPlaces } from "../../domain/field/low-stock.ts";
+import { lowStockPlaces } from "../../domain/inventory/low-stock.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

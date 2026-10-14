@@ -1,4 +1,4 @@
-// How right the forecast was (src/domain/field/forecast-accuracy.ts; docs/decisions/0183-forecast-accuracy.md). NOW is
+// How right the forecast was (src/domain/purchasing/forecast-accuracy.ts; docs/decisions/0183-forecast-accuracy.md). NOW is
 // Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a run is measured once its first period has passed, and once only; each line it expected sits
@@ -7,7 +7,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { measureLastForecast } from "../../../src/domain/field/forecast-accuracy.ts";
+import { measureLastForecast } from "../../../src/domain/purchasing/forecast-accuracy.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
 import { IMRAN, JOB, working, type Working } from "../job-fixtures.ts";
 

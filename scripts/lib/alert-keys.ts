@@ -1,4 +1,4 @@
-// The alert keys the code raises (src/domain/ops/alerts.ts), found in its source, and the keys the runbook's table of
+// The alert keys the code raises (src/domain/platform/alerts.ts), found in its source, and the keys the runbook's table of
 // alerts names (docs/runbook/alerts.md, "What each alert means"). Each is a key's fixed start: "cron_job" for
 // `cron_job:${job}`. test/node/tooling/runbook-alerts.test.ts holds the two to each other.
 

@@ -1,5 +1,5 @@
-// Custom orders (src/routes/ops/custom-orders.ts, src/domain/field/custom-orders.ts,
-// src/domain/money/custom-order-links.ts, src/domain/field/custom-order-po.ts; docs/decisions/0174-custom-orders.md).
+// Custom orders (src/routes/ops/custom-orders.ts, src/domain/purchasing/custom-orders.ts,
+// src/domain/money/custom-order-links.ts, src/domain/purchasing/custom-order-po.ts; docs/decisions/0174-custom-orders.md).
 // NOW is Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a custom order is raised to the client's profile and its whole price asked by a payment link; once

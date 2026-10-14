@@ -2,7 +2,7 @@
 // access.md). Setting one again replaces it; taking one off deletes it. Each change is audited with the figure.
 
 import type { TargetMeasure } from "../../policy/targets.ts";
-import { auditStatement, type AuditActor } from "./audit.ts";
+import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
 export interface Target {
   readonly month: string;

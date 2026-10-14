@@ -2,7 +2,7 @@
 // consumer stop before they read or write anything else, so none of them acts on a database being put back to an
 // earlier minute. Still on after an hour, it is a step forgotten, and ops are told.
 
-import type { AlertOnce } from "../ops/alerts.ts";
+import type { AlertOnce } from "./alerts.ts";
 
 interface Maintenance {
   readonly reason: string;

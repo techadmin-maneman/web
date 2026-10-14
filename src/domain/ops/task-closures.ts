@@ -4,7 +4,7 @@
 // it, by the task's group and its row's id; the board then leaves the task out
 // (src/domain/ops/tasks.ts), and a later visit left partly done is a task of its own.
 
-import { auditStatementIfWritten, type AuditEntry } from "./audit.ts";
+import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import type { TaskKey } from "./task-owners.ts";
 
 interface Closing {

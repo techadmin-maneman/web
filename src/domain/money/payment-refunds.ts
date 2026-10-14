@@ -4,9 +4,9 @@
 
 import { rupees } from "@maneman/web-kit/money";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
-import { paymentsTab, type AlertOnce } from "../ops/alerts.ts";
-import { auditStatement } from "../ops/audit.ts";
-import type { Written } from "../field/stock.ts";
+import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
+import { auditStatement } from "../platform/audit.ts";
+import type { Written } from "../inventory/stock.ts";
 import { askRefund, refundLeftToOps, refundReceipt } from "./refunds.ts";
 
 export type PaymentRefund =

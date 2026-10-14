@@ -9,7 +9,7 @@
 // session is bound to one phone.
 
 import { sha256Hex } from "../../lib/hash.ts";
-import { auditStatement, type AuditEntry } from "../ops/audit.ts";
+import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { checkLoginCode } from "../sign-in/one-time-codes.ts";
 import { newSessionToken, SESSION_TTL_MS } from "../sign-in/sessions.ts";
 
@@ -163,7 +163,7 @@ export async function touchDevice(db: D1Database, deviceRowId: string, now: Date
  * told to drop its cached jobs the next time it called. No phone of theirs signs in
  * again until ops let them (allowSignIn): the lost phone still gets their code on
  * WhatsApp, so a code alone must not undo the revoke. The revoke's audit entry
- * goes in the same batch (src/domain/ops/audit.ts). Null when there is no such
+ * goes in the same batch (src/domain/platform/audit.ts). Null when there is no such
  * device of that technician's.
  */
 export async function revokeDevice(

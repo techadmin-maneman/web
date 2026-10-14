@@ -10,6 +10,7 @@ import { moveVisit } from "../visits/visit-status.ts";
 import { type ConfirmOptions, type HoldRow, type Confirmed, type BookingContext } from "./booked-hold.ts";
 import { giveBack, AUTO_REFUND_NOTES, autoRefundMarked, giveBackUnkept } from "./give-back.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
+import { visitUpkeep } from "../visits/visit-upkeep.ts";
 
 interface VisitToMove {
   id: string;
@@ -81,6 +82,7 @@ export async function moveInPlace(context: BookingContext, hold: HoldRow): Promi
         at,
       ),
     message.statement,
+    ...visitUpkeep(db, { visits: [visit.id] }),
   ]);
   await options.notify?.(message.id);
   return "booked";
@@ -173,5 +175,6 @@ export async function retireReplaced(db: D1Database, hold: HoldRow, now: Date, o
         hold.id,
         at,
       ),
+    ...visitUpkeep(db, { visits: [old.id] }),
   ]);
 }

@@ -7,7 +7,7 @@ import {
   createResolveAlert,
   retellUndelivered,
   type AlertOnce,
-} from "../../../src/domain/ops/alerts.ts";
+} from "../../../src/domain/platform/alerts.ts";
 import { HOUR_MS } from "../../../src/lib/durations.ts";
 import { createLogger } from "../../../src/log.ts";
 import { captureLogs, NOW } from "../helpers.ts";

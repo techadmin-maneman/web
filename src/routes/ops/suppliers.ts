@@ -16,7 +16,7 @@ import {
   changeSupplier,
   retireSupplier,
   setSupplierItem,
-} from "../../domain/field/suppliers.ts";
+} from "../../domain/purchasing/suppliers.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

@@ -1,4 +1,4 @@
-// Recalls (src/domain/field/recalls.ts, src/routes/ops/recalls.ts; docs/decisions/0187-recalls.md). NOW is Monday
+// Recalls (src/domain/inventory/recalls.ts, src/routes/ops/recalls.ts; docs/decisions/0187-recalls.md). NOW is Monday
 // 21 September 2026, 12 noon in India.
 //
 // What these hold: a lot is recalled once, with why; the recall says where its stock is and who wears its pieces, each
@@ -9,7 +9,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
-import { composeRecallNotice } from "../../../src/domain/field/recall-notice.ts";
+import { composeRecallNotice } from "../../../src/domain/inventory/recall-notice.ts";
 
 interface Detail {
   id: string;

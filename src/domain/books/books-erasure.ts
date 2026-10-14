@@ -16,7 +16,7 @@ import type { CallBudget } from "../../lib/call-budget.ts";
 import { failureReason, type Logger } from "../../log.ts";
 import type { BooksProvider } from "../../providers/books/index.ts";
 import type { CrmProvider } from "../../providers/crm/index.ts";
-import type { AlertOnce } from "../ops/alerts.ts";
+import type { AlertOnce } from "../platform/alerts.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../config/pipeline.ts";
 
 /** Most customers, and most Contacts, one run erases. */
