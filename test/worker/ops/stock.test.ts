@@ -130,7 +130,51 @@ describe("the ledger", () => {
     expect(JSON.parse(audit?.detail ?? "{}")).toEqual({ place: "central", counted: 480, held: 500, difference: -20 });
   });
 
+  it("sends and writes off no more than a place holds, and writes nothing when it refuses", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "solvent", quantity: 10 });
+    const refusals = [
+      await job.opsPost("/api/stock/transfers", {
+        consumable_code: "solvent",
+        quantity: 11,
+        from: "central",
+        to: IMRAN,
+      }),
+      await job.opsPost("/api/stock/transfers", {
+        consumable_code: "solvent",
+        quantity: 11,
+        from: "central",
+        to: IMRAN,
+        wait_for_scan: true,
+      }),
+      await job.opsPost("/api/stock/write-offs", {
+        consumable_code: "solvent",
+        place_id: "central",
+        quantity: 11,
+        note: "Spilt",
+      }),
+    ];
+    for (const refused of refusals) {
+      expect(refused.status).toBe(400);
+      expect(await refused.json()).toMatchObject({ error: { fields: ["quantity"] } });
+    }
+    expect(await held("solvent", "central")).toEqual({ quantity: 10, low: false });
+    const written = await env.DB.prepare(
+      "SELECT (SELECT COUNT(*) FROM stock_transfers) AS transfers, (SELECT COUNT(*) FROM audit_log WHERE action IN ('stock.transfer', 'stock.send', 'stock.write_off')) AS entries",
+    ).first();
+    expect(written).toEqual({ transfers: 0, entries: 0 });
+
+    const sent = await job.opsPost("/api/stock/transfers", {
+      consumable_code: "solvent",
+      quantity: 10,
+      from: "central",
+      to: IMRAN,
+    });
+    expect(sent.status).toBe(200);
+    expect(await held("solvent", IMRAN)).toEqual({ quantity: 10, low: false });
+  });
+
   it("writes off a loss with what happened, and wants the words", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "shampoo_sachet", quantity: 5 });
     await job.opsPost("/api/stock/transfers", {
       consumable_code: "shampoo_sachet",
       quantity: 5,
@@ -176,6 +220,7 @@ describe("the ledger", () => {
   });
 
   it("keeps a kit a technician who left still holds, and drops one that holds nothing", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 5 });
     await job.opsPost("/api/stock/transfers", {
       consumable_code: "tape_strips",
       quantity: 5,
@@ -289,6 +334,8 @@ describe("low stock", () => {
   });
 
   it("never marks a consumable with no level, nor one retired", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "solvent", quantity: 1 });
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 1 });
     await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 1, from: "central", to: IMRAN });
     expect(await held("solvent", IMRAN)).toEqual({ quantity: 1, low: false });
 

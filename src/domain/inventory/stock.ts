@@ -108,6 +108,30 @@ export function movementStatementWhen(
     .bind(...movementValues(row.id, row.movement, written), ...condition.binds);
 }
 
+/**
+ * What a movement out of a place by ops is written under: the place holds at least what leaves, and every unit named
+ * is still held there. A job's use is not held to it, as a fit can take a piece no count found.
+ */
+export function leavingCondition(out: {
+  readonly code: string;
+  readonly place: Place;
+  readonly quantity: number;
+  readonly units: readonly string[];
+}): { readonly sql: string; readonly binds: readonly (string | number)[] } {
+  return {
+    sql: `COALESCE((SELECT quantity FROM stock_balances WHERE consumable_code = ?13 AND place = ?14), 0) >= ?15
+      AND (SELECT COUNT(*) FROM stock_units WHERE id IN (SELECT value FROM json_each(?16)) AND place = ?14
+        AND state = 'held') = ?17`,
+    binds: [out.code, out.place, out.quantity, JSON.stringify(out.units), out.units.length],
+  };
+}
+
+/** A movement's row written only where the movement `id` earlier in the same batch was. */
+export const afterMovement = (id: string) => ({
+  sql: "EXISTS (SELECT 1 FROM stock_movements WHERE id = ?13)",
+  binds: [id],
+});
+
 /** What the place of a movement's row holds of its consumable, `?2`, as a statement about the row reads it. */
 const HELD_THERE = `SELECT COALESCE((SELECT quantity FROM stock_balances
   WHERE consumable_code = ?2 AND place = COALESCE(?12, ?4, '${WAREHOUSE}')), 0)`;
@@ -241,14 +265,26 @@ export async function transferStock(db: D1Database, input: Moving, written: Writ
   const taken = await takenFrom(db, { ...input, place: input.from, named: input.units ?? null });
   if (taken === null) return { ok: false, fields: ["units"] };
   const takes = taken.takes;
-  await db.batch([
-    auditStatement(
+  const leaving = leavingCondition({ ...input, place: input.from, units: taken.units });
+  const [left] = await db.batch([
+    movementStatementWhen(
+      db,
+      { movement: { ...moved, place: input.from, kind: fromKind, quantity: -input.quantity }, id: out },
+      written,
+      leaving,
+    ),
+    movementStatementWhen(
+      db,
+      { movement: { ...moved, place: input.to, kind: toKind, quantity: input.quantity }, id: into },
+      written,
+      afterMovement(out),
+    ),
+    auditStatementIfWritten(
       db,
       entry("stock.transfer", input.code, written, { quantity: input.quantity, from: input.from, to: input.to }),
       written.now,
+      { table: "stock_movements", id: out },
     ),
-    movementStatement(db, { ...moved, place: input.from, kind: fromKind, quantity: -input.quantity }, written, out),
-    movementStatement(db, { ...moved, place: input.to, kind: toKind, quantity: input.quantity }, written, into),
     ...lotMoves(db, { movementId: out, place: input.from, takes, sign: -1 }),
     ...lotMoves(db, { movementId: into, place: input.to, takes, sign: 1 }),
     ...unitChanges(db, {
@@ -256,9 +292,12 @@ export async function transferStock(db: D1Database, input: Moving, written: Writ
       state: "held",
       place: input.to,
       movementId: into,
+      from: { states: ["held"], place: input.from },
       ...unitWritten(written),
     }),
   ]);
+  // More than the place holds, or a unit that left it since it was read.
+  if (left?.meta.changes === 0) return { ok: false, fields: ["quantity"] };
   return { ok: true, lowered: [input.from] };
 }
 
@@ -373,6 +412,7 @@ async function writeCount(
       state: "missing",
       place: null,
       movementId: id,
+      from: { states: ["held"], place: input.place },
       ...unitWritten(written),
     }),
   ]);
@@ -403,24 +443,21 @@ export async function writeOff(
   if (taken === null) return { ok: false, fields: ["units"] };
   const takes = taken.takes;
   if (input.lotId !== undefined && input.lotId !== null && takes.length === 0) return { ok: false, fields: ["lot_id"] };
-  await db.batch([
-    auditStatement(
+  const movement = {
+    code: input.code,
+    place: input.place,
+    kind,
+    quantity: -input.quantity,
+    reason: "written_off",
+    note: input.note,
+  } as const;
+  const [left] = await db.batch([
+    movementStatementWhen(db, { movement, id }, written, leavingCondition({ ...input, units: taken.units })),
+    auditStatementIfWritten(
       db,
       entry("stock.write_off", input.code, written, { place: input.place, quantity: input.quantity }),
       written.now,
-    ),
-    movementStatement(
-      db,
-      {
-        code: input.code,
-        place: input.place,
-        kind,
-        quantity: -input.quantity,
-        reason: "written_off",
-        note: input.note,
-      },
-      written,
-      id,
+      { table: "stock_movements", id },
     ),
     ...lotMoves(db, { movementId: id, place: input.place, takes, sign: -1 }),
     ...unitChanges(db, {
@@ -428,9 +465,11 @@ export async function writeOff(
       state: "written_off",
       place: null,
       movementId: id,
+      from: { states: ["held"], place: input.place },
       ...unitWritten(written),
     }),
   ]);
+  if (left?.meta.changes === 0) return { ok: false, fields: ["quantity"] };
   return { ok: true, lowered: [input.place] };
 }
 

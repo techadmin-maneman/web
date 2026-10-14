@@ -9,14 +9,14 @@
 // technician receiving part of a hair system's top-up may keep the rest on its way: the transfer then carries less and
 // stays in transit.
 
-import { auditStatement, auditStatementWhen, type AuditEntry } from "../platform/audit.ts";
+import { auditStatementIfWritten, auditStatementWhen, type AuditEntry } from "../platform/audit.ts";
 import { lotMoves, type LotTake } from "./stock-lots.ts";
 import { placeById, type Place } from "./stock-places.ts";
 import { hairSystemProduct, piecesArriving, takenFrom, unitChanges } from "./stock-units.ts";
 import {
   consumableExists,
   kindOf,
-  movementStatement,
+  leavingCondition,
   movementStatementWhen,
   transferStock,
   unitWritten,
@@ -83,6 +83,9 @@ function entry(
   };
 }
 
+/** Where a unit a transfer carries is until it arrives. */
+const IN_TRANSIT = ["in_transit"] as const;
+
 /**
  * Stock moved from one place to another: handed over at once to a kit, or sent to any other place, or to a kit that
  * waits for its technician's scan, leaving its own now and arriving when received.
@@ -101,15 +104,32 @@ export async function sendStock(db: D1Database, input: Moving, written: Written)
   const takes = taken.takes;
   const detail = { quantity: input.quantity, from: input.from, to: input.to, transfer: transferId };
   const movement = { code: input.code, reason: "transferred", transferId, note: null } as const;
-  await db.batch([
+  const [left] = await db.batch([
+    movementStatementWhen(
+      db,
+      { movement: { ...movement, place: input.from, kind: fromKind, quantity: -input.quantity }, id: out },
+      written,
+      leavingCondition({ ...input, place: input.from, units: taken.units }),
+    ),
     db
       .prepare(
         `INSERT INTO stock_transfers (id, consumable_code, quantity, from_place, to_place, state, sent_by, sent_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, 'in_transit', ?6, ?7)`,
+         SELECT ?1, ?2, ?3, ?4, ?5, 'in_transit', ?6, ?7 WHERE EXISTS (SELECT 1 FROM stock_movements WHERE id = ?8)`,
       )
-      .bind(transferId, input.code, input.quantity, input.from, input.to, written.actor.id, written.now.toISOString()),
-    auditStatement(db, entry("stock.send", input.code, written, detail), written.now),
-    movementStatement(db, { ...movement, place: input.from, kind: fromKind, quantity: -input.quantity }, written, out),
+      .bind(
+        transferId,
+        input.code,
+        input.quantity,
+        input.from,
+        input.to,
+        written.actor.id,
+        written.now.toISOString(),
+        out,
+      ),
+    auditStatementIfWritten(db, entry("stock.send", input.code, written, detail), written.now, {
+      table: "stock_movements",
+      id: out,
+    }),
     ...lotMoves(db, { movementId: out, place: input.from, takes, sign: -1 }),
     ...unitChanges(db, {
       units: taken.units,
@@ -117,9 +137,12 @@ export async function sendStock(db: D1Database, input: Moving, written: Written)
       place: input.to,
       movementId: out,
       transferId,
+      from: { states: ["held"], place: input.from },
       ...unitWritten(written),
     }),
   ]);
+  // More than the place holds, or a unit that left it since it was read.
+  if (left?.meta.changes === 0) return { ok: false, fields: ["quantity"] };
   return { ok: true, lowered: [input.from] };
 }
 
@@ -168,7 +191,7 @@ async function arrivingAt(
     sql: "EXISTS (SELECT 1 FROM stock_transfers WHERE id = ? AND settlement_id = ?)",
     binds: [transfer.id, settled.settlement],
   };
-  const moved = { movementId: settled.movementId, ...unitWritten(settled.written) };
+  const moved = { movementId: settled.movementId, from: { states: IN_TRANSIT }, ...unitWritten(settled.written) };
   return {
     takes: arriving.takes,
     units: [
@@ -322,7 +345,14 @@ async function receivePart(
       binds: [into],
     }),
     ...lotMoves(db, { movementId: into, place, takes: arriving.takes, sign: 1 }),
-    ...unitChanges(db, { units: arriving.units, state: "held", place, movementId: into, ...unitWritten(written) }),
+    ...unitChanges(db, {
+      units: arriving.units,
+      state: "held",
+      place,
+      movementId: into,
+      from: { states: IN_TRANSIT },
+      ...unitWritten(written),
+    }),
   ]);
   // Another receipt, or a settlement, changed what it carries between the read and this batch.
   if (carried?.meta.changes !== 1) return { ok: false, settled: true };
