@@ -4,7 +4,6 @@
 // it by hand today.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -22,6 +21,7 @@ import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { MoneyRecords } from "./Payments.tsx";
 import { VisitRecords } from "./Visits.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.erasure;
 
@@ -163,9 +163,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
         </div>
       )}
       {erasing.step === "failed" && (
-        <InlineMessage tone="error" className={deletionStyles.error}>
-          {errorText(copy.errors, { code: erasing.code })}
-        </InlineMessage>
+        <Refusal className={deletionStyles.error} said={errorText(copy.errors, { code: erasing.code })} />
       )}
     </section>
   );

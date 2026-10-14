@@ -25,6 +25,24 @@ export const firstShown = (count: number) => `Showing the first ${String(count)}
 /** A refusal with no words of its own. */
 export const FAILED = "That didn't work. Try again.";
 
+/** The refusals that say what was acted on had changed or gone since the page opened. */
+const CHANGED = new Set<string>();
+
+/**
+ * A refusal because what ops acted on had changed or gone since the page opened: the page reads itself again, and its
+ * frame says this with LATEST after it (components/Refusal.tsx).
+ */
+export function changed(said: string): string {
+  CHANGED.add(said);
+  return said;
+}
+
+/** Whether a refusal's words are one `changed` named. */
+export const isChanged = (said: string): boolean => CHANGED.has(said);
+
+/** After a changed refusal, the page read again. */
+export const LATEST = "Here's the latest.";
+
 /** Shown wherever a number would be, for a client erased since, whose number is gone. */
 export const ERASED_MOBILE = "Erased client";
 

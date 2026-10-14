@@ -64,8 +64,11 @@ export function CountsScreen() {
   const { open, setOpen, panelId, opener } = useRowPanel();
   const access = useAccess();
   const current = countTasks ?? (loaded.state === "loaded" ? loaded.value : null);
+  // The list read again after a count changed: a failed read says so, with the way to read it again.
+  const [rereadFailed, setRereadFailed] = useState<{ requestId: string | null } | null>(null);
   const reload = () => {
     void loadTasks().then((answer) => {
+      setRereadFailed(answer.ok ? null : { requestId: answer.requestId });
       if (answer.ok) setCountTasks(answer.body);
     });
   };
@@ -73,6 +76,7 @@ export function CountsScreen() {
     <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
+      {rereadFailed !== null && <PanelFailed onRetry={reload} requestId={rereadFailed.requestId} />}
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="count-tasks" title={copy.tasks}>

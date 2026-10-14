@@ -5,6 +5,7 @@
 import { SkipLink } from "@maneman/ui/SkipLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Mark } from "@maneman/ui/Mark";
 import { Link, usePath } from "@maneman/ui/router";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -176,10 +177,12 @@ interface Props {
   readonly flush?: boolean;
   /** The Clients page has its own search, so its header has none. */
   readonly finder?: boolean;
+  /** Why the page was just read again, said above it (lib/refresh.ts). */
+  readonly note?: string | null;
   readonly children: ReactNode;
 }
 
-export function Shell({ section, title, flush, finder = true, children }: Props) {
+export function Shell({ section, title, flush, finder = true, note = null, children }: Props) {
   const lapsed = useLapsed();
   const heading = useRef<HTMLHeadingElement>(null);
   const main = useRef<HTMLElement>(null);
@@ -211,6 +214,13 @@ export function Shell({ section, title, flush, finder = true, children }: Props)
         <NotListed />
         <main id="content" ref={main} tabIndex={-1} className={flush === true ? styles.flushPage : styles.page}>
           <GroupTabs section={section} />
+          <div aria-live="polite">
+            {note !== null && (
+              <InlineMessage tone="note" className={styles.note}>
+                {note}
+              </InlineMessage>
+            )}
+          </div>
           <HeaderSub value={setSub}>{children}</HeaderSub>
         </main>
       </div>

@@ -1,7 +1,6 @@
 // Raising a custom order (docs/decisions/0174-custom-orders.md): made to the client's profile, from a supplier at its
 // price, with what the client pays and when the supplier promised it. Raising it sends the client the payment link.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -12,6 +11,7 @@ import form from "../components/forms.module.css";
 import { clients } from "../content.ts";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
+import { Refusal } from "../components/Refusal.tsx";
 
 export type CustomOrders =
   paths["/api/clients/{id}/custom-orders"]["get"]["responses"][200]["content"]["application/json"];
@@ -159,11 +159,7 @@ export function RaiseCustomOrder({
           {copy.raise.keep}
         </Button>
       </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </div>
   );
 }

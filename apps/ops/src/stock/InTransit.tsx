@@ -3,7 +3,6 @@
 // left can send it back before it arrives. A hair system's pieces that arrived are scanned, and those not scanned
 // went missing on the way (docs/decisions/0162-scanning-labels.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
@@ -19,6 +18,7 @@ import { PieceScans } from "./PieceScans.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 import { unitOf } from "./holdings.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Transfer = Stock["in_transit"][number];
 
@@ -94,11 +94,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
           {copy.cancel}
         </Button>
       </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </div>
   );
 }
@@ -187,11 +183,7 @@ export function InTransit({ stock, onChanged }: { stock: Stock; onChanged: (stoc
           }}
         />
       )}
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

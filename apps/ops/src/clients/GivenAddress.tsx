@@ -3,7 +3,6 @@
 // (apps/app/src/profile/AddressForm.tsx), its building search one session token for every keystroke and the save
 // (docs/decisions/0054-address-capture.md); an address typed without the search saves with no pin.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -14,6 +13,7 @@ import { ADDRESS_FIELDS, given, missingParts, type AddressField, type AddressPar
 import { api, type AddressGiven, type ClientRecord } from "../api.ts";
 import { clients, NOT_PERMITTED } from "../content.ts";
 import styles from "./address.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.visits.given;
 
@@ -174,11 +174,7 @@ export function GivenAddressForm({
       />
       {/* A building chosen from the search is line one, so line one is asked only where none was. */}
       {ADDRESS_FIELDS.filter(({ part }) => part !== "line1" || !given(draft.building)).map(field)}
-      {problem !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {problem}
-        </InlineMessage>
-      )}
+      {problem !== null && <Refusal className={styles.error} said={problem} />}
       <div className={styles.actions}>
         <Button variant="primary" size="small" type="submit" busy={busy}>
           {busy ? copy.saving : copy.save}

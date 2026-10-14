@@ -2,7 +2,6 @@
 // (docs/decisions/0042-client-profile.md). Built as the Referrals review queue is; a rejection needs a reason, a number
 // someone else holds is refused, and each change says how long it has left, as Tasks counts it.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -21,6 +20,7 @@ import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./number-changes.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Choice = "confirm" | "reject";
 
@@ -134,9 +134,7 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
         </div>
       )}
       {deciding.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: deciding.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: deciding.code })} />
       )}
     </>
   );

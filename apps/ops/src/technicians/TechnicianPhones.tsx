@@ -2,7 +2,6 @@
 // signed out or revoked. Revoking a phone ends its session and makes it drop its cached jobs, so it asks before it
 // sends (src/domain/dispatch/technicians.ts). It also stops them signing in on any phone until ops let them again.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -12,6 +11,7 @@ import { api, type Device, type Technician } from "../api.ts";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./technicians.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = technicians.phones;
 
@@ -104,9 +104,7 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
         </div>
       )}
       {revoking.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: revoking.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: revoking.code })} />
       )}
     </li>
   );
@@ -154,9 +152,7 @@ function SignInStopped({ technician, since }: { technician: Technician; since: s
         </div>
       )}
       {allowing.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: allowing.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: allowing.code })} />
       )}
     </div>
   );

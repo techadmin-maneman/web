@@ -4,7 +4,6 @@
 // ops move it, and "Show on board" opens the board on that job's week, with their row in view and the job's drawer open.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -19,6 +18,7 @@ import { dispatchPath } from "../route.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./technicians.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = technicians.leave;
 
@@ -120,11 +120,7 @@ function Period({
         />
       )}
       {leave.jobs.length > 0 && <Stranded jobs={leave.jobs} technician={technician} />}
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </li>
   );
 }
@@ -220,11 +216,7 @@ function LeaveForm({
           {copy.cancel}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );
 }

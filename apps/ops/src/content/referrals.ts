@@ -1,6 +1,6 @@
 // The referrals queue and table: a grant held for review, and every referrer.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const referrals = {
   title: "Referrals",
@@ -36,7 +36,7 @@ export const referrals = {
     deciding: "Saving",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Already decided. Reload.",
+      not_found: changed("Already decided."),
       // A consultation and fit is sold only once paid, so its grant waits for the payment; it can be rejected now.
       not_paid: "The friend hasn't paid yet. Approve once they have, or reject now.",
       offline: OFFLINE,

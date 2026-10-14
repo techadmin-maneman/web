@@ -3,7 +3,6 @@
 // can be chosen too, for a waitlist a launch from Settings left untold
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { TextButton } from "@maneman/ui/TextLink";
 import { DateInput, Label } from "@maneman/ui/Field";
@@ -25,6 +24,7 @@ import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
 import styles from "./areas.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = areas.launch;
 
@@ -289,11 +289,7 @@ export function Waiting() {
 
   return (
     <div className={styles.column}>
-      {refused !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: refused })}
-        </InlineMessage>
-      )}
+      {refused !== null && <Refusal className={styles.error} said={errorText(copy.errors, { code: refused })} />}
       {whenLoaded(loaded, {
         loading: <Loading />,
         failed: <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />,

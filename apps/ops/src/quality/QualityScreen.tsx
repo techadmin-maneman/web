@@ -18,6 +18,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { ExpiryRiskPanel } from "./ExpiryRisk.tsx";
 import { FailuresPanel } from "./Failures.tsx";
 import { RaiseRecall, RecallDetail, type Answer, type Quality, type Detail } from "./Recall.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 const loadRecalls = () => client.get("/api/recalls");
 
@@ -107,11 +108,7 @@ export function QualityScreen() {
                 {said}
               </InlineMessage>
             )}
-            {failure !== null && (
-              <InlineMessage tone="error" className={form.error}>
-                {errorText(copy.errors, failure)}
-              </InlineMessage>
-            )}
+            {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
           </Panel>
           {opened !== null && opened.id === openId && (
             <RecallDetail key={opened.id} id={panelId} recall={opened} onAnswer={answered} />

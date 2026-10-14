@@ -2,7 +2,6 @@
 // client who came with none may have one attached, for a friend who booked away from the invite's page
 // (docs/decisions/0089-an-invite-is-not-lost.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -15,6 +14,7 @@ import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import styles from "./clients.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.invite;
 
@@ -130,9 +130,7 @@ function AttachForm({
         {sending ? copy.form.saving : copy.form.save}
       </Button>
       {attaching.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.form.errors, { code: attaching.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.form.errors, { code: attaching.code })} />
       )}
     </form>
   );

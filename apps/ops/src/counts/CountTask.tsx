@@ -16,6 +16,7 @@ import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PieceScans } from "../stock/index.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Task = paths["/api/count-tasks/{id}"]["get"]["responses"][200]["content"]["application/json"];
 
@@ -228,11 +229,7 @@ export function CountTaskPanel({ id, panelId, onChanged }: { id: string; panelId
           {said}
         </InlineMessage>
       )}
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

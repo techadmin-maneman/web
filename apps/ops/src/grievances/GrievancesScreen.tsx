@@ -2,7 +2,6 @@
 // (docs/decisions/0049-dpdp.md), built as the Referrals review queue is. Recording the answer closes it and writes
 // `grievance.resolve` to the audit log (ADR 0031); it messages nobody, since ops answer the client on the number shown.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
@@ -20,6 +19,7 @@ import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./grievances.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 /** Where a grievance is in its answer: open, sending, or refused by the API. */
 type Answering =
@@ -87,9 +87,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
         </div>
       )}
       {answering.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: answering.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: answering.code })} />
       )}
     </>
   );

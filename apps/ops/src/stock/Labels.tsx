@@ -3,7 +3,6 @@
 // consumable lot's label, for its boxes, in as many copies as there are boxes. Any label scanned here finds its piece
 // (docs/decisions/0162-scanning-labels.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, ChoiceGroup, Field, NumberInput, Select } from "@maneman/ui/Field";
@@ -20,6 +19,7 @@ import { LabelSheet, type PrintedLabel } from "./LabelSheet.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./labels.module.css";
 import { holdingOf } from "./holdings.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 /** The item and place whose labels the panel shows. */
 export interface LabelsFor {
@@ -138,11 +138,7 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
           )}
         </p>
       )}
-      {labelling === "failed" && (
-        <InlineMessage tone="error" className={form.error}>
-          {copy.notLabelled}
-        </InlineMessage>
-      )}
+      {labelling === "failed" && <Refusal className={form.error} said={copy.notLabelled} />}
       <Batches key={String(after?.times ?? 0)} units={units.units} name={name} />
     </>
   );
@@ -209,11 +205,7 @@ function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: Labels
           )}
         </Field>
       </div>
-      {failed && (
-        <InlineMessage tone="error" className={form.error}>
-          {copy.noLabel}
-        </InlineMessage>
-      )}
+      {failed && <Refusal className={form.error} said={copy.noLabel} />}
       <div className={form.actions}>
         <Button
           variant="primary"

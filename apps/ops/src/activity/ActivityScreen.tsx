@@ -128,6 +128,7 @@ function Log({ filters }: { filters: Filters }) {
   const [loaded, retry] = useLoad(useCallback(() => api.activity(askedOf(filters)), [filters]));
   const [older, setOlder] = useState<Older | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [olderFailed, setOlderFailed] = useState<{ requestId: string | null } | null>(null);
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
@@ -137,6 +138,7 @@ function Log({ filters }: { filters: Filters }) {
     setLoadingOlder(true);
     const answer = await api.activity(askedOf(filters, cursor));
     setLoadingOlder(false);
+    setOlderFailed(answer.ok ? null : { requestId: answer.requestId });
     if (!answer.ok) return;
     setOlder({ entries: [...(older?.entries ?? []), ...answer.body.entries], next: answer.body.next_cursor });
   };
@@ -144,6 +146,9 @@ function Log({ filters }: { filters: Filters }) {
   return (
     <>
       <Rows entries={entries} />
+      {olderFailed !== null && next !== null && (
+        <PanelFailed onRetry={() => void showOlder(next)} requestId={olderFailed.requestId} />
+      )}
       {next !== null && (
         <Button
           variant="outline"

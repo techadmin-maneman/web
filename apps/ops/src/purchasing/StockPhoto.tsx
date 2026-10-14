@@ -2,7 +2,6 @@
 // in the browser as the technician's camera makes its photographs, stored, and shown once stored.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { FileInput, Label } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -12,6 +11,7 @@ import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import styles from "./purchasing.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Stored = { photo_id: string };
 
@@ -85,9 +85,7 @@ export function StockPhoto({
         </p>
       )}
       {failed !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, { code: failed, fields: [] })}
-        </InlineMessage>
+        <Refusal className={form.error} said={errorText(copy.errors, { code: failed, fields: [] })} />
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 // A client's page, and finding one (board B): their visits, pieces, consents, payments, photos and profile.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const clients = {
   title: "Clients",
@@ -130,8 +130,8 @@ export const clients = {
       none: "Going ahead, or not said",
       kept: (reason: string) => `Not going ahead: ${reason}`,
       errors: {
-        invalid_request: "That reason is no longer listed. Reload.",
-        not_found: "Not found. Reload.",
+        invalid_request: changed("That reason is no longer listed."),
+        not_found: changed("Not found."),
         not_permitted: NOT_PERMITTED,
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
@@ -753,7 +753,7 @@ export const clients = {
     },
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Already erased. Reload.",
+      not_found: changed("Already erased."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,

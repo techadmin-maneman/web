@@ -4,7 +4,6 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { IconButton } from "@maneman/ui/IconButton";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -16,6 +15,7 @@ import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import type { Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 interface Line {
   readonly code: string;
@@ -87,14 +87,15 @@ function LineBoxes(props: {
       </Field>
       <IconButton d={ICONS.cross} size={16} label={copy.draft.removeLine(named(line.code))} onClick={props.onRemove} />
       {questioned && (
-        <InlineMessage tone="error" className={form.error}>
-          {copy.draft.farAbove(
+        <Refusal
+          className={form.error}
+          said={copy.draft.farAbove(
             inCurrency(item.unit_price, currency),
             unit,
             Math.round(times),
             inCurrency(listed.unit_cost, "INR"),
           )}
-        </InlineMessage>
+        />
       )}
     </div>
   );
@@ -269,11 +270,7 @@ export function DraftOrder({
           {copy.draft.send}
         </Button>
       </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

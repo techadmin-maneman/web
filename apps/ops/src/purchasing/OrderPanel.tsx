@@ -2,7 +2,6 @@
 // done with it now: approved, by a second manager where it needs one; marked sent; cancelled with why; printed.
 
 import { fullDate } from "@maneman/web-kit/dates";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -18,6 +17,7 @@ import { useAccess, whoami } from "../lib/access.ts";
 import { OrderSheet } from "./OrderSheet.tsx";
 import { Receiving } from "./Receiving.tsx";
 import type { Order, Orders } from "./types.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Answer = Awaited<ReturnType<typeof client.post<"/api/purchase-orders/{id}/send">>>;
 
@@ -187,11 +187,7 @@ export function OrderPanel({
           {copy.order.print}
         </Button>
       </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       {printing && (
         <OrderSheet
           orders={orders}

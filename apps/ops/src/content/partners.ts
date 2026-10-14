@@ -1,7 +1,7 @@
 // The Partners panel's words, on Referrals (Growth; docs/decisions/0123-partner-referral-channels.md). The panel
 // imports them itself, so they stay out of the console's first load.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const partners = {
   title: "Partners",
@@ -74,7 +74,7 @@ export const partners = {
     commission: "A whole amount, within the most a fit may earn.",
     discount_code: "One of Finance's codes, switched on, that covers a first fit.",
     taken: "A partner has that name.",
-    not_found: "Not found. Reload.",
+    not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

@@ -2,7 +2,7 @@
 
 import type { components } from "../api-schema.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
-import { FAILED, NOT_PERMITTED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED } from "./common.ts";
 import { DEPARTMENT_NAMES } from "./shell.ts";
 
 /** A task group as the API names it, from the generated schema, which the Worker-typed tests can read too. */
@@ -249,7 +249,7 @@ export const tasks = {
     cancel: "Cancel",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Already handled. Reload.",
+      not_found: changed("Already handled."),
       invalid_request: "That person hasn't used the console recently.",
       unknown: FAILED,
     },
@@ -268,7 +268,7 @@ export const tasks = {
     cancel: "Cancel",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Already booked or closed. Reload.",
+      not_found: changed("Already booked or closed."),
       invalid_request: "Give a reason.",
       unknown: FAILED,
     },
@@ -291,7 +291,7 @@ export const tasks = {
     },
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "That link no longer exists. Reload.",
+      not_found: changed("That link no longer exists."),
       unavailable: "Razorpay isn't responding. Try again in a minute.",
       unknown: FAILED,
     },
@@ -347,7 +347,7 @@ export const needsAHand = {
   shown: (shown: number, count: number) => `Oldest ${String(shown)} of ${String(count)}.`,
   errors: {
     not_permitted: NOT_PERMITTED,
-    not_found: "Already closed. Reload.",
+    not_found: changed("Already closed."),
     unknown: FAILED,
   },
 } as const;

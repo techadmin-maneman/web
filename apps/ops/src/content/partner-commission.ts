@@ -1,7 +1,7 @@
 // The Partner commission page's words (Finance; docs/decisions/0124-partner-statements.md). The page imports them
 // itself, so they stay out of the console's first load.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const partnerCommission = {
   title: "Partner commission",
@@ -77,8 +77,8 @@ export const partnerCommission = {
     paid_on: "A day from the month's first to today.",
     amount: "A whole amount, up to the most one payment may be.",
     reference: "The payout's reference, in letters and digits.",
-    taken: "Already recorded for this month. Reload.",
-    not_found: "Not found. Reload.",
+    taken: changed("Already recorded for this month."),
+    not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

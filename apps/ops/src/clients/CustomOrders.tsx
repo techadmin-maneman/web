@@ -18,6 +18,7 @@ import { customOrders as copy } from "../content/custom-orders.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { RaiseCustomOrder, type CustomOrders } from "./RaiseCustomOrder.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Order = CustomOrders["orders"][number];
 /** What a step answered: the client's whole list, or the refusal. */
@@ -207,11 +208,7 @@ export function CustomOrders({ clientId }: { clientId: string }) {
           {said}
         </InlineMessage>
       )}
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

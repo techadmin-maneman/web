@@ -3,7 +3,6 @@
 // request with the client on their own number. The API refuses while a visit is booked or a payment held, and says
 // which.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -24,6 +23,7 @@ import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "../components/erasure.module.css";
 import { ErasureLists } from "../components/ErasureLists.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Choice = "delete" | "reject";
 
@@ -195,10 +195,9 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
         </div>
       )}
       {deciding.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: deciding.code })}
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: deciding.code })}>
           <SettleOn personId={request.person_id} code={deciding.code} />
-        </InlineMessage>
+        </Refusal>
       )}
     </>
   );

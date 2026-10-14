@@ -3,7 +3,6 @@
 // Back finds them; before a search, the clients opened this session (lib/client-search.ts), then every client
 // (./ClientList.tsx).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -17,6 +16,7 @@ import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { ClientList } from "./ClientList.tsx";
 import styles from "./clients.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.find;
 
@@ -142,9 +142,7 @@ export function FindClientScreen() {
           {finding.step === "finding" ? copy.finding : copy.submit}
         </Button>
         {finding.step === "failed" && (
-          <InlineMessage tone="error" className={styles.error}>
-            {errorText(copy.errors, { code: finding.code })}
-          </InlineMessage>
+          <Refusal className={styles.error} said={errorText(copy.errors, { code: finding.code })} />
         )}
       </form>
       {finding.step === "found" && <Found text={finding.text} found={finding.found} />}

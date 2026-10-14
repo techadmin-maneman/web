@@ -3,7 +3,6 @@
 // shows them. Only its second press publishes.
 
 import { whoWords } from "../lib/who.ts";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -11,6 +10,7 @@ import { api, type WordsPublish } from "../api.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { words as copy } from "../content/words.ts";
 import styles from "../components/forms.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const { publish } = copy;
 
@@ -50,11 +50,7 @@ export function PublishCheck(props: {
         onSend={() => void send()}
         onBack={props.onBack}
       />
-      {typeof step === "object" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, step)}
-        </InlineMessage>
-      )}
+      {typeof step === "object" && <Refusal className={styles.error} said={errorText(copy.errors, step)} />}
     </>
   );
 }

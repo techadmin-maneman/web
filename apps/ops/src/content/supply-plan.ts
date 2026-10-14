@@ -1,7 +1,7 @@
 // Operations · Supply plan (docs/decisions/0180-supply-plan.md). No design draws it; every word here is ours. Only the
 // Supply plan page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const supplyPlan = {
   title: "Supply plan",
@@ -76,7 +76,7 @@ export const supplyPlan = {
     errors: {
       ends_on: "It ends before it starts.",
       city: "We do not serve that city.",
-      not_found: "That event is gone. Reload.",
+      not_found: changed("That event is gone."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -84,9 +84,9 @@ export const supplyPlan = {
     },
   },
   errors: {
-    order_state: "That line is decided already, or no forecast has run. Reload.",
-    not_found: "That line is gone. Reload.",
-    invalid_request: "That could not be made: stock or the supplier moved since. Reload.",
+    order_state: changed("That line is decided already, or no forecast has run."),
+    not_found: changed("That line is gone."),
+    invalid_request: changed("That could not be made: stock or the supplier moved since."),
     supplier_id: "That supplier is retired. Reject the line, or draft again.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

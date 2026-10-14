@@ -28,6 +28,7 @@ import { Disputes } from "./Disputes.tsx";
 import { Distance } from "./Distance.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./no-shows.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Choice = "charged" | "waived";
 
@@ -347,9 +348,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
         </div>
       )}
       {ruling.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: ruling.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: ruling.code })} />
       )}
     </>
   );

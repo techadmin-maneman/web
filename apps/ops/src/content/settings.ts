@@ -1,6 +1,6 @@
 // Settings: the rules, the services and their prices, discount codes, the consumables, the job sheet and staff.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 import { grantPhrasing, settingsTabs } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
 import { tasks } from "./tasks.ts";
@@ -126,7 +126,7 @@ export const settings = {
       expires_on: "The last day can't be in the past.",
       max_uses: "Generated codes are single-use.",
       code_exists: "That code already exists.",
-      not_found: "That code no longer exists. Reload.",
+      not_found: changed("That code no longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
@@ -341,7 +341,7 @@ export const settings = {
       to: "The last day must follow the first, within a month.",
       reason: "Up to 60 letters or digits.",
       city: "Choose one of our cities.",
-      not_found: "Already reopened. Reload.",
+      not_found: changed("Already reopened."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
@@ -360,7 +360,7 @@ export const settings = {
     change: (product: string, was: string, now: string) => `${product}: ${was} → ${now}, from today`,
     errors: {
       invalid_request: "Type whole rupees.",
-      not_found: "That product is no longer sold. Reload.",
+      not_found: changed("That product is no longer sold."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -501,7 +501,7 @@ export const settings = {
       description: "One line, within the limit.",
       minutes: "Outside the allowed range.",
       retired_date: "Retire from today or later. Restore a retired service first.",
-      order: "The order changed elsewhere. Reload.",
+      order: changed("The order changed elsewhere."),
       amount_ex_gst: "Whole rupees, within the range.",
       gst_percent: "A whole percentage, within the range.",
       valid_from: "A new price starts tomorrow at the earliest.",
@@ -509,7 +509,7 @@ export const settings = {
       service_exists: "That name or code is already in use.",
       last_of_kind: "Each kind needs one priced service. Add and price its replacement first.",
       service_retired: "It's retired by then, so it can't be priced.",
-      not_found: "No longer exists. Reload.",
+      not_found: changed("No longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
@@ -598,9 +598,9 @@ export const settings = {
     },
     errors: {
       name: "Another supplier has that name.",
-      consumable_code: "That item is no longer listed. Reload.",
-      id: "That supplier is gone. Reload.",
-      not_found: "That supplier is gone. Reload.",
+      consumable_code: changed("That item is no longer listed."),
+      id: changed("That supplier is gone."),
+      not_found: changed("That supplier is gone."),
       invalid_request: "Check the details.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
@@ -742,7 +742,7 @@ export const settings = {
       from: "Today or later.",
       tier: "That service no longer exists.",
       items: "Unknown or repeated consumable.",
-      not_found: "No longer listed. Reload.",
+      not_found: changed("No longer listed."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
@@ -897,7 +897,7 @@ export const settings = {
       errors: {
         client_id: "Paste the client ID exactly as shown.",
         label: "Give it a short name.",
-        not_found: "No longer listed. Reload.",
+        not_found: changed("No longer listed."),
         not_permitted: "Only national Admin · Manage can change service tokens.",
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,

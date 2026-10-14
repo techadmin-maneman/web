@@ -23,6 +23,7 @@ import {
 import { clients, dispatch } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
 import { Choose, CoverChoice } from "./book-choices.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.visits.book;
 
@@ -97,9 +98,7 @@ function Booked({ booked }: { booked: VisitBooked }) {
 function Unreadable({ onRetry }: { onRetry: () => void }) {
   return (
     <div>
-      <InlineMessage tone="error" className={styles.error}>
-        {copy.unreadable}
-      </InlineMessage>
+      <Refusal className={styles.error} said={copy.unreadable} />
       <Button variant="outline" size="small" className={styles.quiet} onClick={onRetry}>
         {copy.retry}
       </Button>
@@ -369,11 +368,7 @@ function BookingForm({
           {busy ? copy.booking : copy.book}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: failed })}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={errorText(copy.errors, { code: failed })} />}
     </form>
   );
 }

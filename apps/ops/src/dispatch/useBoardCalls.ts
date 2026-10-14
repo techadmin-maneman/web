@@ -1,6 +1,7 @@
 // What the dispatch board does beyond moving a job (./DispatchScreen.tsx): the visit a link asked for brought into
 // view, a client called about a move they had not heard of, and a move to another day taken back.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { api, type Board } from "../api.ts";
 import { dispatch } from "../content.ts";
@@ -60,7 +61,9 @@ export function useClientCalls(refresh: () => Promise<Board | null>, setNotice: 
     async (moveId: string, name: string) => {
       const answer = await api.toldByPhone(moveId);
       if (!answer.ok) {
-        setNotice({ tone: "refusal", text: dispatch.landing.toldFailed, call: { moveId, name } });
+        const text = errorText(dispatch.landing.toldErrors, { code: answer.code });
+        // A call already recorded leaves nothing to retry.
+        setNotice({ tone: "refusal", text, call: answer.code === "not_found" ? null : { moveId, name } });
         return;
       }
       setNotice({ tone: "done", text: dispatch.landing.toldDone(name), call: null });
@@ -76,7 +79,7 @@ export function useClientCalls(refresh: () => Promise<Board | null>, setNotice: 
       setNotice(
         answer.ok
           ? { tone: "done", text: dispatch.landing.withdrawn(name), call: null }
-          : { tone: "refusal", text: dispatch.landing.withdrawFailed, call: null },
+          : { tone: "refusal", text: errorText(dispatch.landing.withdrawErrors, { code: answer.code }), call: null },
       );
       await refresh();
     },

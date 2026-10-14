@@ -14,6 +14,7 @@ import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import { dayAfter } from "./Forecast.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 export type Calendar = paths["/api/demand-events"]["get"]["responses"][200]["content"]["application/json"];
 
@@ -185,11 +186,7 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
           {said}
         </InlineMessage>
       )}
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

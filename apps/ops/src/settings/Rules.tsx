@@ -2,7 +2,6 @@
 // unit and bounds, and a draft is text, never a number, since an empty box read as nought would be a radius no arrival
 // passes. Each figure that moves is shown old beside new before the second press sends it.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { TextLink } from "@maneman/ui/TextLink";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -25,6 +24,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { CHARGES_A_LATE_FEE, CONSOLE_GROUP, sectionsOf, type RuleGroupId, type RuleSection } from "./rule-groups.ts";
 import styles from "../components/forms.module.css";
 import rules from "./rules.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = settings.rules;
 
@@ -443,11 +443,7 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
           </Button>
         </div>
       )}
-      {refusal !== undefined && (
-        <InlineMessage tone="error" className={styles.error}>
-          {refusal}
-        </InlineMessage>
-      )}
+      {refusal !== undefined && <Refusal className={styles.error} said={refusal} />}
     </li>
   );
 }

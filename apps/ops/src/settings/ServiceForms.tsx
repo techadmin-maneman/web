@@ -3,7 +3,6 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A price's boxes start from the price in force, its
 // GST included: a GST box that opened at nought once made an 18% item GST-free without anyone seeing it.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
@@ -15,6 +14,7 @@ import { settings } from "../content/settings.ts";
 import { PRICE_TIER, tierCodeOf } from "@rules/policy/services.ts";
 import styles from "../components/forms.module.css";
 import { Refused, SettingForm, sentOf, useSteps, type Sent } from "./SettingForm.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = settings.services;
 const form = copy.form;
@@ -208,9 +208,7 @@ export function TakeBack(props: {
         onBack={props.onKeep}
       />
       {steps.failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText({ ...copy.errors, ...copy.takeBackErrors }, steps.failed)}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText({ ...copy.errors, ...copy.takeBackErrors }, steps.failed)} />
       )}
     </>
   );

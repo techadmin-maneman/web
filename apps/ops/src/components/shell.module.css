@@ -231,6 +231,11 @@
   padding: var(--sp-24);
 }
 
+/* Why the page was just read again, above it. */
+.note {
+  margin: 0 0 var(--sp-16);
+}
+
 /* The dispatch board runs to the frame's edges, and holds its own tray against the right. */
 .flushPage {
   display: flex;

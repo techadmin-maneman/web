@@ -14,6 +14,7 @@ import { useRef, useState, type RefObject } from "react";
 import { api, type ClosableGroup, type Task, type TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
 import styles from "./tasks.module.css";
+import { useRereadOnChange } from "../components/Refusal.tsx";
 
 type Group = TaskGroup["group"];
 
@@ -170,6 +171,14 @@ function Act({
   );
 }
 
+/** The row's refusal in words, a change of owner's or a closing's; one because the task had changed reads the page again. */
+function useRowRefusal(failed: { readonly code: string; readonly closing: boolean } | null): string | null {
+  const errors = failed?.closing === true ? tasks.close.errors : tasks.owner.errors;
+  const refused = failed === null ? null : errorText(errors, { code: failed.code });
+  useRereadOnChange(refused);
+  return refused;
+}
+
 export function TaskActions({
   group,
   task,
@@ -233,7 +242,7 @@ export function TaskActions({
       else setFailed({ code: answer.code, closing: true });
     });
 
-  const errors = failed?.closing === true ? tasks.close.errors : tasks.owner.errors;
+  const refused = useRowRefusal(failed);
   return (
     <>
       <span className={styles.ownerActs}>
@@ -300,9 +309,9 @@ export function TaskActions({
           }}
         />
       )}
-      {failed !== null && (
+      {refused !== null && (
         <span className={styles.error} role="alert">
-          {errorText(errors, { code: failed.code })}
+          {refused}
         </span>
       )}
     </>

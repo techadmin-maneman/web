@@ -1,7 +1,7 @@
 // A client's custom orders, on their Pieces tab (docs/decisions/0174-custom-orders.md). Only that panel reads it,
 // loaded when the tab opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const customOrders = {
   title: "Custom orders",
@@ -59,7 +59,7 @@ export const customOrders = {
   errors: {
     profile: "Complete their hair profile first.",
     supplier_id: "That supplier is retired. Choose another.",
-    order_state: "That order has moved on. Reload.",
+    order_state: changed("That order has moved on."),
     refund_not_due: "That reason does not hold for this order yet.",
     unavailable: "Refund failed. Refund it in Razorpay.",
     not_found: "That client is outside your places.",

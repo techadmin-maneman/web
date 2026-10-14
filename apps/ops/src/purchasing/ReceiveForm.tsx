@@ -2,7 +2,6 @@
 // were accepted, damaged or failed their check, its lot and expiry; and the receipt's supplier invoice, rupee rate for an
 // order in another currency, and its freight, duty and clearing, which the landed cost shares out.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Fieldset, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -13,6 +12,7 @@ import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import type { Order, Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 interface LineDraft {
   readonly received: string;
@@ -167,11 +167,7 @@ export function ReceiveForm(props: {
           {copy.receive.cancel}
         </Button>
       </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </div>
   );
 }

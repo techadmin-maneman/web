@@ -2,7 +2,6 @@
 // nothing is fetched unless that is written (docs/decisions/0031-access-and-audit.md); beside them is who opened them
 // before. The newest visits come first, earlier ones when asked for.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -15,6 +14,7 @@ import { whoWords } from "../lib/who.ts";
 import { Loading } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.photos;
 const PHASES = ["before", "after"] as const;
@@ -238,9 +238,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
         </Button>
       )}
       {state.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: state.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: state.code })} />
       )}
     </section>
   );

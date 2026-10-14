@@ -1,7 +1,7 @@
 // Operations · Quality (docs/decisions/0187-recalls.md). No design draws it; every word here is ours. Only the Quality
 // page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const quality = {
   title: "Quality",
@@ -54,8 +54,8 @@ export const quality = {
   /** "Move to Imran Qureshi" */
   moveTo: (place: string) => `Move to ${place}`,
   errors: {
-    lot_id: "That lot is recalled already, or gone. Reload.",
-    not_found: "That recall is gone or closed. Reload.",
+    lot_id: changed("That lot is recalled already, or gone."),
+    not_found: changed("That recall is gone or closed."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

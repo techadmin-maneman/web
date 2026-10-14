@@ -17,6 +17,7 @@ import { LotFields } from "./LotFields.tsx";
 import { PieceScans } from "./PieceScans.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
 export type Kind = (typeof KINDS)[number];
@@ -389,11 +390,7 @@ export function StockForm({
             {copy.recorded}
           </InlineMessage>
         )}
-        {step.step === "failed" && (
-          <InlineMessage tone="error" className={form.error}>
-            {errorText(copy.errors, step)}
-          </InlineMessage>
-        )}
+        {step.step === "failed" && <Refusal className={form.error} said={errorText(copy.errors, step)} />}
       </div>
     </Panel>
   );

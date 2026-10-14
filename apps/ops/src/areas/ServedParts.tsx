@@ -12,6 +12,7 @@ import { areas } from "../content.ts";
 import styles from "../components/forms.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import type { Draft, FileChange, Row } from "./served-draft.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = areas.served;
 const launch = areas.launch;
@@ -220,11 +221,7 @@ export function UploadFile({
           {copy.upload.applied}
         </InlineMessage>
       )}
-      {upload?.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {upload.says}
-        </InlineMessage>
-      )}
+      {upload?.step === "failed" && <Refusal className={styles.error} said={upload.says} />}
     </Fieldset>
   );
 }
@@ -303,16 +300,8 @@ export function SaveNotes({
 }) {
   return (
     <>
-      {badName !== undefined && (
-        <InlineMessage tone="error" className={styles.error}>
-          {copy.badName(badName.pincode)}
-        </InlineMessage>
-      )}
-      {later !== undefined && (
-        <InlineMessage tone="error" className={styles.error}>
-          {copy.later(later.pincode)}
-        </InlineMessage>
-      )}
+      {badName !== undefined && <Refusal className={styles.error} said={copy.badName(badName.pincode)} />}
+      {later !== undefined && <Refusal className={styles.error} said={copy.later(later.pincode)} />}
       {mayChange && changes.length === 0 && saving.step === "editing" && <p className={styles.hint}>{copy.nothing}</p>}
       {saving.step === "saved" && (
         <InlineMessage tone="saved" className={styles.saved}>
@@ -320,9 +309,7 @@ export function SaveNotes({
         </InlineMessage>
       )}
       {saving.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: saving.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: saving.code })} />
       )}
     </>
   );

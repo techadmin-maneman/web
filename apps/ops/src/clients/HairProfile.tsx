@@ -2,7 +2,6 @@
 // spec a replacement is ordered to, every version with who recorded it at which visit, and the form ops correct it
 // with. A correction is the whole profile sent as a new version, so the form starts from the latest.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -32,6 +31,7 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./profile.module.css";
 import { isOneOf } from "@rules/lib/one-of.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.profile;
 
@@ -325,11 +325,7 @@ function CorrectionForm({
           )}
         </Field>
       </ChoiceGroup>
-      {problem !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {problem}
-        </InlineMessage>
-      )}
+      {problem !== null && <Refusal className={styles.error} said={problem} />}
       <div className={styles.actions}>
         <Button variant="primary" size="small" type="submit" busy={busy}>
           {busy ? copy.saving : copy.save}
@@ -369,11 +365,7 @@ export function HairProfile({ clientId }: { clientId: string }) {
       <h3 className={capsLook(styles.title)} id="hair-profile-title">
         {copy.title}
       </h3>
-      {moved && (
-        <InlineMessage tone="error" className={styles.error}>
-          {copy.moved}
-        </InlineMessage>
-      )}
+      {moved && <Refusal className={styles.error} said={copy.moved} />}
       {page.latest === null ? <p className={styles.hint}>{copy.none}</p> : <ProfileRows profile={page.latest} />}
       {correcting && (
         <CorrectionForm

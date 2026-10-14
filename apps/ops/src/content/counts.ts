@@ -1,7 +1,7 @@
 // Operations · Counts (docs/decisions/0185-cycle-counts.md). No design draws it; every word here is ours. Only the
 // Counts page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const counts = {
   title: "Counts",
@@ -52,12 +52,12 @@ export const counts = {
   choose: "Choose",
   start: "Start count",
   errors: {
-    lines: "The items changed since this opened. Reload.",
+    lines: changed("The items changed since this opened."),
     labels: "Scan each labelled piece once.",
     counted: "That's fewer than the labels scanned.",
     consumable_code: "This place holds none of that.",
-    order_state: "Someone else counted this first. Reload.",
-    not_found: "That is gone. Reload.",
+    order_state: changed("Someone else counted this first."),
+    not_found: changed("That is gone."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

@@ -1,7 +1,6 @@
 // Adding a member of staff, or changing their grants and whether they are let in. The whole list of grants is sent
 // and replaces theirs; the check names each grant given or taken away before anything is saved.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Checkbox, Fieldset, Label, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -23,6 +22,7 @@ import {
 import styles from "../components/forms.module.css";
 import staffStyles from "./staff.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = settings.staff;
 
@@ -237,11 +237,7 @@ export function StaffForm(props: {
           {copy.form.addGrant}
         </Button>
       </div>
-      {listed && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: "already_listed" })}
-        </InlineMessage>
-      )}
+      {listed && <Refusal className={styles.error} said={errorText(copy.errors, { code: "already_listed" })} />}
     </SettingForm>
   );
 }

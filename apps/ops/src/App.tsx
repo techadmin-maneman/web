@@ -5,13 +5,14 @@
 
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
-import { Fragment, Suspense, useEffect, type ComponentType } from "react";
+import { Fragment, Suspense, useCallback, useEffect, useState, type ComponentType } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
 import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
 import { Shell } from "./components/Shell.tsx";
 import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
 import { useMayCall } from "./lib/access.ts";
+import { PageRefresh } from "./lib/refresh.ts";
 import {
   keyOf,
   mayOpen,
@@ -154,6 +155,15 @@ export function App() {
   const route = routeOf(path);
   const mayCall = useMayCall();
   useScreenTitle(titleOf(route));
+  // A page read again in place is drawn anew under its key, and the frame says why until ops move on.
+  const [read, setRead] = useState({ path, round: 0, note: null as string | null });
+  const shown = read.path === path ? read : { path, round: 0, note: null };
+  const refresh = useCallback(
+    (note: string) => {
+      setRead((was) => ({ path, round: (was.path === path ? was.round : 0) + 1, note }));
+    },
+    [path],
+  );
   useEffect(() => {
     const to = redirectOf(path, mayCall);
     // The hash names a row to land on, as "/no-shows#case-…" from an older task.
@@ -167,14 +177,17 @@ export function App() {
       title={SECTION_NAMES[route.page]}
       flush={flushOf(route)}
       finder={!findsClients(route)}
+      note={shown.note}
     >
-      <Fragment key={keyOf(route)}>
-        <PageBoundary>
-          <Suspense fallback={<Loading />}>
-            <Page route={route} mayCall={mayCall} />
-          </Suspense>
-        </PageBoundary>
-      </Fragment>
+      <PageRefresh value={refresh}>
+        <Fragment key={`${keyOf(route)} ${String(shown.round)}`}>
+          <PageBoundary>
+            <Suspense fallback={<Loading />}>
+              <Page route={route} mayCall={mayCall} />
+            </Suspense>
+          </PageBoundary>
+        </Fragment>
+      </PageRefresh>
     </Shell>
   );
 }

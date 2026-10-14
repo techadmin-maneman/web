@@ -2,7 +2,6 @@
 // what the cancel gives back before anything changes: free to the client, unless ops tick the client's own late terms.
 // It goes only with a reason, which is kept with the cancel (src/routes/ops/visit-changes.ts). No board draws it.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -14,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type CancelOutcome, type CancelTerms } from "../api.ts";
 import { clients } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.visits.cancel;
 
@@ -119,11 +119,7 @@ function CancelForm({
           {busy ? copy.cancelling : copy.confirm}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );
 }
@@ -169,9 +165,7 @@ function Body({ visitId, onCancelled }: { visitId: string; onCancelled: (gives: 
     const unreadable = unreadableOf(terms.code);
     return (
       <div>
-        <InlineMessage tone="error" className={styles.error}>
-          {unreadable.said}
-        </InlineMessage>
+        <Refusal className={styles.error} said={unreadable.said} />
         {!unreadable.final && (
           <Button variant="outline" size="small" className={styles.quiet} onClick={readAgain}>
             {copy.retry}
@@ -182,11 +176,7 @@ function Body({ visitId, onCancelled }: { visitId: string; onCancelled: (gives: 
   }
   return (
     <>
-      {changed && (
-        <InlineMessage tone="error" className={styles.error}>
-          {copy.termsChanged}
-        </InlineMessage>
-      )}
+      {changed && <Refusal className={styles.error} said={copy.termsChanged} />}
       <CancelForm
         terms={terms.value}
         onCancelled={onCancelled}

@@ -2,7 +2,6 @@
 // what it took and the client's words, and Refund or Uphold, each with a note
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The client is told the ruling, never the note.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -23,6 +22,7 @@ import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Distance } from "./Distance.tsx";
 import styles from "./no-shows.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = noShows.dispute;
 
@@ -170,9 +170,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
         </>
       )}
       {step.kind === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: step.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: step.code })} />
       )}
     </section>
   );

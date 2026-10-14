@@ -2,7 +2,6 @@
 // reached us. Ops say how it went, when the work began and ended on the visit's own day, and how they know
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -13,6 +12,7 @@ import { useId, useState } from "react";
 import { api, type HandClose } from "../api.ts";
 import { clients } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.visits.handClose;
 
@@ -134,11 +134,7 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
           {busy ? copy.closing : copy.confirm}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );
 }

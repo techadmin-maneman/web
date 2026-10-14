@@ -2,7 +2,6 @@
 // page holds; and their service-visit credits, which ops correct by hand, the server writing the ledger and audit
 // entries together (docs/decisions/0068-a-paid-hold-is-kept.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { ChoiceGroup, Label, Radio, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -25,6 +24,7 @@ import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { RefundPayment } from "./RefundPayment.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Credits = ClientRecord["credits"];
 type Reason = CreditAdjustment["reason"];
@@ -308,9 +308,7 @@ function CreditForm({
             </p>
           )}
           {adjusting.step === "failed" && (
-            <InlineMessage tone="error" className={styles.error}>
-              {errorText(creditCopy.errors, { code: adjusting.code })}
-            </InlineMessage>
+            <Refusal className={styles.error} said={errorText(creditCopy.errors, { code: adjusting.code })} />
           )}
         </form>
       )}

@@ -2,7 +2,6 @@
 // far from its door (src/routes/ops/visit-changes.ts). Ops say why; the reason stays with the visit and is shown with a
 // no-show's evidence. No board draws it.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -13,6 +12,7 @@ import { useState } from "react";
 import { api } from "../api.ts";
 import styles from "../components/visit-dialog.module.css";
 import { dispatch } from "../content.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = dispatch.letIn;
 
@@ -62,11 +62,7 @@ function LetInForm({ visitId, onLetIn }: { visitId: string; onLetIn: () => void 
           {busy ? copy.sending : copy.confirm}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );
 }

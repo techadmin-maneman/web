@@ -11,6 +11,7 @@ import { useState, type ReactNode } from "react";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import styles from "../components/forms.module.css";
 import { review } from "../content/common.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 /** What a send came to: what to hand on, or the refusal with the boxes it names. */
 export type Sent<T> = ({ readonly ok: true } & T) | ({ readonly ok: false } & Failure);
@@ -65,11 +66,7 @@ export function useSteps<T>(
 /** The line a refused send leaves beneath its form. */
 export function Refused(props: { readonly failed: Failure | null; readonly errors: Readonly<Record<string, string>> }) {
   if (props.failed === null) return null;
-  return (
-    <InlineMessage tone="error" className={styles.error}>
-      {errorText(props.errors, props.failed)}
-    </InlineMessage>
-  );
+  return <Refusal className={styles.error} said={errorText(props.errors, props.failed)} />;
 }
 
 /**

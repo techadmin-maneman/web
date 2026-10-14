@@ -16,6 +16,7 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PlanLineSteps, type Answer, type Line, type Plan } from "./PlanLine.tsx";
 import { Planning } from "./Planning.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 const loadPlan = () => client.get("/api/supply-plan");
 
@@ -99,11 +100,7 @@ export function SupplyPlanScreen() {
               {said}
             </InlineMessage>
           )}
-          {failure !== null && (
-            <InlineMessage tone="error" className={form.error}>
-              {errorText(copy.errors, failure)}
-            </InlineMessage>
-          )}
+          {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
           {access.mayCall("POST /api/supply-plan/draft") && (
             <div className={form.actions}>
               <Button

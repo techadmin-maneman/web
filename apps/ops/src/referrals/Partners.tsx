@@ -25,6 +25,7 @@ import { partnerQr } from "./partner-qr.ts";
 import styles from "../components/forms.module.css";
 import own from "./partners.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
+import { Refusal } from "../components/Refusal.tsx";
 
 /** The site the partner's link opens: the environment's own. */
 const SITE = new URL(BOOKING_URL[import.meta.env.MM_ENV]);
@@ -62,11 +63,7 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
         onSend={() => void send()}
         onBack={onBack}
       />
-      {typeof step === "object" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, step)}
-        </InlineMessage>
-      )}
+      {typeof step === "object" && <Refusal className={styles.error} said={errorText(copy.errors, step)} />}
     </>
   );
 }

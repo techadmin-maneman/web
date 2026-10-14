@@ -1,7 +1,7 @@
 // Operations · Purchasing (docs/decisions/0166-purchase-orders.md, 0169-supplier-claims.md). No design draws it;
 // every word here is ours. Only the Purchasing page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const purchasing = {
   title: "Purchasing",
@@ -172,20 +172,20 @@ export const purchasing = {
     view: "Photograph",
   },
   errors: {
-    supplier_id: "That supplier is retired or gone. Reload.",
+    supplier_id: changed("That supplier is retired or gone."),
     lines: "Each item once, at least its minimum.",
     rupee_rate: "Give the rupee rate for this currency.",
-    order_state: "That order has moved on. Reload.",
+    order_state: changed("That order has moved on."),
     same_approver: "You gave its first approval. Another Operations manager gives the second.",
     custom_order: "A client's custom order is on this order. Cancel the custom order, which refunds them.",
-    claim_state: "That claim has moved on. Reload.",
-    return_settled: "That piece is settled already. Reload.",
+    claim_state: changed("That claim has moved on."),
+    return_settled: changed("That piece is settled already."),
     out_of_warranty: "Its warranty has ended. Write it off instead.",
     credit_amount: "Give the credit.",
     photo_id: "Add a photograph of the piece.",
     photo_invalid_file: "That photograph could not be read. Try another.",
     busy: "Photographs are paused. Try again later.",
-    not_found: "That order is gone. Reload.",
+    not_found: changed("That order is gone."),
     invalid_request: "Check the lines.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

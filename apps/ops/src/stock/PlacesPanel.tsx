@@ -3,8 +3,7 @@
 // another, or closed once it is empty and nothing open is under it. A technician's kit comes with them, and is only
 // moved.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { useWrite } from "../lib/write.ts";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -16,6 +15,7 @@ import { stockPlaces as copy } from "../content/stock-places.ts";
 import form from "../components/forms.module.css";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 type Place = Stock["places"][number];
 type Kind = Place["kind"];
@@ -89,38 +89,13 @@ function NameBox({ value, onChange }: { value: string; onChange: (value: string)
   );
 }
 
-function Refusal({ failure }: { failure: Failure | null }) {
+function Refused({ failure }: { failure: Failure | null }) {
   if (failure === null) return null;
-  return (
-    <InlineMessage tone="error" className={form.error}>
-      {errorText(copy.errors, failure)}
-    </InlineMessage>
-  );
+  return <Refusal className={form.error} said={errorText(copy.errors, failure)} />;
 }
-
-type Answer = Awaited<ReturnType<typeof api.addStockPlace>>;
 
 /** Sends a change, then hands the stock it answers on, or keeps the refusal to show. */
-function useSending(onChanged: (stock: Stock) => void) {
-  const [failure, setFailure] = useState<Failure | null>(null);
-  const [busy, once] = useOneAtATime();
-  /** Whether the change went through; a second press while one is sending sends nothing, and says it did not. */
-  const send = async (call: () => Promise<Answer>): Promise<boolean> => {
-    let sent = false;
-    await once(async () => {
-      setFailure(null);
-      const answer = await call();
-      if (!answer.ok) {
-        setFailure({ code: answer.code, fields: answer.fields });
-        return;
-      }
-      onChanged(answer.body);
-      sent = true;
-    });
-    return sent;
-  };
-  return { failure, busy, send };
-}
+const useSending = (onChanged: (stock: Stock) => void) => useWrite<Stock>(onChanged);
 
 function AddPlace({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock) => void }) {
   const [kind, setKind] = useState<"hub" | "stockroom">("stockroom");
@@ -173,7 +148,7 @@ function AddPlace({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock
           {copy.add.send}
         </Button>
       </div>
-      <Refusal failure={failure} />
+      <Refused failure={failure} />
     </div>
   );
 }
@@ -219,7 +194,7 @@ function ChangePlace(props: { stock: Stock; place: Place; onChanged: (stock: Sto
           {copy.change.cancel}
         </Button>
       </div>
-      <Refusal failure={failure} />
+      <Refused failure={failure} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // Stock: what each place holds, and a delivery, transfer, count or write-off recorded.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 /**
  * Every word of Stock. Stock is kept in our own ledger, per place: the warehouse, hubs, stockrooms and each
@@ -83,11 +83,11 @@ export const stock = {
   /** A refusal, said of the box it names (src/routes/ops/stock.ts). */
   errors: {
     not_permitted: NOT_PERMITTED,
-    consumable_code: "That consumable is no longer listed. Reload.",
-    from: "Unknown place. Reload.",
+    consumable_code: changed("That consumable is no longer listed."),
+    from: changed("Unknown place."),
     to: "From and to must be different places.",
-    place_id: "Unknown place. Reload.",
-    lot_id: "That lot isn't held there. Reload.",
+    place_id: changed("Unknown place."),
+    lot_id: changed("That lot isn't held there."),
     units: "A label scanned isn't held there. Check the pieces.",
     quantity: "One delivery labels at most 500 pieces.",
     note: "Say what happened, in up to 200 characters.",

@@ -2,7 +2,6 @@
 // ours. It goes in unserved, so adding one messages nobody; marking it live is the launch panel's.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -11,6 +10,7 @@ import { api, type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import styles from "./areas.module.css";
 import { AREA_NAME, PINCODE } from "./rules.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = areas.add;
 
@@ -132,11 +132,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
         </Button>
         {cancel}
       </div>
-      {code !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code })}
-        </InlineMessage>
-      )}
+      {code !== null && <Refusal className={styles.error} said={errorText(copy.errors, { code })} />}
     </div>
   );
 }

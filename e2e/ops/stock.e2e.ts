@@ -238,7 +238,7 @@ test("a loss needs its words, and a refusal names what was wrong", async ({ page
   await form.getByLabel(stock.record.lossNote).fill("Two burst in the heat");
   await form.getByRole("button", { name: "Review" }).click();
   await form.getByRole("button", { name: review.send }).click();
-  await expect(form.getByRole("alert")).toHaveText("Unknown place. Reload.");
+  await expect(page.getByText("Unknown place. Here's the latest.")).toBeVisible();
 });
 
 test("lists the latest movements, a job's use under the technician who recorded it", async ({ page }) => {
@@ -248,9 +248,7 @@ test("lists the latest movements, a job's use under the technician who recorded 
   await expect(used).toContainText("Tape strips");
   await expect(used).toContainText("-4");
   await expect(used.getByRole("cell").last()).toHaveText("Imran Qureshi");
-  await expect(movements.getByRole("row").filter({ hasText: stock.movements.reasons.received })).toContainText(
-    "+100",
-  );
+  await expect(movements.getByRole("row").filter({ hasText: stock.movements.reasons.received })).toContainText("+100");
 });
 
 test("sorts the movements by a column, and narrows them by a list or a search", async ({ page }) => {

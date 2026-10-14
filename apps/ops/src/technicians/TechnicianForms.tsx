@@ -3,7 +3,6 @@
 // board.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button, buttonLook } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
@@ -18,6 +17,7 @@ import { technicians } from "../content.ts";
 import { GIVING_NO_CITY, useAccess } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
 import styles from "./technicians.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const ERRORS: Readonly<Record<string, string | undefined>> = technicians.errors;
 
@@ -187,11 +187,7 @@ export function AddTechnician({
           {copy.cancel}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </Drawer>
   );
 }
@@ -279,11 +275,7 @@ function ChangeForm({
           {copy.cancel}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );
 }
@@ -374,11 +366,7 @@ function SwitchOff({
           {copy.cancel}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </div>
   );
 }
@@ -414,11 +402,7 @@ function SwitchOn({ technician, onSwitchedOn }: { technician: TechnicianSummary;
           {sending ? copy.sending : copy.open}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </>
   );
 }

@@ -75,7 +75,7 @@ test("gives a task to another member of staff who has signed in, and says so whe
 
   await answer(page, { "PUT /api/tasks/{group}/{id}/owner": fails(404, "not_found") });
   await row(page, "Sanjay Bhatia").getByRole("button", { name: "Take · Sanjay Bhatia" }).click();
-  await expect(row(page, "Sanjay Bhatia").getByRole("alert")).toContainText("Already handled. Reload.");
+  await expect(page.getByText("Already handled. Here's the latest.")).toBeVisible();
 });
 
 // A visit left partly done may be closed without a follow-up, with why.

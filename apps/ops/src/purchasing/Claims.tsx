@@ -17,6 +17,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { ClaimSteps, type ClaimAnswer } from "./ClaimSteps.tsx";
 import { ReturnedPieces } from "./ReturnedPieces.tsx";
 import type { Claim, SupplierClaims, Orders } from "./types.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 const loadClaims = () => client.get("/api/supplier-claims");
 
@@ -114,11 +115,7 @@ export function Claims({ orders }: { orders: Orders }) {
             {said}
           </InlineMessage>
         )}
-        {failure !== null && (
-          <InlineMessage tone="error" className={form.error}>
-            {errorText(copy.errors, failure)}
-          </InlineMessage>
-        )}
+        {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       </Panel>
       <Panel titleId="returned-pieces" title={copy.returns.title}>
         <ReturnedPieces pieces={current.returns} onAnswer={answered} />

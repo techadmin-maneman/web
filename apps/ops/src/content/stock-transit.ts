@@ -1,7 +1,7 @@
 // The Stock page's In transit panel (docs/decisions/0158-transfers-in-transit.md). No design draws it; every word here
 // is ours. Only the panel reads it, and it loads only while something is on its way.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const stockTransit = {
   title: "In transit",
@@ -18,8 +18,8 @@ export const stockTransit = {
   errors: {
     received: "More arrived than was sent. Check the figure.",
     units: "A label scanned wasn't on this transfer.",
-    transfer_settled: "Already received or sent back. Reload.",
-    not_found: "That transfer is gone. Reload.",
+    transfer_settled: changed("Already received or sent back."),
+    not_found: changed("That transfer is gone."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

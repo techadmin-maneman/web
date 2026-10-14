@@ -11,6 +11,7 @@ import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
+import { Refusal } from "../components/Refusal.tsx";
 
 export type CountTasks = paths["/api/count-tasks"]["get"]["responses"][200]["content"]["application/json"];
 type CountClass = CountTasks["classes"][number]["count_class"];
@@ -88,11 +89,7 @@ export function CountClasses({
           {said}
         </InlineMessage>
       )}
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

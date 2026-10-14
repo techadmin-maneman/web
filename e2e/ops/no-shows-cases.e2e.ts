@@ -286,7 +286,7 @@ test("says so when someone else has ruled on the case already", async ({ page })
   const first = caseOf(page, FIRST);
   await first.getByLabel("Your note · required").fill("Nobody came down");
   await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
-  await expect(page.getByRole("alert")).toContainText("Already decided. Reload.");
+  await expect(page.getByText("Already decided. Here's the latest.")).toBeVisible();
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 

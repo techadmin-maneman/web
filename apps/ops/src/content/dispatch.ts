@@ -1,6 +1,6 @@
 // The dispatch board's words: the week, a move and its reason, a block's drawer.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const dispatch = {
   title: "Dispatch",
@@ -112,8 +112,8 @@ export const dispatch = {
     done: (technician: string) => `${technician} can check in now. Ask them to tap I have arrived again.`,
     errors: {
       invalid_request: "Give a reason.",
-      not_changeable: "Already checked in, or the visit is closed or cancelled. Reload.",
-      not_found: "No longer on the board. Reload.",
+      not_changeable: changed("Already checked in, or the visit is closed or cancelled."),
+      not_found: changed("No longer on the board."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -294,7 +294,14 @@ export const dispatch = {
       call: (name: string, mobile: string, when: string) => `Call ${name} on ${mobile} to ask about ${when}.`,
     },
     withdrawn: (job: string) => `Withdrawn. ${job} stays as booked.`,
-    withdrawFailed: "Couldn't withdraw. Reload and try again.",
+    /** Why a move could not be taken back; the board is read again either way. */
+    withdrawErrors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "Already answered or taken back.",
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: "Couldn't withdraw. Try again.",
+    },
     /** The button that closes the call's task, beside the line that asks for the call. */
     told: "Told by phone",
     toldDone: (name: string) => `Recorded: ${name} told by phone.`,
@@ -345,8 +352,14 @@ export const dispatch = {
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
-    /** The call's record did not go through. */
-    toldFailed: FAILED,
+    /** Why the call's record did not go through. */
+    toldErrors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "Already marked as told.",
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
     /** A link asked for a visit this board does not hold. */
     notOnBoard: "That visit isn't on this board.",
   },

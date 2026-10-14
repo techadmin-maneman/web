@@ -2,7 +2,6 @@
 // (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts), over every referrer's figures, and the partners
 // who refer on their own code (./Partners.tsx). Approving a grant releases its credits.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
@@ -25,6 +24,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import styles from "./referrals.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 /** The partners' panel, fetched as the page draws it: it stays out of the console's first load. */
 const Partners = lazyScreen(() => import("./Partners.tsx").then((module) => module.Partners));
@@ -162,9 +162,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
         </div>
       )}
       {decision.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: decision.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: decision.code })} />
       )}
     </>
   );
