@@ -7,6 +7,7 @@
 import { MINUTE_MS } from "../../lib/durations.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 const EXPIRING_KEY = "stock_expiring:";
 const OVERDUE_KEY = "transfer_overdue:";
@@ -56,7 +57,7 @@ export async function tellOfExpiring(
     );
     await deps.alertOnce({
       key: `${EXPIRING_KEY}${place}`,
-      message: `Stock in ${placeWords(first)} expires within ${String(warningDays)} days: ${lots.join("; ")}. Use it first, move it, or write it off on the Stock page.`,
+      message: ALERT_WORDS.stock_expiring({ place: placeWords(first), days: warningDays, lots: lots.join("; ") }),
       link: "/stock",
     });
   }
@@ -96,9 +97,14 @@ export async function tellOfOverdue(
   for (const row of results) {
     await deps.alertOnce({
       key: `${OVERDUE_KEY}${row.id}`,
-      message:
-        `${String(row.quantity)} ${row.unit} of ${row.item}, sent from ${row.from_place} to ${row.to_place} on ` +
-        `${indiaDate(new Date(row.sent_at))}, has not been received. Receive it, or send it back, on the Stock page.`,
+      message: ALERT_WORDS.transfer_overdue({
+        quantity: row.quantity,
+        unit: row.unit,
+        item: row.item,
+        from: row.from_place,
+        to: row.to_place,
+        day: indiaDate(new Date(row.sent_at)),
+      }),
       link: "/stock",
     });
   }

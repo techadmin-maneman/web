@@ -11,7 +11,13 @@ import { WORKERS } from "../../../scripts/lib/workers.ts";
 
 const API = readJsonc("wrangler.jsonc");
 const APP = readJsonc("apps/app/wrangler.jsonc");
-const CONSUMERS = ["mm-crm-sync-staging", "mm-render-staging", "mm-messaging-staging"];
+const CONSUMERS = [
+  "mm-crm-sync-staging",
+  "mm-render-staging",
+  "mm-messaging-staging",
+  "mm-razorpay-staging",
+  "mm-dead-letters-staging",
+];
 
 describe("what each Worker's config attaches", () => {
   it("mm-api: the every-minute cron and a consumer for each queue it reads", () => {
@@ -87,7 +93,7 @@ function queuesConsumedBy(script: string, queues: readonly string[]): Answer {
   );
 }
 
-function liveQueue(queue: string, settings: Record<string, number>) {
+function liveQueue(queue: string, settings: Record<string, number | undefined>) {
   return { queue_name: queue, consumers: [{ type: "worker", script: "mm-api-staging", settings }] };
 }
 
@@ -108,6 +114,9 @@ const STAGING_ON_4_OCTOBER = ok([
     retry_delay: 0,
   }),
   liveQueue("mm-render-staging", { batch_size: 5, max_retries: 100, max_wait_time_ms: 1000, retry_delay: 0 }),
+  // The two queues added since, attached as configured.
+  liveQueue("mm-razorpay-staging", settingsAsConfigured("mm-razorpay-staging")),
+  liveQueue("mm-dead-letters-staging", settingsAsConfigured("mm-dead-letters-staging")),
 ]);
 
 const WORKFLOWS = "/workflows?per_page=100";

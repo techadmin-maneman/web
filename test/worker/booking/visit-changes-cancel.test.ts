@@ -4,12 +4,12 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { clawBack, creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { PaymentUnanswered } from "../../../src/providers/provider-error.ts";
-import { aPerson } from "../fixtures/index.ts";
+import { aCreditSpent, aPerson } from "../fixtures/index.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
 import {
   PERSON,
@@ -114,8 +114,8 @@ describe("POST /api/appointments/:id/cancel", () => {
     const done = await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: true, notice: "free" });
     expect(await done.json()).toMatchObject({ cancelled: true });
     expect(deps.alerts).toEqual([
-      `The refund of Rs. 2,000 for visit ${VISIT}, cancelled by the client, failed (Razorpay payment pay_visit). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
+      "Refund payment pay_visit by hand in Razorpay, once: Razorpay refused the refund of Rs. 2,000 for visit " +
+        `${VISIT}, cancelled by the client. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -152,9 +152,9 @@ describe("POST /api/appointments/:id/cancel", () => {
     const done = await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: true, notice: "free" });
     expect(await done.json()).toMatchObject({ cancelled: true });
     expect(deps.alerts).toEqual([
-      `Razorpay did not answer the refund of Rs. 2,000 for visit ${VISIT}, cancelled by the client (payment ` +
-        "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 2,000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
+      "Look at payment pay_visit in Razorpay first: Razorpay did not say whether it made the refund of Rs. 2,000 " +
+        `for visit ${VISIT}, cancelled by the client. Refund it by hand only if no refund of Rs. 2,000 is there. ` +
+        `http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -206,7 +206,7 @@ describe("POST /api/appointments/:id/cancel", () => {
     await booked("service", THURSDAY_NOON, 0);
     await env.DB.prepare("DELETE FROM payments").run();
     await grantCredits(env.DB, { personId: PERSON, visits: 3, source: "referral", sourceId: "attr-1", now: NOW }).run();
-    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+    await aCreditSpent(PERSON, VISIT);
     await clawBack(env.DB, "referral", "attr-1", NOW);
     const app = client();
 

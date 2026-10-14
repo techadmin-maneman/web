@@ -338,8 +338,9 @@ describe("moving a visit", () => {
     await env.DB.batch([
       env.DB.prepare("UPDATE appointments SET technician_id = 't2' WHERE id = ?1").bind(VISIT),
       env.DB.prepare(
-        `INSERT INTO dispatch_moves (id, appointment_id, reason, actor, fsm_write_state, created_at, updated_at)
-         VALUES ('m1', ?1, 'zone_rebalance', 'ops@example.com', 'written', ?2, ?2)`,
+        `INSERT INTO dispatch_moves (id, appointment_id, reason, actor, fsm_write_state, write_state, created_at,
+           updated_at)
+         VALUES ('m1', ?1, 'zone_rebalance', 'ops@example.com', 'written', 'written', ?2, ?2)`,
       ).bind(VISIT, new Date(NOW.getTime() + 60_000).toISOString()),
     ]);
 

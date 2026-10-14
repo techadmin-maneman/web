@@ -130,7 +130,51 @@ describe("the ledger", () => {
     expect(JSON.parse(audit?.detail ?? "{}")).toEqual({ place: "central", counted: 480, held: 500, difference: -20 });
   });
 
+  it("sends and writes off no more than a place holds, and writes nothing when it refuses", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "solvent", quantity: 10 });
+    const refusals = [
+      await job.opsPost("/api/stock/transfers", {
+        consumable_code: "solvent",
+        quantity: 11,
+        from: "central",
+        to: IMRAN,
+      }),
+      await job.opsPost("/api/stock/transfers", {
+        consumable_code: "solvent",
+        quantity: 11,
+        from: "central",
+        to: IMRAN,
+        wait_for_scan: true,
+      }),
+      await job.opsPost("/api/stock/write-offs", {
+        consumable_code: "solvent",
+        place_id: "central",
+        quantity: 11,
+        note: "Spilt",
+      }),
+    ];
+    for (const refused of refusals) {
+      expect(refused.status).toBe(400);
+      expect(await refused.json()).toMatchObject({ error: { fields: ["quantity"] } });
+    }
+    expect(await held("solvent", "central")).toEqual({ quantity: 10, low: false });
+    const written = await env.DB.prepare(
+      "SELECT (SELECT COUNT(*) FROM stock_transfers) AS transfers, (SELECT COUNT(*) FROM audit_log WHERE action IN ('stock.transfer', 'stock.send', 'stock.write_off')) AS entries",
+    ).first();
+    expect(written).toEqual({ transfers: 0, entries: 0 });
+
+    const sent = await job.opsPost("/api/stock/transfers", {
+      consumable_code: "solvent",
+      quantity: 10,
+      from: "central",
+      to: IMRAN,
+    });
+    expect(sent.status).toBe(200);
+    expect(await held("solvent", IMRAN)).toEqual({ quantity: 10, low: false });
+  });
+
   it("writes off a loss with what happened, and wants the words", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "shampoo_sachet", quantity: 5 });
     await job.opsPost("/api/stock/transfers", {
       consumable_code: "shampoo_sachet",
       quantity: 5,
@@ -176,6 +220,7 @@ describe("the ledger", () => {
   });
 
   it("keeps a kit a technician who left still holds, and drops one that holds nothing", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 5 });
     await job.opsPost("/api/stock/transfers", {
       consumable_code: "tape_strips",
       quantity: 5,
@@ -217,13 +262,17 @@ describe("low stock", () => {
     );
     expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 4, low: true });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining(`Tape strips is low in technician ${IMRAN}'s kit: 4 strip, at or below its level of 5.`),
+      expect.stringContaining(
+        `of Tape strips for technician ${IMRAN}'s kit on the Stock page: 4 strip left, at or below its level of 5.`,
+      ),
     ]);
     expect(job.deps.alerts[0]).not.toContain("Imran");
     // The console names the kit by its technician, as the chat is never told.
     const listed = await (await request(job.ops, "/api/alerts")).json<{ alerts: { message: string }[] }>();
     expect(listed.alerts.map((alert) => alert.message)).toEqual([
-      expect.stringContaining("Tape strips is low in Imran Qureshi's kit: 4 strip, at or below its level of 5."),
+      expect.stringContaining(
+        "of Tape strips for Imran Qureshi's kit on the Stock page: 4 strip left, at or below its level of 5.",
+      ),
     ]);
 
     // Lower still, and the same alert is counted, not told again.
@@ -263,7 +312,9 @@ describe("low stock", () => {
       to: IMRAN,
     });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining("Tape strips is low in National warehouse: 8 strip, at or below its level of 20."),
+      expect.stringContaining(
+        "of Tape strips for National warehouse on the Stock page: 8 strip left, at or below its level of 20.",
+      ),
     ]);
   });
 
@@ -276,7 +327,7 @@ describe("low stock", () => {
       from: "central",
       to: IMRAN,
     });
-    expect(job.deps.alerts).toEqual([expect.stringContaining("Tape strips is low in National warehouse")]);
+    expect(job.deps.alerts).toEqual([expect.stringContaining("of Tape strips for National warehouse")]);
     expect(await lowPlaces()).toBe(1);
 
     const retired = await job.opsPost("/api/consumables/tape_strips/retire", { from: "2026-09-21" });
@@ -289,6 +340,8 @@ describe("low stock", () => {
   });
 
   it("never marks a consumable with no level, nor one retired", async () => {
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "solvent", quantity: 1 });
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "tape_strips", quantity: 1 });
     await job.opsPost("/api/stock/transfers", { consumable_code: "solvent", quantity: 1, from: "central", to: IMRAN });
     expect(await held("solvent", IMRAN)).toEqual({ quantity: 1, low: false });
 
@@ -320,8 +373,8 @@ describe("low stock", () => {
     await job.opsPost("/api/stock/counts", { consumable_code: "tape_strips", place_id: IMRAN, counted: 3 });
     await job.opsPost("/api/stock/counts", { consumable_code: "adhesive", place_id: IMRAN, counted: 40 });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining("Tape strips is low in technician"),
-      expect.stringContaining("Adhesive is low in technician"),
+      expect.stringContaining("of Tape strips for technician"),
+      expect.stringContaining("of Adhesive for technician"),
     ]);
     expect(await openKeys()).toEqual([`low_stock:kit:${IMRAN}:adhesive`, `low_stock:kit:${IMRAN}:tape_strips`]);
     expect(await lowPlaces()).toBe(1);

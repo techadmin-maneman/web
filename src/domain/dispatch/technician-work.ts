@@ -17,6 +17,7 @@
 import { VISIT_BLOCKS } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { indiaInstant } from "../../lib/india-time.ts";
+import { tierOf } from "../../config/visit-types.ts";
 
 /**
  * How long a visit was planned to take, which its service time is read against:
@@ -58,7 +59,7 @@ const WORK = `SELECT t.id AS technician_id, a.type AS type, sv.minutes AS servic
                WHERE kind = 'start' AND superseded = 0 GROUP BY appointment_id) s ON s.appointment_id = a.id
   LEFT JOIN (SELECT appointment_id, MAX(occurred_at) AS at FROM job_events
                WHERE kind = 'outcome' AND superseded = 0 GROUP BY appointment_id) o ON o.appointment_id = a.id
-  LEFT JOIN services sv ON sv.kind = a.type AND sv.tier = COALESCE(a.tier, 'standard')
+  LEFT JOIN services sv ON sv.kind = a.type AND sv.tier = ${tierOf("a.tier")}
   WHERE t.active = 1
   GROUP BY t.id, a.type, sv.minutes
   ORDER BY t.name`;

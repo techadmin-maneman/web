@@ -11,6 +11,7 @@ import { reachBinding, withinReach } from "./places.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
 import { revokeOthersStatement } from "../sign-in/sessions.ts";
+import { goneNumberSql } from "../../lib/mobile.ts";
 
 type NumberChangeState = "verifying" | "awaiting_ops" | "confirmed" | "rejected" | "withdrawn";
 type WhichNumber = "old" | "new";
@@ -350,7 +351,7 @@ export async function decideNumberChange(
 function releaseNumber(db: D1Database, personId: string, now: Date): D1PreparedStatement[] {
   return [
     db
-      .prepare("UPDATE people SET mobile_e164 = 'released:' || id WHERE id = ?1 AND client_since IS NULL")
+      .prepare(`UPDATE people SET mobile_e164 = ${goneNumberSql("released")} WHERE id = ?1 AND client_since IS NULL`)
       .bind(personId),
     revokeOthersStatement(db, { kind: "client", id: personId }, null, now),
   ];

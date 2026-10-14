@@ -7,6 +7,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import { isLow } from "../../policy/stock.ts";
 import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
 import { WAREHOUSE, type Place } from "./stock-places.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** One consumable a place holds at or below its level. */
 interface Low {
@@ -128,9 +129,7 @@ export async function tellOfLowStock(
     for (const each of low) {
       await deps.alertOnce({
         key: `${key}:${each.code}`,
-        message:
-          `${each.name} is low in ${at}: ${String(each.held)} ${each.unit}, at or below its level of ` +
-          `${String(each.level)}. Record a transfer or a delivery on the Stock page.`,
+        message: ALERT_WORDS.low_stock({ item: each.name, at, held: each.held, unit: each.unit, level: each.level }),
         link: "/stock",
       });
     }

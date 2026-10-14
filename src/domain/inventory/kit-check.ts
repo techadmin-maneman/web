@@ -14,6 +14,10 @@ import type { KitCheck } from "../../policy/kit-check.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
 import { addTheWeek } from "./kit-week.ts";
+import { tierOf } from "../../config/visit-types.ts";
+import { bookedAhead } from "../../config/statuses.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 type UseRow = { technician_id: string; code: string; quantity: number };
 type FitRow = {
@@ -35,32 +39,34 @@ async function neededTomorrow(
 ): Promise<Map<string, Map<string, number>>> {
   const from = indiaInstant(tomorrow, "00:00").toISOString();
   const to = indiaInstant(addDays(tomorrow, 1), "00:00").toISOString();
-  const [used, fits] = await db.batch<UseRow | FitRow>([
-    db
-      .prepare(
-        `SELECT a.technician_id, u.consumable_code AS code, SUM(u.quantity) AS quantity
-         FROM appointments a JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = COALESCE(a.tier, 'standard')
-         WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
-           AND a.deleted_at IS NULL AND a.technician_id IS NOT NULL GROUP BY 1, 2`,
-      )
-      .bind(from, to),
-    db
-      .prepare(
-        `SELECT a.technician_id, a.person_id, a.type, a.tier, a.one_visit, t.city
+  const { used, fits } = await readAll(db, {
+    used: read<UseRow>(
+      db
+        .prepare(
+          `SELECT a.technician_id, u.consumable_code AS code, SUM(u.quantity) AS quantity
+         FROM appointments a JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
+         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL GROUP BY 1, 2`,
+        )
+        .bind(from, to),
+    ),
+    fits: read<FitRow>(
+      db
+        .prepare(
+          `SELECT a.technician_id, a.person_id, a.type, a.tier, a.one_visit, t.city
          FROM appointments a JOIN technicians t ON t.id = a.technician_id
-         WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
-           AND a.deleted_at IS NULL AND a.technician_id IS NOT NULL AND a.type IN ('first_fit', 'replacement')`,
-      )
-      .bind(from, to),
-  ]);
+         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL AND a.type IN ('first_fit', 'replacement')`,
+        )
+        .bind(from, to),
+    ),
+  });
   const needs = new Map<string, Map<string, number>>();
   const add = (kit: string, code: string, quantity: number) => {
     const kitNeeds = needs.get(kit) ?? new Map<string, number>();
     kitNeeds.set(code, (kitNeeds.get(code) ?? 0) + quantity);
     needs.set(kit, kitNeeds);
   };
-  for (const row of (used?.results ?? []) as UseRow[]) add(row.technician_id, row.code, row.quantity);
-  const fitRows = (fits?.results ?? []) as FitRow[];
+  for (const row of used) add(row.technician_id, row.code, row.quantity);
+  const fitRows = fits;
   if (fitRows.length === 0) return needs;
   const profiles = await latestFits(
     db,
@@ -135,14 +141,13 @@ function shortLine(
   kit: { readonly id: string; readonly sourceName: string | null; readonly forTheWeek: boolean },
   gaps: readonly Gap[],
 ): string {
-  const lacks = gaps.map((gap) => `${String(gap.gap)} ${gap.code}`).join(", ");
-  const nowhere = gaps.filter((gap) => gap.atSource < gap.gap).map((gap) => gap.code);
-  const gapLine =
-    nowhere.length === 0
-      ? ""
-      : ` ${kit.sourceName ?? "Its stockroom"} can't cover ${nowhere.join(", ")}: order or move one.`;
-  const span = kit.forTheWeek ? "the week" : "tomorrow";
-  return `Short for ${span} in technician ${kit.id}'s kit: ${lacks}. A top-up waits on the Supply plan.${gapLine}`;
+  return ALERT_WORDS.kit_short({
+    kit: kit.id,
+    span: kit.forTheWeek ? "the week" : "tomorrow",
+    lacks: gaps.map((gap) => `${String(gap.gap)} ${gap.code}`).join(", "),
+    source: kit.sourceName,
+    nowhere: gaps.filter((gap) => gap.atSource < gap.gap).map((gap) => gap.code),
+  });
 }
 
 /** What each kit holds and has on its way of what it needs, and each kit's technician and the source of its top-ups. */
@@ -150,36 +155,40 @@ async function kitsAndHoldings(db: D1Database, needs: ReadonlyMap<string, Readon
   const pairs = JSON.stringify(
     [...needs].flatMap(([kit, kitNeeds]) => [...kitNeeds.keys()].map((code) => [code, kit])),
   );
-  const [held, places] = await db.batch<HeldRow | KitSource>([
-    db
-      .prepare(
-        `SELECT place, consumable_code AS code, quantity FROM stock_balances
+  const { held, places } = await readAll(db, {
+    held: read<HeldRow>(
+      db
+        .prepare(
+          `SELECT place, consumable_code AS code, quantity FROM stock_balances
          WHERE (consumable_code, place) IN (SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]') FROM json_each(?1))
            AND quantity > 0
          UNION ALL
          SELECT to_place, consumable_code, quantity FROM stock_transfers
          WHERE state = 'in_transit'
            AND (consumable_code, to_place) IN (SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]') FROM json_each(?1))`,
-      )
-      .bind(pairs),
-    db
-      .prepare(
-        `SELECT t.id AS kit, s.id AS source, s.name AS source_name
+        )
+        .bind(pairs),
+    ),
+    places: read<KitSource>(
+      db
+        .prepare(
+          `SELECT t.id AS kit, s.id AS source, s.name AS source_name
          FROM technicians t
            LEFT JOIN stock_places s ON s.id = COALESCE(
              (SELECT r.id FROM stock_places r WHERE r.kind = 'stockroom' AND r.city = t.city),
              (SELECT w.id FROM stock_places w WHERE w.kind = 'warehouse'))
          WHERE t.id IN (SELECT value FROM json_each(?1))`,
-      )
-      .bind(JSON.stringify([...needs.keys()])),
-  ]);
-  const placeRows = (places?.results ?? []) as KitSource[];
+        )
+        .bind(JSON.stringify([...needs.keys()])),
+    ),
+  });
+  const placeRows = places;
   const atSources = await heldAtSources(
     db,
     placeRows.flatMap((row) => row.source ?? []),
     [...needs.values()].flatMap((kitNeeds) => [...kitNeeds.keys()]),
   );
-  return { held: (held?.results ?? []) as HeldRow[], places: placeRows, atSources };
+  return { held: held, places: placeRows, atSources };
 }
 
 const sumOf = (rows: readonly HeldRow[], place: string, code: string) =>

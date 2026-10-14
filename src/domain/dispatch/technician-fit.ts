@@ -3,7 +3,7 @@
 // docs/decisions/0119-blackouts-by-city-and-trained-fitters.md).
 
 import { isAFitting } from "../../config/visit-types.ts";
-import { visitCity, type Technician } from "../booking/occupancy.ts";
+import { bookingCity, type Technician } from "../booking/occupancy.ts";
 import type { LiveJob } from "./dispatch-landing.ts";
 
 /**
@@ -19,7 +19,7 @@ export async function whyNotThem(
   if (technicianId === job.technician_id) return null;
   const row = await db
     .prepare(
-      `SELECT ${visitCity("?2", "?3")} AS visit_city, t.city AS technician_city, t.fits_trained
+      `SELECT ${bookingCity("?2", "?3")} AS visit_city, t.city AS technician_city, t.fits_trained
        FROM technicians t WHERE t.id = ?1`,
     )
     .bind(technicianId, job.service_pincode, job.person_id)
@@ -37,7 +37,7 @@ export function roomTechnicians(db: D1Database, job: LiveJob): Promise<Technicia
   return db
     .prepare(
       `SELECT t.id, t.name, t.initials FROM technicians t
-       WHERE t.active = 1 AND (t.id = ?1 OR ((${visitCity("?2", "?3")} IS NULL OR t.city = ${visitCity("?2", "?3")})
+       WHERE t.active = 1 AND (t.id = ?1 OR ((${bookingCity("?2", "?3")} IS NULL OR t.city = ${bookingCity("?2", "?3")})
          AND (?4 = 0 OR t.fits_trained = 1)))
        ORDER BY t.name`,
     )

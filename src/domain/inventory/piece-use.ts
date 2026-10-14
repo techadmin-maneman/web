@@ -93,6 +93,7 @@ export async function recordPieceUse(
       place: move.state === "held" ? technicianId : null,
       movementId: taken.ids.get(stock) ?? crypto.randomUUID(),
       appointmentId: jobId,
+      from: move.state === "held" ? { states: ["fitted", "missing"] } : { states: ["held"], place: technicianId },
       at: step.at,
       actor: technicianId,
     }),

@@ -3,7 +3,8 @@
 
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
 import { compareTechniciansForHold, tieRange } from "./technician-choice.ts";
-import { techniciansBarredOn, visitsOfClient } from "./technician-rotation.ts";
+import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician-rotation.ts";
+import { visitsOfClient } from "./technician-rotation.ts";
 import { graceEnds, ownUnpaid } from "./hold-stages.ts";
 import { PAYMENT_GRACE_SECONDS, type BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
@@ -146,12 +147,10 @@ async function candidatesFor({
   const fitting = technicians
     .map((technician) => ({ technician, start: placement(held(technician.id, date), window, units) }))
     .filter((candidate): candidate is { technician: Technician; start: number } => candidate.start !== null);
-  // Never the technician of the client's visit before or after, unless nobody else is free (ADR 0117).
-  const others = fitting.filter((candidate) => !beside.has(candidate.technician.id));
   const byLoad = compareTechniciansForHold(held, date);
   // A client's move stays with its own technician where they are free.
   const ownFirst = (candidate: { technician: Technician }) => Number(candidate.technician.id === moving?.technicianId);
-  return (others.length > 0 ? others : fitting)
+  return allowedTechnicians(fitting, (candidate) => beside.has(candidate.technician.id))
     .filter((candidate) => input.technicianId === undefined || candidate.technician.id === input.technicianId)
     .sort((a, b) => ownFirst(b) - ownFirst(a) || byLoad(a, b));
 }

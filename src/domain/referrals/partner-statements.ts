@@ -5,6 +5,7 @@
 
 import { addMonths, indiaDate, indiaInstant, monthOf } from "../../lib/india-time.ts";
 import { auditStatementIfDeleted, auditStatementIfWritten, type AuditActor } from "../platform/audit.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 /**
  * Paise a partner, `c`, is owed: what its fitted friends earned, less what refunds took back, which leaves a friend
@@ -68,25 +69,31 @@ interface ChannelRow {
 /** Each partner with anything in the month, or anything owed, and its statement for the month. */
 export async function partnerStatements(db: D1Database, month: string): Promise<PartnerStatement[]> {
   const { from, to } = monthBounds(month);
-  const [channels, lines, payouts] = await db.batch([
-    db.prepare(`SELECT c.id, c.name, c.code, ${OWED} AS owed FROM referral_channels c ORDER BY c.name`),
-    db
-      .prepare(
-        `SELECT channel_id, granted_at AS at, 'fitted' AS kind, COALESCE(commission, 0) AS commission
+  const { channels, lines, payouts } = await readAll(db, {
+    channels: read<ChannelRow>(
+      db.prepare(`SELECT c.id, c.name, c.code, ${OWED} AS owed FROM referral_channels c ORDER BY c.name`),
+    ),
+    lines: read<StatementLine & { channel_id: string; at: string }>(
+      db
+        .prepare(
+          `SELECT channel_id, granted_at AS at, 'fitted' AS kind, COALESCE(commission, 0) AS commission
            FROM channel_attributions WHERE granted_at >= ?1 AND granted_at < ?2
          UNION ALL
          SELECT channel_id, clawed_back_at, 'taken_back', COALESCE(commission, 0)
            FROM channel_attributions WHERE clawed_back_at >= ?1 AND clawed_back_at < ?2
          ORDER BY at`,
-      )
-      .bind(from, to),
-    db
-      .prepare("SELECT channel_id, amount, paid_on, reference, recorded_by FROM partner_payouts WHERE month = ?1")
-      .bind(month),
-  ]);
-  const linesOf = (lines?.results ?? []) as (StatementLine & { channel_id: string; at: string })[];
-  const payoutsOf = (payouts?.results ?? []) as (Payout & { channel_id: string })[];
-  return ((channels?.results ?? []) as ChannelRow[])
+        )
+        .bind(from, to),
+    ),
+    payouts: read<Payout & { channel_id: string }>(
+      db
+        .prepare("SELECT channel_id, amount, paid_on, reference, recorded_by FROM partner_payouts WHERE month = ?1")
+        .bind(month),
+    ),
+  });
+  const linesOf = lines;
+  const payoutsOf = payouts;
+  return channels
     .map((channel) =>
       statementOf(
         channel,

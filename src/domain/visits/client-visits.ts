@@ -21,7 +21,7 @@ import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
 import { landedOutcome, visitBegun } from "./visit-begun.ts";
 import { ANGLES, type Angle, type Phase } from "../field/visit-photos.ts";
 import { MINUTE_MS, minutesBetween } from "../../lib/durations.ts";
-import { PAYMENT_HELD, statusIn } from "../../config/statuses.ts";
+import { PAYMENT_HELD, statusIn, VISIT_ENDED, VISIT_LIVE } from "../../config/statuses.ts";
 import { creditSpentOn } from "./visit-facts.ts";
 
 /** The three windows the client app offers, by the hour a visit starts in India. */
@@ -113,8 +113,6 @@ const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.wind
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
 /** The statuses of a visit not yet closed. */
 const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
-export const UPCOMING_STATUSES = `('scheduled', 'dispatched', 'in_progress')`;
-const PAST_STATUSES = `('completed', 'terminated')`;
 /** A visit cancelled outright, not one a charged move replaced with a new visit, which stands in its place. */
 const CANCELLED = `(a.status = 'cancelled' AND NOT EXISTS (SELECT 1 FROM visit_changes c
     WHERE c.appointment_id = a.id AND c.kind = 'replaced'))`;
@@ -192,7 +190,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
     db
       .prepare(
         `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-         WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES}
+         WHERE ${LIVE} AND ${statusIn("a.status", VISIT_LIVE)}
          ORDER BY a.window_end < ?2 OR landed_outcome IS NOT NULL, a.window_start LIMIT 1`,
       )
       .bind(personId, now.toISOString())
@@ -229,13 +227,15 @@ export async function listVisits(
   now: Date,
   { withCancelled = false }: { readonly withCancelled?: boolean } = {},
 ): Promise<{ upcoming: VisitSummary[]; past: VisitSummary[] }> {
-  const pastStatus = withCancelled ? `(a.status IN ${PAST_STATUSES} OR ${CANCELLED})` : `a.status IN ${PAST_STATUSES}`;
+  const pastStatus = withCancelled
+    ? `(${statusIn("a.status", VISIT_ENDED)} OR ${CANCELLED})`
+    : statusIn("a.status", VISIT_ENDED);
   const [context, upcoming, past] = await Promise.all([
     contextOf(db, personId),
     db
       .prepare(
         `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-         WHERE ${LIVE} AND a.status IN ${UPCOMING_STATUSES} ORDER BY a.window_start`,
+         WHERE ${LIVE} AND ${statusIn("a.status", VISIT_LIVE)} ORDER BY a.window_start`,
       )
       .bind(personId)
       .all<AppointmentRow>(),
@@ -320,7 +320,7 @@ async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boo
  */
 async function invoiceHeld(
   db: D1Database,
-  row: AppointmentRow & { invoice_issued_at: string | null; fsm_invoice_id: string | null },
+  row: AppointmentRow & { invoice_issued_at: string | null; books_invoice_id: string | null },
 ): Promise<InvoiceHeld | null> {
   if (row.status !== "completed" || row.invoice_issued_at !== null) return null;
   const credit = await db
@@ -328,7 +328,7 @@ async function invoiceHeld(
     .bind(row.id)
     .first<{ paid_with_credit: number }>();
   if (credit?.paid_with_credit === 1) return "credit";
-  return row.fsm_invoice_id === null ? null : "checking";
+  return row.books_invoice_id === null ? null : "checking";
 }
 
 /**
@@ -369,7 +369,7 @@ export async function visitDetail({
 }): Promise<VisitDetail | null> {
   const row = await db
     .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS}, a.invoice_issued_at, a.fsm_invoice_id, v.duration_minutes, v.outcome
+      `SELECT ${APPOINTMENT_COLUMNS}, a.invoice_issued_at, a.books_invoice_id, v.duration_minutes, v.outcome
        FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id LEFT JOIN visit_outcomes v ON v.appointment_id = a.id
        WHERE ${LIVE} AND a.id = ?2`,
     )
@@ -377,7 +377,7 @@ export async function visitDetail({
     .first<
       AppointmentRow & {
         invoice_issued_at: string | null;
-        fsm_invoice_id: string | null;
+        books_invoice_id: string | null;
         duration_minutes: number | null;
         outcome: VisitOutcome | null;
       }

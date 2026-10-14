@@ -210,6 +210,7 @@ async function acceptedOf(
   return {
     event_id: event.eventId,
     replayed,
+    write_state: event.writeState,
     fsm_write_state: event.writeState,
     progress: await progressOf(c.env.DB, job, noShowWaitMin),
   };

@@ -50,9 +50,21 @@ describe("validateStaticConfig: Zoho Books", () => {
       orgId: "60088931635",
       refundAccountId: null,
       gst: { gstin: null, stateCode: null, sac: null },
+      itemPush: false,
+      billAccounts: null,
     });
     const withAccount = validateStaticConfig({ ...stagingBase, BOOKS_REFUND_ACCOUNT_ID: "bank-7" });
     expect(withAccount.settings.zohoBooks?.refundAccountId).toBe("bank-7");
+  });
+
+  it("reads the two accounts a bill posts to only when both are set", () => {
+    const one = { ...stagingBase, BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT: "acct-1" };
+    expect(validateStaticConfig(one).settings.zohoBooks?.billAccounts).toBeNull();
+    const both = { ...one, BOOKS_BILL_CONSUMABLES_ACCOUNT: "acct-2" };
+    expect(validateStaticConfig(both).settings.zohoBooks?.billAccounts).toEqual({
+      hairSystems: "acct-1",
+      consumables: "acct-2",
+    });
   });
 
   it("reads the GST registration Books' invoices and items carry, once the CA has given it", () => {
@@ -85,6 +97,8 @@ describe("validateStaticConfig: Zoho Books", () => {
       "ZOHO_BOOKS_ACCOUNTS_HOST is not set",
       "ZOHO_BOOKS_API_HOST is not set",
       "ZOHO_BOOKS_ORG_ID is not set",
+      "BOOKS_ITEM_PUSH is not set",
+      'BOOKS_ITEM_PUSH must be "true" or "false"',
     ]);
   });
 

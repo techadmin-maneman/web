@@ -7,6 +7,7 @@ import { TURNSTILE_HOSTS } from "../config/environments.ts";
 import { countOne } from "../domain/sign-in/rate-limit.ts";
 import { saltedHash } from "../lib/hash.ts";
 import { TURNSTILE_TEST_TOKEN, verifyTurnstile, type TurnstileResult } from "../providers/turnstile.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 interface Visitor {
   /** For Turnstile only; never stored or logged. */
@@ -61,8 +62,6 @@ async function countUnavailable(c: Context<AppEnv>, detail: string): Promise<voi
   if (failed < UNAVAILABLE_PER_HOUR_TO_ALERT) return;
   await deps.alertOnce({
     key: TURNSTILE_UNAVAILABLE,
-    message:
-      `Turnstile could not check ${String(failed)} visitors in the last hour (${detail}), so their bookings, ` +
-      "try-ons and app logins were turned away. Check Cloudflare's status, and the Turnstile secret the API is set up with.",
+    message: ALERT_WORDS.turnstile_unavailable({ failed, detail }),
   });
 }

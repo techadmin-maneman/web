@@ -9,8 +9,18 @@ import type { PlacesReached } from "../../policy/access.ts";
 const pincodeCity = (pincode: string): string =>
   `(SELECT place_pin.city FROM serviceable_pincodes place_pin WHERE place_pin.pincode = ${pincode})`;
 
-const visitPincode = (appointmentId: string): string =>
-  `(SELECT place_visit.service_pincode FROM appointments place_visit WHERE place_visit.id = ${appointmentId})`;
+/**
+ * A visit's city, `row` its alias: the one definition access, stock, the dispatch board and Books read. It is the city
+ * its booking was made in, which booking copies from the pincode (appointments.service_city), so a pincode ops re-map
+ * later leaves the visits booked there where they were; a visit booked before the copy was kept falls back to its
+ * pincode's city now.
+ */
+export const visitCity = (row: string): string =>
+  `COALESCE(${row}.service_city, ${pincodeCity(`${row}.service_pincode`)})`;
+
+/** The city of the visit `appointmentId`. */
+const cityOfVisit = (appointmentId: string): string =>
+  `(SELECT ${visitCity("place_visit")} FROM appointments place_visit WHERE place_visit.id = ${appointmentId})`;
 
 const currentAddressPincode = (personId: string): string =>
   `(SELECT place_address.pincode FROM addresses place_address
@@ -51,16 +61,16 @@ function clientCity(personId: string): string {
   return `COALESCE(${pincodes.map(pincodeCity).join(", ")})`;
 }
 
-/** A hold's city: the pincode it was booked at, else the address of the visit it moves. */
+/** A hold's city: the pincode it was booked at, else the city of the visit it moves. */
 const holdCity = (row: string): string =>
-  pincodeCity(`COALESCE(${row}.pincode, ${visitPincode(`${row}.moves_appointment_id`)})`);
+  `COALESCE(${pincodeCity(`${row}.pincode`)}, ${cityOfVisit(`${row}.moves_appointment_id`)})`;
 
 const orderPincode = (orderId: string): string =>
   `(SELECT place_order.pincode FROM slot_holds place_order WHERE place_order.razorpay_order_id = ${orderId})`;
 
 /** A payment's city: its visit's, else the hold it paid for, else its client's. */
 const paymentCity = (row: string): string =>
-  `COALESCE(${pincodeCity(visitPincode(`${row}.appointment_id`))}, ${pincodeCity(orderPincode(`${row}.razorpay_order_id`))},
+  `COALESCE(${cityOfVisit(`${row}.appointment_id`)}, ${pincodeCity(orderPincode(`${row}.razorpay_order_id`))},
     ${clientCity(`${row}.person_id`)})`;
 
 const caseVisit = (caseId: string): string =>
@@ -76,7 +86,7 @@ interface RecordPlace {
 /** Every kind of record a member of staff may be kept to their own cities for. */
 const RECORD_PLACES = {
   client: { table: "people", city: (row) => clientCity(`${row}.id`) },
-  visit: { table: "appointments", city: (row) => pincodeCity(`${row}.service_pincode`) },
+  visit: { table: "appointments", city: visitCity },
   hold: { table: "slot_holds", city: holdCity },
   payment: { table: "payments", city: paymentCity },
   refund: {
@@ -84,12 +94,12 @@ const RECORD_PLACES = {
     city: (row) => `(SELECT ${paymentCity("place_payment")} FROM payments place_payment
       WHERE place_payment.id = ${row}.payment_id)`,
   },
-  move: { table: "dispatch_moves", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
-  move_proposal: { table: "move_proposals", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
-  payment_link: { table: "payment_links", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
+  move: { table: "dispatch_moves", city: (row) => cityOfVisit(`${row}.appointment_id`) },
+  move_proposal: { table: "move_proposals", city: (row) => cityOfVisit(`${row}.appointment_id`) },
+  payment_link: { table: "payment_links", city: (row) => cityOfVisit(`${row}.appointment_id`) },
   piece: { table: "pieces", city: (row) => clientCity(`${row}.person_id`) },
-  no_show: { table: "no_show_cases", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
-  dispute: { table: "no_show_disputes", city: (row) => pincodeCity(visitPincode(caseVisit(`${row}.case_id`))) },
+  no_show: { table: "no_show_cases", city: (row) => cityOfVisit(`${row}.appointment_id`) },
+  dispute: { table: "no_show_disputes", city: (row) => cityOfVisit(caseVisit(`${row}.case_id`)) },
   grievance: { table: "grievances", city: (row) => clientCity(`${row}.person_id`) },
   number_change: { table: "number_change_requests", city: (row) => clientCity(`${row}.person_id`) },
   deletion_request: { table: "deletion_requests", city: (row) => clientCity(`${row}.person_id`) },
@@ -97,7 +107,7 @@ const RECORD_PLACES = {
   consultation_request: { table: "consultation_requests", city: (row) => pincodeCity(`${row}.pincode`) },
   waitlist_entry: { table: "waitlist_entries", city: (row) => pincodeCity(`${row}.pincode`) },
   technician: { table: "technicians", city: (row) => `${row}.city` },
-  visit_change: { table: "visit_changes", city: (row) => pincodeCity(visitPincode(`${row}.appointment_id`)) },
+  visit_change: { table: "visit_changes", city: (row) => cityOfVisit(`${row}.appointment_id`) },
   // A chat's is its client's; a number we don't know is in no city.
   conversation: { table: "conversations", city: (row) => clientCity(`${row}.person_id`) },
   // A City matter's is the city it was sent to.

@@ -3,6 +3,8 @@
 // in line, and a label scanned that the place does not hold is flagged for ops.
 
 import type { Place } from "./stock-places.ts";
+import { z } from "zod";
+import { storedJson } from "../../lib/stored-json.ts";
 
 /** What a count's labels found against the place: those held and not scanned, and those scanned and not held. */
 export interface LabelsFound {
@@ -69,4 +71,5 @@ export function labelColumns(line: CountedLine, found: LabelsFound | null) {
 }
 
 /** Labels kept as JSON, or none. */
-export const labelsOf = (kept: string | null): string[] => (kept === null ? [] : (JSON.parse(kept) as string[]));
+export const labelsOf = (kept: string | null): string[] =>
+  kept === null ? [] : storedJson(z.array(z.string()), kept, "count_lines labels");

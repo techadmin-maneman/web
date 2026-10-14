@@ -4,7 +4,7 @@
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import type { Point } from "../../providers/routes/index.ts";
 import { pinsOf } from "./day-route.ts";
-import { LIVE } from "./dispatch-board.ts";
+import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 
 const EARTH_KM = 6371;
 const radians = (degrees: number) => (degrees * Math.PI) / 180;
@@ -40,7 +40,7 @@ export async function nearestKm(
   const { results } = await db
     .prepare(
       `SELECT a.id, a.technician_id, a.window_start FROM appointments a
-       WHERE a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.id <> ?1
+       WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_LIVE)} AND a.id <> ?1
          AND a.window_start >= ?2 AND a.window_start < ?3
          AND a.technician_id IN (SELECT value FROM json_each(?4))`,
     )

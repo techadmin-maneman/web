@@ -15,7 +15,8 @@ import type { SlotSchedule } from "../booking/slot-times.ts";
 import { visitBegun, begunPastArrival } from "../visits/visit-begun.ts";
 import type { AppointmentStatus } from "../visits/visit-status.ts";
 import { visitTimes } from "../visits/visit-times.ts";
-import { LIVE } from "./dispatch-board.ts";
+import { tierOf } from "../../config/visit-types.ts";
+import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 
 export interface LiveJob {
   id: string;
@@ -49,8 +50,8 @@ export function liveJob(db: D1Database, appointmentId: string): Promise<LiveJob 
       `SELECT a.id, a.person_id, a.type, a.status, a.window_start, a.window_end, a.start_before_move,
          a.technician_id, a.service_pincode, s.minutes AS service_minutes, ${visitBegun("a")} AS begun,
          ${begunPastArrival("a")} AS begun_past_arrival, ${CLIENT_MOVING} AS client_moving
-       FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
-       WHERE a.id = ?1 AND a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.type IS NOT NULL
+       FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
+       WHERE a.id = ?1 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_LIVE)} AND a.type IS NOT NULL
          AND a.window_start IS NOT NULL`,
     )
     .bind(appointmentId)

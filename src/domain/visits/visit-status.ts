@@ -1,9 +1,10 @@
 // A visit's status, and the steps that move it on. A step only moves a visit forward, never back and never out of a
 // closed status, and each move is one guarded UPDATE that callers put in the same batch as the fact that caused it.
 
+import { VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import { minutesBetween } from "../../lib/durations.ts";
 
-/** The six statuses a visit may be in. */
+/** The six statuses a visit may be in, under the names FSM gave them, which the rows and the apps still hold. */
 export const APPOINTMENT_STATUSES = [
   "scheduled",
   "dispatched",
@@ -14,14 +15,27 @@ export const APPOINTMENT_STATUSES = [
 ] as const;
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
+/** What each status means, which its name does not always say: `dispatched` is not a step of dispatch's. */
+const MEANINGS: Readonly<Record<AppointmentStatus, string>> = {
+  scheduled: "booked, its technician not yet at the door",
+  dispatched: "its technician checked in at the door",
+  in_progress: "its technician began the work",
+  completed: "done",
+  cancelled: "called off before it began",
+  terminated: "ended before it was done: partly done, or a no-show, which its outcome tells apart",
+};
+
+/** Each status with its meaning, as the API documents a visit's status. */
+export const STATUS_MEANINGS = APPOINTMENT_STATUSES.map((status) => `${status}: ${MEANINGS[status]}`).join("; ");
+
 /** How a closed visit ended: done, partly done with the technician's reason, or not at all, the client not home. */
 export const VISIT_OUTCOMES = ["done", "partial", "no_show"] as const;
 export type VisitOutcome = (typeof VISIT_OUTCOMES)[number];
 
 export type Step = "check_in" | "start" | "done" | "partial" | "no_show" | "cancel";
 
-const NOT_STARTED: readonly AppointmentStatus[] = ["scheduled", "dispatched"];
-const OPEN: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
+const NOT_STARTED: readonly AppointmentStatus[] = VISIT_NOT_BEGUN;
+const OPEN: readonly AppointmentStatus[] = VISIT_LIVE;
 
 /**
  * The statuses a visit may be in for this step to apply, and where it goes. A visit can be closed from any open status,

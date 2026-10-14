@@ -123,6 +123,24 @@ describe("units moved", () => {
     expect((await unitsAt("central")).units.map((unit) => unit.lot_code)).toEqual(["LATE"]);
   });
 
+  it("move once when two moves name one label together, and the second is refused, writing nothing", async () => {
+    const [label = ""] = await labelsAt("central");
+    const move = (to: string) =>
+      job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 1, from: "central", to, units: [label] });
+    const answers = await Promise.all([move(IMRAN), move(IMRAN)]);
+    expect(answers.map((answer) => answer.status).sort()).toEqual([200, 400]);
+    expect(await stateOf(label)).toEqual({ state: "held", place: IMRAN });
+    expect(await labelsAt(IMRAN)).toEqual([label]);
+    const moved = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM stock_movements WHERE reason = 'transferred'",
+    ).first();
+    expect(moved).toEqual({ n: 2 });
+
+    // Named again from where it no longer is, it is refused too.
+    expect((await move(IMRAN)).status).toBe(400);
+    expect(await labelsAt("central")).toHaveLength(3);
+  });
+
   it("travel in transit to a stockroom, and those that never arrive go missing", async () => {
     const added = await job.opsPost("/api/stock/places", {
       kind: "stockroom",

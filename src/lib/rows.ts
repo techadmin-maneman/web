@@ -336,6 +336,14 @@ export interface Rows {
     readonly expires_at: string | null;
     readonly created_at: string;
   };
+  readonly crm_contact_updates: {
+    readonly person_id: string;
+    readonly owed_at: string;
+    readonly changed_at: string;
+    readonly invite_attached: number;
+    readonly attempts: number;
+    readonly tried_at: string | null;
+  };
   readonly cron_jobs: {
     readonly job: string;
     readonly failed_runs: number;
@@ -1428,14 +1436,6 @@ export interface Rows {
     readonly books_vendor_id: string | null;
     readonly books_checked_at: string | null;
   };
-  readonly sync_cursors: {
-    readonly name: string;
-    readonly pass_date: string | null;
-    readonly next_page: number;
-    readonly pass_started_at: string | null;
-    readonly repaired: number;
-    readonly updated_at: string;
-  };
   readonly targets: {
     readonly month: string;
     readonly city: string;
@@ -1566,6 +1566,12 @@ export interface Rows {
     readonly created_at: string;
     readonly expires_at: string;
   };
+  readonly vendor_breakers: {
+    readonly vendor: string;
+    readonly failures: number;
+    readonly reopens_at: string | null;
+    readonly opened_at: string | null;
+  };
   readonly visit_blackouts: {
     readonly date: string;
     readonly reason: string;
@@ -1625,17 +1631,6 @@ export interface Rows {
     readonly alerted_at: string | null;
     readonly created_at: string;
   };
-  readonly webhook_inbox: {
-    readonly id: string;
-    readonly source: string;
-    readonly dedupe_key: string;
-    readonly module: string;
-    readonly record_id: string;
-    readonly received_at: string;
-    readonly processed_at: string | null;
-    readonly attempts: number;
-    readonly last_error: string | null;
-  };
   readonly word_versions: {
     readonly id: string;
     readonly key: string;
@@ -1649,16 +1644,6 @@ export interface Rows {
     readonly expires_at: string | null;
     readonly refreshing_until: string | null;
     readonly cool_down_until: string | null;
-  };
-  readonly zoho_token: {
-    readonly id: number;
-    readonly access_token: string;
-    readonly expires_at: string;
-  };
-  readonly zoho_tokens: {
-    readonly client: string;
-    readonly access_token: string;
-    readonly expires_at: string;
   };
   readonly zones: {
     readonly name: string;

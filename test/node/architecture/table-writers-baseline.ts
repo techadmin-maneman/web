@@ -54,6 +54,7 @@ export const WRITTEN_ELSEWHERE: Readonly<Partial<Record<CoreTable, readonly stri
     "src/domain/ops/needs-a-hand.ts",
     "src/domain/privacy/erasure-files.ts",
     "src/domain/privacy/erasure-statements.ts",
+    "src/queues/crm-contact-update.ts",
     "src/queues/crm-sync.ts",
   ],
   technicians: ["src/domain/field/technician-pay.ts"],

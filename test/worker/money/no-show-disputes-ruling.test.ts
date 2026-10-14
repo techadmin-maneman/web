@@ -180,8 +180,8 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
       template: "no_show_dispute_credit_gone_v1",
     });
     expect(deps.alerts).toEqual([
-      `The visit credit for visit ${VISIT}, a no-show refunded on dispute, could not come back: its grant has ` +
-        "expired or been withdrawn. The client is told so; settle it with them by hand if they are owed one. " +
+      `Settle visit ${VISIT}'s credit with the client by hand if they are owed one: its grant expired or was ` +
+        "withdrawn, so it could not come back after the no-show refunded on dispute. The client is told so. " +
         `http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     expect(await env.DB.prepare("SELECT key FROM alerts WHERE key LIKE 'no_show_credit%'").first()).toEqual({
@@ -202,8 +202,8 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
 
     expect(answer.status).toBe(200);
     expect(deps.alerts).toEqual([
-      `The refund of Rs. 4,000 for visit ${VISIT}, a no-show refunded on dispute, failed (Razorpay payment ` +
-        `pay_visit). Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
+      "Refund payment pay_visit by hand in Razorpay, once: Razorpay refused the refund of Rs. 4,000 for visit " +
+        `${VISIT}, a no-show refunded on dispute. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     expect(await env.DB.prepare("SELECT key FROM alerts").first()).toEqual({
       key: `no_show_refund_failed:refunded on dispute:${VISIT}`,
@@ -223,9 +223,9 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
 
     expect(answer.status).toBe(200);
     expect(deps.alerts).toEqual([
-      `Razorpay did not answer the refund of Rs. 4,000 for visit ${VISIT}, a no-show refunded on dispute (payment ` +
-        "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 4,000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
+      "Look at payment pay_visit in Razorpay first: Razorpay did not say whether it made the refund of Rs. 4,000 " +
+        `for visit ${VISIT}, a no-show refunded on dispute. Refund it by hand only if no refund of Rs. 4,000 is ` +
+        `there. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 

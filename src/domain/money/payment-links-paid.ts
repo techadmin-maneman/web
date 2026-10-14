@@ -11,6 +11,7 @@ import type { Composed } from "../messages/visit-message-text.ts";
 import { paymentsTab } from "../platform/alerts.ts";
 import { type LinkDeps, hairSystemName } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** The link a payment paid, by Razorpay's ID for it, and its reference: ours, or the visit's ID on one made by hand. */
 interface PaidLink {
@@ -97,9 +98,7 @@ export async function cancelLinkPaidElsewhere(
     deps.log.warn("payment_link_not_cancelled", { appointment_id: visit.appointmentId, reason });
     await deps.alertOnce({
       key: `paid_elsewhere_link:${own.razorpayLinkId}`,
-      message:
-        `Visit ${visit.appointmentId} was paid by another link, and its own payment link ${own.razorpayLinkId} ` +
-        `could not be cancelled: ${reason}. Cancel it in Razorpay's dashboard; if the client paid it too, refund one.`,
+      message: ALERT_WORDS.paid_elsewhere_link({ visit: visit.appointmentId, link: own.razorpayLinkId, reason }),
       link: paymentsTab(visit.personId),
     });
   }

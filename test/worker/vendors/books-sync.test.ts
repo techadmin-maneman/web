@@ -250,8 +250,8 @@ describe("payments and refunds", () => {
       expect(told).toEqual([
         expect.stringMatching(
           new RegExp(
-            `^Payment ${PAYMENT} \\(Books stub-payment-.+\\) was Rs\\. 30,000, and invoice inv-41 owed Rs\\. 12,000 of ` +
-              "it, so Rs\\. 18,000 has nothing to be set against\\. It stays in Books as credit owed to the client",
+            `^Refund Rs\\. 18,000 of payment ${PAYMENT}, or keep it in Books as the client's credit: it has nothing ` +
+              "to be set against \\(invoice inv-41 owed Rs\\. 12,000 of its Rs\\. 30,000\\)\\. Books payment stub-payment-",
           ),
         ) as string,
       ]);
@@ -294,7 +294,7 @@ describe("payments and refunds", () => {
       expect(told).toEqual([
         expect.stringMatching(
           new RegExp(
-            `^Payment ${PAYMENT} \\(Books stub-payment-.+\\) has nothing to be set against: invoice inv-41 is paid\\.`,
+            `^Refund payment ${PAYMENT}, or keep it in Books as the client's credit: it has nothing to be set against \\(invoice inv-41 is paid\\)\\.`,
           ),
         ) as string,
       ]);

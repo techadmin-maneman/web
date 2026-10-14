@@ -17,10 +17,13 @@ import { UNTOLD_MOVE, UNTOLD_REASON } from "../dispatch/dispatch-board.ts";
 import { LEAVE_ON_THE_DAY } from "../dispatch/leave.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
 import {
+  atRiskFrom,
   atRiskIfDoneBy,
+  firstFitToBookFrom,
   firstFitToBookIfConsultedBy,
   NEXT_VISIT_DAYS,
   offeredWindow,
+  serviceDue,
   type NextVisitDays,
 } from "../../policy/next-visit.ts";
 import { closedIfSentBy } from "../../policy/one-visit.ts";
@@ -271,11 +274,11 @@ const QUEUES: readonly Queue[] = [
   },
   {
     sql: `SELECT 'draft_invoice' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         a.fsm_invoice_id AS detail, json_object('invoice_id', a.fsm_invoice_id) AS facts,
+         a.books_invoice_id AS detail, json_object('invoice_id', a.books_invoice_id) AS facts,
          COALESCE(a.window_end, a.synced_at) AS since, NULL AS due_by, '' AS episode
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL
-     AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL`,
+     AND a.deleted_at IS NULL AND a.books_invoice_id IS NOT NULL AND pe.erased_at IS NULL`,
   },
   // A visit with no technician, due the day before it (src/domain/dispatch/unassigned.ts).
   { sql: UNASSIGNED_VISITS, binds: (at) => [at.now] },
@@ -327,16 +330,14 @@ const QUEUES: readonly Queue[] = [
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)`,
   },
   // An At-risk client is a fitted one with nothing booked since their last first fit, service or replacement, done
-  // before ?1: `at_risk_after_due` days past the day their next service fell due. It waits from that day (?2 on from
-  // the visit's own), names the visit and the day the service fell due (?3 on), and goes as soon as a visit is
-  // booked, paid for, or done after it (docs/decisions/0086-the-next-visit-is-offered.md). It reads each client's
-  // last visits from last_visits, which the database keeps as each visit closes (migration 0053), and looks for a
-  // visit booked since along indexes that hold only the visits to come or those after it.
+  // before ?1: `at_risk_after_due` days past the day their next service fell due. It reads the visit's start as its
+  // `since`, from which nextVisitDays counts the day it waits from and the day the service fell due, and goes as soon
+  // as a visit is booked, paid for, or done after it (docs/decisions/0086-the-next-visit-is-offered.md). It reads each
+  // client's last visits from last_visits, which the database keeps as each visit closes (migration 0053), and looks
+  // for a visit booked since along indexes that hold only the visits to come or those after it.
   {
     sql: `SELECT 'at_risk_client' AS "group", s.visit_id AS id, s.person_id AS person_id, pe.name AS person_name,
-         s.visit_start || ' ' || date(s.visit_start, '+330 minutes', ?3) AS detail,
-         json_object('last_visit_at', s.visit_start, 'due_on', date(s.visit_start, '+330 minutes', ?3)) AS facts,
-         date(s.visit_start, '+330 minutes', ?2) AS since, NULL AS due_by, '' AS episode
+         s.visit_start AS detail, NULL AS facts, s.visit_start AS since, NULL AS due_by, '' AS episode
     FROM last_visits s JOIN people pe ON pe.id = s.person_id
    WHERE s.visit_start < ?1 AND pe.erased_at IS NULL
      AND NOT EXISTS (
@@ -349,21 +350,17 @@ const QUEUES: readonly Queue[] = [
           AND ${statusNotIn("later.status", VISIT_CALLED_OFF)})
      AND NOT EXISTS (
        SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND ${paidNotBooked("h")})`,
-    binds: (at) => [
-      at.atRiskBefore,
-      daysOn(at.days.service_cadence + at.days.at_risk_after_due),
-      daysOn(at.days.service_cadence),
-    ],
+    binds: (at) => [at.atRiskBefore],
   },
   // A First fit to book is a client whose last consultation was done before ?1, with no first fit, service or
   // replacement done since, and nothing booked since. A one visit the client declined ends as a consultation, so it
-  // counts too. It waits from `first_fit_to_book` days after the consultation (?2 on from it), names the
-  // consultation's start, and goes as the at-risk task does. It reads only the clients not fitted since their
+  // counts too. It reads the consultation's start as its `since`, from which nextVisitDays counts the
+  // `first_fit_to_book` days it waits, names the consultation's start, and goes as the at-risk task does. It reads only the clients not fitted since their
   // consultation, along the partial index `last_visits_unfitted`.
   {
     sql: `SELECT 'first_fit_to_book' AS "group", s.person_id AS id, s.person_id AS person_id, pe.name AS person_name,
          s.consulted_start AS detail, json_object('consulted_at', s.consulted_start) AS facts,
-         date(s.consulted_start, '+330 minutes', ?2) AS since, NULL AS due_by,
+         s.consulted_start AS since, NULL AS due_by,
          ${FIRST_FIT_EPISODE} AS episode
     FROM last_visits s JOIN people pe ON pe.id = s.person_id
    WHERE s.consulted_start < ?1 AND ${NOT_FITTED_SINCE_CONSULTED} AND pe.erased_at IS NULL
@@ -377,7 +374,7 @@ const QUEUES: readonly Queue[] = [
           AND ${statusNotIn("later.status", VISIT_CALLED_OFF)})
      AND NOT EXISTS (
        SELECT 1 FROM slot_holds h WHERE h.person_id = s.person_id AND ${paidNotBooked("h")})`,
-    binds: (at) => [at.toBookBefore, daysOn(at.days.first_fit_to_book)],
+    binds: (at) => [at.toBookBefore],
   },
   // A one visit's payment link still unpaid (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): whether
   // Razorpay sent it, has still to, refused it or it has closed unpaid; what it asks for in paise; its address, "-"
@@ -458,6 +455,24 @@ function detailOf(row: Row, schedule: SlotSchedule): string | null {
   return `${kind} ${PARTIAL_REASONS.find((each) => each.id === reason)?.label ?? reason}`;
 }
 
+/**
+ * An At-risk client's and a First fit to book's days, which their statements leave to the next visit's policy: the day
+ * each waits from, counted from the visit or consultation it read, and the day an at-risk client's service fell due.
+ */
+function nextVisitDays(row: Row, days: NextVisitDays): Row {
+  if (row.group === "first_fit_to_book")
+    return { ...row, since: firstFitToBookFrom(indiaDate(new Date(row.since)), days) };
+  if (row.group !== "at_risk_client") return row;
+  const lastVisitDay = indiaDate(new Date(row.since));
+  const due = serviceDue(lastVisitDay, days);
+  return {
+    ...row,
+    since: atRiskFrom(lastVisitDay, days),
+    detail: `${row.since} ${due}`,
+    facts: JSON.stringify({ last_visit_at: row.since, due_on: due }),
+  };
+}
+
 /** A replacement is due on a calendar date; everything else waits from an instant. */
 const instantOf = (since: string) => (since.length === 10 ? indiaInstant(since, "00:00").toISOString() : since);
 
@@ -501,7 +516,7 @@ export async function outstandingTasks(
   ]);
   const truncated = answers.some((answer) => answer.results.length >= READ_CAP);
   // Each queue sorted its own rows; the board wants one list, so they are merged on the same column.
-  const read = answers.flatMap((answer) => answer.results);
+  const read = answers.flatMap((answer) => answer.results).map((row) => nextVisitDays(row, days));
   const results = overdueChats(read, hours, now).sort((a, b) => a.since.localeCompare(b.since));
   return { tasks: results.map((row) => taskOf(row, sla, schedule)), truncated };
 }

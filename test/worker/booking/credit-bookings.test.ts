@@ -258,9 +258,7 @@ describe("one credit pays for one visit", () => {
 
     expect(await confirm(first.id, NOW, { alertOnce: deps.alertOnce })).toBe("booked");
     expect(await redeems()).toEqual([]);
-    expect(deps.alerts).toEqual([
-      expect.stringContaining("had none left by then, so nothing has paid for it. Decide whether to charge"),
-    ]);
+    expect(deps.alerts).toEqual([expect.stringContaining("Decide whether to charge for booking")]);
   });
 });
 

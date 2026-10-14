@@ -24,6 +24,7 @@ import { WAVES } from "../../policy/hair-profile.ts";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { written } from "../../http/audit.ts";
 import { paymentsTab } from "../../domain/platform/alerts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 const Note = z
   .string()
@@ -280,9 +281,7 @@ export function registerOpsCustomOrders(app: App): void {
         // Still open, the link can take a payment for an order no longer to be made.
         await c.var.deps.alertOnce({
           key: `custom_order_link_not_cancelled:${order.id}`,
-          message:
-            `Custom order ${order.id} is cancelled, but its payment link ${linkId} could not be cancelled. Cancel it ` +
-            "in Razorpay's dashboard; if the client pays it first, refund the payment from their Payments.",
+          message: ALERT_WORDS.custom_order_link_not_cancelled({ order: order.id, link: linkId }),
           link: paymentsTab(order.personId),
         });
       }

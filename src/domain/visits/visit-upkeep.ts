@@ -4,6 +4,7 @@
 // they now stand, after the write, so it is right however the visit changed, and worked out again it changes nothing.
 
 import { becameClients } from "../clients/people.ts";
+import { statusNotIn, VISIT_CALLED_OFF } from "../../config/statuses.ts";
 
 /** Whose figures a write moves: the clients of the visits it wrote, as they now stand, or people it names. */
 export type Whose = { readonly visits: readonly string[] } | { readonly people: readonly (string | null)[] };
@@ -12,7 +13,7 @@ const WHOSE_VISITS = "SELECT person_id FROM appointments WHERE id IN (SELECT val
 const WHOSE_PEOPLE = "SELECT value FROM json_each(?1)";
 
 /** A visit that still stands: not taken out, not cancelled. */
-const STANDS = (alias: string) => `${alias}.deleted_at IS NULL AND ${alias}.status NOT IN ('cancelled', 'terminated')`;
+const STANDS = (alias: string) => `${alias}.deleted_at IS NULL AND ${statusNotIn(`${alias}.status`, VISIT_CALLED_OFF)}`;
 
 /** The dispatch board's version, moved on so every open board reads itself again. */
 export const boardMoved = (db: D1Database): D1PreparedStatement =>

@@ -78,6 +78,7 @@ export const ZOHO_BOOKS = {
   ZOHO_BOOKS_ACCOUNTS_HOST: "accounts.zoho.in",
   ZOHO_BOOKS_API_HOST: "www.zohoapis.in",
   ZOHO_BOOKS_ORG_ID: "60088931635",
+  BOOKS_ITEM_PUSH: "false",
 };
 
 export const production = {

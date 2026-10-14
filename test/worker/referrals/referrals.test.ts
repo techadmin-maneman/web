@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
 import { newReferralCode } from "../../../src/domain/referrals/referrals.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import {
@@ -16,6 +16,7 @@ import {
   fittedAndPhotographed,
 } from "../helpers.ts";
 import { REFERRER, person, pincode, client, site, codeOf } from "./referrals-fixtures.ts";
+import { aCreditSpent, aVisit } from "../fixtures/index.ts";
 
 const DAY = 86_400_000;
 
@@ -300,7 +301,7 @@ describe("the credit ledger", () => {
       expiringFirst: 2,
     });
 
-    await redeemCredit(db, REFERRER, "visit-1", NOW).run();
+    await aCreditSpent(REFERRER, String((await aVisit({ person_id: REFERRER })).id));
     const drawn = await db
       .prepare(
         "SELECT g.source_id FROM credit_ledger r JOIN credit_ledger g ON g.id = r.grant_id WHERE r.kind = 'redeem'",

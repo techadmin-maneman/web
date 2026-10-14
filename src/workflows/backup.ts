@@ -14,6 +14,7 @@ import {
 } from "../domain/platform/backups.ts";
 import { failureReason } from "../log.ts";
 import { STEP_RETRIES, type Steps, type WorkflowRun } from "./steps.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 export async function backUp(steps: Steps, run: WorkflowRun, date: string): Promise<void> {
   const { env, config, deps } = run;
@@ -53,7 +54,7 @@ export async function backUp(steps: Steps, run: WorkflowRun, date: string): Prom
     await steps.do("tell of the failure", STEP_RETRIES, async () => {
       await deps.alertOnce({
         key: "backup_failed",
-        message: `The weekly backup failed: ${failureReason(error)}. The cron starts it again within the hour; RB "From a weekly backup".`,
+        message: ALERT_WORDS.backup_failed({ reason: failureReason(error) }),
       });
       return true;
     });

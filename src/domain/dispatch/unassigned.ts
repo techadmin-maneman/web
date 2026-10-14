@@ -2,9 +2,10 @@
 // someone is sent or the visit is moved or called off. And each technician's visits to come, which switching them off
 // would leave with nobody.
 
-import { indiaDate, indiaInstant, addDays } from "../../lib/india-time.ts";
-import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
+import { addDays, INDIA_OFFSET_MINUTES, indiaDate, indiaDateSql, indiaInstant } from "../../lib/india-time.ts";
+import { statusIn, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 const KEY = "unassigned_visit:";
 
@@ -25,7 +26,7 @@ export async function tellOfUnassignedToday(
   for (const visit of results) {
     await deps.alertOnce({
       key: `${KEY}${visit.id}`,
-      message: `Visit ${visit.id} today has no technician. Send someone from the Dispatch board.`,
+      message: ALERT_WORDS.unassigned_visit({ visit: visit.id }),
       link: "/dispatch",
     });
   }
@@ -73,9 +74,9 @@ export const UNASSIGNED_VISITS = `SELECT 'unassigned_visit' AS "group", a.id AS 
 export const VISITS_LEFT_OPEN = `SELECT 'visit_left_open' AS "group", a.id AS id, pe.id AS person_id, pe.name AS person_name,
          a.status || ' ' || a.window_start AS detail,
          json_object('status', a.status, 'starts_at', a.window_start) AS facts,
-         strftime('%Y-%m-%dT%H:%M:%fZ', date(a.window_start, '+330 minutes', '+1 day'), '-330 minutes') AS since,
+         strftime('%Y-%m-%dT%H:%M:%fZ', ${indiaDateSql("a.window_start", "'+1 day'")}, '-${String(INDIA_OFFSET_MINUTES)} minutes') AS since,
          NULL AS due_by, '' AS episode
     FROM appointments a INDEXED BY appointments_live_by_start
     LEFT JOIN people pe ON pe.id = a.person_id AND pe.erased_at IS NULL
-   WHERE a.status IN ('scheduled', 'dispatched', 'in_progress') AND a.deleted_at IS NULL AND a.window_start < ?1
+   WHERE ${statusIn("a.status", VISIT_LIVE)} AND a.deleted_at IS NULL AND a.window_start < ?1
      AND NOT EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id)`;

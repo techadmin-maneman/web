@@ -4,6 +4,8 @@
 
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { listWords } from "./words.ts";
+import { z } from "zod";
+import { storedJson } from "../../lib/stored-json.ts";
 
 /** What the site's builds lay over the copy: each changed line's key and words. */
 type SiteWords = Readonly<Record<string, string>>;
@@ -33,7 +35,7 @@ export async function latestPublish(db: D1Database): Promise<SitePublish | null>
     )
     .first<PublishRow>();
   if (row === null) return null;
-  return { ...row, words: JSON.parse(row.words) as SiteWords };
+  return { ...row, words: storedJson(z.record(z.string(), z.string()), row.words, "site_word_publishes.words") };
 }
 
 /** Publishes every line of the site changed on the Words page, as it stands now, with its audit entry. */

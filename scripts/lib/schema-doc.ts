@@ -7,6 +7,7 @@
 import { RESTORE_GROUPS, type RestoreGroup } from "./restore-groups.ts";
 import { DatabaseSync } from "node:sqlite";
 import { PURPOSES } from "./schema-purposes.ts";
+import { columnNotes } from "./column-notes.ts";
 
 export interface MigrationFile {
   readonly name: string;
@@ -21,6 +22,8 @@ export interface Column {
   readonly primaryKey: boolean;
   /** "people.id" for a column that points at another table's. */
   readonly references: string | null;
+  /** What it holds, as the migrations' comment on it says; empty where none does. */
+  readonly note: string;
 }
 
 export interface Index {
@@ -66,7 +69,7 @@ function signature(db: DatabaseSync, table: string): string {
   return parts.map((part) => part.sql).join("\n");
 }
 
-function columnsOf(db: DatabaseSync, table: string): Column[] {
+function columnsOf(db: DatabaseSync, table: string): Omit<Column, "note">[] {
   const keys = db.prepare(`PRAGMA foreign_key_list("${table}")`).all() as unknown as {
     from: string;
     table: string;
@@ -128,6 +131,7 @@ function triggersOf(db: DatabaseSync, table: string): string[] {
 
 /** Every table the migrations leave, with the migration that made it and those that changed it since. */
 export function migratedTables(migrations: readonly MigrationFile[]): Table[] {
+  const notes = columnNotes(migrations);
   const db = new DatabaseSync(":memory:");
   const history = new Map<string, { createdIn: string; changedIn: string[]; signature: string }>();
   for (const migration of migrations) {
@@ -150,7 +154,7 @@ export function migratedTables(migrations: readonly MigrationFile[]): Table[] {
       name,
       createdIn,
       changedIn,
-      columns: columnsOf(db, name),
+      columns: columnsOf(db, name).map((column) => ({ ...column, note: notes.get(`${name}.${column.name}`) ?? "" })),
       indexes: indexesOf(db, name),
       triggers: triggersOf(db, name),
     }));
@@ -163,7 +167,8 @@ function columnRow(column: Column): string {
   const notes = [...(column.primaryKey ? ["primary key"] : []), ...reference];
   const empty = column.notNull || column.primaryKey ? "no" : "yes";
   const fallback = column.defaultValue === null ? "" : code(column.defaultValue);
-  return `| ${code(column.name)} | ${column.type || "any"} | ${empty} | ${fallback} | ${notes.join("; ")} |`;
+  const meaning = column.note.replace(/\|/g, "\\|");
+  return `| ${code(column.name)} | ${column.type || "any"} | ${empty} | ${fallback} | ${notes.join("; ")} | ${meaning} |`;
 }
 
 function indexLine(index: Index): string {
@@ -182,8 +187,8 @@ function tableSection(table: Table): string[] {
     "",
     `Made by ${code(table.createdIn)}${changed}.`,
     "",
-    "| Column | Type | May be empty | Default | Key |",
-    "| --- | --- | --- | --- | --- |",
+    "| Column | Type | May be empty | Default | Key | What it holds |",
+    "| --- | --- | --- | --- | --- | --- |",
     ...table.columns.map(columnRow),
     "",
     ...(table.indexes.length === 0 ? [] : ["Indexes:", "", ...table.indexes.map(indexLine), ""]),

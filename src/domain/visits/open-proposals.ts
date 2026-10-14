@@ -2,7 +2,9 @@
 // (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md). Apart from ./move-proposals.ts, which moves
 // visits, so the board can read proposals without loading the moves.
 
-import type { BookingWindow } from "../../config/scheduling.ts";
+import { BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
+import { z } from "zod";
+import { storedJson } from "../../lib/stored-json.ts";
 
 /** A proposal still open on a visit, as the client's app and the dispatch board show it. */
 export interface ProposedMove {
@@ -24,19 +26,20 @@ export const openProposalJson = (visit: string): string => `(SELECT json_object(
   FROM move_proposals p LEFT JOIN technicians t ON t.id = p.technician_id
   WHERE p.appointment_id = ${visit}.id AND p.answered_at IS NULL AND p.expected_start = ${visit}.window_start)`;
 
-interface ProposalJson {
-  id: string;
-  date: string;
-  window: BookingWindow;
-  technician_name: string | null;
-  technician_initials: string | null;
-  expires_at: string;
-}
+/** What openProposalJson answers. */
+const PROPOSAL = z.object({
+  id: z.string(),
+  date: z.string(),
+  window: z.enum(BOOKING_WINDOWS),
+  technician_name: z.string().nullable(),
+  technician_initials: z.string().nullable(),
+  expires_at: z.string(),
+});
 
 /** The open proposal openProposalJson read, while it may still be accepted; null for none. */
 export function openProposalOf(json: string | null, now: Date): ProposedMove | null {
   if (json === null) return null;
-  const read = JSON.parse(json) as ProposalJson;
+  const read = storedJson(PROPOSAL, json, "openProposalJson");
   if (Date.parse(read.expires_at) <= now.getTime()) return null;
   return {
     id: read.id,

@@ -55,21 +55,17 @@ beforeEach(async () => {
   });
 });
 
+/** Stock into Imran's kit by way of the warehouse, which ops send no more from than it holds. */
+async function intoKit(code: string, quantity: number): Promise<void> {
+  await job.opsPost("/api/stock/deliveries", { consumable_code: code, quantity });
+  await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity, from: "central", to: IMRAN });
+}
+
 describe("a job's use", () => {
   /** Tape strips and solvent into Imran's kit, and the job worked to its consumables step. */
   async function readyToRecord(): Promise<void> {
-    await job.opsPost("/api/stock/transfers", {
-      consumable_code: "tape_strips",
-      quantity: 12,
-      from: "central",
-      to: IMRAN,
-    });
-    await job.opsPost("/api/stock/transfers", {
-      consumable_code: "solvent",
-      quantity: 100,
-      from: "central",
-      to: IMRAN,
-    });
+    await intoKit("tape_strips", 12);
+    await intoKit("solvent", 100);
     await job.workTo("consumables");
   }
 
@@ -287,12 +283,7 @@ describe("writes that land together", () => {
   const byOps = { actor: { kind: "staff" as const, id: "ops@localhost" }, requestId: "count-1", now: NOW };
 
   it("leaves a kit holding what ops counted when a job's use lands between the count's read and its write", async () => {
-    await job.opsPost("/api/stock/transfers", {
-      consumable_code: "tape_strips",
-      quantity: 12,
-      from: "central",
-      to: IMRAN,
-    });
+    await intoKit("tape_strips", 12);
     await job.workTo("consumables");
 
     // Ops count 8 in the kit: 12 less the 4 the job used, whose step reaches us while the count is written.
@@ -340,12 +331,7 @@ describe("writes that land together", () => {
   });
 
   it("takes a job's use once when an older step is written after a newer one landed", async () => {
-    await job.opsPost("/api/stock/transfers", {
-      consumable_code: "tape_strips",
-      quantity: 12,
-      from: "central",
-      to: IMRAN,
-    });
+    await intoKit("tape_strips", 12);
     await job.workTo("consumables");
     // The phone's first step, read and held before its write.
     await env.DB.prepare(

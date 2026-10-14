@@ -4,7 +4,7 @@ import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
-import { APPOINTMENT_STATUSES } from "../../domain/visits/visit-status.ts";
+import { APPOINTMENT_STATUSES, STATUS_MEANINGS } from "../../domain/visits/visit-status.ts";
 import { REMINDER_STATES } from "../../domain/field/job-card.ts";
 import { CARD_STEPS } from "../../policy/in-job-steps.ts";
 import { PAYMENT_BADGES } from "../../policy/job-visibility.ts";
@@ -65,7 +65,7 @@ const JobSummarySchema = z
         "The area, never the street: the one the visit's pincode is in, from the service area; else the address's " +
         "locality, or the city.",
     }),
-    status: z.enum(APPOINTMENT_STATUSES),
+    status: z.enum(APPOINTMENT_STATUSES).openapi({ description: STATUS_MEANINGS }),
     badge: z.enum(PAYMENT_BADGES).openapi({
       description:
         "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is " +
@@ -333,8 +333,12 @@ export const AcceptedSchema = z
   .object({
     event_id: z.string(),
     replayed: z.boolean().openapi({ description: "True when this write had already landed." }),
+    write_state: z.enum(["pending", "written", "rejected"]).openapi({
+      description: '"written" once the step has landed, which it has.',
+    }),
     fsm_write_state: z.enum(["pending", "written", "rejected"]).openapi({
-      description: 'Kept for phones that read it: "written" once the step has landed, which it has.',
+      description: "write_state, under its old name, for phones that read it.",
+      deprecated: true,
     }),
     progress: ProgressSchema,
   })

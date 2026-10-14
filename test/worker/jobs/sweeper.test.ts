@@ -201,7 +201,7 @@ describe("sweeper: YouCam units", () => {
   it("reads the balance and alerts below the floor", async () => {
     const deps = fakeDependencies();
     expect(await check(deps, 5000)).toBe(1000); // the stub's two pools, summed
-    expect(deps.alerts).toEqual([expect.stringContaining("YouCam is down to 1000 units") as string]);
+    expect(deps.alerts).toEqual([expect.stringContaining("Buy YouCam units before try-ons stop: 1000 left") as string]);
   });
 
   it("tells ops once, not every hour, until a top-up lifts the balance over the floor", async () => {
@@ -252,5 +252,30 @@ describe("sweeper: erasures", () => {
 
     expect(summary.erasuresRequeued).toBe(1);
     expect(queues.crm.sent).toEqual([{ erase_person_id: "pending", request_id: "sweeper" }]);
+  });
+
+  it("sends again a contact update owed a quarter hour, with its invite, and leaves one tried or changed since", async () => {
+    for (const [id, mobile] of [
+      ["due", "+919810000011"],
+      ["tried", "+919810000012"],
+      ["changed", "+919810000013"],
+    ]) {
+      await insertPerson(id ?? "", mobile ?? "");
+    }
+    for (const [person, changedAt, triedAt, invite] of [
+      ["due", minutesAgo(20), null, 1],
+      ["tried", minutesAgo(40), minutesAgo(5), 0],
+      ["changed", minutesAgo(2), null, 0],
+    ] as const) {
+      await env.DB.prepare(
+        `INSERT INTO crm_contact_updates (person_id, owed_at, changed_at, tried_at, invite_attached)
+         VALUES (?1, ?2, ?2, ?3, ?4)`,
+      )
+        .bind(person, changedAt, triedAt, invite)
+        .run();
+    }
+    const { bindings, queues } = sweepEnv();
+    await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS);
+    expect(queues.crm.sent).toEqual([{ update_person_id: "due", request_id: "sweeper", invite_attached: true }]);
   });
 });

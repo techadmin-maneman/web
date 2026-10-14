@@ -179,7 +179,7 @@ describe("confirmBooking", () => {
     );
     expect(booked).toBe("booked");
     expect(await visitOf(holdId)).toMatchObject({ status: "scheduled", technician_id: null });
-    expect(told).toEqual([expect.stringContaining("the one it was held with was switched off")]);
+    expect(told).toEqual([expect.stringContaining("a technician on the board: its own was switched off")]);
   });
 
   it("books a paid hold with its technician and times, its own ID its FSM ID, and links the payment", async () => {

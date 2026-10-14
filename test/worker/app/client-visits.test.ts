@@ -3,7 +3,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { grantCredits } from "../../../src/domain/money/credits.ts";
 import { findEligiblePerson } from "../../../src/domain/sign-in/login.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { syntheticJpeg } from "../tryon-fixtures.ts";
@@ -19,6 +19,7 @@ import {
   cookie,
   signIn,
 } from "./client-visits-fixtures.ts";
+import { aCreditSpent } from "../fixtures/index.ts";
 
 /** Our IDs for the visits written so far in this test, by name. */
 let ids: Record<string, string>;
@@ -330,7 +331,7 @@ describe("a visit paid for ahead (its Prepaid)", () => {
       sourceId: "o1",
       now: NOW,
     }).run();
-    await redeemCredit(env.DB, person?.id ?? "", ids["ap-credit"] ?? "", NOW).run();
+    await aCreditSpent(person?.id ?? "", ids["ap-credit"] ?? "");
 
     const visits = await (await get("/api/visits")).json<{ upcoming: { id: string; prepaid: boolean }[] }>();
     const prepaid = Object.fromEntries(visits.upcoming.map((visit) => [visit.id, visit.prepaid]));

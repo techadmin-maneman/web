@@ -3,6 +3,7 @@
 // entry in one batch. A supplier is retired, never deleted, since orders and bills will name it.
 
 import { auditStatement, type AuditAction, type Written, opsEntry } from "../platform/audit.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 export interface SupplierItem {
   readonly code: string;
@@ -118,8 +119,8 @@ export async function addSupplier(
   db: D1Database,
   fields: SupplierFields,
   written: Written,
-): Promise<{ readonly ok: true; readonly id: string } | { readonly ok: false; readonly fields: string[] }> {
-  if (await nameTaken(db, fields.name, null)) return { ok: false, fields: ["name"] };
+): Promise<{ readonly ok: true; readonly id: string } | Refusal<"invalid_request">> {
+  if (await nameTaken(db, fields.name, null)) return refusal("invalid_request", ["name"]);
   const id = crypto.randomUUID();
   const at = written.now.toISOString();
   await db.batch([
@@ -141,8 +142,8 @@ export async function changeSupplier(
   id: string,
   fields: SupplierFields,
   written: Written,
-): Promise<{ readonly ok: boolean; readonly fields: string[] }> {
-  if (await nameTaken(db, fields.name, id)) return { ok: false, fields: ["name"] };
+): Promise<{ readonly ok: true } | Refusal<"invalid_request">> {
+  if (await nameTaken(db, fields.name, id)) return refusal("invalid_request", ["name"]);
   const [, changed] = await db.batch([
     auditStatement(db, entry(written, "supplier.change", id), written.now),
     db
@@ -153,7 +154,7 @@ export async function changeSupplier(
       )
       .bind(id, ...valuesOf(fields), written.now.toISOString()),
   ]);
-  return changed?.meta.changes === 1 ? { ok: true, fields: [] } : { ok: false, fields: ["id"] };
+  return changed?.meta.changes === 1 ? { ok: true } : refusal("invalid_request", ["id"]);
 }
 
 /** A supplier retired from new orders, or restored. Whether there was such a supplier. */
@@ -174,11 +175,11 @@ export async function setSupplierItem(
   db: D1Database,
   set: { readonly supplierId: string; readonly code: string; readonly item: Omit<SupplierItem, "code"> | null },
   written: Written,
-): Promise<{ readonly ok: boolean; readonly fields: string[] }> {
+): Promise<{ readonly ok: true } | Refusal<"invalid_request">> {
   const supplier = await db.prepare("SELECT 1 FROM suppliers WHERE id = ?1").bind(set.supplierId).first();
-  if (supplier === null) return { ok: false, fields: ["id"] };
+  if (supplier === null) return refusal("invalid_request", ["id"]);
   const known = await db.prepare("SELECT 1 FROM consumables WHERE code = ?1").bind(set.code).first();
-  if (known === null) return { ok: false, fields: ["consumable_code"] };
+  if (known === null) return refusal("invalid_request", ["consumable_code"]);
   const action = set.item === null ? "supplier.item_remove" : "supplier.item_set";
   const audit = auditStatement(db, entry(written, action, set.supplierId, { consumable: set.code }), written.now);
   if (set.item === null) {
@@ -188,7 +189,7 @@ export async function setSupplierItem(
         .prepare("DELETE FROM supplier_items WHERE supplier_id = ?1 AND consumable_code = ?2")
         .bind(set.supplierId, set.code),
     ]);
-    return { ok: true, fields: [] };
+    return { ok: true };
   }
   const { item } = set;
   await db.batch([
@@ -211,5 +212,5 @@ export async function setSupplierItem(
         written.now.toISOString(),
       ),
   ]);
-  return { ok: true, fields: [] };
+  return { ok: true };
 }

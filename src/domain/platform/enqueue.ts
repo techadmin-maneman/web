@@ -11,11 +11,13 @@ import type { Logger } from "../../log.ts";
 export const SEND_BATCH_LIMIT = 100;
 
 /** What brings back a message the queue would not take. */
-export type IfLost =
+type IfLost =
   /** A sweeper pass finds what the message names still waiting in D1, and queues it again (src/scheduled/). */
   | "sweeper"
   /** Nothing would: ops are told, once, what to do by hand. */
-  | { readonly alertOnce: AlertOnce; readonly alert: RaisedAlert };
+  | { readonly alertOnce: AlertOnce; readonly alert: RaisedAlert }
+  /** Its sender sends it again, as the request is answered unavailable: Razorpay's webhook. */
+  | "sender";
 
 interface EnqueueOptions {
   readonly log: Logger;
@@ -73,8 +75,8 @@ async function whenLost(
   lost: { readonly body: unknown; readonly lost: number; readonly error: unknown },
 ): Promise<void> {
   const { log, ifLost } = options;
-  if (ifLost === "sweeper") {
-    log.warn("enqueue_failed", { ...lost, replayed_by: "sweeper" });
+  if (ifLost === "sweeper" || ifLost === "sender") {
+    log.warn("enqueue_failed", { ...lost, replayed_by: ifLost });
     return;
   }
   log.warn("enqueue_failed", { ...lost, alert: ifLost.alert.key });

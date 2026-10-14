@@ -149,7 +149,9 @@ describe("a stockroom's stock", () => {
     });
     expect(await heldAt(id)).toMatchObject({ quantity: 15, low: true });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining("Tape strips is low in Gurgaon stockroom: 15 strip, at or below its level of 20."),
+      expect.stringContaining(
+        "of Tape strips for Gurgaon stockroom on the Stock page: 15 strip left, at or below its level of 20.",
+      ),
     ]);
 
     await sendAndReceive(10, "central", id);

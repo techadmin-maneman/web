@@ -14,8 +14,8 @@ import { draftCustomOrderPo } from "../purchasing/custom-order-po.ts";
 import { paymentsTab } from "../platform/alerts.ts";
 import type { LinkDeps } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
-import { rupees } from "@maneman/web-kit/money";
 import type { AlertOnce } from "../platform/alerts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 export type CustomLinkSent = "sent" | "already_sent" | "unavailable";
 
@@ -87,7 +87,7 @@ export async function sendCustomOrderLink(
     }
     await deps.alertOnce({
       key: `custom_order_link:${order.id}`,
-      message: `The payment link for custom order ${numberOf(order.number)} could not be made: ${reason}. Send it again from the client's page.`,
+      message: ALERT_WORDS.custom_order_link({ order: numberOf(order.number), reason }),
       link: paymentsTab(order.person_id),
     });
     return "unavailable";
@@ -131,9 +131,11 @@ export async function customOrderPaid(
     // Cancelled, or paid already by another payment: nothing is ordered for this one, so it goes back to the client.
     await deps.alertOnce({
       key: `custom_order_payment_stranded:${paid.payment.id}`,
-      message:
-        `Payment ${paid.payment.id} of ${rupees(paid.payment.amount)} came in for custom order ` +
-        `${numberOf(order.number)}, which was cancelled or already paid. Refund it from the client's Payments.`,
+      message: ALERT_WORDS.custom_order_payment_stranded({
+        payment: paid.payment.id,
+        amount: paid.payment.amount,
+        order: numberOf(order.number),
+      }),
       link: paymentsTab(order.person_id),
     });
     return;

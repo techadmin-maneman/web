@@ -9,7 +9,8 @@ import { FITTED } from "../clients/fitted.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { loadBlackouts, occupancy, placement, techniciansFor, type Moving, type Technician } from "./occupancy.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
-import { techniciansBarredOn, visitsOfClient } from "./technician-rotation.ts";
+import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician-rotation.ts";
+import { visitsOfClient } from "./technician-rotation.ts";
 import type { Fitting } from "./occupancy.ts";
 
 /** A visit booked and still to happen. */
@@ -130,17 +131,8 @@ interface Placing {
 }
 
 /**
- * The technicians free for a window, less those who took the client's visit just before or just after it; all of them
- * where nobody else is free, so a city with few technicians never leaves a client unable to book (ADR 0117).
- */
-function notBesideUnlessOnly(free: Technician[], beside: ReadonlySet<string>): Technician[] {
-  const others = free.filter((technician) => !beside.has(technician.id));
-  return others.length > 0 ? others : free;
-}
-
-/**
  * Each window of each day from `from` that a visit this long can start in, and the technicians free to take it: none
- * who took the client's visit just before or just after that day, unless nobody else is free (src/domain/booking/technician-rotation.ts). A window the visit
+ * who took the client's visit just before or just after that day, unless nobody else is free (src/policy/technician-rotation.ts). A window the visit
  * is too long to start in, as a first fit's evening, is left out. A day ops black out, or from `until` on, is offered to
  * nobody.
  */
@@ -183,7 +175,7 @@ async function windowsOf({
     const windows = startable.map((window): WindowTechnicians => {
       if (closed.has(date) || retired(date)) return { window, technicians: [] };
       const free = technicians.filter((technician) => placement(held(technician.id, date), window, units) !== null);
-      return { window, technicians: notBesideUnlessOnly(free, beside) };
+      return { window, technicians: allowedTechnicians(free, (technician) => beside.has(technician.id)) };
     });
     return { date, windows };
   });

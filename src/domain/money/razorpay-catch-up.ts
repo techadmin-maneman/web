@@ -11,7 +11,6 @@
 // is recorded as its webhook would have recorded it, a hold it paid for goes to be booked, or refunded if its time has
 // gone, and ops are told once for each payment we had not heard of.
 
-import { rupees } from "@maneman/web-kit/money";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
 import { failureReason, type Logger } from "../../log.ts";
@@ -26,6 +25,7 @@ import { ASKS } from "./refunds.ts";
 import { graceEnds } from "../booking/hold-stages.ts";
 import { recordHoldLinkPaid } from "../booking/visit-booking.ts";
 import { PAYMENT_TAKEN, statusIn } from "../../config/statuses.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** Holds asked about in one run at most, and one visit's links the same. */
 const CHECKS_PER_PASS = 5;
@@ -307,9 +307,7 @@ async function sendToBeBooked(deps: CatchUpDeps, hold: HoldToAsk): Promise<void>
     deps.log.warn("razorpay_catch_up_not_booked", { hold_id: hold.id, reason });
     await deps.alertOnce({
       key: `razorpay_catch_up_not_booked:${hold.id}`,
-      message:
-        `Booking ${hold.id} is paid for, but could not be booked or refunded: ${reason}. Book the visit for the ` +
-        "client, or refund the payment in Razorpay's dashboard.",
+      message: ALERT_WORDS.razorpay_catch_up_not_booked({ booking: hold.id, reason }),
       link: paymentsTab(hold.person_id),
     });
   }
@@ -365,9 +363,7 @@ async function tellFound(
   deps.log.warn("razorpay_payment_unheard", { payment_id: payment.id });
   await deps.alertOnce({
     key: `razorpay_payment_unheard:${payment.id}`,
-    message:
-      `Payment ${payment.id} of ${rupees(payment.amount)} for ${paidFor} reached us only when we asked Razorpay. ` +
-      `${next} Razorpay's payment messages may not be reaching us (runbook, "Razorpay's webhook is not arriving").`,
+    message: ALERT_WORDS.razorpay_payment_unheard({ next, payment: payment.id, amount: payment.amount, paidFor }),
     ...(personId === null ? {} : { link: paymentsTab(personId) }),
   });
 }

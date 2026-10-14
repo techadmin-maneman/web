@@ -4,7 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
@@ -19,6 +19,7 @@ import {
   request,
   savedAddress,
 } from "../helpers.ts";
+import { aCreditSpent } from "../fixtures/index.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -78,7 +79,7 @@ const paid = (amount: number) =>
 /** The visit paid with one of three visit credits from an invite. */
 async function paidWithCredit() {
   await grantCredits(env.DB, { personId: PERSON, visits: 3, source: "referral", sourceId: "attr-1", now: NOW }).run();
-  await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+  await aCreditSpent(PERSON, VISIT);
 }
 
 interface Vendors {
@@ -311,8 +312,8 @@ describe("POST /api/visits/:id/cancel: what it refuses", () => {
     expect(answer.status).toBe(200);
     expect(await statusOf()).toBe("cancelled");
     expect(deps.alerts).toEqual([
-      `The refund of Rs. 2,000 for visit ${VISIT}, cancelled by ops, failed (Razorpay payment pay_visit). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
+      "Refund payment pay_visit by hand in Razorpay, once: Razorpay refused the refund of Rs. 2,000 for visit " +
+        `${VISIT}, cancelled by ops. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 });

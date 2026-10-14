@@ -10,7 +10,7 @@
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
 // invocation may send (docs/decisions/0112-workers-paid.md).
 
-import { BOOKS_BILL_ACCOUNTS, BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
+import { OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { bookUnbookedHolds } from "../domain/booking/unbooked-holds.ts";
@@ -58,6 +58,7 @@ import {
   expireTryOns,
   deleteExpiredRecords,
   letKeptLooksGo,
+  requeueContactUpdates,
   requeueCrmErasures,
   requeueLeads,
   requeueMessages,
@@ -71,6 +72,7 @@ import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -131,7 +133,7 @@ async function missedJobsJob({ env, deps, config }: CronContext): Promise<void> 
     if (since === undefined || now - Date.parse(since) <= missedAfterMs(job.slot)) continue;
     await deps.alertOnce({
       key: `cron_job_missed:${job.name}`,
-      message: `The cron's ${job.name} job has not run well since ${since}, past its time: runbook, "Alerts and the cron".`,
+      message: ALERT_WORDS.cron_job_missed({ job: job.name, since }),
     });
   }
 }
@@ -245,7 +247,7 @@ async function backupJob({ env, deps, config, slot }: CronContext): Promise<unkn
     if (config.environment !== "local") {
       await deps.alertOnce({
         key: "backup_not_configured",
-        message: "No weekly backup was written: no backup key is set. The runbook, Restoring D1, says how to make one.",
+        message: ALERT_WORDS.backup_not_configured(),
       });
     }
     return undefined;
@@ -320,7 +322,7 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
   const checked = await checkBooksItems(
     env.DB,
     { books: deps.books, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert, log },
-    { push: BOOKS_ITEM_PUSH[config.environment], sac: booksGst(config).sac, now: deps.now(), budget },
+    { push: config.settings.zohoBooks?.itemPush ?? false, sac: booksGst(config).sac, now: deps.now(), budget },
   );
   if (checked !== null && checked.differs.length > 0) log.warn("books_items_differ", { ...checked });
 }
@@ -329,7 +331,7 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
 export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   return {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
-    billAccounts: BOOKS_BILL_ACCOUNTS[config.environment],
+    billAccounts: config.settings.zohoBooks?.billAccounts ?? null,
     labelAsTest: config.environment !== "production",
     gst: booksGst(config),
   };
@@ -374,6 +376,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "books_sync", needs: "books", every: 15, at: 8, run: booksJob },
   { name: "delete_photos", needs: "nothing", every: 15, at: 11, run: deletePhotos },
   { name: "requeue_leads", needs: "nothing", every: 15, at: 12, run: requeueLeads },
+  // A contact change its CRM lead does not have yet, once the change, or its last try, is a quarter hour old.
+  { name: "requeue_contact_updates", needs: "nothing", every: 15, at: 12, run: requeueContactUpdates },
   // A cancel, the client's or ops', whose refund its request could not settle, asked for again under its receipt.
   { name: "cancel_refunds", needs: "nothing", every: 15, at: 13, run: cancelRefundsJob },
 

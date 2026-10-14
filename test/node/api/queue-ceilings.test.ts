@@ -11,7 +11,7 @@ import {
   RENDER_ATTEMPTS,
   SUBMIT_ATTEMPTS,
 } from "../../../src/config/pipeline.ts";
-import { MAX_CONTACT_UPDATE_ATTEMPTS } from "../../../src/queues/crm-sync.ts";
+import { MAX_CONTACT_UPDATE_ATTEMPTS } from "../../../src/queues/crm-contact-update.ts";
 
 /**
  * The most deliveries one job takes: each render's submits, its polls to the give-up time and one past it, and its
@@ -25,6 +25,9 @@ const LAST_DELIVERY: Readonly<Record<string, number>> = {
   "crm-sync": MAX_CONTACT_UPDATE_ATTEMPTS,
   render: RENDER_DELIVERIES,
   messaging: MAX_SEND_ATTEMPTS,
+  // Never given up on here: the queue hands the event to the dead letters, which tell ops on their first delivery.
+  razorpay: 1,
+  "dead-letters": 1,
 };
 
 const REDELIVERY_DELAY_SECONDS = 30;
@@ -64,8 +67,8 @@ describe("queue consumers' delivery ceilings", () => {
     expect([...environments]).toEqual(["local", "staging", "production"]);
   });
 
-  it("lets a CRM contact update reach its fifth try, where ops are told", () => {
-    expect(MAX_CONTACT_UPDATE_ATTEMPTS).toBe(5);
+  it("lets a CRM contact update reach its third try, where the sweeper takes it on", () => {
+    expect(MAX_CONTACT_UPDATE_ATTEMPTS).toBe(3);
     const crmSync = consumers().filter((consumer) => consumer.queue.startsWith("mm-crm-sync-"));
     expect(crmSync.map((consumer) => consumer.max_retries)).toEqual([5, 5, 5]);
   });

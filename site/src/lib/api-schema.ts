@@ -2138,8 +2138,8 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_ready: a refund of a payment not yet recorded, whose event does not carry it; Razorpay retries it */
-                409: {
+                /** @description unavailable: the event could not be queued; Razorpay sends it again */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };

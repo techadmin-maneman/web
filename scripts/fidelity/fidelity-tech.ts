@@ -392,6 +392,7 @@ const checkIn = (passed: boolean, distanceM: number) => (route: Route) =>
         ? {
             event_id: "fidelity",
             replayed: false,
+            write_state: "written",
             fsm_write_state: "written",
             progress: { ...NOTHING_DONE, checked_in_at: new Date(AT_912.getTime()).toISOString() },
           }
@@ -492,7 +493,13 @@ async function steps(browser: Browser, design: Page): Promise<void> {
     outcome: "done",
   };
   // The outcome lands, so the close-out is the one the board draws and not the sign-in an unanswered write would end in.
-  const landed = json({ event_id: "fidelity", replayed: false, fsm_write_state: "written", progress: closedOut });
+  const landed = json({
+    event_id: "fidelity",
+    replayed: false,
+    write_state: "written",
+    fsm_write_state: "written",
+    progress: closedOut,
+  });
   // The outcome's own step, every step before it sent: a job already closed opens on its close-out instead.
   const beforeOutcome: Progress = {
     ...started,

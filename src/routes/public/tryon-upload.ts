@@ -28,6 +28,7 @@ import { checkCopy, checkPhoto } from "../../domain/try-on/photo.ts";
 import { KEEPING_NOTICES } from "../../policy/kept-try-ons.ts";
 import { tryOnRuns } from "../../policy/tryon-delivery.ts";
 import { signToken, verifyToken } from "../../lib/signed-token.ts";
+import { claimCopy, claimUpload, newUploadJob, releaseCopy, releaseUpload } from "../../domain/try-on/tryon-uploads.ts";
 
 const UploadUrlRequestSchema = z
   .object({
@@ -144,14 +145,13 @@ export function registerTryonUpload(app: App): void {
     }
 
     const jobId = crypto.randomUUID();
-    await db
-      .prepare(
-        `INSERT INTO tryon_jobs (id, created_at, upload_key, state, photo_consent_version, photo_consent_at, ip_hash,
-           request_id)
-         VALUES (?1, ?2, ?3, 'awaiting_upload', ?4, ?2, ?5, ?6)`,
-      )
-      .bind(jobId, now.toISOString(), `uploads/${jobId}`, request.notice_version, visitor.ipHash, requestId)
-      .run();
+    await newUploadJob(db, {
+      id: jobId,
+      now,
+      noticeVersion: request.notice_version,
+      ipHash: visitor.ipHash,
+      requestId,
+    });
 
     const expiresAt = new Date(now.getTime() + TRYON_UPLOAD_LINK_TTL_MS);
     const token = await signToken(tryon.linkSigningKey, "upload", jobId, expiresAt);
@@ -195,18 +195,12 @@ function registerCopyUpload(app: App): void {
 
     // Claim the one write the copy gets, before making it.
     const key = copyKey(jobId);
-    const claimed = await db
-      .prepare(
-        "UPDATE tryon_jobs SET copy_key = ?2 WHERE id = ?1 AND copy_key IS NULL AND upload_deleted_at IS NULL RETURNING id",
-      )
-      .bind(jobId, key)
-      .first();
-    if (claimed === null) return refuse(c, "upload_already_received");
+    if (!(await claimCopy(db, jobId, key))) return refuse(c, "upload_already_received");
 
     try {
       await putCounted({ db, bucket: c.env.CLIENT_PHOTOS, key, bytes, contentType: copy.type });
     } catch (error) {
-      await db.prepare("UPDATE tryon_jobs SET copy_key = NULL WHERE id = ?1").bind(jobId).run();
+      await releaseCopy(db, jobId);
       throw error;
     }
     c.var.log.info("tryon_copy_uploaded", { job_id: jobId, bytes: bytes.byteLength });
@@ -240,18 +234,12 @@ function registerPhotoUpload(app: App): void {
     }
 
     // Claim the one write this job gets, before making it.
-    const claimed = await db
-      .prepare(
-        "UPDATE tryon_jobs SET uploaded_at = ?2 WHERE id = ?1 AND state = 'awaiting_upload' AND uploaded_at IS NULL RETURNING id",
-      )
-      .bind(jobId, now.toISOString())
-      .first();
-    if (claimed === null) return refuse(c, "upload_already_received");
+    if (!(await claimUpload(db, jobId, now))) return refuse(c, "upload_already_received");
 
     try {
       await c.env.UPLOADS.put(job.upload_key, bytes, { httpMetadata: { contentType: photo.type } });
     } catch (error) {
-      await db.prepare("UPDATE tryon_jobs SET uploaded_at = NULL WHERE id = ?1").bind(jobId).run();
+      await releaseUpload(db, jobId);
       throw error;
     }
     c.var.log.info("tryon_uploaded", { job_id: jobId, bytes: bytes.byteLength, type: photo.type });

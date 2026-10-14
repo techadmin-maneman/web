@@ -5,6 +5,7 @@
 import { coversOf, isOff, type OffDays } from "../../policy/care-cover.ts";
 import { auditStatement, type AuditAction, type AuditActor } from "../platform/audit.ts";
 import { careTeam } from "./care-people.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 interface Leave {
   readonly id: string;
@@ -39,26 +40,31 @@ export interface RotaMember {
 export async function careRota(db: D1Database, today: string): Promise<RotaMember[]> {
   const [team, rows] = await Promise.all([
     careTeam(db),
-    db.batch([
-      db.prepare("SELECT email, weekday FROM care_weekly_off ORDER BY weekday"),
-      db.prepare("SELECT email, name FROM care_names"),
-      db.prepare("SELECT email, COUNT(*) AS clients FROM care_owners GROUP BY email"),
-      db.prepare("SELECT email, on_shift_since FROM staff WHERE on_shift_since IS NOT NULL"),
-      db.prepare(
-        `SELECT o.email, COUNT(*) AS n FROM conversations c JOIN care_owners o ON o.person_id = c.person_id
-         WHERE c.state = 'open' GROUP BY o.email`,
+    readAll(db, {
+      weekly: read<{ email: string; weekday: number }>(
+        db.prepare("SELECT email, weekday FROM care_weekly_off ORDER BY weekday"),
       ),
-      db
-        .prepare("SELECT id, email, from_date, to_date FROM care_leave WHERE to_date >= ?1 ORDER BY from_date")
-        .bind(today),
-    ]),
+      names: read<{ email: string; name: string }>(db.prepare("SELECT email, name FROM care_names")),
+      owners: read<{ email: string; clients: number }>(
+        db.prepare("SELECT email, COUNT(*) AS clients FROM care_owners GROUP BY email"),
+      ),
+      shifts: read<{ email: string; on_shift_since: string }>(
+        db.prepare("SELECT email, on_shift_since FROM staff WHERE on_shift_since IS NOT NULL"),
+      ),
+      open: read<{ email: string; n: number }>(
+        db.prepare(
+          `SELECT o.email, COUNT(*) AS n FROM conversations c JOIN care_owners o ON o.person_id = c.person_id
+           WHERE c.state = 'open' GROUP BY o.email`,
+        ),
+      ),
+      leave: read<{ id: string; email: string; from_date: string; to_date: string }>(
+        db
+          .prepare("SELECT id, email, from_date, to_date FROM care_leave WHERE to_date >= ?1 ORDER BY from_date")
+          .bind(today),
+      ),
+    }),
   ]);
-  const weekly = (rows[0]?.results ?? []) as { email: string; weekday: number }[];
-  const names = (rows[1]?.results ?? []) as { email: string; name: string }[];
-  const owners = (rows[2]?.results ?? []) as { email: string; clients: number }[];
-  const shifts = (rows[3]?.results ?? []) as { email: string; on_shift_since: string }[];
-  const open = (rows[4]?.results ?? []) as { email: string; n: number }[];
-  const leave = (rows[5]?.results ?? []) as { id: string; email: string; from_date: string; to_date: string }[];
+  const { weekly, names, owners, shifts, open, leave } = rows;
   const onShiftSince = (email: string) => shifts.find((row) => row.email === email)?.on_shift_since ?? null;
   const openChats = (email: string) => open.find((row) => row.email === email)?.n ?? 0;
   const offOf = (email: string): OffDays => ({

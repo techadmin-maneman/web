@@ -8,6 +8,8 @@ import { auditStatement } from "../platform/audit.ts";
 import { labelColumns, labelFields, labelsFound, labelsHeld, labelsOf, type CountedLine } from "./count-labels.ts";
 import type { Place } from "./stock-places.ts";
 import { count, type Written } from "./stock.ts";
+import { read, readAll } from "../../lib/read-all.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 type TaskState = "open" | "recount" | "sign_off" | "done";
 
@@ -48,9 +50,9 @@ export interface Difference {
 /** What a step answered: done, or why not. `waiting` counts the lines left for a recount or a sign-off. */
 export type Stepped =
   | { readonly ok: true; readonly waiting: number; readonly task: CountTask }
-  | { readonly ok: false; readonly missing: true }
-  | { readonly ok: false; readonly state: true }
-  | { readonly ok: false; readonly fields: string[] };
+  | Refusal<"not_found">
+  | Refusal<"order_state">
+  | Refusal<"invalid_request">;
 
 type TaskRow = {
   id: string;
@@ -202,22 +204,24 @@ type DifferenceRow = Pick<Difference, "code" | "name" | "held" | "counted" | "re
 
 /** What the place holds of each code, and which of them are hair systems. */
 async function heldNow(db: D1Database, place: Place, codes: readonly string[]) {
-  const [held, pieces] = await db.batch<{ code: string; quantity: number }>([
-    db
-      .prepare(
-        `SELECT consumable_code AS code, quantity FROM stock_balances
+  const { held, pieces } = await readAll(db, {
+    held: read<{ code: string; quantity: number }>(
+      db
+        .prepare(
+          `SELECT consumable_code AS code, quantity FROM stock_balances
          WHERE place = ?1 AND consumable_code IN (SELECT value FROM json_each(?2))`,
-      )
-      .bind(place, JSON.stringify(codes)),
-    db
-      .prepare("SELECT code, 0 AS quantity FROM hair_systems WHERE code IN (SELECT value FROM json_each(?1))")
-      .bind(JSON.stringify(codes)),
-  ]);
-  return {
-    held: new Map(
-      ((held?.results ?? []) as { code: string; quantity: number }[]).map((row) => [row.code, row.quantity]),
+        )
+        .bind(place, JSON.stringify(codes)),
     ),
-    pieces: new Set(((pieces?.results ?? []) as { code: string }[]).map((row) => row.code)),
+    pieces: read<{ code: string }>(
+      db
+        .prepare("SELECT code, 0 AS quantity FROM hair_systems WHERE code IN (SELECT value FROM json_each(?1))")
+        .bind(JSON.stringify(codes)),
+    ),
+  });
+  return {
+    held: new Map(held.map((row) => [row.code, row.quantity])),
+    pieces: new Set(pieces.map((row) => row.code)),
   };
 }
 
@@ -246,7 +250,8 @@ async function settle(db: D1Database, task: CountTask, line: CountedLine, writte
       : labelsFound((await labelsHeld(db, task.placeId, [line.code])).get(line.code), line.labels).missing;
   const counted = { code: line.code, place: task.placeId, counted: line.counted, note: null, missing };
   const moved = await count(db, counted, written);
-  if (!moved.ok) throw new Error(`a count task's line for ${line.code} was refused: ${moved.fields.join(", ")}`);
+  if (!moved.ok)
+    throw new Error(`a count task's line for ${line.code} was refused: ${(moved.fields ?? []).join(", ")}`);
 }
 
 /**
@@ -260,8 +265,8 @@ async function claim(
   step: (task: CountTask) => Promise<Stepped>,
 ): Promise<Stepped> {
   const task = await countTask(db, id);
-  if (task === null) return { ok: false, missing: true };
-  if (task.state !== state) return { ok: false, state: true };
+  if (task === null) return refusal("not_found");
+  if (task.state !== state) return refusal("order_state");
   const at = written.now.toISOString();
   const statement = {
     open: "UPDATE count_tasks SET counted_by = ?2, counted_at = ?3 WHERE id = ?1 AND state = 'open' AND counted_at IS NULL",
@@ -271,7 +276,7 @@ async function claim(
       "UPDATE count_tasks SET signed_off_by = ?2, signed_off_at = ?3 WHERE id = ?1 AND state = 'sign_off' AND signed_off_at IS NULL",
   }[state as "open" | "recount" | "sign_off"];
   const claimed = await db.prepare(statement).bind(id, written.actor.id, at).run();
-  if (claimed.meta.changes !== 1) return { ok: false, state: true };
+  if (claimed.meta.changes !== 1) return refusal("order_state");
   try {
     return await step(task);
   } catch (error) {
@@ -334,7 +339,7 @@ export async function submitCounts(db: D1Database, id: string, sent: Sent, writt
       (await itemsToCount(db, task)).map((item) => item.code),
       sent.lines,
     );
-    if (refused.length > 0) return { ok: false, fields: refused };
+    if (refused.length > 0) return refusal("invalid_request", refused);
   }
   return claim(db, { id, state: "open" }, written, async (claimed) => {
     const rows = [];
@@ -374,7 +379,7 @@ export async function submitRecounts(db: D1Database, id: string, sent: Sent, wri
   if (task?.state === "recount") {
     const waiting = (await countItems(db, task)).filter((item) => item.state === "recount").map((item) => item.code);
     const refused = await linesRefused(db, task, waiting, sent.lines);
-    if (refused.length > 0) return { ok: false, fields: refused };
+    if (refused.length > 0) return refusal("invalid_request", refused);
   }
   return claim(db, { id, state: "recount" }, written, async (claimed) => {
     const rows = [];

@@ -226,7 +226,7 @@ describe("telling ops", () => {
     expect(deps.alerts).toHaveLength(3);
     expect(deps.alerts[1]).toContain("80% of their 3.6 GB of free storage");
     expect(deps.alerts[2]).toContain("all of their 3.6 GB of free storage");
-    expect(deps.alerts[2]).toContain("Uploads go on");
+    expect(deps.alerts[2]).toContain("uploads go on");
     const { results } = await env.DB.prepare("SELECT key FROM alerts ORDER BY first_seen_at, key").all<{
       key: string;
     }>();
@@ -298,9 +298,9 @@ describe("the database's size", () => {
     await tellOfDatabaseSize(env.DB, deps.alertOnce, 9.8e9);
 
     expect(deps.alerts).toEqual([
-      expect.stringContaining("The database holds 5.00 GB, 50% of the 10 GB"),
-      expect.stringContaining("The database holds 8.00 GB, 80% of the 10 GB"),
-      expect.stringContaining("The database holds 9.60 GB, 95% of the 10 GB"),
+      expect.stringContaining("it holds 5.00 GB, 50% of the 10 GB"),
+      expect.stringContaining("it holds 8.00 GB, 80% of the 10 GB"),
+      expect.stringContaining("it holds 9.60 GB, 95% of the 10 GB"),
     ]);
     const { results } = await env.DB.prepare("SELECT key FROM alerts WHERE key LIKE 'd1_size:%'").all<{
       key: string;

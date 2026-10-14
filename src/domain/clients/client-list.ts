@@ -4,7 +4,8 @@
 
 import { fittedSql } from "./fitted.ts";
 import { clientCityOf, withinReach } from "./places.ts";
-import { clientStateOf, UPCOMING_STATUSES, type ClientState } from "../visits/client-visits.ts";
+import { clientStateOf, type ClientState } from "../visits/client-visits.ts";
+import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 
 /** How many clients a page lists. */
 export const CLIENTS_PER_PAGE = 50;
@@ -12,7 +13,7 @@ export const CLIENTS_PER_PAGE = 50;
 /** The visits of the client `alias` names that are not yet closed, as a subquery's FROM and WHERE. */
 const UPCOMING_OF = (alias: string) => `FROM appointments a
   WHERE a.person_id = ${alias}.id AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL
-    AND a.status IN ${UPCOMING_STATUSES}`;
+    AND ${statusIn("a.status", VISIT_LIVE)}`;
 
 /** When the client's next visit not yet closed starts, and whether one has begun, as two columns. */
 export const NEXT_VISIT_COLUMNS = (alias: string) => `(SELECT MIN(a.window_start) ${UPCOMING_OF(alias)}) AS next_visit,

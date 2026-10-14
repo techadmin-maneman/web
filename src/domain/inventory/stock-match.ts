@@ -6,6 +6,7 @@
 import { latestFits } from "../clients/hair-profiles.ts";
 import { cityOf } from "../clients/places.ts";
 import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 const consumableName = (db: D1Database, code: string) =>
   db.prepare("SELECT name FROM consumables WHERE code = ?1").bind(code).first<string>("name");
@@ -54,34 +55,38 @@ export async function stockMatch(db: D1Database, personId: string): Promise<Stoc
   if (matched === null) return { kind: "custom" };
   const code = { code: matched, name: (await consumableName(db, matched)) ?? matched };
   const city = await cityOf(db, "client", personId);
-  const [held, moving] = await db.batch<HeldRow | { pieces: number }>([
-    db
-      .prepare(
-        `SELECT p.id AS place_id, COALESCE(p.name, t.name) AS name, p.kind, COALESCE(p.city, t.city) AS city,
+  const { held, moving } = await readAll(db, {
+    held: read<HeldRow>(
+      db
+        .prepare(
+          `SELECT p.id AS place_id, COALESCE(p.name, t.name) AS name, p.kind, COALESCE(p.city, t.city) AS city,
            COUNT(*) AS pieces
          FROM stock_units u JOIN stock_places p ON p.id = u.place LEFT JOIN technicians t ON t.id = p.id
          WHERE u.state = 'held' AND u.consumable_code = ?1 AND u.custom_order_id IS NULL
          GROUP BY p.id ORDER BY COALESCE(p.city, t.city) IS ?2 DESC, pieces DESC`,
-      )
-      .bind(code.code, city),
-    db
-      .prepare(
-        "SELECT COUNT(*) AS pieces FROM stock_units WHERE state = 'in_transit' AND consumable_code = ?1 AND custom_order_id IS NULL",
-      )
-      .bind(code.code),
-  ]);
+        )
+        .bind(code.code, city),
+    ),
+    moving: read<{ pieces: number }>(
+      db
+        .prepare(
+          "SELECT COUNT(*) AS pieces FROM stock_units WHERE state = 'in_transit' AND consumable_code = ?1 AND custom_order_id IS NULL",
+        )
+        .bind(code.code),
+    ),
+  });
   return {
     kind: "stocked",
     code: code.code,
     name: code.name,
     city,
-    held: ((held?.results ?? []) as HeldRow[]).map((row) => ({
+    held: held.map((row) => ({
       placeId: row.place_id,
       name: row.name ?? row.place_id,
       kind: row.kind,
       city: row.city,
       pieces: row.pieces,
     })),
-    inTransit: ((moving?.results ?? []) as { pieces: number }[])[0]?.pieces ?? 0,
+    inTransit: moving[0]?.pieces ?? 0,
   };
 }

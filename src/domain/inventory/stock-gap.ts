@@ -7,6 +7,7 @@ import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { latestFits } from "../clients/hair-profiles.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /**
  * The stock code a fit of the client's takes: their latest profile matched exactly, of `product` where a first fit
@@ -70,9 +71,12 @@ export async function tellOfStockGap(
     reach.lead === null ? "no supplier sells it" : `the quickest supplier takes ${String(reach.lead)} days`;
   await deps.alertOnce({
     key: `fit_without_piece:${fit.appointmentId}`,
-    message:
-      `A fit on ${fit.date} needs ${reach.name ?? code}, and none is in ${reach.city ?? "its city"} or on its way; ` +
-      `${quickest}. Move one there or order now.`,
+    message: ALERT_WORDS.fit_without_piece({
+      day: fit.date,
+      item: reach.name ?? code,
+      city: reach.city ?? "its city",
+      quickest,
+    }),
     link: "/supply-plan",
   });
 }

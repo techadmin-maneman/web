@@ -189,7 +189,7 @@ describe("the client, at the app's pay step", () => {
       const event = { entity: "event", event: "payment.captured", payload: { payment: { entity: stale } } };
       expect((await deliverRazorpay(event, { deps })).status).toBe(200);
       expect(deps.alerts).toEqual([
-        expect.stringContaining(`Payment pay_stale of ${rupees(200_000)} was made on order ${first.order_id}`),
+        expect.stringContaining(`Refund payment pay_stale of ${rupees(200_000)} from Razorpay's dashboard`),
       ]);
       expect(await orderOf(hold.id)).toBeNull();
     });

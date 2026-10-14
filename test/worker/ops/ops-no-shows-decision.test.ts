@@ -223,7 +223,7 @@ describe("POST /api/no-shows/:id/decision", () => {
         NOW,
       );
     }
-    expect(told).toEqual([expect.stringContaining("Razorpay did not answer the refund of Rs. 2,000")]);
+    expect(told).toEqual([expect.stringContaining("Razorpay did not say whether it made the refund of Rs. 2,000")]);
     expect(
       await env.DB.prepare(
         "SELECT asked_at IS NOT NULL AS asked, settled_at IS NOT NULL AS settled FROM no_show_refunds",

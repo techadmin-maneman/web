@@ -7,6 +7,7 @@ import { auditStatement, type AuditAction } from "../platform/audit.ts";
 import { draftOrder } from "./purchase-orders.ts";
 import { sendStock } from "../inventory/stock-transit.ts";
 import type { Written } from "../platform/audit.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 export interface PlanLine {
   readonly id: string;
@@ -84,10 +85,7 @@ export async function planLines(db: D1Database, now: Date): Promise<PlanLine[]> 
 }
 
 export type Decided =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly missing: true }
-  | { readonly ok: false; readonly state: true }
-  | { readonly ok: false; readonly fields: readonly string[] };
+  { readonly ok: true } | Refusal<"not_found"> | Refusal<"order_state"> | Refusal<"invalid_request">;
 
 const audited = (
   db: D1Database,
@@ -109,7 +107,7 @@ const audited = (
 
 async function notProposed(db: D1Database, id: string): Promise<Decided> {
   const exists = await db.prepare("SELECT 1 FROM plan_lines WHERE id = ?1").bind(id).first();
-  return exists === null ? { ok: false, missing: true } : { ok: false, state: true };
+  return exists === null ? refusal("not_found") : refusal("order_state");
 }
 
 type ClaimedRow = {
@@ -168,7 +166,7 @@ export async function approvePlanLine(
       )
       .bind(id)
       .run();
-    return { ok: false, fields: moved.fields };
+    return refusal("invalid_request", moved.fields);
   }
   await db.batch([
     db.prepare("UPDATE plan_lines SET po_id = ?2 WHERE id = ?1").bind(id, moved.poId),

@@ -48,10 +48,12 @@ W d1 create maneman-<env> --location apac      # put the ID in wrangler.jsonc, e
 W queues create mm-render-<t>
 W queues create mm-crm-sync-<t>
 W queues create mm-messaging-<t>
+W queues create mm-razorpay-<t>                # Razorpay's events (docs/decisions/0202-razorpay-events-queued.md)
+W queues create mm-dead-letters-<t>            # what every other queue gave up on
 npm run check:config -- --require-provisioned  # must pass before anything deploys
 ```
 
-`wrangler.jsonc` binds all three queues and all four buckets below in every environment, so an upload of mm-api fails until each exists. The release uploads before it migrates (ADR 0006), so a missing one stops it with the database untouched.
+`wrangler.jsonc` binds all five queues and all four buckets below in every environment, so an upload of mm-api fails until each exists. The release uploads before it migrates (ADR 0006), so a missing one stops it with the database untouched.
 
 R2 must be enabled on the account first (dashboard → Storage & databases → R2; it needs a payment method). Try-on photos and results must not outlive 30 days, so each bucket gets an expiry rule:
 
@@ -141,6 +143,9 @@ Cloudflare dashboard → Manage Account → Account API Tokens → Create Token 
 
 - Name `mm-ci-<env>`.
 - Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>`, `mm-ops-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
+- Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
+- Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
+- Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
 - Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also read and write production's database, and production's staging's; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - Optional, production's token: Account → **Account Analytics → Read**. With it, the canary's soak judges the new version on real visitors' errors as well as the smoke's (`docs/decisions/0006-deployment-pipeline.md`); without it the soak says so and the smoke checks stand alone.

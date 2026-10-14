@@ -1746,7 +1746,8 @@ Request body:
         "completed",
         "cancelled",
         "terminated"
-      ]
+      ],
+      "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
     },
     "badge": {
       "type": "string",
@@ -1983,7 +1984,8 @@ Request body:
         "completed",
         "cancelled",
         "terminated"
-      ]
+      ],
+      "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
     },
     "badge": {
       "type": "string",
@@ -3476,6 +3478,15 @@ Request body:
       "type": "boolean",
       "description": "True when this write had already landed."
     },
+    "write_state": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "written",
+        "rejected"
+      ],
+      "description": "\"written\" once the step has landed, which it has."
+    },
     "fsm_write_state": {
       "type": "string",
       "enum": [
@@ -3483,7 +3494,8 @@ Request body:
         "written",
         "rejected"
       ],
-      "description": "Kept for phones that read it: \"written\" once the step has landed, which it has."
+      "description": "write_state, under its old name, for phones that read it.",
+      "deprecated": true
     },
     "progress": {
       "$ref": "#/components/schemas/TechnicianJobProgress"
@@ -3492,6 +3504,7 @@ Request body:
   "required": [
     "event_id",
     "replayed",
+    "write_state",
     "fsm_write_state",
     "progress"
   ],

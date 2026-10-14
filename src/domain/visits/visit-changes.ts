@@ -17,7 +17,7 @@
 // move a visit, the notice counts from its time before they moved it
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 
-import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
+import { STANDARD_TIER, tierOf, type VisitType } from "../../config/visit-types.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { withGst } from "../../config/gst.ts";
 import {
@@ -76,7 +76,7 @@ export async function changeableVisit(
     .prepare(
       `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.window_end, a.start_before_move, a.technician_id,
          s.minutes AS service_minutes
-       FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
+       FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
          AND a.type IS NOT NULL AND a.window_start > ?3 AND NOT ${visitBegun("a")}`,
     )

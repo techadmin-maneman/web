@@ -9,14 +9,14 @@
 // technician receiving part of a hair system's top-up may keep the rest on its way: the transfer then carries less and
 // stays in transit.
 
-import { auditStatement, auditStatementWhen, type AuditEntry } from "../platform/audit.ts";
+import { auditStatementIfWritten, auditStatementWhen, type AuditEntry } from "../platform/audit.ts";
 import { lotMoves, type LotTake } from "./stock-lots.ts";
 import { placeById, type Place } from "./stock-places.ts";
 import { hairSystemProduct, piecesArriving, takenFrom, unitChanges } from "./stock-units.ts";
 import {
   consumableExists,
   kindOf,
-  movementStatement,
+  leavingCondition,
   movementStatementWhen,
   transferStock,
   unitWritten,
@@ -24,6 +24,7 @@ import {
   type Moving,
   type Written,
 } from "./stock.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 /** A transfer still on its way, as the Stock page lists it. */
 export interface InTransit {
@@ -83,6 +84,9 @@ function entry(
   };
 }
 
+/** Where a unit a transfer carries is until it arrives. */
+const IN_TRANSIT = ["in_transit"] as const;
+
 /**
  * Stock moved from one place to another: handed over at once to a kit, or sent to any other place, or to a kit that
  * waits for its technician's scan, leaving its own now and arriving when received.
@@ -91,25 +95,42 @@ export async function sendStock(db: D1Database, input: Moving, written: Written)
   const to = await placeById(db, input.to);
   const atOnce = to?.kind === "kit" && input.waitForScan !== true;
   if (to === null || atOnce || input.from === input.to) return transferStock(db, input, written);
-  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  if (!(await consumableExists(db, input.code))) return refusal("invalid_request", ["consumable_code"]);
   const fromKind = await kindOf(db, input.from);
-  if (fromKind === null) return { ok: false, fields: ["from"] };
+  if (fromKind === null) return refusal("invalid_request", ["from"]);
   const transferId = crypto.randomUUID();
   const out = crypto.randomUUID();
   const taken = await takenFrom(db, { ...input, place: input.from, named: input.units ?? null });
-  if (taken === null) return { ok: false, fields: ["units"] };
+  if (taken === null) return refusal("invalid_request", ["units"]);
   const takes = taken.takes;
   const detail = { quantity: input.quantity, from: input.from, to: input.to, transfer: transferId };
   const movement = { code: input.code, reason: "transferred", transferId, note: null } as const;
-  await db.batch([
+  const [left] = await db.batch([
+    movementStatementWhen(
+      db,
+      { movement: { ...movement, place: input.from, kind: fromKind, quantity: -input.quantity }, id: out },
+      written,
+      leavingCondition({ ...input, place: input.from, units: taken.units }),
+    ),
     db
       .prepare(
         `INSERT INTO stock_transfers (id, consumable_code, quantity, from_place, to_place, state, sent_by, sent_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, 'in_transit', ?6, ?7)`,
+         SELECT ?1, ?2, ?3, ?4, ?5, 'in_transit', ?6, ?7 WHERE EXISTS (SELECT 1 FROM stock_movements WHERE id = ?8)`,
       )
-      .bind(transferId, input.code, input.quantity, input.from, input.to, written.actor.id, written.now.toISOString()),
-    auditStatement(db, entry("stock.send", input.code, written, detail), written.now),
-    movementStatement(db, { ...movement, place: input.from, kind: fromKind, quantity: -input.quantity }, written, out),
+      .bind(
+        transferId,
+        input.code,
+        input.quantity,
+        input.from,
+        input.to,
+        written.actor.id,
+        written.now.toISOString(),
+        out,
+      ),
+    auditStatementIfWritten(db, entry("stock.send", input.code, written, detail), written.now, {
+      table: "stock_movements",
+      id: out,
+    }),
     ...lotMoves(db, { movementId: out, place: input.from, takes, sign: -1 }),
     ...unitChanges(db, {
       units: taken.units,
@@ -117,9 +138,12 @@ export async function sendStock(db: D1Database, input: Moving, written: Written)
       place: input.to,
       movementId: out,
       transferId,
+      from: { states: ["held"], place: input.from },
       ...unitWritten(written),
     }),
   ]);
+  // More than the place holds, or a unit that left it since it was read.
+  if (left?.meta.changes === 0) return refusal("invalid_request", ["quantity"]);
   return { ok: true, lowered: [input.from] };
 }
 
@@ -168,7 +192,7 @@ async function arrivingAt(
     sql: "EXISTS (SELECT 1 FROM stock_transfers WHERE id = ? AND settlement_id = ?)",
     binds: [transfer.id, settled.settlement],
   };
-  const moved = { movementId: settled.movementId, ...unitWritten(settled.written) };
+  const moved = { movementId: settled.movementId, from: { states: IN_TRANSIT }, ...unitWritten(settled.written) };
   return {
     takes: arriving.takes,
     units: [
@@ -181,9 +205,9 @@ async function arrivingAt(
 /** A transfer received, or sent back; refused, or settled already by someone else. */
 export type Settled =
   | { readonly ok: true; readonly touched: readonly Place[] }
-  | { readonly ok: false; readonly fields: string[] }
-  | { readonly ok: false; readonly missing: true }
-  | { readonly ok: false; readonly settled: true };
+  | Refusal<"invalid_request">
+  | Refusal<"not_found">
+  | Refusal<"transfer_settled">;
 
 /**
  * A transfer settled: received at the place it was sent to, `arrived` of it, the rest lost on the way; or sent back,
@@ -204,13 +228,13 @@ async function settle(
     .prepare(`SELECT ${TRANSFER_COLUMNS} FROM stock_transfers WHERE id = ?1`)
     .bind(input.id)
     .first<TransferRow>();
-  if (transfer === null) return { ok: false, missing: true };
-  if (transfer.state !== "in_transit") return { ok: false, settled: true };
+  if (transfer === null) return refusal("not_found");
+  if (transfer.state !== "in_transit") return refusal("transfer_settled");
   const arrived = input.back ? transfer.quantity : (input.units?.length ?? input.arrived ?? transfer.quantity);
-  if (arrived > transfer.quantity) return { ok: false, fields: ["received"] };
+  if (arrived > transfer.quantity) return refusal("invalid_request", ["received"]);
   const place = input.back ? transfer.from_place : transfer.to_place;
   const kind = await kindOf(db, place);
-  if (kind === null) return { ok: false, fields: ["id"] };
+  if (kind === null) return refusal("invalid_request", ["id"]);
   const at = written.now.toISOString();
   const into = crypto.randomUUID();
   const settlement = crypto.randomUUID();
@@ -222,7 +246,7 @@ async function settle(
   const movementId = arrived > 0 ? into : null;
   const arrival = { transfer, arrived, named: input.units ?? null };
   const arriving = await arrivingAt(db, arrival, { place, movementId, settlement, written });
-  if (arriving === null) return { ok: false, fields: ["units"] };
+  if (arriving === null) return refusal("invalid_request", ["units"]);
   const movement = movementStatementWhen(
     db,
     {
@@ -268,7 +292,7 @@ async function settle(
     ...arriving.units,
   ]);
   // Another request settled it between the read and this batch, which then wrote nothing.
-  if (settled?.meta.changes !== 1) return { ok: false, settled: true };
+  if (settled?.meta.changes !== 1) return refusal("transfer_settled");
   return { ok: true, touched: [place] };
 }
 
@@ -290,9 +314,9 @@ async function receivePart(
   if (transfer?.state !== "in_transit" || units.length >= transfer.quantity) return null;
   const place = transfer.to_place;
   const kind = await kindOf(db, place);
-  if (kind === null) return { ok: false, fields: ["id"] };
+  if (kind === null) return refusal("invalid_request", ["id"]);
   const arriving = await piecesArriving(db, transfer, units.length, units);
-  if (arriving === null) return { ok: false, fields: ["units"] };
+  if (arriving === null) return refusal("invalid_request", ["units"]);
   const into = crypto.randomUUID();
   const code = transfer.consumable_code;
   const movement = {
@@ -322,10 +346,17 @@ async function receivePart(
       binds: [into],
     }),
     ...lotMoves(db, { movementId: into, place, takes: arriving.takes, sign: 1 }),
-    ...unitChanges(db, { units: arriving.units, state: "held", place, movementId: into, ...unitWritten(written) }),
+    ...unitChanges(db, {
+      units: arriving.units,
+      state: "held",
+      place,
+      movementId: into,
+      from: { states: IN_TRANSIT },
+      ...unitWritten(written),
+    }),
   ]);
   // Another receipt, or a settlement, changed what it carries between the read and this batch.
-  if (carried?.meta.changes !== 1) return { ok: false, settled: true };
+  if (carried?.meta.changes !== 1) return refusal("transfer_settled");
   return { ok: true, touched: [place] };
 }
 

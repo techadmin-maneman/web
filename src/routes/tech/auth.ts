@@ -34,6 +34,7 @@ import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../../
 import { visitorOf } from "../../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { CODE_TEXT, newLoginCode } from "../../policy/one-time-code.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** Why an active technician was refused a code, and what they can do, in ops' words. */
 function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {
@@ -67,7 +68,10 @@ async function keepRefusalAlert(c: Context<AppEnv>, technicianId: string, asked:
       ? deps.resolveAlert(key)
       : deps.alertOnce({
           key,
-          message: `Technician ${technicianId} was refused a login code: ${refusalReason(asked, config.settings.login)}`,
+          message: ALERT_WORDS.technician_code_refused({
+            technician: technicianId,
+            reason: refusalReason(asked, config.settings.login),
+          }),
           link: "/technicians",
         });
   await afterResponse(

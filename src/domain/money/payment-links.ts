@@ -18,7 +18,6 @@
 // the visit by its reference, the visit's ID. A link paid is ./payment-links-paid.ts.
 
 import { shortDate } from "@maneman/web-kit/dates";
-import { rupees } from "@maneman/web-kit/money";
 import { onAllowlist, type MessagingSettings } from "../../config/settings.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -34,6 +33,7 @@ import { priceOf } from "./price-book.ts";
 import { serviceOf } from "../booking/services.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
 import { cityOfVisit } from "../cities/cities.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
 export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free";
@@ -194,7 +194,7 @@ export async function sendPaymentLink(
     const product = (await serviceOf(db, "first_fit", visit.tier))?.name ?? visit.tier;
     await deps.alertOnce({
       key: refusedKey(visit.appointmentId),
-      message: `${notMade(visit, product, made.kind)} Send the client a link from Razorpay's dashboard with reference ${visit.appointmentId}.`,
+      message: ALERT_WORDS.payment_link_not_made({ visit: visit.appointmentId, product, why: made.kind }),
       link: paymentsTab(visit.personId),
     });
     return made.kind === "unpriced" ? "unpriced" : "unavailable";
@@ -206,13 +206,6 @@ export async function sendPaymentLink(
 }
 
 /** Why a one visit's link was not made, for ops, naming the hair system the client was fitted with. */
-function notMade(visit: FittedVisit, product: string, why: "unpriced" | "code_changing"): string {
-  const fitted = `Visit ${visit.appointmentId} was a consultation and fit, and the client was fitted with ${product}`;
-  if (why === "unpriced")
-    return `${fitted}, which the price book has no price for that day, so no payment link was sent. Price it first.`;
-  return `${fitted}; a discount code went on or came off it each time its payment link was written, so none was sent.`;
-}
-
 interface UnsentRow extends LinkRow {
   appointment_id: string;
   tier: string;
@@ -371,10 +364,7 @@ async function refusedOrMadeBefore(
     .run();
   await deps.alertOnce({
     key: refusedKey(visit.appointmentId),
-    message:
-      `Razorpay would not make the payment link of ${rupees(link.amount)} for visit ${visit.appointmentId}: ` +
-      `${reason}. Send the client one from Razorpay's dashboard with reference ${visit.appointmentId}, whose ` +
-      "payment then finds the visit.",
+    message: ALERT_WORDS.payment_link_refused({ visit: visit.appointmentId, amount: link.amount, reason }),
     link: paymentsTab(visit.personId),
   });
   return "refused";
@@ -407,9 +397,7 @@ async function keepLink(
 async function tellFailure(deps: LinkDeps, visit: FittedVisit, reason: string): Promise<void> {
   await deps.alertOnce({
     key: failedKey(visit.appointmentId),
-    message:
-      `The payment link for visit ${visit.appointmentId} could not be asked of Razorpay ` +
-      `${String(FAILURES_BEFORE_ALERT)} times: ${reason}. It is asked again every five minutes.`,
+    message: ALERT_WORDS.payment_link_failed({ visit: visit.appointmentId, times: FAILURES_BEFORE_ALERT, reason }),
     link: paymentsTab(visit.personId),
     after: FAILURES_BEFORE_ALERT,
   });

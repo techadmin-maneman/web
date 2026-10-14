@@ -66,6 +66,7 @@ import {
 import { pieceBody } from "./jobs.piece.ts";
 import { registerPhotographs } from "./jobs.photos.ts";
 import { NO_PIECE, takesStep } from "../../policy/in-job-steps.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 export function registerTechJobSteps(app: App): void {
   registerArrival(app);
@@ -356,9 +357,7 @@ function registerProfileAndOutcome(app: App): void {
 async function tellOfOlderBase(c: Ctx, personId: string, versionId: string): Promise<void> {
   await c.var.deps.alertOnce({
     key: `hair_profile_from_older:${versionId}`,
-    message:
-      `A technician's hair profile for client ${personId} (version ${versionId}) was taken from an older version ` +
-      "than the latest, and is now the latest. Compare it with the version before it, and correct it if need be.",
+    message: ALERT_WORDS.hair_profile_from_older({ client: personId, version: versionId }),
     link: `/clients/${personId}/pieces`,
   });
 }

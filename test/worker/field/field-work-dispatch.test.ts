@@ -294,7 +294,9 @@ describe("an erasure", () => {
 
     books.failNext("eraseCustomer", "Books said 500");
     expect(await pass(deps)).toBe(0);
-    expect(deps.alerts).toEqual([expect.stringMatching(/stub-customer-rohit.*Books said 500.*by hand/)]);
+    expect(deps.alerts).toEqual([
+      expect.stringMatching(/delete customer stub-customer-rohit.*after 10 tries \(Books said 500\)/),
+    ]);
 
     // Ten attempts, and the pass asks no more.
     expect(await pass(deps)).toBe(0);

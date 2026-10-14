@@ -8,6 +8,7 @@ import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
 import { auditStatement } from "../platform/audit.ts";
 import type { Written } from "../platform/audit.ts";
 import { askRefund, refundLeftToOps, refundReceipt } from "./refunds.ts";
+import { REFUND_NOT_FAILED, statusIn } from "../../config/statuses.ts";
 
 export type PaymentRefund =
   | { readonly kind: "refunded"; readonly amount: number }
@@ -100,5 +101,5 @@ export const REFUND_OWED_FAILED = `SELECT 'payment_to_refund' AS "group", p.id A
    WHERE r.status = 'failed' AND p.status <> 'refunded' AND pe.erased_at IS NULL
      AND NOT EXISTS (
        SELECT 1 FROM refunds later
-        WHERE later.payment_id = r.payment_id AND later.status IN ('created', 'processed')
+        WHERE later.payment_id = r.payment_id AND ${statusIn("later.status", REFUND_NOT_FAILED)}
           AND later.created_at > r.created_at)`;

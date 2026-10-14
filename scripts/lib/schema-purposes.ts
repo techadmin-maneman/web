@@ -80,6 +80,9 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "A matter Customer Care sent from a chat to the client's city, on that city's Tasks until it is closed (ADR 0135).",
   care_owners:
     "Each client's named Care person, given at their first chat and moved by a Customer Care manager (ADR 0131).",
+  crm_contact_updates:
+    "A client's contact change still owed to their CRM lead, which the sweeper sends again until the lead has it (ADR 0203).",
+  vendor_breakers: "Each vendor's failures in a row, and until when its work waits while it is held off (ADR 0203).",
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
   credit_expiry_cursor:
@@ -195,7 +198,6 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "Each object client-photos and referral-cards hold, and its size, written as it is stored and deleted as it is, so the storage meter never counts one twice (ADR 0093).",
   storage_meter:
     "What the apps' two buckets, client-photos and referral-cards, hold together: one row, the sum of `stored_objects` kept beside it, and the last mark of the share ops were told of (ADR 0093); and the last mark of the database's own size they were told of.",
-  sync_cursors: "Where each pass of the reconciliation with FSM has reached (ADR 0032).",
   targets:
     "Each month's target for a city, by measure, as set on the console's Targets page; set again, it is replaced (ADR 0154).",
   task_closures:
@@ -236,10 +238,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times " +
     "(ADR 0032, ADR 0074).",
   waitlist_entries: "Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).",
-  webhook_inbox: "FSM's webhook deliveries, each kept once (ADR 0032).",
   zones: "A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).",
   zoho_access_tokens:
     "Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).",
-  zoho_token: "The CRM's access token before migration 0041; unread since, and dropped later (open point 90).",
-  zoho_tokens: "FSM's and Books' access token before migration 0041; unread since, and dropped later (open point 90).",
 };

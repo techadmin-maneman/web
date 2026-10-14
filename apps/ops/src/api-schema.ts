@@ -706,6 +706,15 @@ export interface paths {
                         "application/json": components["schemas"]["OpsAvailability"];
                     };
                 };
+                /** @description invalid_request: no client or kind named, or a field that is not one */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
@@ -12025,7 +12034,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -12083,7 +12092,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, or units for a label the place does not hold or a count other than the quantity */
+                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, quantity for more than the place holds, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -12150,7 +12159,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -12217,7 +12226,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -12607,7 +12616,7 @@ export interface paths {
                         "application/json": components["schemas"]["StockUnits"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities */
+                /** @description invalid_request: fields names consumable_code for a stock code that is not a hair system */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -12618,6 +12627,15 @@ export interface paths {
                 };
                 /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: a place outside the caller's cities */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -12651,7 +12669,7 @@ export interface paths {
                         "application/json": components["schemas"]["StockUnits"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities */
+                /** @description invalid_request: fields names consumable_code for a stock code that is not a hair system */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -12662,6 +12680,15 @@ export interface paths {
                 };
                 /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description not_found: a place outside the caller's cities */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -15153,7 +15180,10 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
             service: string | null;
-            /** @enum {string} */
+            /**
+             * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
+             * @enum {string}
+             */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description Closed because nobody was home: a no-show. */
             not_home: boolean;
@@ -15247,7 +15277,10 @@ export interface components {
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
             service: string | null;
-            /** @enum {string} */
+            /**
+             * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
+             * @enum {string}
+             */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description Closed because nobody was home: a no-show. */
             not_home: boolean;
@@ -17087,7 +17120,10 @@ export interface components {
             starts_at: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
-            /** @enum {string} */
+            /**
+             * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
+             * @enum {string}
+             */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description The notice the visit was sold under, in hours, or the one in force for a visit no hold sold: a change of the client's own inside it costs them, one ops make never does. */
             notice_hours: number;

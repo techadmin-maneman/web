@@ -184,17 +184,13 @@ describe("PATCH /api/profile/address", () => {
     expect(changedAt).toEqual({ books_details_changed_at: NOW.toISOString() });
   });
 
-  it("tells ops when the address cannot be sent on, until a later change is", async () => {
-    const openAlert = () =>
-      env.DB.prepare("SELECT key FROM alerts WHERE key = 'contact_sync:p1' AND resolved_at IS NULL").first("key");
+  it("keeps the change owed when the queue will not take it, for the sweeper to send, and tells ops nothing", async () => {
+    const owed = () =>
+      env.DB.prepare("SELECT person_id FROM crm_contact_updates WHERE person_id = 'p1'").first("person_id");
     queues.CRM_QUEUE.send = () => Promise.reject(new Error("queue unavailable"));
     expect((await send(client, "PATCH", "/api/profile/address", address)).status).toBe(200);
-    expect(await openAlert()).toBe("contact_sync:p1");
-
-    // The consumers read the person afresh, so the later change carries the one that was not sent.
-    queues.CRM_QUEUE = fakeQueue();
-    expect((await send(client, "PATCH", "/api/profile/address", { ...address, line1: "House 12" })).status).toBe(200);
-    expect(await openAlert()).toBeNull();
+    expect(await owed()).toBe("p1");
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts").first()).toEqual({ n: 0 });
   });
 });
 
@@ -237,8 +233,8 @@ describe("POST /api/address/suggestions", () => {
     expect(res.status).toBe(503);
     await suggest(client, "mm-stub:refused", "s-2");
     const told =
-      "Google refused the address search (autocomplete 403: stub: quota). Clients can still type an address, " +
-      "but none gets a pin. Check the key, its APIs and its quotas (provisioning, step 13).";
+      "Check the Google key, its APIs and its quotas (provisioning, step 13): Google refused the address search " +
+      "(autocomplete 403: stub: quota), so clients' addresses get no pin.";
     expect(deps.alerts).toEqual([told]);
 
     const tomorrow = fakeDependencies({ now: () => new Date(NOW.getTime() + 24 * 60 * 60 * 1000) });

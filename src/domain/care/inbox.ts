@@ -5,6 +5,7 @@
 import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
 import { giveCarePerson } from "./care-people.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 /** A message a client wrote to our number, as the bridge or MSG91 reports it. */
 export interface Inbound {
@@ -236,23 +237,25 @@ export async function conversationThread(db: D1Database, id: string, context: In
     .bind(id, AUTO_REPLY)
     .first<ListRow>();
   if (row === null) return null;
-  const [chat, auto] = await db.batch([
-    db
-      .prepare(
-        `SELECT direction AS kind, sent_at AS at, author, text, delivery FROM chat_messages WHERE conversation_id = ?1
+  const { chat, auto } = await readAll(db, {
+    chat: read<ThreadItem>(
+      db
+        .prepare(
+          `SELECT direction AS kind, sent_at AS at, author, text, delivery FROM chat_messages WHERE conversation_id = ?1
          ORDER BY sent_at DESC LIMIT ?2`,
-      )
-      .bind(id, THREAD_ITEMS),
-    db
-      .prepare(
-        `SELECT 'auto' AS kind, COALESCE(sent_at, queued_at) AS at, kind AS message, state, delivered_at, read_at
+        )
+        .bind(id, THREAD_ITEMS),
+    ),
+    auto: read<ThreadItem>(
+      db
+        .prepare(
+          `SELECT 'auto' AS kind, COALESCE(sent_at, queued_at) AS at, kind AS message, state, delivered_at, read_at
          FROM outbound_messages WHERE person_id = ?1 AND state IN ('sent', 'queued')
          ORDER BY created_at DESC LIMIT ?2`,
-      )
-      .bind(row.person_id, THREAD_ITEMS),
-  ]);
-  const items = [...((chat?.results ?? []) as ThreadItem[]), ...((auto?.results ?? []) as ThreadItem[])]
-    .sort((one, other) => one.at.localeCompare(other.at))
-    .slice(-THREAD_ITEMS);
+        )
+        .bind(row.person_id, THREAD_ITEMS),
+    ),
+  });
+  const items = [...chat, ...auto].sort((one, other) => one.at.localeCompare(other.at)).slice(-THREAD_ITEMS);
   return { conversation: rowOf({ ...row, last_line: null }, context), items };
 }

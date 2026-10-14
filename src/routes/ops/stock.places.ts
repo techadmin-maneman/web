@@ -99,8 +99,7 @@ export function registerOpsStockPlaces(app: App): void {
       { name: body.name, parentId: body.parent_id, active: body.active },
       written(c),
     );
-    if (!changed.ok)
-      return "missing" in changed ? refuse(c, "not_found") : refuse(c, "invalid_request", changed.fields);
+    if (!changed.ok) return refuse(c, changed.code, changed.fields);
     return c.json(await stockAnswer(c), 200);
   });
 }

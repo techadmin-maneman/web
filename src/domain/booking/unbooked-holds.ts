@@ -9,6 +9,7 @@ import { MINUTE_MS } from "../../lib/durations.ts";
 import { paidNotBooked } from "./hold-stages.ts";
 import { type Confirmed } from "./booked-hold.ts";
 import { confirmBooking } from "./bookings.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** How long a confirmed hold may wait to be booked before the cron books it. */
 const UNBOOKED_AFTER_MS = 30 * MINUTE_MS;
@@ -80,9 +81,7 @@ async function bookUnbookedHold(
     pass.log.warn("unbooked_hold_failed", { hold_id: hold.id, reason });
     await pass.alertOnce({
       key: unbookedAlertKey(hold.id),
-      message:
-        `Booking ${hold.id} was paid for, or booked free, and is neither booked nor refunded half an hour on: ` +
-        `${reason}.`,
+      message: ALERT_WORDS.unbooked_hold({ booking: hold.id, reason }),
       link: `/clients/${hold.person_id}`,
     });
     return null;
