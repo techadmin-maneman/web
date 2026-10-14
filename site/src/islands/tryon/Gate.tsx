@@ -48,6 +48,18 @@ function FieldError(props: { id: string; text: string | null }) {
  * Step four: where to send the look on WhatsApp, before it is made. Both fields are needed (ADR 0104), and the number
  * is proved with the WhatsApp code sent to it before the look is made.
  */
+/** What the gate says as it sends: that the photograph is still on its way, or why the look did not go. */
+function GateSaid({ photoOnItsWay, failure }: { photoOnItsWay: boolean; failure: string | null }) {
+  return (
+    <div aria-live="polite">
+      {photoOnItsWay && <p class={styles.reassurance}>{tryOn.gate.photoOnItsWay}</p>}
+      {failure !== null && (
+        <div class={messageLook({ tone: "error", ground: "ink", className: styles.gateFailure })}>{failure}</div>
+      )}
+    </div>
+  );
+}
+
 export function Gate(props: {
   notice: Notice;
   name: string;
@@ -56,6 +68,8 @@ export function Gate(props: {
   mobileBad: boolean;
   failure: string | null;
   sending: boolean;
+  /** The photograph is still uploading, and the look waits for it. */
+  photoOnItsWay: boolean;
   /** Null until a code is on its way to the number typed. */
   code: GateCode | null;
   heading: HeadingRef;
@@ -133,13 +147,7 @@ export function Gate(props: {
             />
           )}
         </div>
-        <div aria-live="polite">
-          {props.failure !== null && (
-            <div class={messageLook({ tone: "error", ground: "ink", className: styles.gateFailure })}>
-              {props.failure}
-            </div>
-          )}
-        </div>
+        <GateSaid photoOnItsWay={props.photoOnItsWay} failure={props.failure} />
         <Button
           variant="light"
           size="action"

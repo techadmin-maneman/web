@@ -5,7 +5,7 @@
 // docs/reference/youcam-api-notes.md). A browser that has had its look is not
 // an error: it is shown that its look was sent (ADR 0104).
 
-import type { ErrorCode, JobStatus } from "./api.ts";
+import type { Code, JobStatus } from "./api.ts";
 
 export const ERROR_KINDS = [
   "photo",
@@ -31,7 +31,7 @@ export interface Failure {
 }
 
 /** An API refusal. Anything the visitor cannot fix by choosing another photograph is "busy". */
-export function errorKindOf(code: ErrorCode | "network"): ErrorKind {
+export function errorKindOf(code: Code): ErrorKind {
   if (code === "photo_invalid_file") return "photo";
   if (code === "whatsapp_unavailable") return "unavailable";
   return "busy";

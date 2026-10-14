@@ -3,6 +3,7 @@ import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
 import { TextLink } from "@maneman/ui/TextLink";
 import { consentCopy, tryOn, type Notice } from "../../content/site.ts";
+import { useState } from "preact/hooks";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
@@ -16,6 +17,8 @@ export function Consent(props: {
 }) {
   const { consent } = props;
   const words = consentCopy(props.notice);
+  // Continue pressed before the box is ticked says why it did nothing.
+  const [askedFirst, setAskedFirst] = useState(false);
   return (
     <div class={styles.narrow}>
       <Title heading={props.heading}>{words.title}</Title>
@@ -32,13 +35,26 @@ export function Consent(props: {
         className={styles.agree}
         checked={consent}
         onChange={(event) => {
+          setAskedFirst(false);
           props.onTick(event.currentTarget.checked);
         }}
         label={<span class={styles.agreeText}>{words.agreement}</span>}
       />
-      <Button variant="light" size="action" className={styles.next} aria-disabled={!consent} onClick={props.onAgree}>
+      <Button
+        variant="light"
+        size="action"
+        className={styles.next}
+        aria-disabled={!consent}
+        onClick={() => {
+          if (consent) props.onAgree();
+          else setAskedFirst(true);
+        }}
+      >
         {tryOn.consent.continue}
       </Button>
+      <p class={styles.small} aria-live="polite">
+        {askedFirst && !consent ? tryOn.consent.tickFirst : ""}
+      </p>
       <p class={styles.small}>
         {tryOn.consent.privacy.before}
         <TextLink tone="ink" inline href="/privacy">

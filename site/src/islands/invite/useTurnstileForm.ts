@@ -3,7 +3,7 @@ import { mobileDigits } from "@maneman/web-kit/mobile";
 import { isPersonName } from "@maneman/web-kit/names";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { referral } from "../../content/referral.ts";
-import type { Answer, ErrorCode } from "../../lib/api.ts";
+import type { Answer, Code } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
 import { useInvalidFocus } from "../useInvalidFocus.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
@@ -37,7 +37,7 @@ function personProblems(fields: PersonFields): PersonField[] {
 }
 
 /** What a form says when the API refuses it. */
-function refusal(code: ErrorCode | "network"): string {
+function refusal(code: Code): string {
   const { errors } = referral;
   if (code === "rate_limited") return errors.rateLimited;
   if (code === "turnstile_failed") return errors.turnstile;
@@ -90,7 +90,7 @@ export function useTurnstileForm(
   }
 
   /** A refusal: fields the form marks are marked and the first focused; any other refusal is said by the button. */
-  function refused(code: ErrorCode | "network", named: readonly string[]) {
+  function refused(code: Code, named: readonly string[]) {
     const marked = named.filter((field) => marks.includes(field));
     if (code === "invalid_request") setTouched(true);
     setRefusedFields(marked);

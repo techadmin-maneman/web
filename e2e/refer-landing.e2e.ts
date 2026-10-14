@@ -557,6 +557,42 @@ test("pressing again after a lost answer sends the same request key", async ({ p
   expect(keys[1]).toBe(keys[0]);
 });
 
+// A request that never answered left the button on "One moment" until the browser gave up, minutes later.
+test("gives up on a request that never answers, says so, and sends it again under the same key", async ({ page }) => {
+  await page.clock.install();
+  await mockApi(page);
+  const keys: (string | undefined)[] = [];
+  await page.route(`**/api/r/${CODE}/consultation`, (route) => {
+    keys.push(route.request().headers()["idempotency-key"]);
+    // The first is left hanging, as a request is when a phone loses its signal after sending.
+    if (keys.length === 1) return;
+    const body = {
+      state: "booked",
+      date: "2026-09-25",
+      window: "morning",
+      area: SERVED.area,
+      credits: true,
+      invite: "valid",
+      one_visit: false,
+    };
+    return route.fulfill({ status: 201, json: body });
+  });
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
+  await fillForm(page);
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await expect.poll(() => keys.length).toBe(1);
+
+  await page.clock.runFor(21_000);
+  await expect(page.getByText(referralCopy.referral.errors.other)).toBeVisible();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
+  expect(keys).toHaveLength(2);
+  expect(keys[1]).toBe(keys[0]);
+});
+
 // Turnstile's script failing to load once used to fail every booking until the page was reloaded.
 test("Turnstile that failed to load is tried again when the form is sent", async ({ page }) => {
   const requests = await mockApi(page);

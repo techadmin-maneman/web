@@ -121,6 +121,8 @@ export const tryOn = {
   /** With the photo notice's words (consentCopy). */
   consent: {
     continue: "Continue",
+    /** Said when Continue is pressed before the box is ticked. */
+    tickFirst: "Tick the box to agree first.",
     privacy: {
       before: "Read the full ",
       link: "privacy notice",
@@ -151,6 +153,8 @@ export const tryOn = {
     // Not drawn: once the WhatsApp code is on its way, the button confirms it and sends the look.
     confirm: "Confirm and send my look",
     sending: "Sending",
+    /** Said while the look waits on the photograph's upload. */
+    photoOnItsWay: "Your photo is still on its way.",
     errors: {
       rateLimited: "This number is out of tries for today. Try again tomorrow.",
       taken: "This look is already on its way to another number.",

@@ -13,7 +13,7 @@ import {
   requestUploadUrl,
   uploadCopy,
   uploadPhoto,
-  type ErrorCode,
+  type Code,
   type GenerateRequest,
 } from "./api.ts";
 import type { PreparedPhoto } from "./photo.ts";
@@ -27,7 +27,7 @@ export interface Uploaded {
 
 const failed = (failure: Failure) => ({ ok: false, ...failure }) as const;
 /** An API refusal, by its code. */
-const refused = (code: ErrorCode | "network") => failed({ kind: errorKindOf(code), code });
+const refused = (code: Code) => failed({ kind: errorKindOf(code), code });
 
 /** Where a visitor stands on arrival: free to start, back after their look, or the try-on cannot run at all. */
 export type Arrival = "open" | "hadLook" | "unavailable";

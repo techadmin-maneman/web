@@ -8,7 +8,7 @@ import { isPersonName } from "@maneman/web-kit/names";
 import type { TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { looks, notices, stageOptions, tryOn } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
-import { claimLook, jobStatus, type ErrorCode } from "../../lib/api.ts";
+import { claimLook, jobStatus, type Code } from "../../lib/api.ts";
 import { keyPerRequest } from "../../lib/idempotency.ts";
 import { startRender, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
@@ -19,17 +19,20 @@ import type { GateCode } from "./Gate.tsx";
 import type { TryOnEvent, TryOnState } from "./machine.ts";
 
 /** The gate's line for each refusal of the claim the visitor can act on there. */
-const GATE_REFUSALS: Partial<Record<ErrorCode | "network", string>> = {
+const GATE_REFUSALS: Partial<Record<Code, string>> = {
   rate_limited: tryOn.gate.errors.rateLimited,
   job_not_claimable: tryOn.gate.errors.taken,
   number_not_proved: tryOn.gate.errors.notProved,
 };
 
+/** How long the claim waits on the photograph's upload before the gate says it is still on its way. */
+const PHOTO_WAIT_MS = 400;
+
 /** The gate's fields, which it marks when a refusal names them, by the API's names. */
 const GATE_FIELDS: readonly string[] = ["name", "mobile"];
 
 /** The gate's line for each refusal of a WhatsApp code to the number. */
-const CODE_REFUSALS: Partial<Record<ErrorCode | "network", string>> = {
+const CODE_REFUSALS: Partial<Record<Code, string>> = {
   rate_limited: tryOn.gate.errors.codes,
   turnstile_failed: tryOn.gate.errors.turnstile,
 };
@@ -48,10 +51,31 @@ interface TryOnWork {
   readonly refused: (failure: Failure) => void;
 }
 
+/** Why a photograph's job can no longer be claimed: it expired while the gate was open, or is saved to another number. */
+async function unclaimable(job: string) {
+  const status = await jobStatus(job);
+  return status.ok ? jobProblem(status.body) : null;
+}
+
+/** The photograph's upload, which the claim needs; a wait past a moment says what the gate is waiting on. */
+async function uploaded(
+  uploading: TryOnWork["uploading"],
+  onWaiting: (state: "sending" | "waiting") => void,
+): Promise<Outcome<Uploaded>> {
+  const slow = setTimeout(() => {
+    onWaiting("waiting");
+  }, PHOTO_WAIT_MS);
+  const upload = (await uploading.current) ?? ({ ok: false, kind: "busy", code: "no_upload" } as const);
+  clearTimeout(slow);
+  onWaiting("sending");
+  return upload;
+}
+
 export function useGate({ state, send, uploading, jobId, turnstile, fail, refused }: TryOnWork) {
   const { demo, name, mobile } = state;
   const [touched, setTouched] = useState(false);
-  const [sending, setSending] = useState(false);
+  // Sending, and, past a moment's wait on the photograph's upload, waiting for it.
+  const [sending, setSending] = useState<false | "sending" | "waiting">(false);
   const [failure, setFailure] = useState<string | null>(null);
   // The gate's fields the last refusal named.
   const [named, setNamed] = useState<readonly string[]>([]);
@@ -63,7 +87,7 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
   const claimCounted = useRef<string | null>(null);
 
   /** A refusal that names the gate's fields marks them and focuses the first; false when it names none. */
-  function markRefused(code: ErrorCode | "network", fields: readonly string[]): boolean {
+  function markRefused(code: Code, fields: readonly string[]): boolean {
     const marked = code === "invalid_request" ? fields.filter((field) => GATE_FIELDS.includes(field)) : [];
     setNamed(marked);
     if (marked.length === 0) return false;
@@ -77,7 +101,7 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
   }
 
   /** A claim refused: a line on the gate where the visitor can act on it, else the error screen. */
-  async function claimRefused(code: ErrorCode | "network", fields: readonly string[], job: string) {
+  async function claimRefused(code: Code, fields: readonly string[], job: string) {
     if (code === "whatsapp_unavailable") {
       fail({ kind: "unavailable", code });
       return;
@@ -87,9 +111,7 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
       return;
     }
     if (code === "job_not_claimable") {
-      // The photograph may have expired while the gate was open, or the try-on is saved to another number.
-      const status = await jobStatus(job);
-      const problem = status.ok ? jobProblem(status.body) : null;
+      const problem = await unclaimable(job);
       if (problem !== null) {
         fail(problem);
         return;
@@ -144,7 +166,7 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
 
   /** A WhatsApp code to the number typed, under a fresh Turnstile token. */
   async function askForCode(digits: string) {
-    setSending(true);
+    setSending("sending");
     setFailure(null);
     setNamed([]);
     const token = (await turnstile.current?.token()) ?? null;
@@ -188,9 +210,9 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
     setNamed([]);
     const numberCodeId = await provedNumber(digits);
     if (numberCodeId === null) return;
-    setSending(true);
+    setSending("sending");
     // The gate may open before the upload has finished; the claim needs the photograph uploaded.
-    const upload = (await uploading.current) ?? ({ ok: false, kind: "busy", code: "no_upload" } as const);
+    const upload = await uploaded(uploading, setSending);
     if (upload.ok) await claimAndRender(upload.value, digits, numberCodeId);
     else refused(upload);
     setSending(false);
@@ -221,7 +243,8 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
     nameBad: (touched && !isPersonName(name)) || named.includes("name"),
     mobileBad: (touched && mobileDigits(mobile) === null) || named.includes("mobile"),
     failure,
-    sending,
+    sending: sending !== false,
+    photoOnItsWay: sending === "waiting",
     code,
     form,
     onName: (typed: string) => {

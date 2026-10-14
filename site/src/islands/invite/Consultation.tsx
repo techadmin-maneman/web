@@ -16,7 +16,7 @@ import {
   bookConsultation,
   bookPublicConsultation,
   type Consultation as PublicConsultation,
-  type ErrorCode,
+  type Code,
   type ReferralConsultation,
 } from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow, type StripDay } from "../../lib/dates.ts";
@@ -82,7 +82,7 @@ const MARKED_HERE: readonly string[] = [...REQUIRED_API_FIELDS, "discount_code"]
 const MARKED_WITH_PERSON: readonly string[] = [...PERSON_FIELDS, ...MARKED_HERE];
 
 /** Whether a refusal means the strip is out of date: a window filled, or a day closed, since it was drawn. */
-const outOfDate = (code: ErrorCode | "network"): boolean => code === "taken" || code === "not_bookable";
+const outOfDate = (code: Code): boolean => code === "taken" || code === "not_bookable";
 
 /** The visit's part of the form: what it books, the day and the window. On /book, its third step. */
 function VisitPart(
