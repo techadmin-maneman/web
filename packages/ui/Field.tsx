@@ -85,7 +85,7 @@ export function Field({
     </label>
   );
   return (
-    <div className={classes(onInk && styles.inkWords, className)}>
+    <div className={classes(onInk && styles.inkWords, labelHidden && styles.holdsHidden, className)}>
       {labelHidden ? <VisuallyHidden>{words}</VisuallyHidden> : words}
       {children({
         id,

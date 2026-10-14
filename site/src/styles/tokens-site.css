@@ -29,7 +29,7 @@
   --page-max: 1440px;
   --gutter: clamp(20px, 4vw, 48px);
   --header-gap: clamp(16px, 2.5vw, 34px);
-  --bar-h: 64px;
+  --bar-h: var(--sp-64);
   --bar-reserve: 72px; /* the space the home page keeps for the sticky bar */
   --section-gap: clamp(56px, 8vw, 112px);
   --section-gap-lg: clamp(64px, 10vw, 160px);
