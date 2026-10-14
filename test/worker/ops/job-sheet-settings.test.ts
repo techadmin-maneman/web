@@ -189,7 +189,9 @@ describe("the lost reasons ops keep", () => {
       "event-outcome-02",
     );
     expect(closed.status).toBe(202);
-    expect(await env.DB.prepare("SELECT lost_reason FROM visit_outcomes WHERE appointment_id = ?1").bind(JOB).first()).toEqual({
+    expect(
+      await env.DB.prepare("SELECT lost_reason FROM visit_outcomes WHERE appointment_id = ?1").bind(JOB).first(),
+    ).toEqual({
       lost_reason: "moving_abroad",
     });
   });
