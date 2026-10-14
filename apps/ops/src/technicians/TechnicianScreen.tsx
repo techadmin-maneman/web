@@ -32,10 +32,10 @@ interface Entry {
   readonly active: Technician | null;
 }
 
-function entryOf(book: Roster, id: string): Entry | null {
-  const active = book.technicians.find((technician) => technician.id === id);
+function entryOf(roster: Roster, id: string): Entry | null {
+  const active = roster.technicians.find((technician) => technician.id === id);
   if (active !== undefined) return { summary: active, active };
-  const off = book.switched_off.find((technician) => technician.id === id);
+  const off = roster.switched_off.find((technician) => technician.id === id);
   if (off === undefined) return null;
   return { summary: off, active: null };
 }
@@ -153,10 +153,10 @@ export function TechnicianScreen({ technicianId, tab }: { technicianId: string; 
   const page = () => {
     if (loaded.state === "loading") return <Loading />;
     if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />;
-    const book = fresh ?? loaded.value;
-    const entry = entryOf(book, technicianId);
+    const roster = fresh ?? loaded.value;
+    const entry = entryOf(roster, technicianId);
     if (entry === null) return <NotOnRoster />;
-    return <TechnicianPage entry={entry} cities={book.cities} tab={tab} onChange={readAgain} />;
+    return <TechnicianPage entry={entry} cities={roster.cities} tab={tab} onChange={readAgain} />;
   };
 
   return (

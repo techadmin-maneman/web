@@ -41,7 +41,7 @@ interface RowProps {
   readonly onDone: (word: Word) => void;
 }
 
-function RowActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<RowProps, "onDone">) {
+function WordActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<RowProps, "onDone">) {
   const place = placeOf(word);
   return (
     <td className={own.actions}>
@@ -71,7 +71,7 @@ function RowActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<Ro
   );
 }
 
-function ActingRow({ word, ...row }: { word: Word } & RowProps) {
+function WordActingRow({ word, ...row }: { word: Word } & RowProps) {
   const { acting, onAct } = row;
   if (acting?.key !== word.key) return null;
   const close = () => {
@@ -112,9 +112,9 @@ function WordRows({ word, ...row }: { word: Word } & RowProps) {
           )}
           {word.on_site === false && <span className={own.changed}>{copy.notOnSite}</span>}
         </td>
-        <RowActions word={word} {...row} />
+        <WordActions word={word} {...row} />
       </tr>
-      <ActingRow word={word} {...row} />
+      <WordActingRow word={word} {...row} />
     </>
   );
 }

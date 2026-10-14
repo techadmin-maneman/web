@@ -20,11 +20,11 @@ interface LotDraft {
 }
 
 export function LotFields({
-  book,
+  stock,
   draft,
   onEdit,
 }: {
-  book: Stock;
+  stock: Stock;
   draft: LotDraft;
   onEdit: (field: "lotCode" | "expiresOn" | "lotId") => (value: string) => void;
 }) {
@@ -59,7 +59,7 @@ export function LotFields({
     );
   }
   const lots =
-    book.holdings.find((each) => each.consumable_code === draft.code && each.place_id === draft.place)?.lots ?? [];
+    stock.holdings.find((each) => each.consumable_code === draft.code && each.place_id === draft.place)?.lots ?? [];
   if (draft.kind !== "write_off" || lots.length === 0) return null;
   return (
     <div className={form.fields}>

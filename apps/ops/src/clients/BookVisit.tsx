@@ -205,7 +205,7 @@ function useAvailability(clientId: string, choice: Choice, tier: string | undefi
   return useLoad(load);
 }
 
-function Form({
+function BookingForm({
   clientId,
   prefill,
   onBooked,
@@ -416,7 +416,7 @@ export function BookVisit({
       }}
     >
       {booked === null ? (
-        <Form clientId={clientId} prefill={prefill} onBooked={setBooked} />
+        <BookingForm clientId={clientId} prefill={prefill} onBooked={setBooked} />
       ) : (
         <Booked booked={booked} />
       )}

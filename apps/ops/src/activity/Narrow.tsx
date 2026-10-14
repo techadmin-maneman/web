@@ -50,7 +50,13 @@ function DateBox({ label, value, onChange }: Box) {
 }
 
 /** One of a list, or any: whose kind of entry, or which action. */
-function Choice({ label, value, onChange, any, options }: Box & { any: string; options: readonly [string, string][] }) {
+function NarrowChoice({
+  label,
+  value,
+  onChange,
+  any,
+  options,
+}: Box & { any: string; options: readonly [string, string][] }) {
   return (
     <Field label={label}>
       {(control) => (
@@ -93,9 +99,9 @@ export function Narrow({ filters, onApply }: { filters: Filters; onApply: (filte
         onApply(draft);
       }}
     >
-      <Choice label={copy.kind} any={copy.kinds.any} options={KIND_OPTIONS} {...box("actor_kind")} />
+      <NarrowChoice label={copy.kind} any={copy.kinds.any} options={KIND_OPTIONS} {...box("actor_kind")} />
       <TextBox label={copy.actor} {...box("actor")} />
-      <Choice label={copy.action} any={copy.anyAction} options={ACTION_OPTIONS} {...box("action")} />
+      <NarrowChoice label={copy.action} any={copy.anyAction} options={ACTION_OPTIONS} {...box("action")} />
       <DateBox label={copy.from} {...box("from")} />
       <DateBox label={copy.to} {...box("to")} />
       <Checkbox

@@ -13,14 +13,14 @@ import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { CountClasses, type Book } from "./CountClasses.tsx";
+import { CountClasses, type CountTasks } from "./CountClasses.tsx";
 import { CountTaskPanel, whatOf } from "./CountTask.tsx";
 import { StartCount } from "./StartCount.tsx";
 
 const loadTasks = () => client.get("/api/count-tasks");
 
-function Tasks({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
-  if (book.tasks.length === 0) return <p className={form.note}>{copy.none}</p>;
+function Tasks({ countTasks, onOpen }: { countTasks: CountTasks; onOpen: (id: string) => void }) {
+  if (countTasks.tasks.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
       <thead>
@@ -33,7 +33,7 @@ function Tasks({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
         </tr>
       </thead>
       <tbody>
-        {book.tasks.map((task) => (
+        {countTasks.tasks.map((task) => (
           <tr key={task.id}>
             <th scope="row" className={form.rowHead}>
               {task.place}
@@ -62,10 +62,10 @@ function Tasks({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
 
 export function CountsScreen() {
   const [loaded, retry] = useLoad(loadTasks);
-  const [book, setBook] = useState<Book | null>(null);
+  const [countTasks, setBook] = useState<CountTasks | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const access = useAccess();
-  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
+  const current = countTasks ?? (loaded.state === "loaded" ? loaded.value : null);
   const reload = () => {
     void loadTasks().then((answer) => {
       if (answer.ok) setBook(answer.body);
@@ -78,11 +78,11 @@ export function CountsScreen() {
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="count-tasks" title={copy.tasks}>
-            <Tasks book={current} onOpen={setOpen} />
+            <Tasks countTasks={current} onOpen={setOpen} />
           </Panel>
           {access.mayCall("POST /api/count-tasks") && (
             <StartCount
-              book={current}
+              countTasks={current}
               onStarted={(id) => {
                 setOpen(id);
                 reload();
@@ -91,7 +91,7 @@ export function CountsScreen() {
           )}
           {open !== null && <CountTaskPanel key={open} id={open} onChanged={reload} />}
           {access.mayCall("POST /api/consumables/{code}/count-class") && (
-            <CountClasses book={current} onBook={setBook} />
+            <CountClasses countTasks={current} onBook={setBook} />
           )}
         </div>
       )}

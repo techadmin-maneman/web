@@ -17,12 +17,12 @@ import form from "../components/forms.module.css";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { RaiseCustomOrder, type CustomOrdersBook } from "./RaiseCustomOrder.tsx";
+import { RaiseCustomOrder, type CustomOrders } from "./RaiseCustomOrder.tsx";
 
-type Order = CustomOrdersBook["orders"][number];
+type Order = CustomOrders["orders"][number];
 /** What a step answered: the client's whole list, or the refusal. */
 type Answer =
-  | { readonly ok: true; readonly body: CustomOrdersBook }
+  | { readonly ok: true; readonly body: CustomOrders }
   | { readonly ok: false; readonly code: string; readonly fields: readonly string[] };
 
 const REFUND_REASONS = ["not_ordered", "late", "failed_check"] as const;
@@ -107,8 +107,14 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
   );
 }
 
-function OrdersTable({ book, onAnswer }: { book: CustomOrdersBook; onAnswer: (answer: Answer, said: string) => void }) {
-  if (book.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
+function OrdersTable({
+  customOrders,
+  onAnswer,
+}: {
+  customOrders: CustomOrders;
+  onAnswer: (answer: Answer, said: string) => void;
+}) {
+  if (customOrders.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
       <thead>
@@ -121,7 +127,7 @@ function OrdersTable({ book, onAnswer }: { book: CustomOrdersBook; onAnswer: (an
         </tr>
       </thead>
       <tbody>
-        {book.orders.map((order) => (
+        {customOrders.orders.map((order) => (
           <tr key={order.id}>
             <th scope="row" className={form.rowHead}>
               {copy.number(order.number)}
@@ -152,13 +158,13 @@ function OrdersTable({ book, onAnswer }: { book: CustomOrdersBook; onAnswer: (an
 export function CustomOrders({ clientId }: { clientId: string }) {
   const load = useCallback(() => client.get("/api/clients/{id}/custom-orders", { path: { id: clientId } }), [clientId]);
   const [loaded, retry] = useLoad(load);
-  const [book, setBook] = useState<CustomOrdersBook | null>(null);
+  const [customOrders, setBook] = useState<CustomOrders | null>(null);
   const [raising, setRaising] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const access = useAccess();
-  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
-  const changed = (next: CustomOrdersBook, words: string) => {
+  const current = customOrders ?? (loaded.state === "loaded" ? loaded.value : null);
+  const changed = (next: CustomOrders, words: string) => {
     setBook(next);
     setSaid(words);
     setFailure(null);
@@ -172,11 +178,11 @@ export function CustomOrders({ clientId }: { clientId: string }) {
     <Panel titleId="custom-orders" title={copy.title}>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
-      {current !== null && <OrdersTable book={current} onAnswer={answered} />}
+      {current !== null && <OrdersTable customOrders={current} onAnswer={answered} />}
       {current !== null && raising && (
         <RaiseCustomOrder
           clientId={clientId}
-          book={current}
+          customOrders={current}
           onRaised={changed}
           onClose={() => {
             setRaising(false);

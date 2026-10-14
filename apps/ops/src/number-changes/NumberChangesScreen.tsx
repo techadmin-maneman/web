@@ -150,7 +150,7 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
   );
 }
 
-function Queue() {
+function NumberChangeQueue() {
   const [loaded, retry] = useLoad(api.numberChanges);
   const mayDecide = useAccess().mayCall("POST /api/number-changes/{id}/decision");
   if (loaded.state === "loading") return <Loading />;
@@ -174,7 +174,7 @@ export function NumberChangesScreen() {
   return (
     <Shell section="/number-changes" title={numberChanges.title}>
       <div className={styles.column}>
-        <Queue />
+        <NumberChangeQueue />
       </div>
     </Shell>
   );

@@ -177,7 +177,7 @@ function Roster() {
     );
   }
 
-  const book = fresh ?? loaded.value;
+  const roster = fresh ?? loaded.value;
   const figures = new Map(work.value.technicians.map((each) => [each.technician_id, each]));
   const readAgain = async () => {
     const answer = await api.technicians();
@@ -209,18 +209,18 @@ function Roster() {
           {technicians.add.added(added)}
         </p>
       )}
-      {book.technicians.length === 0 ? (
+      {roster.technicians.length === 0 ? (
         <EmptyState look="panel" line={technicians.empty} />
       ) : (
-        <RosterTable active={book.technicians} figures={figures} />
+        <RosterTable active={roster.technicians} figures={figures} />
       )}
       <p className={styles.note}>
         {technicians.work.period(fullDate(work.value.from), fullDate(lastDay(work.value.to)))}
       </p>
-      {book.switched_off.length > 0 && <SwitchedOff list={book.switched_off} />}
+      {roster.switched_off.length > 0 && <SwitchedOff list={roster.switched_off} />}
       {adding && (
         <AddTechnician
-          cities={book.cities}
+          cities={roster.cities}
           onAdded={async (name) => {
             await readAgain();
             setAdding(false);

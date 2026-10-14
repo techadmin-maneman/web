@@ -77,7 +77,13 @@ function changes(was: Supplier, draft: Draft): string[] {
     .map(([field, label]) => form.confirm.line(label, said(was[field]), said(now[field])));
 }
 
-function Entry(props: { label: string; value: string; size?: string; max: number; onChange: (text: string) => void }) {
+function SupplierEntry(props: {
+  label: string;
+  value: string;
+  size?: string;
+  max: number;
+  onChange: (text: string) => void;
+}) {
   return (
     <Field label={props.label} className={styles.field}>
       {(control) => (
@@ -100,10 +106,16 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
   return (
     <>
       <div className={styles.fields}>
-        <Entry label={form.name} value={draft.name} size={styles.areaBox} max={80} onChange={edit("name")} />
-        <Entry label={form.gstin} value={draft.gstin} size={styles.areaBox} max={15} onChange={edit("gstin")} />
-        <Entry label={form.country} value={draft.country} size={styles.figureBox} max={2} onChange={edit("country")} />
-        <Entry
+        <SupplierEntry label={form.name} value={draft.name} size={styles.areaBox} max={80} onChange={edit("name")} />
+        <SupplierEntry label={form.gstin} value={draft.gstin} size={styles.areaBox} max={15} onChange={edit("gstin")} />
+        <SupplierEntry
+          label={form.country}
+          value={draft.country}
+          size={styles.figureBox}
+          max={2}
+          onChange={edit("country")}
+        />
+        <SupplierEntry
           label={form.currency}
           value={draft.currency}
           size={styles.figureBox}
@@ -112,21 +124,21 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         />
       </div>
       <div className={styles.fields}>
-        <Entry
+        <SupplierEntry
           label={form.contactName}
           value={draft.contactName}
           size={styles.areaBox}
           max={80}
           onChange={edit("contactName")}
         />
-        <Entry
+        <SupplierEntry
           label={form.contactPhone}
           value={draft.contactPhone}
           size={styles.areaBox}
           max={16}
           onChange={edit("contactPhone")}
         />
-        <Entry
+        <SupplierEntry
           label={form.contactEmail}
           value={draft.contactEmail}
           size={styles.areaBox}
@@ -135,8 +147,14 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         />
       </div>
       <div className={styles.fields}>
-        <Entry label={form.terms} value={draft.terms} size={styles.figureBox} max={3} onChange={edit("terms")} />
-        <Entry
+        <SupplierEntry
+          label={form.terms}
+          value={draft.terms}
+          size={styles.figureBox}
+          max={3}
+          onChange={edit("terms")}
+        />
+        <SupplierEntry
           label={form.warranty}
           value={draft.warranty}
           size={styles.figureBox}
@@ -155,7 +173,7 @@ export function SupplierForm({
 }: {
   /** The one to change; null to add a new one. */
   supplier: Supplier | null;
-  onSaved: (book: Suppliers, said: string) => void;
+  onSaved: (suppliers: Suppliers, said: string) => void;
   onCancel: (() => void) | null;
 }) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(supplier));
@@ -172,10 +190,10 @@ export function SupplierForm({
         supplier === null
           ? await client.post("/api/suppliers", { body })
           : await client.post("/api/suppliers/{id}", { path: { id: supplier.id }, body });
-      return sentOf(answer, (book) => ({ book }));
+      return sentOf(answer, (suppliers) => ({ suppliers }));
     },
     (sent) => {
-      onSaved(sent.book, supplier === null ? form.added : form.saved);
+      onSaved(sent.suppliers, supplier === null ? form.added : form.saved);
     },
   );
   const edit = (field: keyof Draft) => (text: string) => {

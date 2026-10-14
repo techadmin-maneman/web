@@ -18,7 +18,7 @@ import styles from "./clients.module.css";
 
 const copy = clients.history;
 
-function Row({ label, value }: { label: string; value: string }) {
+function HistoryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className={styles.historyRow}>
       <dt className={styles.historyKey}>{label}</dt>
@@ -33,22 +33,22 @@ export function History({ clientId, history }: { clientId: string; history: Clie
   return (
     <section className={styles.history} aria-label={copy.title}>
       <dl className={styles.historyList}>
-        <Row
+        <HistoryRow
           label={copy.rows.firstFit}
           value={history.first_fit_on === null ? copy.noFirstFit : fullDate(history.first_fit_on)}
         />
-        <Row label={copy.rows.visits} value={String(history.visits)} />
-        <Row label={copy.rows.services} value={String(history.services)} />
-        <Row label={copy.rows.replacements} value={String(history.replacements)} />
-        <Row
+        <HistoryRow label={copy.rows.visits} value={String(history.visits)} />
+        <HistoryRow label={copy.rows.services} value={String(history.services)} />
+        <HistoryRow label={copy.rows.replacements} value={String(history.replacements)} />
+        <HistoryRow
           label={copy.rows.lastVisit}
           value={history.last_visit_on === null ? copy.noVisit : fullDate(history.last_visit_on)}
         />
-        <Row
+        <HistoryRow
           label={copy.rows.replacement}
           value={due === null ? copy.noPiece : copy.due(fullDate(due.on), due.piece_code)}
         />
-        <Row label={copy.rows.spend} value={rupees(history.spend)} />
+        <HistoryRow label={copy.rows.spend} value={rupees(history.spend)} />
       </dl>
       {mayReadLog && (
         <p className={styles.historyActivity}>

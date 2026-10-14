@@ -49,14 +49,14 @@ function Found(props: {
   );
 }
 
-export function LabelFound({ book }: { book: Stock }) {
+export function LabelFound({ stock }: { stock: Stock }) {
   const [looked, setLooked] = useState<Looked>({ state: "none" });
-  const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
-  const place = (id: string | null) => (id === null ? null : placeName(book, id));
+  const named = (code: string) => stock.consumables.find((each) => each.code === code)?.name ?? code;
+  const place = (id: string | null) => (id === null ? null : placeName(stock, id));
   const state = (key: string) => copy.states[key] ?? key;
   /** A technician by their kit's name; anyone else as the Activity page names them. */
   const by = (actor: string) =>
-    book.places.some((each) => each.id === actor) ? placeName(book, actor) : recordedBy(actor);
+    stock.places.some((each) => each.id === actor) ? placeName(stock, actor) : recordedBy(actor);
   const find = async (label: string) => {
     const answer = await client.get("/api/stock/units/{code}", { path: { code: label } });
     setLooked(answer.ok ? { state: "found", unit: answer.body } : { state: "missing" });

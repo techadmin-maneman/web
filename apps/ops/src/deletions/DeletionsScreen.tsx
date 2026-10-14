@@ -237,7 +237,7 @@ function SettleOn({ personId, code }: { personId: string; code: string }) {
   );
 }
 
-function Queue() {
+function DeletionQueue() {
   const [loaded, retry] = useLoad(api.deletionRequests);
   const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
   const [done, setDone] = useState<string | null>(null);
@@ -273,7 +273,7 @@ export function DeletionsScreen() {
   return (
     <Shell section="/deletion-requests" title={deletions.title}>
       <div className={styles.column}>
-        <Queue />
+        <DeletionQueue />
       </div>
     </Shell>
   );

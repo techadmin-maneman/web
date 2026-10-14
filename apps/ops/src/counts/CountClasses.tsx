@@ -12,13 +12,19 @@ import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 
-export type Book = paths["/api/count-tasks"]["get"]["responses"][200]["content"]["application/json"];
-type CountClass = Book["classes"][number]["count_class"];
+export type CountTasks = paths["/api/count-tasks"]["get"]["responses"][200]["content"]["application/json"];
+type CountClass = CountTasks["classes"][number]["count_class"];
 
 const CLASSES: readonly CountClass[] = ["weekly", "monthly", "quarterly"];
 const OWN = "";
 
-export function CountClasses({ book, onBook }: { book: Book; onBook: (book: Book) => void }) {
+export function CountClasses({
+  countTasks,
+  onBook,
+}: {
+  countTasks: CountTasks;
+  onBook: (countTasks: CountTasks) => void;
+}) {
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const change = async (code: string, chosen: string) => {
@@ -46,7 +52,7 @@ export function CountClasses({ book, onBook }: { book: Book; onBook: (book: Book
           </tr>
         </thead>
         <tbody>
-          {book.classes.map((item) => {
+          {countTasks.classes.map((item) => {
             const own = item.hair_system ? "weekly" : "quarterly";
             return (
               <tr key={item.consumable_code}>

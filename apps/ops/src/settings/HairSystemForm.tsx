@@ -34,7 +34,7 @@ const INCHES = /^\d{1,2}(\.\d)?$/;
 const WHOLE = /^\d{1,6}$/;
 const RUPEES = /^\d{1,7}(\.\d{1,2})?$/;
 
-function Choice(props: {
+function HairSystemChoice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
@@ -112,17 +112,17 @@ function SpecFields({
   return (
     <>
       <div className={styles.fields}>
-        <Choice label={copy.product} value={draft.product} options={products} onChange={edit("product")} />
+        <HairSystemChoice label={copy.product} value={draft.product} options={products} onChange={edit("product")} />
         <Figure label={copy.width} value={draft.width} onChange={edit("width")} />
         <Figure label={copy.length} value={draft.length} onChange={edit("length")} />
-        <Choice
+        <HairSystemChoice
           label={copy.colour}
           value={draft.colour}
           options={COLOURS.map((each) => [each, `#${each}`] as const)}
           onChange={edit("colour")}
         />
         <Figure label={copy.grey} value={draft.grey} onChange={edit("grey")} />
-        <Choice
+        <HairSystemChoice
           label={copy.density}
           value={draft.density}
           options={DENSITIES.map((each) => [String(each), `${String(each)}%`] as const)}
@@ -165,8 +165,14 @@ function checkLines(draft: Draft, productName: string): string[] {
   ];
 }
 
-export function HairSystemForm({ book, onSaved }: { book: Book; onSaved: (book: Book, said: string) => void }) {
-  const products = book.services.filter((each) => each.visit_type === "first_fit" && each.retired_date === null);
+export function HairSystemForm({
+  consumables,
+  onSaved,
+}: {
+  consumables: Book;
+  onSaved: (consumables: Book, said: string) => void;
+}) {
+  const products = consumables.services.filter((each) => each.visit_type === "first_fit" && each.retired_date === null);
   const blank: Draft = {
     product: products[0]?.tier ?? "",
     width: "",
@@ -186,13 +192,13 @@ export function HairSystemForm({ book, onSaved }: { book: Book; onSaved: (book: 
       // The list is read again, with the new code in it.
       const answer = added.ok ? await api.consumables() : added;
       return answer.ok
-        ? { ok: true as const, book: answer.body }
+        ? { ok: true as const, consumables: answer.body }
         : { ok: false as const, code: answer.code, fields: answer.fields };
     },
     (sent) => {
       setDraft(blank);
       steps.edit();
-      onSaved(sent.book, copy.added);
+      onSaved(sent.consumables, copy.added);
     },
   );
   const edit = (field: keyof Draft) => (value: string) => {

@@ -41,7 +41,7 @@ const listedFor = (consumable: Consumables["consumables"][number], expected: Rea
 
 /** The service chosen, and each listed consumable's box. */
 function UsageFields(props: {
-  book: Consumables;
+  consumables: Consumables;
   chosen: string;
   listed: Consumables["consumables"];
   draft: Draft;
@@ -49,7 +49,7 @@ function UsageFields(props: {
   onChoose: (key: string) => void;
   onFigure: (code: string, text: string) => void;
 }) {
-  const { book, listed, draft } = props;
+  const { consumables, listed, draft } = props;
   return (
     <>
       <div className={styles.field}>
@@ -62,9 +62,9 @@ function UsageFields(props: {
             props.onChoose(event.target.value);
           }}
         >
-          {[...new Set(book.services.map((each) => each.visit_type))].map((kind) => (
+          {[...new Set(consumables.services.map((each) => each.visit_type))].map((kind) => (
             <optgroup key={kind} label={dispatch.typeNames[kind] ?? kind}>
-              {book.services
+              {consumables.services
                 .filter((each) => each.visit_type === kind)
                 .map((each) => (
                   <option key={keyOf(each)} value={keyOf(each)}>
@@ -101,18 +101,23 @@ function UsageFields(props: {
   );
 }
 
-export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (book: Consumables) => void }) {
+interface ServiceUsageProps {
+  consumables: Consumables;
+  onSaved: (consumables: Consumables) => void;
+}
+
+export function ServiceUsage({ consumables, onSaved }: ServiceUsageProps) {
   const [chosen, setChosen] = useState(() => {
-    const first = book.services[0];
+    const first = consumables.services[0];
     return first === undefined ? "" : keyOf(first);
   });
-  const service = book.services.find((each) => keyOf(each) === chosen);
+  const service = consumables.services.find((each) => keyOf(each) === chosen);
   const [draft, setDraft] = useState<Draft>(() => draftOf(service));
   const [saved, setSaved] = useState(false);
   const mayChange = useAccess().mayCall("POST /api/service-usage");
 
   const expectedCodes = new Set(service?.expected.map((each) => each.code) ?? []);
-  const listed = book.consumables.filter((each) => listedFor(each, expectedCodes));
+  const listed = consumables.consumables.filter((each) => listedFor(each, expectedCodes));
   const was = new Map(service?.expected.map((each) => [each.code, each.quantity]) ?? []);
   const figure = (code: string) => (draft[code] ?? "").trim();
   const valid = listed.every((each) => figure(each.code) === "" || /^\d{1,3}$/.test(figure(each.code)));
@@ -143,14 +148,14 @@ export function ServiceUsage({ book, onSaved }: { book: Consumables; onSaved: (b
   const title = service === undefined ? words.title : serviceName(service);
   const fields = (
     <UsageFields
-      book={book}
+      consumables={consumables}
       chosen={chosen}
       listed={listed}
       draft={draft}
       mayChange={mayChange}
       onChoose={(key) => {
         setChosen(key);
-        setDraft(draftOf(book.services.find((each) => keyOf(each) === key)));
+        setDraft(draftOf(consumables.services.find((each) => keyOf(each) === key)));
         setSaved(false);
         steps.edit();
       }}

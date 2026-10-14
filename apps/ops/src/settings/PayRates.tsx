@@ -43,7 +43,7 @@ interface RowProps {
 }
 
 /** A grade's row actions; Delete only while no technician holds it. */
-function RowActions({ grade, acting, may, onAct }: { grade: Grade } & Pick<RowProps, "acting" | "may" | "onAct">) {
+function RateActions({ grade, acting, may, onAct }: { grade: Grade } & Pick<RowProps, "acting" | "may" | "onAct">) {
   const actions: readonly (readonly [boolean, NonNullable<Acting>["kind"], string, string])[] = [
     [may.rates, "rate", copy.setRate, copy.setRateLabel(grade.name)],
     [may.grades, "rename", copy.rename, copy.renameLabel(grade.name)],
@@ -71,7 +71,7 @@ function RowActions({ grade, acting, may, onAct }: { grade: Grade } & Pick<RowPr
 }
 
 /** Beneath a grade's row, what its action opened. */
-function ActingRow({ grade, span, ...row }: { grade: Grade; span: number } & RowProps) {
+function RateActingRow({ grade, span, ...row }: { grade: Grade; span: number } & RowProps) {
   const { acting, onAct, onDone } = row;
   if (acting?.id !== grade.id) return null;
   const cancel = () => {
@@ -127,9 +127,9 @@ function GradeRows({ grade, ...row }: { grade: Grade } & RowProps) {
             ))}
           </td>
         ))}
-        <RowActions grade={grade} {...row} />
+        <RateActions grade={grade} {...row} />
       </tr>
-      <ActingRow grade={grade} span={pay.kinds.length + 3} {...row} />
+      <RateActingRow grade={grade} span={pay.kinds.length + 3} {...row} />
     </>
   );
 }

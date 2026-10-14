@@ -86,7 +86,7 @@ function QrButton({ partner }: { partner: Partner }) {
   );
 }
 
-function RowActions({ partner, acting, onAct }: { partner: Partner } & Pick<RowProps, "acting" | "onAct">) {
+function PartnerActions({ partner, acting, onAct }: { partner: Partner } & Pick<RowProps, "acting" | "onAct">) {
   const paused = partner.paused_at !== null;
   const actions: readonly (readonly [NonNullable<Acting>["kind"], string, string])[] = [
     ["edit", copy.edit, copy.editLabel(partner.name)],
@@ -110,7 +110,7 @@ function RowActions({ partner, acting, onAct }: { partner: Partner } & Pick<RowP
 }
 
 /** Beneath a partner's row, what its action opened. */
-function ActingRow({ partner, list, acting, onAct, onDone }: { partner: Partner } & RowProps) {
+function PartnerActingRow({ partner, list, acting, onAct, onDone }: { partner: Partner } & RowProps) {
   if (acting?.id !== partner.id) return null;
   const cancel = () => {
     onAct(null);
@@ -158,10 +158,10 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
         <td className={own.figure}>{rupees(partner.owed)}</td>
         <td className={own.actions}>
           <QrButton partner={partner} />
-          {row.mayChange && <RowActions partner={partner} {...row} />}
+          {row.mayChange && <PartnerActions partner={partner} {...row} />}
         </td>
       </tr>
-      <ActingRow partner={partner} {...row} />
+      <PartnerActingRow partner={partner} {...row} />
     </>
   );
 }

@@ -101,7 +101,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
   );
 }
 
-function Queue() {
+function GrievanceQueue() {
   const [loaded, retry] = useLoad(api.grievances);
   const mayAnswer = useAccess().mayCall("POST /api/grievances/{id}/resolve");
   if (loaded.state === "loading") return <Loading />;
@@ -126,7 +126,7 @@ export function GrievancesScreen() {
   return (
     <Shell section="/grievances" title={grievances.title}>
       <div className={styles.column}>
-        <Queue />
+        <GrievanceQueue />
       </div>
     </Shell>
   );

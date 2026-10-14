@@ -10,7 +10,7 @@ import { purchasing as copy } from "../content/purchasing.ts";
 import type { Order, Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
 
-export function OrderSheet({ book, order, onPrinted }: { book: Orders; order: Order; onPrinted: () => void }) {
+export function OrderSheet({ orders, order, onPrinted }: { orders: Orders; order: Order; onPrinted: () => void }) {
   const done = useRef(onPrinted);
   const printed = useRef(false);
   useEffect(() => {
@@ -25,8 +25,8 @@ export function OrderSheet({ book, order, onPrinted }: { book: Orders; order: Or
     );
     window.print();
   }, []);
-  const supplier = book.suppliers.find((each) => each.id === order.supplier_id);
-  const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
+  const supplier = orders.suppliers.find((each) => each.id === order.supplier_id);
+  const named = (code: string) => orders.consumables.find((each) => each.code === code)?.name ?? code;
   return createPortal(
     <div id="order-sheet" className={styles.sheet}>
       <h1 className={styles.sheetTitle}>

@@ -16,7 +16,7 @@ const words = copy.retiring;
 
 interface Props {
   readonly consumable: Consumable;
-  readonly onSaved: (book: Consumables, said: string) => void;
+  readonly onSaved: (consumables: Consumables, said: string) => void;
   readonly onCancel: () => void;
 }
 
@@ -27,9 +27,9 @@ export function Restoring({ consumable, onSaved, onCancel }: Props) {
       <ActionCheck
         label={copy.restore}
         question={words.restore(consumable.name)}
-        send={async () => sentOf(await api.restoreConsumable(consumable.code), (book) => ({ book }))}
+        send={async () => sentOf(await api.restoreConsumable(consumable.code), (consumables) => ({ consumables }))}
         onDone={(sent) => {
-          onSaved(sent.book, words.done);
+          onSaved(sent.consumables, words.done);
         }}
         errors={copy.errors}
         onCancel={onCancel}
@@ -42,9 +42,9 @@ export function Restoring({ consumable, onSaved, onCancel }: Props) {
 export function Retiring({ consumable, today, onSaved, onCancel }: Props & { readonly today: string }) {
   const [from, setFrom] = useState(today);
   const steps = useSteps(
-    async () => sentOf(await api.retireConsumable(consumable.code, from), (book) => ({ book })),
+    async () => sentOf(await api.retireConsumable(consumable.code, from), (consumables) => ({ consumables })),
     (sent) => {
-      onSaved(sent.book, words.done);
+      onSaved(sent.consumables, words.done);
     },
   );
   const id = `retire-${consumable.code}`;

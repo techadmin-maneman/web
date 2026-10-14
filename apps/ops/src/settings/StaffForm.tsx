@@ -59,11 +59,11 @@ function checkLines(person: StaffPerson | null, sent: StaffSave): string[] {
 function GrantRow(props: {
   index: number;
   grant: StaffGrant;
-  book: StaffBook;
+  staff: StaffBook;
   onChange: (grant: StaffGrant) => void;
   onRemove: () => void;
 }) {
-  const { index, grant, book, onChange, onRemove } = props;
+  const { index, grant, staff, onChange, onRemove } = props;
   const id = (box: string) => `staff-grant-${String(index)}-${box}`;
   return (
     <li className={staffStyles.grantRow}>
@@ -113,14 +113,14 @@ function GrantRow(props: {
         >
           <option value="national">{copy.national}</option>
           <optgroup label={copy.zones}>
-            {book.zones.map((zone) => (
+            {staff.zones.map((zone) => (
               <option key={zone.name} value={whereValue({ geography: "zone", place: zone.name })}>
                 {copy.zone(zone.name)}
               </option>
             ))}
           </optgroup>
           <optgroup label={copy.cities}>
-            {book.cities.map((city) => (
+            {staff.cities.map((city) => (
               <option key={city} value={whereValue({ geography: "city", place: city })}>
                 {city}
               </option>
@@ -142,12 +142,12 @@ function GrantRow(props: {
 }
 
 export function StaffForm(props: {
-  book: StaffBook;
+  staff: StaffBook;
   person: StaffPerson | null;
-  onSaved: (book: StaffBook) => void;
+  onSaved: (staff: StaffBook) => void;
   onCancel: () => void;
 }) {
-  const { book, person, onSaved, onCancel } = props;
+  const { staff, person, onSaved, onCancel } = props;
   const [draft, setDraft] = useState<Draft>(draftOf(person));
   const sent: StaffSave = { email: draft.email.trim(), active: draft.active, grants: [...draft.grants] };
   const steps = useSteps(
@@ -157,7 +157,7 @@ export function StaffForm(props: {
     },
   );
   // Someone already on the list is changed from their own row, never added twice.
-  const listed = person === null && alreadyListed(book.people, draft.email);
+  const listed = person === null && alreadyListed(staff.people, draft.email);
 
   const edit = (change: Partial<Draft>) => {
     setDraft({ ...draft, ...change });
@@ -214,7 +214,7 @@ export function StaffForm(props: {
               key={index}
               index={index}
               grant={grant}
-              book={book}
+              staff={staff}
               onChange={(changed) => {
                 editGrant(index, changed);
               }}

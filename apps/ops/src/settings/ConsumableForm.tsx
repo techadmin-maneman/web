@@ -99,7 +99,7 @@ export function ConsumableForm({
   /** The one to change; null to add a new one. */
   consumable: Consumable | null;
   maxUnitCost: number;
-  onSaved: (book: Consumables, said: string) => void;
+  onSaved: (consumables: Consumables, said: string) => void;
   onCancel: (() => void) | null;
 }) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(consumable));
@@ -124,10 +124,10 @@ export function ConsumableForm({
       };
       const answer =
         consumable === null ? await api.addConsumable(fields) : await api.changeConsumable(consumable.code, fields);
-      return sentOf(answer, (book) => ({ book }));
+      return sentOf(answer, (consumables) => ({ consumables }));
     },
     (sent) => {
-      onSaved(sent.book, consumable === null ? form.added : form.saved);
+      onSaved(sent.consumables, consumable === null ? form.added : form.saved);
     },
   );
   const edit = (field: keyof Draft) => (text: string) => {

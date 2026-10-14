@@ -29,7 +29,7 @@ function wayTo(group: Group, task: Task, clientId: string): { readonly to: strin
   return { to: taskClientPath(group, clientId), words: copy.toTab(tabLabel(group)) };
 }
 
-function Row({ group, task, clientId, now }: { group: Group; task: Task; clientId: string; now: Date }) {
+function OpenTaskRow({ group, task, clientId, now }: { group: Group; task: Task; clientId: string; now: Date }) {
   const name = taskCopy.groups[group];
   const way = wayTo(group, task, clientId);
   return (
@@ -51,7 +51,7 @@ function List({ board, clientId }: { board: Tasks; clientId: string }) {
   return (
     <ul className={styles.openTasks}>
       {rows.map(({ group, task }) => (
-        <Row key={`${group}/${task.id}`} group={group} task={task} clientId={clientId} now={now} />
+        <OpenTaskRow key={`${group}/${task.id}`} group={group} task={task} clientId={clientId} now={now} />
       ))}
     </ul>
   );

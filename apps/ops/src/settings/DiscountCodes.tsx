@@ -97,7 +97,7 @@ function SwitchOffCheck({ code, onDone, onBack }: { code: DiscountCode; onDone: 
 }
 
 /** A code's row actions: switched off while it is on, and deleted while no booking has taken it. */
-function RowActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit<RowProps, "onDone">) {
+function CodeActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit<RowProps, "onDone">) {
   return (
     <td className={own.actions}>
       {may.off && code.switched_off === null && (
@@ -129,7 +129,7 @@ function RowActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit<
 }
 
 /** Beneath a code's row, what its action opened. */
-function ActingRow({ code, span, acting, onAct, onDone }: { code: DiscountCode; span: number } & RowProps) {
+function CodeActingRow({ code, span, acting, onAct, onDone }: { code: DiscountCode; span: number } & RowProps) {
   if (acting?.id !== code.id) return null;
   const cancel = () => {
     onAct(null);
@@ -187,9 +187,9 @@ function CodeRows({ code, today, ...row }: { code: DiscountCode; today: string }
         <td className={own.figure}>{rupees(code.given)}</td>
         <td className={own.figure}>{rupees(code.paid)}</td>
         <td>{dayOf(code.last_used)}</td>
-        <RowActions code={code} {...row} />
+        <CodeActions code={code} {...row} />
       </tr>
-      <ActingRow code={code} span={ON_COLUMNS} {...row} />
+      <CodeActingRow code={code} span={ON_COLUMNS} {...row} />
     </>
   );
 }
@@ -256,9 +256,9 @@ function OffRows({ code, ...row }: { code: DiscountCode } & RowProps) {
         <td className={own.figure}>{rupees(code.given)}</td>
         <td className={own.figure}>{rupees(code.paid)}</td>
         <td>{dayOf(code.switched_off?.at ?? null)}</td>
-        <RowActions code={code} {...row} />
+        <CodeActions code={code} {...row} />
       </tr>
-      <ActingRow code={code} span={OFF_COLUMNS} {...row} />
+      <CodeActingRow code={code} span={OFF_COLUMNS} {...row} />
     </>
   );
 }
@@ -386,10 +386,10 @@ export function DiscountCodes() {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const book = refreshed ?? loaded.value;
-  const on = book.codes.filter((code) => code.switched_off === null);
+  const codes = refreshed ?? loaded.value;
+  const on = codes.codes.filter((code) => code.switched_off === null);
   const findForm = <FindForm finding={finding} onFind={find} />;
-  const off = book.codes.filter((code) => code.switched_off !== null);
+  const off = codes.codes.filter((code) => code.switched_off !== null);
 
   return (
     <Panel
@@ -412,11 +412,11 @@ export function DiscountCodes() {
         )
       }
     >
-      <Figures totals={book.totals} />
+      <Figures totals={codes.totals} />
       {making && (
         <DiscountCodeForm
-          today={book.today}
-          most={book.batch_most}
+          today={codes.today}
+          most={codes.batch_most}
           onMade={() => void refresh()}
           onClose={() => {
             setMaking(false);
@@ -428,14 +428,14 @@ export function DiscountCodes() {
           {said}
         </InlineMessage>
       )}
-      {book.codes.length === 0 ? (
+      {codes.codes.length === 0 ? (
         <>
           <div className={own.tools}>{findForm}</div>
           <p className={styles.note}>{finding === null ? copy.none : copy.noneFound}</p>
         </>
       ) : (
         <>
-          <CodesTable codes={on} today={book.today} find={findForm} {...row} />
+          <CodesTable codes={on} today={codes.today} find={findForm} {...row} />
           <SwitchedOff codes={off} {...row} />
         </>
       )}

@@ -36,7 +36,7 @@ function monthsBetween(first: string, last: string): string[] {
   return months;
 }
 
-function Choice(props: {
+function TargetChoice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
@@ -82,8 +82,13 @@ function TargetForm({ list, onSaved }: { list: Targets; onSaved: (list: Targets)
   };
   return (
     <div className={styles.group}>
-      <Choice label={copy.city} value={city} options={list.cities.map((each) => [each, each])} onChange={setCity} />
-      <Choice
+      <TargetChoice
+        label={copy.city}
+        value={city}
+        options={list.cities.map((each) => [each, each])}
+        onChange={setCity}
+      />
+      <TargetChoice
         label={copy.measure}
         value={measure}
         options={list.measures.map((each) => [each, copy.measures[each]])}
@@ -172,7 +177,7 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
   const list = saved ?? loaded.value;
   return (
     <>
-      <Choice
+      <TargetChoice
         label={copy.month}
         value={list.month}
         options={monthsBetween(list.first_month, list.last_month).map((each) => [each, fullMonth(each)])}

@@ -11,7 +11,7 @@ import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import styles from "../components/forms.module.css";
-import type { CitiesBook } from "./book.ts";
+import type { Cities } from "./types.ts";
 
 const copy = cities.registrations;
 
@@ -23,7 +23,7 @@ interface Draft {
 
 const EMPTY: Draft = { stateCode: "", gstin: "", branch: "" };
 
-function Entry(props: { label: string; value: string; max: number; onChange: (text: string) => void }) {
+function RegistrationEntry(props: { label: string; value: string; max: number; onChange: (text: string) => void }) {
   return (
     <Field label={props.label} className={styles.field}>
       {(control) => (
@@ -69,7 +69,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
       checking={<p className={styles.checkLine}>{copy.adding(body.state_code, body.gstin)}</p>}
     >
       <div className={styles.fields}>
-        <Entry
+        <RegistrationEntry
           label={copy.stateCode}
           value={draft.stateCode}
           max={2}
@@ -77,7 +77,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
             edit({ stateCode });
           }}
         />
-        <Entry
+        <RegistrationEntry
           label={copy.gstin}
           value={draft.gstin}
           max={15}
@@ -85,7 +85,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
             edit({ gstin });
           }}
         />
-        <Entry
+        <RegistrationEntry
           label={copy.branch}
           value={draft.branch}
           max={40}
@@ -98,7 +98,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
   );
 }
 
-export function Registrations({ book, onSaved }: { book: CitiesBook; onSaved: () => void }) {
+export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
   const access = useAccess();
   const [said, setSaid] = useState<string | null>(null);
   const saved = (words: string) => () => {
@@ -106,9 +106,9 @@ export function Registrations({ book, onSaved }: { book: CitiesBook; onSaved: ()
     onSaved();
   };
   return (
-    <Panel titleId="gst-registrations" title={copy.panel} count={book.registrations.length}>
+    <Panel titleId="gst-registrations" title={copy.panel} count={cities.registrations.length}>
       <p className={styles.note}>{copy.note}</p>
-      {book.registrations.length === 0 ? (
+      {cities.registrations.length === 0 ? (
         <p className={styles.note}>{copy.none}</p>
       ) : (
         <Table className={styles.table}>
@@ -122,7 +122,7 @@ export function Registrations({ book, onSaved }: { book: CitiesBook; onSaved: ()
             </tr>
           </thead>
           <tbody>
-            {book.registrations.map((registration) => (
+            {cities.registrations.map((registration) => (
               <tr key={registration.state_code}>
                 <th scope="row" className={styles.rowHead}>
                   {registration.state_code}

@@ -27,22 +27,22 @@ import staffStyles from "./staff.module.css";
 const copy = settings.staff;
 
 interface PanelProps {
-  readonly book: StaffBook;
-  readonly onChanged: (book: StaffBook) => void;
+  readonly staff: StaffBook;
+  readonly onChanged: (staff: StaffBook) => void;
 }
 
-function Enforcement({ book, onChanged }: PanelProps) {
+function Enforcement({ staff, onChanged }: PanelProps) {
   const words = copy.enforcement;
-  const on = book.enforced.on;
-  const { set_by: setBy, set_at: setAt } = book.enforced;
+  const on = staff.enforced.on;
+  const { set_by: setBy, set_at: setAt } = staff.enforced;
   return (
     <Panel titleId="staff-enforcement" title={words.title} className={styles.panel}>
       <p className={styles.note}>{on ? words.on : words.off}</p>
       {setBy !== null && setAt !== null && (
         <p className={styles.note}>{words.setBy(whoWords(setBy), longDate(setAt))}</p>
       )}
-      {!book.may_run_access && <p className={styles.note}>{words.onlyNational}</p>}
-      {book.may_run_access && (
+      {!staff.may_run_access && <p className={styles.note}>{words.onlyNational}</p>}
+      {staff.may_run_access && (
         <ActionCheck
           key={String(on)}
           label={on ? words.stop : words.start}
@@ -60,14 +60,14 @@ function Enforcement({ book, onChanged }: PanelProps) {
   );
 }
 
-function People({ book, onChanged }: PanelProps) {
+function People({ staff, onChanged }: PanelProps) {
   /** The e-mail of the person being changed, "new" while one is added, or null. */
   const [editing, setEditing] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const access = useAccess();
   const mayGrant = access.mayCall("POST /api/staff");
   const [me] = useLoad(whoami);
-  const person = book.people.find((each) => each.email === editing) ?? null;
+  const person = staff.people.find((each) => each.email === editing) ?? null;
   // Nobody removes themselves: they would be locked out by their own hand.
   const mayRemove =
     person !== null &&
@@ -94,7 +94,7 @@ function People({ book, onChanged }: PanelProps) {
           </tr>
         </thead>
         <tbody>
-          {book.people.map((each) => (
+          {staff.people.map((each) => (
             <tr key={each.email}>
               <th scope="row">{each.email}</th>
               <td>
@@ -143,7 +143,7 @@ function People({ book, onChanged }: PanelProps) {
       {editing !== null && (
         <StaffForm
           key={editing}
-          book={book}
+          staff={staff}
           person={person}
           onSaved={(next) => {
             onChanged(next);
@@ -184,7 +184,7 @@ interface TokenRowProps {
   readonly token: StaffToken;
   /** Whether the viewer may take it off: only a person with Admin · Manage nationally. */
   readonly removable: boolean;
-  readonly onChanged: (book: StaffBook) => void;
+  readonly onChanged: (staff: StaffBook) => void;
 }
 
 function TokenRow({ token, removable, onChanged }: TokenRowProps) {
@@ -211,7 +211,7 @@ function TokenRow({ token, removable, onChanged }: TokenRowProps) {
   );
 }
 
-function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
+function TokenForm({ onChanged }: { onChanged: (staff: StaffBook) => void }) {
   const words = copy.tokens;
   const [clientId, setClientId] = useState("");
   const [label, setLabel] = useState("");
@@ -268,20 +268,20 @@ function TokenForm({ onChanged }: { onChanged: (book: StaffBook) => void }) {
   );
 }
 
-function ServiceTokens({ book, onChanged }: PanelProps) {
+function ServiceTokens({ staff, onChanged }: PanelProps) {
   const words = copy.tokens;
   return (
     <Panel titleId="staff-tokens" title={words.title} className={styles.panel}>
-      {book.service_tokens.length === 0 ? (
+      {staff.service_tokens.length === 0 ? (
         <p className={styles.note}>{words.none}</p>
       ) : (
         <ul className={styles.rules}>
-          {book.service_tokens.map((token) => (
-            <TokenRow key={token.client_id} token={token} removable={book.may_run_access} onChanged={onChanged} />
+          {staff.service_tokens.map((token) => (
+            <TokenRow key={token.client_id} token={token} removable={staff.may_run_access} onChanged={onChanged} />
           ))}
         </ul>
       )}
-      {book.may_run_access ? <TokenForm onChanged={onChanged} /> : <p className={styles.note}>{words.onlyNational}</p>}
+      {staff.may_run_access ? <TokenForm onChanged={onChanged} /> : <p className={styles.note}>{words.onlyNational}</p>}
     </Panel>
   );
 }
@@ -293,13 +293,13 @@ export function Staff() {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const book = changed ?? loaded.value;
+  const staff = changed ?? loaded.value;
 
   return (
     <>
-      <Enforcement book={book} onChanged={setChanged} />
-      <People book={book} onChanged={setChanged} />
-      <ServiceTokens book={book} onChanged={setChanged} />
+      <Enforcement staff={staff} onChanged={setChanged} />
+      <People staff={staff} onChanged={setChanged} />
+      <ServiceTokens staff={staff} onChanged={setChanged} />
     </>
   );
 }

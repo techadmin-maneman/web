@@ -14,7 +14,7 @@ import { BookVisit } from "../clients/index.ts";
 import { quality as copy } from "../content/quality.ts";
 import { useAccess } from "../lib/access.ts";
 
-export type Book = paths["/api/recalls"]["get"]["responses"][200]["content"]["application/json"];
+export type Quality = paths["/api/recalls"]["get"]["responses"][200]["content"]["application/json"];
 export type Detail = paths["/api/recalls/{id}"]["get"]["responses"][200]["content"]["application/json"];
 
 /** What a step answered: the recall, or the refusal. */
@@ -155,10 +155,16 @@ export function RecallDetail({
   );
 }
 
-export function RaiseRecall({ book, onAnswer }: { book: Book; onAnswer: (answer: Answer, said: string) => void }) {
-  const [lot, setLot] = useState(book.lots[0]?.id ?? "");
+export function RaiseRecall({
+  quality,
+  onAnswer,
+}: {
+  quality: Quality;
+  onAnswer: (answer: Answer, said: string) => void;
+}) {
+  const [lot, setLot] = useState(quality.lots[0]?.id ?? "");
   const [reason, setReason] = useState("");
-  if (book.lots.length === 0) return null;
+  if (quality.lots.length === 0) return null;
   return (
     <div className={form.group}>
       <h3 className={form.ruleTitle}>{copy.raise}</h3>
@@ -172,7 +178,7 @@ export function RaiseRecall({ book, onAnswer }: { book: Book; onAnswer: (answer:
               setLot(event.target.value);
             }}
           >
-            {book.lots.map((each) => (
+            {quality.lots.map((each) => (
               <option key={each.id} value={each.id}>
                 {copy.lotLabel(each.name, each.lot_code)}
               </option>

@@ -27,7 +27,7 @@ function Actions(props: {
   supplier: Supplier;
   onChange: () => void;
   onItems: () => void;
-  onRetired: (book: Book, said: string) => void;
+  onRetired: (suppliers: Book, said: string) => void;
 }) {
   const access = useAccess();
   const { supplier } = props;
@@ -64,12 +64,12 @@ function Actions(props: {
               await client.post(retired ? "/api/suppliers/{id}/restore" : "/api/suppliers/{id}/retire", {
                 path: { id: supplier.id },
               }),
-              (book) => ({ book }),
+              (suppliers) => ({ suppliers }),
             )
           }
           onDone={(sent) => {
             setAsking(false);
-            props.onRetired(sent.book, retired ? copy.restoredSaid : copy.retiredSaid);
+            props.onRetired(sent.suppliers, retired ? copy.restoredSaid : copy.retiredSaid);
           }}
           errors={copy.errors}
           onCancel={() => {
@@ -82,13 +82,13 @@ function Actions(props: {
 }
 
 function SupplierTable(props: {
-  book: Book;
+  suppliers: Book;
   onChange: (id: string) => void;
   onItems: (id: string) => void;
-  onRetired: (book: Book, said: string) => void;
+  onRetired: (suppliers: Book, said: string) => void;
 }) {
-  const { book, onChange, onItems, onRetired } = props;
-  return book.suppliers.length === 0 ? (
+  const { suppliers, onChange, onItems, onRetired } = props;
+  return suppliers.suppliers.length === 0 ? (
     <p className={styles.note}>{copy.none}</p>
   ) : (
     <Table className={styles.table}>
@@ -102,7 +102,7 @@ function SupplierTable(props: {
         </tr>
       </thead>
       <tbody>
-        {book.suppliers.map((supplier) => (
+        {suppliers.suppliers.map((supplier) => (
           <tr key={supplier.id}>
             <th scope="row" className={styles.rowHead}>
               {supplier.name}
@@ -131,7 +131,7 @@ function SupplierTable(props: {
 
 export function Suppliers() {
   const [loaded, retry] = useLoad(loadSuppliers);
-  const [book, setBook] = useState<Book | null>(null);
+  const [suppliers, setBook] = useState<Book | null>(null);
   const [doing, setDoing] = useState<Doing>({ kind: "add" });
   const [picked, setPicked] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
@@ -139,7 +139,7 @@ export function Suppliers() {
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const current = book ?? loaded.value;
+  const current = suppliers ?? loaded.value;
   const saved = (next: Book, words: string) => {
     setBook(next);
     setDoing({ kind: "add" });
@@ -152,7 +152,7 @@ export function Suppliers() {
     <>
       <Panel titleId="suppliers" title={copy.title} className={styles.panel}>
         <SupplierTable
-          book={current}
+          suppliers={current}
           onChange={(id) => {
             setDoing({ kind: "change", id });
             setSaid(null);
@@ -180,7 +180,7 @@ export function Suppliers() {
           )
         )}
       </Panel>
-      {shown !== null && <SupplierItems book={current} supplier={shown} onSaved={saved} />}
+      {shown !== null && <SupplierItems suppliers={current} supplier={shown} onSaved={saved} />}
     </>
   );
 }

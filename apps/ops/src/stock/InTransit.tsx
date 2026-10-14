@@ -22,13 +22,13 @@ import styles from "./stock.module.css";
 type Transfer = Stock["in_transit"][number];
 
 /** What arrived of one transfer, and a word on it, before it is recorded. */
-function Receiving(props: { book: Stock; transfer: Transfer; onDone: (book: Stock | null) => void }) {
-  const { book, transfer } = props;
+function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: Stock | null) => void }) {
+  const { stock, transfer } = props;
   const [typed, setArrived] = useState(String(transfer.quantity));
   const [units, setUnits] = useState<readonly string[]>([]);
   const [note, setNote] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
-  const consumable = book.consumables.find((each) => each.code === transfer.consumable_code);
+  const consumable = stock.consumables.find((each) => each.code === transfer.consumable_code);
   const unit = consumable?.unit ?? "";
   const arrived = units.length > 0 ? String(units.length) : typed;
   const figure = Number(arrived);
@@ -102,14 +102,14 @@ function Receiving(props: { book: Stock; transfer: Transfer; onDone: (book: Stoc
   );
 }
 
-function Row(props: { book: Stock; transfer: Transfer; onReceive: () => void; onSendBack: () => void }) {
-  const { book, transfer } = props;
+function TransferRow(props: { stock: Stock; transfer: Transfer; onReceive: () => void; onSendBack: () => void }) {
+  const { stock, transfer } = props;
   const access = useAccess();
   const what =
-    book.consumables.find((each) => each.code === transfer.consumable_code)?.name ?? transfer.consumable_code;
-  const unit = book.consumables.find((each) => each.code === transfer.consumable_code)?.unit ?? "";
-  const from = placeName(book, transfer.from);
-  const to = placeName(book, transfer.to);
+    stock.consumables.find((each) => each.code === transfer.consumable_code)?.name ?? transfer.consumable_code;
+  const unit = stock.consumables.find((each) => each.code === transfer.consumable_code)?.unit ?? "";
+  const from = placeName(stock, transfer.from);
+  const to = placeName(stock, transfer.to);
   return (
     <tr>
       <th scope="row" className={form.rowHead}>
@@ -137,10 +137,10 @@ function Row(props: { book: Stock; transfer: Transfer; onReceive: () => void; on
   );
 }
 
-export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: Stock) => void }) {
+export function InTransit({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock) => void }) {
   const [receiving, setReceiving] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
-  const transfer = book.in_transit.find((each) => each.id === receiving);
+  const transfer = stock.in_transit.find((each) => each.id === receiving);
   const sendBack = async (id: string) => {
     setFailure(null);
     const answer = await client.post("/api/stock/transfers/{id}/send-back", { path: { id } });
@@ -161,10 +161,10 @@ export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: 
             </tr>
           </thead>
           <tbody>
-            {book.in_transit.map((each) => (
-              <Row
+            {stock.in_transit.map((each) => (
+              <TransferRow
                 key={each.id}
-                book={book}
+                stock={stock}
                 transfer={each}
                 onReceive={() => {
                   setReceiving(each.id);
@@ -178,7 +178,7 @@ export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: 
       {transfer !== undefined && (
         <Receiving
           key={transfer.id}
-          book={book}
+          stock={stock}
           transfer={transfer}
           onDone={(next) => {
             setReceiving(null);

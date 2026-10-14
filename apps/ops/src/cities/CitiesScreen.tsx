@@ -27,10 +27,10 @@ export function CitiesScreen() {
         {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
         {loaded.state === "loaded" && (
           <>
-            <CityList book={loaded.value} onSaved={refresh} />
-            <CityRules book={loaded.value} onSaved={refresh} />
-            <CityPrices book={loaded.value} onSaved={refresh} />
-            <Registrations book={loaded.value} onSaved={refresh} />
+            <CityList cities={loaded.value} onSaved={refresh} />
+            <CityRules cities={loaded.value} onSaved={refresh} />
+            <CityPrices cities={loaded.value} onSaved={refresh} />
+            <Registrations cities={loaded.value} onSaved={refresh} />
           </>
         )}
       </div>

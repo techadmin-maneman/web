@@ -25,7 +25,7 @@ const copy = supplyPlan.events;
 
 const EMPTY = { name: "", city: "", startsOn: "", endsOn: "", percent: "" };
 
-function Entry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
+function DemandEntry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
   return (
     <Field label={props.label} className={form.field}>
       {(control) => (
@@ -71,7 +71,7 @@ function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (
   return (
     <div className={form.group}>
       <h3 className={form.ruleTitle}>{copy.add}</h3>
-      <Entry label={copy.name} value={draft.name} onChange={edit("name")} />
+      <DemandEntry label={copy.name} value={draft.name} onChange={edit("name")} />
       <Field label={copy.city} className={form.field}>
         {(control) => (
           <Select
@@ -91,9 +91,9 @@ function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (
           </Select>
         )}
       </Field>
-      <Entry label={copy.startsOn} type="date" value={draft.startsOn} onChange={edit("startsOn")} />
-      <Entry label={copy.endsOn} type="date" value={draft.endsOn} onChange={edit("endsOn")} />
-      <Entry label={copy.percent} type="number" value={draft.percent} onChange={edit("percent")} />
+      <DemandEntry label={copy.startsOn} type="date" value={draft.startsOn} onChange={edit("startsOn")} />
+      <DemandEntry label={copy.endsOn} type="date" value={draft.endsOn} onChange={edit("endsOn")} />
+      <DemandEntry label={copy.percent} type="number" value={draft.percent} onChange={edit("percent")} />
       <div className={form.actions}>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {copy.save}
@@ -141,7 +141,7 @@ function EventRow({
 
 export function EventsPanel({ calendar }: { calendar: Calendar }) {
   const access = useAccess();
-  const [book, setBook] = useState(calendar);
+  const [demand, setDemand] = useState(calendar);
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const answered = (words: string) => (answer: Answer) => {
@@ -150,7 +150,7 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
       setSaid(null);
       return false;
     }
-    setBook(answer.body);
+    setDemand(answer.body);
     setSaid(words);
     setFailure(null);
     return true;
@@ -159,7 +159,7 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
   return (
     <Panel titleId="plan-events" title={copy.title}>
       <p className={form.note}>{copy.note}</p>
-      {book.events.length === 0 ? (
+      {demand.events.length === 0 ? (
         <p className={form.note}>{copy.none}</p>
       ) : (
         <Table className={form.table}>
@@ -173,13 +173,13 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
             </tr>
           </thead>
           <tbody>
-            {book.events.map((event) => (
+            {demand.events.map((event) => (
               <EventRow key={event.id} event={event} mayRemove={mayRemove} onAnswer={answered(copy.removed)} />
             ))}
           </tbody>
         </Table>
       )}
-      {access.mayCall("POST /api/demand-events") && <AddEvent cities={book.cities} onAnswer={answered(copy.added)} />}
+      {access.mayCall("POST /api/demand-events") && <AddEvent cities={demand.cities} onAnswer={answered(copy.added)} />}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}

@@ -12,10 +12,10 @@ import { useAccess } from "../lib/access.ts";
 import { ReceiveForm } from "./ReceiveForm.tsx";
 import type { Order, Orders } from "./types.ts";
 
-function ReceiptList({ book, order }: { book: Orders; order: Order }) {
+function ReceiptList({ orders, order }: { orders: Orders; order: Order }) {
   const named = (lineId: string) => {
     const code = order.lines.find((line) => line.id === lineId)?.consumable_code ?? "";
-    return book.consumables.find((each) => each.code === code)?.name ?? code;
+    return orders.consumables.find((each) => each.code === code)?.name ?? code;
   };
   if (order.receipts.length === 0) return null;
   return (
@@ -44,13 +44,13 @@ function ReceiptList({ book, order }: { book: Orders; order: Order }) {
 }
 
 export function Receiving({
-  book,
+  orders,
   order,
   onChanged,
 }: {
-  book: Orders;
+  orders: Orders;
   order: Order;
-  onChanged: (book: Orders, said: string) => void;
+  onChanged: (orders: Orders, said: string) => void;
 }) {
   const access = useAccess();
   const [receiving, setReceiving] = useState(false);
@@ -61,10 +61,10 @@ export function Receiving({
   };
   return (
     <>
-      <ReceiptList book={book} order={order} />
+      <ReceiptList orders={orders} order={order} />
       {receiving ? (
         <ReceiveForm
-          book={book}
+          orders={orders}
           order={order}
           onReceived={(next, said) => {
             setReceiving(false);

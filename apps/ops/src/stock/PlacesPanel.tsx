@@ -38,12 +38,12 @@ function treeOf(places: readonly Place[]): { place: Place; depth: number }[] {
 }
 
 /** The open places a place of `kind` may hang from, by name. */
-const parentsFor = (book: Stock, kind: Kind, except?: string) =>
-  book.places
+const parentsFor = (stock: Stock, kind: Kind, except?: string) =>
+  stock.places
     .filter((place) => place.active && DEPTH[place.kind] < DEPTH[kind] && place.id !== except)
-    .map((place) => [place.id, placeName(book, place.id)] as const);
+    .map((place) => [place.id, placeName(stock, place.id)] as const);
 
-function Choice(props: {
+function PlaceChoice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
@@ -100,7 +100,7 @@ function Refusal({ failure }: { failure: Failure | null }) {
 type Answer = Awaited<ReturnType<typeof api.addStockPlace>>;
 
 /** Sends a change, then hands the stock it answers on, or keeps the refusal to show. */
-function useSending(onChanged: (book: Stock) => void) {
+function useSending(onChanged: (stock: Stock) => void) {
   const [failure, setFailure] = useState<Failure | null>(null);
   const [busy, setBusy] = useState(false);
   const send = async (call: () => Promise<Answer>): Promise<boolean> => {
@@ -118,14 +118,14 @@ function useSending(onChanged: (book: Stock) => void) {
   return { failure, busy, send };
 }
 
-function AddPlace({ book, onChanged }: { book: Stock; onChanged: (book: Stock) => void }) {
+function AddPlace({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock) => void }) {
   const [kind, setKind] = useState<"hub" | "stockroom">("stockroom");
   const [name, setName] = useState("");
   const [under, setUnder] = useState("");
   const [area, setArea] = useState("");
   const { failure, busy, send } = useSending(onChanged);
-  const parents = parentsFor(book, kind);
-  const areas = kind === "hub" ? book.zones : book.cities;
+  const parents = parentsFor(stock, kind);
+  const areas = kind === "hub" ? stock.zones : stock.cities;
   const parentId = parents.some(([id]) => id === under) ? under : (parents[0]?.[0] ?? "");
   const where = areas.includes(area) ? area : (areas[0] ?? "");
   const add = async () => {
@@ -139,7 +139,7 @@ function AddPlace({ book, onChanged }: { book: Stock; onChanged: (book: Stock) =
     <div className={form.group}>
       <h3 className={form.ruleTitle}>{copy.add.title}</h3>
       <div className={form.fields}>
-        <Choice
+        <PlaceChoice
           label={copy.add.kind}
           value={kind}
           options={[
@@ -151,8 +151,8 @@ function AddPlace({ book, onChanged }: { book: Stock; onChanged: (book: Stock) =
           }}
         />
         <NameBox value={name} onChange={setName} />
-        <Choice label={copy.add.under} value={parentId} options={parents} onChange={setUnder} />
-        <Choice
+        <PlaceChoice label={copy.add.under} value={parentId} options={parents} onChange={setUnder} />
+        <PlaceChoice
           label={kind === "hub" ? copy.add.zone : copy.add.city}
           value={where}
           options={areas.map((each) => [each, each] as const)}
@@ -174,12 +174,12 @@ function AddPlace({ book, onChanged }: { book: Stock; onChanged: (book: Stock) =
   );
 }
 
-function ChangePlace(props: { book: Stock; place: Place; onChanged: (book: Stock) => void; onDone: () => void }) {
-  const { book, place } = props;
+function ChangePlace(props: { stock: Stock; place: Place; onChanged: (stock: Stock) => void; onDone: () => void }) {
+  const { stock, place } = props;
   const [name, setName] = useState(place.name);
   const [under, setUnder] = useState(place.parent_id ?? "");
   const { failure, busy, send } = useSending(props.onChanged);
-  const parents = parentsFor(book, place.kind, place.id);
+  const parents = parentsFor(stock, place.kind, place.id);
   const save = async (change: StockPlaceChange) => {
     if (await send(() => api.changeStockPlace(place.id, change))) props.onDone();
   };
@@ -190,11 +190,11 @@ function ChangePlace(props: { book: Stock; place: Place; onChanged: (book: Stock
   const closable = place.kind === "hub" || place.kind === "stockroom";
   return (
     <div className={form.group}>
-      <h3 className={form.ruleTitle}>{copy.editLabel(placeName(book, place.id))}</h3>
+      <h3 className={form.ruleTitle}>{copy.editLabel(placeName(stock, place.id))}</h3>
       <div className={form.fields}>
         {place.kind !== "kit" && <NameBox value={name} onChange={setName} />}
         {place.kind !== "warehouse" && (
-          <Choice label={copy.change.under} value={under} options={parents} onChange={setUnder} />
+          <PlaceChoice label={copy.change.under} value={under} options={parents} onChange={setUnder} />
         )}
       </div>
       <div className={form.actions}>
@@ -220,7 +220,7 @@ function ChangePlace(props: { book: Stock; place: Place; onChanged: (book: Stock
   );
 }
 
-function PlaceRows({ book, onEdit }: { book: Stock; onEdit: (id: string) => void }) {
+function PlaceRows({ stock, onEdit }: { stock: Stock; onEdit: (id: string) => void }) {
   return (
     <Table className={form.table}>
       <thead>
@@ -233,10 +233,10 @@ function PlaceRows({ book, onEdit }: { book: Stock; onEdit: (id: string) => void
         </tr>
       </thead>
       <tbody>
-        {treeOf(book.places).map(({ place, depth }) => (
+        {treeOf(stock.places).map(({ place, depth }) => (
           <tr key={place.id}>
             <th scope="row" className={`${form.rowHead} ${INDENT[Math.min(depth, 3)] ?? ""}`}>
-              {placeName(book, place.id)}
+              {placeName(stock, place.id)}
             </th>
             <td>
               {copy.kinds[place.kind]}
@@ -246,7 +246,7 @@ function PlaceRows({ book, onEdit }: { book: Stock; onEdit: (id: string) => void
             <td>
               <RowButton
                 className={form.inline}
-                aria-label={copy.editLabel(placeName(book, place.id))}
+                aria-label={copy.editLabel(placeName(stock, place.id))}
                 onClick={() => {
                   onEdit(place.id);
                 }}
@@ -261,21 +261,21 @@ function PlaceRows({ book, onEdit }: { book: Stock; onEdit: (id: string) => void
   );
 }
 
-export function PlacesPanel({ book, onChanged }: { book: Stock; onChanged: (book: Stock) => void }) {
+export function PlacesPanel({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock) => void }) {
   const [editing, setEditing] = useState<string | null>(null);
-  const place = book.places.find((each) => each.id === editing);
+  const place = stock.places.find((each) => each.id === editing);
   return (
     <Panel titleId="stock-places" title={copy.title}>
       <p className={form.note}>{copy.intro}</p>
       <div className={styles.scroll}>
-        <PlaceRows book={book} onEdit={setEditing} />
+        <PlaceRows stock={stock} onEdit={setEditing} />
       </div>
       {place === undefined ? (
-        <AddPlace book={book} onChanged={onChanged} />
+        <AddPlace stock={stock} onChanged={onChanged} />
       ) : (
         <ChangePlace
           key={place.id}
-          book={book}
+          stock={stock}
           place={place}
           onChanged={onChanged}
           onDone={() => {

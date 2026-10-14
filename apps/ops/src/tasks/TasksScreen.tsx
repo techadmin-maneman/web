@@ -106,7 +106,7 @@ interface RowProps {
   readonly marked: boolean;
 }
 
-function Row({ group, task, now, acting, marked }: RowProps) {
+function TaskRow({ group, task, now, acting, marked }: RowProps) {
   const subject = task.person?.name ?? unnamedSubject(group, task);
   const where = decidedAt(group, task);
   const action = tasks.decide[group];
@@ -243,7 +243,7 @@ function toggled(groups: ReadonlySet<Group>, group: Group): ReadonlySet<Group> {
   return next;
 }
 
-function Queue() {
+function TaskQueue() {
   const [loaded, retry] = useLoad(readTasks);
   const [signedIn] = useLoad(whoami);
   const access = useAccess();
@@ -303,7 +303,7 @@ function Queue() {
         setUnfolded((was) => toggled(was, group.group));
       }}
       rowOf={(task) => (
-        <Row
+        <TaskRow
           key={task.id}
           group={group.group}
           task={task}
@@ -343,7 +343,7 @@ export function TasksScreen() {
     <Shell section="/tasks" title={tasks.title}>
       <div className={styles.board}>
         <NeedsAHand />
-        <Queue />
+        <TaskQueue />
       </div>
     </Shell>
   );

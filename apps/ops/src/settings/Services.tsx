@@ -76,13 +76,13 @@ const actionWhere = (action: Action): string => {
   return whereOf(action.service.kind, action.service.tier);
 };
 
-/** The book after a price is set or taken back: each service's and late fee's rows, from the book's answer. */
-function withPrices(book: ServiceBook, prices: readonly Price[]): ServiceBook {
+/** The services after a price is set or taken back: each service's and late fee's rows, from the book's answer. */
+function withPrices(services: ServiceBook, prices: readonly Price[]): ServiceBook {
   const rowsOf = (item: string, tier: string) => prices.filter((row) => row.item === item && row.tier === tier);
   return {
-    ...book,
-    services: book.services.map((service) => ({ ...service, prices: rowsOf(service.kind, service.tier) })),
-    late_fees: book.late_fees.map((fee) => ({ ...fee, prices: rowsOf(fee.item, "standard") })),
+    ...services,
+    services: services.services.map((service) => ({ ...service, prices: rowsOf(service.kind, service.tier) })),
+    late_fees: services.late_fees.map((fee) => ({ ...fee, prices: rowsOf(fee.item, "standard") })),
   };
 }
 
@@ -118,7 +118,7 @@ function pricesOf(target: Priced, today: string) {
 interface Opened {
   readonly action: Action | null;
   readonly outcome: { readonly where: string; readonly said: string } | null;
-  readonly book: ServiceBook;
+  readonly services: ServiceBook;
   /** The row whose Edit is open, if one is. */
   readonly expanded: string | null;
   /** Whether the person's access lets them take this kind of action. */
@@ -131,11 +131,13 @@ interface Opened {
 
 /** The form or check open in a block, if this block has one. */
 function OpenAction({ opened, where }: { opened: Opened; where: string }) {
-  const { action, book } = opened;
+  const { action, services } = opened;
   if (action === null || actionWhere(action) !== where) return null;
-  const bounds = { min: book.min_minutes, max: book.max_minutes };
+  const bounds = { min: services.min_minutes, max: services.max_minutes };
   const done = opened.onDone;
   const cancel = opened.onCancel;
+  // What every form is handed: how it ends, saved or not.
+  const ends = { onDone: done, onCancel: cancel };
   switch (action.kind) {
     case "price":
     case "correct":
@@ -143,33 +145,32 @@ function OpenAction({ opened, where }: { opened: Opened; where: string }) {
         <PriceForm
           target={action.target}
           {...(action.kind === "correct" ? { correcting: action.row } : {})}
-          today={book.today}
-          maxAmount={book.max_amount_ex_gst}
-          maxGst={book.max_gst_percent}
-          onDone={done}
-          onCancel={cancel}
+          today={services.today}
+          maxAmount={services.max_amount_ex_gst}
+          maxGst={services.max_gst_percent}
+          {...ends}
         />
       );
     case "takeBack":
       return <TakeBack target={action.target} row={action.row} onDone={done} onKeep={cancel} />;
     case "rename":
-      return <RenameForm service={action.service} onDone={done} onCancel={cancel} />;
+      return <RenameForm service={action.service} {...ends} />;
     case "describe":
-      return <DescribeForm service={action.service} maxLength={book.max_description} onDone={done} onCancel={cancel} />;
+      return <DescribeForm service={action.service} maxLength={services.max_description} {...ends} />;
     case "length":
-      return <LengthForm service={action.service} bounds={bounds} onDone={done} onCancel={cancel} />;
+      return <LengthForm service={action.service} bounds={bounds} {...ends} />;
     case "retire":
-      return <RetireForm service={action.service} today={book.today} onDone={done} onCancel={cancel} />;
+      return <RetireForm service={action.service} today={services.today} {...ends} />;
     case "restore":
       return <RestoreCheck service={action.service} onDone={done} onKeep={cancel} />;
     case "order": {
-      const was = book.services.filter((service) => service.kind === action.of);
+      const was = services.services.filter((service) => service.kind === action.of);
       const now = action.tiers.flatMap((tier) => was.filter((service) => service.tier === tier));
       return <OrderCheck kind={action.of} was={was} now={now} onDone={done} onKeep={cancel} />;
     }
     case "add": {
-      const minutes = book.kinds.find((each) => each.kind === action.of)?.minutes ?? bounds.min;
-      return <AddForm kind={action.of} minutes={minutes} bounds={bounds} onDone={done} onCancel={cancel} />;
+      const minutes = services.kinds.find((each) => each.kind === action.of)?.minutes ?? bounds.min;
+      return <AddForm kind={action.of} minutes={minutes} bounds={bounds} {...ends} />;
     }
   }
 }
@@ -223,7 +224,7 @@ function Strip(props: {
   readonly opened: Opened;
 }) {
   const { target, opened } = props;
-  const { toCome, spent } = pricesOf(target, opened.book.today);
+  const { toCome, spent } = pricesOf(target, opened.services.today);
   const busy = opened.action !== null;
   return (
     <tr className={prices.strip} id={props.id}>
@@ -297,7 +298,7 @@ function PriceRow(props: {
   readonly opened: Opened;
 }) {
   const { where, target, opened } = props;
-  const { inForce, toCome } = pricesOf(target, opened.book.today);
+  const { inForce, toCome } = pricesOf(target, opened.services.today);
   const next = toCome[0];
   const open = opened.expanded === where;
   const stripId = `prices-${where.replace("/", "-")}`;
@@ -352,7 +353,7 @@ function ServiceRow(props: {
   readonly opened: Opened;
 }) {
   const { service, siblings, opened } = props;
-  const today = opened.book.today;
+  const today = opened.services.today;
   const place = siblings.findIndex((each) => each.tier === service.tier);
   const act = (kind: "rename" | "describe" | "length" | "retire" | "restore") => () => {
     opened.onAct({ kind, service });
@@ -434,8 +435,8 @@ function LateFeeRow({ fee, opened }: { fee: LateFee; opened: Opened }) {
 
 /** One kind of visit: its services in their order and its late fee in one table, and a way to add another. */
 function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
-  const services = opened.book.services.filter((service) => service.kind === kind);
-  const fee = opened.book.late_fees.find((each) => each.kind === kind);
+  const services = opened.services.services.filter((service) => service.kind === kind);
+  const fee = opened.services.late_fees.find((each) => each.kind === kind);
   const name = copy.kinds[kind] ?? kind;
   const titleId = `kind-${kind}`;
   return (
@@ -489,8 +490,8 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
 
 export function Services() {
   const [loaded, retry] = useLoad(api.services);
-  /** The book after a change, so the panel follows without reading it again. */
-  const [book, setBook] = useState<ServiceBook | null>(null);
+  /** The services after a change, so the panel follows without reading it again. */
+  const [services, setBook] = useState<ServiceBook | null>(null);
   const [action, setAction] = useState<Action | null>(null);
   const [outcome, setOutcome] = useState<Opened["outcome"]>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -499,11 +500,11 @@ export function Services() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
 
-  const current = book ?? loaded.value;
+  const current = services ?? loaded.value;
   const opened: Opened = {
     action,
     outcome,
-    book: current,
+    services: current,
     expanded,
     may: (kind) => access.mayCall(CALL_OF[kind]),
     onExpand: (where) => {

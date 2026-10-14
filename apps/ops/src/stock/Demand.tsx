@@ -14,12 +14,12 @@ import styles from "./stock.module.css";
 
 const loadDemand = () => client.get("/api/stock/demand");
 
-export function Demand({ book }: { book: Stock }) {
+export function Demand({ stock }: { stock: Stock }) {
   const [loaded, retry] = useLoad(loadDemand);
   const words = stockViews.demand;
   const named = (code: string | null) =>
-    code === null ? words.noProfile : (book.consumables.find((each) => each.code === code)?.name ?? code);
-  const unit = (code: string) => book.consumables.find((each) => each.code === code)?.unit ?? "";
+    code === null ? words.noProfile : (stock.consumables.find((each) => each.code === code)?.name ?? code);
+  const unit = (code: string) => stock.consumables.find((each) => each.code === code)?.unit ?? "";
   return (
     <Panel titleId="stock-demand" title={words.title}>
       {loaded.state === "loading" && <Loading />}

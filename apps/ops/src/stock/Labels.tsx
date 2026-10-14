@@ -149,8 +149,12 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
 
 const MAX_COPIES = 200;
 
-function LotLabels({ book, name, at }: { book: Stock; name: string; at: LabelsFor }) {
-  const lots = book.holdings.find((each) => each.consumable_code === at.code && each.place_id === at.place)?.lots ?? [];
+/** The lots a place holds of one consumable. */
+const lotsAt = (stock: Stock, at: LabelsFor) =>
+  stock.holdings.find((each) => each.consumable_code === at.code && each.place_id === at.place)?.lots ?? [];
+
+function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: LabelsFor }) {
+  const lots = lotsAt(stock, at);
   const [lotId, setLotId] = useState(lots[0]?.id ?? "");
   const [copies, setCopies] = useState("1");
   const [failed, setFailed] = useState(false);
@@ -233,7 +237,7 @@ function LotLabels({ book, name, at }: { book: Stock; name: string; at: LabelsFo
 }
 
 /** One of the items or the places, by name. */
-function Choice(props: {
+function LabelChoice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
@@ -261,37 +265,37 @@ function Choice(props: {
 }
 
 /** The panel, opened on `focus` where given: a hair system's delivery opens its labels at the warehouse. */
-export function Labels({ book, focus }: { book: Stock; focus: LabelsFor | null }) {
-  const [code, setCode] = useState(focus?.code ?? book.consumables.find((each) => !each.retired)?.code ?? "");
-  const [place, setPlace] = useState(focus?.place ?? book.places[0]?.id ?? "");
+export function Labels({ stock, focus }: { stock: Stock; focus: LabelsFor | null }) {
+  const [code, setCode] = useState(focus?.code ?? stock.consumables.find((each) => !each.retired)?.code ?? "");
+  const [place, setPlace] = useState(focus?.place ?? stock.places[0]?.id ?? "");
   const panel = useRef<HTMLElement>(null);
   useEffect(() => {
     if (focus !== null) panel.current?.scrollIntoView({ block: "start" });
   }, [focus]);
-  const consumable = book.consumables.find((each) => each.code === code);
+  const consumable = stock.consumables.find((each) => each.code === code);
   const at = { code, place };
   const access = useAccess();
   return (
     <Panel titleId="stock-labels" title={copy.title} ref={panel}>
-      {access.mayCall("GET /api/stock/units/{code}") && <LabelFound book={book} />}
+      {access.mayCall("GET /api/stock/units/{code}") && <LabelFound stock={stock} />}
       <div className={form.fields}>
-        <Choice
+        <LabelChoice
           label={copy.item}
           value={code}
-          options={book.consumables.map((each) => [each.code, each.name] as const)}
+          options={stock.consumables.map((each) => [each.code, each.name] as const)}
           onChange={setCode}
         />
-        <Choice
+        <LabelChoice
           label={copy.place}
           value={place}
-          options={book.places.map((each) => [each.id, placeName(book, each.id)] as const)}
+          options={stock.places.map((each) => [each.id, placeName(stock, each.id)] as const)}
           onChange={setPlace}
         />
       </div>
       {consumable?.hair_system === true ? (
         <PieceLabels key={`${code}:${place}`} name={consumable.name} at={at} />
       ) : (
-        <LotLabels key={`${code}:${place}`} book={book} name={consumable?.name ?? code} at={at} />
+        <LotLabels key={`${code}:${place}`} stock={stock} name={consumable?.name ?? code} at={at} />
       )}
     </Panel>
   );

@@ -31,8 +31,8 @@ interface Draft {
   readonly lead: string;
 }
 
-const draftOf = (book: Suppliers, item: Item | null): Draft => ({
-  code: item?.consumable_code ?? book.consumables[0]?.code ?? "",
+const draftOf = (suppliers: Suppliers, item: Item | null): Draft => ({
+  code: item?.consumable_code ?? suppliers.consumables[0]?.code ?? "",
   theirCode: item?.their_code ?? "",
   price: item === null ? "" : String(item.unit_price / 100),
   pack: String(item?.pack_size ?? 1),
@@ -40,7 +40,7 @@ const draftOf = (book: Suppliers, item: Item | null): Draft => ({
   lead: item === null ? "" : String(item.lead_time_days),
 });
 
-function Entry(props: { label: string; value: string; onChange: (text: string) => void }) {
+function ItemEntry(props: { label: string; value: string; onChange: (text: string) => void }) {
   return (
     <Field label={props.label} className={styles.field}>
       {(control) => (
@@ -60,15 +60,15 @@ function Entry(props: { label: string; value: string; onChange: (text: string) =
 
 /** The item's boxes: the stock code, which starts from what the supplier lists of it, and its figures. */
 function ItemBoxes(props: {
-  book: Suppliers;
+  suppliers: Suppliers;
   supplier: Supplier;
   draft: Draft;
   onDraft: (draft: Draft) => void;
   edit: (field: keyof Draft) => (text: string) => void;
   onPick: () => void;
 }) {
-  const { book, supplier, draft, onDraft, edit, onPick } = props;
-  const unit = book.consumables.find((each) => each.code === draft.code)?.unit ?? "";
+  const { suppliers, supplier, draft, onDraft, edit, onPick } = props;
+  const unit = suppliers.consumables.find((each) => each.code === draft.code)?.unit ?? "";
   return (
     <>
       <div className={styles.fields}>
@@ -82,11 +82,11 @@ function ItemBoxes(props: {
                 // A stock code already listed starts from what it holds; a new one from nothing.
                 const code = event.target.value;
                 const listed = supplier.items.find((item) => item.consumable_code === code);
-                onDraft(listed === undefined ? { ...draftOf(book, null), code } : draftOf(book, listed));
+                onDraft(listed === undefined ? { ...draftOf(suppliers, null), code } : draftOf(suppliers, listed));
                 onPick();
               }}
             >
-              {book.consumables.map((each) => (
+              {suppliers.consumables.map((each) => (
                 <option key={each.code} value={each.code}>
                   {each.name}
                 </option>
@@ -94,13 +94,13 @@ function ItemBoxes(props: {
             </Select>
           )}
         </Field>
-        <Entry label={words.theirCode} value={draft.theirCode} onChange={edit("theirCode")} />
-        <Entry label={words.price(supplier.currency, unit)} value={draft.price} onChange={edit("price")} />
+        <ItemEntry label={words.theirCode} value={draft.theirCode} onChange={edit("theirCode")} />
+        <ItemEntry label={words.price(supplier.currency, unit)} value={draft.price} onChange={edit("price")} />
       </div>
       <div className={styles.fields}>
-        <Entry label={words.pack(unit)} value={draft.pack} onChange={edit("pack")} />
-        <Entry label={words.minimum} value={draft.minimum} onChange={edit("minimum")} />
-        <Entry label={words.lead} value={draft.lead} onChange={edit("lead")} />
+        <ItemEntry label={words.pack(unit)} value={draft.pack} onChange={edit("pack")} />
+        <ItemEntry label={words.minimum} value={draft.minimum} onChange={edit("minimum")} />
+        <ItemEntry label={words.lead} value={draft.lead} onChange={edit("lead")} />
       </div>
     </>
   );
@@ -112,15 +112,15 @@ const itemLine = (name: string, unit: string, item: Omit<Item, "consumable_code"
   `${words.minimum} ${words.amount(item.minimum_order, unit)} · ${words.days(item.lead_time_days)}`;
 
 function ItemForm({
-  book,
+  suppliers,
   supplier,
   onSaved,
 }: {
-  book: Suppliers;
+  suppliers: Suppliers;
   supplier: Supplier;
-  onSaved: (book: Suppliers, said: string) => void;
+  onSaved: (suppliers: Suppliers, said: string) => void;
 }) {
-  const [draft, setDraft] = useState<Draft>(() => draftOf(book, null));
+  const [draft, setDraft] = useState<Draft>(() => draftOf(suppliers, null));
   const was = supplier.items.find((item) => item.consumable_code === draft.code) ?? null;
   const ready =
     draft.code !== "" &&
@@ -141,14 +141,14 @@ function ItemForm({
       sentOf(await client.post("/api/suppliers/{id}/items", { path: { id: supplier.id }, body }), (next) => ({ next })),
     (sent) => {
       onSaved(sent.next, words.saved);
-      setDraft(draftOf(book, null));
+      setDraft(draftOf(suppliers, null));
     },
   );
   const edit = (field: keyof Draft) => (text: string) => {
     setDraft({ ...draft, [field]: text });
     steps.edit();
   };
-  const listed = book.consumables.find((each) => each.code === draft.code);
+  const listed = suppliers.consumables.find((each) => each.code === draft.code);
   const name = listed?.name ?? draft.code;
   const unit = listed?.unit ?? "";
   const line = itemLine(name, unit, body, supplier.currency);
@@ -166,7 +166,14 @@ function ItemForm({
         </p>
       ))}
     >
-      <ItemBoxes book={book} supplier={supplier} draft={draft} onDraft={setDraft} edit={edit} onPick={steps.edit} />
+      <ItemBoxes
+        suppliers={suppliers}
+        supplier={supplier}
+        draft={draft}
+        onDraft={setDraft}
+        edit={edit}
+        onPick={steps.edit}
+      />
     </SettingForm>
   );
 }
@@ -177,7 +184,7 @@ function RemoveItem(props: {
   code: string;
   name: string;
   mayRemove: boolean;
-  onSaved: (book: Suppliers, said: string) => void;
+  onSaved: (suppliers: Suppliers, said: string) => void;
 }) {
   const [asking, setAsking] = useState(false);
   if (!props.mayRemove) return null;
@@ -219,17 +226,17 @@ function RemoveItem(props: {
 }
 
 export function SupplierItems({
-  book,
+  suppliers,
   supplier,
   onSaved,
 }: {
-  book: Suppliers;
+  suppliers: Suppliers;
   supplier: Supplier;
-  onSaved: (book: Suppliers, said: string) => void;
+  onSaved: (suppliers: Suppliers, said: string) => void;
 }) {
   const access = useAccess();
-  const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
-  const unitOf = (code: string) => book.consumables.find((each) => each.code === code)?.unit ?? "";
+  const named = (code: string) => suppliers.consumables.find((each) => each.code === code)?.name ?? code;
+  const unitOf = (code: string) => suppliers.consumables.find((each) => each.code === code)?.unit ?? "";
   return (
     <Panel titleId="supplier-items" title={words.title(supplier.name)}>
       {supplier.items.length === 0 ? (
@@ -274,7 +281,7 @@ export function SupplierItems({
         </Table>
       )}
       {access.mayCall("POST /api/suppliers/{id}/items") && (
-        <ItemForm key={supplier.id} book={book} supplier={supplier} onSaved={onSaved} />
+        <ItemForm key={supplier.id} suppliers={suppliers} supplier={supplier} onSaved={onSaved} />
       )}
     </Panel>
   );

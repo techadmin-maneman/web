@@ -49,7 +49,13 @@ function OutcomeChoice({ outcome, onChoose }: { outcome: Outcome; onChoose: (out
   );
 }
 
-function Form({ visitId, date, onClosed }: { visitId: string; date: string; onClosed: (outcome: Outcome) => void }) {
+interface ClosingProps {
+  visitId: string;
+  date: string;
+  onClosed: (outcome: Outcome) => void;
+}
+
+function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
   const [outcome, setOutcome] = useState<Outcome>("done");
   const [started, setStarted] = useState("");
   const [ended, setEnded] = useState("");
@@ -167,7 +173,7 @@ export function CloseVisit({
       onDismiss={dismiss}
     >
       {closed === null ? (
-        <Form visitId={visitId} date={date} onClosed={setClosed} />
+        <ClosingForm visitId={visitId} date={date} onClosed={setClosed} />
       ) : (
         <p className={styles.done} role="status">
           {copy.done[closed]}

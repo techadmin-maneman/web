@@ -367,7 +367,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
   );
 }
 
-function Queue({ onDecided }: { onDecided: () => void }) {
+function NoShowQueue({ onDecided }: { onDecided: () => void }) {
   const [loaded, retry] = useLoad(api.noShows);
   const access = useAccess();
   if (loaded.state === "loading") return <Loading />;
@@ -456,7 +456,7 @@ export function NoShowsScreen() {
       <div className={styles.column}>
         <Money key={`money-${String(rulings)}`} />
         <Disputes onRuled={ruled} />
-        <Queue onDecided={ruled} />
+        <NoShowQueue onDecided={ruled} />
         <DecidedToday key={`decided-${String(rulings)}`} />
       </div>
     </Shell>

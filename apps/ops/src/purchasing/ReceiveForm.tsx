@@ -25,7 +25,7 @@ interface LineDraft {
 const WHOLE = /^\d{1,7}$/;
 const RUPEES = /^\d{1,9}(?:\.\d{1,2})?$/;
 
-function Entry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
+function ReceiptEntry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
   return (
     <Field label={props.label} className={form.field}>
       {(control) => (
@@ -50,11 +50,11 @@ function LineFields(props: { name: string; draft: LineDraft; onDraft: (draft: Li
   };
   return (
     <Fieldset className={styles.line} legend={props.name}>
-      <Entry label={copy.receive.received} value={draft.received} onChange={set("received")} />
-      <Entry label={copy.receive.damaged} value={draft.damaged} onChange={set("damaged")} />
-      <Entry label={copy.receive.failed} value={draft.failed} onChange={set("failed")} />
-      <Entry label={copy.receive.lot} value={draft.lot} onChange={set("lot")} />
-      <Entry label={copy.receive.expires} value={draft.expires} type="date" onChange={set("expires")} />
+      <ReceiptEntry label={copy.receive.received} value={draft.received} onChange={set("received")} />
+      <ReceiptEntry label={copy.receive.damaged} value={draft.damaged} onChange={set("damaged")} />
+      <ReceiptEntry label={copy.receive.failed} value={draft.failed} onChange={set("failed")} />
+      <ReceiptEntry label={copy.receive.lot} value={draft.lot} onChange={set("lot")} />
+      <ReceiptEntry label={copy.receive.expires} value={draft.expires} type="date" onChange={set("expires")} />
     </Fieldset>
   );
 }
@@ -82,13 +82,13 @@ function ExtrasFields({
   };
   return (
     <div className={form.fields}>
-      <Entry label={copy.receive.invoice} value={extras.invoice} onChange={extra("invoice")} />
+      <ReceiptEntry label={copy.receive.invoice} value={extras.invoice} onChange={extra("invoice")} />
       {order.currency !== "INR" && (
-        <Entry label={copy.receive.rate(order.currency)} value={extras.rate} onChange={extra("rate")} />
+        <ReceiptEntry label={copy.receive.rate(order.currency)} value={extras.rate} onChange={extra("rate")} />
       )}
-      <Entry label={copy.receive.freight} value={extras.freight} onChange={extra("freight")} />
-      <Entry label={copy.receive.duty} value={extras.duty} onChange={extra("duty")} />
-      <Entry label={copy.receive.clearing} value={extras.clearing} onChange={extra("clearing")} />
+      <ReceiptEntry label={copy.receive.freight} value={extras.freight} onChange={extra("freight")} />
+      <ReceiptEntry label={copy.receive.duty} value={extras.duty} onChange={extra("duty")} />
+      <ReceiptEntry label={copy.receive.clearing} value={extras.clearing} onChange={extra("clearing")} />
     </div>
   );
 }
@@ -117,12 +117,12 @@ function receiptBody(order: Order, lines: readonly LineDraft[], extras: Extras) 
 }
 
 export function ReceiveForm(props: {
-  book: Orders;
+  orders: Orders;
   order: Order;
-  onReceived: (book: Orders, said: string) => void;
+  onReceived: (orders: Orders, said: string) => void;
   onCancel: () => void;
 }) {
-  const { book, order } = props;
+  const { orders, order } = props;
   const [lines, setLines] = useState<readonly LineDraft[]>(() =>
     order.lines.map((line) => ({
       received: String(Math.max(0, line.quantity - line.received)),
@@ -135,7 +135,7 @@ export function ReceiveForm(props: {
   const [extras, setExtras] = useState<Extras>({ invoice: "", rate: "", freight: "0", duty: "0", clearing: "0" });
   const [failure, setFailure] = useState<Failure | null>(null);
   const foreign = order.currency !== "INR";
-  const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
+  const named = (code: string) => orders.consumables.find((each) => each.code === code)?.name ?? code;
   const ready =
     lines.every((line) => [line.received, line.damaged, line.failed].every((figure) => WHOLE.test(figure.trim()))) &&
     [extras.freight, extras.duty, extras.clearing].every((amount) => RUPEES.test(amount.trim())) &&

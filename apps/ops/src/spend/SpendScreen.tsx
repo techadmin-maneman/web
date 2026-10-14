@@ -35,7 +35,7 @@ function monthsOf(list: SpendList): string[] {
 /** Whole rupees, one or more, as typed. */
 const isRupees = (typed: string): boolean => /^\d+$/.test(typed.trim()) && Number(typed) >= 1;
 
-function Choice(props: {
+function SpendChoice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
@@ -113,19 +113,19 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
   const channelOf = (value: string) => list.channels.find((each) => each === value);
   return (
     <div className={styles.group}>
-      <Choice
+      <SpendChoice
         label={copy.month}
         value={month}
         options={monthsOf(list).map((each) => [each, fullMonth(each)])}
         onChange={setMonth}
       />
-      <Choice
+      <SpendChoice
         label={copy.city}
         value={city}
         options={[["", copy.national], ...list.cities.map((each) => [each, each] as const)]}
         onChange={setCity}
       />
-      <Choice
+      <SpendChoice
         label={copy.channel}
         value={channel}
         options={list.channels.map((each) => [each, copy.channels[each]])}

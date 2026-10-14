@@ -10,9 +10,9 @@ import { useState } from "react";
 import { client } from "../api.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
-import type { Book } from "./CountClasses.tsx";
+import type { CountTasks } from "./CountClasses.tsx";
 
-export function StartCount({ book, onStarted }: { book: Book; onStarted: (id: string) => void }) {
+export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; onStarted: (id: string) => void }) {
   const [place, setPlace] = useState("");
   const [item, setItem] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
@@ -36,7 +36,7 @@ export function StartCount({ book, onStarted }: { book: Book; onStarted: (id: st
               }}
             >
               <option value="">{copy.choose}</option>
-              {book.places.map((each) => (
+              {countTasks.places.map((each) => (
                 <option key={each.id} value={each.id}>
                   {each.name}
                 </option>
@@ -54,7 +54,7 @@ export function StartCount({ book, onStarted }: { book: Book; onStarted: (id: st
               }}
             >
               <option value="">{copy.choose}</option>
-              {book.classes.map((each) => (
+              {countTasks.classes.map((each) => (
                 <option key={each.consumable_code} value={each.consumable_code}>
                   {each.name}
                 </option>

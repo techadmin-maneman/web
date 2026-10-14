@@ -16,7 +16,7 @@ import { dispatch } from "../content.ts";
 
 const copy = dispatch.letIn;
 
-function Form({ visitId, onLetIn }: { visitId: string; onLetIn: () => void }) {
+function LetInForm({ visitId, onLetIn }: { visitId: string; onLetIn: () => void }) {
   const [reason, setReason] = useState("");
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
@@ -102,7 +102,7 @@ export function LetIn({
           {copy.done(technician)}
         </p>
       ) : (
-        <Form
+        <LetInForm
           visitId={visitId}
           onLetIn={() => {
             setDone(true);

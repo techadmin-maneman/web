@@ -10,7 +10,7 @@ import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import styles from "../components/forms.module.css";
-import type { CitiesBook, CityRuleName } from "./book.ts";
+import type { Cities, CityRuleName } from "./types.ts";
 
 const copy = cities.rules;
 
@@ -90,11 +90,11 @@ function RuleRow(props: { city: string; rule: CityRuleName; own: number | null; 
   );
 }
 
-export function CityRules({ book, onSaved }: { book: CitiesBook; onSaved: () => void }) {
-  const [city, setCity] = useState(book.cities[0]?.name ?? "");
+export function CityRules({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
+  const [city, setCity] = useState(cities.cities[0]?.name ?? "");
   const [said, setSaid] = useState<string | null>(null);
   const ownOf = (rule: CityRuleName): number | null => {
-    const set = book.rules.find((each) => each.city === city && each.rule === rule)?.value;
+    const set = cities.rules.find((each) => each.city === city && each.rule === rule)?.value;
     return typeof set === "number" ? set : null;
   };
   const saved = () => {
@@ -114,7 +114,7 @@ export function CityRules({ book, onSaved }: { book: CitiesBook; onSaved: () => 
               setSaid(null);
             }}
           >
-            {book.cities.map((each) => (
+            {cities.cities.map((each) => (
               <option key={each.name} value={each.name}>
                 {each.name}
               </option>
@@ -122,7 +122,7 @@ export function CityRules({ book, onSaved }: { book: CitiesBook; onSaved: () => 
           </Select>
         )}
       </Field>
-      {book.rule_names.map((rule) => (
+      {cities.rule_names.map((rule) => (
         <RuleRow key={`${city}:${rule}`} city={city} rule={rule} own={ownOf(rule)} onSaved={saved} />
       ))}
       {said !== null && (

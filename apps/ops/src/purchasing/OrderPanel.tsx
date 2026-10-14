@@ -142,18 +142,18 @@ function LinesTable({ order, named }: { order: Order; named: (code: string) => s
 }
 
 export function OrderPanel({
-  book,
+  orders,
   order,
   onChanged,
 }: {
-  book: Orders;
+  orders: Orders;
   order: Order;
-  onChanged: (book: Orders, said: string) => void;
+  onChanged: (orders: Orders, said: string) => void;
 }) {
   const [printing, setPrinting] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
-  const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
-  const supplier = book.suppliers.find((each) => each.id === order.supplier_id)?.name ?? order.supplier_id;
+  const named = (code: string) => orders.consumables.find((each) => each.code === code)?.name ?? code;
+  const supplier = orders.suppliers.find((each) => each.id === order.supplier_id)?.name ?? order.supplier_id;
   const answered = (answer: Answer, said: string) => {
     if (answer.ok) {
       setFailure(null);
@@ -173,7 +173,7 @@ export function OrderPanel({
         {copy.order.total}: {inCurrency(order.total, order.currency)}
       </p>
       <Steps order={order} onAnswer={answered} />
-      <Receiving book={book} order={order} onChanged={onChanged} />
+      <Receiving orders={orders} order={order} onChanged={onChanged} />
       <div className={form.actions}>
         <Button
           variant="outline"
@@ -192,7 +192,7 @@ export function OrderPanel({
       )}
       {printing && (
         <OrderSheet
-          book={book}
+          orders={orders}
           order={order}
           onPrinted={() => {
             setPrinting(false);

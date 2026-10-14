@@ -43,9 +43,10 @@ function monthBefore(month: string): string {
 }
 
 /** Every month from the first partner's to this one, newest first. */
-function monthsOf(book: PartnerStatements): string[] {
+function monthsOf(statements: PartnerStatements): string[] {
   const months: string[] = [];
-  for (let month = book.this_month; month >= book.first_month; month = monthBefore(month)) months.push(month);
+  for (let month = statements.this_month; month >= statements.first_month; month = monthBefore(month))
+    months.push(month);
   return months;
 }
 
@@ -53,14 +54,20 @@ function monthsOf(book: PartnerStatements): string[] {
 type Acting = { readonly id: string; readonly kind: "pay" | "delete" } | null;
 
 interface RowProps {
-  readonly book: PartnerStatements;
+  readonly statements: PartnerStatements;
   readonly mayPay: boolean;
   readonly acting: Acting;
   readonly onAct: (acting: Acting) => void;
-  readonly onDone: (book: PartnerStatements, said: string) => void;
+  readonly onDone: (statements: PartnerStatements, said: string) => void;
 }
 
-function RowActions({ statement, book, mayPay, acting, onAct }: { statement: PartnerStatement } & RowProps) {
+function StatementActions({
+  statement,
+  statements,
+  mayPay,
+  acting,
+  onAct,
+}: { statement: PartnerStatement } & RowProps) {
   const act = (kind: NonNullable<Acting>["kind"]) => {
     onAct({ id: statement.channel_id, kind });
   };
@@ -83,8 +90,8 @@ function RowActions({ statement, book, mayPay, acting, onAct }: { statement: Par
         aria-label={copy.statementLabel(statement.name)}
         onClick={() => {
           saveFile(
-            copy.statementName(statement.code, book.month),
-            statementCsv(statement, fullMonth(book.month)),
+            copy.statementName(statement.code, statements.month),
+            statementCsv(statement, fullMonth(statements.month)),
             "text/csv",
           );
         }}
@@ -92,7 +99,7 @@ function RowActions({ statement, book, mayPay, acting, onAct }: { statement: Par
         {copy.statement}
       </RowButton>
       {mayPay &&
-        book.month < book.this_month &&
+        statements.month < statements.this_month &&
         statement.payout === null &&
         offer("pay", copy.record, copy.recordLabel(statement.name))}
       {mayPay &&
@@ -103,7 +110,13 @@ function RowActions({ statement, book, mayPay, acting, onAct }: { statement: Par
 }
 
 /** Beneath a partner's row, what its action opened. */
-function ActingRow({ statement, book, acting, onAct, onDone }: { statement: PartnerStatement } & RowProps) {
+function StatementActingRow({
+  statement,
+  statements,
+  acting,
+  onAct,
+  onDone,
+}: { statement: PartnerStatement } & RowProps) {
   if (acting?.id !== statement.channel_id) return null;
   const cancel = () => {
     onAct(null);
@@ -113,10 +126,10 @@ function ActingRow({ statement, book, acting, onAct, onDone }: { statement: Part
       {acting.kind === "pay" ? (
         <PayoutForm
           statement={statement}
-          month={book.month}
-          monthName={fullMonth(book.month)}
-          today={book.today}
-          maxAmount={book.max_amount}
+          month={statements.month}
+          monthName={fullMonth(statements.month)}
+          today={statements.today}
+          maxAmount={statements.max_amount}
           onDone={(next) => {
             onDone(next, copy.done.recorded);
           }}
@@ -125,8 +138,8 @@ function ActingRow({ statement, book, acting, onAct, onDone }: { statement: Part
       ) : (
         <div className={own.ask}>
           <DeleteAction
-            name={copy.paymentTo(statement.name, fullMonth(book.month))}
-            send={() => api.deletePartnerPayout(statement.channel_id, book.month)}
+            name={copy.paymentTo(statement.name, fullMonth(statements.month))}
+            send={() => api.deletePartnerPayout(statement.channel_id, statements.month)}
             refusal={(refused) => errorText(copy.errors, { code: refused, fields: [] })}
             onDeleted={(next) => {
               onDone(next, copy.done.deleted);
@@ -156,9 +169,9 @@ function StatementRows({ statement, ...row }: { statement: PartnerStatement } & 
           {payout !== null && <span className={own.reference}>{payout.reference}</span>}
         </td>
         <td className={own.figure}>{amountOf(statement.owed)}</td>
-        <RowActions statement={statement} {...row} />
+        <StatementActions statement={statement} {...row} />
       </tr>
-      <ActingRow statement={statement} {...row} />
+      <StatementActingRow statement={statement} {...row} />
     </>
   );
 }
@@ -182,7 +195,7 @@ function StatementsTable(row: RowProps) {
           </tr>
         </thead>
         <tbody>
-          {row.book.statements.map((statement) => (
+          {row.statements.statements.map((statement) => (
             <StatementRows key={statement.channel_id} statement={statement} {...row} />
           ))}
         </tbody>
@@ -191,7 +204,7 @@ function StatementsTable(row: RowProps) {
   );
 }
 
-function MonthChoice({ book, onMonth }: { book: PartnerStatements; onMonth: (month: string) => void }) {
+function MonthChoice({ statements, onMonth }: { statements: PartnerStatements; onMonth: (month: string) => void }) {
   return (
     <div className={own.tools}>
       <Field label={copy.month}>
@@ -199,14 +212,14 @@ function MonthChoice({ book, onMonth }: { book: PartnerStatements; onMonth: (mon
           <Select
             {...control}
             className={styles.choiceBox}
-            value={book.month}
+            value={statements.month}
             onChange={(event) => {
               onMonth(event.target.value);
             }}
           >
-            {monthsOf(book).map((month) => (
+            {monthsOf(statements).map((month) => (
               <option key={month} value={month}>
-                {month === book.this_month ? copy.soFar(fullMonth(month)) : fullMonth(month)}
+                {month === statements.this_month ? copy.soFar(fullMonth(month)) : fullMonth(month)}
               </option>
             ))}
           </Select>
@@ -227,9 +240,9 @@ export function PartnerCommission() {
   const mayPay = useAccess().mayCall("POST /api/partner-statements/{id}/payouts");
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const book = changed ?? loaded.value;
+  const statements = changed ?? loaded.value;
   const row: RowProps = {
-    book,
+    statements,
     mayPay,
     acting,
     onAct: (next) => {
@@ -254,13 +267,13 @@ export function PartnerCommission() {
       title={copy.title}
       className={styles.panel}
       actions={
-        book.statements.length > 0 && (
+        statements.statements.length > 0 && (
           <Button
             variant="outline"
             size="small"
             className={styles.quiet}
             onClick={() => {
-              saveFile(copy.downloadName(book.month), monthCsv(book.statements), "text/csv");
+              saveFile(copy.downloadName(statements.month), monthCsv(statements.statements), "text/csv");
             }}
           >
             {copy.download}
@@ -268,13 +281,13 @@ export function PartnerCommission() {
         )
       }
     >
-      <MonthChoice book={book} onMonth={choose} />
+      <MonthChoice statements={statements} onMonth={choose} />
       {said !== null && (
         <InlineMessage tone="saved" className={styles.saved}>
           {said}
         </InlineMessage>
       )}
-      {book.statements.length === 0 ? <p className={styles.note}>{copy.none}</p> : <StatementsTable {...row} />}
+      {statements.statements.length === 0 ? <p className={styles.note}>{copy.none}</p> : <StatementsTable {...row} />}
     </Panel>
   );
 }

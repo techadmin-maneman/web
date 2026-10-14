@@ -47,7 +47,7 @@ function lateTermsDiffer(terms: CancelTerms): boolean {
   return free.refund !== client.refund || free.kept !== client.kept || free.credit !== client.credit;
 }
 
-function Form({
+function CancelForm({
   terms,
   onCancelled,
   onTermsChanged,
@@ -187,7 +187,7 @@ function Body({ visitId, onCancelled }: { visitId: string; onCancelled: (gives: 
           {copy.termsChanged}
         </InlineMessage>
       )}
-      <Form
+      <CancelForm
         terms={terms.value}
         onCancelled={onCancelled}
         onTermsChanged={() => {

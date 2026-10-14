@@ -16,8 +16,8 @@ const copy = technicians.kit;
 
 type Holding = Stock["holdings"][number];
 
-function KitRow({ book, holding }: { book: Stock; holding: Holding }) {
-  const consumable = book.consumables.find((each) => each.code === holding.consumable_code);
+function KitRow({ kitStock, holding }: { kitStock: Stock; holding: Holding }) {
+  const consumable = kitStock.consumables.find((each) => each.code === holding.consumable_code);
   const counted = holding.counted_at === null ? technicians.unknown : shortDate(indiaDate(holding.counted_at));
   return (
     <tr>
@@ -39,8 +39,8 @@ export function Kit({ technician }: { technician: TechnicianSummary }) {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />;
 
-  const book = loaded.value;
-  const held = book.holdings.filter((holding) => holding.place_id === technician.id);
+  const kitStock = loaded.value;
+  const held = kitStock.holdings.filter((holding) => holding.place_id === technician.id);
   return (
     <>
       {held.length === 0 ? (
@@ -58,7 +58,7 @@ export function Kit({ technician }: { technician: TechnicianSummary }) {
           </thead>
           <tbody>
             {held.map((holding) => (
-              <KitRow key={holding.consumable_code} book={book} holding={holding} />
+              <KitRow key={holding.consumable_code} kitStock={kitStock} holding={holding} />
             ))}
           </tbody>
         </Table>

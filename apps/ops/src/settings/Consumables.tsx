@@ -57,7 +57,15 @@ function stateWords(consumable: Consumable): string {
   return consumable.offered ? copy.states.retiring(from) : copy.states.retired(from);
 }
 
-function Row({ consumable, may, onDo }: { consumable: Consumable; may: MayDo; onDo: (doing: Doing) => void }) {
+function ConsumableRow({
+  consumable,
+  may,
+  onDo,
+}: {
+  consumable: Consumable;
+  may: MayDo;
+  onDo: (doing: Doing) => void;
+}) {
   const { code, name } = consumable;
   const notRetired = consumable.retired_from === null;
   return (
@@ -125,24 +133,30 @@ function Row({ consumable, may, onDo }: { consumable: Consumable; may: MayDo; on
 }
 
 /** The form beneath the table: the one a row's button asked for, else adding a new one, where access allows it. */
-function Form({
-  book,
+function ConsumableEditor({
+  consumables,
   doing,
   mayAdd,
   onSaved,
   onCancel,
 }: {
-  book: Book;
+  consumables: Book;
   doing: Doing;
   mayAdd: boolean;
-  onSaved: (book: Book, said: string) => void;
+  onSaved: (consumables: Book, said: string) => void;
   onCancel: () => void;
 }) {
-  const named = doing.kind === "add" ? undefined : book.consumables.find((each) => each.code === doing.code);
+  const named = doing.kind === "add" ? undefined : consumables.consumables.find((each) => each.code === doing.code);
   if (named === undefined || doing.kind === "add") {
     if (!mayAdd) return null;
     return (
-      <ConsumableForm key="new" consumable={null} maxUnitCost={book.max_unit_cost} onSaved={onSaved} onCancel={null} />
+      <ConsumableForm
+        key="new"
+        consumable={null}
+        maxUnitCost={consumables.max_unit_cost}
+        onSaved={onSaved}
+        onCancel={null}
+      />
     );
   }
   if (doing.kind === "change") {
@@ -150,7 +164,7 @@ function Form({
       <ConsumableForm
         key={named.code}
         consumable={named}
-        maxUnitCost={book.max_unit_cost}
+        maxUnitCost={consumables.max_unit_cost}
         onSaved={onSaved}
         onCancel={onCancel}
       />
@@ -179,7 +193,7 @@ function Form({
     <Retiring
       key={`retire-${named.code}`}
       consumable={named}
-      today={book.today}
+      today={consumables.today}
       onSaved={onSaved}
       onCancel={onCancel}
     />
@@ -189,14 +203,14 @@ function Form({
 export function Consumables() {
   const [loaded, retry] = useLoad(api.consumables);
   /** The list after a change, so the table follows without reading it again. */
-  const [book, setBook] = useState<Book | null>(null);
+  const [consumables, setBook] = useState<Book | null>(null);
   const [doing, setDoing] = useState<Doing>({ kind: "add" });
   const [said, setSaid] = useState<string | null>(null);
   const may = useMayDo();
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
-  const current = book ?? loaded.value;
+  const current = consumables ?? loaded.value;
 
   const saved = (next: Book, words: string) => {
     setBook(next);
@@ -222,7 +236,7 @@ export function Consumables() {
             </thead>
             <tbody>
               {current.consumables.map((consumable) => (
-                <Row
+                <ConsumableRow
                   key={consumable.code}
                   consumable={consumable}
                   may={may}
@@ -240,8 +254,8 @@ export function Consumables() {
             {said}
           </InlineMessage>
         )}
-        <Form
-          book={current}
+        <ConsumableEditor
+          consumables={current}
           doing={doing}
           mayAdd={may.add}
           onSaved={saved}
@@ -250,8 +264,8 @@ export function Consumables() {
           }}
         />
       </Panel>
-      {may.addHairSystem && <HairSystemForm book={current} onSaved={saved} />}
-      <ServiceUsage book={current} onSaved={setBook} />
+      {may.addHairSystem && <HairSystemForm consumables={current} onSaved={saved} />}
+      <ServiceUsage consumables={current} onSaved={setBook} />
     </>
   );
 }

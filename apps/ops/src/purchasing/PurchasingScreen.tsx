@@ -24,9 +24,9 @@ import type { Orders } from "./types.ts";
 
 const loadOrders = () => client.get("/api/purchase-orders");
 
-function OrdersTable({ book, onOpen }: { book: Orders; onOpen: (id: string) => void }) {
-  const supplierOf = (id: string) => book.suppliers.find((each) => each.id === id)?.name ?? id;
-  if (book.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
+function OrdersTable({ orders, onOpen }: { orders: Orders; onOpen: (id: string) => void }) {
+  const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;
+  if (orders.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
       <thead>
@@ -39,7 +39,7 @@ function OrdersTable({ book, onOpen }: { book: Orders; onOpen: (id: string) => v
         </tr>
       </thead>
       <tbody>
-        {book.orders.map((order) => (
+        {orders.orders.map((order) => (
           <tr key={order.id}>
             <th scope="row" className={form.rowHead}>
               <RowButton
@@ -65,11 +65,11 @@ function OrdersTable({ book, onOpen }: { book: Orders; onOpen: (id: string) => v
 
 export function PurchasingScreen() {
   const [loaded, retry] = useLoad(loadOrders);
-  const [book, setBook] = useState<Orders | null>(null);
+  const [orders, setBook] = useState<Orders | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const access = useAccess();
-  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
+  const current = orders ?? (loaded.state === "loaded" ? loaded.value : null);
   const changed = (next: Orders, words: string) => {
     setBook(next);
     setSaid(words);
@@ -82,17 +82,17 @@ export function PurchasingScreen() {
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="orders" title={copy.orders}>
-            <OrdersTable book={current} onOpen={setOpen} />
+            <OrdersTable orders={current} onOpen={setOpen} />
             {said !== null && (
               <InlineMessage tone="saved" className={form.saved}>
                 {said}
               </InlineMessage>
             )}
           </Panel>
-          {opened !== null && <OrderPanel key={opened.id} book={current} order={opened} onChanged={changed} />}
+          {opened !== null && <OrderPanel key={opened.id} orders={current} order={opened} onChanged={changed} />}
           {access.mayCall("POST /api/purchase-orders") && (
             <DraftOrder
-              book={current}
+              orders={current}
               onDrafted={(next, words) => {
                 changed(next, words);
                 setOpen(next.orders[0]?.id ?? null);

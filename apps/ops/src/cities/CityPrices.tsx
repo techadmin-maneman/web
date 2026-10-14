@@ -12,7 +12,7 @@ import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import styles from "../components/forms.module.css";
-import type { CitiesBook, CityPrice } from "./book.ts";
+import type { Cities, CityPrice } from "./types.ts";
 
 const copy = cities.prices;
 type Item = CityPrice["item"];
@@ -39,9 +39,9 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => void }) {
   );
 }
 
-function PriceTable({ book, onDone }: { book: CitiesBook; onDone: () => void }) {
+function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => void }) {
   const mayWithdraw = useAccess().mayCall("DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}");
-  if (book.prices.length === 0) return <p className={styles.note}>{copy.none}</p>;
+  if (cities.prices.length === 0) return <p className={styles.note}>{copy.none}</p>;
   return (
     <Table className={styles.table}>
       <thead>
@@ -54,7 +54,7 @@ function PriceTable({ book, onDone }: { book: CitiesBook; onDone: () => void }) 
         </tr>
       </thead>
       <tbody>
-        {book.prices.map((price) => (
+        {cities.prices.map((price) => (
           <tr key={`${price.city}/${price.item}/${price.tier}/${price.valid_from}`}>
             <th scope="row" className={styles.rowHead}>
               {price.city}
@@ -65,7 +65,7 @@ function PriceTable({ book, onDone }: { book: CitiesBook; onDone: () => void }) 
             <td>{rupees(price.amount_ex_gst)}</td>
             <td>{price.gst_percent}%</td>
             <td>{price.in_force ? copy.inForce : price.valid_from}</td>
-            <td>{mayWithdraw && price.valid_from > book.today && <Withdraw price={price} onDone={onDone} />}</td>
+            <td>{mayWithdraw && price.valid_from > cities.today && <Withdraw price={price} onDone={onDone} />}</td>
           </tr>
         ))}
       </tbody>
@@ -82,7 +82,7 @@ interface Draft {
   readonly from: string;
 }
 
-function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edit: (change: Partial<Draft>) => void }) {
+function PriceBoxes({ cities, draft, edit }: { cities: Cities; draft: Draft; edit: (change: Partial<Draft>) => void }) {
   return (
     <div className={styles.fields}>
       <Field label={copy.city} className={styles.field}>
@@ -94,7 +94,7 @@ function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edi
               edit({ city: event.target.value });
             }}
           >
-            {book.cities.map((city) => (
+            {cities.cities.map((city) => (
               <option key={city.name} value={city.name}>
                 {city.name}
               </option>
@@ -179,9 +179,9 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
   );
 }
 
-function PriceForm({ book, onSaved }: { book: CitiesBook; onSaved: () => void }) {
+function PriceForm({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
   const first: Draft = {
-    city: book.cities[0]?.name ?? "",
+    city: cities.cities[0]?.name ?? "",
     item: "service",
     tier: "standard",
     amount: "",
@@ -224,12 +224,12 @@ function PriceForm({ book, onSaved }: { book: CitiesBook; onSaved: () => void })
       onCancel={null}
       checking={<p className={styles.checkLine}>{line}</p>}
     >
-      <PriceBoxes book={book} draft={draft} edit={edit} />
+      <PriceBoxes cities={cities} draft={draft} edit={edit} />
     </SettingForm>
   );
 }
 
-export function CityPrices({ book, onSaved }: { book: CitiesBook; onSaved: () => void }) {
+export function CityPrices({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
   const mayAdd = useAccess().mayCall("POST /api/cities/{name}/prices");
   const [said, setSaid] = useState<string | null>(null);
   const saved = (words: string) => () => {
@@ -237,15 +237,15 @@ export function CityPrices({ book, onSaved }: { book: CitiesBook; onSaved: () =>
     onSaved();
   };
   return (
-    <Panel titleId="city-prices" title={copy.panel} count={book.prices.length}>
+    <Panel titleId="city-prices" title={copy.panel} count={cities.prices.length}>
       <p className={styles.note}>{copy.note}</p>
-      <PriceTable book={book} onDone={saved(copy.withdrawn)} />
+      <PriceTable cities={cities} onDone={saved(copy.withdrawn)} />
       {said !== null && (
         <InlineMessage tone="saved" className={styles.saved}>
           {said}
         </InlineMessage>
       )}
-      {mayAdd && <PriceForm book={book} onSaved={saved(copy.added)} />}
+      {mayAdd && <PriceForm cities={cities} onSaved={saved(copy.added)} />}
     </Panel>
   );
 }

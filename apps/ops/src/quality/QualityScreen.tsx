@@ -17,12 +17,12 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ExpiryRiskPanel } from "./ExpiryRisk.tsx";
 import { FailuresPanel } from "./Failures.tsx";
-import { RaiseRecall, RecallDetail, type Answer, type Book, type Detail } from "./Recall.tsx";
+import { RaiseRecall, RecallDetail, type Answer, type Quality, type Detail } from "./Recall.tsx";
 
 const loadRecalls = () => client.get("/api/recalls");
 
-function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
-  if (book.recalls.length === 0) return <p className={form.note}>{copy.none}</p>;
+function Recalls({ quality, onOpen }: { quality: Quality; onOpen: (id: string) => void }) {
+  if (quality.recalls.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
       <thead>
@@ -35,7 +35,7 @@ function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void })
         </tr>
       </thead>
       <tbody>
-        {book.recalls.map((recall) => (
+        {quality.recalls.map((recall) => (
           <tr key={recall.id}>
             <th scope="row" className={form.rowHead}>
               {copy.number(recall.number)}
@@ -65,12 +65,12 @@ function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void })
 
 export function QualityScreen() {
   const [loaded, retry] = useLoad(loadRecalls);
-  const [book, setBook] = useState<Book | null>(null);
+  const [quality, setBook] = useState<Quality | null>(null);
   const [opened, setOpened] = useState<Detail | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const access = useAccess();
-  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
+  const current = quality ?? (loaded.state === "loaded" ? loaded.value : null);
   const reload = () => {
     void loadRecalls().then((answer) => {
       if (answer.ok) setBook(answer.body);
@@ -98,8 +98,8 @@ export function QualityScreen() {
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="quality-recalls" title={copy.recalls}>
-            <Recalls book={current} onOpen={open} />
-            {access.mayCall("POST /api/recalls") && <RaiseRecall book={current} onAnswer={answered} />}
+            <Recalls quality={current} onOpen={open} />
+            {access.mayCall("POST /api/recalls") && <RaiseRecall quality={current} onAnswer={answered} />}
             {said !== null && (
               <InlineMessage tone="saved" className={form.saved}>
                 {said}

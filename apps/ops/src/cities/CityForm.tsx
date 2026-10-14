@@ -7,7 +7,7 @@ import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import styles from "../components/forms.module.css";
-import type { City } from "./book.ts";
+import type { City } from "./types.ts";
 
 const form = cities.form;
 

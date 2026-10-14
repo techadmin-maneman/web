@@ -275,7 +275,7 @@ function MoveAllForm(props: {
 type Acting = "name" | "days" | "leave" | "move" | null;
 
 /** A manager's ways to change a member: their name, days off and leave while on the team, and moving their clients. */
-function RowActions(props: { member: CareMember; acting: Acting; onActing: (acting: Acting) => void }) {
+function MemberActions(props: { member: CareMember; acting: Acting; onActing: (acting: Acting) => void }) {
   const { member } = props;
   const actions: readonly (readonly [Exclude<Acting, null>, string, string])[] = [
     ...(member.on_team
@@ -331,7 +331,7 @@ function MemberRows(props: {
         </td>
         <td>{todayOf(member)}</td>
         <td className={own.actions}>
-          {mayManage && <RowActions member={member} acting={acting} onActing={setActing} />}
+          {mayManage && <MemberActions member={member} acting={acting} onActing={setActing} />}
         </td>
       </tr>
       {acting !== null && (
