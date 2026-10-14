@@ -268,7 +268,7 @@ describe("sweeper: erasures", () => {
       ["changed", minutesAgo(2), null, 0],
     ] as const) {
       await env.DB.prepare(
-        `INSERT INTO crm_contact_updates (person_id, owed_since, changed_at, tried_at, invite_attached)
+        `INSERT INTO crm_contact_updates (person_id, owed_at, changed_at, tried_at, invite_attached)
          VALUES (?1, ?2, ?2, ?3, ?4)`,
       )
         .bind(person, changedAt, triedAt, invite)

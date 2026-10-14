@@ -71,7 +71,7 @@ const HISTORY = [
      fsm_request_id)
    SELECT 'l-' || i, 'p-' || i, '${AGO}', 'form', 'Gurgaon', 'crown', 'synced', '${AGO}', 'r', 'req-' || i FROM n`,
   // Owed updates each tried just before the runs measured, as a run finds them: none is due.
-  `INSERT INTO crm_contact_updates (person_id, owed_since, changed_at, tried_at)
+  `INSERT INTO crm_contact_updates (person_id, owed_at, changed_at, tried_at)
    SELECT 'p-' || i, '${AGO}', '${AGO}', '${new Date(NOW.getTime() + DAY_MS).toISOString()}' FROM n`,
   `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at, sent_at)
    SELECT 'm-' || i, '${AGO}', 'p-' || i, 'visit_reminder', 'appointment', 'a-' || i, 'sent', '${AGO}', '${AGO}'

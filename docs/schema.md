@@ -193,29 +193,29 @@ Each address a client has given, in the app or to ops on the phone, who then sav
 
 Made by `0008_profile.sql`; changed by `0028_address_pin.sql`, `0056_task_owners.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `created_at` | TEXT | no |  |  |
-| `line1` | TEXT | no |  |  |
-| `line2` | TEXT | yes |  |  |
-| `locality` | TEXT | no |  |  |
-| `city` | TEXT | no |  |  |
-| `pincode` | TEXT | no |  |  |
-| `access_notes` | TEXT | yes |  |  |
-| `lat` | REAL | yes |  |  |
-| `lng` | REAL | yes |  |  |
-| `geocoded_at` | TEXT | yes |  |  |
-| `replaced_at` | TEXT | yes |  |  |
-| `building` | TEXT | yes |  |  |
-| `flat` | TEXT | yes |  |  |
-| `floor` | TEXT | yes |  |  |
-| `tower` | TEXT | yes |  |  |
-| `landmark` | TEXT | yes |  |  |
-| `place_id` | TEXT | yes |  |  |
-| `geocode_source` | TEXT | yes |  |  |
-| `given_to_staff` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `created_at` | TEXT | no |  |  |  |
+| `line1` | TEXT | no |  |  |  |
+| `line2` | TEXT | yes |  |  |  |
+| `locality` | TEXT | no |  |  |  |
+| `city` | TEXT | no |  |  |  |
+| `pincode` | TEXT | no |  |  |  |
+| `access_notes` | TEXT | yes |  |  | "Gate code 4417 · park in visitor bay B": for the technician, from the day before the visit. |
+| `lat` | REAL | yes |  |  | Filled once a geocoder is chosen (plan input 16), for the check-in's distance (P2-M4). |
+| `lng` | REAL | yes |  |  |  |
+| `geocoded_at` | TEXT | yes |  |  |  |
+| `replaced_at` | TEXT | yes |  |  |  |
+| `building` | TEXT | yes |  |  | The building or society as the client chose it from the suggestions, kept apart from line1 so the old free-text addresses keep their meaning. |
+| `flat` | TEXT | yes |  |  | "Flat 1203", "House 4417": the part no map knows and only the client can give. |
+| `floor` | TEXT | yes |  |  |  |
+| `tower` | TEXT | yes |  |  |  |
+| `landmark` | TEXT | yes |  |  | "Opposite the Sector 65 metro gate": what a technician navigates by when the pin lands in the middle of a large society. |
+| `place_id` | TEXT | yes |  |  | Google's Place ID for the building. Exempt from their caching restriction and storable for good, so it is what we keep rather than their suggestion text; it is also what re-resolves the coordinate if the address is ever rechecked (docs/decisions/0054-address-capture.md, "What may be kept"). |
+| `geocode_source` | TEXT | yes |  |  | Where lat/lng came from, because the licence differs by source and a coordinate we observed is worth more than one a provider computed: google_geocoding  the Geocoding API, resolved from the Place ID above device            the client's own phone, through navigator.geolocation checkin           a technician who has stood at the door The last two are not written yet (ADR 0054 ranks them first and cheapest); they are listed now so adding them needs no second migration. |
+| `given_to_staff` | TEXT | yes |  |  | The Access e-mail of the member of staff a client gave the address to on the phone, who saved it for them; NULL for an address the client saved. |
 
 Indexes:
 
@@ -227,18 +227,18 @@ One row per alert while it is open, kept once it is resolved; raising it again c
 
 Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`, `0088_alerts_retold.sql`, `0172_retention_reaches_every_table.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `key` | TEXT | no |  |  |
-| `message` | TEXT | no |  |  |
-| `link` | TEXT | yes |  |  |
-| `count` | INTEGER | no |  |  |
-| `first_seen_at` | TEXT | no |  |  |
-| `last_seen_at` | TEXT | no |  |  |
-| `resolved_at` | TEXT | yes |  |  |
-| `told_at` | TEXT | yes |  |  |
-| `last_told_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `key` | TEXT | no |  |  |  |
+| `message` | TEXT | no |  |  |  |
+| `link` | TEXT | yes |  |  | A path in the ops console, "/clients/<personId>", where ops act on it. |
+| `count` | INTEGER | no |  |  |  |
+| `first_seen_at` | TEXT | no |  |  |  |
+| `last_seen_at` | TEXT | no |  |  |  |
+| `resolved_at` | TEXT | yes |  |  |  |
+| `told_at` | TEXT | yes |  |  |  |
+| `last_told_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -252,42 +252,42 @@ Each visit, mirrored from FSM or booked without it: when, with whom, of what typ
 
 Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`, `0168_upkeep_out_of_triggers.sql`, `0169_visits_whole.sql`, `0173_fsm_columns_read_the_new.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `fsm_id` | TEXT | no |  |  |
-| `fsm_work_order_id` | TEXT | yes |  |  |
-| `person_id` | TEXT | yes |  | → `people.id` |
-| `type` | TEXT | yes |  |  |
-| `window_start` | TEXT | yes |  |  |
-| `window_end` | TEXT | yes |  |  |
-| `technician_id` | TEXT | yes |  | → `technicians.id` |
-| `status` | TEXT | no |  |  |
-| `service_city` | TEXT | yes |  |  |
-| `service_pincode` | TEXT | yes |  |  |
-| `fsm_invoice_id` | TEXT | yes |  |  |
-| `synced_at` | TEXT | no |  |  |
-| `deleted_at` | TEXT | yes |  |  |
-| `reconciled_at` | TEXT | yes |  |  |
-| `invoice_checked_at` | TEXT | yes |  |  |
-| `invoice_issued_at` | TEXT | yes |  |  |
-| `asked_window` | TEXT | yes |  |  |
-| `asked_checked_at` | TEXT | yes |  |  |
-| `asked_failed_at` | TEXT | yes |  |  |
-| `client_note` | TEXT | yes |  |  |
-| `client_note_at` | TEXT | yes |  |  |
-| `first_seen_at` | TEXT | yes |  |  |
-| `tier` | TEXT | yes |  |  |
-| `start_before_move` | TEXT | yes |  |  |
-| `one_visit` | TEXT | yes |  |  |
-| `nothing_owed_at` | TEXT | yes |  |  |
-| `fsm_note_written_at` | TEXT | yes |  |  |
-| `fsm_status` | TEXT | yes |  |  |
-| `fsm_modified_at` | TEXT | yes |  |  |
-| `checkin_waived_at` | TEXT | yes |  |  |
-| `checkin_waived_by` | TEXT | yes |  |  |
-| `checkin_waived_reason` | TEXT | yes |  |  |
-| `books_invoice_id` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `fsm_id` | TEXT | no |  |  |  |
+| `fsm_work_order_id` | TEXT | yes |  |  |  |
+| `person_id` | TEXT | yes |  | → `people.id` | NULL while FSM's client has no mobile number the mirror could match. |
+| `type` | TEXT | yes |  |  | NULL for an appointment for none of our four services. |
+| `window_start` | TEXT | yes |  |  |  |
+| `window_end` | TEXT | yes |  |  |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` | The lead technician. |
+| `status` | TEXT | no |  |  |  |
+| `service_city` | TEXT | yes |  |  |  |
+| `service_pincode` | TEXT | yes |  |  |  |
+| `fsm_invoice_id` | TEXT | yes |  |  |  |
+| `synced_at` | TEXT | no |  |  |  |
+| `deleted_at` | TEXT | yes |  |  | Set when FSM no longer has the appointment. |
+| `reconciled_at` | TEXT | yes |  |  | When the last full pass saw the appointment in FSM's list. |
+| `invoice_checked_at` | TEXT | yes |  |  |  |
+| `invoice_issued_at` | TEXT | yes |  |  |  |
+| `asked_window` | TEXT | yes |  |  | The window the client asked for, as against the one the visit was given. FSM holds one time on an appointment and its own Preference subform is read-only there, so the asked window is read from the Request the visit's work order names, and matched to the lead we wrote that Request from (ADR 0063). NULL means nothing recorded one, and the board says so in words. |
+| `asked_checked_at` | TEXT | yes |  |  | When the pass last looked, so a visit with no Request behind it — everything our own booking creates — is not asked about again on every run. |
+| `asked_failed_at` | TEXT | yes |  |  | When FSM last failed to say what a visit's client asked for. The pass asks about it again an hour later, rather than first on every run (src/domain/asked-windows.ts). |
+| `client_note` | TEXT | yes |  |  | The client's note on a visit to come, from the app's "Add a note", which the technician reads on the client's card (src/domain/client-notes.ts). The latest replaces any before it. Blanked when the client is erased. |
+| `client_note_at` | TEXT | yes |  |  |  |
+| `first_seen_at` | TEXT | yes |  |  | When a visit first reached our records, from a booking or from FSM, which the address it still needs waits from on the Tasks board (src/domain/tasks.ts). Written once, on insert. A visit the Worker already deployed writes has none, and waits from when it was last synced instead. |
+| `tier` | TEXT | yes |  |  | The service an appointment is, beside its kind (type): from the hold that booked it, or from its FSM item. Null where neither says, as for every appointment mirrored before this; it is then read as the standard tier. |
+| `start_before_move` | TEXT | yes |  |  | When the visit started before ops moved it: the time the client last chose, kept through every move ops make after it and cleared by the client's own. A client's change counts its notice from it where it is later than the visit's time, so a move by ops never takes a free change away. NULL while the visit is where its booking, or the client's last move, put it. |
+| `one_visit` | TEXT | yes |  |  | Where a visit booked as one stands: booked until the technician closes it, then fitted, the client having chosen a product and been fitted, or declined, the client having decided against it, when the visit is a consultation. NULL for every other visit. The mirror keeps a fitted visit's product and a declined visit's kind, which FSM's item does not say (src/domain/fsm-mirror.ts). |
+| `nothing_owed_at` | TEXT | yes |  |  | When the close of a consultation and fit in one visit found its discount code left nothing to pay, so no payment link was made: the fit itself then settles the friend's referral, which otherwise waits for the link's payment. |
+| `fsm_note_written_at` | TEXT | yes |  |  | When the visit's note last reached FSM, so an erasure knows which appointments' notes to blank there, and blanks them once. Emptied again when the erasure has blanked it. |
+| `fsm_status` | TEXT | yes |  |  | A visit booked without FSM has no FSM status and no time FSM changed it, so both may be empty. Many tables point at appointments, so each column is swapped in place rather than the table rebuilt; no index, trigger or view names either. |
+| `fsm_modified_at` | TEXT | yes |  |  |  |
+| `checkin_waived_at` | TEXT | yes |  |  |  |
+| `checkin_waived_by` | TEXT | yes |  |  |  |
+| `checkin_waived_reason` | TEXT | yes |  |  |  |
+| `books_invoice_id` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -313,18 +313,18 @@ Every ops action that reads or changes a client's data, and who took it. An entr
 
 Made by `0005_audit.sql`; changed by `0172_retention_reaches_every_table.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `at` | TEXT | no |  |  |
-| `surface` | TEXT | no |  |  |
-| `actor_kind` | TEXT | no |  |  |
-| `actor` | TEXT | no |  |  |
-| `action` | TEXT | no |  |  |
-| `subject_kind` | TEXT | yes |  |  |
-| `subject_id` | TEXT | yes |  |  |
-| `request_id` | TEXT | yes |  |  |
-| `detail` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `at` | TEXT | no |  |  |  |
+| `surface` | TEXT | no |  |  |  |
+| `actor_kind` | TEXT | no |  |  | staff: an Access login, by e-mail. service: an Access service token, by client ID. client, technician: by our own opaque ID. system: a scheduled job, by name. |
+| `actor` | TEXT | no |  |  |  |
+| `action` | TEXT | no |  |  | e.g. ops.call, photo.view. The list is in src/domain/audit.ts, so a new action needs no migration. |
+| `subject_kind` | TEXT | yes |  |  |  |
+| `subject_id` | TEXT | yes |  |  |  |
+| `request_id` | TEXT | yes |  |  |  |
+| `detail` | TEXT | yes |  |  | A JSON object of IDs, counts and codes, never personal details. |
 
 Indexes:
 
@@ -340,10 +340,10 @@ One row: a number that triggers raise whenever a visit, a move, leave, a technic
 
 Made by `0090_board_version.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `version` | INTEGER | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `version` | INTEGER | no |  |  |  |
 
 ## care_leave
 
@@ -351,14 +351,14 @@ Leave for a Care team member, from one date to another; their chats are covered 
 
 Made by `0117_care_days_off.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `email` | TEXT | no |  |  |
-| `from_date` | TEXT | no |  |  |
-| `to_date` | TEXT | no |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `email` | TEXT | no |  |  |  |
+| `from_date` | TEXT | no |  |  |  |
+| `to_date` | TEXT | no |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -370,12 +370,12 @@ The first name each Care team member is known by to clients, as their Support ca
 
 Made by `0119_care_names.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `email` | TEXT | no |  | primary key |
-| `name` | TEXT | no |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `email` | TEXT | no |  | primary key |  |
+| `name` | TEXT | no |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 ## care_owners
 
@@ -383,12 +383,12 @@ Each client's named Care person, given at their first chat and moved by a Custom
 
 Made by `0116_care_owners.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `person_id` | TEXT | no |  | primary key; → `people.id` |
-| `email` | TEXT | no |  |  |
-| `since` | TEXT | no |  |  |
-| `assigned_by` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `person_id` | TEXT | no |  | primary key; → `people.id` |  |
+| `email` | TEXT | no |  |  | The Care person, by the e-mail the Staff list names them by; one taken off the list keeps their clients until a manager moves them. |
+| `since` | TEXT | no |  |  |  |
+| `assigned_by` | TEXT | no |  |  | "system" when given at the first chat; else the manager who moved the client. |
 
 Indexes:
 
@@ -400,12 +400,12 @@ Each Care team member's weekly days off, as a Customer Care manager sets them (A
 
 Made by `0117_care_days_off.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `email` | TEXT | no |  | primary key |
-| `weekday` | INTEGER | no |  | primary key |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `email` | TEXT | no |  | primary key |  |
+| `weekday` | INTEGER | no |  | primary key |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 ## channel_attributions
 
@@ -413,23 +413,23 @@ A person who came through a partner's code, and what the friend and the partner 
 
 Made by `0109_referral_channels.sql`; changed by `0110_partner_payouts.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `channel_id` | TEXT | no |  | → `referral_channels.id` |
-| `referred_person_id` | TEXT | no |  | → `people.id` |
-| `first_touch_at` | TEXT | no |  |  |
-| `via` | TEXT | no |  |  |
-| `pincode` | TEXT | yes |  |  |
-| `first_fit_appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `grant_state` | TEXT | no | `'pending'` |  |
-| `friend_visits` | INTEGER | yes |  |  |
-| `valid_days` | INTEGER | yes |  |  |
-| `commission` | INTEGER | yes |  |  |
-| `granted_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `clawed_back_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `channel_id` | TEXT | no |  | → `referral_channels.id` |  |
+| `referred_person_id` | TEXT | no |  | → `people.id` |  |
+| `first_touch_at` | TEXT | no |  |  |  |
+| `via` | TEXT | no |  |  |  |
+| `pincode` | TEXT | yes |  |  |  |
+| `first_fit_appointment_id` | TEXT | yes |  | → `appointments.id` |  |
+| `grant_state` | TEXT | no | `'pending'` |  | pending: not fitted yet; granted: the friend's visits given and the commission earned; expired: held on a waitlist past the invite's life; clawed_back: the first fit was refunded under the guarantee. |
+| `friend_visits` | INTEGER | yes |  |  | The reward in force when the friend was fitted, kept with it. |
+| `valid_days` | INTEGER | yes |  |  |  |
+| `commission` | INTEGER | yes |  |  |  |
+| `granted_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `clawed_back_at` | TEXT | yes |  |  | When a refund took a friend's commission back, so the taking back falls in that month's statement. |
 
 Indexes:
 
@@ -446,18 +446,18 @@ Every message in a Care inbox thread: what the client wrote, our replies, and no
 
 Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `conversation_id` | TEXT | no |  | → `conversations.id` |
-| `direction` | TEXT | no |  |  |
-| `author` | TEXT | no |  |  |
-| `text` | TEXT | yes |  |  |
-| `provider_message_id` | TEXT | yes |  |  |
-| `sent_at` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `delivery` | TEXT | yes |  |  |
-| `failure` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `conversation_id` | TEXT | no |  | → `conversations.id` |  |
+| `direction` | TEXT | no |  |  | in: from the client; out: our reply; note: for staff alone, never sent. |
+| `author` | TEXT | no |  |  | "client", a member of staff's e-mail, or "system". |
+| `text` | TEXT | yes |  |  | Null once the client's record is erased. |
+| `provider_message_id` | TEXT | yes |  |  | WhatsApp's ID for it, through the bridge or MSG91: a message filed twice is filed once. |
+| `sent_at` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `delivery` | TEXT | yes |  |  | For a reply: sent, or failed with why; null for the client's messages and staff's notes. |
+| `failure` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -470,23 +470,23 @@ Each "I have arrived", passed or not, with the distance measured and the radius 
 
 Made by `0026_field_operations.sql`; changed by `0035_checkin_times_and_distance.sql`, `0037_cron_indexes.sql`, `0057_consent_sources_and_checkin_coordinates.sql`, `0085_checkin_job_event.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `technician_id` | TEXT | no |  | → `technicians.id` |
-| `address_id` | TEXT | yes |  | → `addresses.id` |
-| `at` | TEXT | no |  |  |
-| `accuracy_m` | REAL | yes |  |  |
-| `radius_m` | INTEGER | no |  |  |
-| `passed` | INTEGER | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `claimed_at` | TEXT | yes |  |  |
-| `distance_m` | INTEGER | yes |  |  |
-| `lat` | REAL | yes |  |  |
-| `lng` | REAL | yes |  |  |
-| `job_event_id` | TEXT | yes |  | → `job_events.id` |
-| `waived_by` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `address_id` | TEXT | yes |  | → `addresses.id` | The address measured against (migration 0008 holds its lat and lng). |
+| `at` | TEXT | no |  |  |  |
+| `accuracy_m` | REAL | yes |  |  | What the phone claimed of its own fix, in metres; NULL where it said nothing. |
+| `radius_m` | INTEGER | no |  |  |  |
+| `passed` | INTEGER | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `claimed_at` | TEXT | yes |  |  |  |
+| `distance_m` | INTEGER | yes |  |  |  |
+| `lat` | REAL | yes |  |  | Where the phone said it was. |
+| `lng` | REAL | yes |  |  |  |
+| `job_event_id` | TEXT | yes |  | → `job_events.id` |  |
+| `waived_by` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -501,15 +501,15 @@ Each kind of visit's checklist as ops set it, an item they took off kept as reti
 
 Made by `0049_consumables_and_stock.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `visit_type` | TEXT | no |  | primary key |
-| `code` | TEXT | no |  | primary key |
-| `label` | TEXT | no |  |  |
-| `position` | INTEGER | no |  |  |
-| `retired_at` | TEXT | yes |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `visit_type` | TEXT | no |  | primary key |  |
+| `code` | TEXT | no |  | primary key | What the app sends back; made from the label when the item is added. |
+| `label` | TEXT | no |  |  |  |
+| `position` | INTEGER | no |  |  | The order the technician sees them in. |
+| `retired_at` | TEXT | yes |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 ## cities
 
@@ -517,15 +517,15 @@ Our cities, each a row ops edit at Admin › Cities: its state for GST, its zone
 
 Made by `0002_lead_path.sql`; changed by `0069_staff_and_access.sql`, `0167_cities_as_data.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `name` | TEXT | no |  | primary key |
-| `served` | INTEGER | no |  |  |
-| `active` | INTEGER | no | `1` |  |
-| `sort` | INTEGER | no |  |  |
-| `zone` | TEXT | yes |  | → `zones.name` |
-| `state_code` | TEXT | yes |  |  |
-| `state` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `name` | TEXT | no |  | primary key |  |
+| `served` | INTEGER | no |  |  |  |
+| `active` | INTEGER | no | `1` |  |  |
+| `sort` | INTEGER | no |  |  |  |
+| `zone` | TEXT | yes |  | → `zones.name` | NULL for a city in no zone yet, which only a national grant or a grant of that city reaches. |
+| `state_code` | TEXT | yes |  |  |  |
+| `state` | TEXT | yes |  |  |  |
 
 ## city_blackouts
 
@@ -533,13 +533,13 @@ Days on which no visit is offered in one city alone (ADR 0119).
 
 Made by `0107_city_blackouts_and_fitters.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `date` | TEXT | no |  | primary key |
-| `city` | TEXT | no |  | primary key; → `cities.name` |
-| `reason` | TEXT | no |  |  |
-| `set_by` | TEXT | yes |  |  |
-| `set_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `date` | TEXT | no |  | primary key |  |
+| `city` | TEXT | no |  | primary key; → `cities.name` |  |
+| `reason` | TEXT | no |  |  |  |
+| `set_by` | TEXT | yes |  |  |  |
+| `set_at` | TEXT | yes |  |  |  |
 
 ## city_matters
 
@@ -547,15 +547,15 @@ A matter Customer Care sent from a chat to the client's city, on that city's Tas
 
 Made by `0118_city_matters.sql`; changed by `0172_retention_reaches_every_table.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `conversation_id` | TEXT | yes |  | → `conversations.id` |
-| `city` | TEXT | no |  |  |
-| `note` | TEXT | yes |  |  |
-| `raised_by` | TEXT | no |  |  |
-| `raised_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `conversation_id` | TEXT | yes |  | → `conversations.id` |  |
+| `city` | TEXT | no |  |  | The client's city when it was sent, which decides whose Tasks it waits on. |
+| `note` | TEXT | yes |  |  | Care's words to the city team about the client; NULL once the client is erased. |
+| `raised_by` | TEXT | no |  |  |  |
+| `raised_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -568,14 +568,14 @@ A price a city sets apart from the book's, from a day, which comes first there (
 
 Made by `0167_cities_as_data.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `item` | TEXT | no |  | primary key |
-| `tier` | TEXT | no | `'standard'` | primary key |
-| `city` | TEXT | no |  | primary key; → `cities.name` |
-| `amount_ex_gst` | INTEGER | no |  |  |
-| `gst_percent` | INTEGER | no |  |  |
-| `valid_from` | TEXT | no |  | primary key |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `item` | TEXT | no |  | primary key |  |
+| `tier` | TEXT | no | `'standard'` | primary key |  |
+| `city` | TEXT | no |  | primary key; → `cities.name` |  |
+| `amount_ex_gst` | INTEGER | no |  |  |  |
+| `gst_percent` | INTEGER | no |  |  |  |
+| `valid_from` | TEXT | no |  | primary key |  |
 
 ## city_settings
 
@@ -583,13 +583,13 @@ A rule a city sets apart from the national one: its check-in radius or reminder 
 
 Made by `0167_cities_as_data.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `city` | TEXT | no |  | primary key; → `cities.name` |
-| `key` | TEXT | no |  | primary key |
-| `value` | TEXT | no |  |  |
-| `updated_by` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `city` | TEXT | no |  | primary key; → `cities.name` |  |
+| `key` | TEXT | no |  | primary key |  |
+| `value` | TEXT | no |  |  |  |
+| `updated_by` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
 
 ## consents
 
@@ -597,16 +597,16 @@ What each person agreed to, under which notice's version, and where (ADR 0094). 
 
 Made by `0002_lead_path.sql`; changed by `0009_consents_v2.sql`, `0057_consent_sources_and_checkin_coordinates.sql`, `0090_board_version.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `purpose` | TEXT | no |  |  |
-| `notice_version` | TEXT | no |  |  |
-| `granted` | INTEGER | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `ip_hash` | TEXT | yes |  |  |
-| `source` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `purpose` | TEXT | no |  |  |  |
+| `notice_version` | TEXT | no |  |  |  |
+| `granted` | INTEGER | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `ip_hash` | TEXT | yes |  |  |  |
+| `source` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -621,18 +621,18 @@ A consultation asked for while self-serve booking is off, for ops to fix the hou
 
 Made by `0032_consultation_requests.sql`; changed by `0056_task_owners.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `pincode` | TEXT | no |  |  |
-| `requested_date` | TEXT | no |  |  |
-| `requested_window` | TEXT | no |  |  |
-| `referral_code` | TEXT | yes |  | → `referral_codes.code` |
-| `created_at` | TEXT | no |  |  |
-| `booked` | INTEGER | no | `0` |  |
-| `one_visit` | INTEGER | no | `0` |  |
-| `discount_code` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `pincode` | TEXT | no |  |  |  |
+| `requested_date` | TEXT | no |  |  | The day and window they asked for, in the landing's own three windows. |
+| `requested_window` | TEXT | no |  |  |  |
+| `referral_code` | TEXT | yes |  | → `referral_codes.code` | The invite they arrived with, where there was one. |
+| `created_at` | TEXT | no |  |  |  |
+| `booked` | INTEGER | no | `0` |  | Whether the client has a consultation booked or done: one not cancelled, terminated or deleted. A request is a task while they have none, so the board reads only the requests with none, however many leads have asked before. |
+| `one_visit` | INTEGER | no | `0` |  | A consultation and fit in one visit asked for while self-serve booking is off, which ops book by hand. |
+| `discount_code` | TEXT | yes |  |  | The code the site's form was given with a consultation and fit in one visit asked for while self-serve booking is off, as it was typed and found to apply: ops enter it on the visit they book by hand, which the Tasks board says. |
 
 Indexes:
 
@@ -648,14 +648,14 @@ What each service, a kind of visit at a tier of the price book, is expected to u
 
 Made by `0049_consumables_and_stock.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `visit_type` | TEXT | no |  | primary key |
-| `tier` | TEXT | no | `'standard'` | primary key |
-| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |
-| `quantity` | INTEGER | no |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `visit_type` | TEXT | no |  | primary key |  |
+| `tier` | TEXT | no | `'standard'` | primary key |  |
+| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |  |
+| `quantity` | INTEGER | no |  |  | How many of its unit, a whole number. |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 ## consumables
 
@@ -663,23 +663,23 @@ The consumables ops keep: name, unit, what one costs, the reorder levels, the da
 
 Made by `0049_consumables_and_stock.sql`; changed by `0135_stock_lots.sql`, `0154_cycle_counts.sql`, `0166_store_reorder_levels.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `code` | TEXT | no |  | primary key |
-| `name` | TEXT | no |  |  |
-| `unit` | TEXT | no |  |  |
-| `unit_cost` | INTEGER | no |  |  |
-| `reorder_kit` | INTEGER | yes |  |  |
-| `reorder_central` | INTEGER | yes |  |  |
-| `retired_date` | TEXT | yes |  |  |
-| `fsm_item_id` | TEXT | yes |  |  |
-| `fsm_name` | TEXT | yes |  |  |
-| `fsm_checked_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `shelf_life_days` | INTEGER | yes |  |  |
-| `count_class` | TEXT | yes |  |  |
-| `reorder_store` | INTEGER | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key | What the technician app sends and the ledger keys on. Made from the name when the consumable is added and never changed, so a rename keeps its history and a phone that queued it offline is still understood. |
+| `name` | TEXT | no |  |  |  |
+| `unit` | TEXT | no |  |  | What one is counted in: strip, ml, sachet. |
+| `unit_cost` | INTEGER | no |  |  | In paise, for one unit. |
+| `reorder_kit` | INTEGER | yes |  |  | A kit, or the central store, is low at or below its level; NULL for no level. |
+| `reorder_central` | INTEGER | yes |  |  |  |
+| `retired_date` | TEXT | yes |  |  | The day in India from which it is no longer offered; NULL while it is. |
+| `fsm_item_id` | TEXT | yes |  |  | FSM's Part for it, once the hourly check finds one by its name or the push makes one; the name FSM gives that Part; and when the check first found FSM so. All three stay empty until the check has run. |
+| `fsm_name` | TEXT | yes |  |  |  |
+| `fsm_checked_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `shelf_life_days` | INTEGER | yes |  |  | Lots and expiry (docs/decisions/0157-lots-and-expiry.md): a delivery brings a lot of a stock code, with the supplier's lot and the day it expires, and each movement is broken down by the lots it moved, soonest to expire first, so each place knows what it holds of each lot. A stock code's shelf life gives a lot its expiry when the supplier names none. The ledger's rows and balances stay as they are; stock moved before lots, or of no known lot, has none. |
+| `count_class` | TEXT | yes |  |  | How often an item is counted wherever it is held; NULL for its kind's own: a hair system weekly, the rest quarterly. |
+| `reorder_store` | INTEGER | yes |  |  |  |
 
 Indexes:
 
@@ -691,18 +691,18 @@ The consumables a technician recorded at a job's third step, with what its servi
 
 Made by `0026_field_operations.sql`; changed by `0049_consumables_and_stock.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `job_event_id` | TEXT | no |  | → `job_events.id` |
-| `fsm_item_id` | TEXT | yes |  | → `fsm_items.fsm_id` |
-| `name` | TEXT | no |  |  |
-| `quantity` | INTEGER | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `consumable_code` | TEXT | yes |  | → `consumables.code` |
-| `expected_quantity` | INTEGER | yes |  |  |
-| `unit_cost` | INTEGER | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `job_event_id` | TEXT | no |  | → `job_events.id` | The event that carried it, so a replay updates the same rows. |
+| `fsm_item_id` | TEXT | yes |  | → `fsm_items.fsm_id` | FSM's part, once the catalogue has it (migration 0011). |
+| `name` | TEXT | no |  |  |  |
+| `quantity` | INTEGER | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `consumable_code` | TEXT | yes |  | → `consumables.code` | A job's use as the technician recorded it, now that the step names each consumable by its code: which one, what the job's service expected of it, and what one cost that day. An item a phone queued by name before this release keeps its name alone, and all three stay empty. |
+| `expected_quantity` | INTEGER | yes |  |  |  |
+| `unit_cost` | INTEGER | yes |  |  |  |
 
 Indexes:
 
@@ -716,20 +716,20 @@ The Care inbox: one thread for each number that writes to our WhatsApp number, m
 
 Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`, `0124_care_numbers_indexes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | yes |  | → `people.id` |
-| `mobile_e164` | TEXT | no |  |  |
-| `state` | TEXT | no | `'open'` |  |
-| `opened_at` | TEXT | no |  |  |
-| `last_message_at` | TEXT | no |  |  |
-| `last_inbound_at` | TEXT | yes |  |  |
-| `closed_at` | TEXT | yes |  |  |
-| `closed_by` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `close_reason` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | yes |  | → `people.id` | The client whose number it is; null for a number we do not know. |
+| `mobile_e164` | TEXT | no |  |  | The number the thread is with, as E.164; after an erasure, a placeholder that is nobody's. |
+| `state` | TEXT | no | `'open'` |  | open: waiting on us; waiting: on the client; closed: settled, until the client writes again. |
+| `opened_at` | TEXT | no |  |  |  |
+| `last_message_at` | TEXT | no |  |  |  |
+| `last_inbound_at` | TEXT | yes |  |  | When the client last wrote, which opens WhatsApp's 24-hour window for a free reply. |
+| `closed_at` | TEXT | yes |  |  |  |
+| `closed_by` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `close_reason` | TEXT | yes |  |  | What the chat was about, as Care closed it. |
 
 Indexes:
 
@@ -744,17 +744,17 @@ Each item a count task counted: what the ledger held, which the counter never sa
 
 Made by `0154_cycle_counts.sql`; changed by `0162_counts_by_label.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `task_id` | TEXT | no |  | primary key; → `count_tasks.id` |
-| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |
-| `held` | INTEGER | no |  |  |
-| `counted` | INTEGER | no |  |  |
-| `recounted` | INTEGER | yes |  |  |
-| `state` | TEXT | no |  |  |
-| `labels` | TEXT | yes |  |  |
-| `missing_labels` | TEXT | yes |  |  |
-| `unknown_labels` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `task_id` | TEXT | no |  | primary key; → `count_tasks.id` |  |
+| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |  |
+| `held` | INTEGER | no |  |  | What the ledger held when the line was counted, which the counter never sees. |
+| `counted` | INTEGER | no |  |  |  |
+| `recounted` | INTEGER | yes |  |  |  |
+| `state` | TEXT | no |  |  | settled once the ledger takes it; recount or sign_off while it waits. |
+| `labels` | TEXT | yes |  |  | JSON arrays: the labels last scanned, those held and not scanned (gone missing), and those not held there. |
+| `missing_labels` | TEXT | yes |  |  |  |
+| `unknown_labels` | TEXT | yes |  |  |  |
 
 ## count_tasks
 
@@ -762,24 +762,24 @@ Each cycle count of one class of items at one place: raised once its period come
 
 Made by `0154_cycle_counts.sql`; changed by `0162_counts_by_label.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `place_id` | TEXT | no |  |  |
-| `count_class` | TEXT | no |  |  |
-| `due_on` | TEXT | no |  |  |
-| `state` | TEXT | no |  |  |
-| `raised_at` | TEXT | no |  |  |
-| `counted_by` | TEXT | yes |  |  |
-| `counted_at` | TEXT | yes |  |  |
-| `recounted_by` | TEXT | yes |  |  |
-| `recounted_at` | TEXT | yes |  |  |
-| `signed_off_by` | TEXT | yes |  |  |
-| `signed_off_at` | TEXT | yes |  |  |
-| `sign_off_note` | TEXT | yes |  |  |
-| `done_at` | TEXT | yes |  |  |
-| `consumable_code` | TEXT | yes |  |  |
-| `started_by` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `place_id` | TEXT | no |  |  | No foreign key: a kit is deleted with a technician added by mistake (migration 0133), and reads leave its tasks out. |
+| `count_class` | TEXT | no |  |  |  |
+| `due_on` | TEXT | no |  |  |  |
+| `state` | TEXT | no |  |  | open until counted; recount while a difference waits to be counted again; sign_off while a recount that still differs waits for a manager; done once every line is settled. |
+| `raised_at` | TEXT | no |  |  |  |
+| `counted_by` | TEXT | yes |  |  |  |
+| `counted_at` | TEXT | yes |  |  |  |
+| `recounted_by` | TEXT | yes |  |  |  |
+| `recounted_at` | TEXT | yes |  |  |  |
+| `signed_off_by` | TEXT | yes |  |  |  |
+| `signed_off_at` | TEXT | yes |  |  |  |
+| `sign_off_note` | TEXT | yes |  |  |  |
+| `done_at` | TEXT | yes |  |  |  |
+| `consumable_code` | TEXT | yes |  |  | A task of one item, and who started it; both NULL on the morning's tasks of a class. No foreign key, as place_id has none: an item added by mistake is deleted, and a task of it then reads by its code. |
+| `started_by` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -793,12 +793,12 @@ Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 
 Made by `0002_lead_path.sql`; changed by `0037_cron_indexes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `scope` | TEXT | no |  | primary key |
-| `key` | TEXT | no |  | primary key |
-| `window_start` | TEXT | no |  | primary key |
-| `count` | INTEGER | no | `0` |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `scope` | TEXT | no |  | primary key |  |
+| `key` | TEXT | no |  | primary key |  |
+| `window_start` | TEXT | no |  | primary key |  |
+| `count` | INTEGER | no | `0` |  |  |
 
 Indexes:
 
@@ -810,11 +810,11 @@ One row: how far the pass that closes expired credits has got, so it reads only 
 
 Made by `0083_credit_expiry_cursor.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `open_from_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `open_from_at` | TEXT | no |  |  | Every grant that expired before this has its expire entry; the pass reads from here. |
+| `updated_at` | TEXT | no |  |  |  |
 
 ## credit_ledger
 
@@ -822,17 +822,17 @@ Service-visit credits, entry by entry, each drawing on the grant it spends; a ba
 
 Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0132_credit_closed_once.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `kind` | TEXT | no |  |  |
-| `visits` | INTEGER | no |  |  |
-| `grant_id` | TEXT | yes |  | → `credit_ledger.id` |
-| `source_kind` | TEXT | no |  |  |
-| `source_id` | TEXT | no |  |  |
-| `expires_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `kind` | TEXT | no |  |  |  |
+| `visits` | INTEGER | no |  |  | Signed: a grant or a restore adds, the others take away. |
+| `grant_id` | TEXT | yes |  | → `credit_ledger.id` |  |
+| `source_kind` | TEXT | no |  |  | Where it came from: a referral attribution, an appointment, ops, or the pre-January import. |
+| `source_id` | TEXT | no |  |  |  |
+| `expires_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -852,14 +852,14 @@ A client's contact change still owed to their CRM lead, which the sweeper sends 
 
 Made by `0174_crm_held_off_and_owed_updates.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `person_id` | TEXT | no |  | primary key; → `people.id` |
-| `owed_since` | TEXT | no |  |  |
-| `changed_at` | TEXT | no |  |  |
-| `invite_attached` | INTEGER | no | `0` |  |
-| `attempts` | INTEGER | no | `0` |  |
-| `tried_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `person_id` | TEXT | no |  | primary key; → `people.id` |  |
+| `owed_at` | TEXT | no |  |  | the instant the oldest change the lead does not have was made |
+| `changed_at` | TEXT | no |  |  | the instant of the latest change, which a sent update must cover |
+| `invite_attached` | INTEGER | no | `0` |  | 1 once ops attached an invite |
+| `attempts` | INTEGER | no | `0` |  | tries that did not reach the lead |
+| `tried_at` | TEXT | yes |  |  | the instant of the last of them; empty since the latest change |
 
 Indexes:
 
@@ -871,15 +871,15 @@ Each job of the cron, and how many runs in a row it has failed (ADR 0067).
 
 Made by `0038_alerts.sql`; changed by `0165_cron_job_leases.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `job` | TEXT | no |  | primary key |
-| `failed_runs` | INTEGER | no | `0` |  |
-| `last_failed_at` | TEXT | yes |  |  |
-| `last_error` | TEXT | yes |  |  |
-| `lease_until` | TEXT | yes |  |  |
-| `last_success_at` | TEXT | yes |  |  |
-| `first_seen_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `job` | TEXT | no |  | primary key |  |
+| `failed_runs` | INTEGER | no | `0` |  |  |
+| `last_failed_at` | TEXT | yes |  |  |  |
+| `last_error` | TEXT | yes |  |  | The error's message, scrubbed of numbers and e-mail addresses. |
+| `lease_until` | TEXT | yes |  |  |  |
+| `last_success_at` | TEXT | yes |  |  |  |
+| `first_seen_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -891,13 +891,13 @@ One row: when the cron's latest run started and its last finished run ended, so 
 
 Made by `0068_cron_runs.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `started_at` | TEXT | no |  |  |
-| `completed_at` | TEXT | yes |  |  |
-| `failed_jobs` | INTEGER | yes |  |  |
-| `cut_short_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `started_at` | TEXT | no |  |  |  |
+| `completed_at` | TEXT | yes |  |  | When the last run to finish did so, which a run in progress leaves in place; empty until one has. |
+| `failed_jobs` | INTEGER | yes |  |  | How many of that run's jobs failed. |
+| `cut_short_at` | TEXT | yes |  |  | When a run last found the one before it cut short; emptied once runs have finished for an hour after. |
 
 ## custom_orders
 
@@ -905,39 +905,39 @@ Each hair system made for one client to their exact spec: the spec, supplier and
 
 Made by `0147_custom_orders.sql`; changed by `0149_custom_refunds.sql`, `0160_custom_order_money.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `number` | INTEGER | no |  |  |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `product` | TEXT | no |  |  |
-| `base_width_in` | REAL | no |  |  |
-| `base_length_in` | REAL | no |  |  |
-| `colour` | TEXT | no |  |  |
-| `grey_percent` | INTEGER | no |  |  |
-| `density_percent` | INTEGER | no |  |  |
-| `wave` | TEXT | yes |  |  |
-| `note` | TEXT | yes |  |  |
-| `supplier_id` | TEXT | no |  | → `suppliers.id` |
-| `supplier_price` | INTEGER | no |  |  |
-| `amount` | INTEGER | no |  |  |
-| `promised_on` | TEXT | yes |  |  |
-| `state` | TEXT | no |  |  |
-| `razorpay_link_id` | TEXT | yes |  |  |
-| `short_url` | TEXT | yes |  |  |
-| `link_sent_at` | TEXT | yes |  |  |
-| `razorpay_payment_id` | TEXT | yes |  |  |
-| `paid_at` | TEXT | yes |  |  |
-| `consumable_code` | TEXT | yes |  | → `consumables.code` |
-| `po_id` | TEXT | yes |  | → `purchase_orders.id` |
-| `raised_by` | TEXT | no |  |  |
-| `raised_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `refund_reason` | TEXT | yes |  |  |
-| `razorpay_refund_id` | TEXT | yes |  |  |
-| `refunded_at` | TEXT | yes |  |  |
-| `refund_asked_at` | TEXT | yes |  |  |
-| `payment_checked_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `number` | INTEGER | no |  |  |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `product` | TEXT | no |  |  | The spec, from the client's hair profile when raised. |
+| `base_width_in` | REAL | no |  |  |  |
+| `base_length_in` | REAL | no |  |  |  |
+| `colour` | TEXT | no |  |  |  |
+| `grey_percent` | INTEGER | no |  |  |  |
+| `density_percent` | INTEGER | no |  |  |  |
+| `wave` | TEXT | yes |  |  |  |
+| `note` | TEXT | yes |  |  |  |
+| `supplier_id` | TEXT | no |  | → `suppliers.id` |  |
+| `supplier_price` | INTEGER | no |  |  | One piece's price from the supplier, in its currency's smallest unit; and what the client pays, in paise. |
+| `amount` | INTEGER | no |  |  |  |
+| `promised_on` | TEXT | yes |  |  |  |
+| `state` | TEXT | no |  |  |  |
+| `razorpay_link_id` | TEXT | yes |  |  |  |
+| `short_url` | TEXT | yes |  |  |  |
+| `link_sent_at` | TEXT | yes |  |  |  |
+| `razorpay_payment_id` | TEXT | yes |  |  |  |
+| `paid_at` | TEXT | yes |  |  |  |
+| `consumable_code` | TEXT | yes |  | → `consumables.code` | The stock code made to its spec, and the purchase order drafted for it, once paid. |
+| `po_id` | TEXT | yes |  | → `purchase_orders.id` |  |
+| `raised_by` | TEXT | no |  |  |  |
+| `raised_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `refund_reason` | TEXT | yes |  |  | A custom order refunded in full (docs/decisions/0176-custom-order-refunds.md): before its purchase order went out, once its supplier was late past the grace ops set, or once its piece failed its check. Never once the client changes their mind after the order has gone. |
+| `razorpay_refund_id` | TEXT | yes |  |  |  |
+| `refunded_at` | TEXT | yes |  |  |  |
+| `refund_asked_at` | TEXT | yes |  |  |  |
+| `payment_checked_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -953,16 +953,16 @@ A client's request to be erased, waiting for ops, and what ops decided (ADR 0042
 
 Made by `0008_profile.sql`; changed by `0023_dpdp.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `created_at` | TEXT | no |  |  |
-| `state` | TEXT | no |  |  |
-| `decided_at` | TEXT | yes |  |  |
-| `decided_by` | TEXT | yes |  |  |
-| `reason` | TEXT | yes |  |  |
-| `alerted_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `created_at` | TEXT | no |  |  |  |
+| `state` | TEXT | no |  |  |  |
+| `decided_at` | TEXT | yes |  |  |  |
+| `decided_by` | TEXT | yes |  |  |  |
+| `reason` | TEXT | yes |  |  |  |
+| `alerted_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -974,17 +974,17 @@ The calendar of uplifts ops keep, each an event in a city or every city, which l
 
 Made by `0151_forecast.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `name` | TEXT | no |  |  |
-| `city` | TEXT | yes |  |  |
-| `starts_on` | TEXT | no |  |  |
-| `ends_on` | TEXT | no |  |  |
-| `uplift_percent` | INTEGER | no |  |  |
-| `created_by` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `deleted_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `name` | TEXT | no |  |  |  |
+| `city` | TEXT | yes |  |  | NULL for every city. |
+| `starts_on` | TEXT | no |  |  |  |
+| `ends_on` | TEXT | no |  |  |  |
+| `uplift_percent` | INTEGER | no |  |  |  |
+| `created_by` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `deleted_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -996,11 +996,11 @@ Which environment's database this is, so a Worker refuses to serve on another's 
 
 Made by `0001_deployment_identity.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `database_name` | TEXT | no |  |  |
-| `marked_at` | TEXT | no | `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')` |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `database_name` | TEXT | no |  |  |  |
+| `marked_at` | TEXT | no | `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')` |  |  |
 
 Triggers: `deployment_identity_no_delete`, `deployment_identity_no_update`.
 
@@ -1010,20 +1010,20 @@ Each time a discount code was entered on a booking, its hold or its visit: by wh
 
 Made by `0063_discount_codes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `code_id` | TEXT | no |  | → `discount_codes.id` |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `hold_id` | TEXT | yes |  | → `slot_holds.id` |
-| `appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `amount_off` | INTEGER | yes |  |  |
-| `given_by` | TEXT | no |  |  |
-| `given_by_id` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `removed_at` | TEXT | yes |  |  |
-| `removed_by` | TEXT | yes |  |  |
-| `removed_by_id` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `code_id` | TEXT | no |  | → `discount_codes.id` |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `hold_id` | TEXT | yes |  | → `slot_holds.id` | The booking: the hold, for a code entered as the client books; the visit, for one entered after. |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |  |
+| `amount_off` | INTEGER | yes |  |  | Paise taken off before GST; NULL until the price is known, as a one visit's is only once its product is chosen. |
+| `given_by` | TEXT | no |  |  |  |
+| `given_by_id` | TEXT | no |  |  | The client's or the technician's ID, or the Access identity of ops. |
+| `created_at` | TEXT | no |  |  |  |
+| `removed_at` | TEXT | yes |  |  | Taken off the booking before it was invoiced; NULL while it stands. |
+| `removed_by` | TEXT | yes |  |  |  |
+| `removed_by_id` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1042,24 +1042,24 @@ The discount codes ops make: a percentage with an optional cap or an amount, the
 
 Made by `0063_discount_codes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `code` | TEXT | no |  |  |
-| `kind` | TEXT | no |  |  |
-| `value` | INTEGER | no |  |  |
-| `cap` | INTEGER | yes |  |  |
-| `covers_first_fit` | INTEGER | no |  |  |
-| `covers_service` | INTEGER | no |  |  |
-| `covers_replacement` | INTEGER | no |  |  |
-| `expires_on` | TEXT | yes |  |  |
-| `max_uses` | INTEGER | yes |  |  |
-| `once_per_client` | INTEGER | no |  |  |
-| `batch_id` | TEXT | yes |  |  |
-| `created_by` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `switched_off_by` | TEXT | yes |  |  |
-| `switched_off_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `code` | TEXT | no |  |  | In capitals, of the letters and digits none reads as another (src/policy/discount-codes.ts); matched whatever case it is entered in. |
+| `kind` | TEXT | no |  |  | percent: value is whole per cent, 1 to 100; amount: value is paise taken off before GST. |
+| `value` | INTEGER | no |  |  |  |
+| `cap` | INTEGER | yes |  |  | The most a percent code takes off, in paise before GST; NULL for no cap, and always NULL for an amount. |
+| `covers_first_fit` | INTEGER | no |  |  | The kinds of visit it takes money off, 1 for each: a one visit is a first fit. |
+| `covers_service` | INTEGER | no |  |  |  |
+| `covers_replacement` | INTEGER | no |  |  |  |
+| `expires_on` | TEXT | yes |  |  | The last day in India it may be entered; NULL for no end. |
+| `max_uses` | INTEGER | yes |  |  | How many bookings it may be on; NULL for no limit. |
+| `once_per_client` | INTEGER | no |  |  |  |
+| `batch_id` | TEXT | yes |  |  | The codes generated with it in one press, as a batch of single-use codes is; NULL for a code made alone. |
+| `created_by` | TEXT | no |  |  | The Access identity that made it. |
+| `created_at` | TEXT | no |  |  |  |
+| `switched_off_by` | TEXT | yes |  |  | Switched off: no booking takes it from then on, and its uses stay as they are. NULL while it is on. |
+| `switched_off_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1072,25 +1072,25 @@ Every move ops make on the dispatch board: from where to where, by whom, why, wh
 
 Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`, `0094_dispatch_move_blackout_reason.sql`, `0104_fsm_columns_expand.sql`, `0172_retention_reaches_every_table.sql`, `0173_fsm_columns_read_the_new.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `was_technician_id` | TEXT | yes |  | → `technicians.id` |
-| `now_technician_id` | TEXT | yes |  | → `technicians.id` |
-| `was_start` | TEXT | yes |  |  |
-| `now_start` | TEXT | yes |  |  |
-| `reason` | TEXT | no |  |  |
-| `actor` | TEXT | no |  |  |
-| `fsm_write_state` | TEXT | no | `'pending'` |  |
-| `fsm_error` | TEXT | yes |  |  |
-| `message_id` | TEXT | yes |  | → `outbound_messages.id` |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `told_at` | TEXT | yes |  |  |
-| `told_by` | TEXT | yes |  |  |
-| `blackout_reason` | TEXT | yes |  |  |
-| `write_state` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `was_technician_id` | TEXT | yes |  | → `technicians.id` | A reassignment changes the technician, a reschedule the time; a move may do both. |
+| `now_technician_id` | TEXT | yes |  | → `technicians.id` |  |
+| `was_start` | TEXT | yes |  |  |  |
+| `now_start` | TEXT | yes |  |  |  |
+| `reason` | TEXT | no |  |  |  |
+| `actor` | TEXT | no |  |  | The Access identity of the ops user who moved it (ADR 0031). |
+| `fsm_write_state` | TEXT | no | `'pending'` |  |  |
+| `fsm_error` | TEXT | yes |  |  | No personal data: FSM's status and message only. |
+| `message_id` | TEXT | yes |  | → `outbound_messages.id` |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `told_at` | TEXT | yes |  |  | A client who has not agreed to WhatsApp is told of a move by phone. Ops record that they called, which closes the task (src/policy/tasks.ts). |
+| `told_by` | TEXT | yes |  |  |  |
+| `blackout_reason` | TEXT | yes |  |  |  |
+| `write_state` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1109,13 +1109,13 @@ What happened, for analysis, with no personal data in its payload.
 
 Made by `0002_lead_path.sql`; changed by `0037_cron_indexes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `created_at` | TEXT | no |  |  |
-| `name` | TEXT | no |  |  |
-| `subject_id` | TEXT | yes |  |  |
-| `payload_json` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `created_at` | TEXT | no |  |  |  |
+| `name` | TEXT | no |  |  |  |
+| `subject_id` | TEXT | yes |  |  |  |
+| `payload_json` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1128,13 +1128,13 @@ A first fit asked for on the site's form with the consultation; a person's lates
 
 Made by `0047_first_fit_requests.sql`; changed by `0056_task_owners.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `preferred_window` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `fitted_since` | INTEGER | no | `0` |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `preferred_window` | TEXT | yes |  |  | The window the fit is wanted in, where one was given. A first fit takes two slots, which do not fit in the evening's (docs/decisions/0035-window-slot-map.md). |
+| `created_at` | TEXT | no |  |  |  |
+| `fitted_since` | INTEGER | no | `0` |  | Whether the client has had a first fit, service or replacement done since their last consultation, or with none: read from last_visits, which keeps both (migration 0053). A first fit asked for can be a task only while they have not, so the board reads only those requests, however many clients have been fitted since they asked. |
 
 Indexes:
 
@@ -1149,17 +1149,17 @@ How right each forecast run was: its first period's expected use and high case o
 
 Made by `0153_forecast_accuracy.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `run_id` | TEXT | no |  | primary key |
-| `consumable_code` | TEXT | no |  | primary key |
-| `city` | TEXT | no |  | primary key |
-| `period_start` | TEXT | no |  |  |
-| `period_days` | INTEGER | no |  |  |
-| `expected` | REAL | no |  |  |
-| `high` | REAL | no |  |  |
-| `actual` | REAL | no |  |  |
-| `measured_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `run_id` | TEXT | no |  | primary key |  |
+| `consumable_code` | TEXT | no |  | primary key |  |
+| `city` | TEXT | no |  | primary key | '' where the use behind it names no city. |
+| `period_start` | TEXT | no |  |  |  |
+| `period_days` | INTEGER | no |  |  |  |
+| `expected` | REAL | no |  |  |  |
+| `high` | REAL | no |  |  |  |
+| `actual` | REAL | no |  |  |  |
+| `measured_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -1171,18 +1171,18 @@ Each forecast run's expected use of each stock code in each city and period, wit
 
 Made by `0151_forecast.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `run_id` | TEXT | no |  | primary key; → `forecast_runs.id` |
-| `consumable_code` | TEXT | no |  | primary key |
-| `city` | TEXT | no |  | primary key |
-| `period` | INTEGER | no |  | primary key |
-| `booked` | REAL | no |  |  |
-| `due` | REAL | no |  |  |
-| `pipeline` | REAL | no |  |  |
-| `baseline` | REAL | no |  |  |
-| `expected` | REAL | no |  |  |
-| `high` | REAL | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `run_id` | TEXT | no |  | primary key; → `forecast_runs.id` |  |
+| `consumable_code` | TEXT | no |  | primary key |  |
+| `city` | TEXT | no |  | primary key | '' where the visits behind it name no city. |
+| `period` | INTEGER | no |  | primary key |  |
+| `booked` | REAL | no |  |  |  |
+| `due` | REAL | no |  |  |  |
+| `pipeline` | REAL | no |  |  |  |
+| `baseline` | REAL | no |  |  |  |
+| `expected` | REAL | no |  |  |  |
+| `high` | REAL | no |  |  |  |
 
 ## forecast_runs
 
@@ -1190,16 +1190,16 @@ Each demand forecast run, once a planning period: its period, horizon and the ra
 
 Made by `0151_forecast.sql`; changed by `0153_forecast_accuracy.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `run_on` | TEXT | no |  |  |
-| `period_days` | INTEGER | no |  |  |
-| `horizon_periods` | INTEGER | no |  |  |
-| `due_rate` | REAL | no |  |  |
-| `fit_rate` | REAL | no |  |  |
-| `ran_at` | TEXT | no |  |  |
-| `measured_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `run_on` | TEXT | no |  |  | India's date the run's first period starts on. |
+| `period_days` | INTEGER | no |  |  |  |
+| `horizon_periods` | INTEGER | no |  |  |  |
+| `due_rate` | REAL | no |  |  | The rates it learned: the share of clients due who book, and of consultations that become a first fit. |
+| `fit_rate` | REAL | no |  |  |  |
+| `ran_at` | TEXT | no |  |  |  |
+| `measured_at` | TEXT | yes |  |  | When a run was measured, so one whose period used nothing it expected is measured once all the same. |
 
 Indexes:
 
@@ -1212,12 +1212,12 @@ FSM's catalogue, to read each appointment's visit type from its service item and
 
 Made by `0011_fsm_mirror.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `fsm_id` | TEXT | no |  | primary key |
-| `name` | TEXT | no |  |  |
-| `type` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `fsm_id` | TEXT | no |  | primary key |  |
+| `name` | TEXT | no |  |  |  |
+| `type` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
 
 ## grievances
 
@@ -1225,16 +1225,16 @@ A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
 
 Made by `0023_dpdp.sql`; changed by `0037_cron_indexes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `text` | TEXT | no |  |  |
-| `state` | TEXT | no |  |  |
-| `response` | TEXT | yes |  |  |
-| `resolved_by` | TEXT | yes |  |  |
-| `resolved_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `text` | TEXT | no |  |  | The client's own words; blanked if they are erased. |
+| `state` | TEXT | no |  |  |  |
+| `response` | TEXT | yes |  |  |  |
+| `resolved_by` | TEXT | yes |  |  |  |
+| `resolved_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -1247,13 +1247,13 @@ A state's own GST registration, which supplies the visits in it, and its Books b
 
 Made by `0167_cities_as_data.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `state_code` | TEXT | no |  | primary key |
-| `gstin` | TEXT | no |  |  |
-| `books_branch_id` | TEXT | yes |  |  |
-| `added_by` | TEXT | no |  |  |
-| `added_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `state_code` | TEXT | no |  | primary key |  |
+| `gstin` | TEXT | no |  |  |  |
+| `books_branch_id` | TEXT | yes |  |  | The Books branch its invoices are raised under; null for an organisation with no branches. |
+| `added_by` | TEXT | no |  |  |  |
+| `added_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -1265,32 +1265,32 @@ Every version of a client's hair profile, the fit spec and the history: the tech
 
 Made by `0064_hair_profiles.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `event_id` | TEXT | yes |  |  |
-| `technician_id` | TEXT | yes |  | → `technicians.id` |
-| `staff` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `norwood_stage` | TEXT | yes |  |  |
-| `head_circumference_cm` | REAL | yes |  |  |
-| `front_to_nape_cm` | REAL | yes |  |  |
-| `ear_to_ear_cm` | REAL | yes |  |  |
-| `temple_to_temple_cm` | REAL | yes |  |  |
-| `base_width_in` | REAL | yes |  |  |
-| `base_length_in` | REAL | yes |  |  |
-| `colour` | TEXT | yes |  |  |
-| `grey_percent` | INTEGER | yes |  |  |
-| `density_percent` | INTEGER | yes |  |  |
-| `wave` | TEXT | yes |  |  |
-| `hairline` | TEXT | yes |  |  |
-| `product` | TEXT | yes |  |  |
-| `attachment` | TEXT | yes |  |  |
-| `remedies` | TEXT | yes |  |  |
-| `transplant_year` | INTEGER | yes |  |  |
-| `skin_and_allergies` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |  |
+| `event_id` | TEXT | yes |  |  |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` |  |
+| `staff` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `norwood_stage` | TEXT | yes |  |  | The fit spec. |
+| `head_circumference_cm` | REAL | yes |  |  |  |
+| `front_to_nape_cm` | REAL | yes |  |  |  |
+| `ear_to_ear_cm` | REAL | yes |  |  |  |
+| `temple_to_temple_cm` | REAL | yes |  |  |  |
+| `base_width_in` | REAL | yes |  |  |  |
+| `base_length_in` | REAL | yes |  |  |  |
+| `colour` | TEXT | yes |  |  |  |
+| `grey_percent` | INTEGER | yes |  |  |  |
+| `density_percent` | INTEGER | yes |  |  |  |
+| `wave` | TEXT | yes |  |  |  |
+| `hairline` | TEXT | yes |  |  |  |
+| `product` | TEXT | yes |  |  |  |
+| `attachment` | TEXT | yes |  |  |  |
+| `remedies` | TEXT | yes |  |  | The history: remedies tried (a JSON array of codes), a transplant's year, skin conditions and allergies. |
+| `transplant_year` | INTEGER | yes |  |  |  |
+| `skin_and_allergies` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1305,15 +1305,15 @@ Each hair system kept in stock: its product, base size, colour, grey and density
 
 Made by `0134_hair_systems.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `code` | TEXT | no |  | primary key; → `consumables.code` |
-| `product` | TEXT | no |  |  |
-| `base_width_in` | REAL | no |  |  |
-| `base_length_in` | REAL | no |  |  |
-| `colour` | TEXT | no |  |  |
-| `grey_percent` | INTEGER | no |  |  |
-| `density_percent` | INTEGER | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key; → `consumables.code` |  |
+| `product` | TEXT | no |  |  | The tier of the first-fit service it is sold as, as the hair profile names a product. |
+| `base_width_in` | REAL | no |  |  | In inches, to one decimal, as the hair profile records the base. |
+| `base_length_in` | REAL | no |  |  |  |
+| `colour` | TEXT | no |  |  | The suppliers' colour code, #1B written 1B (src/policy/hair-profile.ts). |
+| `grey_percent` | INTEGER | no |  |  |  |
+| `density_percent` | INTEGER | no |  |  |  |
 
 Indexes:
 
@@ -1325,13 +1325,13 @@ The stored answer to each `Idempotency-Key`, so a request sent again gets its fi
 
 Made by `0002_lead_path.sql`; changed by `0037_cron_indexes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `key` | TEXT | no |  | primary key |
-| `route` | TEXT | no |  | primary key |
-| `request_hash` | TEXT | no |  |  |
-| `response_json` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `key` | TEXT | no |  | primary key |  |
+| `route` | TEXT | no |  | primary key |  |
+| `request_hash` | TEXT | no |  |  |  |
+| `response_json` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -1343,23 +1343,23 @@ The technician app's writes, each once by the ID the phone gave it, and whether 
 
 Made by `0026_field_operations.sql`; changed by `0090_board_version.sql`, `0101_job_event_phone_time.sql`, `0104_fsm_columns_expand.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `event_id` | TEXT | no |  |  |
-| `technician_id` | TEXT | no |  | → `technicians.id` |
-| `device_id` | TEXT | yes |  | → `technician_devices.id` |
-| `kind` | TEXT | no |  |  |
-| `body` | TEXT | no |  |  |
-| `occurred_at` | TEXT | no |  |  |
-| `received_at` | TEXT | no |  |  |
-| `fsm_write_state` | TEXT | no | `'pending'` |  |
-| `fsm_error` | TEXT | yes |  |  |
-| `superseded` | INTEGER | no | `0` |  |
-| `updated_at` | TEXT | no |  |  |
-| `claimed_at` | TEXT | yes |  |  |
-| `write_state` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `event_id` | TEXT | no |  |  | The device's own ID for the event: what the replay is made idempotent on. |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `device_id` | TEXT | yes |  | → `technician_devices.id` |  |
+| `kind` | TEXT | no |  |  | The in-job steps, in the order they are taken (src/policy/in-job-steps.ts). |
+| `body` | TEXT | no |  |  | The event's own fields, as JSON, as the device sent them. |
+| `occurred_at` | TEXT | no |  |  | The phone's clock, kept as evidence; ours, which orders the queue. |
+| `received_at` | TEXT | no |  |  |  |
+| `fsm_write_state` | TEXT | no | `'pending'` |  | FSM is written first, and the mirror only after FSM accepts (ADR 0032). |
+| `fsm_error` | TEXT | yes |  |  | No personal data: FSM's status and message only. |
+| `superseded` | INTEGER | no | `0` |  | Set when FSM had changed underneath, say ops reassigned the job while the phone was offline. The technician is shown what changed; the write is refused. |
+| `updated_at` | TEXT | no |  |  |  |
+| `claimed_at` | TEXT | yes |  |  |  |
+| `write_state` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1373,12 +1373,12 @@ Each client's last first fit, service or replacement done, and last consultation
 
 Made by `0053_balances_and_last_visits.sql`; changed by `0056_task_owners.sql`, `0095_last_visits_unfitted.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `person_id` | TEXT | no |  | primary key |
-| `visit_id` | TEXT | yes |  |  |
-| `visit_start` | TEXT | yes |  |  |
-| `consulted_start` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `person_id` | TEXT | no |  | primary key |  |
+| `visit_id` | TEXT | yes |  |  |  |
+| `visit_start` | TEXT | yes |  |  |  |
+| `consulted_start` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1393,33 +1393,33 @@ Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whet
 
 Made by `0002_lead_path.sql`; changed by `0015_fsm_leads.sql`, `0031_optional_loss_extent.sql`, `0037_cron_indexes.sql`, `0038_alerts.sql`, `0039_money_path.sql`, `0120_whatsapp_leads.sql`, `0127_found_us.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `created_at` | TEXT | no |  |  |
-| `city` | TEXT | yes |  | → `cities.name` |
-| `first_choice_window` | TEXT | yes |  |  |
-| `proposed_visit_date` | TEXT | yes |  |  |
-| `utm_source` | TEXT | yes |  |  |
-| `utm_medium` | TEXT | yes |  |  |
-| `utm_campaign` | TEXT | yes |  |  |
-| `utm_content` | TEXT | yes |  |  |
-| `gclid` | TEXT | yes |  |  |
-| `fbclid` | TEXT | yes |  |  |
-| `referrer` | TEXT | yes |  |  |
-| `landing_path` | TEXT | yes |  |  |
-| `sync_state` | TEXT | no | `'pending'` |  |
-| `sync_attempts` | INTEGER | no | `0` |  |
-| `last_sync_error` | TEXT | yes |  |  |
-| `synced_at` | TEXT | yes |  |  |
-| `request_id` | TEXT | no |  |  |
-| `fsm_request_id` | TEXT | yes |  |  |
-| `loss_extent` | TEXT | yes |  |  |
-| `fsm_queued_at` | TEXT | yes |  |  |
-| `fsm_request_tried_at` | TEXT | yes |  |  |
-| `source` | TEXT | yes |  |  |
-| `found_us` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `created_at` | TEXT | no |  |  |  |
+| `city` | TEXT | yes |  | → `cities.name` |  |
+| `first_choice_window` | TEXT | yes |  |  |  |
+| `proposed_visit_date` | TEXT | yes |  |  |  |
+| `utm_source` | TEXT | yes |  |  |  |
+| `utm_medium` | TEXT | yes |  |  |  |
+| `utm_campaign` | TEXT | yes |  |  |  |
+| `utm_content` | TEXT | yes |  |  |  |
+| `gclid` | TEXT | yes |  |  |  |
+| `fbclid` | TEXT | yes |  |  |  |
+| `referrer` | TEXT | yes |  |  |  |
+| `landing_path` | TEXT | yes |  |  |  |
+| `sync_state` | TEXT | no | `'pending'` |  |  |
+| `sync_attempts` | INTEGER | no | `0` |  |  |
+| `last_sync_error` | TEXT | yes |  |  |  |
+| `synced_at` | TEXT | yes |  |  |  |
+| `request_id` | TEXT | no |  |  |  |
+| `fsm_request_id` | TEXT | yes |  |  |  |
+| `loss_extent` | TEXT | yes |  |  |  |
+| `fsm_queued_at` | TEXT | yes |  |  | When a booked lead was put on the fsm-sync queue. Empty on a lead whose queueing failed, which the sweeper then queues (src/scheduled/sweeper.ts). |
+| `fsm_request_tried_at` | TEXT | yes |  |  | Set before a lead's Request is first asked of FSM, as for a work order above. |
+| `source` | TEXT | yes |  |  |  |
+| `found_us` | TEXT | yes |  |  | How the client told Care they found us, for a lead Care saved from a chat (docs/decisions/0148-the-channel-rule.md): one of the channel codes in src/policy/channels.ts. NULL for a lead from the site, whose tags tell. |
 
 Indexes:
 
@@ -1434,14 +1434,14 @@ Why a client is not going ahead with a fit after their consultation, as ops set 
 
 Made by `0128_lost_reasons.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `code` | TEXT | no |  | primary key |
-| `label` | TEXT | no |  |  |
-| `position` | INTEGER | no |  |  |
-| `retired_at` | TEXT | yes |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |  |
+| `label` | TEXT | no |  |  |  |
+| `position` | INTEGER | no |  |  |  |
+| `retired_at` | TEXT | yes |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 ## maintenance
 
@@ -1449,11 +1449,11 @@ One row while D1 is being restored: the cron and the queue consumers stand still
 
 Made by `0071_maintenance.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `reason` | TEXT | no |  |  |
-| `started_at` | TEXT | no | `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')` |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `reason` | TEXT | no |  |  |  |
+| `started_at` | TEXT | no | `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')` |  |  |
 
 ## move_proposals
 
@@ -1461,23 +1461,23 @@ A move to another day ops asked a client to confirm: where the visit would go, u
 
 Made by `0105_move_proposals.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `technician_id` | TEXT | no |  | → `technicians.id` |
-| `date` | TEXT | no |  |  |
-| `window_label` | TEXT | no |  |  |
-| `reason` | TEXT | no |  |  |
-| `proposed_by` | TEXT | no |  |  |
-| `expected_technician_id` | TEXT | yes |  |  |
-| `expected_start` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `expires_at` | TEXT | no |  |  |
-| `answered_at` | TEXT | yes |  |  |
-| `answer` | TEXT | yes |  |  |
-| `move_id` | TEXT | yes |  | → `dispatch_moves.id` |
-| `message_id` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` | Where the visit would go. |
+| `date` | TEXT | no |  |  |  |
+| `window_label` | TEXT | no |  |  |  |
+| `reason` | TEXT | no |  |  |  |
+| `proposed_by` | TEXT | no |  |  | The Access identity that asked, which the move names once accepted. |
+| `expected_technician_id` | TEXT | yes |  |  | The visit as the board showed it when ops asked: a move since makes the proposal moot. |
+| `expected_start` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `expires_at` | TEXT | no |  |  | The last moment it may be accepted: two days on, or the visit's own start if that is sooner. |
+| `answered_at` | TEXT | yes |  |  |  |
+| `answer` | TEXT | yes |  |  |  |
+| `move_id` | TEXT | yes |  | → `dispatch_moves.id` |  |
+| `message_id` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1489,28 +1489,28 @@ The evidence a no-show is ruled on, the ruling, and what a charge cost the clien
 
 Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0065_dispute_window.sql`, `0172_retention_reaches_every_table.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `checkin_id` | TEXT | no |  | → `checkins.id` |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `wait_started_at` | TEXT | no |  |  |
-| `wait_ends_at` | TEXT | no |  |  |
-| `closed_at` | TEXT | yes |  |  |
-| `message_id` | TEXT | yes |  | → `outbound_messages.id` |
-| `message_delivered_at` | TEXT | yes |  |  |
-| `decision` | TEXT | no | `'undecided'` |  |
-| `decided_by` | TEXT | yes |  |  |
-| `decided_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `decision_reason` | TEXT | yes |  |  |
-| `waiver_payment` | TEXT | yes |  |  |
-| `waiver_credit` | TEXT | yes |  |  |
-| `charge` | TEXT | yes |  |  |
-| `kept_amount` | INTEGER | yes |  |  |
-| `refund_amount` | INTEGER | yes |  |  |
-| `ruling_id` | TEXT | yes |  |  |
-| `dispute_until` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `checkin_id` | TEXT | no |  | → `checkins.id` | The check-in the wait ran from; one case per check-in. |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `wait_started_at` | TEXT | no |  |  |  |
+| `wait_ends_at` | TEXT | no |  |  | When "Close as no-show" becomes possible, and when the technician used it. |
+| `closed_at` | TEXT | yes |  |  |  |
+| `message_id` | TEXT | yes |  | → `outbound_messages.id` | The third fact: the WhatsApp ops read the receipt of, and what the BSP reported. |
+| `message_delivered_at` | TEXT | yes |  |  |  |
+| `decision` | TEXT | no | `'undecided'` |  | Charged under the 24-hour policy (src/policy/moving-a-visit.ts), or waived. |
+| `decided_by` | TEXT | yes |  |  | The Access identity of the ops user who ruled (ADR 0031). |
+| `decided_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `decision_reason` | TEXT | yes |  |  |  |
+| `waiver_payment` | TEXT | yes |  |  | What a waiver gave back, kept on the ruling: whether the visit's payment was refunded or kept, and its credit returned or spent. Ops set what a waiver gives in the console now, so the client's message and the money follow what was ruled, whatever is set after. Null for a charge, and for a waiver ruled before, which gave both back (WAIVER_GIVES_BACK, src/policy/no-show.ts). |
+| `waiver_credit` | TEXT | yes |  |  |  |
+| `charge` | TEXT | yes |  |  | What a charged no-show cost the client, as the booking was sold under it (ADR 0088): the charge, what it kept of the visit's payment, and what it gave back, in paise. NULL on a waiver, and on a case charged before this, which kept whatever the visit took and recorded no amount. |
+| `kept_amount` | INTEGER | yes |  |  |  |
+| `refund_amount` | INTEGER | yes |  |  |  |
+| `ruling_id` | TEXT | yes |  |  | The ID of the request that ruled, written with the ruling. What goes in the ruling's batch beside it (its audit entry, the client's message, a credit given back) is written only where the case carries that ID, so a ruling that loses a race to another member of staff's writes nothing. NULL while undecided, and on a case ruled before. |
+| `dispute_until` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1525,18 +1525,18 @@ A client's dispute of a no-show's charge, one a charge, and ops' ruling on it, r
 
 Made by `0059_no_show_charges_and_disputes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `case_id` | TEXT | no |  | → `no_show_cases.id` |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `reason` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `ruling` | TEXT | yes |  |  |
-| `ruled_by` | TEXT | yes |  |  |
-| `ruled_at` | TEXT | yes |  |  |
-| `ruling_id` | TEXT | yes |  |  |
-| `ruling_reason` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `case_id` | TEXT | no |  | → `no_show_cases.id` |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `reason` | TEXT | yes |  |  | The client's own words; NULL once they are erased. |
+| `created_at` | TEXT | no |  |  |  |
+| `ruling` | TEXT | yes |  |  |  |
+| `ruled_by` | TEXT | yes |  |  |  |
+| `ruled_at` | TEXT | yes |  |  |  |
+| `ruling_id` | TEXT | yes |  |  | The ID of the request that ruled, which guards what its batch writes beside the ruling, as on no_show_cases. |
+| `ruling_reason` | TEXT | yes |  |  | Ops' own words about the client, which reach no message; NULL once the client is erased. |
 
 Indexes:
 
@@ -1550,16 +1550,16 @@ What a no-show's ruling gives back of the visit's payment, kept as owed with the
 
 Made by `0161_no_show_refunds_owed.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `why` | TEXT | no |  |  |
-| `amount` | INTEGER | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `asked_at` | TEXT | yes |  |  |
-| `settled_at` | TEXT | yes |  |  |
-| `razorpay_refund_id` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `why` | TEXT | no |  |  | What gives it back: a waiver, what a charge does not keep, or a dispute refunded. A ruling is made once, so each is owed once a visit. |
+| `amount` | INTEGER | no |  |  | In paise, as ruled; what is refunded is at most what is left of the visit's payment then. |
+| `created_at` | TEXT | no |  |  |  |
+| `asked_at` | TEXT | yes |  |  | When Razorpay was first asked, written before it is, so a second ask is made as one that may have been made. |
+| `settled_at` | TEXT | yes |  |  | When it was done with: refunded, or left to ops with an alert, or nothing left to give back. |
+| `razorpay_refund_id` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1572,20 +1572,20 @@ A client's change of mobile number: the codes proven on both numbers, and what o
 
 Made by `0008_profile.sql`; changed by `0041_vendor_correctness.sql`, `0102_number_change_session.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `created_at` | TEXT | no |  |  |
-| `new_mobile_e164` | TEXT | no |  |  |
-| `old_verified_at` | TEXT | yes |  |  |
-| `new_verified_at` | TEXT | yes |  |  |
-| `state` | TEXT | no |  |  |
-| `decided_at` | TEXT | yes |  |  |
-| `decided_by` | TEXT | yes |  |  |
-| `reason` | TEXT | yes |  |  |
-| `replaced_mobile_e164` | TEXT | yes |  |  |
-| `session_id` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `created_at` | TEXT | no |  |  |  |
+| `new_mobile_e164` | TEXT | no |  |  |  |
+| `old_verified_at` | TEXT | yes |  |  |  |
+| `new_verified_at` | TEXT | yes |  |  |  |
+| `state` | TEXT | no |  |  |  |
+| `decided_at` | TEXT | yes |  |  |  |
+| `decided_by` | TEXT | yes |  |  | The member of staff who decided, by their Access e-mail. |
+| `reason` | TEXT | yes |  |  |  |
+| `replaced_mobile_e164` | TEXT | yes |  |  | The number a confirmed change replaced, so the referral fraud rule can compare every number a person has held (src/domain/referral-grants.ts). Null on changes confirmed before this migration, and on any not confirmed. |
+| `session_id` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1598,16 +1598,16 @@ Each WhatsApp code sent to prove a number typed into the site, with the number a
 
 Made by `0074_number_codes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `created_at` | TEXT | no |  |  |
-| `mobile_hash` | TEXT | no |  |  |
-| `code_hash` | TEXT | no |  |  |
-| `attempts` | INTEGER | no | `0` |  |
-| `expires_at` | TEXT | no |  |  |
-| `verified_at` | TEXT | yes |  |  |
-| `voided_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `created_at` | TEXT | no |  |  |  |
+| `mobile_hash` | TEXT | no |  |  | The number, only as the rate limits key it: HMAC-SHA256 of "mobile:<E.164>" under IP_HASH_SALT. |
+| `code_hash` | TEXT | no |  |  | HMAC-SHA256 of the row's ID and its code, under OTP_PEPPER. |
+| `attempts` | INTEGER | no | `0` |  |  |
+| `expires_at` | TEXT | no |  |  |  |
+| `verified_at` | TEXT | yes |  |  |  |
+| `voided_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1619,12 +1619,12 @@ The business inputs ops set in the console, a row each; a row that is not there 
 
 Made by `0033_ops_settings.sql`; changed by `0054_policies_in_the_console.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `name` | TEXT | no |  | primary key |
-| `value` | TEXT | no |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `name` | TEXT | no |  | primary key | One of OPS_SETTINGS' names. Not a CHECK constraint, so adding an input needs no table rebuild, exactly as audit_log's actions do not. |
+| `value` | TEXT | no |  |  | JSON: a number, or an object of numbers keyed by the input's own keys. The register says which, and the bounds, and refuses anything else before it reaches here. |
+| `set_by` | TEXT | no |  |  | The Access identity that set it, as every ops action records (ADR 0031). |
+| `set_at` | TEXT | no |  |  |  |
 
 Triggers: `ops_settings_snapshot_on_delete`, `ops_settings_snapshot_on_insert`, `ops_settings_snapshot_on_update`.
 
@@ -1634,10 +1634,10 @@ One row holding every `ops_settings` value, kept by that table's triggers: the o
 
 Made by `0054_policies_in_the_console.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `inputs` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key | There is only ever the one row. |
+| `inputs` | TEXT | no |  |  | A JSON object: each ops_settings name, with its value as that row holds it. The register decides at read time whether each still stands, exactly as it does for the rows themselves. |
 
 ## otp_challenges
 
@@ -1645,24 +1645,24 @@ Each one-time code sent, as a hash, with its sends and attempts (ADR 0030, ADR 0
 
 Made by `0007_login.sql`; changed by `0008_profile.sql`, `0027_pieces_and_zones.sql`, `0037_cron_indexes.sql`, `0079_challenge_number.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `created_at` | TEXT | no |  |  |
-| `person_id` | TEXT | yes |  | → `people.id` |
-| `purpose` | TEXT | no |  |  |
-| `channel` | TEXT | no |  |  |
-| `code_hash` | TEXT | yes |  |  |
-| `last_sent_at` | TEXT | no |  |  |
-| `sends` | INTEGER | no | `1` |  |
-| `attempts` | INTEGER | no | `0` |  |
-| `expires_at` | TEXT | no |  |  |
-| `verified_at` | TEXT | yes |  |  |
-| `voided_at` | TEXT | yes |  |  |
-| `number_change_id` | TEXT | yes |  | → `number_change_requests.id` |
-| `technician_login` | INTEGER | no | `0` |  |
-| `technician_id` | TEXT | yes |  | → `technicians.id` |
-| `mobile_hash` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `created_at` | TEXT | no |  |  |  |
+| `person_id` | TEXT | yes |  | → `people.id` | NULL for a number with no booking. Such a challenge answers exactly as a real one does, but nothing is sent and no code matches it, so the login screen never says whether a number has a booking. |
+| `purpose` | TEXT | no |  |  |  |
+| `channel` | TEXT | no |  |  | The channel the current code went by. |
+| `code_hash` | TEXT | yes |  |  | HMAC-SHA256 of the challenge's ID and its code, under OTP_PEPPER. NULL for a challenge that sends nothing. |
+| `last_sent_at` | TEXT | no |  |  |  |
+| `sends` | INTEGER | no | `1` |  |  |
+| `attempts` | INTEGER | no | `0` |  |  |
+| `expires_at` | TEXT | no |  |  |  |
+| `verified_at` | TEXT | yes |  |  |  |
+| `voided_at` | TEXT | yes |  |  |  |
+| `number_change_id` | TEXT | yes |  | → `number_change_requests.id` | Which number change a code belongs to, for its two challenges. |
+| `technician_login` | INTEGER | no | `0` |  | A technician's login code. The challenge is otherwise the client's (migration 0007): same table, same lifetime, same five wrong attempts. Two columns, not one. technician_login says whose login the row belongs to, and each login reads only its own rows; technician_id says which technician, and is NULL for a number FSM does not list, exactly as person_id is NULL for a number with no booking. Without the first column a challenge for an unrecognised number could not be told from a client's, and the answer for a number FSM lists would differ from the answer for one it does not. |
+| `technician_id` | TEXT | yes |  | → `technicians.id` |  |
+| `mobile_hash` | TEXT | yes |  |  | The number, only as the rate limits key it: HMAC-SHA256 of "mobile:<E.164>" under IP_HASH_SALT. |
 
 Indexes:
 
@@ -1676,24 +1676,24 @@ Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
 Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `created_at` | TEXT | no |  |  |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `kind` | TEXT | no |  |  |
-| `subject_kind` | TEXT | no | `'tryon_job'` |  |
-| `subject_id` | TEXT | no |  |  |
-| `state` | TEXT | no |  |  |
-| `queued_at` | TEXT | yes |  |  |
-| `sending_at` | TEXT | yes |  |  |
-| `provider_message_id` | TEXT | yes |  |  |
-| `attempts` | INTEGER | no | `0` |  |
-| `last_error` | TEXT | yes |  |  |
-| `sent_at` | TEXT | yes |  |  |
-| `delivered_at` | TEXT | yes |  |  |
-| `read_at` | TEXT | yes |  |  |
-| `due_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `created_at` | TEXT | no |  |  |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `kind` | TEXT | no |  |  |  |
+| `subject_kind` | TEXT | no | `'tryon_job'` |  | What the message is about, and its ID in that table. |
+| `subject_id` | TEXT | no |  |  | The try-on job whose result this message carries. |
+| `state` | TEXT | no |  |  |  |
+| `queued_at` | TEXT | yes |  |  |  |
+| `sending_at` | TEXT | yes |  |  | Claimed before each send, so two overlapping consumer runs cannot both send it. |
+| `provider_message_id` | TEXT | yes |  |  |  |
+| `attempts` | INTEGER | no | `0` |  |  |
+| `last_error` | TEXT | yes |  |  | No personal data: a provider status and code only. |
+| `sent_at` | TEXT | yes |  |  |  |
+| `delivered_at` | TEXT | yes |  |  | When WhatsApp reported the message delivered to the phone, and read. The first report wins. |
+| `read_at` | TEXT | yes |  |  |  |
+| `due_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1709,14 +1709,14 @@ The reasons a job may be left partly done, as ops set them, one they took off ke
 
 Made by `0049_consumables_and_stock.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `code` | TEXT | no |  | primary key |
-| `label` | TEXT | no |  |  |
-| `position` | INTEGER | no |  |  |
-| `retired_at` | TEXT | yes |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |  |
+| `label` | TEXT | no |  |  |  |
+| `position` | INTEGER | no |  |  |  |
+| `retired_at` | TEXT | yes |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 ## partner_payouts
 
@@ -1724,16 +1724,16 @@ Each month's payment to a partner, as Finance made it from the payout tool, with
 
 Made by `0110_partner_payouts.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `channel_id` | TEXT | no |  | → `referral_channels.id` |
-| `month` | TEXT | no |  |  |
-| `amount` | INTEGER | no |  |  |
-| `paid_on` | TEXT | no |  |  |
-| `reference` | TEXT | no |  |  |
-| `recorded_by` | TEXT | no |  |  |
-| `recorded_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `channel_id` | TEXT | no |  | → `referral_channels.id` |  |
+| `month` | TEXT | no |  |  | The month paid for, "YYYY-MM", in India. |
+| `amount` | INTEGER | no |  |  | Paise, as paid: what the month came to, or less where tax was deducted. |
+| `paid_on` | TEXT | no |  |  |  |
+| `reference` | TEXT | no |  |  | The payout tool's reference for the transfer: a UTR, or a payout's ID. |
+| `recorded_by` | TEXT | no |  |  |  |
+| `recorded_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -1745,12 +1745,12 @@ The seniority grades Finance names for technicians' pay per visit (ADR 0122).
 
 Made by `0108_technician_pay.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `name` | TEXT | no |  |  |
-| `created_by` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `name` | TEXT | no |  |  |  |
+| `created_by` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -1762,27 +1762,27 @@ The Razorpay payment link a consultation and fit in one visit is paid by once th
 
 Made by `0061_one_visit.sql`; changed by `0080_payment_link_references.sql`, `0091_razorpay_catch_up.sql`, `0157_payment_link_closes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `tier` | TEXT | no |  |  |
-| `amount` | INTEGER | no |  |  |
-| `amount_ex_gst` | INTEGER | no |  |  |
-| `gst_percent` | INTEGER | no |  |  |
-| `razorpay_link_id` | TEXT | yes |  |  |
-| `short_url` | TEXT | yes |  |  |
-| `sent_at` | TEXT | yes |  |  |
-| `refused_at` | TEXT | yes |  |  |
-| `razorpay_payment_id` | TEXT | yes |  |  |
-| `paid_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `reference` | TEXT | yes |  |  |
-| `reference_year` | INTEGER | yes |  |  |
-| `reference_number` | INTEGER | yes |  |  |
-| `payment_checked_at` | TEXT | yes |  |  |
-| `closes_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `tier` | TEXT | no |  |  | The first fit's service the client chose, by its tier. |
+| `amount` | INTEGER | no |  |  | In paise: the price with GST, and its parts, as the price book gave them. |
+| `amount_ex_gst` | INTEGER | no |  |  |  |
+| `gst_percent` | INTEGER | no |  |  |  |
+| `razorpay_link_id` | TEXT | yes |  |  | Razorpay's link and its address, once Razorpay has made it and sent it to the client; NULL until then. |
+| `short_url` | TEXT | yes |  |  |  |
+| `sent_at` | TEXT | yes |  |  |  |
+| `refused_at` | TEXT | yes |  |  | When Razorpay refused to make it, which ops are told of; NULL while it may still be asked for. |
+| `razorpay_payment_id` | TEXT | yes |  |  | The payment that paid it, once Razorpay's webhook says so. |
+| `paid_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `reference` | TEXT | yes |  |  |  |
+| `reference_year` | INTEGER | yes |  |  |  |
+| `reference_number` | INTEGER | yes |  |  |  |
+| `payment_checked_at` | TEXT | yes |  |  |  |
+| `closes_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -1799,32 +1799,32 @@ The mirror of Razorpay's payments, and where each stands in Books (ADR 0044).
 
 Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0020_visit_changes.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0096_payments_to_refund.sql`, `0099_retention.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `reference` | TEXT | yes |  |  |
-| `reference_year` | INTEGER | yes |  |  |
-| `reference_number` | INTEGER | yes |  |  |
-| `person_id` | TEXT | yes |  | → `people.id` |
-| `appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `razorpay_order_id` | TEXT | yes |  |  |
-| `razorpay_payment_id` | TEXT | no |  |  |
-| `amount` | INTEGER | no |  |  |
-| `currency` | TEXT | no |  |  |
-| `method` | TEXT | yes |  |  |
-| `vpa_hash` | TEXT | yes |  |  |
-| `card_network` | TEXT | yes |  |  |
-| `status` | TEXT | no |  |  |
-| `refunded_amount` | INTEGER | no | `0` |  |
-| `captured_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `books_payment_id` | TEXT | yes |  |  |
-| `books_checked_at` | TEXT | yes |  |  |
-| `books_applied_at` | TEXT | yes |  |  |
-| `kind` | TEXT | no | `'visit'` |  |
-| `amount_ex_gst` | INTEGER | yes |  |  |
-| `gst_percent` | INTEGER | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `reference` | TEXT | yes |  |  | Ours, for the client and ops: "MM-2026-0841", numbered by year once the payment is captured. |
+| `reference_year` | INTEGER | yes |  |  |  |
+| `reference_number` | INTEGER | yes |  |  |  |
+| `person_id` | TEXT | yes |  | → `people.id` | From the order's notes when we made the order; else the payment's mobile number matched to a person. |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |  |
+| `razorpay_order_id` | TEXT | yes |  |  |  |
+| `razorpay_payment_id` | TEXT | no |  |  |  |
+| `amount` | INTEGER | no |  |  | In paise. |
+| `currency` | TEXT | no |  |  |  |
+| `method` | TEXT | yes |  |  | upi, card, netbanking, wallet and so on, as Razorpay names them. |
+| `vpa_hash` | TEXT | yes |  |  | HMAC of the lower-cased UPI handle under IP_HASH_SALT: compared, never shown. |
+| `card_network` | TEXT | yes |  |  |  |
+| `status` | TEXT | no |  |  |  |
+| `refunded_amount` | INTEGER | no | `0` |  | In paise; refunds that Razorpay has processed. |
+| `captured_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `books_payment_id` | TEXT | yes |  |  |  |
+| `books_checked_at` | TEXT | yes |  |  |  |
+| `books_applied_at` | TEXT | yes |  |  |  |
+| `kind` | TEXT | no | `'visit'` |  | What a payment paid for: the visit, or a late fee for moving it. |
+| `amount_ex_gst` | INTEGER | yes |  |  | What a payment was before GST, and at what rate, as the hold priced it. Null for a payment no hold priced, which the Payments tab splits at GST_PERCENT. |
+| `gst_percent` | INTEGER | yes |  |  |  |
 
 Indexes:
 
@@ -1847,33 +1847,33 @@ One row per person, keyed by mobile number. D1 owns the identity; the CRM's and 
 
 Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sql`, `0023_dpdp.sql`, `0036_erased_files.sql`, `0037_cron_indexes.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0077_books_customer_upkeep.sql`, `0099_retention.sql`, `0100_test_record_flag.sql`, `0103_crm_contact_erasure.sql`, `0163_threads_found_their_client.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `created_at` | TEXT | no |  |  |
-| `mobile_e164` | TEXT | no |  |  |
-| `name` | TEXT | no |  |  |
-| `email` | TEXT | yes |  |  |
-| `zoho_lead_id` | TEXT | yes |  |  |
-| `contactable` | INTEGER | no | `0` |  |
-| `erased_at` | TEXT | yes |  |  |
-| `crm_erased_at` | TEXT | yes |  |  |
-| `crm_erasure_attempts` | INTEGER | no | `0` |  |
-| `crm_erasure_error` | TEXT | yes |  |  |
-| `fsm_contact_id` | TEXT | yes |  |  |
-| `fsm_erased_at` | TEXT | yes |  |  |
-| `fsm_erasure_attempts` | INTEGER | no | `0` |  |
-| `files_erased_at` | TEXT | yes |  |  |
-| `books_customer_id` | TEXT | yes |  |  |
-| `books_checked_at` | TEXT | yes |  |  |
-| `books_erased_at` | TEXT | yes |  |  |
-| `books_erasure_attempts` | INTEGER | no | `0` |  |
-| `books_details_changed_at` | TEXT | yes |  |  |
-| `client_since` | TEXT | yes |  |  |
-| `test_record` | INTEGER | no | `0` |  |
-| `crm_contact_id` | TEXT | yes |  |  |
-| `crm_contact_erased_at` | TEXT | yes |  |  |
-| `crm_contact_erasure_attempts` | INTEGER | no | `0` |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `created_at` | TEXT | no |  |  |  |
+| `mobile_e164` | TEXT | no |  |  |  |
+| `name` | TEXT | no |  |  |  |
+| `email` | TEXT | yes |  |  |  |
+| `zoho_lead_id` | TEXT | yes |  |  |  |
+| `contactable` | INTEGER | no | `0` |  | 1 only once a `contact` consent exists: ops may call and message. |
+| `erased_at` | TEXT | yes |  |  |  |
+| `crm_erased_at` | TEXT | yes |  |  |  |
+| `crm_erasure_attempts` | INTEGER | no | `0` |  |  |
+| `crm_erasure_error` | TEXT | yes |  |  | A provider status and code only, never the person's details. |
+| `fsm_contact_id` | TEXT | yes |  |  | The FSM contact a person is, once the mirror has matched them by mobile number. |
+| `fsm_erased_at` | TEXT | yes |  |  |  |
+| `fsm_erasure_attempts` | INTEGER | no | `0` |  |  |
+| `files_erased_at` | TEXT | yes |  |  |  |
+| `books_customer_id` | TEXT | yes |  |  | The person's customer in Zoho Books, once the Books pass has made it. |
+| `books_checked_at` | TEXT | yes |  |  | When the Books pass last tried to make the person's customer: one it could not make waits an hour before it is tried again. |
+| `books_erased_at` | TEXT | yes |  |  | The Books erasure pass (src/domain/books-erasure.ts), with the tries it took, as the CRM's and FSM's erasures keep theirs. |
+| `books_erasure_attempts` | INTEGER | no | `0` |  |  |
+| `books_details_changed_at` | TEXT | yes |  |  | When the client's number or address last changed, until the Books pass has written it to their customer. |
+| `client_since` | TEXT | yes |  |  |  |
+| `test_record` | INTEGER | no | `0` |  |  |
+| `crm_contact_id` | TEXT | yes |  |  |  |
+| `crm_contact_erased_at` | TEXT | yes |  |  |  |
+| `crm_contact_erasure_attempts` | INTEGER | no | `0` |  |  |
 
 Indexes:
 
@@ -1896,12 +1896,12 @@ A visit's set of photographs, before or after (ADR 0028).
 
 Made by `0013_client_photos.sql`; changed by `0045_kept_try_ons.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `phase` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `phase` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -1914,20 +1914,20 @@ One photograph of a set, by its angle, and where it and its thumbnail are kept i
 
 Made by `0013_client_photos.sql`; changed by `0055_storage_meter.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `photo_set_id` | TEXT | no |  | → `photo_sets.id` |
-| `angle` | TEXT | no |  |  |
-| `r2_key` | TEXT | no |  |  |
-| `content_type` | TEXT | no |  |  |
-| `bytes` | INTEGER | no |  |  |
-| `width` | INTEGER | yes |  |  |
-| `height` | INTEGER | yes |  |  |
-| `taken_at` | TEXT | no |  |  |
-| `fsm_attachment_id` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `thumbnail_key` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `photo_set_id` | TEXT | no |  | → `photo_sets.id` |  |
+| `angle` | TEXT | no |  |  |  |
+| `r2_key` | TEXT | no |  |  |  |
+| `content_type` | TEXT | no |  |  |  |
+| `bytes` | INTEGER | no |  |  |  |
+| `width` | INTEGER | yes |  |  | NULL when the image's header does not say. |
+| `height` | INTEGER | yes |  |  |  |
+| `taken_at` | TEXT | no |  |  |  |
+| `fsm_attachment_id` | TEXT | yes |  |  | The FSM attachment it came from, while photographs are taken in FSM's own app. |
+| `created_at` | TEXT | no |  |  |  |
+| `thumbnail_key` | TEXT | yes |  |  | The small copy the technician's phone makes of each photograph for the client app's rows, in the client-photos bucket beside it (visits/<appointment>/<phase>-<angle>-<take>-small.jpg). Empty for a photograph copied from FSM, or taken before the phone made one: the app shows the photograph itself. |
 
 Indexes:
 
@@ -1941,22 +1941,22 @@ Each piece that came off a client at a replacement, held in the technician's kit
 
 Made by `0139_piece_returns.sql`; changed by `0144_supplier_claims.sql`, `0145_stock_photos.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `piece_code` | TEXT | no |  |  |
-| `appointment_id` | TEXT | no |  |  |
-| `technician_id` | TEXT | no |  |  |
-| `reason` | TEXT | yes |  |  |
-| `returned_at` | TEXT | no |  |  |
-| `handed_in_at` | TEXT | yes |  |  |
-| `handed_in_to` | TEXT | yes |  |  |
-| `settled_at` | TEXT | yes |  |  |
-| `settled_by` | TEXT | yes |  |  |
-| `claim_id` | TEXT | yes |  | → `supplier_claims.id` |
-| `write_off_reason` | TEXT | yes |  |  |
-| `settlement_id` | TEXT | yes |  |  |
-| `photo_id` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `piece_code` | TEXT | no |  |  |  |
+| `appointment_id` | TEXT | no |  |  | The visit it came off at, and the technician whose kit holds it. |
+| `technician_id` | TEXT | no |  |  |  |
+| `reason` | TEXT | yes |  |  | Why it came off, as the technician said; never the client's name. |
+| `returned_at` | TEXT | no |  |  |  |
+| `handed_in_at` | TEXT | yes |  |  | Where and when it was handed in; null while the kit still holds it. |
+| `handed_in_to` | TEXT | yes |  |  |  |
+| `settled_at` | TEXT | yes |  |  | A returned piece handed in is settled once: claimed on its supplier, or written off with why. |
+| `settled_by` | TEXT | yes |  |  |  |
+| `claim_id` | TEXT | yes |  | → `supplier_claims.id` |  |
+| `write_off_reason` | TEXT | yes |  |  |  |
+| `settlement_id` | TEXT | yes |  |  | The request that settled it, which what follows from the settlement is written under. |
+| `photo_id` | TEXT | yes |  |  | Photographs of stock (docs/decisions/0170-stock-photos.md), each kept in the client-photos bucket under stock/ and counted by the storage meter: a returned piece's when it is written off, which it must have, and a claim's when it is sent, which it may. |
 
 Indexes:
 
@@ -1970,23 +1970,23 @@ Each piece fitted, its base and lot, the day it was fitted and the day it falls 
 
 Made by `0027_pieces_and_zones.sql`; changed by `0060_flat_task_reads.sql`, `0151_forecast.sql`, `0156_pieces_replaced.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `fsm_id` | TEXT | no |  |  |
-| `person_id` | TEXT | yes |  | → `people.id` |
-| `piece_code` | TEXT | no |  |  |
-| `base` | TEXT | yes |  |  |
-| `supplier_lot` | TEXT | yes |  |  |
-| `fitted_at` | TEXT | yes |  |  |
-| `replacement_due_at` | TEXT | yes |  |  |
-| `appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `failed_at` | TEXT | yes |  |  |
-| `failure_reason` | TEXT | yes |  |  |
-| `synced_at` | TEXT | no |  |  |
-| `deleted_at` | TEXT | yes |  |  |
-| `replacement_booked` | INTEGER | no | `0` |  |
-| `replaced_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `fsm_id` | TEXT | no |  |  |  |
+| `person_id` | TEXT | yes |  | → `people.id` |  |
+| `piece_code` | TEXT | no |  |  | FSM's Asset_Number: the label on the piece, e.g. MM-STD-4417-B. The format is a placeholder until the owner sets it (docs/open-points.md, item 25). |
+| `base` | TEXT | yes |  |  | The base the piece is built on, from the part item FSM's asset names. |
+| `supplier_lot` | TEXT | yes |  |  |  |
+| `fitted_at` | TEXT | yes |  |  |  |
+| `replacement_due_at` | TEXT | yes |  |  | fitted_at plus the base's cycle (src/config/pieces.ts); NULL until it is fitted. |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` | The visit it was fitted on, where we wrote it ourselves. |
+| `failed_at` | TEXT | yes |  |  |  |
+| `failure_reason` | TEXT | yes |  |  | From the job sheet once its template exists (docs/open-points.md, item 13). |
+| `synced_at` | TEXT | no |  |  |  |
+| `deleted_at` | TEXT | yes |  |  | Set when FSM no longer has the asset. |
+| `replacement_booked` | INTEGER | no | `0` |  | Whether a replacement is booked for the piece: a replacement visit of its client's, not cancelled, on or after the day the piece fell due. |
+| `replaced_at` | TEXT | yes |  |  | A piece taken off at a replacement is marked replaced, apart from one that failed, so it no longer reads as worn; a worn piece with a later one fitted for the same client is marked replaced as that one was recorded (docs/decisions/0191-a-replaced-piece-comes-off.md). A piece's recalls are found by the piece, for what a client is owed free (docs/decisions/0192-free-remakes.md). |
 
 Indexes:
 
@@ -2004,27 +2004,27 @@ Each move the supply plan proposes from a forecast run, a transfer or an order, 
 
 Made by `0152_supply_plan.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `run_id` | TEXT | no |  |  |
-| `kind` | TEXT | no |  |  |
-| `consumable_code` | TEXT | no |  | → `consumables.code` |
-| `city` | TEXT | yes |  |  |
-| `from_place` | TEXT | yes |  | → `stock_places.id` |
-| `to_place` | TEXT | yes |  | → `stock_places.id` |
-| `supplier_id` | TEXT | yes |  | → `suppliers.id` |
-| `proposed` | INTEGER | no |  |  |
-| `quantity` | INTEGER | yes |  |  |
-| `usable` | INTEGER | no |  |  |
-| `need` | REAL | no |  |  |
-| `safety` | REAL | no |  |  |
-| `state` | TEXT | no |  |  |
-| `reject_reason` | TEXT | yes |  |  |
-| `decided_by` | TEXT | yes |  |  |
-| `decided_at` | TEXT | yes |  |  |
-| `po_id` | TEXT | yes |  | → `purchase_orders.id` |
-| `drafted_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `run_id` | TEXT | no |  |  | The forecast run it was drafted from (forecast_runs), let go with it. |
+| `kind` | TEXT | no |  |  |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |  |
+| `city` | TEXT | yes |  |  | The city it is for; NULL for an order, which the warehouse receives for every city. |
+| `from_place` | TEXT | yes |  | → `stock_places.id` |  |
+| `to_place` | TEXT | yes |  | → `stock_places.id` |  |
+| `supplier_id` | TEXT | yes |  | → `suppliers.id` |  |
+| `proposed` | INTEGER | no |  |  |  |
+| `quantity` | INTEGER | yes |  |  | As approved, where ops changed it. |
+| `usable` | INTEGER | no |  |  | Why: what the city could use, and what it needs over the lead time and a period, and its safety stock. |
+| `need` | REAL | no |  |  |  |
+| `safety` | REAL | no |  |  |  |
+| `state` | TEXT | no |  |  |  |
+| `reject_reason` | TEXT | yes |  |  |  |
+| `decided_by` | TEXT | yes |  |  |  |
+| `decided_at` | TEXT | yes |  |  |  |
+| `po_id` | TEXT | yes |  | → `purchase_orders.id` | The purchase order an approved order drafted. |
+| `drafted_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -2037,15 +2037,15 @@ Each line of a purchase order: the stock code, how many, the price it was ordere
 
 Made by `0141_purchase_orders.sql`; changed by `0147_custom_orders.sql`, `0159_receipts_held_to_the_order.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `po_id` | TEXT | no |  | → `purchase_orders.id` |
-| `consumable_code` | TEXT | no |  | → `consumables.code` |
-| `quantity` | INTEGER | no |  |  |
-| `unit_price` | INTEGER | no |  |  |
-| `received_quantity` | INTEGER | no | `0` |  |
-| `custom_order_id` | TEXT | yes |  | → `custom_orders.id` |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `po_id` | TEXT | no |  | → `purchase_orders.id` |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |  |
+| `quantity` | INTEGER | no |  |  |  |
+| `unit_price` | INTEGER | no |  |  | One unit's price in the order's currency, in its smallest unit, as the supplier listed it when drafted. |
+| `received_quantity` | INTEGER | no | `0` |  |  |
+| `custom_order_id` | TEXT | yes |  | → `custom_orders.id` |  |
 
 Indexes:
 
@@ -2059,13 +2059,13 @@ Every price from its date, and the only source of prices; an old row stays for w
 
 Made by `0016_booking.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `item` | TEXT | no |  | primary key |
-| `tier` | TEXT | no | `'standard'` | primary key |
-| `amount_ex_gst` | INTEGER | no |  |  |
-| `gst_percent` | INTEGER | no |  |  |
-| `valid_from` | TEXT | no |  | primary key |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `item` | TEXT | no |  | primary key | consultation, first_fit, service, replacement, late_fee_first_fit or late_fee_replacement. |
+| `tier` | TEXT | no | `'standard'` | primary key |  |
+| `amount_ex_gst` | INTEGER | no |  |  | In paise, before GST. |
+| `gst_percent` | INTEGER | no |  |  |  |
+| `valid_from` | TEXT | no |  | primary key | India's calendar date it applies from. |
 
 ## purchase_orders
 
@@ -2073,28 +2073,28 @@ Each purchase order to a supplier: its state from drafted to closed or cancelled
 
 Made by `0141_purchase_orders.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `number` | INTEGER | no |  |  |
-| `supplier_id` | TEXT | no |  | → `suppliers.id` |
-| `currency` | TEXT | no |  |  |
-| `state` | TEXT | no |  |  |
-| `expected_on` | TEXT | yes |  |  |
-| `note` | TEXT | yes |  |  |
-| `drafted_by` | TEXT | no |  |  |
-| `drafted_at` | TEXT | no |  |  |
-| `approved_by` | TEXT | yes |  |  |
-| `approved_at` | TEXT | yes |  |  |
-| `second_approved_by` | TEXT | yes |  |  |
-| `second_approved_at` | TEXT | yes |  |  |
-| `sent_by` | TEXT | yes |  |  |
-| `sent_at` | TEXT | yes |  |  |
-| `cancelled_by` | TEXT | yes |  |  |
-| `cancelled_at` | TEXT | yes |  |  |
-| `cancel_reason` | TEXT | yes |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `change_id` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `number` | INTEGER | no |  |  | Shown as PO-0001, one after another. |
+| `supplier_id` | TEXT | no |  | → `suppliers.id` |  |
+| `currency` | TEXT | no |  |  | The supplier's currency when it was drafted, which its lines' prices are in. |
+| `state` | TEXT | no |  |  |  |
+| `expected_on` | TEXT | yes |  |  | India's date the supplier promised it for. |
+| `note` | TEXT | yes |  |  | Ops' own words. Never a client's name. |
+| `drafted_by` | TEXT | no |  |  |  |
+| `drafted_at` | TEXT | no |  |  |  |
+| `approved_by` | TEXT | yes |  |  |  |
+| `approved_at` | TEXT | yes |  |  |  |
+| `second_approved_by` | TEXT | yes |  |  |  |
+| `second_approved_at` | TEXT | yes |  |  |  |
+| `sent_by` | TEXT | yes |  |  |  |
+| `sent_at` | TEXT | yes |  |  |  |
+| `cancelled_by` | TEXT | yes |  |  |  |
+| `cancelled_at` | TEXT | yes |  |  |  |
+| `cancel_reason` | TEXT | yes |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `change_id` | TEXT | yes |  |  | The last change's own token, which its audit entry is written only where it stands. |
 
 Indexes:
 
@@ -2107,14 +2107,14 @@ Saved answers Customer Care pick in a chat, kept by a Customer Care manager (ADR
 
 Made by `0122_quick_replies.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `title` | TEXT | no |  |  |
-| `text` | TEXT | no |  |  |
-| `created_by` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `retired_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `title` | TEXT | no |  |  |  |
+| `text` | TEXT | no |  |  |  |
+| `created_by` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `retired_at` | TEXT | yes |  |  | Taken off the list; kept, as the record of what was offered. |
 
 ## razorpay_events
 
@@ -2122,11 +2122,11 @@ Each Razorpay webhook event, once, by its event ID (ADR 0044).
 
 Made by `0014_payments.sql`; changed by `0172_retention_reaches_every_table.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `event_id` | TEXT | no |  | primary key |
-| `event` | TEXT | no |  |  |
-| `received_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `event_id` | TEXT | no |  | primary key |  |
+| `event` | TEXT | no |  |  |  |
+| `received_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -2138,11 +2138,11 @@ Each fitted piece a recall made due for replacement, and the day it was due befo
 
 Made by `0155_recalls.sql`; changed by `0156_pieces_replaced.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `recall_id` | TEXT | no |  | primary key; → `recalls.id` |
-| `piece_id` | TEXT | no |  | primary key |
-| `due_before` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `recall_id` | TEXT | no |  | primary key; → `recalls.id` |  |
+| `piece_id` | TEXT | no |  | primary key | No foreign key: a client's pieces go with them when they are erased, and reads leave such a row out. |
+| `due_before` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2154,16 +2154,16 @@ Each lot recalled: why, who raised it and when, and when it was closed once deal
 
 Made by `0155_recalls.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `number` | INTEGER | no |  |  |
-| `lot_id` | TEXT | no |  | → `stock_lots.id` |
-| `reason` | TEXT | no |  |  |
-| `raised_by` | TEXT | no |  |  |
-| `raised_at` | TEXT | no |  |  |
-| `closed_by` | TEXT | yes |  |  |
-| `closed_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `number` | INTEGER | no |  |  |  |
+| `lot_id` | TEXT | no |  | → `stock_lots.id` |  |
+| `reason` | TEXT | no |  |  |  |
+| `raised_by` | TEXT | no |  |  |  |
+| `raised_at` | TEXT | no |  |  |  |
+| `closed_by` | TEXT | yes |  |  |  |
+| `closed_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2176,18 +2176,18 @@ What a receipt brought of each order line: accepted, damaged, failed its check, 
 
 Made by `0142_receipts.sql`; changed by `0144_supplier_claims.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `receipt_id` | TEXT | no |  | → `receipts.id` |
-| `po_line_id` | TEXT | no |  | → `po_lines.id` |
-| `received` | INTEGER | no |  |  |
-| `damaged` | INTEGER | no |  |  |
-| `qc_failed` | INTEGER | no |  |  |
-| `lot_code` | TEXT | yes |  |  |
-| `expires_on` | TEXT | yes |  |  |
-| `landed_unit_paise` | INTEGER | no |  |  |
-| `movement_id` | TEXT | yes |  | → `stock_movements.id` |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `receipt_id` | TEXT | no |  | → `receipts.id` |  |
+| `po_line_id` | TEXT | no |  | → `po_lines.id` |  |
+| `received` | INTEGER | no |  |  | Accepted into stock; the damaged and those that failed their check never enter it. |
+| `damaged` | INTEGER | no |  |  |  |
+| `qc_failed` | INTEGER | no |  |  |  |
+| `lot_code` | TEXT | yes |  |  |  |
+| `expires_on` | TEXT | yes |  |  |  |
+| `landed_unit_paise` | INTEGER | no |  |  |  |
+| `movement_id` | TEXT | yes |  | → `stock_movements.id` | The delivery into the warehouse; null where nothing of the line was accepted. |
 
 Indexes:
 
@@ -2200,20 +2200,20 @@ Each receipt against a purchase order at the warehouse: who received it, the sup
 
 Made by `0142_receipts.sql`; changed by `0143_books_bills.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `po_id` | TEXT | no |  | → `purchase_orders.id` |
-| `received_by` | TEXT | no |  |  |
-| `received_at` | TEXT | no |  |  |
-| `supplier_invoice` | TEXT | yes |  |  |
-| `rupee_rate` | INTEGER | no |  |  |
-| `freight_paise` | INTEGER | no |  |  |
-| `duty_paise` | INTEGER | no |  |  |
-| `clearing_paise` | INTEGER | no |  |  |
-| `note` | TEXT | yes |  |  |
-| `books_bill_id` | TEXT | yes |  |  |
-| `books_checked_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `po_id` | TEXT | no |  | → `purchase_orders.id` |  |
+| `received_by` | TEXT | no |  |  |  |
+| `received_at` | TEXT | no |  |  |  |
+| `supplier_invoice` | TEXT | yes |  |  | The supplier's own invoice number, as printed. |
+| `rupee_rate` | INTEGER | no |  |  | Paise per one unit of the order's currency: 100 for rupees, 8325 for a dollar at Rs. 83.25. |
+| `freight_paise` | INTEGER | no |  |  |  |
+| `duty_paise` | INTEGER | no |  |  |  |
+| `clearing_paise` | INTEGER | no |  |  |  |
+| `note` | TEXT | yes |  |  | Ops' own words. Never a client's name. |
+| `books_bill_id` | TEXT | yes |  |  |  |
+| `books_checked_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2226,30 +2226,30 @@ A person who came through an invite, to the first invite they used, what became 
 
 Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_offs_and_messages.sql`, `0051_invites_ops_attach.sql`, `0060_flat_task_reads.sql`, `0062_referral_reward_kept.sql`, `0073_invite_told_notice.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `code` | TEXT | no |  | → `referral_codes.code` |
-| `referred_person_id` | TEXT | no |  | → `people.id` |
-| `first_touch_at` | TEXT | no |  |  |
-| `via` | TEXT | no |  |  |
-| `pincode` | TEXT | yes |  |  |
-| `consultation_appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `first_fit_appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `grant_state` | TEXT | no | `'pending'` |  |
-| `fraud_signals` | TEXT | yes |  |  |
-| `review_reason` | TEXT | yes |  |  |
-| `reviewed_by` | TEXT | yes |  |  |
-| `reviewed_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `friend_first_name` | TEXT | yes |  |  |
-| `attached_by` | TEXT | yes |  |  |
-| `attach_reason` | TEXT | yes |  |  |
-| `referrer_visits` | INTEGER | yes |  |  |
-| `friend_visits` | INTEGER | yes |  |  |
-| `credit_valid_days` | INTEGER | yes |  |  |
-| `told_notice` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `code` | TEXT | no |  | → `referral_codes.code` |  |
+| `referred_person_id` | TEXT | no |  | → `people.id` |  |
+| `first_touch_at` | TEXT | no |  |  |  |
+| `via` | TEXT | no |  |  | How they came: a consultation booked, or a place on the waitlist. |
+| `pincode` | TEXT | yes |  |  |  |
+| `consultation_appointment_id` | TEXT | yes |  | → `appointments.id` |  |
+| `first_fit_appointment_id` | TEXT | yes |  | → `appointments.id` |  |
+| `grant_state` | TEXT | no | `'pending'` |  | pending: not fitted yet; held: waiting for ops' review; approved and granted; rejected; expired: the invite lapsed, so a consultation but no credits; clawed_back: the first fit was refunded under the guarantee. |
+| `fraud_signals` | TEXT | yes |  |  | Why a grant was held: a JSON list of the fraud rules it met. |
+| `review_reason` | TEXT | yes |  |  |  |
+| `reviewed_by` | TEXT | yes |  |  |  |
+| `reviewed_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `friend_first_name` | TEXT | yes |  |  | The friend's first name, kept with the referral when it is granted, so the referrer's tracker reads it without the friend's record, and an erasure, which blanks it, shows "A friend" rather than "Erased" (src/routes/client-refer.ts). Filled here for the grants already made to a friend not erased. |
+| `attached_by` | TEXT | yes |  |  |  |
+| `attach_reason` | TEXT | yes |  |  |  |
+| `referrer_visits` | INTEGER | yes |  |  |  |
+| `friend_visits` | INTEGER | yes |  |  |  |
+| `credit_valid_days` | INTEGER | yes |  |  |  |
+| `told_notice` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2265,21 +2265,21 @@ Partners who send us clients on their own code: the friend's reward and the part
 
 Made by `0109_referral_channels.sql`; changed by `0111_partner_discount.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `name` | TEXT | no |  |  |
-| `code` | TEXT | no |  |  |
-| `friend_visits` | INTEGER | no |  |  |
-| `valid_days` | INTEGER | no |  |  |
-| `commission` | INTEGER | no |  |  |
-| `paused_at` | TEXT | yes |  |  |
-| `opens` | INTEGER | no | `0` |  |
-| `created_by` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `changed_by` | TEXT | yes |  |  |
-| `changed_at` | TEXT | yes |  |  |
-| `discount_code_id` | TEXT | yes |  | → `discount_codes.id` |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `name` | TEXT | no |  |  | As the invite page names it: "Recommended by Looks Salon". |
+| `code` | TEXT | no |  |  | In capitals, of the letters and digits none reads as another, as a client's code is; never one a client has. |
+| `friend_visits` | INTEGER | no |  |  | What the friend gets once fitted: service visits, and how many days they last. |
+| `valid_days` | INTEGER | no |  |  |  |
+| `commission` | INTEGER | no |  |  | What the partner earns for each friend fitted, in paise; 0 for none. |
+| `paused_at` | TEXT | yes |  |  | Paused: nobody new comes through it, and its code reads as one we do not have. |
+| `opens` | INTEGER | no | `0` |  | The invite page opened, once a day for each address, as a client's code counts its opens. |
+| `created_by` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `changed_by` | TEXT | yes |  |  |  |
+| `changed_at` | TEXT | yes |  |  |  |
+| `discount_code_id` | TEXT | yes |  | → `discount_codes.id` | A partner's discount code for the friends it sends (docs/decisions/0125-partner-discount-codes.md): one of Finance's codes, which comes off the friend's first paid visit by itself, beside or instead of the partner's free visits. |
 
 Indexes:
 
@@ -2293,16 +2293,16 @@ A client's invite code, the version of their card, and how often the invite was 
 
 Made by `0021_referrals.sql`; changed by `0024_referral_opens.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `code` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `card_state` | TEXT | no | `'house'` |  |
-| `card_version` | INTEGER | no | `1` |  |
-| `card_key` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `opens` | INTEGER | no | `0` |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `code` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `card_state` | TEXT | no | `'house'` |  |  |
+| `card_version` | INTEGER | no | `1` |  |  |
+| `card_key` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `opens` | INTEGER | no | `0` |  |  |
 
 Indexes:
 
@@ -2314,19 +2314,19 @@ The mirror of Razorpay's refunds, and where each stands in Books (ADR 0044).
 
 Made by `0014_payments.sql`; changed by `0019_books_payments.sql`, `0037_cron_indexes.sql`, `0096_payments_to_refund.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `payment_id` | TEXT | no |  | → `payments.id` |
-| `razorpay_refund_id` | TEXT | no |  |  |
-| `amount` | INTEGER | no |  |  |
-| `status` | TEXT | no |  |  |
-| `speed` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `processed_at` | TEXT | yes |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `books_refund_id` | TEXT | yes |  |  |
-| `books_checked_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `payment_id` | TEXT | no |  | → `payments.id` |  |
+| `razorpay_refund_id` | TEXT | no |  |  |  |
+| `amount` | INTEGER | no |  |  |  |
+| `status` | TEXT | no |  |  |  |
+| `speed` | TEXT | yes |  |  | normal or optimum, as asked; Razorpay reports the speed it used. |
+| `created_at` | TEXT | no |  |  |  |
+| `processed_at` | TEXT | yes |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `books_refund_id` | TEXT | yes |  |  |  |
+| `books_checked_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2341,18 +2341,18 @@ Free service visits Customer Care gave a client, with why: given within the limi
 
 Made by `0123_remedies.sql`; changed by `0124_care_numbers_indexes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `visits` | INTEGER | no |  |  |
-| `reason` | TEXT | no |  |  |
-| `note` | TEXT | yes |  |  |
-| `given_by` | TEXT | no |  |  |
-| `given_at` | TEXT | no |  |  |
-| `state` | TEXT | no |  |  |
-| `decided_by` | TEXT | yes |  |  |
-| `decided_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `visits` | INTEGER | no |  |  |  |
+| `reason` | TEXT | no |  |  |  |
+| `note` | TEXT | yes |  |  | Care's words about it; NULL once the client is erased. |
+| `given_by` | TEXT | no |  |  |  |
+| `given_at` | TEXT | no |  |  |  |
+| `state` | TEXT | no |  |  |  |
+| `decided_by` | TEXT | yes |  |  |  |
+| `decided_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2366,14 +2366,14 @@ Every NCR pincode, its area and city, and whether and since when we serve it (AD
 
 Made by `0021_referrals.sql`; changed by `0043_area_names.sql`, `0167_cities_as_data.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `pincode` | TEXT | no |  | primary key |
-| `area` | TEXT | no |  |  |
-| `city` | TEXT | no |  |  |
-| `served` | INTEGER | no | `0` |  |
-| `launched_at` | TEXT | yes |  |  |
-| `area_named_by` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `pincode` | TEXT | no |  | primary key |  |
+| `area` | TEXT | no |  |  | The area a client would recognise ("Saket"), and the city. |
+| `city` | TEXT | no |  |  |  |
+| `served` | INTEGER | no | `0` |  |  |
+| `launched_at` | TEXT | yes |  |  | When a technician started coming, or will start. |
+| `area_named_by` | TEXT | yes |  |  |  |
 
 Triggers: `serviceable_pincodes_in_a_city`, `serviceable_pincodes_moved_to_a_city`.
 
@@ -2383,19 +2383,19 @@ What clients may book: each kind of visit's services, their names, the line clie
 
 Made by `0050_services.sql`; changed by `0070_field_record_ours.sql`, `0092_service_description.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `kind` | TEXT | no |  | primary key |
-| `tier` | TEXT | no |  | primary key |
-| `name` | TEXT | no |  |  |
-| `minutes` | INTEGER | no |  |  |
-| `sort` | INTEGER | no | `0` |  |
-| `retired_date` | TEXT | yes |  |  |
-| `fsm_item_id` | TEXT | yes |  |  |
-| `updated_by` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `books_item_id` | TEXT | yes |  |  |
-| `description` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `kind` | TEXT | no |  | primary key | The kind of visit, which decides the technician's steps, the booking rules and the fees. |
+| `tier` | TEXT | no |  | primary key | The code the price book prices it under: small letters, digits and _, a letter first (PRICE_TIER, src/config/ops-settings.ts). Made from its first name, and never changed after, so its prices stay its own. |
+| `name` | TEXT | no |  |  | What clients, ops and FSM's catalogue call it. One name, one service, so FSM's item can be found by it. |
+| `minutes` | INTEGER | no |  |  | How long FSM books it for, which is the time the scheduler reserves (src/policy/visit-length.ts). |
+| `sort` | INTEGER | no | `0` |  | Its place among its kind's services, as the console and the app list them. |
+| `retired_date` | TEXT | yes |  |  | India's date from which clients no longer see it or book it; null while it is offered. |
+| `fsm_item_id` | TEXT | yes |  |  | Its service item in FSM's catalogue, once found or made; until then it is looked for by name. |
+| `updated_by` | TEXT | no |  |  | The Access identity that last changed it, and when; the audit log holds each change. |
+| `updated_at` | TEXT | no |  |  |  |
+| `books_item_id` | TEXT | yes |  |  | The service's item in Zoho Books, once found by name or made. |
+| `description` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2407,16 +2407,16 @@ The client app's and the technician app's sessions: whose, from which device, an
 
 Made by `0007_login.sql`; changed by `0037_cron_indexes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `subject_kind` | TEXT | no |  |  |
-| `subject_id` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `last_seen_at` | TEXT | no |  |  |
-| `expires_at` | TEXT | no |  |  |
-| `device_label` | TEXT | yes |  |  |
-| `revoked_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key | SHA-256 of the cookie's token. The token itself is never stored. |
+| `subject_kind` | TEXT | no |  |  | A client (people.id) now; a technician from P2-M4. |
+| `subject_id` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `last_seen_at` | TEXT | no |  |  |  |
+| `expires_at` | TEXT | no |  |  |  |
+| `device_label` | TEXT | yes |  |  | What the browser said it was at login, e.g. "Chrome on Android", for the profile's list of devices. |
+| `revoked_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2430,13 +2430,13 @@ Each publish of the site's words from the Words page: the changed lines as they 
 
 Made by `0113_site_word_publishes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `words` | TEXT | no |  |  |
-| `lines` | INTEGER | no |  |  |
-| `published_by` | TEXT | no |  |  |
-| `published_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `words` | TEXT | no |  |  | JSON: each changed line's key, as src/config/words.json names it, and its words. |
+| `lines` | INTEGER | no |  |  |  |
+| `published_by` | TEXT | no |  |  |  |
+| `published_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -2448,13 +2448,13 @@ What a hold or a visit takes of a technician's day, a row per half-slot and wind
 
 Made by `0016_booking.sql`; changed by `0040_dispatch_claims.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `technician_id` | TEXT | no |  | primary key; → `technicians.id` |
-| `date` | TEXT | no |  | primary key |
-| `claim` | TEXT | no |  | primary key |
-| `hold_id` | TEXT | yes |  | → `slot_holds.id` |
-| `move_id` | TEXT | yes |  | → `dispatch_moves.id` |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `technician_id` | TEXT | no |  | primary key; → `technicians.id` |  |
+| `date` | TEXT | no |  | primary key |  |
+| `claim` | TEXT | no |  | primary key |  |
+| `hold_id` | TEXT | yes |  | → `slot_holds.id` |  |
+| `move_id` | TEXT | yes |  | → `dispatch_moves.id` |  |
 
 Indexes:
 
@@ -2467,56 +2467,56 @@ A slot held while a client pays, at Checkout or by a payment link ops sent, and 
 
 Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`, `0091_razorpay_catch_up.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `type` | TEXT | no |  |  |
-| `date` | TEXT | no |  |  |
-| `window_label` | TEXT | no |  |  |
-| `technician_id` | TEXT | no |  | → `technicians.id` |
-| `start_unit` | INTEGER | no |  |  |
-| `amount` | INTEGER | no |  |  |
-| `amount_ex_gst` | INTEGER | no |  |  |
-| `gst_percent` | INTEGER | no |  |  |
-| `state` | TEXT | no |  |  |
-| `razorpay_order_id` | TEXT | yes |  |  |
-| `appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `expires_at` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `refunded_at` | TEXT | yes |  |  |
-| `moves_appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `move_kind` | TEXT | yes |  |  |
-| `use_credit` | INTEGER | no | `0` |  |
-| `confirmed_at` | TEXT | yes |  |  |
-| `queued_at` | TEXT | yes |  |  |
-| `booking_until` | TEXT | yes |  |  |
-| `fsm_tried_at` | TEXT | yes |  |  |
-| `fsm_work_order_id` | TEXT | yes |  |  |
-| `fsm_appointment_id` | TEXT | yes |  |  |
-| `pincode` | TEXT | yes |  |  |
-| `late_fee_ex_gst` | INTEGER | yes |  |  |
-| `late_fee_gst_percent` | INTEGER | yes |  |  |
-| `tier` | TEXT | no | `'standard'` |  |
-| `minutes` | INTEGER | yes |  |  |
-| `grace_seconds` | INTEGER | yes |  |  |
-| `change_notice_hours` | INTEGER | yes |  |  |
-| `late_change_charge` | TEXT | yes |  |  |
-| `no_show_charge` | TEXT | yes |  |  |
-| `fsm_held_at` | TEXT | yes |  |  |
-| `fsm_refusal` | TEXT | yes |  |  |
-| `one_visit` | INTEGER | no | `0` |  |
-| `pay_by_link` | INTEGER | no | `0` |  |
-| `payment_link_id` | TEXT | yes |  |  |
-| `payment_link_url` | TEXT | yes |  |  |
-| `consents_shown` | TEXT | yes |  |  |
-| `consents_ip_hash` | TEXT | yes |  |  |
-| `reference` | TEXT | yes |  |  |
-| `reference_year` | INTEGER | yes |  |  |
-| `reference_number` | INTEGER | yes |  |  |
-| `auto_refund_reason` | TEXT | yes |  |  |
-| `payment_checked_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `type` | TEXT | no |  |  |  |
+| `date` | TEXT | no |  |  | India's calendar date, and the window booked on it. |
+| `window_label` | TEXT | no |  |  |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `start_unit` | INTEGER | no |  |  | The half-slot the visit starts in (src/config/scheduling.ts). |
+| `amount` | INTEGER | no |  |  | The price when it was held, in paise: what the client pays, and its GST. |
+| `amount_ex_gst` | INTEGER | no |  |  |  |
+| `gst_percent` | INTEGER | no |  |  |  |
+| `state` | TEXT | no |  |  | held: waiting to be paid; booked: paid (or free) and written to FSM; released: let go or expired unpaid. |
+| `razorpay_order_id` | TEXT | yes |  |  |  |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` |  |
+| `expires_at` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `refunded_at` | TEXT | yes |  |  |  |
+| `moves_appointment_id` | TEXT | yes |  | → `appointments.id` | A hold made to move a visit: which visit, and whether it moves in place ('move': free, or once its late fee is paid) or is replaced by a new visit ('replace': a service visit moved inside 24 hours, the old one charged). |
+| `move_kind` | TEXT | yes |  |  |  |
+| `use_credit` | INTEGER | no | `0` |  |  |
+| `confirmed_at` | TEXT | yes |  |  | When the client's side of a hold was done: Razorpay's own time for its payment, or when a free visit was booked. From then the hold keeps its time until it is booked or refunded, however long FSM takes, and nothing else lets it go. |
+| `queued_at` | TEXT | yes |  |  | When the booking was put on the fsm-sync queue, or was due to be. The cron puts back one still neither booked nor refunded 30 minutes later. |
+| `booking_until` | TEXT | yes |  |  | The lease one consumer holds while it writes the hold to FSM, so two never write it at once. |
+| `fsm_tried_at` | TEXT | yes |  |  | Set before the work order is first asked for, so a later try knows FSM may have made one whose answer never reached us, and looks for it first. |
+| `fsm_work_order_id` | TEXT | yes |  |  | FSM's IDs, each kept the moment FSM answers with it, so a retry reuses them. |
+| `fsm_appointment_id` | TEXT | yes |  |  |  |
+| `pincode` | TEXT | yes |  |  | Where the visit is: the pincode it was booked at, for the visit and FSM. |
+| `late_fee_ex_gst` | INTEGER | yes |  |  | A first fit's or a replacement's late fee when it was held, in paise before GST, and its rate: what moving or cancelling it late costs, whatever the price book says later. |
+| `late_fee_gst_percent` | INTEGER | yes |  |  |  |
+| `tier` | TEXT | no | `'standard'` |  | The service a hold is for, beside its kind (type): its price, late fee and length are copied onto it as it is made, so what the client was sold stays sold whatever ops change after. |
+| `minutes` | INTEGER | yes |  |  | How long the hold's visit was held for, in minutes: the service's length when it was made. Null for a hold made before services had lengths of their own, which took its kind's (VISIT_BLOCKS). |
+| `grace_seconds` | INTEGER | yes |  |  | The grace a hold was made with, in seconds: how long after its countdown a payment Razorpay made still counts as in time, and how long an unpaid hold keeps its time (docs/decisions/0068-a-paid-hold-is-kept.md). Ops set it in the console now; a hold keeps the one it was made with. Null for a hold made before, which had the committed two minutes (PAYMENT_GRACE_SECONDS, src/config/scheduling.ts). |
+| `change_notice_hours` | INTEGER | yes |  |  | The terms a hold was sold under, so a change in the console never moves a promise already made: how many hours before its window moving or cancelling it stops being free, and what its kind costs inside that notice, and what it costs if the client is not home. Each charge is one of src/policy/moving-a-visit.ts's Charge ('nothing', 'late_fee', 'visit'); there is no CHECK, since slot_holds is referenced by other tables and could not be rebuilt to change one. Null for a hold made before, which was sold under the committed terms (FREE_CHANGE_NOTICE_HOURS, LATE_CHANGE_CHARGES, NO_SHOW_CHARGES). |
+| `late_change_charge` | TEXT | yes |  |  |  |
+| `no_show_charge` | TEXT | yes |  |  |  |
+| `fsm_held_at` | TEXT | yes |  |  | When FSM's fifth refusal running held the booking for ops, rather than giving it up. The hourly tries count their 24 hours from it, and the Tasks board lists the booking from it until it is booked or refunded. Kept once the booking is booked or refunded, as the record that it waited. |
+| `fsm_refusal` | TEXT | yes |  |  | FSM's latest refusal, as the log gives it (failureReason, src/log.ts), for ops to read beside the booking. |
+| `one_visit` | INTEGER | no | `0` |  | A hold the site's form made for a consultation and fit in one visit: a first fit, sold with nothing paid. |
+| `pay_by_link` | INTEGER | no | `0` |  | A hold ops made that the client pays for by a payment link, rather than at the app's Checkout. |
+| `payment_link_id` | TEXT | yes |  |  | The link Razorpay made for it, and the address Razorpay texted the client. |
+| `payment_link_url` | TEXT | yes |  |  |  |
+| `consents_shown` | TEXT | yes |  |  | The purposes shown, comma-separated, as "photos_own_record,photos_referral_cards". |
+| `consents_ip_hash` | TEXT | yes |  |  | The tapping client's hashed address, which the consent rows carry. |
+| `reference` | TEXT | yes |  |  |  |
+| `reference_year` | INTEGER | yes |  |  |  |
+| `reference_number` | INTEGER | yes |  |  |  |
+| `auto_refund_reason` | TEXT | yes |  |  |  |
+| `payment_checked_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2537,14 +2537,14 @@ Each change of the day's half-slot times ops set, from the day it applies; never
 
 Made by `0067_slot_times.sql`; changed by `0090_board_version.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `applies_from` | TEXT | no |  |  |
-| `unit_starts` | TEXT | no |  |  |
-| `day_end` | TEXT | no |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `applies_from` | TEXT | no |  |  |  |
+| `unit_starts` | TEXT | no |  |  | A JSON array of eight "HH:MM", in order. |
+| `day_end` | TEXT | no |  |  |  |
+| `set_by` | TEXT | no |  |  | The member of staff's Access e-mail, and when they set it. |
+| `set_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -2558,19 +2558,19 @@ A month's offline spend to win clients, for a city or national, by channel, as t
 
 Made by `0129_spend_entries.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `month` | TEXT | no |  |  |
-| `city` | TEXT | yes |  | → `cities.name` |
-| `channel` | TEXT | no |  |  |
-| `campaign` | TEXT | yes |  |  |
-| `amount` | INTEGER | no |  |  |
-| `note` | TEXT | yes |  |  |
-| `entered_by` | TEXT | no |  |  |
-| `entered_at` | TEXT | no |  |  |
-| `removed_by` | TEXT | yes |  |  |
-| `removed_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `month` | TEXT | no |  |  |  |
+| `city` | TEXT | yes |  | → `cities.name` |  |
+| `channel` | TEXT | no |  |  |  |
+| `campaign` | TEXT | yes |  |  |  |
+| `amount` | INTEGER | no |  |  |  |
+| `note` | TEXT | yes |  |  |  |
+| `entered_by` | TEXT | no |  |  |  |
+| `entered_at` | TEXT | no |  |  |  |
+| `removed_by` | TEXT | yes |  |  |  |
+| `removed_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2582,15 +2582,15 @@ Each member of staff on the console's Staff list, by their Access e-mail, and wh
 
 Made by `0069_staff_and_access.sql`; changed by `0121_care_shifts.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `email` | TEXT | no |  | primary key |
-| `active` | INTEGER | no |  |  |
-| `added_by` | TEXT | no |  |  |
-| `added_at` | TEXT | no |  |  |
-| `changed_by` | TEXT | yes |  |  |
-| `changed_at` | TEXT | yes |  |  |
-| `on_shift_since` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `email` | TEXT | no |  | primary key | In lower case, as the Worker reads it from the Access token. |
+| `active` | INTEGER | no |  |  | 0: kept on the list, with their grants, but let in nowhere. |
+| `added_by` | TEXT | no |  |  |  |
+| `added_at` | TEXT | no |  |  |  |
+| `changed_by` | TEXT | yes |  |  |  |
+| `changed_at` | TEXT | yes |  |  |  |
+| `on_shift_since` | TEXT | yes |  |  | When each of the Care team went on shift, as they mark it themselves on the Messages page (docs/decisions/0139-care-shifts.md); NULL while off shift. A Care person off shift has their chats covered. |
 
 ## staff_access_mode
 
@@ -2598,12 +2598,12 @@ One row: whether the console enforces the Staff list yet, and who last switched 
 
 Made by `0069_staff_and_access.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `enforced` | INTEGER | no |  |  |
-| `set_by` | TEXT | yes |  |  |
-| `set_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `enforced` | INTEGER | no |  |  | 0: nothing is refused, and what would have been is logged. 1: the Staff list decides. |
+| `set_by` | TEXT | yes |  |  |  |
+| `set_at` | TEXT | yes |  |  |  |
 
 ## staff_grants
 
@@ -2611,16 +2611,16 @@ What each member of staff may do: a department, at a level, over a place, nation
 
 Made by `0069_staff_and_access.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `email` | TEXT | no |  | → `staff.email` |
-| `department` | TEXT | no |  |  |
-| `level` | TEXT | no |  |  |
-| `geography` | TEXT | no |  |  |
-| `place` | TEXT | yes |  |  |
-| `granted_by` | TEXT | no |  |  |
-| `granted_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `email` | TEXT | no |  | → `staff.email` |  |
+| `department` | TEXT | no |  |  |  |
+| `level` | TEXT | no |  |  | view < act < manage: each level can do what the ones before it can. |
+| `geography` | TEXT | no |  |  |  |
+| `place` | TEXT | yes |  |  | The zone's or the city's name; NULL for national, which names no place. |
+| `granted_by` | TEXT | no |  |  |  |
+| `granted_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -2632,12 +2632,12 @@ The Access service tokens let in as every caller was before the Staff list, such
 
 Made by `0069_staff_and_access.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `client_id` | TEXT | no |  | primary key |
-| `label` | TEXT | no |  |  |
-| `added_by` | TEXT | no |  |  |
-| `added_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `client_id` | TEXT | no |  | primary key | What Access sends as the token's common name. |
+| `label` | TEXT | no |  |  |  |
+| `added_by` | TEXT | no |  |  |  |
+| `added_at` | TEXT | no |  |  |  |
 
 ## standard_costs
 
@@ -2645,14 +2645,14 @@ What each first fit and replacement product costs us, from its date, for the mar
 
 Made by `0130_standard_costs.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `item` | TEXT | no |  | primary key |
-| `tier` | TEXT | no |  | primary key |
-| `cost` | INTEGER | no |  |  |
-| `valid_from` | TEXT | no |  | primary key |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `item` | TEXT | no |  | primary key |  |
+| `tier` | TEXT | no |  | primary key |  |
+| `cost` | INTEGER | no |  |  |  |
+| `valid_from` | TEXT | no |  | primary key |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 ## stock_balances
 
@@ -2660,12 +2660,12 @@ What each place holds of each consumable, and when it last counted it: the sum o
 
 Made by `0053_balances_and_last_visits.sql`; changed by `0154_cycle_counts.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |
-| `place` | TEXT | no |  | primary key |
-| `quantity` | INTEGER | no |  |  |
-| `counted_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |  |
+| `place` | TEXT | no |  | primary key | 'central' for the central store; for a technician's kit, his ID. |
+| `quantity` | INTEGER | no |  |  |  |
+| `counted_at` | TEXT | yes |  |  | When the place last counted it; NULL if never. |
 
 Indexes:
 
@@ -2677,11 +2677,11 @@ What each place holds of each lot: the sum of its rows in `stock_lot_moves`, kep
 
 Made by `0135_stock_lots.sql`; changed by `0137_held_lots.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `lot_id` | TEXT | no |  | primary key; → `stock_lots.id` |
-| `place` | TEXT | no |  | primary key |
-| `quantity` | INTEGER | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `lot_id` | TEXT | no |  | primary key; → `stock_lots.id` |  |
+| `place` | TEXT | no |  | primary key |  |
+| `quantity` | INTEGER | no |  |  |  |
 
 Indexes:
 
@@ -2694,12 +2694,12 @@ What each movement moved of each lot, soonest to expire first, at the movement's
 
 Made by `0135_stock_lots.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `movement_id` | TEXT | no |  | primary key; → `stock_movements.id` |
-| `lot_id` | TEXT | no |  | primary key; → `stock_lots.id` |
-| `place` | TEXT | no |  |  |
-| `quantity` | INTEGER | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `movement_id` | TEXT | no |  | primary key; → `stock_movements.id` |  |
+| `lot_id` | TEXT | no |  | primary key; → `stock_lots.id` |  |
+| `place` | TEXT | no |  |  |  |
+| `quantity` | INTEGER | no |  |  |  |
 
 Triggers: `stock_lot_moves_balance`, `stock_lot_moves_taken_out`.
 
@@ -2709,17 +2709,17 @@ Each lot of a stock code a delivery brought: the supplier's lot, or the day it w
 
 Made by `0135_stock_lots.sql`; changed by `0138_stock_units.sql`, `0142_receipts.sql`, `0155_recalls.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `consumable_code` | TEXT | no |  | → `consumables.code` |
-| `lot_code` | TEXT | no |  |  |
-| `expires_on` | TEXT | yes |  |  |
-| `received_at` | TEXT | no |  |  |
-| `label` | TEXT | yes |  |  |
-| `label_serial` | INTEGER | yes |  |  |
-| `landed_cost_paise` | INTEGER | yes |  |  |
-| `recalled_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |  |
+| `lot_code` | TEXT | no |  |  | The supplier's lot, as printed, or the day it was received where it carries none. |
+| `expires_on` | TEXT | yes |  |  | India's date it expires on; null for one that does not. |
+| `received_at` | TEXT | no |  |  |  |
+| `label` | TEXT | yes |  |  | A lot's label, for its boxes: e.g. MM-LT-0000042-Q. |
+| `label_serial` | INTEGER | yes |  |  |  |
+| `landed_cost_paise` | INTEGER | yes |  |  |  |
+| `recalled_at` | TEXT | yes |  |  | When a lot was recalled; it stays blocked after its recall is closed. |
 
 Indexes:
 
@@ -2733,22 +2733,22 @@ Every movement of a consumable into or out of the central store or a technician'
 
 Made by `0049_consumables_and_stock.sql`; changed by `0053_balances_and_last_visits.sql`, `0133_stock_places.sql`, `0151_forecast.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `consumable_code` | TEXT | no |  | → `consumables.code` |
-| `location` | TEXT | no |  |  |
-| `technician_id` | TEXT | yes |  | → `technicians.id` |
-| `quantity` | INTEGER | no |  |  |
-| `reason` | TEXT | no |  |  |
-| `transfer_id` | TEXT | yes |  |  |
-| `appointment_id` | TEXT | yes |  | → `appointments.id` |
-| `job_event_id` | TEXT | yes |  | → `job_events.id` |
-| `actor_kind` | TEXT | no |  |  |
-| `actor` | TEXT | no |  |  |
-| `note` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `place_id` | TEXT | yes |  | → `stock_places.id` |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |  |
+| `location` | TEXT | no |  |  |  |
+| `technician_id` | TEXT | yes |  | → `technicians.id` | Whose kit; NULL for the central store. |
+| `quantity` | INTEGER | no |  |  | Into the place, positive; out of it, negative. Only a count that matched is nought. |
+| `reason` | TEXT | no |  |  |  |
+| `transfer_id` | TEXT | yes |  |  | The two rows of one transfer share it. |
+| `appointment_id` | TEXT | yes |  | → `appointments.id` | A job's use: the visit, and the technician's event that recorded it. |
+| `job_event_id` | TEXT | yes |  | → `job_events.id` |  |
+| `actor_kind` | TEXT | no |  |  | Who: a member of staff by their Access identity, or the technician by our ID. |
+| `actor` | TEXT | no |  |  |  |
+| `note` | TEXT | yes |  |  | Ops' own words: the supplier's note, what was lost. Never a client's name. |
+| `created_at` | TEXT | no |  |  |  |
+| `place_id` | TEXT | yes |  | → `stock_places.id` | A hub's or a stockroom's row names it; the warehouse's and a kit's leave it null, as every row before. |
 
 Indexes:
 
@@ -2766,18 +2766,18 @@ Where stock is kept, as a tree: the national warehouse, zone hubs, city stockroo
 
 Made by `0133_stock_places.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `kind` | TEXT | no |  |  |
-| `name` | TEXT | yes |  |  |
-| `parent_id` | TEXT | yes |  | → `stock_places.id` |
-| `zone` | TEXT | yes |  | → `zones.name` |
-| `city` | TEXT | yes |  | → `cities.name` |
-| `technician_id` | TEXT | yes |  |  |
-| `active` | INTEGER | no | `1` |  |
-| `created_by` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `kind` | TEXT | no |  |  |  |
+| `name` | TEXT | yes |  |  | A kit is named by its technician. |
+| `parent_id` | TEXT | yes |  | → `stock_places.id` |  |
+| `zone` | TEXT | yes |  | → `zones.name` | A hub's zone; a stockroom's city. A kit is in its technician's city. |
+| `city` | TEXT | yes |  | → `cities.name` |  |
+| `technician_id` | TEXT | yes |  |  | A kit's technician, whose ID it shares. No foreign key: the code before this release deletes a technician added by mistake without knowing of kits, so a kit can outlive its technician, and reads leave such a kit out. |
+| `active` | INTEGER | no | `1` |  |  |
+| `created_by` | TEXT | no |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -2789,13 +2789,13 @@ Each fit booked ahead found with no hair system in its city, or no profile to ma
 
 Made by `0150_stock_risks.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `appointment_id` | TEXT | no |  | primary key; → `appointments.id` |
-| `consumable_code` | TEXT | yes |  |  |
-| `city` | TEXT | yes |  |  |
-| `found_at` | TEXT | no |  |  |
-| `cleared_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `appointment_id` | TEXT | no |  | primary key; → `appointments.id` |  |
+| `consumable_code` | TEXT | yes |  |  | The stock code it needs; NULL where the client has no profile to match one by. |
+| `city` | TEXT | yes |  |  |  |
+| `found_at` | TEXT | no |  |  |  |
+| `cleared_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2807,21 +2807,21 @@ Each transfer sent to a warehouse, a hub or a stockroom: what left, from where, 
 
 Made by `0136_stock_transfers.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `consumable_code` | TEXT | no |  | → `consumables.code` |
-| `quantity` | INTEGER | no |  |  |
-| `from_place` | TEXT | no |  | → `stock_places.id` |
-| `to_place` | TEXT | no |  | → `stock_places.id` |
-| `state` | TEXT | no |  |  |
-| `received_quantity` | INTEGER | yes |  |  |
-| `note` | TEXT | yes |  |  |
-| `sent_by` | TEXT | no |  |  |
-| `sent_at` | TEXT | no |  |  |
-| `settled_by` | TEXT | yes |  |  |
-| `settled_at` | TEXT | yes |  |  |
-| `settlement_id` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |  |
+| `quantity` | INTEGER | no |  |  |  |
+| `from_place` | TEXT | no |  | → `stock_places.id` |  |
+| `to_place` | TEXT | no |  | → `stock_places.id` |  |
+| `state` | TEXT | no |  |  |  |
+| `received_quantity` | INTEGER | yes |  |  | What arrived; short of the quantity sent where some was lost on the way. |
+| `note` | TEXT | yes |  |  | Ops' own words on what arrived. Never a client's name. |
+| `sent_by` | TEXT | no |  |  |  |
+| `sent_at` | TEXT | no |  |  |  |
+| `settled_by` | TEXT | yes |  |  |  |
+| `settled_at` | TEXT | yes |  |  |  |
+| `settlement_id` | TEXT | yes |  |  | The settling request's own token, which the rows written with the settlement test for. |
 
 Indexes:
 
@@ -2833,16 +2833,16 @@ Each unit's history, only ever added to: the state it moved into, where, and by 
 
 Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `unit_id` | TEXT | no |  | → `stock_units.id` |
-| `at` | TEXT | no |  |  |
-| `state` | TEXT | no |  |  |
-| `place` | TEXT | yes |  |  |
-| `movement_id` | TEXT | yes |  |  |
-| `transfer_id` | TEXT | yes |  |  |
-| `appointment_id` | TEXT | yes |  |  |
-| `actor` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `unit_id` | TEXT | no |  | → `stock_units.id` |  |
+| `at` | TEXT | no |  |  |  |
+| `state` | TEXT | no |  |  |  |
+| `place` | TEXT | yes |  |  |  |
+| `movement_id` | TEXT | yes |  |  |  |
+| `transfer_id` | TEXT | yes |  |  |  |
+| `appointment_id` | TEXT | yes |  |  |  |
+| `actor` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -2855,20 +2855,20 @@ Each hair system piece labelled: its label, stock code and lot, and where it is 
 
 Made by `0138_stock_units.sql`; changed by `0148_custom_reservations.sql`, `0155_recalls.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `code` | TEXT | no |  |  |
-| `serial` | INTEGER | no |  |  |
-| `consumable_code` | TEXT | no |  | → `consumables.code` |
-| `lot_id` | TEXT | yes |  | → `stock_lots.id` |
-| `state` | TEXT | no |  |  |
-| `place` | TEXT | yes |  |  |
-| `transfer_id` | TEXT | yes |  | → `stock_transfers.id` |
-| `appointment_id` | TEXT | yes |  |  |
-| `labelled_at` | TEXT | no |  |  |
-| `moved_at` | TEXT | no |  |  |
-| `custom_order_id` | TEXT | yes |  | → `custom_orders.id` |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `code` | TEXT | no |  |  | The label on the piece and in its QR code, e.g. MM-STA-0000123-K; a piece fitted keeps it as its piece code. |
+| `serial` | INTEGER | no |  |  |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |  |
+| `lot_id` | TEXT | yes |  | → `stock_lots.id` |  |
+| `state` | TEXT | no |  |  |  |
+| `place` | TEXT | yes |  |  | The place holding it, or one in transit is going to; null once it has left the stock. |
+| `transfer_id` | TEXT | yes |  | → `stock_transfers.id` |  |
+| `appointment_id` | TEXT | yes |  |  | The visit it was fitted on, or came off at. |
+| `labelled_at` | TEXT | no |  |  |  |
+| `moved_at` | TEXT | no |  |  |  |
+| `custom_order_id` | TEXT | yes |  | → `custom_orders.id` | A custom order's piece reserved to its client (docs/decisions/0175-custom-pieces-reserved.md): the unit a receipt of its order's line labels names the custom order, and never joins free stock. |
 
 Indexes:
 
@@ -2886,14 +2886,14 @@ What the apps' two buckets, client-photos and referral-cards, hold together: one
 
 Made by `0055_storage_meter.sql`; changed by `0072_database_size_told.sql`, `0164_storage_growth_by_day.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `bytes` | INTEGER | no |  |  |
-| `told_percent` | INTEGER | no | `0` |  |
-| `database_told_percent` | INTEGER | no | `0` |  |
-| `growth_date` | TEXT | yes |  |  |
-| `growth_from_bytes` | INTEGER | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `bytes` | INTEGER | no |  |  |  |
+| `told_percent` | INTEGER | no | `0` |  |  |
+| `database_told_percent` | INTEGER | no | `0` |  |  |
+| `growth_date` | TEXT | yes |  |  |  |
+| `growth_from_bytes` | INTEGER | yes |  |  |  |
 
 ## stored_objects
 
@@ -2901,10 +2901,10 @@ Each object client-photos and referral-cards hold, and its size, written as it i
 
 Made by `0055_storage_meter.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `key` | TEXT | no |  | primary key |
-| `bytes` | INTEGER | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `key` | TEXT | no |  | primary key |  |
+| `bytes` | INTEGER | no |  |  |  |
 
 ## supplier_claims
 
@@ -2912,32 +2912,32 @@ Each claim on a supplier: what arrived damaged or failed its check, or a returne
 
 Made by `0144_supplier_claims.sql`; changed by `0145_stock_photos.sql`, `0146_vendor_credits.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `number` | INTEGER | no |  |  |
-| `supplier_id` | TEXT | no |  | → `suppliers.id` |
-| `consumable_code` | TEXT | no |  | → `consumables.code` |
-| `quantity` | INTEGER | no |  |  |
-| `reason` | TEXT | no |  |  |
-| `receipt_line_id` | TEXT | no |  | → `receipt_lines.id` |
-| `unit_id` | TEXT | yes |  | → `stock_units.id` |
-| `unit_price` | INTEGER | no |  |  |
-| `currency` | TEXT | no |  |  |
-| `state` | TEXT | no |  |  |
-| `outcome` | TEXT | yes |  |  |
-| `credit_amount` | INTEGER | yes |  |  |
-| `note` | TEXT | yes |  |  |
-| `drafted_by` | TEXT | no |  |  |
-| `drafted_at` | TEXT | no |  |  |
-| `sent_by` | TEXT | yes |  |  |
-| `sent_at` | TEXT | yes |  |  |
-| `decided_by` | TEXT | yes |  |  |
-| `decided_at` | TEXT | yes |  |  |
-| `change_id` | TEXT | yes |  |  |
-| `photo_id` | TEXT | yes |  |  |
-| `books_credit_id` | TEXT | yes |  |  |
-| `books_checked_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `number` | INTEGER | no |  |  |  |
+| `supplier_id` | TEXT | no |  | → `suppliers.id` |  |
+| `consumable_code` | TEXT | no |  | → `consumables.code` |  |
+| `quantity` | INTEGER | no |  |  |  |
+| `reason` | TEXT | no |  |  |  |
+| `receipt_line_id` | TEXT | no |  | → `receipt_lines.id` |  |
+| `unit_id` | TEXT | yes |  | → `stock_units.id` | The returned piece a warranty claim is for. |
+| `unit_price` | INTEGER | no |  |  | One unit's price on the order, in the order's currency's smallest unit. |
+| `currency` | TEXT | no |  |  |  |
+| `state` | TEXT | no |  |  |  |
+| `outcome` | TEXT | yes |  |  |  |
+| `credit_amount` | INTEGER | yes |  |  |  |
+| `note` | TEXT | yes |  |  |  |
+| `drafted_by` | TEXT | no |  |  |  |
+| `drafted_at` | TEXT | no |  |  |  |
+| `sent_by` | TEXT | yes |  |  |  |
+| `sent_at` | TEXT | yes |  |  |  |
+| `decided_by` | TEXT | yes |  |  |  |
+| `decided_at` | TEXT | yes |  |  |  |
+| `change_id` | TEXT | yes |  |  |  |
+| `photo_id` | TEXT | yes |  |  |  |
+| `books_credit_id` | TEXT | yes |  |  | Vendor credits in Zoho Books (docs/decisions/0171-vendor-credits.md): each claim settled as a credit made a vendor credit on its supplier's vendor, once, tried again an hour after a failure. |
+| `books_checked_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -2954,16 +2954,16 @@ What each supplier supplies of a stock code: their code, price in their currency
 
 Made by `0140_suppliers.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `supplier_id` | TEXT | no |  | primary key; → `suppliers.id` |
-| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |
-| `their_code` | TEXT | yes |  |  |
-| `unit_price` | INTEGER | no |  |  |
-| `pack_size` | INTEGER | no |  |  |
-| `minimum_order` | INTEGER | no |  |  |
-| `lead_time_days` | INTEGER | no |  |  |
-| `updated_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `supplier_id` | TEXT | no |  | primary key; → `suppliers.id` |  |
+| `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |  |
+| `their_code` | TEXT | yes |  |  |  |
+| `unit_price` | INTEGER | no |  |  | One unit's price in the supplier's currency, in its smallest unit: paise for rupees, cents for dollars. |
+| `pack_size` | INTEGER | no |  |  |  |
+| `minimum_order` | INTEGER | no |  |  |  |
+| `lead_time_days` | INTEGER | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -2975,23 +2975,23 @@ Each supplier we buy stock from: its terms, currency and warranty, retired rathe
 
 Made by `0140_suppliers.sql`; changed by `0143_books_bills.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `name` | TEXT | no |  |  |
-| `gstin` | TEXT | yes |  |  |
-| `country` | TEXT | no |  |  |
-| `currency` | TEXT | no |  |  |
-| `contact_name` | TEXT | yes |  |  |
-| `contact_phone` | TEXT | yes |  |  |
-| `contact_email` | TEXT | yes |  |  |
-| `payment_terms_days` | INTEGER | no |  |  |
-| `warranty_days` | INTEGER | no |  |  |
-| `retired_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `books_vendor_id` | TEXT | yes |  |  |
-| `books_checked_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `name` | TEXT | no |  |  |  |
+| `gstin` | TEXT | yes |  |  | India's GST number; null for a supplier abroad, or one not registered. |
+| `country` | TEXT | no |  |  | ISO 3166 alpha-2, and the ISO 4217 currency its invoices are in, which its prices are kept in. |
+| `currency` | TEXT | no |  |  |  |
+| `contact_name` | TEXT | yes |  |  |  |
+| `contact_phone` | TEXT | yes |  |  |  |
+| `contact_email` | TEXT | yes |  |  |  |
+| `payment_terms_days` | INTEGER | no |  |  |  |
+| `warranty_days` | INTEGER | no |  |  | How long after a piece is fitted the supplier takes it back if it fails; nought for none. |
+| `retired_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `books_vendor_id` | TEXT | yes |  |  | Bills in Zoho Books (docs/decisions/0168-bills-in-books.md): each supplier with a receipt to bill made a Books vendor, and each receipt a bill, once, each tried again an hour after a failure. |
+| `books_checked_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -3003,14 +3003,14 @@ Where each pass of the reconciliation with FSM has reached (ADR 0032).
 
 Made by `0012_fsm_reconciliation.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `name` | TEXT | no |  | primary key |
-| `pass_date` | TEXT | yes |  |  |
-| `next_page` | INTEGER | no | `1` |  |
-| `pass_started_at` | TEXT | yes |  |  |
-| `repaired` | INTEGER | no | `0` |  |
-| `updated_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `name` | TEXT | no |  | primary key |  |
+| `pass_date` | TEXT | yes |  |  | The India date of the night whose full pass this is. |
+| `next_page` | INTEGER | no | `1` |  | The next page the pass reads; 0 once tonight's pass is done. |
+| `pass_started_at` | TEXT | yes |  |  |  |
+| `repaired` | INTEGER | no | `0` |  | Copies this pass found missing or out of date, which the webhook should have kept. |
+| `updated_at` | TEXT | no |  |  |  |
 
 ## targets
 
@@ -3018,14 +3018,14 @@ Each month's target for a city, by measure, as set on the console's Targets page
 
 Made by `0131_targets.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `month` | TEXT | no |  | primary key |
-| `city` | TEXT | no |  | primary key; → `cities.name` |
-| `measure` | TEXT | no |  | primary key |
-| `target` | INTEGER | no |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `month` | TEXT | no |  | primary key |  |
+| `city` | TEXT | no |  | primary key; → `cities.name` |  |
+| `measure` | TEXT | no |  | primary key |  |
+| `target` | INTEGER | no |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 ## task_closures
 
@@ -3033,14 +3033,14 @@ A task on the Tasks board ops closed without doing its thing, a visit left partl
 
 Made by `0056_task_owners.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `task_group` | TEXT | no |  |  |
-| `subject_id` | TEXT | no |  |  |
-| `reason` | TEXT | yes |  |  |
-| `closed_by` | TEXT | no |  |  |
-| `closed_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `task_group` | TEXT | no |  |  |  |
+| `subject_id` | TEXT | no |  |  |  |
+| `reason` | TEXT | yes |  |  | Ops' own words about the client's visit; NULL once the client is erased. |
+| `closed_by` | TEXT | no |  |  |  |
+| `closed_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -3052,14 +3052,14 @@ The member of staff a task on the Tasks board is theirs, by Access e-mail, by th
 
 Made by `0056_task_owners.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `task_group` | TEXT | no |  | primary key |
-| `subject_id` | TEXT | no |  | primary key |
-| `episode` | TEXT | no |  |  |
-| `owner` | TEXT | no |  |  |
-| `assigned_by` | TEXT | no |  |  |
-| `assigned_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `task_group` | TEXT | no |  | primary key |  |
+| `subject_id` | TEXT | no |  | primary key |  |
+| `episode` | TEXT | no |  |  |  |
+| `owner` | TEXT | no |  |  |  |
+| `assigned_by` | TEXT | no |  |  |  |
+| `assigned_at` | TEXT | no |  |  |  |
 
 ## task_spans
 
@@ -3067,15 +3067,15 @@ Each task the Tasks board has held, by its group, row and episode: the client's 
 
 Made by `0126_task_spans.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `task_group` | TEXT | no |  |  |
-| `subject_id` | TEXT | no |  |  |
-| `episode` | TEXT | no |  |  |
-| `city` | TEXT | yes |  |  |
-| `opened_at` | TEXT | no |  |  |
-| `closed_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `task_group` | TEXT | no |  |  |  |
+| `subject_id` | TEXT | no |  |  | The task's row and episode, as the board names it; with the group, which task it is. |
+| `episode` | TEXT | no |  |  |  |
+| `city` | TEXT | yes |  |  | The client's city when it opened; NULL where none is known. |
+| `opened_at` | TEXT | no |  |  |  |
+| `closed_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -3088,18 +3088,18 @@ The phones technicians work from, each bound to a session and revocable by ops (
 
 Made by `0026_field_operations.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `technician_id` | TEXT | no |  | → `technicians.id` |
-| `device_id` | TEXT | no |  |  |
-| `session_id` | TEXT | yes |  | → `sessions.id` |
-| `label` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
-| `last_seen_at` | TEXT | no |  |  |
-| `revoked_at` | TEXT | yes |  |  |
-| `revoked_by` | TEXT | yes |  |  |
-| `wiped_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `device_id` | TEXT | no |  |  | The app's own ID for the phone, kept in its storage. Never a hardware serial. |
+| `session_id` | TEXT | yes |  | → `sessions.id` | The session it logged in with (migration 0007); NULL once that session ended. |
+| `label` | TEXT | yes |  |  | What the browser said it was at login, e.g. "Chrome on Android". |
+| `created_at` | TEXT | no |  |  |  |
+| `last_seen_at` | TEXT | no |  |  |  |
+| `revoked_at` | TEXT | yes |  |  |  |
+| `revoked_by` | TEXT | yes |  |  | The Access identity of the ops user who revoked it (ADR 0031). |
+| `wiped_at` | TEXT | yes |  |  | When the device confirmed it had dropped its cached jobs. |
 
 Indexes:
 
@@ -3112,17 +3112,17 @@ A technician's leave in whole days, which the clash check reads beside `slot_cla
 
 Made by `0034_leave_and_asked_window.sql`; changed by `0090_board_version.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `technician_id` | TEXT | no |  | → `technicians.id` |
-| `from_date` | TEXT | no |  |  |
-| `to_date` | TEXT | no |  |  |
-| `note` | TEXT | yes |  |  |
-| `actor` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
-| `cancelled_at` | TEXT | yes |  |  |
-| `cancelled_by` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `technician_id` | TEXT | no |  | → `technicians.id` |  |
+| `from_date` | TEXT | no |  |  | Inclusive, both of them: a single day's leave has the same date twice. |
+| `to_date` | TEXT | no |  |  |  |
+| `note` | TEXT | yes |  |  | Why, in ops' own words, for whoever reads the board later. Never a medical detail. |
+| `actor` | TEXT | no |  |  | The Access identity of the ops user who recorded it, and of whoever took it back (ADR 0031). |
+| `created_at` | TEXT | no |  |  |  |
+| `cancelled_at` | TEXT | yes |  |  |  |
+| `cancelled_by` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -3136,15 +3136,15 @@ A technician's word to the client from the job card: on the way, at the gate, or
 
 Made by `0125_technician_updates.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `technician_id` | TEXT | no |  |  |
-| `preset` | TEXT | no |  |  |
-| `minutes` | INTEGER | yes |  |  |
-| `written_at` | TEXT | no |  |  |
-| `created_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `technician_id` | TEXT | no |  |  |  |
+| `preset` | TEXT | no |  |  |  |
+| `minutes` | INTEGER | yes |  |  | How many minutes away, or late; NULL at the gate. |
+| `written_at` | TEXT | no |  |  | When the phone queued it, from its event ID. |
+| `created_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -3156,22 +3156,22 @@ The mirror of FSM's technicians: name, initials, mobile number and zone; and on 
 
 Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`, `0106_technician_test_record.sql`, `0107_city_blackouts_and_fitters.sql`, `0108_technician_pay.sql`, `0133_stock_places.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `fsm_id` | TEXT | no |  |  |
-| `name` | TEXT | no |  |  |
-| `initials` | TEXT | no |  |  |
-| `active` | INTEGER | no |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `zone` | TEXT | yes |  |  |
-| `mobile_e164` | TEXT | yes |  |  |
-| `hand_written` | INTEGER | no | `0` |  |
-| `city` | TEXT | yes |  | → `cities.name` |
-| `sign_in_stopped_at` | TEXT | yes |  |  |
-| `test_record` | INTEGER | no | `0` |  |
-| `fits_trained` | INTEGER | no | `0` |  |
-| `pay_grade_id` | TEXT | yes |  | → `pay_grades.id` |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `fsm_id` | TEXT | no |  |  |  |
+| `name` | TEXT | no |  |  |  |
+| `initials` | TEXT | no |  |  |  |
+| `active` | INTEGER | no |  |  |  |
+| `updated_at` | TEXT | no |  |  |  |
+| `zone` | TEXT | yes |  |  | The zone migration 0026 left for the code that reads it: the dispatch board groups technicians by it, and FSM calls it a territory. NULL until each technician has one there (docs/open-points.md, item 12). |
+| `mobile_e164` | TEXT | yes |  |  | "Mobile number plus a one-time code, the same flow as clients but a separate role" (src/policy/technician-login.ts). The number comes from the technician's FSM user, which is also what makes him "an active field technician": nobody logs in whom FSM does not list. NULL for a user with no number on his FSM record, who then cannot log in (docs/open-points.md, item 12). |
+| `hand_written` | INTEGER | no | `0` |  |  |
+| `city` | TEXT | yes |  | → `cities.name` |  |
+| `sign_in_stopped_at` | TEXT | yes |  |  |  |
+| `test_record` | INTEGER | no | `0` |  |  |
+| `fits_trained` | INTEGER | no | `0` |  |  |
+| `pay_grade_id` | TEXT | yes |  | → `pay_grades.id` |  |
 
 Indexes:
 
@@ -3186,49 +3186,49 @@ One try-on render: the photograph, the look, the provider's job and the result (
 
 Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0074_number_codes.sql`, `0171_tryon_on_youcam.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `created_at` | TEXT | no |  |  |
-| `upload_key` | TEXT | no |  |  |
-| `uploaded_at` | TEXT | yes |  |  |
-| `upload_deleted_at` | TEXT | yes |  |  |
-| `parent_job_id` | TEXT | yes |  | → `tryon_jobs.id` |
-| `stage` | TEXT | yes |  |  |
-| `preset` | TEXT | yes |  |  |
-| `hair_color` | TEXT | yes |  |  |
-| `endpoint` | TEXT | yes |  |  |
-| `provider_color` | TEXT | yes |  |  |
-| `color_route` | TEXT | yes |  |  |
-| `state` | TEXT | no |  |  |
-| `submit_started_at` | TEXT | yes |  |  |
-| `submit_attempts` | INTEGER | no | `0` |  |
-| `submitted_at` | TEXT | yes |  |  |
-| `provider_task_id` | TEXT | yes |  |  |
-| `provider_result_url` | TEXT | yes |  |  |
-| `provider_result_expires_at` | TEXT | yes |  |  |
-| `download_attempts` | INTEGER | no | `0` |  |
-| `download_attempted_at` | TEXT | yes |  |  |
-| `result_key` | TEXT | yes |  |  |
-| `failure_code` | TEXT | yes |  |  |
-| `provider_error_detail` | TEXT | yes |  |  |
-| `latency_ms` | INTEGER | yes |  |  |
-| `person_id` | TEXT | yes |  | → `people.id` |
-| `lead_id` | TEXT | yes |  | → `leads.id` |
-| `session_id` | TEXT | yes |  |  |
-| `claimed_at` | TEXT | yes |  |  |
-| `expires_at` | TEXT | yes |  |  |
-| `photo_consent_version` | TEXT | no |  |  |
-| `photo_consent_at` | TEXT | no |  |  |
-| `ip_hash` | TEXT | no |  |  |
-| `request_id` | TEXT | no |  |  |
-| `copy_key` | TEXT | yes |  |  |
-| `kept_at` | TEXT | yes |  |  |
-| `kept_look_key` | TEXT | yes |  |  |
-| `number_proved_at` | TEXT | yes |  |  |
-| `failure_reason` | TEXT | yes |  |  |
-| `render_key` | TEXT | yes |  |  |
-| `renders` | INTEGER | no | `0` |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `created_at` | TEXT | no |  |  |  |
+| `upload_key` | TEXT | no |  |  | The photo in the UPLOADS bucket. A second look reuses its first look's key. |
+| `uploaded_at` | TEXT | yes |  |  |  |
+| `upload_deleted_at` | TEXT | yes |  |  |  |
+| `parent_job_id` | TEXT | yes |  | → `tryon_jobs.id` | The first look of this photo, for a second or later look; NULL otherwise. |
+| `stage` | TEXT | yes |  |  | Chosen at generate. |
+| `preset` | TEXT | yes |  |  |  |
+| `hair_color` | TEXT | yes |  |  |  |
+| `endpoint` | TEXT | yes |  |  |  |
+| `provider_color` | TEXT | yes |  |  | The colour sent to the provider, and why: 'as_detected', or the UNKNOWN_COLOR_ROUTE taken. |
+| `color_route` | TEXT | yes |  |  |  |
+| `state` | TEXT | no |  |  |  |
+| `submit_started_at` | TEXT | yes |  |  | The render. submit_started_at is claimed before submitting, so a job is never submitted (and billed) twice. |
+| `submit_attempts` | INTEGER | no | `0` |  |  |
+| `submitted_at` | TEXT | yes |  |  |  |
+| `provider_task_id` | TEXT | yes |  |  |  |
+| `provider_result_url` | TEXT | yes |  |  | Kept before downloading: the image is billed on generation, and this URL is the only way back to it for 24 hours. |
+| `provider_result_expires_at` | TEXT | yes |  |  |  |
+| `download_attempts` | INTEGER | no | `0` |  |  |
+| `download_attempted_at` | TEXT | yes |  |  |  |
+| `result_key` | TEXT | yes |  |  |  |
+| `failure_code` | TEXT | yes |  |  |  |
+| `provider_error_detail` | TEXT | yes |  |  | The provider's error, with the API key scrubbed out. Never shown to the customer. |
+| `latency_ms` | INTEGER | yes |  |  |  |
+| `person_id` | TEXT | yes |  | → `people.id` | Who, once the gate is passed (or the session that asked for a second look). |
+| `lead_id` | TEXT | yes |  | → `leads.id` |  |
+| `session_id` | TEXT | yes |  |  |  |
+| `claimed_at` | TEXT | yes |  |  |  |
+| `expires_at` | TEXT | yes |  |  | When the result is deleted: 30 days after it is ready. |
+| `photo_consent_version` | TEXT | no |  |  | The photo consent, given before the upload. Copied into consents at claim. |
+| `photo_consent_at` | TEXT | no |  |  |  |
+| `ip_hash` | TEXT | no |  |  |  |
+| `request_id` | TEXT | no |  |  |  |
+| `copy_key` | TEXT | yes |  |  | The photograph's small copy in the client-photos bucket (tryons/<job>/before.jpg), from its upload until the sweeper deletes it: with the photograph, with the look, or never once the try-on is kept. Blank once deleted. |
+| `kept_at` | TEXT | yes |  |  | When the sweeper kept the try-on, on its look's last day: its person had booked a visit by then. |
+| `kept_look_key` | TEXT | yes |  |  | The kept look, moved to the client-photos bucket (tryons/<job>/look.<ext>), where no lifecycle rule can take it, until the client's first fit is photographed. Blank once deleted. |
+| `number_proved_at` | TEXT | yes |  |  | When the try-on's claim came with its number proved by a code. The app shows and keeps a client's try-on only when it did. |
+| `failure_reason` | TEXT | yes |  |  |  |
+| `render_key` | TEXT | yes |  |  | A sha256 over the photograph's own bytes, the look and the references' version. |
+| `renders` | INTEGER | no | `0` |  | The renders YouCam took for the job: one more is made when its model fails or runs out of time. |
 
 Indexes:
 
@@ -3246,12 +3246,12 @@ The try-on gate's session, which showed a visitor their result (ADR 0014); writt
 
 Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `created_at` | TEXT | no |  |  |
-| `expires_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `created_at` | TEXT | no |  |  |  |
+| `expires_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -3264,12 +3264,12 @@ Each vendor's failures in a row, and until when its work waits while it is held 
 
 Made by `0174_crm_held_off_and_owed_updates.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `vendor` | TEXT | no |  | primary key |
-| `failures` | INTEGER | no | `0` |  |
-| `open_until` | TEXT | yes |  |  |
-| `opened_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `vendor` | TEXT | no |  | primary key | "crm" |
+| `failures` | INTEGER | no | `0` |  | the vendor's own failures in a row, its refusals of a record not among them |
+| `reopens_at` | TEXT | yes |  |  | the instant its work may be tried again; empty while it is not held |
+| `opened_at` | TEXT | yes |  |  | the instant the hold that is open, or the run of them, began |
 
 ## visit_blackouts
 
@@ -3277,12 +3277,12 @@ Days on which no visit is offered.
 
 Made by `0002_lead_path.sql`; changed by `0054_policies_in_the_console.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `date` | TEXT | no |  | primary key |
-| `reason` | TEXT | no |  |  |
-| `set_by` | TEXT | yes |  |  |
-| `set_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `date` | TEXT | no |  | primary key |  |
+| `reason` | TEXT | no |  |  |  |
+| `set_by` | TEXT | yes |  |  | Blackout days are set in the console now, where the runbook's SQL set them: who set each and when, as every ops change records it (ADR 0031). Null for a day the runbook's SQL wrote before. |
+| `set_at` | TEXT | yes |  |  |  |
 
 ## visit_changes
 
@@ -3290,25 +3290,25 @@ Each move or cancel a client made, and each cancel ops made, with its notice and
 
 Made by `0020_visit_changes.sql`; changed by `0037_cron_indexes.sql`, `0082_ops_cancel_and_close.sql`, `0084_cancel_refund_settled.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `kind` | TEXT | no |  |  |
-| `notice` | TEXT | no |  |  |
-| `was_start` | TEXT | no |  |  |
-| `now_start` | TEXT | yes |  |  |
-| `refund_amount` | INTEGER | no | `0` |  |
-| `kept_amount` | INTEGER | no | `0` |  |
-| `payment_id` | TEXT | yes |  | → `payments.id` |
-| `razorpay_refund_id` | TEXT | yes |  |  |
-| `hold_id` | TEXT | yes |  | → `slot_holds.id` |
-| `created_at` | TEXT | no |  |  |
-| `cancelled_by` | TEXT | yes |  |  |
-| `cancel_reason` | TEXT | yes |  |  |
-| `ops_terms` | TEXT | yes |  |  |
-| `refund_settled_at` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `kind` | TEXT | no |  |  | moved: the same visit at a new time; replaced: cancelled for a new visit; cancelled. |
+| `notice` | TEXT | no |  |  |  |
+| `was_start` | TEXT | no |  |  | When the visit was to start, and, for a move, when it starts now. |
+| `now_start` | TEXT | yes |  |  |  |
+| `refund_amount` | INTEGER | no | `0` |  | In paise: what goes back to the client, and what is kept as a charge. |
+| `kept_amount` | INTEGER | no | `0` |  |  |
+| `payment_id` | TEXT | yes |  | → `payments.id` | The payment refunded or kept, and Razorpay's refund once asked for. |
+| `razorpay_refund_id` | TEXT | yes |  |  |  |
+| `hold_id` | TEXT | yes |  | → `slot_holds.id` |  |
+| `created_at` | TEXT | no |  |  |  |
+| `cancelled_by` | TEXT | yes |  |  | A cancel ops made: the Access e-mail of who made it, their reason as they typed it, and the terms it was made on: free to the client, or the client's own late terms. |
+| `cancel_reason` | TEXT | yes |  |  |  |
+| `ops_terms` | TEXT | yes |  |  |  |
+| `refund_settled_at` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -3323,20 +3323,20 @@ What an appointment became once it closed, or ops closed it by hand: the outcome
 
 Made by `0169_visits_whole.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `appointment_id` | TEXT | no |  | → `appointments.id` |
-| `started_at` | TEXT | yes |  |  |
-| `ended_at` | TEXT | yes |  |  |
-| `duration_minutes` | INTEGER | yes |  |  |
-| `outcome` | TEXT | no |  |  |
-| `partial_reason` | TEXT | yes |  |  |
-| `updated_at` | TEXT | no |  |  |
-| `followed_up` | INTEGER | no | `0` |  |
-| `closed_by` | TEXT | yes |  |  |
-| `close_reason` | TEXT | yes |  |  |
-| `lost_reason` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `appointment_id` | TEXT | no |  | → `appointments.id` |  |
+| `started_at` | TEXT | yes |  |  |  |
+| `ended_at` | TEXT | yes |  |  |  |
+| `duration_minutes` | INTEGER | yes |  |  |  |
+| `outcome` | TEXT | no |  |  |  |
+| `partial_reason` | TEXT | yes |  |  | From the technician's outcome, for a partial visit only (src/config/job-sheet.ts). |
+| `updated_at` | TEXT | no |  |  |  |
+| `followed_up` | INTEGER | no | `0` |  | Whether a visit left partly done has been followed: any visit of its client's, not cancelled, booked after it. |
+| `closed_by` | TEXT | yes |  |  | A visit ops closed by hand: who closed it, and why, as they typed it. |
+| `close_reason` | TEXT | yes |  |  |  |
+| `lost_reason` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -3352,16 +3352,16 @@ What a visit pays a technician, beside their salary: per grade and kind of visit
 
 Made by `0108_technician_pay.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `grade_id` | TEXT | no |  | → `pay_grades.id` |
-| `city` | TEXT | yes |  | → `cities.name` |
-| `visit_kind` | TEXT | no |  |  |
-| `amount` | INTEGER | yes |  |  |
-| `effective_from` | TEXT | no |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `grade_id` | TEXT | no |  | → `pay_grades.id` |  |
+| `city` | TEXT | yes |  | → `cities.name` | One city's rate, which stands in for every city's there; NULL for every city. |
+| `visit_kind` | TEXT | no |  |  |  |
+| `amount` | INTEGER | yes |  |  | Paise. NULL from this date: no rate of its own, so a city's falls back to every city's, and every city's to none. |
+| `effective_from` | TEXT | no |  |  | India's date it applies from. |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -3373,16 +3373,16 @@ Someone waiting for us to reach their pincode, and whether they were told it lau
 
 Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `pincode` | TEXT | no |  |  |
-| `person_id` | TEXT | no |  | → `people.id` |
-| `referral_code` | TEXT | yes |  | → `referral_codes.code` |
-| `contact_consent_at` | TEXT | no |  |  |
-| `launch_alert` | INTEGER | no | `0` |  |
-| `alerted_at` | TEXT | yes |  |  |
-| `created_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `pincode` | TEXT | no |  |  |  |
+| `person_id` | TEXT | no |  | → `people.id` |  |
+| `referral_code` | TEXT | yes |  | → `referral_codes.code` |  |
+| `contact_consent_at` | TEXT | no |  |  |  |
+| `launch_alert` | INTEGER | no | `0` |  | Whether they asked to be told when we launch there, and when we told them. |
+| `alerted_at` | TEXT | yes |  |  |  |
+| `created_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -3396,17 +3396,17 @@ FSM's webhook deliveries, each kept once (ADR 0032).
 
 Made by `0011_fsm_mirror.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `source` | TEXT | no |  |  |
-| `dedupe_key` | TEXT | no |  |  |
-| `module` | TEXT | no |  |  |
-| `record_id` | TEXT | no |  |  |
-| `received_at` | TEXT | no |  |  |
-| `processed_at` | TEXT | yes |  |  |
-| `attempts` | INTEGER | no | `0` |  |
-| `last_error` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `source` | TEXT | no |  |  |  |
+| `dedupe_key` | TEXT | no |  |  |  |
+| `module` | TEXT | no |  |  |  |
+| `record_id` | TEXT | no |  |  |  |
+| `received_at` | TEXT | no |  |  |  |
+| `processed_at` | TEXT | yes |  |  |  |
+| `attempts` | INTEGER | no | `0` |  |  |
+| `last_error` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -3419,13 +3419,13 @@ Every wording a line of the site or a WhatsApp message has had on the Words page
 
 Made by `0112_words.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `key` | TEXT | no |  |  |
-| `text` | TEXT | yes |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |  |
+| `key` | TEXT | no |  |  |  |
+| `text` | TEXT | yes |  |  |  |
+| `set_by` | TEXT | no |  |  |  |
+| `set_at` | TEXT | no |  |  |  |
 
 Indexes:
 
@@ -3437,13 +3437,13 @@ Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one 
 
 Made by `0041_vendor_correctness.sql`; changed by `0070_field_record_ours.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `client` | TEXT | no |  | primary key |
-| `access_token` | TEXT | yes |  |  |
-| `expires_at` | TEXT | yes |  |  |
-| `refreshing_until` | TEXT | yes |  |  |
-| `cool_down_until` | TEXT | yes |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `client` | TEXT | no |  | primary key |  |
+| `access_token` | TEXT | yes |  |  |  |
+| `expires_at` | TEXT | yes |  |  |  |
+| `refreshing_until` | TEXT | yes |  |  |  |
+| `cool_down_until` | TEXT | yes |  |  |  |
 
 ## zoho_token
 
@@ -3451,11 +3451,11 @@ The CRM's access token before migration 0041; unread since, and dropped later (o
 
 Made by `0002_lead_path.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | INTEGER | no |  | primary key |
-| `access_token` | TEXT | no |  |  |
-| `expires_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `id` | INTEGER | no |  | primary key |  |
+| `access_token` | TEXT | no |  |  |  |
+| `expires_at` | TEXT | no |  |  |  |
 
 ## zoho_tokens
 
@@ -3463,11 +3463,11 @@ FSM's and Books' access token before migration 0041; unread since, and dropped l
 
 Made by `0010_zoho_tokens.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `client` | TEXT | no |  | primary key |
-| `access_token` | TEXT | no |  |  |
-| `expires_at` | TEXT | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `client` | TEXT | no |  | primary key |  |
+| `access_token` | TEXT | no |  |  |  |
+| `expires_at` | TEXT | no |  |  |  |
 
 ## zones
 
@@ -3475,7 +3475,7 @@ A region made of cities, as NCR is, which a grant of staff access may name (ADR 
 
 Made by `0069_staff_and_access.sql`.
 
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `name` | TEXT | no |  | primary key |
-| `sort` | INTEGER | no |  |  |
+| Column | Type | May be empty | Default | Key | What it holds |
+| --- | --- | --- | --- | --- | --- |
+| `name` | TEXT | no |  | primary key |  |
+| `sort` | INTEGER | no |  |  |  |

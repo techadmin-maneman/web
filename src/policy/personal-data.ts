@@ -137,7 +137,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     erasure: { why: "Kept two years and never changed, as the record of who did what." },
   },
   crm_contact_updates: {
-    leftOut: ["person_id", "owed_since", "changed_at", "invite_attached", "attempts", "tried_at"],
+    leftOut: ["person_id", "owed_at", "changed_at", "invite_attached", "attempts", "tried_at"],
     whyLeftOut: "Whether a change of theirs is still to reach the CRM, which holds the change itself.",
     erasure: { deletes: true, why: "Deleted: nothing is sent to the CRM for an erased record but its erasure." },
   },

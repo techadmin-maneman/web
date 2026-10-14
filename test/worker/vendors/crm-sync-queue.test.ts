@@ -237,7 +237,7 @@ describe("crm-sync: erasing a person", () => {
 // A confirmed change of number stayed in D1, and the CRM lead kept the old one. An invite ops attach is
 // sent the same way (docs/decisions/0089-an-invite-is-not-lost.md).
 describe("crm-sync: the CRM down", () => {
-  const breaker = () => env.DB.prepare("SELECT failures, open_until FROM vendor_breakers WHERE vendor = 'crm'").first();
+  const breaker = () => env.DB.prepare("SELECT failures, reopens_at FROM vendor_breakers WHERE vendor = 'crm'").first();
 
   it("is held off after five failures of its own: leads wait uncounted, ops hear once, and an answer closes it", async () => {
     const leads = await Promise.all([1, 2, 3, 4, 5, 6].map((n) => phaseOneLead(`+91981000010${String(n)}`, "Gurgaon")));
@@ -245,7 +245,7 @@ describe("crm-sync: the CRM down", () => {
     for (const leadId of leads) await syncLead(env.DB, deps, log, leadId);
 
     // The fifth failure held it, and counted against the CRM; the sixth lead was not tried.
-    expect(await breaker()).toMatchObject({ failures: 5, open_until: expect.any(String) as string });
+    expect(await breaker()).toMatchObject({ failures: 5, reopens_at: expect.any(String) as string });
     expect((await Promise.all(leads.map(leadRow))).map((row) => row?.sync_attempts)).toEqual([1, 1, 1, 1, 0, 0]);
     expect(deps.alerts).toEqual([expect.stringContaining("Check Zoho CRM's status: it has failed 5 times in a row")]);
     expect(await openAlertKeys()).toEqual(["vendor_down:crm"]);
@@ -254,7 +254,7 @@ describe("crm-sync: the CRM down", () => {
     const later = new Date(Date.now() + 16 * 60_000);
     const answered = fakeDependencies({ crm: recordingCrm(), now: () => later });
     await syncLead(env.DB, answered, log, leads[5] ?? "");
-    expect(await breaker()).toMatchObject({ failures: 0, open_until: null });
+    expect(await breaker()).toMatchObject({ failures: 0, reopens_at: null });
     expect(await openAlertKeys()).toEqual([]);
   });
 

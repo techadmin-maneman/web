@@ -15,7 +15,7 @@ export function oweContactUpdate(
 ): D1PreparedStatement {
   return db
     .prepare(
-      `INSERT INTO crm_contact_updates (person_id, owed_since, changed_at, invite_attached) VALUES (?1, ?2, ?2, ?3)
+      `INSERT INTO crm_contact_updates (person_id, owed_at, changed_at, invite_attached) VALUES (?1, ?2, ?2, ?3)
        ON CONFLICT (person_id) DO UPDATE SET changed_at = excluded.changed_at, tried_at = NULL,
          invite_attached = MAX(invite_attached, excluded.invite_attached)`,
     )

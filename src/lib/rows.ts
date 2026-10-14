@@ -338,7 +338,7 @@ export interface Rows {
   };
   readonly crm_contact_updates: {
     readonly person_id: string;
-    readonly owed_since: string;
+    readonly owed_at: string;
     readonly changed_at: string;
     readonly invite_attached: number;
     readonly attempts: number;
@@ -1577,7 +1577,7 @@ export interface Rows {
   readonly vendor_breakers: {
     readonly vendor: string;
     readonly failures: number;
-    readonly open_until: string | null;
+    readonly reopens_at: string | null;
     readonly opened_at: string | null;
   };
   readonly visit_blackouts: {

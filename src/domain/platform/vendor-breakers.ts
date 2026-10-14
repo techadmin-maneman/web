@@ -18,9 +18,9 @@ const alertKey = (vendor: BreakerVendor) => `vendor_down:${vendor}`;
 /** Until when the vendor's work waits; null while it may be tried. */
 export async function heldUntil(db: D1Database, vendor: BreakerVendor, now: Date): Promise<Date | null> {
   const until = await db
-    .prepare("SELECT open_until FROM vendor_breakers WHERE vendor = ?1 AND open_until > ?2")
+    .prepare("SELECT reopens_at FROM vendor_breakers WHERE vendor = ?1 AND reopens_at > ?2")
     .bind(vendor, now.toISOString())
-    .first<string>("open_until");
+    .first<string>("reopens_at");
   return until === null ? null : new Date(until);
 }
 
@@ -35,9 +35,9 @@ export async function noteOutage(
   const { vendor, now } = outage;
   const row = await db
     .prepare(
-      `INSERT INTO vendor_breakers (vendor, failures, open_until, opened_at) VALUES (?1, 1, NULL, NULL)
+      `INSERT INTO vendor_breakers (vendor, failures, reopens_at, opened_at) VALUES (?1, 1, NULL, NULL)
        ON CONFLICT (vendor) DO UPDATE SET failures = failures + 1,
-         open_until = CASE WHEN failures + 1 >= ?2 THEN ?3 ELSE open_until END,
+         reopens_at = CASE WHEN failures + 1 >= ?2 THEN ?3 ELSE reopens_at END,
          opened_at = CASE WHEN failures + 1 >= ?2 THEN COALESCE(opened_at, ?4) ELSE opened_at END
        RETURNING failures, opened_at`,
     )
@@ -61,7 +61,7 @@ export async function noteOutage(
 export async function noteAnswered(db: D1Database, vendor: BreakerVendor, resolveAlert: ResolveAlert): Promise<void> {
   const reset = await db
     .prepare(
-      `UPDATE vendor_breakers SET failures = 0, open_until = NULL, opened_at = NULL
+      `UPDATE vendor_breakers SET failures = 0, reopens_at = NULL, opened_at = NULL
        WHERE vendor = ?1 AND failures > 0 RETURNING opened_at`,
     )
     .bind(vendor)
