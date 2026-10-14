@@ -36,9 +36,6 @@ export async function bookHold(c: Context<AppEnv>, holdId: string): Promise<void
 }
 
 async function tellRefundOwed(c: Context<AppEnv>, holdId: string, error: RefundNotDone): Promise<void> {
-  const personId = await c.env.DB.prepare("SELECT person_id FROM slot_holds WHERE id = ?1")
-    .bind(holdId)
-    .first<string>("person_id");
   const owed = `Booking ${holdId} owes back payment ${error.paymentId} of ${rupees(error.amount)}`;
   // A refund Razorpay never answered may have been made: ops look before they refund, so it is not made twice.
   const message =
@@ -49,6 +46,6 @@ async function tellRefundOwed(c: Context<AppEnv>, holdId: string, error: RefundN
   await c.var.deps.alertOnce({
     key: `hold_refund_failed:${holdId}`,
     message,
-    ...(personId === null ? {} : { link: paymentsTab(personId) }),
+    link: paymentsTab(error.personId),
   });
 }

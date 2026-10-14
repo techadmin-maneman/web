@@ -30,10 +30,12 @@ export class RefundNotDone extends Error {
   readonly outcome: "refused" | "unanswered";
   readonly paymentId: string;
   readonly amount: number;
+  /** The client the payment is owed back to. */
+  readonly personId: string;
 
   constructor(
     outcome: "refused" | "unanswered",
-    payment: { readonly id: string; readonly amount: number },
+    payment: { readonly id: string; readonly amount: number; readonly personId: string },
     cause: unknown,
   ) {
     super(
@@ -45,6 +47,7 @@ export class RefundNotDone extends Error {
     this.outcome = outcome;
     this.paymentId = payment.id;
     this.amount = payment.amount;
+    this.personId = payment.personId;
   }
 }
 
@@ -152,11 +155,11 @@ async function refundOnce({
   reason: string;
 }): Promise<GivenBack> {
   // The refund is claimed on the hold before it is asked for, so a repeated message cannot ask twice.
-  const claimed = await db
-    .prepare("UPDATE slot_holds SET refunded_at = ?1 WHERE id = ?2 AND refunded_at IS NULL RETURNING id")
+  const claimedFor = await db
+    .prepare("UPDATE slot_holds SET refunded_at = ?1 WHERE id = ?2 AND refunded_at IS NULL RETURNING person_id")
     .bind(now.toISOString(), holdId)
-    .first();
-  if (claimed === null) return { kind: "refunded_before", paymentId: payment.razorpay_payment_id };
+    .first<string>("person_id");
+  if (claimedFor === null) return { kind: "refunded_before", paymentId: payment.razorpay_payment_id };
   const asked = await askRefund(payments, payment.razorpay_payment_id, {
     amount: payment.amount,
     notes: { hold_id: holdId, reason },
@@ -167,6 +170,6 @@ async function refundOnce({
   }
   // Let go, so the refund can be asked for again: its receipt keeps Razorpay from making it twice.
   await db.prepare("UPDATE slot_holds SET refunded_at = NULL WHERE id = ?1").bind(holdId).run();
-  const refund = { id: payment.razorpay_payment_id, amount: payment.amount };
+  const refund = { id: payment.razorpay_payment_id, amount: payment.amount, personId: claimedFor };
   throw new RefundNotDone(asked.kind === "refused" ? "refused" : "unanswered", refund, asked.error);
 }
