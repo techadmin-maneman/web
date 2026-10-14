@@ -1,13 +1,13 @@
 // What the service is, in the words every page shares: where we come, and how long each visit takes.
 //
-// The lengths are the backend's VISIT_BLOCKS, so the site says what a visit is booked for. The area is "Delhi NCR",
-// as the home page has always said, until its wording is settled (open point 14): the served pincodes decide where we
-// actually go.
+// The lengths are the backend's VISIT_BLOCKS, so the site says what a visit is booked for. The area is the client app's
+// too (packages/web-kit/service-area.ts), until its wording is settled (open point 14).
 
+import { SERVICE_AREA } from "@maneman/web-kit/service-area";
 import { VISIT_BLOCKS } from "@rules/config/scheduling.ts";
 import type { VisitType } from "@rules/config/visit-types.ts";
 
-export const serviceArea = "Delhi NCR";
+export const serviceArea = SERVICE_AREA;
 
 /** Minutes, in words. A new length in VISIT_BLOCKS needs its words here, or the build stops. */
 const MINUTES_IN_WORDS: Readonly<Record<number, string>> = {
