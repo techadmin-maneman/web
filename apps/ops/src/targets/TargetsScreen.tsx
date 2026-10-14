@@ -9,6 +9,7 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import type { Sent, Success } from "@maneman/web-kit/api";
 import { fullMonth } from "@maneman/web-kit/dates";
+import { quantity } from "@maneman/web-kit/figures";
 import type { Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import type { paths } from "../api-schema.ts";
@@ -144,7 +145,7 @@ function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets
             <tr key={`${target.city}/${target.measure}`}>
               <td>{target.city}</td>
               <td>{copy.measures[target.measure]}</td>
-              <td>{target.target.toLocaleString("en-IN")}</td>
+              <td>{quantity(target.target)}</td>
               <td>{whoWords(target.set_by)}</td>
               {mayRemove && (
                 <td>

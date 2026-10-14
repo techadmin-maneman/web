@@ -2,6 +2,7 @@
 // measured periods, and each item across them, the furthest off first.
 
 import type { Success } from "@maneman/web-kit/api";
+import { quantity } from "@maneman/web-kit/figures";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
@@ -17,8 +18,6 @@ import { supplyPlanApi } from "./supply-plan-api.ts";
 type Accuracy = Success<paths["/api/stock/forecast-accuracy"]["get"]>;
 
 const copy = supplyPlan.accuracy;
-
-const figure = (value: number) => value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
 
 function Head({ columns }: { columns: readonly string[] }) {
   return (
@@ -46,8 +45,8 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
             {accuracy.periods.map((period) => (
               <tr key={period.period_start}>
                 <RowHead>{dayAfter(period.period_start, 0, true)}</RowHead>
-                <td className={form.figure}>{figure(period.expected)}</td>
-                <td className={form.figure}>{figure(period.actual)}</td>
+                <td className={form.figure}>{quantity(period.expected)}</td>
+                <td className={form.figure}>{quantity(period.actual)}</td>
                 <td className={form.figure}>{copy.percent(period.error_percent)}</td>
                 <td className={form.figure}>{copy.bias(period.bias_percent)}</td>
                 <td className={form.figure}>{copy.percent(period.within_high_percent)}</td>
@@ -61,8 +60,8 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
             {accuracy.items.map((item) => (
               <tr key={item.consumable_code}>
                 <RowHead>{item.name}</RowHead>
-                <td className={form.figure}>{figure(item.expected)}</td>
-                <td className={form.figure}>{figure(item.actual)}</td>
+                <td className={form.figure}>{quantity(item.expected)}</td>
+                <td className={form.figure}>{quantity(item.actual)}</td>
                 <td className={form.figure}>{copy.percent(item.error_percent)}</td>
                 <td className={form.figure}>{copy.bias(item.bias_percent)}</td>
               </tr>

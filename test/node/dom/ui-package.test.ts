@@ -112,6 +112,14 @@ describe.each(APPS)("%s", (app) => {
     const own = code.filter((path) => /\bfetch\(\s*["'`]\/api\//.test(read(path)));
     expect(own).toEqual([]);
   });
+
+  // Quantities were grouped, and dates written, four ways in the console's stock screens.
+  it("writes figures and dates through @maneman/web-kit alone", () => {
+    const own = code.filter((path) =>
+      /\.toLocale(Date|Time)?String\(|\bIntl\.(NumberFormat|DateTimeFormat)\b/.test(read(path)),
+    );
+    expect(own).toEqual([]);
+  });
 });
 
 // The site's islands render the shared package's parts through Preact, so they keep no copy of them either.

@@ -1,5 +1,6 @@
 // The dispatch board's words: the week, a move and its reason, a block's drawer.
 
+import { distance } from "@maneman/web-kit/figures";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const dispatch = {
@@ -242,7 +243,7 @@ export const dispatch = {
     none: "No visits this day.",
     driveTimes: { off: "Drive times are off.", unavailable: "Some drive times are unavailable." },
     noPin: "no pin",
-    drive: (minutes: number, km: number) => `${String(minutes)} min · ${km.toFixed(1)} km`,
+    drive: (minutes: number, km: number) => `${String(minutes)} min · ${distance(km * 1000)}`,
     /** A drive longer than the gap between two visits. */
     tight: (minutes: number, gap: number) => `${String(minutes)} min drive, ${String(Math.max(gap, 0))} min gap`,
   },
@@ -264,7 +265,7 @@ export const dispatch = {
     listPrompt: "A technician, day and window",
     /** With how far the job is from that technician's nearest other visit that day, where known. */
     listOption: (technician: string, date: string, window: string, km: number | null) =>
-      [technician, date, window, km === null ? null : `${km.toFixed(1)} km`].filter(Boolean).join(" · "),
+      [technician, date, window, km === null ? null : distance(km * 1000)].filter(Boolean).join(" · "),
     listGo: "Choose",
     // A week with nowhere the job fits.
     nowhere: "No room this week.",
