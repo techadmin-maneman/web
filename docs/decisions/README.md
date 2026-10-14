@@ -208,6 +208,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0082](0082-try-ons-in-the-app.md) A client's try-on in the app
 - [0084](0084-a-clients-try-on-is-kept.md) A client's try-on is kept
 - [0104](0104-the-try-ons-look-on-whatsapp-only.md) The try-on's look on WhatsApp only
+- [0201](0201-the-try-on-on-youcam.md) The try-on on YouCam
 
 ### The site
 

@@ -188,6 +188,12 @@ export const tryOn = {
       photo: {
         step: "Cannot use this photograph",
         frame: "Cannot read the photograph",
+        title: "We cannot use this photograph.",
+        body: "Your face may be turned, your hairline covered, or the light too low. Face a window and shoot straight on.",
+      },
+      noFace: {
+        step: "Cannot see your face",
+        frame: "Face not clear",
         title: "We couldn't see your face clearly.",
         body: "Try a well-lit photograph, taken straight on.",
       },

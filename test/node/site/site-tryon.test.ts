@@ -13,7 +13,7 @@ describe("the try-on's error screen", () => {
   });
 
   it("says what YouCam found wrong with the photograph, and that the try-on is paused when it cannot run", () => {
-    expect(failureKindOf("photo_unreadable", "no_face")).toBe("photo");
+    expect(failureKindOf("photo_unreadable", "no_face")).toBe("noFace");
     expect(failureKindOf("photo_unreadable", "no_shoulders")).toBe("shoulders");
     expect(failureKindOf("photo_unreadable", "face_angle")).toBe("facing");
     expect(failureKindOf("photo_unreadable", "several_people")).toBe("onePerson");

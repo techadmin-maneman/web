@@ -2783,10 +2783,38 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We couldn't see your face clearly."
+    "text": "We cannot use this photograph."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.photo.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your face may be turned, your hairline covered, or the light too low. Face a window and shoot straight on."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.noFace.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Cannot see your face"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.noFace.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Face not clear"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.noFace.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We couldn't see your face clearly."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.noFace.body",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",

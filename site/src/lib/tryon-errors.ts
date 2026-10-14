@@ -9,6 +9,7 @@ import type { ErrorCode, JobStatus } from "./api.ts";
 
 export const ERROR_KINDS = [
   "photo",
+  "noFace",
   "shoulders",
   "facing",
   "onePerson",
@@ -38,7 +39,7 @@ export function errorKindOf(code: ErrorCode | "network"): ErrorKind {
 
 /** The screen for each fault YouCam names. */
 const REASON_KINDS: Readonly<Record<FailureReason, ErrorKind>> = {
-  no_face: "photo",
+  no_face: "noFace",
   no_shoulders: "shoulders",
   face_angle: "facing",
   several_people: "onePerson",
