@@ -46,7 +46,7 @@ The words the code, the database and the API use for the same few things, and wh
 | **client**     | A person who may sign in to the app: one with a booked consultation or a later visit (`src/domain/sign-in/login.ts`). Fitted, a lead or nothing booked (`clientStateOf`).               |
 | **lead**       | Two meanings: a row in `leads`, what a form or a try-on left, which reaches the CRM; and, as a client's state, a person booked but not yet fitted. The CRM's own record is also a Lead. |
 | **customer**   | The person's record in Books, where invoices and payments are (`books_customer_id`). Books' word, never ours.                                                                           |
-| **technician** | A field technician ops add in the console's Technicians, in `technicians`. He signs in on one phone at a time (ADR 0052).                                                               |
+| **technician** | A field technician ops add in the console's Technicians, in `technicians`. They sign in on one phone at a time (ADR 0052).                                                              |
 | **staff**      | Whoever Cloudflare Access let into the ops console: a person's e-mail, or a service token (`staffOf`, `src/http/audit.ts`).                                                             |
 
 ## Removing a person
@@ -55,6 +55,24 @@ The words the code, the database and the API use for the same few things, and wh
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **deletion request** | A client asking, in the app, for their account to be deleted (`deletion_requests`). Ops decide it within the days `DELETION_DECIDED_WITHIN_DAYS` sets.                                                                       |
 | **erasure**          | The act itself (`eraseAndQueue`, ADR 0019 and 0066): photographs deleted, the person blanked, the CRM and Books told. Done in the console only: a decided deletion request, or Erase on a person's own page. All or nothing. |
+
+## The client's words
+
+What the site, the app and the WhatsApp messages call these things, one word each. `test/node/architecture/client-glossary.test.ts` holds the client's copy to the first six rows and to the try-on's look. The consent notices keep the words they were published in (`src/config/notices.ts`), since a consent records the version its person saw; the legal pages may say "photograph" and "simulation".
+
+| Say                                        | Not                                      | Where it matters                                                                                                                     |
+| ------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **free service visit**                     | credit, visit credit                     | The referral reward, everywhere the client reads it, the terms included.                                                             |
+| **missed visit**, missed-visit charge      | no-show, not home                        | A visit the client was not home for, and what it costs them.                                                                         |
+| **the Mane Man example card**              | house example, house sample, our example | The card a referrer shares when not their own before and after.                                                                      |
+| **switch off** your photo card             | revoke                                   | Taking a referrer's own card back.                                                                                                   |
+| **service visit**, every month             | monthly service, the monthly visit       | The visit after the first fit.                                                                                                       |
+| **photo**                                  | photograph                               | Every photo the client takes or is shown.                                                                                            |
+| **look**                                   | simulation, result, preview              | What the try-on makes. "Preview" stays for the referral card's preview of what a friend sees.                                        |
+| **first fit**                              | the fit, for the visit                   | The visit that fits a hair system. "Fit" alone is how it fits, as in the guarantee; "Consultation and fit" stays the one-visit name. |
+| **time**, with Morning, Afternoon, Evening | window, hour                             | The part of the day a visit is booked for.                                                                                           |
+| **visit**                                  | booking                                  | What the client has. "Booking" only opens a message about one: "your booking has moved".                                             |
+| **hair system**                            | system, piece, patch                     | The product, always both words.                                                                                                      |
 
 ## Names left from FSM
 

@@ -91,7 +91,7 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
   await expect(sheet.getByText(appCopy.refer.card.what)).toBeVisible();
   await scan(page);
-  await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await sheet.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
 
   // The preview: the chat's bubble, exactly as the friend will see it, with the house card itself in it.
@@ -124,7 +124,7 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
 test("says when the link could not be shared, and tries again", async ({ page }) => {
   await toRefer(page);
   await page.getByRole("button", { name: appCopy.refer.share }).click();
-  await page.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await page.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await page.getByRole("button", { name: appCopy.refer.card.next }).click();
   await page.evaluate(() => {
     const writeText = navigator.clipboard.writeText.bind(navigator.clipboard);
@@ -146,7 +146,7 @@ test("says when the link could not be shared, and tries again", async ({ page })
 async function toTheExample(page: Page) {
   await toRefer(page);
   await page.getByRole("button", { name: appCopy.refer.share }).click();
-  await page.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await page.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await page.getByRole("button", { name: appCopy.refer.card.next }).click();
   return page.getByRole("dialog", { name: appCopy.refer.preview.title });
 }
@@ -223,7 +223,7 @@ test("shows a client’s stored card in the preview, and sends that card", async
   // The two cards are native radio buttons, which the arrow keys move between.
   await theirOwn.focus();
   await page.keyboard.press("ArrowDown");
-  await expect(page.getByRole("radio", { name: /A Mane Man example/ })).toBeChecked();
+  await expect(page.getByRole("radio", { name: /The Mane Man example card/ })).toBeChecked();
   await page.keyboard.press("ArrowUp");
   await expect(theirOwn).toBeChecked();
   await page.getByRole("button", { name: appCopy.refer.card.next }).click();
@@ -269,7 +269,7 @@ test("offers their own card only once the first fit’s photographs are in", asy
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
   await expect(sheet.getByText(appCopy.refer.card.mineNotYet)).toBeVisible();
   await expect(sheet.getByRole("radio")).toHaveCount(1);
-  await expect(sheet.getByRole("radio", { name: /A Mane Man example/ })).toBeChecked();
+  await expect(sheet.getByRole("radio", { name: /The Mane Man example card/ })).toBeChecked();
   await scan(page);
 });
 
@@ -416,7 +416,7 @@ test("says what ops set each side gets, and beside each friend what the client e
 
   await page.getByRole("button", { name: appCopy.refer.share }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
-  await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await sheet.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
   const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(
@@ -442,7 +442,7 @@ test("draws Refer, its preview and its tracker, with no count, where the answers
 
   await page.getByRole("button", { name: appCopy.refer.share }).click();
   const sheet = page.getByRole("dialog", { name: appCopy.refer.card.title });
-  await sheet.getByRole("radio", { name: /A Mane Man example/ }).click();
+  await sheet.getByRole("radio", { name: /The Mane Man example card/ }).click();
   await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
   const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(preview.getByText("Home-fitted hair systems across Delhi NCR.", { exact: true })).toBeVisible();

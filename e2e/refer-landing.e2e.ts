@@ -374,7 +374,7 @@ test("a consultation nobody can book outright is confirmed as a request", async 
 
   await expect(page.getByText(referralCopy.referral.requested.label)).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(referralCopy.referral.requested.title);
-  await expect(page.getByText("On WhatsApp, at +91 98100 00000, to fix the hour.")).toBeVisible();
+  await expect(page.getByText("On WhatsApp, at +91 98100 00000, to fix the time.")).toBeVisible();
   // The invite still stands, and nothing says the visit is booked.
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeVisible();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeHidden();
@@ -637,7 +637,7 @@ test("a booking sends the details to WhatsApp, and opens the app with the number
   await bookThrough(page);
   await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
   await expect(
-    page.getByText("Your technician arrives in that window. Details are on WhatsApp at +91 98100 00000."),
+    page.getByText("Your technician arrives in those hours. Details are on WhatsApp at +91 98100 00000."),
   ).toBeVisible();
   await expect(page.getByText(referralCopy.referral.booked.appHint)).toBeVisible();
   await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);

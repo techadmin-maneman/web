@@ -690,7 +690,7 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "One visit a month"
+    "text": "One service visit a month"
   },
   {
     "key": "site:home/tryOnTeaser.eyebrow",
@@ -711,7 +711,7 @@
     "surface": "site",
     "group": "Home",
     "where": "tryOnTeaser",
-    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days."
+    "text": "One photo, one look from six, sent privately to your WhatsApp. An illustration, not a photo of a result. Your photo is deleted within the hour; a small copy stays with your look for up to 14 days."
   },
   {
     "key": "site:home/tryOnTeaser.start",
@@ -788,7 +788,7 @@
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "The fit"
+    "text": "The first fit"
   },
   {
     "key": "site:home/howItWorks.steps.1.body",
@@ -809,7 +809,7 @@
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "Monthly service"
+    "text": "Service visit, every month"
   },
   {
     "key": "site:home/howItWorks.steps.2.body",
@@ -1649,14 +1649,14 @@
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. The monthly visit keeps it at its best."
+    "text": "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every month keeps it at its best."
   },
   {
     "key": "site:home/faq.items.2.q",
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "What happens during the monthly service visit?"
+    "text": "What happens at a service visit?"
   },
   {
     "key": "site:home/faq.items.2.a",
@@ -2055,7 +2055,7 @@
     "surface": "site",
     "group": "Page titles",
     "where": "pageDescriptions",
-    "text": "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days."
+    "text": "One photo, one look from six, sent privately to your WhatsApp. An illustration, not a photo of a result. Your photo is deleted within the hour; a small copy stays with your look for up to 14 days."
   },
   {
     "key": "site:pages/pageDescriptions.book",
@@ -2342,7 +2342,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Cannot use this photograph"
+    "text": "Can’t use this photo"
   },
   {
     "key": "site:tryon/tryOn.upload.title",
@@ -2356,7 +2356,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "The simulation is only as good as the photo. Three things matter, and none of them need a good camera."
+    "text": "The look is only as good as the photo. Three things matter, and none of them need a good camera."
   },
   {
     "key": "site:tryon/tryOn.upload.guidelines.0.title",
@@ -2405,7 +2405,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Choose a photograph"
+    "text": "Choose a photo"
   },
   {
     "key": "site:tryon/tryOn.upload.camera",
@@ -2419,14 +2419,14 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Your photograph appears here"
+    "text": "Your photo appears here"
   },
   {
     "key": "site:tryon/tryOn.upload.previewAlt",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "The photograph you chose"
+    "text": "The photo you chose"
   },
   {
     "key": "site:tryon/tryOn.upload.oval",
@@ -2664,7 +2664,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "An illustrative simulation, not a photograph of a result. Your hair system is matched to your own hair colour, density and growth pattern."
+    "text": "An illustration, not a photo of a result. Your hair system is matched to your own hair colour, density and growth pattern."
   },
   {
     "key": "site:tryon/tryOn.sent.book",
@@ -2713,21 +2713,21 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Cannot use this photograph"
+    "text": "Can’t use this photo"
   },
   {
     "key": "site:tryon/tryOn.error.kinds.photo.frame",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Cannot read the photograph"
+    "text": "Can’t read the photo"
   },
   {
     "key": "site:tryon/tryOn.error.kinds.photo.title",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We cannot use this photograph."
+    "text": "We can’t use this photo."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.photo.body",
@@ -2741,7 +2741,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Cannot see your face"
+    "text": "Can’t see your face"
   },
   {
     "key": "site:tryon/tryOn.error.kinds.noFace.frame",
@@ -2762,7 +2762,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Try a well-lit photograph, taken straight on."
+    "text": "Try a well-lit photo, taken straight on."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.shoulders.step",
@@ -2790,7 +2790,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Use a photograph that shows your head and shoulders."
+    "text": "Use a photo that shows your head and shoulders."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.facing.step",
@@ -2818,7 +2818,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Then take the photograph again."
+    "text": "Then take the photo again."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.onePerson.step",
@@ -2839,21 +2839,21 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Only you in the photograph, please."
+    "text": "Only you in the photo, please."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.onePerson.body",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Use a photograph with no one else in it."
+    "text": "Use a photo with no one else in it."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.notStyleable.step",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Try another photograph"
+    "text": "Try another photo"
   },
   {
     "key": "site:tryon/tryOn.error.kinds.notStyleable.frame",
@@ -2867,7 +2867,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We couldn’t style this photograph."
+    "text": "We couldn’t style this photo."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.notStyleable.body",
@@ -2881,21 +2881,21 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Try another photograph"
+    "text": "Try another photo"
   },
   {
     "key": "site:tryon/tryOn.error.kinds.refused.frame",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Photograph not accepted"
+    "text": "Photo not accepted"
   },
   {
     "key": "site:tryon/tryOn.error.kinds.refused.title",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Please try another photograph."
+    "text": "Please try another photo."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.refused.body",
@@ -2916,14 +2916,14 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "The simulation failed"
+    "text": "The look didn’t work"
   },
   {
     "key": "site:tryon/tryOn.error.kinds.renderFailed.title",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "The simulation did not work this time."
+    "text": "The look didn’t work this time."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.renderFailed.body",
@@ -2944,14 +2944,14 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "The simulation is busy"
+    "text": "The try-on is busy"
   },
   {
     "key": "site:tryon/tryOn.error.kinds.busy.title",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "The simulation is busy just now."
+    "text": "The try-on is busy just now."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.busy.body",
@@ -3441,7 +3441,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Daily care for a hair system, what to do after a swim, and what happens at the monthly visit."
+    "text": "Daily care for a hair system, what to do after a swim, and what happens at a service visit."
   },
   {
     "key": "site:guides/guides.3.lead",
@@ -3476,7 +3476,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The monthly visit"
+    "text": "The service visit"
   },
   {
     "key": "site:guides/guides.3.sections.1.paragraphs.0",
@@ -3532,7 +3532,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The base. A clear skin film looks the most natural and wears the soonest; monofilament mesh outlasts every other base. Heat, sea water and chlorine all shorten its life, and so does skipping the monthly visit."
+    "text": "The base. A clear skin film looks the most natural and wears the soonest; monofilament mesh outlasts every other base. Heat, sea water and chlorine all shorten its life, and so does skipping service visits."
   },
   {
     "key": "site:guides/guides.4.sections.1.heading",
@@ -3546,7 +3546,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Rinse it in fresh water after a swim, keep the monthly visit, and choose a base that suits how you live: a lace top for the gym and a Delhi summer, a skin base where nothing must show."
+    "text": "Rinse it in fresh water after a swim, keep your service visits, and choose a base that suits how you live: a lace top for the gym and a Delhi summer, a skin base where nothing must show."
   },
   {
     "key": "site:guides/guides.4.sections.2.heading",
@@ -3595,7 +3595,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The hair system itself, and the visits: the fit, then a visit about once a month. No consultation fee, no deposit, no package."
+    "text": "The hair system itself, and the visits: the first fit, then a service visit about once a month. No consultation fee, no deposit, no package."
   },
   {
     "key": "site:guides/guides.5.sections.1.heading",
@@ -3987,7 +3987,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "The fit, also at home"
+    "text": "The first fit, also at home"
   },
   {
     "key": "site:referral/referral.howItWorks.steps.1.body",
@@ -4120,7 +4120,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Window"
+    "text": "Time"
   },
   {
     "key": "site:referral/referral.consultation.windows.0.label",
@@ -4645,7 +4645,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Your technician arrives in that window. Details are on WhatsApp at +91 {mobile}."
+    "text": "Your technician arrives in those hours. Details are on WhatsApp at +91 {mobile}."
   },
   {
     "key": "site:referral/referral.booked.ready.consultation",
@@ -4792,7 +4792,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "On WhatsApp, at +91 {mobile}, to fix the hour."
+    "text": "On WhatsApp, at +91 {mobile}, to fix the time."
   },
   {
     "key": "site:referral/referral.listed.label",
@@ -4981,7 +4981,7 @@
     "surface": "message",
     "group": "Messages",
     "where": "tryon_result_v1",
-    "text": "Hi {{1}}, your new look is ready.\nIt's a preview: your hair system is matched to your own hair. See it for real at a free consultation: {{2}}"
+    "text": "Hi {{1}}, your new look is ready.\nIt's an illustration: your hair system is matched to your own hair. See it for real at a free consultation: {{2}}"
   },
   {
     "key": "message:consultation_booked_v1",
@@ -5093,21 +5093,21 @@
     "surface": "message",
     "group": "Messages",
     "where": "no_show_charged_paid_v1",
-    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept the {{6}} you paid as the no-show charge. If you were home, dispute it in the Mane Man app."
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept the {{6}} you paid as the missed-visit charge. If you were home, dispute it in the Mane Man app."
   },
   {
     "key": "message:no_show_charged_fee_v1",
     "surface": "message",
     "group": "Messages",
     "where": "no_show_charged_fee_v1",
-    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept {{6}} as the no-show charge and refunded {{10}} to your {{8}} (5 to 7 working days). If you were home, dispute it in the Mane Man app."
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept {{6}} as the missed-visit charge and refunded {{10}} to your {{8}} (5 to 7 working days). If you were home, dispute it in the Mane Man app."
   },
   {
     "key": "message:no_show_charged_credit_v1",
     "surface": "message",
     "group": "Messages",
     "where": "no_show_charged_credit_v1",
-    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. The free service visit it used counts as the no-show charge. If you were home, dispute it in the Mane Man app."
+    "text": "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. The free service visit it used counts as the missed-visit charge. If you were home, dispute it in the Mane Man app."
   },
   {
     "key": "message:no_show_waived_v1",

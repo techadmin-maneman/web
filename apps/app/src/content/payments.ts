@@ -19,8 +19,8 @@ export const payments = {
   evidence: (change: "cancelled" | "moved", at: string, visit: string) => `${change} ${at}, visit was ${visit}`,
   // The design draws no visit the client was not home for.
   noShow: {
-    meta: (note: { waited_minutes: number }) => `not home, we waited ${String(note.waited_minutes)} min`,
-    label: "Not home",
+    meta: (note: { waited_minutes: number }) => `missed visit, we waited ${String(note.waited_minutes)} min`,
+    label: "Missed visit",
     decision: { undecided: "under review", charged: "charged", waived: "not charged" },
     fact: (minutes: number, decision: string) => `We waited ${String(minutes)} minutes · ${decision}`,
   },
@@ -50,7 +50,7 @@ export const payments = {
       lost: "cancelled late",
       returned: "cancelled in time",
       expired: "past their date",
-      withdrawn: "the fit was refunded",
+      withdrawn: "the first fit was refunded",
       corrected: "corrected by us",
       added: "added",
     },

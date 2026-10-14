@@ -69,7 +69,7 @@ export const home = {
     paid: "Paid in full. We are placing your order.",
     ordered: (date: string | null) =>
       date === null ? "Your hair system is being made." : `Your hair system is being made, due by ${date}.`,
-    arrived: "Your hair system has arrived. We’ll message you to book your fit.",
+    arrived: "Your hair system has arrived. We’ll message you to book your first fit.",
   },
   /**
    * Home's one prompt, and the invoice line beneath it (src/domain/clients/home-prompt.ts). The replacement's line and

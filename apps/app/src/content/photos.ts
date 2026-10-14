@@ -44,7 +44,7 @@ export const photos = {
     keptTogether: (until: string) => `Your photo and the look are kept until ${until}.`,
     // A client's try-on, once they have booked (ADR 0084): the photograph for good, the look until the first fit.
     photoKept: "Your photo is kept in your account until you ask us to delete it.",
-    lookKeptToFirstFit: "The look is kept until your first fit is photographed.",
+    lookKeptToFirstFit: "The look is kept until the photos of your first fit are taken.",
     lookKeptUntil: (lookUntil: string) => `The look is kept until ${lookUntil}.`,
   },
 } as const;

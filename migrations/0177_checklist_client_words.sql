@@ -3,4 +3,7 @@
 -- new hair system against its label. An item already saved keeps showing the client what it showed before.
 ALTER TABLE checklist_items ADD COLUMN client_label TEXT;
 
+-- backfill: the checklists ops have saved, under 100 items on either database and no index but the key: under 200
+-- writes.
+
 UPDATE checklist_items SET client_label = label;

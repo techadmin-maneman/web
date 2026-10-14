@@ -15,7 +15,7 @@ export const visits = {
   // Offline, the visits are not kept on the phone.
   offline: "Your visits will load when you are back online.",
   cancelled: "Cancelled",
-  notHome: "Not home",
+  notHome: "Missed visit",
   partial: "Partly done",
   /*
    * The client's own record, derived from their visits and
@@ -67,7 +67,7 @@ export const visits = {
     // The design draws no visit the client missed, nor the dispute of its charge (ADR 0096).
     // The reason ops gave stays with them.
     noShow: {
-      label: "Not home",
+      label: "Missed visit",
       line: (minutes: number) => `We came and waited ${String(minutes)} minutes, but no one was home.`,
       decision: {
         undecided: "We are looking at it. Nothing is charged until we have.",

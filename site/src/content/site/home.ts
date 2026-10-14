@@ -198,7 +198,7 @@ export const comparison = {
     { label: "Reversible", cells: [false, true, true] },
     {
       label: "Upkeep",
-      cells: ["Loss carries on; often a second transplant in a few years", "Daily, for life", "One visit a month"],
+      cells: ["Loss carries on; often a second transplant in a few years", "Daily, for life", "One service visit a month"],
     },
   ] satisfies { label: string; cells: [ComparisonCell, ComparisonCell, ComparisonCell] }[],
 };
@@ -207,7 +207,7 @@ export const tryOnTeaser = {
   eyebrow: "Try-on",
   title: "See yourself with hair before anyone comes to your home.",
   // The look on WhatsApp only is ADR 0104's.
-  body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days.",
+  body: "One photo, one look from six, sent privately to your WhatsApp. An illustration, not a photo of a result. Your photo is deleted within the hour; a small copy stays with your look for up to 14 days.",
   start: "Start the try-on",
   before: "Before",
   after: "After",
@@ -233,13 +233,13 @@ export const howItWorks = {
     },
     {
       number: "02",
-      title: "The fit",
+      title: "The first fit",
       body: "The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Your new look, on the spot.",
       meta: `${capitalised(visitLength.firstFit)} · at your home`,
     },
     {
       number: "03",
-      title: "Monthly service",
+      title: "Service visit, every month",
       body: "Lifted, cleaned, re-bonded and trimmed to your own growth, so it looks right every month.",
       meta: `Every month · ${visitLength.service}`,
     },
@@ -437,10 +437,10 @@ export const faq = {
     },
     {
       q: "How long does a hair system last?",
-      a: "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. The monthly visit keeps it at its best.",
+      a: "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every month keeps it at its best.",
     },
     {
-      q: "What happens during the monthly service visit?",
+      q: "What happens at a service visit?",
       a: `The technician lifts the hair system, cleans the adhesive off the base and your scalp, checks the knots, re-bonds it and trims the hair to match your own growth. About ${visitLength.service}, at your home.`,
     },
     {

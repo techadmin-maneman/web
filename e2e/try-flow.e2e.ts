@@ -336,9 +336,9 @@ test("while WhatsApp cannot send a look, the visitor is told on arrival, and not
 
 // A refused upload shows as soon as it happens, while the visitor is still choosing.
 for (const [name, answers, heading] of [
-  ["a full day’s uploads", { uploadUrl: refusal(503, "busy") }, "The simulation is busy just now."],
-  ["a failed Turnstile check", { uploadUrl: refusal(403, "turnstile_failed") }, "The simulation is busy just now."],
-  ["a refused file", { upload: refusal(422, "photo_invalid_file") }, "We cannot use this photograph."],
+  ["a full day’s uploads", { uploadUrl: refusal(503, "busy") }, "The try-on is busy just now."],
+  ["a failed Turnstile check", { uploadUrl: refusal(403, "turnstile_failed") }, "The try-on is busy just now."],
+  ["a refused file", { upload: refusal(422, "photo_invalid_file") }, "We can’t use this photo."],
   [
     "WhatsApp switched off since the page opened",
     { uploadUrl: refusal(503, "whatsapp_unavailable") },
@@ -359,8 +359,8 @@ for (const [name, answers, heading] of [
 }
 
 for (const [name, answers, heading] of [
-  ["the hourly render limit", { generate: refusal(429, "rate_limited") }, "The simulation is busy just now."],
-  ["today’s render ceiling", { generate: refusal(503, "busy") }, "The simulation is busy just now."],
+  ["the hourly render limit", { generate: refusal(429, "rate_limited") }, "The try-on is busy just now."],
+  ["today’s render ceiling", { generate: refusal(503, "busy") }, "The try-on is busy just now."],
   ["WhatsApp switched off at the gate", { claim: refusal(503, "whatsapp_unavailable") }, "The try-on is paused."],
 ] as const) {
   test(`the gate: ${name} shows "${heading}"`, async ({ page }) => {

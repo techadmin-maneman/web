@@ -67,13 +67,13 @@ export const refer = {
     mine: { name: "My before and after", note: "Your own photos" },
     // The board always offers their own card; it needs a before and an after from the first fit.
     mineNotYet: "Your own before and after appears once your first-fit photos are in.",
-    house: { name: "A Mane Man example", note: "Our house sample" },
+    house: { name: "The Mane Man example card", note: "Our own before and after" },
     next: "Continue to share",
   },
   consent: {
     title: "Before you send your own photos",
     allow: "Allow for referral cards",
-    instead: "Use the example instead",
+    instead: "Use the Mane Man example card",
   },
   /**
    * The chat's preview, exactly as the friend receives it. Its heading and line are the landing's own
@@ -120,9 +120,9 @@ export const refer = {
     back: "Back to refer",
   },
   revoke: {
-    open: "Revoke the photo card",
+    open: "Switch off your photo card",
     title: "Switch off your photos?",
-    body: "New opens show the house example. Cards already sent stay in those chats.",
+    body: "Anyone who opens your link from now on sees the Mane Man example card. Cards already sent stay in those chats.",
     yes: "Switch off",
     no: "Keep it on",
     // A revoke the API did not answer leaves the card as it was.
@@ -130,7 +130,7 @@ export const refer = {
   },
   // The card is composed on the phone; the design does not draw its waiting or its failures.
   composing: "Making your card…",
-  cardFailed: "We couldn’t make your card, so we’ve used our example instead.",
+  cardFailed: "We couldn’t make your card, so we’ve used the Mane Man example card instead.",
   /** Consent or the example did not go through: nothing changed, and nothing was shared. */
   notChanged: "Couldn’t save that. Try again.",
   close: "Close",

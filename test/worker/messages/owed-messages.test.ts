@@ -202,7 +202,7 @@ describe("the no-show ruling", () => {
 
   it("says a charge ruled before charges were recorded kept what was paid", async () => {
     expect((await send(await ruled("charged", "payment"))).text).toBe(
-      `${MISSED} We've kept the Rs. 2,000 you paid as the no-show charge. ${DISPUTE}`,
+      `${MISSED} We've kept the Rs. 2,000 you paid as the missed-visit charge. ${DISPUTE}`,
     );
   });
 
@@ -210,7 +210,7 @@ describe("the no-show ruling", () => {
     const message = await ruled("charged", "credit");
     await recorded("visit", 0, 0);
     expect((await send(message)).text).toBe(
-      `${MISSED} The free service visit it used counts as the no-show charge. ${DISPUTE}`,
+      `${MISSED} The free service visit it used counts as the missed-visit charge. ${DISPUTE}`,
     );
   });
 
@@ -218,7 +218,7 @@ describe("the no-show ruling", () => {
     const message = await ruled("charged", "payment");
     await recorded("late_fee", 50000, 150000);
     expect((await send(message)).text).toBe(
-      `${MISSED} We've kept Rs. 500 as the no-show charge and refunded Rs. 1,500 to your UPI (5 to 7 working days). ` +
+      `${MISSED} We've kept Rs. 500 as the missed-visit charge and refunded Rs. 1,500 to your UPI (5 to 7 working days). ` +
         DISPUTE,
     );
   });
@@ -227,7 +227,7 @@ describe("the no-show ruling", () => {
     const message = await ruled("charged", "payment");
     await recorded("visit", 200000, 0);
     expect((await send(message)).text).toBe(
-      `${MISSED} We've kept the Rs. 2,000 you paid as the no-show charge. ${DISPUTE}`,
+      `${MISSED} We've kept the Rs. 2,000 you paid as the missed-visit charge. ${DISPUTE}`,
     );
   });
 

@@ -150,7 +150,7 @@ export const guides: readonly Guide[] = [
     published: "2026-10-11",
     updated: "2026-10-13",
     title: "Looking after a hair system",
-    description: "Daily care for a hair system, what to do after a swim, and what happens at the monthly visit.",
+    description: "Daily care for a hair system, what to do after a swim, and what happens at a service visit.",
     lead: "A few habits at home, and a visit about once a month.",
     sections: [
       {
@@ -161,7 +161,7 @@ export const guides: readonly Guide[] = [
         ],
       },
       {
-        heading: "The monthly visit",
+        heading: "The service visit",
         paragraphs: [
           `About once a month, your technician comes back to lift the hair system, clean the base and your scalp, bond it again and refresh the cut. It takes ${visitLength.service}, and keeps it looking like the day it was fitted.`,
         ],
@@ -187,13 +187,13 @@ export const guides: readonly Guide[] = [
       {
         heading: "What decides it",
         paragraphs: [
-          "The base. A clear skin film looks the most natural and wears the soonest; monofilament mesh outlasts every other base. Heat, sea water and chlorine all shorten its life, and so does skipping the monthly visit.",
+          "The base. A clear skin film looks the most natural and wears the soonest; monofilament mesh outlasts every other base. Heat, sea water and chlorine all shorten its life, and so does skipping service visits.",
         ],
       },
       {
         heading: "How to make it last",
         paragraphs: [
-          "Rinse it in fresh water after a swim, keep the monthly visit, and choose a base that suits how you live: a lace top for the gym and a Delhi summer, a skin base where nothing must show.",
+          "Rinse it in fresh water after a swim, keep your service visits, and choose a base that suits how you live: a lace top for the gym and a Delhi summer, a skin base where nothing must show.",
         ],
       },
       {
@@ -217,7 +217,7 @@ export const guides: readonly Guide[] = [
       {
         heading: "What you pay for",
         paragraphs: [
-          "The hair system itself, and the visits: the fit, then a visit about once a month. No consultation fee, no deposit, no package.",
+          "The hair system itself, and the visits: the first fit, then a service visit about once a month. No consultation fee, no deposit, no package.",
         ],
       },
       {

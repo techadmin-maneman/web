@@ -121,7 +121,7 @@ describe("a visit’s payment the client was not home for", () => {
   const notHome = (decision: "undecided" | "charged" | "waived") => payment({ no_show: noShow(decision) });
 
   it("says nobody was home and how long we waited, in place of the method", () => {
-    expect(entryMeta(notHome("charged"), 2030)).toBe("10 Sep · not home, we waited 16 min");
+    expect(entryMeta(notHome("charged"), 2030)).toBe("10 Sep · missed visit, we waited 16 min");
   });
 
   it("is a charge once ops charge it, and stays paid otherwise", () => {
@@ -147,7 +147,7 @@ describe("the credits among the payments", () => {
   it("say a free service visit is lost on a late cancel or a charged no-show, and back after a cancel in time", () => {
     expect(creditStatus(credit({ event: "lost" }))).toBe("Not returned");
     expect(creditMeta(credit({ event: "lost", no_show: noShow("charged") }), 2030)).toBe(
-      "19 Sep · not home, we waited 16 min",
+      "19 Sep · missed visit, we waited 16 min",
     );
     expect(creditStatus(credit({ event: "returned", visits: 1 }))).toBe("Returned");
     expect(creditAmount(credit({ event: "returned", visits: 1 }))).toEqual({ amount: "Rs. 0", count: "1 visit back" });

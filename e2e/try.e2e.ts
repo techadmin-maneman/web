@@ -19,7 +19,7 @@ const SCREENS = {
   looks: { label: "Step three of four", progress: 60 },
   gate: { label: "Step four of four", progress: 90 },
   sent: { label: "Sent to WhatsApp", progress: 100 },
-  error: { label: "Cannot use this photograph", progress: 28 },
+  error: { label: "Can’t use this photo", progress: 28 },
 } as const;
 type Screen = keyof typeof SCREENS;
 
@@ -263,15 +263,15 @@ test.describe("error", () => {
     {
       kind: "renderFailed",
       step: "Something went wrong",
-      frame: "The simulation failed",
-      heading: "The simulation did not work this time.",
+      frame: "The look didn’t work",
+      heading: "The look didn’t work this time.",
       another: true,
     },
     {
       kind: "busy",
       step: "Please try again shortly",
-      frame: "The simulation is busy",
-      heading: "The simulation is busy just now.",
+      frame: "The try-on is busy",
+      heading: "The try-on is busy just now.",
       another: true,
     },
     {

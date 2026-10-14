@@ -260,7 +260,7 @@ test.describe("home sections", () => {
     await page.goto("/");
     const steps = page.locator('[data-section="how"] ol > li');
     await expect(steps).toHaveCount(3);
-    await expect(steps.locator("h3")).toHaveText(["Consultation at home", "The fit", "Monthly service"]);
+    await expect(steps.locator("h3")).toHaveText(["Consultation at home", "The first fit", "Service visit, every month"]);
   });
 
   test("technicians, the range and testimonials: three, four and three cards", async ({ page }) => {
@@ -295,7 +295,7 @@ test.describe("home sections", () => {
     await page.goto("/");
     await expect(page.locator('[data-section="prices"]')).toHaveCount(0);
     await expect(page.locator("[data-price]")).toHaveCount(0);
-    await expect(page.locator('[data-section="comparison"]')).toContainText("Quoted at your free consultation");
+    await expect(page.locator('[data-section="comparison"]')).toContainText("Quoted free, before anything is fitted");
   });
 
   test("FAQ: ten questions, the first open, one open at a time", async ({ page }) => {

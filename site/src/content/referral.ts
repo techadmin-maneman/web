@@ -196,7 +196,7 @@ export const referral = {
       },
       {
         n: "2",
-        title: "The fit, also at home",
+        title: "The first fit, also at home",
         body: `${capitalised(visitLength.firstFit)}. You’re wearing it by the end.`,
       },
       {
@@ -230,7 +230,7 @@ export const referral = {
     body: `${capitalised(visitLength.consultation)}, and free. Or have your fit in the same visit.`,
     forPincode: "For {pincode}",
     date: "Pick a date",
-    window: "Window",
+    window: "Time",
     // A no-break space keeps "am" and "pm" on the line of their hour.
     windows: [
       { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
@@ -357,7 +357,7 @@ export const referral = {
   booked: {
     label: "Booked",
     when: "{day}, {hours}",
-    body: "Your technician arrives in that window. Details are on WhatsApp at +91 {mobile}.",
+    body: "Your technician arrives in those hours. Details are on WhatsApp at +91 {mobile}.",
     ready: {
       consultation: `${capitalised(visitLength.consultation)} at home, and free. Nothing is fitted.`,
       oneVisit: `${capitalised(visitLength.firstFit)} at home. You pay once fitted, by a link to your phone.`,
@@ -401,7 +401,7 @@ export const referral = {
   requested: {
     label: "Request received",
     title: "We’ll message you",
-    body: "On WhatsApp, at +91 {mobile}, to fix the hour.",
+    body: "On WhatsApp, at +91 {mobile}, to fix the time.",
   },
   listed: {
     label: "On the list",

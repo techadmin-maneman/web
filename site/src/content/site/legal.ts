@@ -33,7 +33,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         heading: "What we keep",
         paragraphs: [
           "Mane Man Grooming Services Private Limited collects only what it needs to arrange your visits and your simulation. When you book, we keep your name, mobile number, the address the visit is at, preferred visit time and the extent of your hair loss, with how you reached this site.",
-          "Once you are a client, we also keep what your visits need: the photographs taken at each visit; your hair profile, which records your fit and what you tell us of treatments you have tried, skin conditions and allergies; and your visits, payments, refunds and credits.",
+          "Once you are a client, we also keep what your visits need: the photographs taken at each visit; your hair profile, which records your fit and what you tell us of treatments you have tried, skin conditions and allergies; and your visits, payments, refunds and free service visits.",
         ],
       },
       {
@@ -64,7 +64,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         heading: "How long we keep it",
         paragraphs: [
           // PLACEHOLDER: the periods, for counsel to confirm.
-          "Once you are a client, we keep your details, your address and your visit photographs until you ask us to erase them. If you never book a visit or pay us, we erase your details a year after you last used the site or the app. A waitlist place goes a year after we launch in your area. Where a technician checked in at your door is kept only until a no-show charge can no longer be disputed. Invoices are kept for 8 years, as the law requires.",
+          "Once you are a client, we keep your details, your address and your visit photographs until you ask us to erase them. If you never book a visit or pay us, we erase your details a year after you last used the site or the app. A waitlist place goes a year after we launch in your area. Where a technician checked in at your door is kept only until a missed-visit charge can no longer be disputed. Invoices are kept for 8 years, as the law requires.",
         ],
       },
       {
@@ -102,14 +102,14 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "Moving and cancelling",
         paragraphs: [
-          "You can move or cancel a visit in the app. Until the time the app shows when you book, that is free: your payment carries over to the new visit or is refunded, and a credit comes back. After that, the late terms the app shows before you confirm apply: the visit may be charged, a late fee kept, or a credit used. If we move a visit, it costs you nothing.",
+          "You can move or cancel a visit in the app. Until the time the app shows when you book, that is free: your payment carries over to the new visit or is refunded, and a free service visit it used comes back. After that, the late terms the app shows before you confirm apply: the visit may be charged, a late fee kept, or a free service visit used. If we move a visit, it costs you nothing.",
           "If nobody is home when your technician arrives, the visit may be charged as a late cancellation would be, and you can dispute the charge in the app. A refund reaches the account you paid from in 5 to 7 working days.",
         ],
       },
       {
         heading: "The guarantee",
         paragraphs: [
-          "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within 14 days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a hair system isn’t suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we give are typical, not promised.",
+          "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within 14 days of the first fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the first fit; if a hair system isn’t suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we give are typical, not promised.",
         ],
       },
       {
