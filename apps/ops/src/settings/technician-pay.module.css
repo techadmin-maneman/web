@@ -3,7 +3,7 @@
 /* This page's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
   --local-pay-table: 1040px; /* the narrowest the rates go before they scroll */
-  --local-pay-people: 560px; /* the narrowest the technicians go before they scroll */
+  --local-pay-people: var(--ops-measure); /* the narrowest the technicians go before they scroll */
 }
 
 /* The city the rates are shown for, on a line above the table. */

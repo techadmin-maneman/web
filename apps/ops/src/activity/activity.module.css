@@ -6,7 +6,7 @@
 /* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
   --local-activity-filter: 192px; /* a filter's narrowest: a date box with its picker */
-  --local-activity-when: 176px; /* "14 Nov 2026, 10:45 am" on one line */
+  --local-activity-when: var(--ops-filter); /* "14 Nov 2026, 10:45 am" on one line */
   --local-activity-record: 128px; /* "Client", "Visit", or a kind and the start of an ID */
 }
 

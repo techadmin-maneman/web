@@ -15,8 +15,8 @@
 
 /* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
-  --local-control: 28px; /* a box or a button inside a table row, which keeps the row at --ops-row */
-  --local-amount: 120px; /* a price in whole rupees, up to ten lakh, beside the box's own arrows */
+  --local-control: var(--sp-28); /* a box or a button inside a table row, which keeps the row at --ops-row */
+  --local-amount: var(--ops-column-wide); /* a price in whole rupees, up to ten lakh, beside the box's own arrows */
 }
 
 .screen {

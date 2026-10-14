@@ -5,7 +5,7 @@
   --local-prices-table: 760px; /* the narrowest the table goes before it scrolls */
   --local-prices-length: 110px;
   --local-prices-price: 130px;
-  --local-prices-gst: 80px;
+  --local-prices-gst: var(--ops-figure);
   --local-prices-next: 260px; /* "Rs. 25,000 + 18% GST from 10 Oct 2027" */
   --local-prices-edit: 90px;
 }

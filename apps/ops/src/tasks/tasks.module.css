@@ -10,8 +10,8 @@
 
 /* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
-  --local-task-owner: 72px; /* a task's owner, and how long it has left, beside what it is */
-  --local-task-due: 120px; /* "18 days overdue" on one line */
+  --local-task-owner: var(--ops-column-narrow); /* a task's owner, and how long it has left, beside what it is */
+  --local-task-due: var(--ops-column-wide); /* "18 days overdue" on one line */
 }
 
 .board {

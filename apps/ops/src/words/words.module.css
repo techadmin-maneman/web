@@ -2,7 +2,7 @@
 
 /* This page's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
-  --local-words-text: 560px; /* the widest a line's wording runs before it wraps */
+  --local-words-text: var(--ops-measure); /* the widest a line's wording runs before it wraps */
 }
 
 .narrow {
