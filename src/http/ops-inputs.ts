@@ -10,7 +10,5 @@ import type { AppEnv } from "./context.ts";
 import type { OpsInputs } from "../domain/platform/ops-settings.ts";
 
 export function opsInputs(c: Context<AppEnv>): Promise<OpsInputs> {
-  return c.var.readOpsInputs(c.env.DB, c.var.deps.now(), (error: unknown) => {
-    c.var.log.error("ops_settings_unreadable", { error });
-  });
+  return c.var.readOpsInputs(c.env.DB, c.var.deps.now(), c.var.log);
 }

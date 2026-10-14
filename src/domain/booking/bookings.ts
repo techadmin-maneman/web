@@ -276,11 +276,11 @@ async function bookNewVisit(db: D1Database, hold: HoldRow, now: Date, options: C
   const visitId = crypto.randomUUID();
   const row = await newVisit(db, hold, visitId, now);
   await writeNewBooking({ db, hold, visit: { id: visitId, row }, now, options });
-  const assigned = await db
+  const written = await db
     .prepare("SELECT technician_id FROM appointments WHERE id = ?1")
     .bind(visitId)
-    .first<string | null>("technician_id");
-  if (assigned === null && hold.technician_id !== null) {
+    .first<{ technician_id: string | null }>();
+  if (written !== null && written.technician_id === null) {
     await options.alertOnce?.({
       key: `booked_unassigned:${visitId}`,
       message: `A visit booked for ${hold.date} has no technician: the one it was held with was switched off. Give it to someone on the board.`,

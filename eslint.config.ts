@@ -237,6 +237,10 @@ export default defineConfig(
           selector: "CallExpression[callee.property.name='includes'][callee.object.property.name='message']",
           message: "Read an error's message through src/lib/d1-errors.ts.",
         },
+        {
+          selector: "CallExpression[callee.property.name='includes'][callee.object.callee.name='String']",
+          message: "Read an error's message through src/lib/d1-errors.ts.",
+        },
       ],
     },
   },

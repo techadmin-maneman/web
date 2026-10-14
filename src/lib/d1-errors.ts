@@ -5,6 +5,10 @@
 export const failedUniqueOn = (error: unknown, table: string): boolean =>
   error instanceof Error && error.message.includes(`UNIQUE constraint failed: ${table}.`);
 
+/** Whether a write failed because a row still points at the one written: "FOREIGN KEY constraint failed". */
+export const failedForeignKey = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes("FOREIGN KEY constraint failed");
+
 /** Whether a write failed for want of this column, as SQLite words it: "NOT NULL constraint failed: t.c". */
 export const failedNotNullOn = (error: unknown, column: string): boolean =>
   error instanceof Error && error.message.includes(`NOT NULL constraint failed: ${column}`);

@@ -9,6 +9,7 @@
 // Retiring one stops the technician app offering it from a day; its rows in
 // the ledger stay, and restoring it offers it again.
 
+import { failedForeignKey } from "../../lib/d1-errors.ts";
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { auditStatement, auditStatementIfDeleted, type Written } from "../platform/audit.ts";
 import { allServices, serviceOf } from "../booking/services.ts";
@@ -297,7 +298,7 @@ export async function deleteConsumable(
     ]);
   } catch (error) {
     // A row the question missed still names it; the foreign key refuses the whole batch, and nothing changes.
-    if (String(error).includes("FOREIGN KEY")) return "in_use";
+    if (failedForeignKey(error)) return "in_use";
     throw error;
   }
   return (await consumableCoded(db, code)) === null ? "deleted" : "in_use";

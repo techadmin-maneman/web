@@ -43,7 +43,7 @@ import type { StockQuality } from "../../policy/stock-quality.ts";
 import type { StockUsage } from "../../policy/stock-usage.ts";
 import { auditStatement, type AuditActor } from "./audit.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
-import { createLogger } from "../../log.ts";
+import type { Logger } from "../../log.ts";
 import type { CheckInDays } from "../../policy/follow-ups.ts";
 
 /** How long an isolate holds the store before reading it again. The staleness window. */
@@ -168,21 +168,22 @@ function shape(values: OpsValues): OpsInputs {
   };
 }
 
-/** Settings are read outside any one request, so a refused row is logged without a request's fields. */
-const log = createLogger();
-
 /**
  * A stored figure, if the register still allows it. A name the register has
  * since dropped, malformed JSON, or a figure now outside its bounds are all
  * ignored in favour of the committed default: the store is edited by people,
  * and a row left behind by an earlier register must not decide anything.
  */
-function storedValue(name: string, stored: unknown): { name: OpsSettingName; value: SettingValue } | null {
+function storedValue(
+  name: string,
+  stored: unknown,
+  log?: Logger,
+): { name: OpsSettingName; value: SettingValue } | null {
   const setting = settingNamed(name);
   if (setting === undefined) return null;
   const checked = checkValue(setting, fittedToRegisterKeys(setting, stored));
   if (!checked.ok) {
-    log.warn("ops_setting_ignored", {
+    log?.warn("ops_setting_ignored", {
       setting: setting.name,
       fields: checked.refusals.map((refusal) => refusal.field),
     });
@@ -213,20 +214,24 @@ function fittedToRegisterKeys(setting: OpsSetting, stored: unknown): unknown {
 }
 
 /** The inputs a snapshot holds: its JSON object of each name with its value, the committed figure for the rest. */
-function resolve(snapshot: string): OpsInputs {
+function resolve(snapshot: string, log?: Logger): OpsInputs {
   const values = fallbacks();
   const stored = parsedOrNull(snapshot);
   if (typeof stored !== "object" || stored === null || Array.isArray(stored)) return shape(values);
   // Each value is checked against its own input's register entry (storedValue), so it is that input's type.
   const byName: Record<OpsSettingName, SettingValue> = values;
   for (const [name, value] of Object.entries(stored)) {
-    const accepted = storedValue(name, value);
+    const accepted = storedValue(name, value, log);
     if (accepted !== null) byName[accepted.name] = accepted.value;
   }
   return shape(values);
 }
 
-export type ReadOpsInputs = (db: D1Database, now: Date, onError?: (error: unknown) => void) => Promise<OpsInputs>;
+/**
+ * The inputs in force. `log`, the caller's, hears of a stored figure ignored and of a store that cannot be read; with
+ * none, both are passed over in silence.
+ */
+export type ReadOpsInputs = (db: D1Database, now: Date, log?: Logger) => Promise<OpsInputs>;
 
 const ROWS = "SELECT name, value, set_by, set_at FROM ops_settings";
 const SNAPSHOT = "SELECT inputs FROM ops_settings_snapshot WHERE id = 1";
@@ -247,11 +252,11 @@ async function snapshot(db: D1Database): Promise<string> {
  * scheduled pass, which runs once a message and has no isolate worth caching
  * in; a route uses createCachedOpsInputs instead.
  */
-export const readOpsInputs: ReadOpsInputs = async (db, _now, onError) => {
+export const readOpsInputs: ReadOpsInputs = async (db, _now, log) => {
   try {
-    return resolve(await snapshot(db));
+    return resolve(await snapshot(db), log);
   } catch (error) {
-    onError?.(error);
+    log?.error("ops_settings_unreadable", { error });
     return COMMITTED;
   }
 };
@@ -264,15 +269,15 @@ export const readOpsInputs: ReadOpsInputs = async (db, _now, onError) => {
  */
 export function createCachedOpsInputs(): ReadOpsInputs {
   let held: { readonly at: number; readonly inputs: OpsInputs } | undefined;
-  return async (db, now, onError) => {
+  return async (db, now, log) => {
     const at = now.getTime();
     if (held !== undefined && at - held.at < SETTINGS_TTL_MS) return held.inputs;
     try {
-      const inputs = resolve(await snapshot(db));
+      const inputs = resolve(await snapshot(db), log);
       held = { at, inputs };
       return inputs;
     } catch (error) {
-      onError?.(error);
+      log?.error("ops_settings_unreadable", { error });
       return held?.inputs ?? COMMITTED;
     }
   };
