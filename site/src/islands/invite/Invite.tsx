@@ -7,13 +7,11 @@
 // preview WhatsApp fetches is the referrer's own card (site/src/worker.ts).
 // Where it is missing — local dev, a page served straight from the assets, or
 // mm-api not answering the Worker — the island fetches it, and any code books.
-// The prices arrive the same way, from the price book, onto <body>, and are
-// fetched where they did not (docs/decisions/0073-prices-from-the-price-book.md),
-// while the site gives prices at all (PRICES_SHOWN). So does what a referral
-// earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md),
-// which every sentence that gives a count is built from.
+// What a referral earns, as ops set it (docs/decisions/0107-referral-rewards-in-the-console.md),
+// arrives the same way, onto <body>, and is fetched where it did not; every
+// sentence that gives a count is built from it.
 //
-// The invite, the prices and the reward are read by useLandingData.ts, the
+// The invite and the reward are read by useLandingData.ts, the
 // pincode check is usePincode.ts, the two forms Consultation.tsx and
 // Waitlist.tsx, which send through useTurnstileForm.ts, and the confirmations
 // Done.tsx. Outside production, ?state= opens each state directly (preview.ts).
@@ -30,7 +28,6 @@ import { capsLook } from "@maneman/ui/Caps";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { inviteReward, referral } from "../../content/referral.ts";
 import { booking } from "../../content/site.ts";
-import { PRICES_SHOWN } from "../../lib/flags.ts";
 import { type Invite as InviteAnswer, type PincodeAnswer } from "../../lib/api.ts";
 import { cardPath, HOUSE_CARD } from "../../lib/invite.ts";
 import { fill } from "../../lib/text.ts";
@@ -43,7 +40,6 @@ import { HowItWorks } from "./HowItWorks.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
 import { PincodePanel } from "./PincodePanel.tsx";
-import { Prices } from "./Prices.tsx";
 import { PREVIEW_PERSON, usePreview } from "./preview.ts";
 import type { Step } from "./step.ts";
 import { usePincode } from "./usePincode.ts";
@@ -101,7 +97,7 @@ function inviteHeading(invite: InviteAnswer | null): string {
 function InviteForm(props: Props) {
   const invited = (props.mode ?? "invited") === "invited";
   const landing = useLandingData(invited);
-  const { invite, prices } = landing;
+  const { invite } = landing;
   const reward = inviteReward(invite, landing.reward);
   const [state, setState] = useState<State>("arrival");
   // Kept here rather than in the form, so the page's heading follows it and a changed pincode keeps it.
@@ -212,7 +208,6 @@ function InviteForm(props: Props) {
               </p>
             )}
           </div>
-          {PRICES_SHOWN && <Prices words={prices} />}
           {atStart ? (
             <AboutYou turnstileSiteKey={props.turnstileSiteKey} kept={kept} onKept={keepPerson} />
           ) : (

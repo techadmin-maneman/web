@@ -1,8 +1,8 @@
 // The production build's gate (docs/site.md). A production build stops if
 // a published block still holds the design's placeholder material, if a
 // consent notice or a legal page's wording has not been approved, if a price
-// on the site or the landing is typed into its sentence rather than filled
-// from the price book (docs/decisions/0073-prices-from-the-price-book.md), or if a count of the
+// is typed into the site's or the landing's copy, which give none
+// (docs/decisions/0204-the-sites-price-pipeline-removed.md), or if a count of the
 // visits a referral earns is typed rather than built from what ops set
 // (docs/decisions/0107-referral-rewards-in-the-console.md). Staging builds never run it.
 
@@ -41,8 +41,8 @@ function stringsIn(value: unknown): string[] {
 }
 
 /**
- * "Rs." or a rupee sign before a digit: a price written into a sentence, where the price book should fill a hole.
- * The site writes "Rs." (ADR 0025); the rupee sign, which it wrote before, is caught too.
+ * "Rs." or a rupee sign before a digit: a price written into a sentence. The apps write "Rs." (ADR 0025); the rupee
+ * sign, which the site wrote before, is caught too.
  */
 const TYPED_PRICE = /(?:Rs\.|₹)\s?\d/;
 
@@ -102,8 +102,8 @@ export function publishProblems(
   }
   for (const price of typedPrices(pages)) {
     problems.push(
-      `a price is typed by hand, "${price}": every price comes from the price book ` +
-        "(docs/decisions/0073-prices-from-the-price-book.md)",
+      `a price is typed by hand, "${price}": the site gives no price of ours ` +
+        "(docs/decisions/0204-the-sites-price-pipeline-removed.md)",
     );
   }
   for (const count of typedVisits(pages)) {

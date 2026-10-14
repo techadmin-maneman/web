@@ -86,64 +86,6 @@
   color: var(--text-soft);
 }
 
-/* ---- Prices (C1, C5) ------------------------------------------------------ */
-
-.prices {
-  order: 5;
-  margin: var(--sp-24) 0 0;
-  border-top: var(--hairline) solid var(--text);
-}
-
-.priceRow {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  align-items: baseline;
-  padding-block: var(--sp-16);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
-.priceRow dt,
-.priceRow dd {
-  margin: 0;
-  min-width: 0;
-}
-
-.priceRow dd {
-  text-align: right;
-}
-
-.priceWhat,
-.priceNote,
-.priceAmount,
-.priceIncl {
-  display: block;
-}
-
-.priceWhat {
-  font-size: var(--fs-16);
-}
-
-.priceNote {
-  margin-top: var(--sp-4);
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.priceAmount {
-  font-family: var(--font-serif);
-  font-size: var(--landing-price);
-  line-height: var(--lh-100);
-  font-variant-numeric: lining-nums tabular-nums;
-}
-
-.priceIncl {
-  margin-top: var(--sp-4);
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ---- How it works (C1, C5) ----------------------------------------------- */
 
 .steps {
@@ -591,27 +533,6 @@
   .offer {
     margin-top: var(--sp-24);
     line-height: var(--lh-160);
-  }
-
-  .prices {
-    margin-top: var(--sp-36);
-  }
-
-  .priceRow {
-    gap: var(--sp-20);
-    padding-block: var(--sp-16);
-  }
-
-  .priceWhat {
-    font-size: var(--fs-17);
-  }
-
-  .priceNote {
-    font-size: var(--fs-15);
-  }
-
-  .priceIncl {
-    font-size: var(--fs-14);
   }
 
   .steps {

@@ -29,8 +29,8 @@ interface Props {
   home?: boolean;
   /** Pages that should never be indexed, such as the 404. */
   noindex?: boolean;
-  /** Schema.org objects, written as JSON-LD. Each is named, so the mm-site Worker can build it again. */
-  structuredData?: readonly { readonly name: string; readonly data: object }[];
+  /** Schema.org objects, written as JSON-LD. */
+  structuredData?: readonly object[];
   /**
    * The card a shared link shows, at OG_IMAGE's size: the site's own unless a page has another. Its type and its
    * HTTPS address go beside it, which a chat's crawler may look for before it fetches the card.
@@ -89,8 +89,8 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     <link rel="preload" href={serif400} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={sans400} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={sans500} as="font" type="font/woff2" crossorigin />
-    {structuredData.map((block) => (
-      <script type="application/ld+json" data-structured={block.name} set:html={jsonLd(block.data)}></script>
+    {structuredData.map((data) => (
+      <script type="application/ld+json" set:html={jsonLd(data)}></script>
     ))}
     <slot name="head" />
   </head>

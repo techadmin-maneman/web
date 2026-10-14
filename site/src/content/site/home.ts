@@ -421,25 +421,6 @@ export const materials: { readonly title: string; readonly intro: string; readon
     ],
   };
 
-/**
- * A first fit's price is the cheapest hair system ops offer in the console, and its row and the example say nothing
- * while they offer none.
- */
-export const prices = {
-  label: "Published prices",
-  intro: "No consultation fee, no deposit, no package. You pay for your hair system and the visits you take.",
-  column: "Price",
-  rows: [
-    { label: "First fit", note: "Your hair system, the fitting and the cut", amount: "From {firstFit}" },
-    { label: "Monthly service visit", note: "Refit, clean, trim — at your home", amount: "{service}" },
-    { label: "Replacement hair system", note: "Every six months", amount: "{replacement}" },
-  ],
-  example: "Your first year, from {firstYear}: the first fit and twelve service visits at {service}.",
-  payment: "Pay by UPI or card: in the app as you book, or by a link once you are fitted.",
-  book: "Book a free consultation",
-  tryOn: "Or try a new look first",
-};
-
 export const guarantee = {
   label: "The guarantee",
   text: GUARANTEE,

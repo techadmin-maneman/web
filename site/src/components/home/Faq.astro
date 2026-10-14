@@ -4,7 +4,6 @@
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { faq, whatsapp } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
-import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import Disclosure from "../Disclosure.astro";
 
@@ -37,9 +36,7 @@ const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
             {item.a}
           </p>
         ) : (
-          <p class="answer" data-price={priceTemplate(item.a)}>
-            {asBuilt(item.a)}
-          </p>
+          <p class="answer">{item.a}</p>
         )}
       </Disclosure>
     ))}

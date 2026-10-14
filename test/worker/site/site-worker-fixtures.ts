@@ -1,4 +1,4 @@
-// What the site Worker's tests share (site-worker*.test.ts): a page, the prices and the referral reward the API answers
+// What the site Worker's tests share (site-worker*.test.ts): a page, the invite and the referral reward the API answers
 // with, the Worker's environment, and what it logged.
 
 import { HOUSE_CARD } from "../../../src/config/house-card.ts";
@@ -27,43 +27,12 @@ export const VALID = {
   card: { state: "personal", version: 3 },
 };
 
-export const price = (amountExGst: number) => ({ amount_ex_gst: amountExGst, amount: amountExGst, gst_percent: 0 });
-
-export const offered = (type: string, tier: string, name: string, amountExGst: number) => ({
-  type,
-  tier,
-  name,
-  minutes: 90,
-  price: price(amountExGst),
-});
-
-/** The book, moved on from the figures the page was built with, and offering two hair systems as first fits. */
-export const PRICES = {
-  on: "2026-09-26",
-  tier: "standard",
-  service: price(250_000),
-  replacement: price(1_600_000),
-  services: [
-    offered("first_fit", "essential", "Mane Man Essential", 3_500_000),
-    offered("first_fit", "natmax", "Mane Man NatMax", 4_500_000),
-    offered("service", "standard", "Service visit", 250_000),
-    offered("replacement", "standard", "Replacement", 1_600_000),
-  ],
-};
-
 export type Api = (request: Request) => Response | Promise<Response>;
-
-export const isPriceRequest = (request: Request) => new URL(request.url).pathname === "/api/published-prices";
 
 export const isRewardRequest = (request: Request) => new URL(request.url).pathname === "/api/referral-reward";
 
 /** What a referral earns as the console begins, each side 3 visits for a year. */
 export const REWARD = { referrer_visits: 3, friend_visits: 3, valid_days: 365 };
-
-/** mm-api answering the book with `book`, and anything else with `other`. */
-export function withPrices(other: Api = () => Response.json(VALID), book: object = PRICES): Api {
-  return (request) => (isPriceRequest(request) ? Response.json(book) : other(request));
-}
 
 /** mm-api answering what a referral earns with `reward`, and anything else with `other`. */
 export function withReward(other: Api = () => Response.json(VALID), reward: object = REWARD): Api {
@@ -93,21 +62,4 @@ export function siteEnv(api: Api, page = PAGE): { env: SiteEnv; asked: Request[]
 /** The lines the Worker wrote to its log, each parsed. */
 export function logged(warn: { mock: { calls: unknown[][] } }): Record<string, unknown>[] {
   return warn.mock.calls.map(([line]) => JSON.parse(String(line)) as Record<string, unknown>);
-}
-
-/** A page with prices, read back: its figures, its structured data and what the booking form's island is given. */
-export function readPriced(html: string) {
-  const structured = (name: string): unknown => {
-    const json = new RegExp(`<script type="application/ld\\+json" data-structured="${name}">([^<]*)</script>`).exec(
-      html,
-    )?.[1];
-    return json === undefined ? "(missing)" : JSON.parse(json);
-  };
-  const figures = [...html.matchAll(/data-price="[^"]*">([^<]*)</g)].map(([, text]) => text);
-  const written = /<body data-prices="([^"]*)"/.exec(html)?.[1]?.replaceAll("&quot;", '"');
-  return {
-    structured,
-    figures,
-    written: written === undefined ? null : (JSON.parse(written) as unknown),
-  };
 }

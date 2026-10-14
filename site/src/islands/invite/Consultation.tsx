@@ -39,7 +39,7 @@ import {
   type FormProps,
 } from "./fields.tsx";
 import styles from "./Invite.module.css";
-import { codeInPath, hairSystemsInPage } from "./page.ts";
+import { codeInPath } from "./page.ts";
 import { byDoor, leadSent } from "./submit.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
@@ -87,7 +87,6 @@ const outOfDate = (code: Code): boolean => code === "taken" || code === "not_boo
 /** The visit's part of the form: what it books, the day and the window. On /book, its third step. */
 function VisitPart(
   props: ConsultationProps & {
-    oneVisitOffered: boolean;
     days: readonly StripDay[];
     slot: Slot;
     open: ReturnType<typeof useOpenWindows>["days"];
@@ -116,7 +115,7 @@ function VisitPart(
         />
       </div>
 
-      <PlanChoice plan={plan} oneVisitOffered={props.oneVisitOffered} onPlanChange={props.onPlanChange} />
+      <PlanChoice plan={plan} onPlanChange={props.onPlanChange} />
 
       <DayStrip
         days={props.days}
@@ -228,8 +227,6 @@ export function Consultation(props: ConsultationProps) {
   );
   const numberCode = useNumberCode();
   const { plan } = props;
-  // Offered while ops offer a hair system to fit. A page with no word of it offers it, and the API refuses it if not.
-  const [oneVisitOffered] = useState(() => hairSystemsInPage() !== false);
   const [picked, setPicked] = useState<Slot>(() => ({ date: indiaTomorrow(), window: "morning" }));
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
   const [extent, setExtent] = useState<LossExtent | null>(null);
@@ -345,7 +342,6 @@ export function Consultation(props: ConsultationProps) {
       {stage !== "address" && (
         <VisitPart
           {...props}
-          oneVisitOffered={oneVisitOffered}
           days={days}
           slot={slot}
           open={open.days}

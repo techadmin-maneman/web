@@ -16,7 +16,6 @@
   --fs-h3: clamp(28px, 3.4vw, 44px);
   --fs-h4: clamp(24px, 2.8vw, 38px);
   --fs-h5: clamp(20px, 2vw, 26px);
-  --fs-price: clamp(24px, 3vw, 40px);
   --fs-guarantee: clamp(26px, 3.2vw, 40px);
   --fs-range-tagline: clamp(26px, 2.4vw, 34px);
   --fs-column-head: clamp(17px, 2vw, 28px);
@@ -102,11 +101,6 @@
 
   --materials-photo-h: clamp(200px, 24vw, 300px);
 
-  --prices-pad-top: clamp(36px, 5vw, 64px);
-  --price-column: clamp(96px, 16vw, 240px);
-  --price-cell-pad: clamp(8px, 1.5vw, 28px);
-  --price-row-pad: clamp(20px, 3vw, 32px);
-
   --testimonials-intro-gap: clamp(32px, 4vw, 56px);
   --testimonial-pad: clamp(20px, 2.2vw, 28px);
 
@@ -152,7 +146,6 @@
   --landing-pad-top: clamp(26px, 4.4vw, 64px);
   --landing-column-gap: var(--bar-reserve);
   --landing-title: clamp(36px, 4.45vw, 64px);
-  --landing-price: clamp(24px, 2.1vw, 30px);
   --landing-step-number: clamp(22px, 1.8vw, 26px);
   --landing-panel-title: clamp(24px, 1.8vw, 26px);
   --landing-answer: var(--fs-26);

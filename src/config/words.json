@@ -1589,104 +1589,6 @@
     "text": "Finer, dearer, and a poor match for Indian hair."
   },
   {
-    "key": "site:home/prices.label",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Published prices"
-  },
-  {
-    "key": "site:home/prices.intro",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "No consultation fee, no deposit, no package. You pay for your hair system and the visits you take."
-  },
-  {
-    "key": "site:home/prices.column",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Price"
-  },
-  {
-    "key": "site:home/prices.rows.0.label",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "First fit"
-  },
-  {
-    "key": "site:home/prices.rows.0.note",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Your hair system, the fitting and the cut"
-  },
-  {
-    "key": "site:home/prices.rows.0.amount",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "From {firstFit}"
-  },
-  {
-    "key": "site:home/prices.rows.1.label",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Monthly service visit"
-  },
-  {
-    "key": "site:home/prices.rows.1.note",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Refit, clean, trim — at your home"
-  },
-  {
-    "key": "site:home/prices.rows.2.label",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Replacement hair system"
-  },
-  {
-    "key": "site:home/prices.rows.2.note",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Every six months"
-  },
-  {
-    "key": "site:home/prices.example",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Your first year, from {firstYear}: the first fit and twelve service visits at {service}."
-  },
-  {
-    "key": "site:home/prices.payment",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Pay by UPI or card: in the app as you book, or by a link once you are fitted."
-  },
-  {
-    "key": "site:home/prices.book",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Book a free consultation"
-  },
-  {
-    "key": "site:home/prices.tryOn",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Or try a new look first"
-  },
-  {
     "key": "site:home/guarantee.label",
     "surface": "site",
     "group": "Home",
@@ -3787,48 +3689,6 @@
     "text": "We do not recognise this invite"
   },
   {
-    "key": "site:referral/referral.prices.rows.0.what",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "First fit, from"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.0.note",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "The hair system you choose"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.0.incl",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "With the fitting and the cut"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.1.what",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Service visit"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.1.note",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Every month, at home"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.1.incl",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Lifted, cleaned, re-bonded, trimmed"
-  },
-  {
     "key": "site:referral/referral.howItWorks.title",
     "surface": "site",
     "group": "Invite page",
@@ -4079,13 +3939,6 @@
     "group": "Invite page",
     "where": "referral",
     "text": "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing."
-  },
-  {
-    "key": "site:referral/referral.consultation.plan.notYet",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Consultation and fit in one visit isn’t open to book yet."
   },
   {
     "key": "site:referral/referral.consultation.code.label",

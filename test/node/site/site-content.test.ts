@@ -280,12 +280,6 @@ describe("the second copy round", () => {
     expect(site.comparison.intro).toBe("Two of these are not ours.");
     expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
   });
-
-  // The prices block is hidden, but switched on it said a client pays on the day of the fit, and "piece".
-  it("keeps the hidden prices true to how a client pays, in hair systems rather than pieces", () => {
-    expect(site.prices.payment).not.toMatch(/on the day of the fit/);
-    expect(JSON.stringify({ site: site.prices, landing: referral.prices })).not.toMatch(/\bpiece\b/i);
-  });
 });
 
 describe("the legal pages", () => {

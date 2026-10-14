@@ -1,11 +1,7 @@
-// Schema.org data for search engines, from content: the business on the home
-// page, and the FAQ as it appears there. The prices in both are the price
-// book's: the build writes them with the figures it has, and the mm-site Worker
-// builds both again with the book's (docs/decisions/0073-prices-from-the-price-book.md).
+// Schema.org data for search engines, from content: the business on the home page, and the FAQ as it appears there.
+// Neither gives a price: the site gives none (docs/decisions/0103-the-home-pages-first-copy-round.md).
 
 import { business, faq, whatsapp } from "../content/site.ts";
-import { PRICES_SHOWN } from "./flags.ts";
-import { fillPrices, type PriceWords } from "./prices.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
 
 /**
@@ -17,7 +13,7 @@ function telephone(): string | undefined {
   return undefined;
 }
 
-export function localBusiness(prices: PriceWords): object {
+export function localBusiness(): object {
   const number = telephone();
   return {
     "@context": "https://schema.org",
@@ -26,20 +22,19 @@ export function localBusiness(prices: PriceWords): object {
     description: business.description,
     url: `${SITE_ORIGIN}/`,
     image: `${SITE_ORIGIN}/og.png`,
-    ...(PRICES_SHOWN ? { priceRange: fillPrices(business.priceRange, prices) } : {}),
     areaServed: business.areaServed.map((name) => ({ "@type": "City", name })),
     ...(number === undefined ? {} : { telephone: number }),
   };
 }
 
-export function faqPage(prices: PriceWords): object {
+export function faqPage(): object {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     mainEntity: faq.items.map((item) => ({
       "@type": "Question",
       name: item.q,
-      acceptedAnswer: { "@type": "Answer", text: fillPrices(item.a, prices) },
+      acceptedAnswer: { "@type": "Answer", text: item.a },
     })),
   };
 }

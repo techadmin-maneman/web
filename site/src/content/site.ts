@@ -16,9 +16,8 @@
 //   added to APPROVED_NOTICES.
 // - The legal pages carry `approved` too: the production build stops until
 //   counsel has signed their wording off.
-// - Prices are holes, "{firstFit}, then {service} a month", which the price
-//   book fills (src/lib/prices.ts, docs/decisions/0073-prices-from-the-price-book.md).
-//   The production build stops on a price typed into a sentence.
+// - The site gives no prices (docs/decisions/0103-the-home-pages-first-copy-round.md),
+//   and the production build stops on a price typed into a sentence.
 //
 // Images are file names in design/assets; src/lib/images.ts resolves them.
 // `{city}` and similar are filled in by the page.

@@ -24,7 +24,6 @@ export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
 export type BuildingSuggestions = Schemas["AddressSuggestions"];
 export type OpenWindows = Schemas["OpenWindows"];
-export type PublishedPrices = Schemas["PublishedPrices"];
 export type ReferralReward = Schemas["ReferralReward"];
 export type ReferralConsultation = Schemas["ReferralConsultation"];
 export type ReferralWaitlist = Schemas["ReferralWaitlist"];
@@ -172,11 +171,6 @@ export function jobStatus(jobId: string): Promise<Answer<JobStatus>> {
 
 export function fetchInvite(code: string): Promise<Answer<Invite>> {
   return call<Invite>(`/api/r/${code}`);
-}
-
-/** The price book's figures, where the mm-site Worker did not write them into the page (local dev). */
-export function fetchPublishedPrices(): Promise<Answer<PublishedPrices>> {
-  return call<PublishedPrices>("/api/published-prices");
 }
 
 /** What a referral earns, where the mm-site Worker did not write it into the page (local dev). */

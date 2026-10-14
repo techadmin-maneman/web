@@ -2,10 +2,10 @@
 // (design/phase2/Referral and Waitlist), except where we go
 // and how long each visit takes, which are the site's own (service.ts).
 //
-// The prices are the site's own, from the price book (src/lib/prices.ts),
-// because the design's open question rules that a referred friend sees the
-// same figures. The referrer's name is filled in where {name} appears; without
-// a name the page says "You have an invite" instead.
+// It gives no prices, as the site gives none
+// (docs/decisions/0204-the-sites-price-pipeline-removed.md). The referrer's name
+// is filled in where {name} appears; without a name the page says "You have an
+// invite" instead.
 //
 // What the invite earns is what ops set in the console, each side apart
 // (docs/decisions/0107-referral-rewards-in-the-console.md), so no sentence types
@@ -129,23 +129,6 @@ export const referral = {
       body: unknownBody,
     },
   },
-  prices: {
-    rows: [
-      {
-        what: "First fit, from",
-        note: "The hair system you choose",
-        amount: "{firstFit}",
-        incl: "With the fitting and the cut",
-      },
-      {
-        what: "Service visit",
-        // Monthly, as the main site sells twelve service visits a year.
-        note: "Every month, at home",
-        amount: "{service}",
-        incl: "Lifted, cleaned, re-bonded, trimmed",
-      },
-    ],
-  },
   howItWorks: {
     title: "How it works",
     // The lengths are the backend's (service.ts), where the design wrote forty minutes and an hour.
@@ -211,8 +194,6 @@ export const referral = {
       ] satisfies readonly { id: OpenWindows["plan"]; label: string }[],
       // The first fit's three hours do not fit in the evening's half-slots, so the one visit starts earlier.
       note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.",
-      // Not drawn: no hair system is offered in the console yet, so only the consultation can be booked.
-      notYet: "Consultation and fit in one visit isn’t open to book yet.",
     },
     /**
      * Not drawn: a discount code for the consultation and fit in one visit, on /book only

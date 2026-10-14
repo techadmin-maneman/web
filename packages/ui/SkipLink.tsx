@@ -2,10 +2,11 @@
 // the focus.
 
 import type { ReactNode } from "react";
+import { classes } from "./classes.ts";
 import styles from "./skip-link.module.css";
 
 /** The link's look, for a page that draws its own anchor: the site's. */
-export const skipLinkLook = (): string => styles.skip;
+export const skipLinkLook = (): string => classes(styles.skip);
 
 export function SkipLink({ onSkip, children }: { readonly onSkip: () => void; readonly children: ReactNode }) {
   return (

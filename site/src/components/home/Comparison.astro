@@ -5,7 +5,6 @@
 import { hiddenLook } from "@maneman/ui/VisuallyHidden";
 import { capsLook } from "@maneman/ui/Caps";
 import { comparison, type ComparisonCell } from "../../content/site.ts";
-import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import Icon from "../Icon.astro";
 
 const { columns } = comparison;
@@ -45,7 +44,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
                   <span class={hiddenLook}>{cell ? comparison.yes : comparison.no}</span>
                 </>
               ) : (
-                <span data-price={priceTemplate(cell)}>{asBuilt(cell)}</span>
+                <span>{cell}</span>
               )}
             </div>
           ))}
