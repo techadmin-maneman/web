@@ -1,5 +1,12 @@
 [
   {
+    "key": "site:home/header.skip",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "Skip to content"
+  },
+  {
     "key": "site:home/header.homeLabel",
     "surface": "site",
     "group": "Home",
@@ -138,6 +145,27 @@
     "group": "Home",
     "where": "footer",
     "text": "Terms"
+  },
+  {
+    "key": "site:home/footer.pagesLabel",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Pages"
+  },
+  {
+    "key": "site:home/footer.pages.0.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Home"
+  },
+  {
+    "key": "site:home/footer.pages.1.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Try-on"
   },
   {
     "key": "site:home/footer.area",
