@@ -123,7 +123,7 @@ describe("the image provider chosen", () => {
 describe("the stub", () => {
   const stub = createStubYoucamFetch(() => NOW);
   const call = (path: string, init: RequestInit = {}, key = STUB_API_KEY) =>
-    stub(`${API_BASE_URL}${path}`, { ...init, headers: { Authorization: `Bearer ${key}`, ...init.headers } });
+    stub(`${API_BASE_URL}${path}`, { ...init, headers: { Authorization: `Bearer ${key}` } });
 
   it("refuses an unknown host, a wrong key and a call it does not know", async () => {
     expect((await stub("https://elsewhere.test/")).status).toBe(404);
