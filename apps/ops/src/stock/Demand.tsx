@@ -11,6 +11,7 @@ import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./stock.module.css";
+import { unitOf } from "./holdings.ts";
 
 const loadDemand = () => client.get("/api/stock/demand");
 
@@ -19,7 +20,7 @@ export function Demand({ stock }: { stock: Stock }) {
   const words = stockViews.demand;
   const named = (code: string | null) =>
     code === null ? words.noProfile : (stock.consumables.find((each) => each.code === code)?.name ?? code);
-  const unit = (code: string) => stock.consumables.find((each) => each.code === code)?.unit ?? "";
+  const unit = (code: string) => unitOf(stock, code);
   return (
     <Panel titleId="stock-demand" title={words.title}>
       {loaded.state === "loading" && <Loading />}

@@ -32,7 +32,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/ops/src/components/DeleteAction.tsx": { fn: 83 },
   "apps/ops/src/deletions/DeletionsScreen.tsx": { fn: 109 },
   "apps/ops/src/dispatch/BlockDrawer.tsx": { fn: 123 },
-  "apps/ops/src/dispatch/DispatchScreen.tsx": { fn: 165 },
+  "apps/ops/src/dispatch/DispatchScreen.tsx": { fn: 161 },
   "apps/ops/src/number-changes/NumberChangesScreen.tsx": { fn: 94 },
   "apps/ops/src/referrals/ReferralsScreen.tsx": { fn: 109 },
   "apps/ops/src/settings/Blackouts.tsx": { fn: 114 },

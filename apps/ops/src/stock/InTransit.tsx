@@ -18,6 +18,7 @@ import { useAccess } from "../lib/access.ts";
 import { PieceScans } from "./PieceScans.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
+import { unitOf } from "./holdings.ts";
 
 type Transfer = Stock["in_transit"][number];
 
@@ -107,7 +108,7 @@ function TransferRow(props: { stock: Stock; transfer: Transfer; onReceive: () =>
   const access = useAccess();
   const what =
     stock.consumables.find((each) => each.code === transfer.consumable_code)?.name ?? transfer.consumable_code;
-  const unit = stock.consumables.find((each) => each.code === transfer.consumable_code)?.unit ?? "";
+  const unit = unitOf(stock, transfer.consumable_code);
   const from = placeName(stock, transfer.from);
   const to = placeName(stock, transfer.to);
   return (

@@ -38,7 +38,7 @@ import { MovePicker } from "./MovePicker.tsx";
 import { Toolbar } from "./Toolbar.tsx";
 import { Tray } from "./Tray.tsx";
 import { useBoard } from "./useBoard.ts";
-import { answersTo, foundBy, weekOf } from "./board-view.ts";
+import { useSearch, weekOf } from "./board-view.ts";
 import { ChangePanel, changedNotice, type Changing } from "./ChangePanel.tsx";
 import type { Notice } from "./landing.ts";
 import { NoticeLine } from "./NoticeLine.tsx";
@@ -112,11 +112,7 @@ export function DispatchScreen() {
     area.current?.focus();
   };
 
-  const rows = useMemo(
-    () => (board === null ? [] : board.technicians.filter((row) => answersTo(row, find))),
-    [board, find],
-  );
-  const found = useMemo(() => foundBy(board, find), [board, find]);
+  const { settled, rows, found } = useSearch(board, find);
   const inHand = useMemo(
     (): InHand | null =>
       choosing && move !== null ? { job: move.job, windowsAt: windowsFrom(rooms), kmAt: kmFrom(rooms) } : null,
@@ -148,7 +144,7 @@ export function DispatchScreen() {
             <div className={styles.scroll}>
               {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
               {board.technicians.length > 0 && rows.length === 0 && (
-                <EmptyState look="panel" line={dispatch.tools.nothingFound(find.trim())} />
+                <EmptyState look="panel" line={dispatch.tools.nothingFound(settled.trim())} />
               )}
               {rows.length > 0 && (
                 <Grid

@@ -11,6 +11,9 @@
 //
 // A search that names a client, an area or a pincode outlines the blocks it
 // found, so the one visit is plain among a technician's eight.
+//
+// A row, a day and a block each draw again only when what they show changes, so a board of a hundred technicians
+// keeps up with a drag and with the search.
 
 import { TextButton } from "@maneman/ui/TextLink";
 import { Table } from "@maneman/ui/Table";
@@ -19,6 +22,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { inIndia, shortDate } from "@maneman/web-kit/dates";
+import { memo, useMemo } from "react";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import label from "../components/label.module.css";
@@ -66,6 +70,29 @@ function sizeOf(block: Block): string | undefined {
 const isAway = (leave: Board["leave"], technicianId: string, date: string) =>
   leave.some((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
 
+/** A technician's day, as the board's days are looked up. */
+const dayKey = (technicianId: string, date: string) => `${technicianId} ${date}`;
+
+const NO_BLOCKS: readonly Block[] = [];
+
+/** Each technician's blocks by day, and the days they are away, read once from each answer of the board. */
+interface Days {
+  readonly blocks: ReadonlyMap<string, readonly Block[]>;
+  readonly away: ReadonlySet<string>;
+}
+
+function daysOf(board: Board): Days {
+  const blocks = new Map<string, readonly Block[]>();
+  const away = new Set<string>();
+  for (const row of board.technicians) {
+    for (const day of row.days) blocks.set(dayKey(row.technician_id, day.date), day.blocks);
+    for (const date of board.dates) {
+      if (isAway(board.leave, row.technician_id, date)) away.add(dayKey(row.technician_id, date));
+    }
+  }
+  return { blocks, away };
+}
+
 /** Takes a job up to move it; null when the person's access does not let them move one. */
 type Take = ((job: Job, from: HTMLElement) => void) | null;
 
@@ -73,8 +100,11 @@ type Take = ((job: Job, from: HTMLElement) => void) | null;
 type Found = ((block: Block) => boolean) | null;
 
 interface BlockButtonProps {
-  readonly job: Job & { readonly kind: "block" };
-  readonly found: Found;
+  readonly block: Block;
+  readonly technician: BoardRow;
+  readonly date: string;
+  /** The search found it, so it is outlined and says so. */
+  readonly matched: boolean;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
   readonly onTake: Take;
 }
@@ -92,11 +122,10 @@ function blockLabel(job: Job & { readonly kind: "block" }): string {
  * One visit on a technician's day. A visit done, or one the technician has begun, opens its drawer and cannot be
  * dragged.
  */
-function BlockButton({ job, found, onOpen, onTake }: BlockButtonProps) {
-  const { block } = job;
+const BlockButton = memo(function BlockButton({ block, technician, date, matched, onOpen, onTake }: BlockButtonProps) {
+  const job = { kind: "block", block, technician, date } as const;
   const movable = isMovable(block);
   const begun = begunWord(block);
-  const matched = found?.(block) === true;
   return (
     <Tile
       className={classes(styles.block, inkOf(block), sizeOf(block), !movable && styles.finished)}
@@ -122,7 +151,7 @@ function BlockButton({ job, found, onOpen, onTake }: BlockButtonProps) {
       {begun !== null && <span className={styles.what}>{begun}</span>}
     </Tile>
   );
-}
+});
 
 interface CellProps {
   readonly technician: BoardRow;
@@ -159,7 +188,7 @@ function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: st
  * leave recorded after a job was assigned must not hide that job — and offers
  * no window to put another one in.
  */
-function Cell({ technician, date, blocks, away, inHand, found, onOpen, onTake, onLand }: CellProps) {
+const Cell = memo(function Cell({ technician, date, blocks, away, inHand, found, onOpen, onTake, onLand }: CellProps) {
   const windows = inHand === null || away ? null : inHand.windowsAt(technician.technician_id, date);
   return (
     <td className={away ? `${styles.cell ?? ""} ${styles.away ?? ""}` : styles.cell}>
@@ -167,8 +196,10 @@ function Cell({ technician, date, blocks, away, inHand, found, onOpen, onTake, o
       {blocks.map((block) => (
         <BlockButton
           key={block.appointment_id}
-          job={{ kind: "block", block, technician, date }}
-          found={found}
+          block={block}
+          technician={technician}
+          date={date}
+          matched={found?.(block) === true}
           onOpen={onOpen}
           onTake={onTake}
         />
@@ -207,7 +238,33 @@ function Cell({ technician, date, blocks, away, inHand, found, onOpen, onTake, o
       )}
     </td>
   );
+});
+
+interface RowProps extends Omit<CellProps, "date" | "blocks" | "away"> {
+  readonly dates: readonly string[];
+  readonly days: Days;
 }
+
+const TechnicianRow = memo(function TechnicianRow({ technician, dates, days, ...cell }: RowProps) {
+  return (
+    <tr>
+      <th className={styles.tech} scope="row">
+        <span>{technician.name}</span>
+        <span className={styles.zone}>{technician.zone ?? dispatch.unknown}</span>
+      </th>
+      {dates.map((date) => (
+        <Cell
+          {...cell}
+          away={days.away.has(dayKey(technician.technician_id, date))}
+          blocks={days.blocks.get(dayKey(technician.technician_id, date)) ?? NO_BLOCKS}
+          date={date}
+          key={date}
+          technician={technician}
+        />
+      ))}
+    </tr>
+  );
+});
 
 interface GridProps {
   readonly board: Board;
@@ -222,7 +279,8 @@ interface GridProps {
   readonly onRoutes: ((date: string) => void) | null;
 }
 
-export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRoutes }: GridProps) {
+export const Grid = memo(function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRoutes }: GridProps) {
+  const days = useMemo(() => daysOf(board), [board]);
   return (
     <Table plain className={styles.grid}>
       <thead>
@@ -257,28 +315,19 @@ export function Grid({ board, rows, inHand, found, onOpen, onTake, onLand, onRou
       </thead>
       <tbody>
         {rows.map((technician) => (
-          <tr key={technician.technician_id}>
-            <th className={styles.tech} scope="row">
-              <span>{technician.name}</span>
-              <span className={styles.zone}>{technician.zone ?? dispatch.unknown}</span>
-            </th>
-            {board.dates.map((date) => (
-              <Cell
-                away={isAway(board.leave, technician.technician_id, date)}
-                blocks={technician.days.find((day) => day.date === date)?.blocks ?? []}
-                date={date}
-                found={found}
-                inHand={inHand}
-                key={date}
-                onLand={onLand}
-                onOpen={onOpen}
-                onTake={onTake}
-                technician={technician}
-              />
-            ))}
-          </tr>
+          <TechnicianRow
+            key={technician.technician_id}
+            technician={technician}
+            dates={board.dates}
+            days={days}
+            found={found}
+            inHand={inHand}
+            onLand={onLand}
+            onOpen={onOpen}
+            onTake={onTake}
+          />
         ))}
       </tbody>
     </Table>
   );
-}
+});

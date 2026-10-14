@@ -26,6 +26,7 @@ import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import type { LabelsFor } from "./Labels.tsx";
+import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 
 /** The places, read only by national managers, so the panel loads only for them. */
@@ -82,8 +83,8 @@ const RECORDING: Readonly<Record<Kind, OpsCall>> = {
 
 /** One place's figure: what it holds, marked Low at or below its level, and when it was last counted. */
 function Held({ stock, code, place }: { stock: Stock; code: string; place: string }) {
-  const holding = stock.holdings.find((each) => each.consumable_code === code && each.place_id === place);
-  const unit = stock.consumables.find((each) => each.code === code)?.unit ?? "";
+  const holding = holdingOf(stock, code, place);
+  const unit = unitOf(stock, code);
   const quantity = holding?.quantity ?? 0;
   // The lots come soonest to expire first.
   const soonest = holding?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? null;

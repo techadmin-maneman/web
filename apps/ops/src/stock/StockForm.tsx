@@ -21,6 +21,7 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
 import { LotFields } from "./LotFields.tsx";
 import { PieceScans } from "./PieceScans.tsx";
+import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
@@ -113,8 +114,7 @@ function Quantity(props: { label: string; hint?: string; value: string; onChange
 function effectOf(stock: Stock, draft: Draft): { lines: string[]; warnings: string[] } {
   const consumable = stock.consumables.find((each) => each.code === draft.code);
   const unit = consumable?.unit ?? "";
-  const held = (place: string) =>
-    stock.holdings.find((each) => each.consumable_code === draft.code && each.place_id === place)?.quantity ?? 0;
+  const held = (place: string) => holdingOf(stock, draft.code, place)?.quantity ?? 0;
   const said = (quantity: number) => copy.held(quantity, unit);
   const moved = Number(draft.quantity);
   const changes: [string, number][] = [];
@@ -296,7 +296,7 @@ export function StockForm({
     setDraft({ ...draft, units, quantity: units.length === 0 ? "" : String(units.length) });
     setStep({ step: "editing" });
   };
-  const unit = stock.consumables.find((each) => each.code === draft.code)?.unit ?? "";
+  const unit = unitOf(stock, draft.code);
   const checking = step.step === "checking" || step.step === "saving";
   const effect = effectOf(stock, draft);
 

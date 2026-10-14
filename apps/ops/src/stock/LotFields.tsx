@@ -8,6 +8,7 @@ import { fullDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
 import form from "../components/forms.module.css";
+import { holdingOf } from "./holdings.ts";
 
 /** What the fields read and write of the movement being recorded. */
 interface LotDraft {
@@ -58,8 +59,7 @@ export function LotFields({
       </div>
     );
   }
-  const lots =
-    stock.holdings.find((each) => each.consumable_code === draft.code && each.place_id === draft.place)?.lots ?? [];
+  const lots = holdingOf(stock, draft.code, draft.place)?.lots ?? [];
   if (draft.kind !== "write_off" || lots.length === 0) return null;
   return (
     <div className={form.fields}>

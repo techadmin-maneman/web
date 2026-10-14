@@ -19,6 +19,7 @@ import { LabelFound } from "./LabelFound.tsx";
 import { LabelSheet, type PrintedLabel } from "./LabelSheet.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./labels.module.css";
+import { holdingOf } from "./holdings.ts";
 
 /** The item and place whose labels the panel shows. */
 export interface LabelsFor {
@@ -150,8 +151,7 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
 const MAX_COPIES = 200;
 
 /** The lots a place holds of one consumable. */
-const lotsAt = (stock: Stock, at: LabelsFor) =>
-  stock.holdings.find((each) => each.consumable_code === at.code && each.place_id === at.place)?.lots ?? [];
+const lotsAt = (stock: Stock, at: LabelsFor) => holdingOf(stock, at.code, at.place)?.lots ?? [];
 
 function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: LabelsFor }) {
   const lots = lotsAt(stock, at);
