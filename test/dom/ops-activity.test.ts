@@ -13,10 +13,11 @@ let reads: string[];
 
 const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 10)));
 
-const show = () =>
+const show = () => {
   act(() => {
     [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === activity.filters.show)?.click();
   });
+};
 
 function choose(select: HTMLSelectElement | null, value: string) {
   act(() => {
