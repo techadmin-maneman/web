@@ -125,7 +125,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         const frame = await captureFrame(video.current);
         const frameId = await keepFrame({ jobId: id, angle, phase, frame: frame.photo.blob, small: frame.small.blob });
         setMissed(false);
-        setTaken((already) => [...already.filter((one) => one.angle !== angle), { angle, frameId }]);
+        setTaken((already) => [...already.filter((one) => one.angle !== angle), { angle, frameId, sending: false }]);
       } catch {
         setMissed(true);
       }
@@ -133,7 +133,8 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
 
   // Only a frame on the phone can be taken again: a photograph that reached us stays. The angle let go is the first
   // not taken, so it is the one taken next.
-  const lastOnPhone = taken.at(-1)?.frameId ?? null;
+  const last = taken.at(-1);
+  const lastOnPhone = last === undefined || last.sending ? null : last.frameId;
   const retake = (frameId: string | null) =>
     once(async () => {
       if (frameId === null) return;
@@ -226,13 +227,14 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
 
       <ul className={styles.tiles}>
         {ANGLES.map((name) => {
-          const frameId = taken.find((one) => one.angle === name)?.frameId ?? null;
+          const one = taken.find((each) => each.angle === name);
+          const frameId = one?.frameId ?? null;
           const picture = frameId === null ? undefined : pictures.get(frameId);
           const label = <span className={styles.tileLabel}>{copy.angles[name]}</span>;
           return (
             <li className={styles.tile} key={name} data-state={tileState(name, taken, angle)}>
               {picture !== undefined && <img className={styles.tilePicture} src={picture} alt="" />}
-              {frameId === null ? (
+              {frameId === null || one?.sending === true ? (
                 label
               ) : (
                 <Tile

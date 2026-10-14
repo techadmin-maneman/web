@@ -54,12 +54,15 @@ export interface TakenAngle {
   readonly angle: Angle;
   /** The frame on the phone; null for an angle whose photograph has already reached us. */
   readonly frameId: string | null;
+  /** The set is on its way: its frame may be going up now, so it is not taken again. */
+  readonly sending: boolean;
 }
 
 /**
  * The angles of a job's set already taken, for the capture screen: those whose photograph reached us first, then each
  * frame on the phone in the order taken. Once a set is finished, an angle the phone no longer holds has reached us. A
- * frame the API refused is not taken: its angle is taken again.
+ * frame the API refused is not taken: its angle is taken again. While the set is waiting to go, its frames are not
+ * taken again: one going up meanwhile would be written back over the new one, and then let go.
  */
 export function anglesTaken(
   frames: readonly Frame[],
@@ -68,12 +71,14 @@ export function anglesTaken(
   phase: Phase,
 ): TakenAngle[] {
   const held = frames.filter((frame) => frame.job_id === jobId && frame.phase === phase);
-  const finished = events.some((event) => event.job_id === jobId && PHASE_OF[event.kind] === phase);
+  const set = events.filter((event) => event.job_id === jobId && PHASE_OF[event.kind] === phase);
+  const finished = set.length > 0;
+  const sending = set.some((event) => event.state === "waiting");
   const reached = finished ? ANGLES.filter((angle) => !held.some((frame) => frame.angle === angle)) : [];
   const good = held.filter((frame) => frame.refused !== true).sort((a, b) => a.kept_at - b.kept_at);
   return [
-    ...reached.map((angle) => ({ angle, frameId: null })),
-    ...good.map((frame) => ({ angle: frame.angle, frameId: frame.id })),
+    ...reached.map((angle) => ({ angle, frameId: null, sending: false })),
+    ...good.map((frame) => ({ angle: frame.angle, frameId: frame.id, sending })),
   ];
 }
 
