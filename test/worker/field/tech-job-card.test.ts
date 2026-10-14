@@ -323,7 +323,7 @@ describe("the card", () => {
       .bind(PERSON, TODAY_JOB)
       .run();
 
-    expect((await card(TODAY_JOB)).reminder).toEqual({ delivered_at: "2026-09-20T12:31:00Z" });
+    expect((await card(TODAY_JOB)).reminder).toEqual({ state: "delivered", delivered_at: "2026-09-20T12:31:00Z" });
     expect((await card(LATER_JOB)).reminder).toBeNull();
   });
 
@@ -338,20 +338,25 @@ describe("the card", () => {
         .run();
     }
 
-    it.each(["queued", "skipped", "failed"])("has none where the reminder was %s", async (state) => {
+    it.each(["skipped", "failed"])("has none where the reminder was %s", async (state) => {
       await message("m1", "visit_reminder", state, "2026-09-20T12:30:00Z");
       expect((await card(TODAY_JOB)).reminder).toBeNull();
     });
 
+    it("says one still queued is on its way", async () => {
+      await message("m1", "visit_reminder", "queued", "2026-09-20T12:30:00Z");
+      expect((await card(TODAY_JOB)).reminder).toEqual({ state: "on_its_way", delivered_at: null });
+    });
+
     it("has one sent and never delivered", async () => {
       await message("m1", "visit_reminder", "sent", "2026-09-20T12:30:00Z");
-      expect((await card(TODAY_JOB)).reminder).toEqual({ delivered_at: null });
+      expect((await card(TODAY_JOB)).reminder).toEqual({ state: "sent", delivered_at: null });
     });
 
     it("keeps the reminder that went when a later arrival notice did not", async () => {
       await message("m1", "visit_reminder", "sent", "2026-09-20T12:30:00Z");
       await message("m2", "arrival_notice", "skipped", "2026-09-21T06:00:00Z");
-      expect((await card(TODAY_JOB)).reminder).toEqual({ delivered_at: null });
+      expect((await card(TODAY_JOB)).reminder).toEqual({ state: "sent", delivered_at: null });
     });
   });
 

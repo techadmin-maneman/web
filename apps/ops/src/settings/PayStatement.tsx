@@ -24,7 +24,7 @@ const copy = technicianPay.statement;
 type Line = components["schemas"]["PayStatement"]["lines"][number];
 
 /** The twelve months to today's, newest first, as YYYY-MM. */
-export function monthsTo(today: string): string[] {
+function monthsTo(today: string): string[] {
   const [year = 2026, month = 1] = today.split("-").map(Number);
   return Array.from({ length: 12 }, (_, back) => {
     const index = year * 12 + (month - 1) - back;
@@ -35,7 +35,7 @@ export function monthsTo(today: string): string[] {
 const amountOf = (paise: number | null): string => (paise === null ? copy.noRate : rupees(paise));
 
 /** The month's lines as payroll reads them: one row a line, amounts in rupees. */
-export function statementCsv(lines: readonly Line[]): string {
+function statementCsv(lines: readonly Line[]): string {
   return csvText([
     [...copy.columns],
     ...lines.map((line) => [

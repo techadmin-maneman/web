@@ -353,6 +353,11 @@
   text-align: left;
 }
 
+/* A chosen option is filled in paper, so what it says beside its name takes the option's ink, not the note's. */
+.choice[aria-pressed="true"] .note {
+  color: inherit;
+}
+
 .reason {
   display: flex;
   align-items: center;

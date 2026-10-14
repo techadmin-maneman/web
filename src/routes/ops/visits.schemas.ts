@@ -19,7 +19,7 @@ export const PriceSchema = z
 
 export const TechnicianSchema = z.object({ id: z.string(), name: z.string() }).strict().openapi("FreeTechnician");
 
-export const ServiceOfferSchema = z
+const ServiceOfferSchema = z
   .object({ tier: z.string(), name: z.string(), minutes: z.number().int(), price: PriceSchema })
   .strict()
   .openapi("ServiceOffer");
@@ -30,7 +30,7 @@ export const PaysSchema = z.enum(PAYS).openapi({
     "once fitted), a service-visit credit, or a payment link Razorpay texts the client.",
 });
 
-export const OwedSchema = z
+const OwedSchema = z
   .object({
     id: z
       .string()
