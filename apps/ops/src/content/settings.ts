@@ -347,10 +347,6 @@ export const settings = {
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
-  /**
-   * No board draws the services (docs/decisions/0085-services-ops-can-edit.md). What a price or a change was is
-   * shown beside what it will be before anything is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
-   */
   /** What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md). */
   standardCosts: {
     title: "Hair system costs",
@@ -371,6 +367,10 @@ export const settings = {
       unknown: FAILED,
     },
   },
+  /**
+   * No board draws the services (docs/decisions/0085-services-ops-can-edit.md). What a price or a change was is
+   * shown beside what it will be before anything is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+   */
   services: {
     title: "Services and prices",
     /** The four kinds, as the rest of the console names them. */
@@ -520,8 +520,8 @@ export const settings = {
       valid_from: "That price is already in effect, so it stays.",
     } as Readonly<Record<string, string>>,
   },
-  /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
   // No design draws them (docs/decisions/0165-suppliers.md).
+  /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
   suppliers: {
     title: "Suppliers",
     columns: ["Supplier", "Country · currency", "Terms", "Warranty", "Status"],

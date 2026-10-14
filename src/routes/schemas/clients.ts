@@ -40,7 +40,6 @@ export const ClientAddressSchema = z
   .strict()
   .openapi("ClientAddress");
 /** The address visits go to now, as the client's page shows it. */
-
 export const clientAddressOf = (address: SavedAddress) => ({
   line1: address.line1,
   line2: address.line2,

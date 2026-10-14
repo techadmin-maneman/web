@@ -132,12 +132,12 @@ export const payments = {
   /** Said to a screen reader only, since a document opens outside the app. */
   newTab: "PDF, opens in a new tab",
   receipt: "Receipt",
+  /** A document the API would not give when it was tapped. */
+  notOpened: "That didn’t open. Try again.",
   /**
    * The documents' line for a document not yet raised. An invoice is raised once the visit is done, so what it says
    * depends on when that was (ADR 0056). Our words: every line but the invoice's first.
    */
-  /** A document the API would not give when it was tapped. */
-  notOpened: "That didn’t open. Try again.",
   unavailable: {
     invoice: "The invoice is still generating. Usually ready within the hour.",
     invoiceAfterVisit: "The tax invoice is raised once the visit is done.",

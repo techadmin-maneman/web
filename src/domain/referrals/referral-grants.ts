@@ -26,8 +26,6 @@ import type { MessageKind } from "../../config/message-kinds.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { PAYMENT_HELD, statusIn } from "../../config/statuses.ts";
 
-/** "Karan Bhatia" → "Karan": all the messages and the tracker name a person by. */
-
 interface ReferralAttribution {
   readonly id: string;
   readonly code: string;

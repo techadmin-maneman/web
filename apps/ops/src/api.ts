@@ -272,7 +272,6 @@ export const api = {
   board: (asked: BoardQuery) => client.get("/api/dispatch", { query: setOnly({ from: asked.from, city: asked.city }) }),
   /** A number that moves whenever something the board draws changes; one row, where the board is hundreds. */
   boardVersion: () => client.get("/api/dispatch/version"),
-  /** Where a job in hand would land in the week from `from`, by the check a move runs. Writes nothing. */
   /** A day's routes: each technician's visits in order, and the drive between each two. */
   dispatchDay: (date: string, city: string | null) =>
     client.get("/api/dispatch/day", { query: setOnly({ date, city }) }),
@@ -441,15 +440,15 @@ export const api = {
   deleteTechnician: (id: string) => client.post("/api/technicians/{id}/delete", { path: { id } }),
   /** What each of them has finished, over the period the route rules; the roster above carries no figure. */
   technicianWork: () => client.get("/api/technicians/work"),
-  /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
   /** Let the technician check in to the visit wherever their phone puts them, with why. */
   letIn: (id: string, reason: string) => client.post("/api/visits/{id}/let-in", { path: { id }, body: { reason } }),
+  /** The phone's ID is the app's own, never a hardware serial, so it can stand in a path. */
   revokeDevice: (id: string, deviceId: string) =>
     client.post("/api/technicians/{id}/devices/{device}/revoke", { path: { id, device: deviceId } }),
   /** After a revoke stopped them signing in. */
   allowSignIn: (id: string) => client.post("/api/technicians/{id}/allow-sign-in", { path: { id } }),
-  /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
   standingLeave: (id: string) => client.get("/api/technicians/{id}/leave", { path: { id } }),
+  /** Both dates inclusive. Those days are then refused to booking and to the dispatch board alike (ADR 0062). */
   recordLeave: (id: string, leave: { from: string; to: string; note: string | null }) =>
     client.post("/api/technicians/{id}/leave", {
       path: { id },
@@ -491,7 +490,6 @@ export const api = {
     client.post("/api/services/{kind}/{tier}/retire", { path: { kind, tier }, body: { from } }),
   restoreService: (kind: Kind, tier: string) =>
     client.post("/api/services/{kind}/{tier}/restore", { path: { kind, tier } }),
-  /** Every day from today on that no visit is offered, with what is still booked on each. */
   partners: () => client.get("/api/referral-channels"),
   addPartner: (terms: PartnerTerms) => client.post("/api/referral-channels", { body: terms }),
   changePartner: (id: string, terms: PartnerTerms) =>
@@ -518,6 +516,7 @@ export const api = {
   setPayRate: (rate: PayRateSet) => client.post("/api/technician-pay/rates", { body: rate }),
   setPayGradeOf: (technicianId: string, gradeId: string | null) =>
     client.post("/api/technician-pay/technicians/{id}", { path: { id: technicianId }, body: { grade_id: gradeId } }),
+  /** Every day from today on that no visit is offered, with what is still booked on each. */
   blackouts: () => client.get("/api/blackouts"),
   /** The visits still booked on the days from the first to the last, which closing them strands. */
   blackoutsBooked: (period: BlackoutRemove) => client.get("/api/blackouts/booked", { query: period }),

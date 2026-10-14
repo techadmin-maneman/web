@@ -43,8 +43,8 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
  */
 export const tasks = {
   title: "Tasks",
-  /** The head's count, in oxblood, as the board writes "4 overdue". */
   // Not drawn: the list's heading, the tasks open, as the page's bar already says "Tasks".
+  /** The head's count, in oxblood, as the board writes "4 overdue". */
   openCount: (count: number) => `${String(count)} open`,
   overdue: (count: number) => `${String(count)} overdue`,
   /** The head's count as a screen reader names it, with what it does. */
@@ -170,10 +170,6 @@ export const tasks = {
       when === null
         ? `Consultation ${consulted} · not fitted`
         : `Consultation ${consulted}, ${when.toLowerCase()} · not fitted`,
-    /**
-     * "9 weeks since the last visit · due Sat 19 Sep", as the Tasks design writes "9 weeks since service": the day the next
-     * service fell due, from the cadence ops set. The task goes when the client books.
-     */
     /** "Service visit · Tue 22 Sep, 9:00 am · no technician": send someone from the board. */
     unassigned_visit: (visit: string, when: string) => `${visit} · ${when} · no technician`,
     /** "MM-ESS-0000041-R · recalled, replacement free": call them to book it. */
@@ -183,6 +179,10 @@ export const tasks = {
     /** "hs_essential_8x10_1b_g20_d100 · none in their city", or the profile that matches no stock code yet. */
     stock_at_risk: (code: string) =>
       code === "" ? "No hair system matched to their profile" : `${code} · none in their city`,
+    /**
+     * "9 weeks since the last visit · due Sat 19 Sep", as the Tasks design writes "9 weeks since service": the day the next
+     * service fell due, from the cadence ops set. The task goes when the client books.
+     */
     at_risk_client: (weeks: number, due: string) =>
       `${String(weeks)} ${weeks === 1 ? "week" : "weeks"} since last visit · due ${due}`,
     /**

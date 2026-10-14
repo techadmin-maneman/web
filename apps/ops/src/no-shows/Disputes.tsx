@@ -28,8 +28,6 @@ import styles from "./no-shows.module.css";
 
 const copy = noShows.dispute;
 
-/** Whole minutes from one instant to another. */
-
 /** "Vikram Sethi disputes the charge", their name opening their visits. */
 function Title({ person }: { person: NoShowDispute["person"] }) {
   if (person === null) return copy.erased;

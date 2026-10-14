@@ -113,8 +113,6 @@ function Money() {
 
 const copy = noShows.queue;
 
-/** Whole minutes from one instant to another. */
-
 /** "5 h 8 m after the booked start", or before it, as the Technicians page writes a length. */
 function offsetOf(minutesLate: number): string {
   if (minutesLate === 0) return copy.onTime;

@@ -22,8 +22,6 @@ export const bookingName = (booking: NonNullable<Me["being_booked"]>) =>
 /** A visit by its kind; a consultation and fit in one visit, still to happen, by that name. */
 export const summaryName = (visit: VisitSummary) => (oneVisitOf(visit) === null ? visitName(visit.type) : ONE_VISIT);
 
-/** "Imran Qureshi" → "Imran": the name Home and the lists use; the visit's detail gives it in full. */
-
 /** The technician's first name, as none or one, to join into a line: "Service visit · Imran". */
 export const technicianOf = (visit: VisitSummary): string[] =>
   visit.technician === null ? [] : [firstNameOf(visit.technician.name)];

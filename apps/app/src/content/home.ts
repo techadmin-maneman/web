@@ -62,11 +62,6 @@ export const home = {
   },
   /** Home's credit tile: "3 free service visits", and "Use by 2 Oct", or "Use by tonight" on the last day. */
   credits: freeVisitsTile,
-  /**
-   * Home's one prompt, and the invoice line beneath it (src/domain/clients/home-prompt.ts). The replacement's line and
-   * "See what that involves" are the board's own, and Visits' record words the line the same way. Our words:
-   * everything else here.
-   */
   /** A hair system made to their profile, as it comes to them (docs/decisions/0177-custom-orders-in-the-app.md). */
   customOrder: {
     awaitingPayment: "Your hair system, made to your profile, is ready to order.",
@@ -76,6 +71,11 @@ export const home = {
       date === null ? "Your hair system is being made." : `Your hair system is being made, due by ${date}.`,
     arrived: "Your hair system has arrived. We will call to book your fit.",
   },
+  /**
+   * Home's one prompt, and the invoice line beneath it (src/domain/clients/home-prompt.ts). The replacement's line and
+   * "See what that involves" are the board's own, and Visits' record words the line the same way. Our words:
+   * everything else here.
+   */
   prompt: {
     address: "Add your address, so your technician can find the door.",
     addAddress: "Add your address",

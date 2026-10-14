@@ -49,7 +49,6 @@ interface Change {
   readonly value: SettingValue | null;
 }
 
-/** How a section's form is going. A refusal keeps the rule it came from, so it shows under that rule. */
 /** A rule's draft: the text in each box, or the choice, keyed as the value is. One number uses the rule's own name. */
 type Draft = Readonly<Record<string, string>>;
 

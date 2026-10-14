@@ -206,11 +206,6 @@ const BOOKED_SINCE = `(EXISTS (SELECT 1 FROM appointments later WHERE later.pers
     OR EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = a.person_id AND ${paidNotBooked("h")}))`;
 
 /**
- * The visits whose next service is due within `reminder_before_due` days with nothing booked, and not yet reminded
- * of: the last visit of each client, done between ?1 and ?2.
- */
-
-/**
  * Writes the next service's reminder for each client it is due to, once a last visit, from the reminder hour in
  * India that the day-before reminders go from. Returns the messages' IDs, for the queue; the consumer decides at
  * sending whether each goes.

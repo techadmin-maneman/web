@@ -335,7 +335,6 @@ function addressOf(row: JobRow): JobAddress | null {
  * What the phone has already sent for this job, from the events it landed. The check-in is the job's technician's
  * own, so one given the job after another checked in at it still has to arrive themselves.
  */
-
 export async function progressOf(
   db: D1Database,
   job: { id: string; type: VisitType; windowStart: Date; technicianId: string },

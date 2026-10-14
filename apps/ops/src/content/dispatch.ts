@@ -98,7 +98,6 @@ export const dispatch = {
     // The board draws four waiting and no empty tray.
     empty: "Nothing unassigned.",
   },
-  /** The drawer a block opens. */
   /** Our words, all of them: letting a technician check in past the geofence, which no board draws. */
   letIn: {
     title: (technician: string) => `Allow ${technician} to check in`,
@@ -117,6 +116,7 @@ export const dispatch = {
       unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
+  /** The drawer a block opens. */
   drawer: {
     /** The way past the geofence, for a visit today they have not checked in to. */
     letIn: "Allow check-in",
@@ -125,8 +125,8 @@ export const dispatch = {
     withdraw: "Withdraw",
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
-    /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
     // at_visit: a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
+    /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
     badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
       Record<string, string>
     >,

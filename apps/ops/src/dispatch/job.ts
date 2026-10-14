@@ -147,5 +147,3 @@ export const mayLetIn = (block: Block, now: number): boolean =>
   block.status === "scheduled" &&
   block.begun === null &&
   indiaDate(block.starts_at) === indiaDate(new Date(now).toISOString());
-
-/** "Rohit", as the drawer's WhatsApp button names them. */
