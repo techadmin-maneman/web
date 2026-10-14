@@ -8,7 +8,7 @@
 
 import { reachBinding } from "../clients/places.ts";
 import type { PlacesReached } from "../../policy/access.ts";
-import { auditStatement, type AuditActor, type AuditEntry } from "../platform/audit.ts";
+import { auditStatement, type AuditEntry, type Written, opsEntry } from "../platform/audit.ts";
 
 /** A place, by its ID: the warehouse is WAREHOUSE and a kit its technician's ID. */
 export type Place = string;
@@ -114,12 +114,6 @@ export async function placeAreas(db: D1Database): Promise<{ zones: string[]; cit
 export const isPlaceWithin = (within: ReadonlySet<Place> | null, place: Place): boolean =>
   within === null || within.has(place);
 
-interface Written {
-  readonly actor: AuditActor;
-  readonly requestId: string;
-  readonly now: Date;
-}
-
 type PlaceAdded = { readonly ok: true; readonly id: Place } | { readonly ok: false; readonly fields: string[] };
 
 export type PlaceChanged = PlaceAdded | { readonly ok: false; readonly missing: true };
@@ -144,14 +138,7 @@ function entry(
   written: Written,
   detail: AuditEntry["detail"],
 ): AuditEntry {
-  return {
-    surface: "ops",
-    actor: written.actor,
-    action,
-    subject: { kind: "stock_place", id },
-    requestId: written.requestId,
-    detail,
-  };
+  return opsEntry(written, action, { kind: "stock_place", id }, detail);
 }
 
 /** A hub for a zone, or a stockroom in a city, under a place above it. */

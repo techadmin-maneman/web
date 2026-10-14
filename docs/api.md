@@ -1687,7 +1687,7 @@ Razorpay's webhook: payments and refunds
             "at"
           ],
           "additionalProperties": false,
-          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when."
         },
         "earliest_at": {
           "type": "string",
@@ -1763,7 +1763,7 @@ Razorpay's webhook: payments and refunds
         "string",
         "null"
       ],
-      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
+      "description": "When the cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [

@@ -1,14 +1,11 @@
-// Booking a visit for a client from the console (src/domain/booking/visit-booking.ts), on the ops surface behind Access:
-//
-//   GET  /api/visits/availability   a client's 14 days of windows for a kind of visit, who is free in each, the kind's
-//                                   services, and how the visit would be paid
-//   POST /api/visits                book it: at once when nothing is paid at booking, else a payment link goes out
+// Booking a visit for a client from the console (src/domain/booking/visit-booking.ts), on the ops surface behind Access.
 //
 // Both keep to the caller's cities: a client elsewhere is not found, and only the technicians there are offered. The
 // booking is audited in the batch that holds its slot (ADR 0031).
 
+import { opsRoute } from "../../http/session-routes.ts";
 import { recommendedProduct } from "../../domain/clients/hair-profiles.ts";
-import { createRoute, z } from "@hono/zod-openapi";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
@@ -41,7 +38,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
-import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
+import { clientInReach, routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { stripStart } from "../../policy/next-visit.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
@@ -85,14 +82,13 @@ const AvailabilityQuerySchema = z.object({
 });
 type AvailabilityQuery = z.infer<typeof AvailabilityQuerySchema>;
 
-const availabilityRoute = createRoute({
+const availabilityRoute = opsRoute({
   method: "get",
   path: "/api/visits/availability",
   summary: "A client's windows for a kind of visit over 14 days, and who is free in each",
   request: { query: AvailabilityQuerySchema },
   responses: {
     200: { description: "Each day's windows", ...json(OpsAvailabilitySchema) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     422: errorResponse(
       "not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale",
@@ -132,7 +128,7 @@ const VisitToBookSchema = z
   .strict()
   .openapi("VisitToBook");
 
-const bookRoute = createRoute({
+const bookRoute = opsRoute({
   method: "post",
   path: "/api/visits",
   summary: "Book a visit for a client: at once when nothing is paid at booking, else by a payment link",
@@ -142,7 +138,6 @@ const bookRoute = createRoute({
     400: errorResponse(
       "invalid_request: a one visit that is not a first fit, or in the evening; covers for nothing owed of the kind, or with a one visit or a code",
     ),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     409: errorResponse(
       "taken: nobody chosen is free in that window now, or the technician chosen is not in the caller's cities; already_booked: a consultation or first fit is still to " +
@@ -274,18 +269,14 @@ const owedOf = (owed: readonly Remake[], kind: VisitType) =>
     .map((each) => ({ id: each.id, why: each.why, piece_code: each.pieceCode, since: each.since }));
 
 /** Whether the client is on our records, not erased, and in the caller's cities. */
-async function isClientInReach(c: Context<AppEnv>, client: string): Promise<boolean> {
-  const person = await c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?1 AND erased_at IS NULL")
-    .bind(client)
-    .first();
-  return person !== null && withinRouteReach(c, "client", client);
-}
+const isClientInReach = async (c: Context<AppEnv>, client: string): Promise<boolean> =>
+  (await clientInReach(c, client)) !== null;
 
-/** A booking outside the caller's cities: a client elsewhere is not found, and a technician elsewhere is not free. */
+/** A booking outside the caller's cities: a client or a technician elsewhere is not found, as anything elsewhere is. */
 async function refusedElsewhere(c: Context<AppEnv>, asked: VisitAsked) {
-  if (!(await withinRouteReach(c, "client", asked.personId))) return { code: "not_found", status: 404 } as const;
+  if (!(await withinRouteReach(c, "client", asked.personId))) return { code: "not_found" } as const;
   if (asked.technicianId === undefined) return null;
-  if (!(await withinRouteReach(c, "technician", asked.technicianId))) return { code: "taken", status: 409 } as const;
+  if (!(await withinRouteReach(c, "technician", asked.technicianId))) return { code: "not_found" } as const;
   return null;
 }
 
@@ -337,13 +328,12 @@ export function registerOpsVisits(app: App): void {
     const db = c.env.DB;
     const now = c.var.deps.now();
     const elsewhere = await refusedElsewhere(c, asked);
-    if (elsewhere !== null) return c.json(errorBody(elsewhere.code, c.var.requestId), elsewhere.status);
+    if (elsewhere !== null) return refuse(c, elsewhere.code);
     const inputs = await opsInputs(c);
     const checked = await saleFor(db, asked, inputs, now);
     if (!checked.ok) {
       const { refusal } = checked;
-      if (refusal.status === 400) return c.json(errorBody(refusal.code, c.var.requestId, [...refusal.fields]), 400);
-      return c.json(errorBody(refusal.code, c.var.requestId), refusal.status);
+      return refuse(c, refusal.code, "fields" in refusal ? refusal.fields : undefined);
     }
     const { sale } = checked;
     const closesAt = sale.pays === "link" ? await linkClosesAt(db, asked, now, inputs.paymentLinks) : null;

@@ -5,7 +5,7 @@
 // (src/policy/purchasing.ts), kept on the line and on its lot. The order moves on to part received or received.
 
 import { landedUnitCosts } from "../../policy/purchasing.ts";
-import { auditStatement, type AuditActor } from "../platform/audit.ts";
+import { auditStatement, type Written } from "../platform/audit.ts";
 import { deliveryStatements } from "../inventory/stock.ts";
 import { receiptClaimStatements } from "./supplier-claims.ts";
 
@@ -27,13 +27,10 @@ export interface Receipt {
   readonly lines: readonly (ReceiptLine & { readonly landedUnitPaise: number })[];
 }
 
-interface Written {
-  readonly actor: AuditActor;
-  readonly requestId: string;
-  readonly now: Date;
-}
-
-type Refused = { readonly ok: false; readonly fields: string[] } | { readonly ok: false; readonly state: true };
+type Refused =
+  | { readonly ok: false; readonly fields: string[] }
+  | { readonly ok: false; readonly state: true }
+  | { readonly ok: false; readonly missing: true };
 
 type OrderLineRow = {
   id: string;
@@ -92,7 +89,7 @@ async function checkedReceipt(
     .bind(receipt.poId)
     .all<OrderLineRow>();
   const order = orderLines[0];
-  if (order === undefined) return { ok: false, fields: ["id"] };
+  if (order === undefined) return { ok: false, missing: true };
   if (order.state !== "sent" && order.state !== "part_received") return { ok: false, state: true };
   const rate = order.currency === "INR" ? 100 : receipt.rupeeRate;
   if (rate === null || rate <= 0) return { ok: false, fields: ["rupee_rate"] };

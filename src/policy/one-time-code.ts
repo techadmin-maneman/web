@@ -1,4 +1,4 @@
-// The login code (docs/prompts/phase2-backend.md, "Business rules, decided").
+// The login code.
 // The numbers it turns on (docs/decisions/0030-one-time-codes.md). A code is
 // asked for and sent through src/http/send-code.ts, and checked, for a client and a technician alike, by
 // src/domain/sign-in/one-time-codes.ts.

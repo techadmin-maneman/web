@@ -1,5 +1,5 @@
 // The lint, in four runs (`npm run lint`). ESLint checks each file through its TypeScript project, and a run over the
-// whole repository holds all eleven projects at once: 4 GB by 13 October 2026, all of CI's heap. Each run here holds
+// whole repository holds all eleven projects at once, past 4 GB, all of CI's heap. Each run here holds
 // its own part's projects only, the largest about 2.3 GB. Together they lint every file `eslint .` would.
 //
 //   node scripts/ci/lint.ts [--fix]

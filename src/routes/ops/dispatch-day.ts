@@ -1,11 +1,9 @@
-// The dispatch board's day on the road (ADR 0120), behind Access:
-//   GET  /api/dispatch/day?date=&city=       each technician's visits in order, the drive between each two, and
-//                                            whether it fits the gap the board left
-//   GET  /api/dispatch/day/map?date=&city=   the picture of it, from Google through us: the console never holds the key
+// The dispatch board's day on the road (ADR 0120), behind Access.
 //
 // Both keep to the caller's cities, as the board does.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { dayRoute } from "../../domain/dispatch/day-route.ts";
@@ -80,18 +78,17 @@ const DayRouteSchema = z
   .strict()
   .openapi("DispatchDay", { description: "Only technicians with a visit that day, each in board order." });
 
-const dayRouteRoute = createRoute({
+const dayRouteRoute = opsRoute({
   method: "get",
   path: "/api/dispatch/day",
   summary: "A day's routes: each technician's visits in order, the drive between each two, and whether it fits",
   request: { query: DayQuery },
   responses: {
     200: { description: "The day", ...json(DayRouteSchema) },
-    403: errorResponse("access_required"),
   },
 });
 
-const dayMapRoute = createRoute({
+const dayMapRoute = opsRoute({
   method: "get",
   path: "/api/dispatch/day/map",
   summary: "The picture of a day's routes, each technician's in their colour, their visits numbered in order",
@@ -101,7 +98,6 @@ const dayMapRoute = createRoute({
       description: "The map",
       content: { "image/png": { schema: z.string() }, "image/svg+xml": { schema: z.string() } },
     },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no visit that day has a pin, so there is nothing to draw"),
     503: errorResponse("unavailable: the map is not switched on here, Google failed, or the day's ceiling is spent"),
   },

@@ -9,9 +9,8 @@
 // keeps the published notices' rules. A client keeps one try-on, the oldest, so what R2 holds for good grows with the
 // clients and not with the try-ons each makes (scripts/lib/usage-budget.ts).
 
-/** Where a kept try-on lives, as the prompt gives the bucket for clients' photographs: what is kept stays until deleted. */
-// Its rules, as the brief states them:
-// - Stored in a new bucket per environment, mm-{env}-client-photos, with no lifecycle rule.
+// A kept try-on lives in each environment's bucket for clients' photographs, mm-{env}-client-photos, which no lifecycle
+// rule empties: what is kept stays until deleted.
 
 /** The photo notices that tell the visitor a client's try-on is kept. */
 export const KEEPING_NOTICES: readonly string[] = ["photo-v2", "photo-v3", "photo-v4", "photo-v5"];

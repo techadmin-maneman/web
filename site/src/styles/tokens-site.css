@@ -148,7 +148,7 @@
   /* ---- The legal pages and the 404, whose tops are the retired booking page's ---- */
   --book-pad-top: clamp(40px, 6vw, 88px);
 
-  /* ---- The referral landing and /book (Referral and Waitlist, C1 to C5): 390, then 1440 ---- */
+  /* ---- The referral landing and /book: 390, then 1440 ---- */
   --landing-pad-top: clamp(26px, 4.4vw, 64px);
   --landing-column-gap: var(--bar-reserve);
   --landing-title: clamp(36px, 4.45vw, 64px);

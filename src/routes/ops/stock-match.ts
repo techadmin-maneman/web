@@ -1,10 +1,9 @@
-// A client matched to stock, on their page in the console (docs/decisions/0173-matching-a-client-to-stock.md):
-//   GET /api/clients/{id}/stock-match    the stock code their profile matches exactly, and where its pieces are held;
-//                                        or what their profile lacks; or that theirs is a custom order
+// A client matched to stock, on their page in the console (docs/decisions/0173-matching-a-client-to-stock.md).
 //
 // Read as their hair profile is, within the reader's places.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { MATCHED_FIELDS, stockMatch } from "../../domain/inventory/stock-match.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -33,14 +32,13 @@ const StockMatchSchema = z
   })
   .openapi("ClientStockMatch");
 
-const matchRoute = createRoute({
+const matchRoute = opsRoute({
   method: "get",
   path: "/api/clients/{id}/stock-match",
   summary: "The stock code the client's hair profile matches exactly, and where its pieces are",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: { description: "The match", ...json(StockMatchSchema) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client within the reader's places"),
   },
 });

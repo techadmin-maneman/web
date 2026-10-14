@@ -1,16 +1,15 @@
-// Transfers in transit, behind Access (docs/decisions/0158-transfers-in-transit.md):
-//   POST /api/stock/transfers/{id}/receive      received at the place it was sent to, in full or short
-//   POST /api/stock/transfers/{id}/send-back    sent back to where it left, before it arrived
+// Transfers in transit, behind Access (docs/decisions/0158-transfers-in-transit.md).
 //
 // Receiving keeps to the caller's cities at the place it was sent to, and sending back at the place it left. Each
 // answers the whole of GET /api/stock, so the screen follows without reading again.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { tellOfLowStock } from "../../domain/inventory/stock.ts";
 import { placesWithin, isPlaceWithin } from "../../domain/inventory/stock-places.ts";
 import { receiveTransfer, sendBack, type Settled } from "../../domain/inventory/stock-transit.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -24,7 +23,7 @@ const transferPath = { params: z.object({ id: z.string().min(1).max(64) }) };
 const SETTLED = errorResponse("transfer_settled: the transfer was received or sent back already");
 const MISSING = errorResponse("not_found: no such transfer, or one not in the caller's cities");
 
-const receiveRoute = createRoute({
+const receiveRoute = opsRoute({
   method: "post",
   path: "/api/stock/transfers/{id}/receive",
   summary: "A transfer received at the place it was sent to, in full or short",
@@ -60,13 +59,12 @@ const receiveRoute = createRoute({
     400: errorResponse(
       "invalid_request: fields names received for more than was sent, id for a place that is gone, or units for a label the transfer does not carry or a count other than received",
     ),
-    403: errorResponse("access_required"),
     404: MISSING,
     409: SETTLED,
   },
 });
 
-const sendBackRoute = createRoute({
+const sendBackRoute = opsRoute({
   method: "post",
   path: "/api/stock/transfers/{id}/send-back",
   summary: "A transfer sent back to where it left, before it arrived",
@@ -74,13 +72,10 @@ const sendBackRoute = createRoute({
   responses: {
     200: STOCK,
     400: errorResponse("invalid_request: fields names id for a transfer whose place is gone"),
-    403: errorResponse("access_required"),
     404: MISSING,
     409: SETTLED,
   },
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 /** Whether the transfer's end the caller settles it at is within their cities. */
 async function endWithin(c: Context<AppEnv>, id: string, end: "to_place" | "from_place"): Promise<boolean> {

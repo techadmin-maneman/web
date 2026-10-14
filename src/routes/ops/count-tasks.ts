@@ -1,19 +1,10 @@
-// Cycle counts, behind Access (docs/decisions/0185-cycle-counts.md):
-//   GET  /api/count-tasks                     the tasks still to finish and those done in the last week, in the
-//                                             caller's places, and every item with its class
-//   GET  /api/count-tasks/{id}                one task and its items, never a figure
-//   POST /api/count-tasks                     a count of one item at one place, started now
-//   GET  /api/count-tasks/{id}/differences    the lines waiting for a sign-off, with what was held and both counts
-//   POST /api/count-tasks/{id}/counts         an open task counted, every item it lists; a hair system held under
-//                                             labels by the labels scanned
-//   POST /api/count-tasks/{id}/recounts       the lines that differed counted again
-//   POST /api/count-tasks/{id}/sign-off       a recount that still differs signed off, with why
-//   POST /api/consumables/{code}/count-class  an item's class set, or put back to its kind's own
+// Cycle counts, behind Access (docs/decisions/0185-cycle-counts.md).
 //
 // Read with Operations VIEW in the caller's places; started and counted with ACT; the differences and the sign-off
 // with MANAGE; the classes with Operations MANAGE.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import {
   countItems,
@@ -28,7 +19,7 @@ import {
 } from "../../domain/inventory/count-tasks.ts";
 import { countClasses, setCountClass, startCount } from "../../domain/inventory/cycle-counts.ts";
 import { allPlaces, isPlaceWithin, placeById, placesWithin } from "../../domain/inventory/stock-places.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -147,14 +138,14 @@ const STEP_ANSWERS = {
   409: errorResponse("order_state: the task has moved past this step"),
 };
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/count-tasks",
   summary: "The count tasks in the caller's places, and every item's class",
   responses: { 200: TASKS, 403: ACCESS },
 });
 
-const startRoute = createRoute({
+const startRoute = opsRoute({
   method: "post",
   path: "/api/count-tasks",
   summary: "A count of one item at one place, started now; one already open is the answer",
@@ -177,7 +168,7 @@ const startRoute = createRoute({
   },
 });
 
-const taskRoute = createRoute({
+const taskRoute = opsRoute({
   method: "get",
   path: "/api/count-tasks/{id}",
   summary: "A count task and its items, never a figure",
@@ -185,7 +176,7 @@ const taskRoute = createRoute({
   responses: { 200: TASK, 403: ACCESS, 404: errorResponse("not_found: no such task in the caller's places") },
 });
 
-const differencesRoute = createRoute({
+const differencesRoute = opsRoute({
   method: "get",
   path: "/api/count-tasks/{id}/differences",
   summary: "The lines waiting for a sign-off, with what was held and both counts",
@@ -216,7 +207,7 @@ const differencesRoute = createRoute({
   },
 });
 
-const countsRoute = createRoute({
+const countsRoute = opsRoute({
   method: "post",
   path: "/api/count-tasks/{id}/counts",
   summary: "An open task counted, every item it lists",
@@ -224,7 +215,7 @@ const countsRoute = createRoute({
   responses: STEP_ANSWERS,
 });
 
-const recountsRoute = createRoute({
+const recountsRoute = opsRoute({
   method: "post",
   path: "/api/count-tasks/{id}/recounts",
   summary: "The lines that differed counted again",
@@ -232,7 +223,7 @@ const recountsRoute = createRoute({
   responses: STEP_ANSWERS,
 });
 
-const signOffRoute = createRoute({
+const signOffRoute = opsRoute({
   method: "post",
   path: "/api/count-tasks/{id}/sign-off",
   summary: "A recount that still differs signed off, with why",
@@ -243,7 +234,7 @@ const signOffRoute = createRoute({
   responses: STEP_ANSWERS,
 });
 
-const classRoute = createRoute({
+const classRoute = opsRoute({
   method: "post",
   path: "/api/consumables/{code}/count-class",
   summary: "An item's count class set, or put back to its kind's own with null",
@@ -256,8 +247,6 @@ const classRoute = createRoute({
   },
   responses: { 200: TASKS, 403: ACCESS, 404: errorResponse("not_found: no such item, or it is retired") },
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const taskJson = (task: CountTask) => ({
   id: task.id,

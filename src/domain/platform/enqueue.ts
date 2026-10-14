@@ -3,6 +3,7 @@
 // whoever made it would make it again. A lost message is logged, and either a sweeper pass finds its row in D1 and
 // queues it again, or ops are told what to do by hand.
 
+import type { MessagingMessage } from "../../config/pipeline.ts";
 import type { AlertOnce, RaisedAlert } from "./alerts.ts";
 import type { Logger } from "../../log.ts";
 
@@ -19,6 +20,19 @@ export type IfLost =
 interface EnqueueOptions {
   readonly log: Logger;
   readonly ifLost: IfLost;
+}
+
+/**
+ * Puts a WhatsApp message already written in outbound_messages on the messaging queue, for the request that wrote it.
+ * One the queue refuses, the sweeper sends minutes later (src/scheduled/unsent-messages.ts).
+ */
+export function notifyMessage(
+  queue: Queue,
+  message: { readonly id: string; readonly requestId: string },
+  log: Logger,
+): Promise<boolean> {
+  const body = { message_id: message.id, request_id: message.requestId } satisfies MessagingMessage;
+  return enqueue(queue, body, { log, ifLost: "sweeper" });
 }
 
 /** Puts one message on the queue. Never throws; answers whether the queue took it. */

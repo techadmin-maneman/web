@@ -7,7 +7,7 @@
 import { serviceOf } from "../booking/services.ts";
 import { freshCode } from "../../lib/slug.ts";
 import { insertRow } from "../../lib/sql.ts";
-import { auditStatement, type AuditActor } from "../platform/audit.ts";
+import { auditStatement, type Written } from "../platform/audit.ts";
 
 /** What a stock code is made to, matched exactly against a client's hair profile. */
 export interface HairSystemSpec {
@@ -89,12 +89,6 @@ const inches = (value: number) => String(Math.round(value * 10) / 10);
 const hairSystemName = (productName: string, spec: HairSystemSpec): string =>
   `${productName} ${inches(spec.baseWidthIn)}x${inches(spec.baseLengthIn)} ${spec.colour}, ` +
   `${String(spec.greyPercent)}% grey, ${String(spec.densityPercent)}%`;
-
-interface Written {
-  readonly actor: AuditActor;
-  readonly requestId: string;
-  readonly now: Date;
-}
 
 interface NewHairSystem extends HairSystemSpec {
   readonly unitCost: number;

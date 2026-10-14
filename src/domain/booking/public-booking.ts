@@ -58,7 +58,7 @@
 import type { LossExtent } from "../../config/booking.ts";
 import type { ToldNotice } from "../../config/notices.ts";
 import type { Logger } from "../../log.ts";
-import { enqueue } from "../platform/enqueue.ts";
+import { enqueue, notifyMessage } from "../platform/enqueue.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import type { EnvironmentName } from "../../config/environments.ts";
 import { attribute, type InviteState, type Via } from "../referrals/referrals.ts";
@@ -66,34 +66,37 @@ import { attributeToPartner, isPartnerInvite, type AnyInvite } from "../referral
 import { saveBookingLead, type LeadAttribution } from "../leads/leads.ts";
 import { type Pincode } from "../clients/service-area.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
-import { type MessagingMessage } from "../../config/pipeline.ts";
 import type { AddressPin } from "../clients/profile.ts";
 
+/** The codes a submission is refused with; each carries its own status (src/http/errors.ts, ERROR_STATUS). */
+type RefusalCode =
+  | "invalid_request"
+  | "turnstile_failed"
+  | "rate_limited"
+  | "unavailable"
+  | "taken"
+  | "not_bookable"
+  | "code_not_applicable"
+  | "no_product"
+  | "number_not_proved";
+
+/** What any form can be refused for before it is read: the request, Turnstile, a limit, or the database. */
+export type FormRefusalCode = "invalid_request" | "turnstile_failed" | "rate_limited" | "unavailable";
+
 /**
- * Why a submission was refused, in the codes the routes answer with. Each route
- * declares which statuses it can answer, so the type says which ones its caller
- * may see: only a booking can be too late for a window.
+ * Why a submission was refused, in the codes the routes answer with. Each route declares the statuses those codes
+ * carry, so the type says which ones its caller may see: only a booking can be too late for a window.
  */
-export interface Refusal<Status extends number = 400 | 403 | 409 | 422 | 429 | 503> {
+export interface Refusal<Code extends RefusalCode = RefusalCode> {
   readonly ok: false;
-  readonly status: Status;
-  readonly code:
-    | "invalid_request"
-    | "turnstile_failed"
-    | "rate_limited"
-    | "unavailable"
-    | "taken"
-    | "not_bookable"
-    | "code_not_applicable"
-    | "no_product"
-    | "number_not_proved";
+  readonly code: Code;
   /** For invalid_request: the field refused, where the request was well formed and did not add up. */
   readonly fields?: readonly string[];
 }
 
 /** The person a form is from, checked: their number as E.164 and their address's salted hash; or why not. */
 export type Checked =
-  { readonly ok: true; readonly mobile: string; readonly ipHash: string } | Refusal<400 | 403 | 429 | 503>;
+  { readonly ok: true; readonly mobile: string; readonly ipHash: string } | Refusal<FormRefusalCode>;
 
 /** What booking from a form needs of the request it arrived in. */
 export interface FormRequest {
@@ -208,6 +211,5 @@ export async function recordLead(
 
 /** Sends a message written with the form's batch to the messaging queue. One the queue drops, the sweeper sends. */
 export async function queueMessage(form: FormRequest, messageId: string): Promise<void> {
-  const body = { message_id: messageId, request_id: form.requestId } satisfies MessagingMessage;
-  await enqueue(form.queues.messages, body, { log: form.log, ifLost: "sweeper" });
+  await notifyMessage(form.queues.messages, { id: messageId, requestId: form.requestId }, form.log);
 }

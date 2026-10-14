@@ -6,7 +6,7 @@
 import { auditStatement, type AuditAction } from "../platform/audit.ts";
 import { draftOrder } from "./purchase-orders.ts";
 import { sendStock } from "../inventory/stock-transit.ts";
-import type { Written } from "../inventory/stock.ts";
+import type { Written } from "../platform/audit.ts";
 
 export interface PlanLine {
   readonly id: string;

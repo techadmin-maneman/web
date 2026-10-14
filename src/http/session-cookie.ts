@@ -1,6 +1,6 @@
 // A session's cookie (docs/decisions/0029-sessions.md): host-only under its __Host- name, HttpOnly, Secure,
-// SameSite=Lax, at path /, 90 days from last use. The name it had until October 2026 is still read, and cleared, until
-// every session it names has lapsed.
+// SameSite=Lax, at path /, 90 days from last use. Its old name, without the prefix, is still read, and cleared, until every session it names has
+// lapsed.
 
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";

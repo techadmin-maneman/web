@@ -19,7 +19,7 @@ import { isTestNumber } from "../../domain/platform/test-records.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import { loadJob, type JobRow } from "../../domain/try-on/tryon.ts";
 import { hadLookSince, leadOfOwnClaim, recordClaim, reserveJob } from "../../domain/try-on/tryon-claims.ts";
-import { errorResponse, type ErrorCode } from "../../http/errors.ts";
+import { errorResponse } from "../../http/errors.ts";
 import { answerKeyed, IdempotencyKeyHeaderSchema, onceForKey } from "../../http/idempotency.ts";
 import { provedNumber } from "../../http/number-proof.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
@@ -110,8 +110,14 @@ type Outcome =
   | { readonly ok: true; readonly body: ClaimResponse }
   | {
       readonly ok: false;
-      readonly status: 400 | 403 | 404 | 409 | 429 | 503;
-      readonly code: ErrorCode;
+      readonly code:
+        | "invalid_request"
+        | "number_not_proved"
+        | "not_found"
+        | "job_not_claimable"
+        | "look_limit_reached"
+        | "rate_limited"
+        | "whatsapp_unavailable";
       readonly fields?: string[];
     };
 
@@ -137,22 +143,22 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
   const now = deps.now();
 
   const mobileE164 = toE164(request.mobile);
-  if (mobileE164 === null) return { ok: false, status: 400, code: "invalid_request", fields: ["mobile"] };
+  if (mobileE164 === null) return { ok: false, code: "invalid_request", fields: ["mobile"] };
   const gateNotice = request.notice_version ?? CURRENT_NOTICE.result_delivery;
   if (gateNotice !== CURRENT_NOTICE.result_delivery) {
-    return { ok: false, status: 400, code: "invalid_request", fields: ["notice_version"] };
+    return { ok: false, code: "invalid_request", fields: ["notice_version"] };
   }
   if (!(await provedNumber(c, request.number_code_id, mobileE164))) {
-    return { ok: false, status: 403, code: "number_not_proved" };
+    return { ok: false, code: "number_not_proved" };
   }
 
   const job = await loadJob(db, request.job_id);
-  if (job === null) return { ok: false, status: 404, code: "not_found" };
+  if (job === null) return { ok: false, code: "not_found" };
   if (job.lead_id !== null) return claimAgain(c, job, mobileE164);
-  if (!claimable(job)) return { ok: false, status: 409, code: "job_not_claimable" };
+  if (!claimable(job)) return { ok: false, code: "job_not_claimable" };
   const { tryonLookDays } = await opsInputs(c);
   if (await hadLookSince(db, mobileE164, new Date(now.getTime() - tryonLookDays * DAY_MS))) {
-    return { ok: false, status: 403, code: "look_limit_reached" };
+    return { ok: false, code: "look_limit_reached" };
   }
 
   const why = undelivered({
@@ -168,19 +174,19 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
       settings,
     }),
   });
-  if (why === "number_capped") return { ok: false, status: 429, code: "rate_limited" };
+  if (why === "number_capped") return { ok: false, code: "rate_limited" };
   if (why !== null) {
     log.info("tryon_claim_undelivered", { job_id: job.id, why });
-    return { ok: false, status: 503, code: "whatsapp_unavailable" };
+    return { ok: false, code: "whatsapp_unavailable" };
   }
 
   const withinLimit = await takeOne(db, "tryon:claim:mobile", await mobileHashOf(settings.ipHashSalt, mobileE164), {
     now,
     settings,
   });
-  if (!withinLimit) return { ok: false, status: 429, code: "rate_limited" };
+  if (!withinLimit) return { ok: false, code: "rate_limited" };
 
-  if (!(await reserveJob(db, job.id, now))) return { ok: false, status: 409, code: "job_not_claimable" };
+  if (!(await reserveJob(db, job.id, now))) return { ok: false, code: "job_not_claimable" };
   const visitor = await visitorOf(c);
   const leadId = await recordClaim(db, {
     job,
@@ -203,6 +209,6 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
 /** A job already claimed, claimed again: its lead for its own number, refused for any other. */
 async function claimAgain(c: Context<AppEnv>, job: JobRow, mobileE164: string): Promise<Outcome> {
   const leadId = await leadOfOwnClaim(c.env.DB, job, mobileE164);
-  if (leadId === null) return { ok: false, status: 409, code: "job_not_claimable" };
+  if (leadId === null) return { ok: false, code: "job_not_claimable" };
   return { ok: true, body: { lead_id: leadId } };
 }

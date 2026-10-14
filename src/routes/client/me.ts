@@ -1,5 +1,4 @@
-// GET /api/me: the client app's Home card (docs/prompts/phase2-backend.md,
-// "Read endpoints"). A client is fitted once a first fit or a later visit is
+// GET /api/me: the client app's Home card. A client is fitted once a first fit or a later visit is
 // done; a lead has a consultation, booked, or from their booking on the site
 // while it is not yet a visit; else nothing is booked. The next visit comes
 // from the visits, and

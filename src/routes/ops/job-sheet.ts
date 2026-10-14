@@ -1,16 +1,13 @@
 // The job sheet the technician app reads, set by ops behind Access
-// (docs/decisions/0087-consumables-and-stock.md; docs/open-points.md, item 28):
-//   GET  /api/job-sheet                              each kind of visit's checklist, and the partial reasons
-//   POST /api/job-sheet/checklists/:visit_type       one kind's checklist, the whole list in its order
-//   POST /api/job-sheet/partial-reasons              the partial reasons, the whole list in their order
-//   POST /api/job-sheet/lost-reasons                 why a client is not going ahead after a consultation
+// (docs/decisions/0087-consumables-and-stock.md; docs/open-points.md, item 28).
 //
 // A list nobody has saved is the committed one (src/config/job-sheet.ts). A
 // phone keeps the list it was given with the job, and an item ops take off is
 // retired, so what a phone queued before the change is still understood. Each
 // save records the Access identity behind it in the same batch (ADR 0031).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { JOB_SHEET_BOUNDS } from "../../config/job-sheet.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
@@ -97,14 +94,14 @@ const REFUSED = errorResponse(
     "that is empty, too long, twice on the list, or a code the list never held",
 );
 
-const sheetRoute = createRoute({
+const sheetRoute = opsRoute({
   method: "get",
   path: "/api/job-sheet",
   summary: "Each kind of visit's checklist and the partial reasons, as the technician app reads them",
-  responses: { 200: SHEET, 403: errorResponse("access_required") },
+  responses: { 200: SHEET },
 });
 
-const checklistRoute = createRoute({
+const checklistRoute = opsRoute({
   method: "post",
   path: "/api/job-sheet/checklists/{visit_type}",
   summary: "One kind of visit's checklist, the whole list in its order",
@@ -112,23 +109,23 @@ const checklistRoute = createRoute({
     params: z.object({ visit_type: z.enum(VISIT_TYPES) }),
     body: { required: true, ...json(ListChangeSchema) },
   },
-  responses: { 200: SHEET, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: SHEET, 400: REFUSED },
 });
 
-const reasonsRoute = createRoute({
+const reasonsRoute = opsRoute({
   method: "post",
   path: "/api/job-sheet/partial-reasons",
   summary: "The reasons a job may be left partly done, the whole list in its order",
   request: { body: { required: true, ...json(ListChangeSchema) } },
-  responses: { 200: SHEET, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: SHEET, 400: REFUSED },
 });
 
-const lostReasonsRoute = createRoute({
+const lostReasonsRoute = opsRoute({
   method: "post",
   path: "/api/job-sheet/lost-reasons",
   summary: "Why a client is not going ahead with a fit after their consultation, the whole list in its order",
   request: { body: { required: true, ...json(ListChangeSchema) } },
-  responses: { 200: SHEET, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: SHEET, 400: REFUSED },
 });
 
 const listBody = (list: JobSheetList) => ({

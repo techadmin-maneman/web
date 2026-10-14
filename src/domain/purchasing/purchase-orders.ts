@@ -7,7 +7,7 @@
 
 import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { needsSecondApproval, CANCELLABLE, type PoState } from "../../policy/purchasing.ts";
-import { auditStatement, auditStatementWhen, type AuditActor, type AuditAction } from "../platform/audit.ts";
+import { auditStatement, auditStatementWhen, type AuditAction, type Written, opsEntry } from "../platform/audit.ts";
 
 interface PoLine {
   readonly id: string;
@@ -33,12 +33,6 @@ export interface PurchaseOrder {
   readonly secondApprovedBy: string | null;
   readonly sentAt: string | null;
   readonly cancelReason: string | null;
-}
-
-interface Written {
-  readonly actor: AuditActor;
-  readonly requestId: string;
-  readonly now: Date;
 }
 
 type OrderRow = {
@@ -69,24 +63,19 @@ type LineRow = {
 /** How many closed and cancelled orders the page keeps beneath the open ones. */
 const SETTLED_SHOWN = 100;
 
-/** Every open order, and the latest settled ones, newest first. */
-export async function purchaseOrders(db: D1Database): Promise<PurchaseOrder[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT id, number, supplier_id, currency, state, expected_on, note, drafted_by, drafted_at, approved_by,
-         second_approved_by, sent_at, cancel_reason
-       FROM purchase_orders ORDER BY state IN ('received', 'closed', 'cancelled'), drafted_at DESC, rowid DESC LIMIT ?1`,
-    )
-    .bind(SETTLED_SHOWN)
-    .all<OrderRow>();
+const ORDER_COLUMNS = `id, number, supplier_id, currency, state, expected_on, note, drafted_by, drafted_at, approved_by,
+  second_approved_by, sent_at, cancel_reason`;
+
+/** Each order read with its lines. */
+async function withLines(db: D1Database, rows: readonly OrderRow[]): Promise<PurchaseOrder[]> {
   const lines = await db
     .prepare(
       `SELECT id, po_id, consumable_code, quantity, unit_price, received_quantity FROM po_lines
        WHERE po_id IN (SELECT value FROM json_each(?1)) ORDER BY rowid`,
     )
-    .bind(JSON.stringify(results.map((row) => row.id)))
+    .bind(JSON.stringify(rows.map((row) => row.id)))
     .all<LineRow>();
-  return results.map((row) => {
+  return rows.map((row) => {
     const own = lines.results
       .filter((line) => line.po_id === row.id)
       .map((line) => ({
@@ -116,14 +105,26 @@ export async function purchaseOrders(db: D1Database): Promise<PurchaseOrder[]> {
   });
 }
 
-const entry = (written: Written, action: AuditAction, id: string, detail: Record<string, string | number> = {}) => ({
-  surface: "ops" as const,
-  actor: written.actor,
-  action,
-  subject: { kind: "purchase_order", id },
-  requestId: written.requestId,
-  detail,
-});
+/** Every open order, and the latest settled ones, newest first. */
+export async function purchaseOrders(db: D1Database): Promise<PurchaseOrder[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT ${ORDER_COLUMNS}
+       FROM purchase_orders ORDER BY state IN ('received', 'closed', 'cancelled'), drafted_at DESC, rowid DESC LIMIT ?1`,
+    )
+    .bind(SETTLED_SHOWN)
+    .all<OrderRow>();
+  return withLines(db, results);
+}
+
+/** One order with its lines; null for none. */
+async function purchaseOrder(db: D1Database, id: string): Promise<PurchaseOrder | null> {
+  const row = await db.prepare(`SELECT ${ORDER_COLUMNS} FROM purchase_orders WHERE id = ?1`).bind(id).first<OrderRow>();
+  return row === null ? null : ((await withLines(db, [row]))[0] ?? null);
+}
+
+const entry = (written: Written, action: AuditAction, id: string, detail: Record<string, string | number> = {}) =>
+  opsEntry(written, action, { kind: "purchase_order", id }, detail);
 
 type Refused = { readonly ok: false; readonly fields: string[] };
 
@@ -193,10 +194,13 @@ type Changed =
   | { readonly ok: false; readonly sameApprover: true }
   | { readonly ok: false; readonly customOrder: true };
 
-/** An update of one order, `?1` its ID, stamping `change_id = ?9`, which this request's token fills. */
+/**
+ * An update of one order. Its SQL sets `change_id = ?1`, this request's token, on the order `?2`, and takes its own
+ * values from `?3` on.
+ */
 interface OrderUpdate {
   readonly sql: string;
-  readonly binds: readonly (string | number | null)[];
+  readonly values: readonly (string | number | null)[];
 }
 
 /**
@@ -210,13 +214,12 @@ async function changed(
   written: Written,
 ): Promise<Changed> {
   const token = crypto.randomUUID();
-  const unused = Array.from({ length: 8 - update.binds.length }, () => null);
   const landed = {
     sql: "EXISTS (SELECT 1 FROM purchase_orders WHERE id = ?10 AND change_id = ?11)",
     binds: [order.id, token],
   };
   const [result] = await db.batch([
-    db.prepare(update.sql).bind(...update.binds, ...unused, token),
+    db.prepare(update.sql).bind(token, order.id, ...update.values),
     auditStatementWhen(db, entry(written, order.action, order.id), written.now, landed),
   ]);
   if (result?.meta.changes === 1) return { ok: true };
@@ -234,7 +237,7 @@ export async function approveOrder(
   rule: { readonly aboveRupees: number; readonly rupeesToOne: Readonly<Record<string, number>> },
   written: Written,
 ): Promise<Changed> {
-  const order = (await purchaseOrders(db)).find((each) => each.id === id) ?? null;
+  const order = await purchaseOrder(db, id);
   if (order === null) return { ok: false, missing: true };
   if (order.state !== "drafted") return { ok: false, state: true };
   if (order.approvedBy === written.actor.id) return { ok: false, sameApprover: true };
@@ -243,16 +246,16 @@ export async function approveOrder(
   const update: OrderUpdate =
     order.approvedBy === null
       ? {
-          sql: `UPDATE purchase_orders SET change_id = ?9, approved_by = ?2, approved_at = ?3, state = ?4, updated_at = ?3
-                WHERE id = ?1 AND state = 'drafted' AND approved_by IS NULL`,
-          binds: [id, written.actor.id, at, twice ? "drafted" : "approved"],
+          sql: `UPDATE purchase_orders SET change_id = ?1, approved_by = ?3, approved_at = ?4, state = ?5, updated_at = ?4
+                WHERE id = ?2 AND state = 'drafted' AND approved_by IS NULL`,
+          values: [written.actor.id, at, twice ? "drafted" : "approved"],
         }
       : {
-          sql: `UPDATE purchase_orders SET change_id = ?9, second_approved_by = ?2, second_approved_at = ?3,
-                  state = 'approved', updated_at = ?3
-                WHERE id = ?1 AND state = 'drafted' AND approved_by IS NOT NULL AND approved_by <> ?2
+          sql: `UPDATE purchase_orders SET change_id = ?1, second_approved_by = ?3, second_approved_at = ?4,
+                  state = 'approved', updated_at = ?4
+                WHERE id = ?2 AND state = 'drafted' AND approved_by IS NOT NULL AND approved_by <> ?3
                   AND second_approved_by IS NULL`,
-          binds: [id, written.actor.id, at],
+          values: [written.actor.id, at],
         };
   return changed(db, { id, action: "purchase_order.approve" }, update, written);
 }
@@ -260,9 +263,9 @@ export async function approveOrder(
 /** An approved order marked sent, once ops have sent it to the supplier. */
 export function markSent(db: D1Database, id: string, written: Written): Promise<Changed> {
   const update = {
-    sql: `UPDATE purchase_orders SET change_id = ?9, state = 'sent', sent_by = ?2, sent_at = ?3, updated_at = ?3
-          WHERE id = ?1 AND state = 'approved'`,
-    binds: [id, written.actor.id, written.now.toISOString()],
+    sql: `UPDATE purchase_orders SET change_id = ?1, state = 'sent', sent_by = ?3, sent_at = ?4, updated_at = ?4
+          WHERE id = ?2 AND state = 'approved'`,
+    values: [written.actor.id, written.now.toISOString()],
   };
   return changed(db, { id, action: "purchase_order.send" }, update, written);
 }
@@ -270,9 +273,9 @@ export function markSent(db: D1Database, id: string, written: Written): Promise<
 /** An order part received closed short: what has not arrived will not, and no more is received against it. */
 export function closeOrder(db: D1Database, id: string, written: Written): Promise<Changed> {
   const update = {
-    sql: `UPDATE purchase_orders SET change_id = ?9, state = 'closed', updated_at = ?2
-          WHERE id = ?1 AND state = 'part_received'`,
-    binds: [id, written.now.toISOString()],
+    sql: `UPDATE purchase_orders SET change_id = ?1, state = 'closed', updated_at = ?3
+          WHERE id = ?2 AND state = 'part_received'`,
+    values: [written.now.toISOString()],
   };
   return changed(db, { id, action: "purchase_order.close" }, update, written);
 }
@@ -288,10 +291,10 @@ export async function cancelOrder(db: D1Database, id: string, reason: string, wr
     .first();
   if (carries !== null) return { ok: false, customOrder: true };
   const update = {
-    sql: `UPDATE purchase_orders SET change_id = ?9, state = 'cancelled', cancelled_by = ?2, cancelled_at = ?3,
-            cancel_reason = ?4, updated_at = ?3
-          WHERE id = ?1 AND state IN (SELECT value FROM json_each(?5))`,
-    binds: [id, written.actor.id, written.now.toISOString(), reason, JSON.stringify([...CANCELLABLE])],
+    sql: `UPDATE purchase_orders SET change_id = ?1, state = 'cancelled', cancelled_by = ?3, cancelled_at = ?4,
+            cancel_reason = ?5, updated_at = ?4
+          WHERE id = ?2 AND state IN (SELECT value FROM json_each(?6))`,
+    values: [written.actor.id, written.now.toISOString(), reason, JSON.stringify([...CANCELLABLE])],
   };
   return changed(db, { id, action: "purchase_order.cancel" }, update, written);
 }

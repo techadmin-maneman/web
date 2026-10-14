@@ -1,8 +1,8 @@
 // A matter sent from a chat to its client's city, behind Access (Customer Care Act; docs/decisions/0135-city-matters.md):
-//   POST /api/conversations/:id/city-matter   a City matter on the city's Tasks, with what they need to know
 // The city closes it from Tasks, with what was done (POST /api/tasks/city_matter/:id/close).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -10,7 +10,7 @@ import { actorOf } from "../../http/audit.ts";
 import { raiseCityMatter } from "../../domain/care/city-matters.ts";
 import { REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 
-const raiseRoute = createRoute({
+const raiseRoute = opsRoute({
   method: "post",
   path: "/api/conversations/{id}/city-matter",
   summary: "Send a matter from a chat to its client's city, as a City matter on their Tasks",
@@ -33,7 +33,6 @@ const raiseRoute = createRoute({
   responses: {
     200: { description: "Sent, and to which city", ...json(z.object({ city: z.string() }).strict()) },
     400: errorResponse("invalid_request: fields names city when we know no city for the client"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such chat, a number we don't know, or an erased client"),
   },
 });

@@ -2,7 +2,7 @@
 // supply their code, price, pack, minimum order and the lead time they promise. Each change is written with its audit
 // entry in one batch. A supplier is retired, never deleted, since orders and bills will name it.
 
-import { auditStatement, type AuditActor, type AuditAction } from "../platform/audit.ts";
+import { auditStatement, type AuditAction, type Written, opsEntry } from "../platform/audit.ts";
 
 export interface SupplierItem {
   readonly code: string;
@@ -30,12 +30,6 @@ export interface Supplier extends SupplierFields {
   readonly id: string;
   readonly retiredAt: string | null;
   readonly items: readonly SupplierItem[];
-}
-
-interface Written {
-  readonly actor: AuditActor;
-  readonly requestId: string;
-  readonly now: Date;
 }
 
 type SupplierRow = {
@@ -98,14 +92,8 @@ export async function allSuppliers(db: D1Database): Promise<Supplier[]> {
   }));
 }
 
-const entry = (written: Written, action: AuditAction, id: string, detail: Record<string, string | number> = {}) => ({
-  surface: "ops" as const,
-  actor: written.actor,
-  action,
-  subject: { kind: "supplier", id },
-  requestId: written.requestId,
-  detail,
-});
+const entry = (written: Written, action: AuditAction, id: string, detail: Record<string, string | number> = {}) =>
+  opsEntry(written, action, { kind: "supplier", id }, detail);
 
 const nameTaken = async (db: D1Database, name: string, except: string | null) =>
   (await db

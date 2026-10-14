@@ -1,8 +1,6 @@
 // A client's note on one of their visits (src/domain/clients/client-notes.ts). Behind
 // SELF_SERVE_BOOKING, as the brief puts it among booking's routes: while it is
 // off, the app sends the note to ops on WhatsApp instead (ADR 0043).
-//
-//   POST /api/appointments/:id/note   { note }: kept on the visit, for the technician's card
 
 import { z } from "@hono/zod-openapi";
 import { selfServeRoute } from "../../http/session-routes.ts";

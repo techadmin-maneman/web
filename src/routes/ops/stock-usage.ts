@@ -1,15 +1,13 @@
-// Usage against expected, and shrinkage, behind Access (docs/decisions/0186-usage-and-shrinkage.md):
-//   GET /api/stock/usage   over the last weeks, each technician's use beside what their visits were expected to use,
-//                          and each place's losses, write-offs and first-time counts, the flagged first
+// Usage against expected, and shrinkage, behind Access (docs/decisions/0186-usage-and-shrinkage.md).
 //
 // Read with Operations MANAGE in the caller's places: it values stock at cost.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { placesWithin } from "../../domain/inventory/stock-places.ts";
 import { shrinkage, usageAgainstExpected } from "../../domain/inventory/stock-usage.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
-import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
@@ -56,13 +54,12 @@ const UsageSchema = z
   })
   .openapi("StockUsage");
 
-const usageRoute = createRoute({
+const usageRoute = opsRoute({
   method: "get",
   path: "/api/stock/usage",
   summary: "Each technician's use beside expected, and each place's losses, over the last weeks",
   responses: {
     200: { description: "Usage and shrinkage", ...json(UsageSchema) },
-    403: errorResponse("access_required"),
   },
 });
 

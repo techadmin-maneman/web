@@ -1,10 +1,5 @@
 // Stock of consumables at each place it is kept, behind Access
 // (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md; src/policy/stock.ts):
-//   GET  /api/stock                 every place, what each holds of each consumable, what is low, the latest movements
-//   POST /api/stock/deliveries      stock received into the national warehouse
-//   POST /api/stock/transfers       stock handed to a kit, or sent to any other place to be received there
-//   POST /api/stock/counts          what ops counted at a place: the ledger takes the difference
-//   POST /api/stock/write-offs      a loss somebody saw, with what happened
 // the places themselves (src/routes/ops/stock.places.ts), transfers received or sent back
 // (src/routes/ops/stock.transit.ts), what the weeks ahead will use (src/routes/ops/stock.read.ts), and the units and
 // labels of pieces (src/routes/ops/stock.units.ts).
@@ -20,7 +15,8 @@
 // stockrooms in them, a hub with every city of its zone, and the warehouse,
 // which is in no city, only with a national grant.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { CONSUMABLE_BOUNDS } from "../../config/consumables.ts";
 import { count, receiveStock, tellOfLowStock, writeOff, type Moved } from "../../domain/inventory/stock.ts";
@@ -28,7 +24,7 @@ import { hairSystemSpecs } from "../../domain/inventory/hair-systems.ts";
 import { inTransit, sendStock } from "../../domain/inventory/stock-transit.ts";
 import { stockView } from "../../domain/inventory/stock-view.ts";
 import { isPlaceWithin, placeAreas, placesWithin, WAREHOUSE, type Place } from "../../domain/inventory/stock-places.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -41,14 +37,17 @@ const REFUSED = errorResponse(
   "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity",
 );
 
-const stockRoute = createRoute({
+/** A place outside the caller's cities, as anything elsewhere is. */
+const ELSEWHERE = errorResponse("not_found: a place outside the caller's cities");
+
+const stockRoute = opsRoute({
   method: "get",
   path: "/api/stock",
   summary: "Every place, what each holds of each consumable, what is low, and the latest movements",
-  responses: { 200: STOCK, 403: errorResponse("access_required") },
+  responses: { 200: STOCK },
 });
 
-const deliveryRoute = createRoute({
+const deliveryRoute = opsRoute({
   method: "post",
   path: "/api/stock/deliveries",
   summary: "Stock received into the national warehouse",
@@ -71,10 +70,10 @@ const deliveryRoute = createRoute({
       ),
     },
   },
-  responses: { 200: STOCK, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: STOCK, 400: REFUSED },
 });
 
-const transferRoute = createRoute({
+const transferRoute = opsRoute({
   method: "post",
   path: "/api/stock/transfers",
   summary: "Stock moved from one place to another: out of one, into the other",
@@ -99,15 +98,15 @@ const transferRoute = createRoute({
     },
   },
   responses: {
+    404: ELSEWHERE,
     200: STOCK,
     400: errorResponse(
       "invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, or units for a label the place does not hold or a count other than the quantity",
     ),
-    403: errorResponse("access_required"),
   },
 });
 
-const countRoute = createRoute({
+const countRoute = opsRoute({
   method: "post",
   path: "/api/stock/counts",
   summary: "What ops counted at a place. The ledger takes the difference from what it held",
@@ -131,10 +130,14 @@ const countRoute = createRoute({
       ),
     },
   },
-  responses: { 200: STOCK, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: {
+    404: ELSEWHERE,
+    200: STOCK,
+    400: REFUSED,
+  },
 });
 
-const writeOffRoute = createRoute({
+const writeOffRoute = opsRoute({
   method: "post",
   path: "/api/stock/write-offs",
   summary: "A loss somebody saw at a place, with what happened",
@@ -158,7 +161,11 @@ const writeOffRoute = createRoute({
       ),
     },
   },
-  responses: { 200: STOCK, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: {
+    404: ELSEWHERE,
+    200: STOCK,
+    400: REFUSED,
+  },
 });
 
 /** GET's answer, which every write here and on the places answers too. */
@@ -238,8 +245,6 @@ export async function stockAnswer(c: Context<AppEnv>) {
   };
 }
 
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
-
 /** The fields that name a place outside the caller's cities; the warehouse is in none of them. */
 async function placesOutOfReach(c: Context<AppEnv>, places: Readonly<Record<string, Place>>): Promise<string[]> {
   const within = await placesWithin(c.env.DB, await routeReach(c));
@@ -248,7 +253,8 @@ async function placesOutOfReach(c: Context<AppEnv>, places: Readonly<Record<stri
     .map(([field]) => field);
 }
 
-const outOfReach = (c: Context<AppEnv>, fields: string[]) => refuse(c, "invalid_request", fields);
+/** A place outside the caller's cities is not found, as anything elsewhere is. */
+const outOfReach = (c: Context<AppEnv>, _fields: string[]) => refuse(c, "not_found");
 
 /** Pieces named by their labels number the quantity moved. */
 const countsAsScanned = (body: { readonly quantity: number; readonly units?: readonly string[] }) =>

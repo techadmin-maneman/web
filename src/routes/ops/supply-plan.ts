@@ -1,18 +1,14 @@
-// The supply plan, behind Access (docs/decisions/0180-supply-plan.md):
-//   GET  /api/supply-plan                     the latest draft's lines: transfers by city and orders by supplier, each
-//                                             with the figures behind it and what was decided
-//   POST /api/supply-plan/draft               the plan drafted again now, from the latest forecast
-//   POST /api/supply-plan/lines/{id}/approve  a proposal approved at a quantity: its transfer sent or its order drafted
-//   POST /api/supply-plan/lines/{id}/reject   a proposal rejected, with why
+// The supply plan, behind Access (docs/decisions/0180-supply-plan.md).
 //
 // Read with Operations VIEW, decided and drafted with MANAGE. Each write answers the whole of GET's answer.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { draftPlan } from "../../domain/purchasing/supply-plan.ts";
 import { approvePlanLine, planLines, rejectPlanLine, type Decided } from "../../domain/purchasing/supply-plan-lines.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -51,21 +47,21 @@ const LINE_ANSWERS = {
   409: errorResponse("order_state: the line is decided already"),
 };
 
-const planRoute = createRoute({
+const planRoute = opsRoute({
   method: "get",
   path: "/api/supply-plan",
   summary: "The latest supply plan, each line with the figures behind it",
   responses: { 200: PLAN, 403: ACCESS },
 });
 
-const draftRoute = createRoute({
+const draftRoute = opsRoute({
   method: "post",
   path: "/api/supply-plan/draft",
   summary: "The supply plan drafted again now, from the latest forecast",
   responses: { 200: PLAN, 403: ACCESS, 409: errorResponse("order_state: no forecast has run yet") },
 });
 
-const approveRoute = createRoute({
+const approveRoute = opsRoute({
   method: "post",
   path: "/api/supply-plan/lines/{id}/approve",
   summary: "A proposal approved at a quantity: its transfer sent, or its order drafted",
@@ -84,7 +80,7 @@ const approveRoute = createRoute({
   responses: LINE_ANSWERS,
 });
 
-const rejectRoute = createRoute({
+const rejectRoute = opsRoute({
   method: "post",
   path: "/api/supply-plan/lines/{id}/reject",
   summary: "A proposal rejected, with why",
@@ -102,8 +98,6 @@ const rejectRoute = createRoute({
   },
   responses: LINE_ANSWERS,
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 async function planAnswer(c: Context<AppEnv>) {
   const lines = await planLines(c.env.DB, c.var.deps.now());

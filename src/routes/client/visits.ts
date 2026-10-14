@@ -1,13 +1,4 @@
-// The client app's visits and photographs (docs/prompts/phase2-backend.md,
-// "Read endpoints").
-//
-//   GET /api/visits                 upcoming and past, with what they add up to
-//   GET /api/visits/:id             one visit, with its photographs
-//   GET /api/photos                 the timeline: each visit's photographs, newest first, and the try-ons
-//   GET /api/photos/compare         one angle from two visits, side by side
-//   GET /api/photos/file/:token     a photograph itself, for the signed-in client
-//   GET /api/photos/small/:token    its small copy, for the rows, or the photograph where it has none (ADR 0093)
-//   GET /api/photos/try-on/:image/:token   a try-on's photograph or look (ADR 0082, ADR 0084)
+// The client app's visits and photographs.
 //
 // Every photograph is served through a link that lasts 15 minutes, and only
 // to the client whose photograph it is. The visits are here; the photographs are ./photos.ts.

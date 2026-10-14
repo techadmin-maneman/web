@@ -1,13 +1,10 @@
 // Ops' side of the client's profile, on the ops surface behind Access
 // (docs/decisions/0042-client-profile.md):
-//   GET  /api/number-changes                  changes waiting for ops, both numbers proven
-//   POST /api/number-changes/:id/decision     confirm or reject
-//   GET  /api/deletion-requests               requests waiting for ops
-//   POST /api/deletion-requests/:id/decision  delete (the erasure) or reject
 // Each decision is audited under the member of staff who made it, in the same batch as the decision. Ops answer
 // all three in the console's own sections (apps/ops/src). Each route keeps to the caller's cities.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { afterResponse } from "../../http/after-response.ts";
 import { actorOf } from "../../http/audit.ts";
@@ -40,7 +37,7 @@ const DueSchema = z.iso.datetime().openapi({
   description: "When ops should have decided: the Tasks board's allowance for this queue, which ops set.",
 });
 
-const numberChangesRoute = createRoute({
+const numberChangesRoute = opsRoute({
   method: "get",
   path: "/api/number-changes",
   summary: "Number changes waiting for ops in the caller's cities: both numbers proven by code",
@@ -77,7 +74,7 @@ const numberChangesRoute = createRoute({
   },
 });
 
-const numberChangeDecisionRoute = createRoute({
+const numberChangeDecisionRoute = opsRoute({
   method: "post",
   path: "/api/number-changes/{id}/decision",
   summary: "Confirm a number change, which then takes effect, or reject it",
@@ -101,7 +98,7 @@ const numberChangeDecisionRoute = createRoute({
   },
 });
 
-const deletionRequestsRoute = createRoute({
+const deletionRequestsRoute = opsRoute({
   method: "get",
   path: "/api/deletion-requests",
   summary: "Deletion requests waiting for ops in the caller's cities",
@@ -130,7 +127,7 @@ const deletionRequestsRoute = createRoute({
   },
 });
 
-const deletionDecisionRoute = createRoute({
+const deletionDecisionRoute = opsRoute({
   method: "post",
   path: "/api/deletion-requests/{id}/decision",
   summary: "Delete the account now (photographs, results and details), or reject the request",

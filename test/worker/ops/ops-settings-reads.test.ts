@@ -18,6 +18,7 @@ import {
   SETTINGS_TTL_MS,
 } from "../../../src/domain/platform/ops-settings.ts";
 import { NEXT_VISIT_DAYS } from "../../../src/policy/next-visit.ts";
+import { createLogger } from "../../../src/log.ts";
 import { appFor, captureLogs, countRowsRead, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { POST, type Setting } from "./ops-settings-fixtures.ts";
 
@@ -70,12 +71,10 @@ describe("what the routes that read them do", () => {
     const down = () => Promise.reject(new Error("D1 is down"));
     const broken = { prepare: () => ({ all: down, first: down }) } as unknown as D1Database;
 
-    let reported: unknown = null;
-    const inputs = await read(broken, NOW, (error) => {
-      reported = error;
-    });
+    const logs = captureLogs();
+    const inputs = await read(broken, NOW, createLogger());
     expect(inputs).toEqual(COMMITTED);
-    expect(reported).toBeInstanceOf(Error);
+    expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "ops_settings_unreadable" }));
   });
 
   it("keeps what ops set for each task group when a group is added later, which takes its committed figure", async () => {
@@ -104,7 +103,7 @@ describe("what the routes that read them do", () => {
     const setByOps = Object.fromEntries(Object.keys(COMMITTED.taskSlaHours).map((group) => [group, 48]));
     await storeByHand("task_sla_hours", { ...setByOps, group_since_removed: 24 });
 
-    expect((await readOpsInputs(env.DB, NOW)).taskSlaHours).toEqual(setByOps);
+    expect((await readOpsInputs(env.DB, NOW, createLogger())).taskSlaHours).toEqual(setByOps);
     expect(await named("task_sla_hours")).toMatchObject({ value: setByOps, set_by: "ops" });
     expect(logs.lines().map((line) => line.event)).not.toContain("ops_setting_ignored");
   });
@@ -120,7 +119,7 @@ describe("what the routes that read them do", () => {
   it("ignores a stored row the register would no longer accept, and logs which rule it ignored", async () => {
     const logs = captureLogs();
     await storeByHand("checkin_radius_m", 0);
-    expect((await createCachedOpsInputs()(env.DB, NOW)).checkinRadiusM).toBe(COMMITTED.checkinRadiusM);
+    expect((await createCachedOpsInputs()(env.DB, NOW, createLogger())).checkinRadiusM).toBe(COMMITTED.checkinRadiusM);
     expect((await named("checkin_radius_m")).set_by).toBeNull();
     expect(logs.lines()).toContainEqual(
       expect.objectContaining({

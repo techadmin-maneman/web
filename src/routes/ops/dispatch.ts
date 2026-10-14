@@ -1,17 +1,12 @@
 // The dispatch board on the ops console, behind Access (Ops Console, board A;
 // src/policy/dispatch.ts). The board's reads are here; assigning and moving a job, and a call to a client, are
 // ./dispatch-moves.ts.
-//   GET  /api/dispatch?from=&city=   the grid, blocks, unassigned tray, leave and utilisation
-//   GET  /api/dispatch/version       whether anything the board draws has changed since it was read
-//   GET  /api/dispatch/room?appointment_id=&from=   where a job in hand would land this week, and how near
-//   POST /api/dispatch/assign        put an unassigned job on a technician
-//   POST /api/dispatch/move          move a job, with a reason from the design's list
-//   POST /api/dispatch/moves/:id/told   ops called a client who had not heard of a move
 //
 // Each keeps to the caller's cities: the board shows their visits and technicians, and a visit or move elsewhere is
 // not found.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
@@ -35,11 +30,12 @@ const ClientSchema = z
     name: z.string().openapi({ description: "In full, as the drawer heads it." }),
     mobile: z.string().openapi({ description: "E.164, for WhatsApp and for a call." }),
     whatsapp_visits: z.boolean().openapi({
-      description: "His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there.",
+      description:
+        "Their latest word on WhatsApp about their visits is yes, so a move's new window reaches them there.",
     }),
     referred_by: z
       .union([z.string(), z.null()])
-      .openapi({ description: "Who invited him, by name; null when he came on his own." }),
+      .openapi({ description: "Who invited them, by name; null when they came on their own." }),
   })
   .strict()
   .openapi("DispatchClient");
@@ -85,7 +81,7 @@ const BlockSchema = z
       ])
       .openapi({
         description:
-          "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told.",
+          "The latest move of this visit its client has not heard of, and why. no_consent: they have not agreed to WhatsApp about their visits; not_sent: the WhatsApp was skipped or failed. Ops call them, then POST /api/dispatch/moves/{id}/told.",
       }),
     proposal: z.union([ProposedMoveSchema, z.null()]).openapi({
       description:
@@ -94,7 +90,7 @@ const BlockSchema = z
     }),
     begun: z.union([z.enum(BEGUN), z.null()]).openapi({
       description:
-        "How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved.",
+        "How far the technician has got, from the steps their phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before they arrive. A visit they have begun, or one in progress, is not moved.",
     }),
   })
   .strict()
@@ -138,7 +134,7 @@ const BoardSchema = z
           was_technician: z.union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()]).openapi({
             description:
               "The technician the job is still on, who was switched off and so has no row; null for a job nobody " +
-              "holds. A move of it names him as the expected technician.",
+              "holds. A move of it names them as the expected technician.",
           }),
         })
         .strict(),
@@ -165,7 +161,7 @@ const BoardSchema = z
   .strict()
   .openapi("DispatchBoard");
 
-const boardRoute = createRoute({
+const boardRoute = opsRoute({
   method: "get",
   path: "/api/dispatch",
   summary:
@@ -173,11 +169,10 @@ const boardRoute = createRoute({
   request: { query: z.object({ from: z.iso.date().optional(), city: z.string().min(1).max(60).optional() }) },
   responses: {
     200: { description: "The board", ...json(BoardSchema) },
-    403: errorResponse("access_required"),
   },
 });
 
-const versionRoute = createRoute({
+const versionRoute = opsRoute({
   method: "get",
   path: "/api/dispatch/version",
   summary:
@@ -187,7 +182,6 @@ const versionRoute = createRoute({
       description: "The version now",
       ...json(z.object({ version: VERSION }).strict().openapi("DispatchBoardVersion")),
     },
-    403: errorResponse("access_required"),
   },
 });
 
@@ -223,14 +217,13 @@ const RoomSchema = z
       "Each technician's day in the caller's cities with a window the job would land in, by the check a move runs: today, only at a start still ahead, and never on a day gone. A day not listed has none. Not where the job already is.",
   });
 
-const roomRoute = createRoute({
+const roomRoute = opsRoute({
   method: "get",
   path: "/api/dispatch/room",
   summary: "Where a job in hand can go in the board's week, before ops pick a reason. Writes nothing",
   request: { query: z.object({ appointment_id: z.uuid(), from: z.iso.date().optional() }) },
   responses: {
     200: { description: "Where it would land", ...json(RoomSchema) },
-    403: errorResponse("access_required"),
     404: errorResponse(
       "not_found: no such live job in the caller's cities, or one the technician has started or closed, which stays where it is",
     ),

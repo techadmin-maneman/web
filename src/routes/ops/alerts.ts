@@ -1,11 +1,9 @@
 // The Tasks board's "Needs a hand", behind Access (src/domain/ops/needs-a-hand.ts):
-//   GET  /api/alerts                    the open alerts ops have been told of, of the caller's departments
-//   POST /api/alerts/:id/resolve        mark one done
-//   POST /api/alerts/:id/send-again     send again the message, lead or CRM erasure it gave up on
 // Each department sees and acts on its own kinds of alert (src/policy/alerts.ts); every action is audited under the
 // member of staff who took it.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -49,7 +47,7 @@ const AlertsSchema = z
   .strict()
   .openapi("OpenAlerts");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/alerts",
   summary: "The open alerts ops have been told of, the longest open first",
@@ -61,7 +59,7 @@ const listRoute = createRoute({
 
 const AlertParams = z.object({ id: z.uuid() });
 
-const resolveRoute = createRoute({
+const resolveRoute = opsRoute({
   method: "post",
   path: "/api/alerts/{id}/resolve",
   summary: "Mark an alert done: what it was about is put right",
@@ -75,7 +73,7 @@ const resolveRoute = createRoute({
   },
 });
 
-const sendAgainRoute = createRoute({
+const sendAgainRoute = opsRoute({
   method: "post",
   path: "/api/alerts/{id}/send-again",
   summary: "Send again the message, lead or CRM erasure an alert gave up on, and close the alert",

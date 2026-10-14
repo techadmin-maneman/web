@@ -1,14 +1,12 @@
 // A client's hair profile on their page in the console (docs/decisions/0106-a-clients-hair-profile.md). On the ops
-// surface behind Access:
-//
-//   GET  /api/clients/:id/hair-profile   the profile as it stands, and every version
-//   POST /api/clients/:id/hair-profile   ops' correction: a new version under the member of staff
+// surface behind Access.
 //
 // The technician records the profile at a visit (POST /api/tech/jobs/:id/profile); ops correct it here. A correction
 // names the version it started from, and is refused, 409 superseded, once another has become the latest since, so
 // it never silently replaces a newer one. It is audited by the client's ID and the version's, never a word of it.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { staffMemberOf } from "../../http/audit.ts";
@@ -48,19 +46,18 @@ const CorrectionSchema = z
   .strict()
   .openapi("HairProfileCorrection", { description: "The whole profile as it now stands, sent as a new version." });
 
-const readRoute = createRoute({
+const readRoute = opsRoute({
   method: "get",
   path: "/api/clients/{id}/hair-profile",
   summary: "The client's hair profile, and every version of it",
   request: { params: clientId },
   responses: {
     200: { description: "The profile", ...json(ClientHairProfileSchema) },
-    403: errorResponse("access_required"),
     404: unknownClient,
   },
 });
 
-const correctRoute = createRoute({
+const correctRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/hair-profile",
   summary: "Correct the client's hair profile: a new version, under the member of staff, audited",

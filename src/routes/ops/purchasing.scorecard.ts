@@ -1,14 +1,12 @@
-// The supplier scorecard, behind Access (docs/decisions/0172-supplier-scorecard.md):
-//   GET /api/supplier-scorecard    each supplier's year: on time in full, lead time against promised, what arrived
-//                                  damaged or failed its check, and its claims
+// The supplier scorecard, behind Access (docs/decisions/0172-supplier-scorecard.md).
 //
 // Read with Operations VIEW.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { supplierScores } from "../../domain/purchasing/supplier-scorecard.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
-import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 
 const Percent = z.number().int().min(0).max(100).nullable();
@@ -29,7 +27,7 @@ const ScoreSchema = z.object({
   credited: z.number().int().openapi({ description: "What was credited, in the supplier's currency's smallest unit." }),
 });
 
-const scorecardRoute = createRoute({
+const scorecardRoute = opsRoute({
   method: "get",
   path: "/api/supplier-scorecard",
   summary: "Each supplier's last year: on time in full, lead time, quality and claims",
@@ -38,7 +36,6 @@ const scorecardRoute = createRoute({
       description: "The scorecard",
       ...json(z.object({ suppliers: z.array(ScoreSchema) }).openapi("SupplierScorecard")),
     },
-    403: errorResponse("access_required"),
   },
 });
 

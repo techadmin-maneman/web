@@ -22,11 +22,13 @@ type ProposeOutcome =
 interface ProposeDeps {
   /** Queues the client's message. */
   readonly notify?: (messageId: string) => Promise<unknown>;
+  /** The proposal's audit entry, by its ID, written in the proposal's own batch. */
+  readonly audit?: (proposalId: string) => AuditEntry;
 }
 
 /**
  * Asks the client to confirm a move to another day: the board's checks, then the proposal written, and any proposal
- * open on the visit before it withdrawn in the same batch. Nothing of the visit changes.
+ * open on the visit before it withdrawn, with its audit entry, in the same batch. Nothing of the visit changes.
  */
 export async function proposeMove(
   db: D1Database,
@@ -86,6 +88,7 @@ export async function proposeMove(
             at,
           }),
         ]),
+    ...(deps.audit === undefined ? [] : [auditStatement(db, deps.audit(id), now)]),
   ]);
   if (messageId !== null) await deps.notify?.(messageId);
   return { kind: "proposed", proposalId: id, clientNotice: messageId === null ? "call" : "messaged" };

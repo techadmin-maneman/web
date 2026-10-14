@@ -1,13 +1,5 @@
-// The referral landing's API (design/phase2/Referral and Waitlist, C1 to C4; docs/decisions/0048-referrals.md),
-// on the public host, for maneman.in/r/:code:
-//
-//   GET  /api/r/:code                 the invite: valid or unknown, with the referrer's first name if they agreed
-//   GET  /api/pincodes/:pin           whether we come there, and the area's name
-//   POST /api/r/:code/consultation    book a free consultation through the invite, or ask for one where
-//                                     self-serve booking is off and ops fix the hour on WhatsApp
-//   POST /api/r/:code/waitlist        wait for an unserved pincode, the invite held until 12 months after launch
-//   GET  /api/og/:code.jpg?v=         the invite's preview image: the referrer's card while it is live, else the
-//                                     house card; the version in the link is what makes a revoke reach new shares
+// The referral landing's API (docs/decisions/0048-referrals.md),
+// on the public host, for maneman.in/r/:code.
 //
 // Looking up a code that is not there, as the invite or as its preview, counts against the address it comes from;
 // past its misses for the hour the address is refused every code (src/domain/referrals/invite-lookups.ts).

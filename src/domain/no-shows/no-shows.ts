@@ -1,14 +1,12 @@
 // The client is not home (src/policy/no-show.ts).
 //
-// "The wait timer starts at check-in and runs config NO_SHOW_WAIT_MIN (15)
-// minutes. Close as no-show is disabled until the timer ends." The server
-// enforces the wait, not the screen, and on its own clock as well as the
+// The wait starts at check-in and runs the visit type's minutes ops set (NO_SHOW_WAIT_MIN), and a visit cannot be
+// closed as a no-show before it ends. The server enforces the wait, not the screen, and on its own clock as well as the
 // phone's (docs/decisions/0065-a-technicians-writes-reach-fsm.md).
 //
-// "Ops then receive three facts: check-in time, distance, and the delivery
-// receipt of the day-before or arrival WhatsApp to the client." Nothing here
-// charges anybody: "the charge is applied by ops from the evidence, never
-// automatically", so a case opens undecided and waits for a person.
+// Ops then have three facts: the check-in time, its distance from the address, and the delivery receipt of the
+// day-before or arrival message. Nothing here charges anybody: a charge is ops' ruling on that evidence, never
+// automatic, so a case opens undecided and waits for a person.
 //
 // A charge costs what the booking was sold to cost a no-show, and the ruling
 // records what it kept and gave back; the client may dispute it

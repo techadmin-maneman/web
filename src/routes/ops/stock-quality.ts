@@ -1,17 +1,13 @@
-// Failure rates and value at risk, behind Access (docs/decisions/0188-failure-rates-and-value-at-risk.md):
-//   GET /api/quality/failures   the labelled pieces fitted in the last year and how many failed, by stock code, lot,
-//                               supplier and technician
-//   GET /api/stock/expiry-risk  each lot that will not all be used before it expires at its place's pace, valued at
-//                               its landed cost, with what to do about it
+// Failure rates and value at risk, behind Access (docs/decisions/0188-failure-rates-and-value-at-risk.md).
 //
 // Failure rates read with Operations VIEW; the value at risk with MANAGE in the caller's places, since it values stock.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { placesWithin } from "../../domain/inventory/stock-places.ts";
 import { expiryRisk, failureRates, type FailureGroup } from "../../domain/inventory/stock-quality.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
-import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
@@ -23,7 +19,7 @@ const Group = z.object({
   rate_percent: z.number().nullable(),
 });
 
-const failuresRoute = createRoute({
+const failuresRoute = opsRoute({
   method: "get",
   path: "/api/quality/failures",
   summary: "The labelled pieces fitted in the last year and how many failed, four ways",
@@ -42,11 +38,10 @@ const failuresRoute = createRoute({
           .openapi("FailureRates"),
       ),
     },
-    403: errorResponse("access_required"),
   },
 });
 
-const riskRoute = createRoute({
+const riskRoute = opsRoute({
   method: "get",
   path: "/api/stock/expiry-risk",
   summary: "Each lot that will not all be used before it expires, valued at its landed cost",
@@ -75,7 +70,6 @@ const riskRoute = createRoute({
           .openapi("ExpiryRisk"),
       ),
     },
-    403: errorResponse("access_required"),
   },
 });
 

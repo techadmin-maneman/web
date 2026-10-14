@@ -1,16 +1,14 @@
 // An address a client gives ops on the phone, recorded on their page
 // (docs/decisions/0092-task-owners.md; open point 62). On the ops surface behind
-// Access:
-//
-//   POST /api/clients/:id/address/suggestions   buildings matching what ops have typed so far
-//   POST /api/clients/:id/address               save it as the client's address, marked as given to ops
+// Access.
 //
 // It is saved as the client's own save in the app saves one (src/http/address-save.ts): the same fields and checks,
 // the building geocoded once within the day's ceiling, and the address sent on to Books and the CRM. It is
 // marked with the member of staff who saved it, audited in the same batch, and replaces any address before it. A
 // visit to come with no address then leaves the Tasks board, as it does when the client saves one.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { staffMemberOf, actorOf } from "../../http/audit.ts";
 import { saveClientAddress, suggestBuildings } from "../../http/address-save.ts";
@@ -27,7 +25,7 @@ const unknownClient = errorResponse(
   "not_found: no such client, or the client has been erased or is outside the caller's cities",
 );
 
-const suggestionsRoute = createRoute({
+const suggestionsRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/address/suggestions",
   summary: "Buildings matching what ops have typed of the address a client is giving them",
@@ -54,13 +52,12 @@ const suggestionsRoute = createRoute({
   responses: {
     200: { description: "The suggestions, which may be empty", ...json(SuggestionsSchema) },
     400: errorResponse("invalid_request"),
-    403: errorResponse("access_required"),
     404: unknownClient,
     503: errorResponse("busy: today's address-lookup ceiling is reached; unavailable: Google could not be reached"),
   },
 });
 
-const saveRoute = createRoute({
+const saveRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/address",
   summary: "Save an address the client gave ops on the phone as theirs, marked as given to ops",

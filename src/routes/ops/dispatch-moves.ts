@@ -7,13 +7,13 @@
 // they are never charged for a move ops make", so no amount appears anywhere
 // below.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { json } from "../../http/openapi.ts";
 import type { Context } from "hono";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { type MoveInput, moveFromTheBoard, moveJob, recordToldByPhone } from "../../domain/dispatch/dispatch.ts";
 import { proposeMove, withdrawProposal } from "../../domain/dispatch/move-proposals.ts";
-import { auditStatement } from "../../domain/platform/audit.ts";
 import type { AuditEntry } from "../../domain/platform/audit.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -64,7 +64,7 @@ const MoveRequestSchema = z
     ...BLACKOUT_REASON,
     clear_check_in: z.literal(true).optional().openapi({
       description:
-        "Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress.",
+        "Ops were warned that the technician has checked in, and move the visit anyway: their check-in is cleared, and they check in again at the new time. The audit log names who chose it. Without it, a visit they have checked in at answers 409 in_progress.",
     }),
   })
   .strict()
@@ -74,13 +74,13 @@ const MovedSchema = z
     move_id: z.uuid(),
     client_notice: z.enum(CLIENT_NOTICES).openapi({
       description:
-        "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell.",
+        "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about their visits, so ops call them, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell.",
     }),
   })
   .strict()
   .openapi("DispatchMoved");
 
-const assignRoute = createRoute({
+const assignRoute = opsRoute({
   method: "post",
   path: "/api/dispatch/assign",
   summary: "Put a job on a technician, with a reason. The clash check runs before anything is written",
@@ -88,7 +88,6 @@ const assignRoute = createRoute({
   responses: {
     200: { description: "Assigned", ...json(MovedSchema) },
     400: errorResponse("invalid_request: fields names technician_id for one not in the caller's cities"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
       "past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit",
@@ -96,7 +95,7 @@ const assignRoute = createRoute({
   },
 });
 
-const moveRoute = createRoute({
+const moveRoute = opsRoute({
   method: "post",
   path: "/api/dispatch/move",
   summary: "Move a job to another technician, day or window, with a reason. The client is never charged",
@@ -106,22 +105,20 @@ const moveRoute = createRoute({
     400: errorResponse(
       "invalid_request, including a move to the technician, day and window the job already has, or to a technician not in the caller's cities",
     ),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
-      "past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them",
+      "past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One they have only checked in at moves with clear_check_in; one they have started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them",
     ),
   },
 });
 
-const toldRoute = createRoute({
+const toldRoute = opsRoute({
   method: "post",
   path: "/api/dispatch/moves/{id}/told",
-  summary: "Ops called the client about a move he had not heard of; its task leaves the board",
+  summary: "Ops called the client about a move they had not heard of; its task leaves the board",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: { description: "Recorded", ...json(z.object({ told: z.literal(true) }).strict()) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no move of a live visit in the caller's cities whose client is still to be told"),
   },
 });
@@ -138,7 +135,7 @@ const ProposedSchema = z
   .strict()
   .openapi("DispatchProposed");
 
-const proposeRoute = createRoute({
+const proposeRoute = opsRoute({
   method: "post",
   path: "/api/dispatch/propose",
   summary:
@@ -149,7 +146,6 @@ const proposeRoute = createRoute({
     400: errorResponse(
       "invalid_request: the move keeps the visit's day (fields: date), names a technician not in the caller's cities, or the visit has no client",
     ),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
       "the move's checks, as POST /api/dispatch/move answers them: past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city; not_trained; superseded, with what changed in fields; in_progress",
@@ -157,14 +153,13 @@ const proposeRoute = createRoute({
   },
 });
 
-const withdrawRoute = createRoute({
+const withdrawRoute = opsRoute({
   method: "post",
   path: "/api/dispatch/proposals/{id}/withdraw",
   summary: "Take back a move to another day the client has not yet accepted",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     204: { description: "Taken back" },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no open proposal of a visit in the caller's cities"),
   },
 });
@@ -266,24 +261,21 @@ function refusedMove(c: Context<AppEnv>, outcome: Refused) {
 /** A move to another day, asked of the client rather than made. */
 async function propose(c: Context<AppEnv>, request: MoveRequest) {
   if (!(await withinRouteReach(c, "visit", request.appointment_id))) return refuse(c, "not_found");
-  if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
+  if (!(await mayGoTo(c, request))) return refuse(c, "not_found");
   const input = inputOf(c, request);
   const now = c.var.deps.now();
-  const outcome = await proposeMove(c.env.DB, { notify: (messageId) => queueMessage(c, messageId) }, input, now);
+  const audit = (proposalId: string) => ({
+    surface: "ops" as const,
+    actor: actorOf(c),
+    action: "dispatch.move_proposed" as const,
+    subject: { kind: "appointment", id: input.appointmentId },
+    requestId: c.var.requestId,
+    detail: { proposal_id: proposalId, reason: input.reason },
+  });
+  const notify = (messageId: string) => queueMessage(c, messageId);
+  const outcome = await proposeMove(c.env.DB, { notify, audit }, input, now);
   if (outcome.kind === "same_day") return refuse(c, "invalid_request", ["date"]);
   if (outcome.kind !== "proposed") return refusedMove(c, outcome);
-  await auditStatement(
-    c.env.DB,
-    {
-      surface: "ops",
-      actor: actorOf(c),
-      action: "dispatch.move_proposed",
-      subject: { kind: "appointment", id: input.appointmentId },
-      requestId: c.var.requestId,
-      detail: { proposal_id: outcome.proposalId, reason: input.reason },
-    },
-    now,
-  ).run();
   c.var.log.info("dispatch_move_proposed", { appointment_id: input.appointmentId, proposal_id: outcome.proposalId });
   return c.json({ proposal_id: outcome.proposalId, client_notice: outcome.clientNotice }, 200);
 }
@@ -294,7 +286,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   if (!(await withinRouteReach(c, "visit", request.appointment_id))) {
     return refuse(c, "not_found");
   }
-  if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
+  if (!(await mayGoTo(c, request))) return refuse(c, "not_found");
 
   const input = inputOf(c, request);
   const notify = (messageId: string) => queueMessage(c, messageId);

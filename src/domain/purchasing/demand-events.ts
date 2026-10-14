@@ -3,7 +3,7 @@
 // (./forecast-layers.ts). An event is taken off, never edited, and kept.
 
 import { auditStatement } from "../platform/audit.ts";
-import type { Written } from "../inventory/stock.ts";
+import type { Written } from "../platform/audit.ts";
 
 export interface DemandEvent {
   readonly id: string;

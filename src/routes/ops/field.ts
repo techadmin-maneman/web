@@ -1,23 +1,14 @@
 // What ops do about field work, behind Access (src/policy/no-show.ts,
 // technician-login.ts). The roster is here; the no-shows are ./no-shows.ts, the pieces tab
 // ./client-pieces.ts, leave ./technician-leave.ts and a technician's phones ./technician-phones.ts.
-//   GET  /api/no-shows                                   the cases, with their evidence
-//   POST /api/no-shows/:id/decision                      charge or waive, from the evidence
-//   GET  /api/clients/:id/pieces                         the pieces tab
-//   GET  /api/technicians                                who works, their phones and leave, and who is switched off
-//   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs, and they are stopped signing in
-//   POST /api/technicians/:id/allow-sign-in              let them sign in again after a revoke
-//   GET  /api/technicians/:id/leave                      their leave still to end, each with the jobs booked on it
-//   POST /api/technicians/:id/leave                      record leave; the board and booking both refuse those days
-//   POST /api/technicians/:id/leave/:leave/cancel        take it back
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { listCities } from "../../domain/cities/cities.ts";
 import { leaveFrom } from "../../domain/dispatch/leave.ts";
 import { roster, type RosterTechnician } from "../../domain/dispatch/technician-roster.ts";
 import { devicesByTechnician } from "../../domain/dispatch/technicians.ts";
 import type { App } from "../../http/context.ts";
-import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -36,10 +27,10 @@ const LeaveSchema = z
 
 const MOBILE = z
   .union([z.string(), z.null()])
-  .openapi({ description: "The number he signs in with, +91 and ten digits; null where none is recorded." });
+  .openapi({ description: "The number they sign in with, +91 and ten digits; null where none is recorded." });
 const CITY = z
   .union([z.string(), z.null()])
-  .openapi({ description: "The city he works in, which staff access by place reads; null for none." });
+  .openapi({ description: "The city they work in, which staff access by place reads; null for none." });
 
 const FITS_TRAINED = z
   .boolean()
@@ -64,7 +55,8 @@ const TechniciansSchema = z
           fits_trained: FITS_TRAINED,
           visits_to_come: VISITS_TO_COME,
           sign_in_stopped_at: z.union([z.iso.datetime(), z.null()]).openapi({
-            description: "When revoking a phone of his stopped him signing in; null while he may. Ops let him again.",
+            description:
+              "When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again.",
           }),
           devices: z.array(
             z
@@ -75,7 +67,7 @@ const TechniciansSchema = z
                 revoked_at: z.union([z.iso.datetime(), z.null()]),
                 signed_in: z.boolean().openapi({
                   description:
-                    "Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it.",
+                    "Whether the phone's last session is still live: false once they signed out, it ran out, or ops revoked it.",
                 }),
               })
               .strict(),
@@ -111,14 +103,13 @@ const TechniciansSchema = z
   .strict()
   .openapi("Technicians");
 
-const techniciansRoute = createRoute({
+const techniciansRoute = opsRoute({
   method: "get",
   path: "/api/technicians",
   summary:
     "Active technicians in the caller's cities, the phones they have logged in on and their leave, and those switched off",
   responses: {
     200: { description: "The technicians", ...json(TechniciansSchema) },
-    403: errorResponse("access_required"),
   },
 });
 

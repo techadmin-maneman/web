@@ -1,11 +1,9 @@
 // Ops' waitlist, the pincode launch and the referrers' funnel (Ops Console, C2 and C3;
 // docs/decisions/0048-referrals.md), on the ops surface behind Access:
-//   GET  /api/waitlist                 who is waiting, by pincode, and the cities a pincode may be added in
-//   POST /api/pincodes/:pin/launch     what a launch would send, then the launch itself
-//   GET  /api/referrers                every referrer's figures: opens, consultations, fits, granted, redeemed
 // A launch is audited, and its alerts leave in a paced line.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { listCities } from "../../domain/cities/cities.ts";
@@ -26,7 +24,7 @@ export const WAITLIST_AREAS = 200;
 /** The referrers one page holds, the busiest first. */
 export const REFERRERS_PAGE = 50;
 
-const waitlistRoute = createRoute({
+const waitlistRoute = opsRoute({
   method: "get",
   path: "/api/waitlist",
   summary: "Who is waiting in the caller's cities, by pincode, the longest wait first",
@@ -67,7 +65,7 @@ const waitlistRoute = createRoute({
   },
 });
 
-const launchRoute = createRoute({
+const launchRoute = opsRoute({
   method: "post",
   path: "/api/pincodes/{pin}/launch",
   summary: "Launch a pincode: without confirm, what it would send; with it, the launch",
@@ -110,7 +108,7 @@ const launchRoute = createRoute({
   },
 });
 
-const referrersRoute = createRoute({
+const referrersRoute = opsRoute({
   method: "get",
   path: "/api/referrers",
   summary: `The figures of the referrers in the caller's cities, the busiest first, ${String(REFERRERS_PAGE)} at a time`,

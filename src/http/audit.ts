@@ -11,6 +11,7 @@ import {
   type AuditAction,
   type AuditActor,
   type AuditEntry,
+  type Written,
 } from "../domain/platform/audit.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
 import type { AccessIdentity } from "../providers/cloudflare-access.ts";
@@ -73,6 +74,13 @@ export function actorOf(c: Context<AppEnv>): AuditActor {
  * The member of staff behind the call, or null for a service token: Access lets one in, and it names no person for
  * a write that is kept under whoever made it, a task's owner or an address given to ops (docs/decisions/0092-task-owners.md).
  */
+/** Who writes a change from the console, for which request, and when: what its audit entry names. */
+export const written = (c: Context<AppEnv>): Written => ({
+  actor: actorOf(c),
+  requestId: c.var.requestId,
+  now: c.var.deps.now(),
+});
+
 export function staffMemberOf(c: Context<AppEnv>): AuditActor | null {
   const actor = actorOf(c);
   return actor.kind === "staff" ? actor : null;

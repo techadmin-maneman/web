@@ -1,19 +1,13 @@
 // The consumables ops keep, and what each service is expected to use, behind Access
-// (docs/decisions/0087-consumables-and-stock.md):
-//   GET  /api/consumables                   every consumable, and each service's expected use
-//   POST /api/consumables                   add one
-//   POST /api/consumables/:code             rename it, or change its unit, its cost or its reorder levels
-//   POST /api/consumables/:code/retire      no longer offered, from a day
-//   POST /api/consumables/:code/restore     offered again
-//   POST /api/consumables/:code/delete      one added by mistake, while no stock of it has moved
-//   POST /api/service-usage                 what one service is expected to use, the whole list at once
+// (docs/decisions/0087-consumables-and-stock.md).
 //
 // A change here needs no release. Each records the Access identity behind it,
 // with what it changed, in the same batch as the change (ADR 0031). Every
 // write answers the whole of GET's answer, so the screen follows it without
 // reading again.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { CONSUMABLE_BOUNDS, CONSUMABLE_NAME, CONSUMABLE_UNIT } from "../../config/consumables.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
@@ -31,7 +25,7 @@ import {
 } from "../../domain/inventory/consumables.ts";
 import { hairSystemSpecs, type HairSystemSpec } from "../../domain/inventory/hair-systems.ts";
 import { closeStaleLowStock } from "../../domain/inventory/low-stock.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -127,14 +121,14 @@ const ConsumablesSchema = z
 const CONSUMABLES = { description: "Every consumable and each service's expected use", ...json(ConsumablesSchema) };
 const REFUSED = errorResponse("invalid_request: fields names what was refused, such as a name already taken");
 
-const consumablesRoute = createRoute({
+const consumablesRoute = opsRoute({
   method: "get",
   path: "/api/consumables",
   summary: "Every consumable, and what each service is expected to use",
-  responses: { 200: CONSUMABLES, 403: errorResponse("access_required") },
+  responses: { 200: CONSUMABLES },
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/consumables",
   summary: "Add a consumable. The technician app offers it from now on",
@@ -157,12 +151,12 @@ const addRoute = createRoute({
       ),
     },
   },
-  responses: { 200: CONSUMABLES, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: CONSUMABLES, 400: REFUSED },
 });
 
 const code = z.object({ code: z.string().min(1).max(64) });
 
-const changeRoute = createRoute({
+const changeRoute = opsRoute({
   method: "post",
   path: "/api/consumables/{code}",
   summary:
@@ -190,12 +184,11 @@ const changeRoute = createRoute({
   responses: {
     200: CONSUMABLES,
     400: REFUSED,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such consumable"),
   },
 });
 
-const retireRoute = createRoute({
+const retireRoute = opsRoute({
   method: "post",
   path: "/api/consumables/{code}/retire",
   summary: "Stop offering a consumable from a day. Nothing already recorded moves",
@@ -206,37 +199,34 @@ const retireRoute = createRoute({
   responses: {
     200: CONSUMABLES,
     400: errorResponse("invalid_request: fields names from, a day before today"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such consumable"),
   },
 });
 
-const restoreRoute = createRoute({
+const restoreRoute = opsRoute({
   method: "post",
   path: "/api/consumables/{code}/restore",
   summary: "Offer a retired consumable again",
   request: { params: code },
   responses: {
     200: CONSUMABLES,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such consumable"),
   },
 });
 
-const deleteRoute = createRoute({
+const deleteRoute = opsRoute({
   method: "post",
   path: "/api/consumables/{code}/delete",
   summary: "Delete a consumable added by mistake, while no stock of it has moved and no job has used it",
   request: { params: code },
   responses: {
     200: CONSUMABLES,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such consumable"),
     409: errorResponse("in_use: stock of it has moved, or a job used it; retire it instead"),
   },
 });
 
-const usageRoute = createRoute({
+const usageRoute = opsRoute({
   method: "post",
   path: "/api/service-usage",
   summary: "What one service is expected to use. The whole list: a consumable left out is expected no more",
@@ -270,7 +260,6 @@ const usageRoute = createRoute({
       "invalid_request: fields names tier for a service the console does not hold, or items.N.code for a " +
         "consumable nobody added or one named twice",
     ),
-    403: errorResponse("access_required"),
   },
 });
 
@@ -326,8 +315,6 @@ async function answer(c: Context<AppEnv>) {
     max_reorder_level: CONSUMABLE_BOUNDS.maxReorderLevel,
   };
 }
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 export function registerOpsConsumables(app: App): void {
   app.openapi(consumablesRoute, async (c) => c.json(await answer(c), 200));

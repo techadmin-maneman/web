@@ -1,15 +1,10 @@
-// Claims on suppliers and returned pieces, behind Access (docs/decisions/0169-supplier-claims.md):
-//   GET  /api/supplier-claims                     open claims and the latest settled, and the pieces handed in to settle
-//   POST /api/supplier-claims/{id}/send           a drafted claim marked sent to its supplier
-//   POST /api/supplier-claims/{id}/withdraw       a drafted claim withdrawn, with why
-//   POST /api/supplier-claims/{id}/decide         a sent claim settled: a credit, a replacement, or rejected
-//   POST /api/returned-pieces/{id}/claim          a returned piece inside its warranty claimed on its supplier
-//   POST /api/returned-pieces/{id}/write-off      a returned piece written off, with why
+// Claims on suppliers and returned pieces, behind Access (docs/decisions/0169-supplier-claims.md).
 //
 // Sending, withdrawing and settling pieces with Operations ACT; settling a claim with MANAGE. Each answers the whole of
 // GET's answer.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { stockPhotoExists } from "../../domain/inventory/stock-photos.ts";
 import { returnedPieces, claimReturn, writeOffReturn, type Settled } from "../../domain/inventory/returned-pieces.ts";
@@ -73,7 +68,7 @@ const CLAIMS = {
 };
 const ACCESS = errorResponse("access_required");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/supplier-claims",
   summary: "Open claims on suppliers and the latest settled, and the returned pieces handed in to settle",
@@ -87,7 +82,7 @@ const CLAIM_ANSWERS = {
   409: errorResponse("claim_state: the claim is past the step asked"),
 };
 
-const sendRoute = createRoute({
+const sendRoute = opsRoute({
   method: "post",
   path: "/api/supplier-claims/{id}/send",
   summary: "A drafted claim marked sent to its supplier",
@@ -104,7 +99,7 @@ const sendRoute = createRoute({
   },
 });
 
-const withdrawRoute = createRoute({
+const withdrawRoute = opsRoute({
   method: "post",
   path: "/api/supplier-claims/{id}/withdraw",
   summary: "A drafted claim withdrawn, with why",
@@ -115,7 +110,7 @@ const withdrawRoute = createRoute({
   responses: CLAIM_ANSWERS,
 });
 
-const decideRoute = createRoute({
+const decideRoute = opsRoute({
   method: "post",
   path: "/api/supplier-claims/{id}/decide",
   summary: "A sent claim settled by the supplier's answer",
@@ -150,7 +145,7 @@ const PIECE_ANSWERS = {
   409: errorResponse("return_settled: the piece is settled already, or not handed in"),
 };
 
-const claimRoute = createRoute({
+const claimRoute = opsRoute({
   method: "post",
   path: "/api/returned-pieces/{id}/claim",
   summary: "A returned piece inside its supplier's warranty claimed on the supplier",
@@ -163,7 +158,7 @@ const claimRoute = createRoute({
   },
 });
 
-const writeOffRoute = createRoute({
+const writeOffRoute = opsRoute({
   method: "post",
   path: "/api/returned-pieces/{id}/write-off",
   summary: "A returned piece written off, with why",

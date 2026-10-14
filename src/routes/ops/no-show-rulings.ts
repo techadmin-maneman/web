@@ -1,10 +1,9 @@
-// Either side of ops' ruling on a no-show, behind Access (src/routes/ops/no-shows.ts rules on it):
-//   GET /api/no-shows/:id/charge     what charging the case would keep of the visit's payment, and refund
-//   GET /api/no-shows/decided        the cases ruled on today, with their rulings
+// Either side of ops' ruling on a no-show, behind Access (src/routes/ops/no-shows.ts rules on it).
 //
 // The charge is asked about once more before it is sent, with these figures, worked out as charging works them out.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { casesDecidedSince } from "../../domain/no-shows/no-show-rulings.ts";
 import { chargePreview } from "../../domain/no-shows/no-shows.ts";
@@ -27,14 +26,13 @@ const ChargePreviewSchema = z
   .strict()
   .openapi("NoShowChargePreview", { description: "What charging the case would do, worked out as charging does." });
 
-const chargePreviewRoute = createRoute({
+const chargePreviewRoute = opsRoute({
   method: "get",
   path: "/api/no-shows/{id}/charge",
   summary: "What charging an undecided no-show would keep of the visit's payment, and refund",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: { description: "What a charge would do", ...json(ChargePreviewSchema) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such case in the caller's cities, or it was ruled on already"),
   },
 });
@@ -65,7 +63,7 @@ const DecidedCaseSchema = z
   .strict()
   .openapi("NoShowDecided");
 
-const decidedRoute = createRoute({
+const decidedRoute = opsRoute({
   method: "get",
   path: "/api/no-shows/decided",
   summary: "The no-shows in the caller's cities ruled on today in India, the latest first, each with its ruling",
@@ -74,7 +72,6 @@ const decidedRoute = createRoute({
       description: "The day's rulings",
       ...json(z.object({ cases: z.array(DecidedCaseSchema), more: More(LIMIT) }).strict()),
     },
-    403: errorResponse("access_required"),
   },
 });
 

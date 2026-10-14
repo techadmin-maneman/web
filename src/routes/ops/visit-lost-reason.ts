@@ -1,10 +1,10 @@
 // Why a client is not going ahead after their consultation, set or cleared on the client's page, behind Access
-// (Customer Care; docs/decisions/0149-lost-reasons.md):
-//   POST /api/visits/:id/lost-reason   { lost_reason: a code from the job sheet's list, or null to clear it }
+// (Customer Care; docs/decisions/0149-lost-reasons.md).
 //
 // It keeps to the caller's cities: a visit elsewhere is answered as one that does not exist.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { setLostReason } from "../../domain/visits/lost-reasons.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
@@ -12,7 +12,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";
 
-const lostReasonRoute = createRoute({
+const lostReasonRoute = opsRoute({
   method: "post",
   path: "/api/visits/{id}/lost-reason",
   summary: "Set, or clear, why a client is not going ahead with a fit after this consultation",
@@ -35,7 +35,6 @@ const lostReasonRoute = createRoute({
   responses: {
     200: { description: "Kept", ...json(z.object({ lost_reason: z.union([z.string(), z.null()]) }).strict()) },
     400: errorResponse("invalid_request: fields names lost_reason for a code the job sheet never listed"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no closed consultation by this id in the caller's cities"),
   },
 });

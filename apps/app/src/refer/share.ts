@@ -2,7 +2,6 @@
 // 2026). Where the phone's share sheet takes files, the card goes as a photograph with the invite's words as its
 // caption, so the friend sees it whether or not their chat draws the link's preview. Elsewhere WhatsApp's own link
 // takes the words alone, and the chat draws the card from the landing's Open Graph tags. The try-on's WhatsApp button
-// shares its look the same way (site/src/islands/tryon/Result.tsx).
 //
 // A share must start on the tap itself, so the sheet makes the card a file before its share step shows
 // (ShareSheet.tsx); these only decide what the tap sends.

@@ -72,7 +72,7 @@ export interface Fake {
    * API does once the phone asks again.
    */
   movedTo: string | null;
-  /** Set to make the no-show refuse with `425 too_early_to_close`, as it does before the wait runs. */
+  /** Set to make the no-show refuse with `409 too_early_to_close`, as it does before the wait runs. */
   tooEarly: boolean;
   /** Set to a photograph's slot, as `before-top`, to refuse its file with `422 photo_invalid_file`, as an empty one is. */
   refusedPhoto: string | null;
@@ -292,7 +292,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
 
       const changed = fake.supersede;
       if (changed !== null) return refuse(route, 409, "superseded", changed, fake.wentTo);
-      if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 425, "too_early_to_close");
+      if (path.endsWith("/no-show") && fake.tooEarly) return refuse(route, 409, "too_early_to_close");
 
       // A one visit's client may decide against the fit, when the piece step carries no label.
       const body = route.request().postDataJSON() as {

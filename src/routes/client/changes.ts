@@ -2,10 +2,6 @@
 // consequence before the client confirms, from src/policy/moving-a-visit.ts.
 // Behind SELF_SERVE_BOOKING, as booking is.
 //
-//   GET  /api/appointments/:id/reschedule   what moving costs now
-//   POST /api/appointments/:id/reschedule   { hold_id }: start the move a hold makes
-//   POST /api/appointments/:id/cancel       { confirm: false }: what cancelling gives back; { confirm: true, notice }: cancel
-//
 // A move picks its new time as a booking does, through GET /api/availability
 // and POST /api/holds with `moving`.
 

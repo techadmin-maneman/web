@@ -7,7 +7,7 @@
 // service, or as its booked window where that is longer, and is placed and
 // moved by that length (docs/decisions/0085-services-ops-can-edit.md).
 //
-// "A technician cannot hold two live jobs in one window on one date": the
+// A technician never holds two live jobs in one window on one date: the
 // refusal below happens before anything is written. A technician on leave is
 // refused the same way, and named as away rather than busy (ADR 0062); a free
 // window with no room for the visit is named as that. A move is one batch: its

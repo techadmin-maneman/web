@@ -1,5 +1,4 @@
-// Why ops decided what they did about a client (docs/prompts/phase2-backend.md,
-// "Pieces tab"; docs/prompts/phase2-frontend.md, the no-show queue).
+// Why ops decided what they did about a client: a piece's failure, and a no-show's ruling.
 //
 // The console asked for a reason wherever the prompts do, but only the browser
 // insisted, so a grant of credits could be approved, and a client charged, with

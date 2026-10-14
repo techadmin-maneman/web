@@ -1,4 +1,4 @@
-// Paying for a visit (docs/prompts/phase2-backend.md, "Business rules, decided").
+// Paying for a visit.
 // Every visit is prepaid at booking, and technicians never handle money: what that means for the tax invoice. The payment is taken in
 // src/domain/booking/bookings.ts before anything is booked; the invoice is held or issued in src/domain/books/books-invoices.ts.
 //

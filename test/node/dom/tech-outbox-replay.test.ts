@@ -91,7 +91,7 @@ describe("sending what the phone holds", () => {
 
   it("keeps a no-show sent before the wait ran as early, sends it no more, and the countdown goes on", async () => {
     await queue("no_show", "a", null);
-    const sent = api(() => ({ status: 425, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
+    const sent = api(() => ({ status: 409, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
     await replay();
     await replay();
 

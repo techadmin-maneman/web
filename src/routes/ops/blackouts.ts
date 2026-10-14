@@ -1,14 +1,11 @@
-// Blackout days, behind Access (Settings; docs/decisions/0088-every-policy-in-the-console.md):
-//   GET  /api/blackouts          every day from today on that no visit is offered, and what is still booked on it
-//   GET  /api/blackouts/booked   the visits booked on days ops are about to close, for the check before they do
-//   POST /api/blackouts          black out the days from one date to another, with a reason
-//   POST /api/blackouts/remove   offer the days from one date to another again
+// Blackout days, behind Access (Settings; docs/decisions/0088-every-policy-in-the-console.md).
 //
 // They were edited by the runbook's own SQL. A change here needs no release,
 // and each records the Access identity behind it in the same batch
 // (src/domain/dispatch/blackouts.ts).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import {
@@ -67,14 +64,14 @@ const Period = {
   to: z.iso.date().openapi({ description: "The last day, the first included; a month on at most when adding." }),
 };
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/blackouts",
   summary: "Every day from today on that no visit is offered, with the visits still booked on each",
-  responses: { 200: { description: "The days", ...json(ListSchema) }, 403: errorResponse("access_required") },
+  responses: { 200: { description: "The days", ...json(ListSchema) } },
 });
 
-const bookedRoute = createRoute({
+const bookedRoute = opsRoute({
   method: "get",
   path: "/api/blackouts/booked",
   summary: "How many visits are still booked on days ops are about to close, in one city or every city",
@@ -85,11 +82,10 @@ const bookedRoute = createRoute({
       ...json(z.object({ booked: z.number().int() }).strict().openapi("BlackoutBooked")),
     },
     400: errorResponse("invalid_request: fields names from, to or city as for adding the days"),
-    403: errorResponse("access_required"),
   },
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/blackouts",
   summary: "Black out every day from one date to another. A day already blacked out takes the reason given now",
@@ -110,11 +106,10 @@ const addRoute = createRoute({
       "invalid_request: fields names from when it is before today, to when it is before from or more than a month " +
         "on, city when it is not one of ours, and reason when there is none or it is not one a list can hold",
     ),
-    403: errorResponse("access_required"),
   },
 });
 
-const removeRoute = createRoute({
+const removeRoute = opsRoute({
   method: "post",
   path: "/api/blackouts/remove",
   summary: "Offer the days from one date to another again",
@@ -135,7 +130,6 @@ const removeRoute = createRoute({
       "invalid_request: fields names from when it is before today, to when it is before from, and city when it is " +
         "not one of ours",
     ),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: none of those days is blacked out"),
   },
 });

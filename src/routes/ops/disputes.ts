@@ -1,12 +1,11 @@
-// A client's dispute of a no-show's charge, behind Access (src/domain/no-shows/no-show-disputes.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
-//   GET  /api/no-shows/disputes                  the disputes still to rule on, each with its case's evidence
-//   POST /api/no-shows/disputes/:id/ruling       Refund or Uphold, with a reason
+// A client's dispute of a no-show's charge, behind Access (src/domain/no-shows/no-show-disputes.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 //
 // Refunded gives back what the charge took, the money it kept and the credit it spent; upheld keeps them. Either
 // way the client is told on WhatsApp, with their consent to messages about visits, never with ops' reason, which
 // stays on the dispute.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { openDisputes, ruleOnDispute } from "../../domain/no-shows/no-show-disputes.ts";
@@ -44,13 +43,13 @@ const DisputeSchema = z
     kept: z.number().int().openapi({ description: "In paise: what the charge kept of the visit's payment." }),
     credit_spent: z.boolean().openapi({ description: "Whether the charge spent the credit the visit used." }),
     window_start: z.union([z.iso.datetime(), z.null()]).openapi({ description: "When the visit was booked for." }),
-    checked_in_at: z.iso.datetime().openapi({ description: "When he arrived, by his phone, held within bounds." }),
+    checked_in_at: z.iso.datetime().openapi({ description: "When they arrived, by their phone, held within bounds." }),
     phone_checked_in_at: z.union([z.iso.datetime(), z.null()]).openapi({
       description: "What the phone itself said, before the bounds; null when it said nothing.",
     }),
     received_at: z.iso.datetime(),
     distance_m: z.union([z.number().int(), z.null()]),
-    radius_m: z.number().int().openapi({ description: "The check-in radius in force when he checked in." }),
+    radius_m: z.number().int().openapi({ description: "The check-in radius in force when they checked in." }),
     message_state: z.enum(MESSAGE_STATES).openapi({
       description:
         "What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.",
@@ -71,7 +70,7 @@ const RulingRequestSchema = z
   .strict()
   .openapi("NoShowDisputeRuling");
 
-const disputesRoute = createRoute({
+const disputesRoute = opsRoute({
   method: "get",
   path: "/api/no-shows/disputes",
   summary: "Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence",
@@ -80,11 +79,10 @@ const disputesRoute = createRoute({
       description: "The disputes",
       ...json(z.object({ disputes: z.array(DisputeSchema), more: More(LIMIT) }).strict()),
     },
-    403: errorResponse("access_required"),
   },
 });
 
-const rulingRoute = createRoute({
+const rulingRoute = opsRoute({
   method: "post",
   path: "/api/no-shows/disputes/{id}/ruling",
   summary: "Refund or uphold a disputed no-show charge, with a reason",

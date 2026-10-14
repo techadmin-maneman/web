@@ -1,16 +1,15 @@
 // Ops attaching an invite to a client who booked away from the invite's own page: in the app, by messaging ops, or
 // on /book in a browser that no longer remembers it (docs/decisions/0089-an-invite-is-not-lost.md). On the ops
-// surface behind Access:
-//
-//   POST /api/clients/:id/referral   { code, reason }: attach the invite, under the landing's own rules
+// surface behind Access.
 //
 // The client is attributed through the landing's own function, so its rules hold here too: never the code's own
 // referrer, never a client who came with an invite already; one attached after the friend's first fit waits for ops'
-// review (src/policy/fraud-holds.ts, LATE_ATTACH_RULE). Who attached it and why are
+// review (src/policy/fraud-holds.ts, attached_after_fit). Who attached it and why are
 // kept with it, and its audit entry is written in the same batch. The CRM is then sent the client again, and reads
 // the invite they now carry.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -24,7 +23,7 @@ import {
 } from "../../domain/referrals/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { withinRouteReach } from "../../http/staff-access.ts";
+import { clientInReach } from "../../http/staff-access.ts";
 import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../../config/crm.ts";
 import { REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
@@ -66,7 +65,7 @@ const AlreadyInvitedSchema = z
   .strict()
   .openapi("AlreadyInvited");
 
-const attachRoute = createRoute({
+const attachRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/referral",
   summary: "Attach an invite to a client who booked away from its page, with the reason",
@@ -90,7 +89,6 @@ const attachRoute = createRoute({
   responses: {
     201: { description: "Attached", ...json(ClientInviteSchema) },
     400: errorResponse("invalid_request: no reason, or a code that is not shaped like one"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     409: {
       description:
@@ -130,13 +128,7 @@ export function registerOpsClientReferral(app: App): void {
     const { code, reason } = c.req.valid("json");
     const { requestId } = c.var;
     const db = c.env.DB;
-    const person = await db
-      .prepare("SELECT id FROM people WHERE id = ?1 AND erased_at IS NULL")
-      .bind(personId)
-      .first<{ id: string }>();
-    if (person === null || !(await withinRouteReach(c, "client", personId))) {
-      return refuse(c, "not_found");
-    }
+    if ((await clientInReach(c, personId)) === null) return refuse(c, "not_found");
     const invite = await inviteOf({ db, code, nameOnInvite: false });
     if (invite === null) return refuse(c, "unknown_invite");
 
@@ -161,7 +153,7 @@ export function registerOpsClientReferral(app: App): void {
       },
     });
     if (outcome.outcome === "own_invite") return refuse(c, "own_invite");
-    // Ops may attach after the friend's first fit; the grant is held for their review (LATE_ATTACH_RULE).
+    // Ops may attach after the friend's first fit; the grant is held for their review (attached_after_fit).
     if (outcome.outcome === "fitted") throw new Error("an invite ops attach is never refused for a first fit");
     if (outcome.outcome === "already_attributed") {
       return c.json({ ...errorBody("already_invited", requestId), invite: { code: outcome.code } }, 409);

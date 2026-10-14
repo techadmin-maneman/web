@@ -1,18 +1,5 @@
-// One client's record on the ops surface behind Access (Ops Console, B1 to B3;
-// docs/decisions/0031-access-and-audit.md). Finding a client is here; each section of their page has its file beside
+// One client's record on the ops surface behind Access (docs/decisions/0031-access-and-audit.md). Finding a client is here; each section of their page has its file beside
 // it: the record (./client-record.ts), the photographs (./client-photos.ts) and the consents (./client-consents.ts).
-//   GET  /api/clients                      every client in the caller's cities, the soonest next visit first, by
-//                                          where they stand and city, a page at a time
-//   POST /api/clients/search               find a client by their whole mobile number
-//   POST /api/clients/find                 find clients by part of a name or of a number
-//   GET  /api/clients/:id                  who they are, their address, their visits, their payments, payment links
-//                                          and invoices, their history, the invite they came with, and any
-//                                          booking that refunded its payment by itself
-//   GET  /api/clients/:id/photos           which photographs exist, by visit. No links: this is the locked view
-//   POST /api/clients/:id/photos/view      open them: one audit entry, and who opened them before
-//   GET  /api/clients/:id/photos/:photoId  one photograph, served within a logged opening
-//   GET  /api/clients/:id/consents         every consent with its notice version, date and where it was given, and any
-//                                          deletion request
 //
 // A client is always found by their ID. What ops search with goes in a request
 // body, never in a path, so that a number stays out of URLs, referrers and logs.
@@ -23,7 +10,8 @@
 // the record answers only what is kept: when they were erased, their visits
 // and their money. Every other route here does not find them: their photographs, address and details are gone (ADR 0049).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
 import { CLIENTS_PER_PAGE, listClients, NEXT_VISIT_COLUMNS } from "../../domain/clients/client-list.ts";
 import { fittedSql } from "../../domain/clients/fitted.ts";
@@ -38,7 +26,7 @@ import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { unknownClient } from "../schemas/clients.ts";
 
 const UnderWay = z.boolean().openapi({ description: "Whether a visit of theirs has begun and is not yet closed." });
-const searchRoute = createRoute({
+const searchRoute = opsRoute({
   method: "post",
   path: "/api/clients/search",
   summary: "Find a client by mobile number. A POST, so the number stays out of the URL",
@@ -69,7 +57,7 @@ export const CLIENTS_FOUND = 20;
 const NAME_MIN = 2;
 const DIGITS_MIN = 4;
 
-const findRoute = createRoute({
+const findRoute = opsRoute({
   method: "post",
   path: "/api/clients/find",
   summary:
@@ -122,7 +110,7 @@ const findRoute = createRoute({
   },
 });
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/clients",
   summary: "Every client in the caller's cities, the soonest next visit first, then those with none, newest first",

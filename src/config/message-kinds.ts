@@ -7,7 +7,7 @@
 export const MESSAGE_KINDS = [
   // The try-on result, with its image.
   "tryon_result",
-  // The client's (docs/prompts/phase2-backend.md, "Providers and integrations"):
+  // The client's:
   "consultation_confirmation",
   "visit_reminder", // the day before
   "waitlist_confirmation",

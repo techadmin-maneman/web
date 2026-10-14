@@ -56,6 +56,8 @@ describe("a queue consumer", () => {
     });
     expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: backoffSeconds(3, 30) });
     expect(backoffSeconds(3, 30)).toBe(120);
+    // A message that keeps failing waits an hour at most, never past the twelve hours a queue allows.
+    expect(backoffSeconds(12, 30)).toBe(3600);
     expect(batch.messages[1]?.ack).toHaveBeenCalledOnce();
   });
 

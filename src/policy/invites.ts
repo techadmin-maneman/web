@@ -1,13 +1,10 @@
-// How long an invite lasts (docs/prompts/phase2-backend.md, "Business rules, decided").
-// The rules as the prompt states them (ADR 0025, item 24). A lapsed invite is marked
+// How long an invite lasts (docs/decisions/0048-referrals.md; ADR 0025, item 24): one to an area we do not serve yet
+// stays good a year after the area launches, and one that has lapsed still books a free consultation but carries no
+// credits, so a friend is never turned away for waiting. A lapsed invite is marked
 // when its friend books (src/domain/referrals/referrals.ts), and again when their first fit is settled
 // (src/domain/referrals/referral-grants.ts).
 
 import { DAY_MS } from "../lib/durations.ts";
-
-// Its rules, as the brief states them:
-// - An invite to an unserved area stays valid config INVITE_TTL_AFTER_LAUNCH_DAYS (365) after that area goes live.
-// - An expired invite still allows a free consultation, but carries no credits.
 
 /** How long an invite to an unserved area lasts once the area launches: 12 months, as ruled. */
 const INVITE_TTL_AFTER_LAUNCH_DAYS = 365;

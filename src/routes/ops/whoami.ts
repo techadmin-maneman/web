@@ -1,12 +1,12 @@
-// Who is signed in to the ops console, behind Access:
-//   GET /api/whoami    the identity Access let through, where signing out goes, and what the Staff list lets them do
+// Who is signed in to the ops console, behind Access.
 //
 // The console holds no session of its own (docs/decisions/0031-access-and-audit.md),
 // so it cannot know who is working unless it asks. The design draws them at the
 // header's right; the way out is Access's own logout, which ends the only
 // session there is.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { callerAccess } from "../../http/staff-access.ts";
 import { routesOpenTo } from "../../policy/console-routes.ts";
@@ -15,7 +15,7 @@ import { grantJson, GrantSchema } from "./staff.ts";
 /** Access's own path on every host it guards: it ends the session and shows the team's page. */
 const ACCESS_LOGOUT_PATH = "/cdn-cgi/access/logout";
 
-const whoamiRoute = createRoute({
+const whoamiRoute = opsRoute({
   method: "get",
   path: "/api/whoami",
   summary: "Who Access let through, and where signing out goes",

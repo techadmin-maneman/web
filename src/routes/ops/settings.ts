@@ -1,15 +1,6 @@
 // The business inputs ops set for themselves, behind Access (Ops Console, the
 // Settings section the design draws; docs/decisions/0061-ops-editable-inputs.md). The rules are here; the price
 // book is ./prices.ts and the service area ./service-area.ts.
-//   GET  /api/settings              every rule ops may change, with its unit and its bounds
-//   POST /api/settings/:name        set one, or send null to put the default back
-//   GET  /api/prices                the price book, with the row in force marked
-//   POST /api/prices                a price from the date it applies, for a service or a late fee
-//   POST /api/prices/withdraw       a price still to come, taken back
-//   POST /api/prices/correct        a price still to come, taken back and set again, in one batch
-//   GET  /api/service-area          every pincode, its city, whether we go there and who waits there
-//   POST /api/service-area          which pincodes we go to, from when, and what their areas are called
-//   POST /api/pincodes              a pincode the service area does not hold, added unserved
 //
 // A change here needs no release. Every one records the Access identity behind
 // it, what the value was and what it is now, in the same batch as the change
@@ -19,7 +10,8 @@
 // holds, and not from the day it is retired by; the services themselves are
 // src/routes/ops/services.ts's (docs/decisions/0085-services-ops-can-edit.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { setOpsSetting, settingStates } from "../../domain/platform/ops-settings.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
@@ -94,17 +86,16 @@ const ChoiceRuleSchema = z
 
 const SettingSchema = z.discriminatedUnion("kind", [NumberRuleSchema, ChoiceRuleSchema]).openapi("OpsSetting");
 
-const settingsRoute = createRoute({
+const settingsRoute = opsRoute({
   method: "get",
   path: "/api/settings",
   summary: "Every business rule ops may change, with its unit, its bounds and who last set it",
   responses: {
     200: { description: "The rules", ...json(z.object({ settings: z.array(SettingSchema) }).strict()) },
-    403: errorResponse("access_required"),
   },
 });
 
-const setSettingRoute = createRoute({
+const setSettingRoute = opsRoute({
   method: "post",
   path: "/api/settings/{name}",
   summary: "Set one rule, or send a null value to put the committed default back",
@@ -123,7 +114,6 @@ const setSettingRoute = createRoute({
   responses: {
     200: { description: "What it is now", ...json(SettingSchema) },
     400: errorResponse("invalid_request: the figure is outside what the rule allows, and fields names it"),
-    403: errorResponse("access_required"),
     422: errorResponse("figures_conflict: fields names a box, then the box its figure must reach"),
   },
 });

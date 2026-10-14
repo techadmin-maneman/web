@@ -1,7 +1,5 @@
 // A client disputing a no-show's charge on one of their visits (src/domain/no-shows/no-show-disputes.ts,
-// docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
-//
-//   POST /api/visits/:id/dispute   { reason }: once a charge; ops rule Refund or Uphold in the console
+// docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 //
 // Not behind SELF_SERVE_BOOKING: a charge can be disputed however the visit was booked.
 

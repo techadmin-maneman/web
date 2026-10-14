@@ -245,6 +245,23 @@ export type AuditActor = {
   readonly id: string;
 };
 
+/** Who writes a change, for which request, and when: what each change's audit entry names. */
+export interface Written {
+  readonly actor: AuditActor;
+  readonly requestId: string;
+  readonly now: Date;
+}
+
+/** A change made in the console: its audit entry, naming the record it changed, with IDs, counts and codes. */
+export function opsEntry(
+  written: Written,
+  action: AuditAction,
+  subject: { readonly kind: string; readonly id: string },
+  detail: AuditEntry["detail"] = {},
+): AuditEntry {
+  return { surface: "ops", actor: written.actor, action, subject, requestId: written.requestId, detail };
+}
+
 export interface AuditEntry {
   readonly surface: Surface;
   readonly actor: AuditActor;

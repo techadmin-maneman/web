@@ -1,11 +1,9 @@
-// Receipts against purchase orders, behind Access (docs/decisions/0167-receipts-and-landed-cost.md):
-//   POST /api/purchase-orders/{id}/receipts    what arrived of each line at the warehouse, its lot, what was damaged or
-//                                              failed its check, and the receipt's freight, duty and clearing
-//   POST /api/purchase-orders/{id}/close       an order part received closed short
+// Receipts against purchase orders, behind Access (docs/decisions/0167-receipts-and-landed-cost.md).
 //
 // Receiving with Operations ACT, closing with MANAGE. Each answers the whole of GET /api/purchase-orders.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { closeOrder } from "../../domain/purchasing/purchase-orders.ts";
 import { receiveOrder } from "../../domain/purchasing/receipts.ts";
 import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
@@ -46,7 +44,7 @@ const ReceiptSchema = z
   .strict()
   .openapi("PurchaseOrderReceipt");
 
-const receiptRoute = createRoute({
+const receiptRoute = opsRoute({
   method: "post",
   path: "/api/purchase-orders/{id}/receipts",
   summary: "What arrived of an order at the warehouse, with its lots and landed cost",
@@ -54,21 +52,20 @@ const receiptRoute = createRoute({
   responses: {
     200: ORDERS,
     400: errorResponse(
-      `invalid_request: fields names lines.N for a line not of the order or more than ${String(MAX_LABELLED)} pieces of a hair system, lines for nothing received, rupee_rate for none on an order in another currency, or id for no such order`,
+      `invalid_request: fields names lines.N for a line not of the order or more than ${String(MAX_LABELLED)} pieces of a hair system, lines for nothing received, or rupee_rate for none on an order in another currency`,
     ),
-    403: errorResponse("access_required"),
+    404: errorResponse("not_found: no such order"),
     409: errorResponse("order_state: the order is not sent or part received"),
   },
 });
 
-const closeRoute = createRoute({
+const closeRoute = opsRoute({
   method: "post",
   path: "/api/purchase-orders/{id}/close",
   summary: "An order part received closed short",
   request: orderPath,
   responses: {
     200: ORDERS,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such order"),
     409: errorResponse("order_state: the order is not part received"),
   },
@@ -97,6 +94,7 @@ export function registerOpsReceipts(app: App): void {
       written(c),
     );
     if (!received.ok) {
+      if ("missing" in received) return refuse(c, "not_found");
       return "state" in received ? refuse(c, "order_state") : refuse(c, "invalid_request", received.fields);
     }
     return c.json(await ordersAnswer(c), 200);

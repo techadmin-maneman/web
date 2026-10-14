@@ -1,21 +1,13 @@
 // The services clients book, behind Access (docs/decisions/0085-services-ops-can-edit.md): each kind of visit's
 // services, with every price each has had, is to have, and has now, and the two late fees beside their kinds.
 //
-//   GET  /api/services                            every service, offered or retired, and its dated prices
-//   POST /api/services                            a service added to a kind
-//   POST /api/services/{kind}/{tier}/name         renamed; its code, and so its prices, stay
-//   POST /api/services/{kind}/{tier}/description  the line clients read under its name
-//   POST /api/services/{kind}/{tier}/length       how long it is booked for, from now on
-//   POST /api/services/{kind}/order               a kind's services in another order
-//   POST /api/services/{kind}/{tier}/retire       no longer offered from a day, today or later
-//   POST /api/services/{kind}/{tier}/restore      offered again
-//
 // A kind is code, and so is what it decides: the technician's steps, the booking rules and the fees. Every change
 // here is audited in the same batch as the change itself (ADR 0031), and nothing already sold moves with it: a hold
 // keeps the service's price, late fee and length it was made with. Books' items follow the services at the hourly
 // item check (src/domain/books/books-items.ts).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { VISIT_BLOCKS } from "../../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
@@ -100,7 +92,6 @@ const ServicesSchema = z
 const answered = { description: "Every service as it now stands", ...json(ServicesSchema) };
 const refused = {
   400: errorResponse("invalid_request: fields names the box refused"),
-  403: errorResponse("access_required"),
   404: errorResponse("not_found: no service of that kind has that code"),
   409: errorResponse(
     "service_exists: another service has the name, or its kind the code (fields names which); last_of_kind: its " +
@@ -110,14 +101,14 @@ const refused = {
 
 const Path = z.object({ kind: Kind, tier: Tier });
 
-const servicesRoute = createRoute({
+const servicesRoute = opsRoute({
   method: "get",
   path: "/api/services",
   summary: "Every service, offered or retired, with every price it has had and is to have, and the late fees",
-  responses: { 200: answered, 403: errorResponse("access_required") },
+  responses: { 200: answered },
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/services",
   summary: "Add a service to a kind of visit. Clients see it once it has a price",
@@ -140,7 +131,7 @@ const addRoute = createRoute({
   responses: { 201: answered, ...refused },
 });
 
-const renameRoute = createRoute({
+const renameRoute = opsRoute({
   method: "post",
   path: "/api/services/{kind}/{tier}/name",
   summary: "Rename a service. Its code stays, and so do its prices and what was sold under them",
@@ -159,7 +150,7 @@ const renameRoute = createRoute({
   responses: { 200: answered, ...refused },
 });
 
-const describeRoute = createRoute({
+const describeRoute = opsRoute({
   method: "post",
   path: "/api/services/{kind}/{tier}/description",
   summary: "The line clients read under a service's name as they choose. An empty one clears it",
@@ -178,7 +169,7 @@ const describeRoute = createRoute({
   responses: { 200: answered, ...refused },
 });
 
-const lengthRoute = createRoute({
+const lengthRoute = opsRoute({
   method: "post",
   path: "/api/services/{kind}/{tier}/length",
   summary: "How long a service is booked for, from now on. A visit held or booked before keeps its own",
@@ -189,7 +180,7 @@ const lengthRoute = createRoute({
   responses: { 200: answered, ...refused },
 });
 
-const orderRoute = createRoute({
+const orderRoute = opsRoute({
   method: "post",
   path: "/api/services/{kind}/order",
   summary: "A kind's services in another order, as the console and the app list them",
@@ -210,7 +201,7 @@ const orderRoute = createRoute({
   responses: { 200: answered, ...refused },
 });
 
-const retireRoute = createRoute({
+const retireRoute = opsRoute({
   method: "post",
   path: "/api/services/{kind}/{tier}/retire",
   summary: "Stop offering a service from a day, today or later. Nothing already sold changes",
@@ -229,7 +220,7 @@ const retireRoute = createRoute({
   responses: { 200: answered, ...refused },
 });
 
-const restoreRoute = createRoute({
+const restoreRoute = opsRoute({
   method: "post",
   path: "/api/services/{kind}/{tier}/restore",
   summary: "Offer a retired service again, or take back a retirement still to come",

@@ -65,7 +65,6 @@ export const FOLDER_EDGES: readonly string[] = [
   "money -> booking",
   "money -> cities",
   "money -> clients",
-  "money -> inventory",
   "money -> messages",
   "money -> platform",
   "money -> privacy",

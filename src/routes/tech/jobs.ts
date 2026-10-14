@@ -1,23 +1,5 @@
 // The technician's day and the job they are on (src/policy/job-visibility.ts,
-// in-job-steps.ts, check-in.ts, no-show.ts):
-//
-//   GET  /api/tech/jobs?date=                    the day's jobs; today and tomorrow in full
-//   GET  /api/tech/jobs/:id                      one job, under the day-before unlock
-//   GET  /api/tech/jobs/:id/last-visit-photo     the client's last visit, after
-//   POST /api/tech/jobs/:id/checkin              I have arrived, with the geofence
-//   POST /api/tech/jobs/:id/start                start the job
-//   POST /api/tech/jobs/:id/photos/upload-url    a link to PUT one photograph to
-//   PUT  /api/tech/photos/:token                 the photograph itself
-//   PUT  /api/tech/photos/:token/small           its small copy, for the client app's rows
-//   POST /api/tech/jobs/:id/photos               the set is complete
-//   POST /api/tech/jobs/:id/checklist            the service checklist
-//   POST /api/tech/jobs/:id/consumables          what was used, with quantities
-//   POST /api/tech/jobs/:id/piece                the piece fitted, or the one that failed; on a one visit, the
-//                                                product chosen with it, or that the client decided against it
-//   POST /api/tech/jobs/:id/profile              the client's hair profile: the fit spec and their history
-//   POST /api/tech/jobs/:id/outcome              done, or partial with a reason; a one visit closed as done
-//                                                sends the client its payment link
-//   POST /api/tech/jobs/:id/no-show              refused before the wait ends
+// in-job-steps.ts, check-in.ts, no-show.ts).
 //
 // "Every write accepts the client-generated X-Client-Event-Id, which is
 // idempotent": a phone replaying its outbox lands each event once and gets the

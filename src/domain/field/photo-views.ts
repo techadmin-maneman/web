@@ -1,6 +1,5 @@
-// A member of staff opening a client's photographs: "a locked photograph view
-// that writes the audit entry before returning any URL"
-// (docs/prompts/phase2-backend.md; docs/decisions/0031-access-and-audit.md).
+// A member of staff opening a client's photographs, behind a locked view that writes its audit entry before it gives
+// any URL (docs/decisions/0031-access-and-audit.md): no one sees a client's photographs unrecorded.
 //
 // One opening is one entry in the audit log, written before any image leaves,
 // at the server's time. The images shown in that opening are then served for

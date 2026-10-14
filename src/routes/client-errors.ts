@@ -1,8 +1,5 @@
 // What goes wrong in the site and the client, ops and technician apps, as their pages report it
-// (packages/web-kit/client-errors.ts):
-//
-//   POST /api/client-errors   a script error, a promise nobody caught, a screen that could not draw, or a write the
-//                             technician app's outbox gave up on
+// (packages/web-kit/client-errors.ts).
 //
 // Each report is one `client_error` log line, redacted like every other; nothing is stored. No session is asked
 // for, since a page can fail before anyone signs in: the same-origin rule of every app surface keeps other sites

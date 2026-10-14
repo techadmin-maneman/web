@@ -1,8 +1,4 @@
-// What ops still have to do, behind Access (src/policy/tasks.ts):
-//   GET /api/tasks                        the groups of the caller's departments, their counts, how many have run
-//                                         over, and whose each task is; ?person= narrows it to one client
-//   PUT /api/tasks/:group/:id/owner       make a task a member of staff's, or nobody's
-//   POST /api/tasks/:group/:id/close      close a visit left partly done without a follow-up, with why
+// What ops still have to do, behind Access (src/policy/tasks.ts).
 //
 // A task is not a record. It is a row in a queue the database already keeps,
 // read at the moment ops look: a held grant, an undecided no-show, a number
@@ -19,7 +15,8 @@
 // its longest waits and no more, since past that the section that decides them
 // is the tool.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { staffMemberOf } from "../../http/audit.ts";
@@ -143,7 +140,7 @@ const TasksSchema = z
   .strict()
   .openapi("Tasks", { description: "Derived at read time from the queues themselves; there is no tasks table." });
 
-const tasksRoute = createRoute({
+const tasksRoute = opsRoute({
   method: "get",
   path: "/api/tasks",
   summary: "What ops still have to do, by group, the longest wait first",
@@ -168,7 +165,7 @@ const tasksRoute = createRoute({
 /** A task by its group and the id of the row it is read from, as the board names it. */
 const TaskParams = z.object({ group: z.enum(TASK_GROUPS), id: z.uuid() });
 
-const ownerRoute = createRoute({
+const ownerRoute = opsRoute({
   method: "put",
   path: "/api/tasks/{group}/{id}/owner",
   summary: "Make a task a member of staff's, or hand it back to nobody",
@@ -207,7 +204,7 @@ const ownerRoute = createRoute({
   },
 });
 
-const closeRoute = createRoute({
+const closeRoute = opsRoute({
   method: "post",
   path: "/api/tasks/{group}/{id}/close",
   summary: "Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed",

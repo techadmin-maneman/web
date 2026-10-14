@@ -113,9 +113,7 @@ function metered(run: CronRun): { run: CronRun; meter: MeteredDatabase } {
 function sharedInputs({ env, deps, log }: CronRun): () => Promise<OpsInputs> {
   let read: Promise<OpsInputs> | undefined;
   return () => {
-    read ??= readOpsInputs(env.DB, deps.now(), (error) => {
-      log.error("ops_settings_unreadable", { error });
-    });
+    read ??= readOpsInputs(env.DB, deps.now(), log);
     return read;
   };
 }

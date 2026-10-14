@@ -2,7 +2,7 @@
 // expand, deploy, then contract in a later release. A contract step (a drop,
 // rename or delete) must name the ADR that sequences it:
 //
-//   -- contract: docs/decisions/0042-drop-legacy-column.md
+//   -- contract: docs/decisions/<number>-<name>.md
 //
 // See docs/decisions/0006-deployment-pipeline.md.
 
@@ -130,7 +130,7 @@ function checkTriggers(file: MigrationFile): string[] {
 
 /**
  * A short header, no open point's number, no one environment's test data, and an estimate on a backfill of a whole
- * table: D1 stops a statement at 30 seconds, and the free plan allows 100,000 rows written a day (docs/migrations.md).
+ * table: D1 stops a statement at 30 seconds (docs/migrations.md).
  */
 function checkWriting(file: MigrationFile): string[] {
   const problems: string[] = [];

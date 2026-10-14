@@ -1,9 +1,7 @@
-// Offline spend, behind Access (Growth; docs/decisions/0150-spend.md):
-//   GET /api/spend                 the last thirteen months' entries, the latest first, with the cities to put them under
-//   POST /api/spend                a month's spend added, for a city or national, by channel
-//   POST /api/spend/:id/remove     an entry taken off the figures
+// Offline spend, behind Access (Growth; docs/decisions/0150-spend.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { addSpend, removeSpend, spendSince } from "../../domain/money/spend.ts";
 import { actorOf } from "../../http/audit.ts";
@@ -31,7 +29,7 @@ const SpendEntrySchema = z
   .strict()
   .openapi("SpendEntry");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/spend",
   summary: "The last thirteen months' offline spend, the latest month first",
@@ -51,11 +49,10 @@ const listRoute = createRoute({
           .openapi("SpendList"),
       ),
     },
-    403: errorResponse("access_required"),
   },
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/spend",
   summary: "Add a month's offline spend",
@@ -84,18 +81,16 @@ const addRoute = createRoute({
     400: errorResponse(
       "invalid_request: fields names month for one outside the list's months, or city for one we do not hold",
     ),
-    403: errorResponse("access_required"),
   },
 });
 
-const removeRoute = createRoute({
+const removeRoute = opsRoute({
   method: "post",
   path: "/api/spend/{id}/remove",
   summary: "Take an entry off the figures",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: { description: "Taken off", ...json(z.object({ ok: z.literal(true) }).strict()) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such entry on the figures"),
   },
 });

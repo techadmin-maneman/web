@@ -1,7 +1,8 @@
 // The price book in the console (./settings.ts): every price with the row in force marked, a price from the day it
 // applies, and a price still to come taken back, or taken back and set again.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import {
   correctPrice,
   PRICE_ITEMS,
@@ -42,7 +43,7 @@ const priceRefused = (requestId: string, refusal: PriceRefusal) =>
     ? errorBody("service_retired", requestId, [refusal.field])
     : errorBody("invalid_request", requestId, [refusal.field]);
 
-const pricesRoute = createRoute({
+const pricesRoute = opsRoute({
   method: "get",
   path: "/api/prices",
   summary: "The price book: every price, past, present and scheduled",
@@ -60,11 +61,10 @@ const pricesRoute = createRoute({
           .strict(),
       ),
     },
-    403: errorResponse("access_required"),
   },
 });
 
-const setPriceRoute = createRoute({
+const setPriceRoute = opsRoute({
   method: "post",
   path: "/api/prices",
   summary: "A price from the date it applies, tomorrow at the earliest. A change is a new row, so nothing sold moves",
@@ -77,11 +77,10 @@ const setPriceRoute = createRoute({
       "invalid_request: fields names what was refused, valid_from when it is before tomorrow, tier where no service " +
         "of the kind has it; service_retired: the service is retired by the day it would apply from",
     ),
-    403: errorResponse("access_required"),
   },
 });
 
-const correctPriceRoute = createRoute({
+const correctPriceRoute = opsRoute({
   method: "post",
   path: "/api/prices/correct",
   summary: "Correct a price still to come: take it back and set its replacement, from tomorrow or later, at once",
@@ -105,12 +104,11 @@ const correctPriceRoute = createRoute({
       "invalid_request: fields names what was refused, was_valid_from when that row applies today or applied " +
         "before; service_retired: the service is retired by the new day",
     ),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: the book holds no such row to correct"),
   },
 });
 
-const withdrawPriceRoute = createRoute({
+const withdrawPriceRoute = opsRoute({
   method: "post",
   path: "/api/prices/withdraw",
   summary: "Take back a price still to come. The one in force and the spent ones stay: an invoice may stand on them",
@@ -128,7 +126,6 @@ const withdrawPriceRoute = createRoute({
   responses: {
     200: bookAnswer,
     400: errorResponse("invalid_request: fields names valid_from when the row applies today or applied before"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: the book holds no such row"),
   },
 });

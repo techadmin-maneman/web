@@ -13,7 +13,7 @@ import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import type { LeadAttribution } from "../leads/leads.ts";
 import { hasAskedForAVisit } from "../referrals/referrals.ts";
 import { formPerson, personWithMobile } from "./form-person.ts";
-import { type FormRequest, type Refusal, recordLead } from "./public-booking.ts";
+import { type FormRefusalCode, type FormRequest, type Refusal, recordLead } from "./public-booking.ts";
 
 interface LeadRequest {
   readonly name: string;
@@ -46,7 +46,7 @@ async function leadOwed(db: D1Database, knownId: string | null, now: Date): Prom
 export async function leaveNameAndNumber(
   form: FormRequest,
   request: LeadRequest,
-): Promise<{ readonly ok: true } | Refusal<400 | 403 | 429 | 503>> {
+): Promise<{ readonly ok: true } | Refusal<FormRefusalCode>> {
   const checked = await form.checkPerson(request.mobile, request.turnstileToken, request.name);
   if (!checked.ok) return checked;
   const { db, now } = form;

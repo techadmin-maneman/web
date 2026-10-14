@@ -1,14 +1,6 @@
 // The client's profile, on the client surface (docs/decisions/0042-client-profile.md). The profile and a deletion
 // request are here; each other section has its file beside it: the address (./address.ts), the consents
 // (./consents.ts) and a number change (./number-change.ts).
-//   GET   /api/profile
-//   POST  /api/address/suggestions     buildings matching what is typed so far
-//   PATCH /api/profile/address
-//   PATCH /api/consents/:purpose
-//   POST  /api/number-change          a code to each number
-//   DELETE /api/number-change         the client withdraws it, before ops decide
-//   POST  /api/number-change/verify   one number's code; with both, the change waits for ops
-//   POST  /api/deletion-request
 // Each consent switch is audited in the same batch as the switch, and a switch
 // to the state a purpose already holds writes neither a ledger row (ADR 0058)
 // nor an audit entry. A number change or deletion request is audited as it is

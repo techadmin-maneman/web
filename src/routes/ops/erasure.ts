@@ -1,11 +1,12 @@
 // POST /api/clients/:id/erasure: ops erase a client the day they ask, from the client's page
 // (docs/decisions/0019-erasure.md). A request the client made in their app is decided in Deletion requests instead
-// (src/routes/ops-profile.ts); both erase through eraseAndQueue, audited under the member of staff who did it, and
+// (src/routes/ops/profile.ts); both erase through eraseAndQueue, audited under the member of staff who did it, and
 // keep to the caller's cities. Refused while the client has a visit or booking still to happen, a payment held or a
 // payment link unpaid, unless ops say they will settle it by hand today
 // (docs/decisions/0066-erasure-all-or-nothing.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import type { AuditEntry } from "../../domain/platform/audit.ts";
@@ -115,7 +116,7 @@ const ErasedSchema = z
   .strict()
   .openapi("Erased");
 
-const erasureRoute = createRoute({
+const erasureRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/erasure",
   summary: "Erase a client now: their photographs and details. The CRM and Books follow within minutes",

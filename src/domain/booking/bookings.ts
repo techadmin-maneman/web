@@ -268,7 +268,10 @@ async function releaseLease(db: D1Database, holdId: string): Promise<void> {
   await db.prepare("UPDATE slot_holds SET booking_until = NULL WHERE id = ?1").bind(holdId).run();
 }
 
-/** Books a new visit: its row is written in the booking's own batch. */
+/**
+ * Books a new visit: its row is written in the booking's own batch. A hold whose technician was switched off since is
+ * booked unassigned, for ops to give to someone on the board, and they are told.
+ */
 async function bookNewVisit(db: D1Database, hold: HoldRow, now: Date, options: ConfirmOptions): Promise<Confirmed> {
   const visitId = crypto.randomUUID();
   const row = await newVisit(db, hold, visitId, now);
@@ -288,7 +291,8 @@ async function newVisit(db: D1Database, hold: HoldRow, visitId: string, now: Dat
     .prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, tier, window_start, window_end, technician_id, status,
          service_city, service_pincode, synced_at, first_seen_at, one_visit, asked_checked_at, asked_window)
-       SELECT ?1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, 'scheduled', ?8, ?9, ?10, ?10, ?11, ?10,
+       SELECT ?1, ?1, ?2, ?3, ?4, ?5, ?6, (SELECT id FROM technicians WHERE id = ?7 AND active = 1), 'scheduled', ?8,
+         ?9, ?10, ?10, ?11, ?10,
          (SELECT r.requested_window FROM consultation_requests r
            WHERE r.person_id = ?2 AND ?3 = 'consultation' ORDER BY r.created_at DESC LIMIT 1)
        WHERE EXISTS (SELECT 1 FROM slot_holds WHERE id = ?12 AND state = 'held')`,
@@ -357,7 +361,18 @@ async function writeNewBooking({
   const booked = await bookingHoldRow(db, hold.id);
   if (booked === null) return;
   await alertIfNoCreditPaid(db, booked, options);
+  await alertIfUnassigned(booked, visit.id, options);
   await afterBooked(db, booked, now, options);
+}
+
+/** A visit this booking wrote with no technician, the one it was held with switched off since: ops give it out. */
+async function alertIfUnassigned(booked: HoldRow, visitId: string, options: ConfirmOptions): Promise<void> {
+  if (booked.appointment_id !== visitId || booked.technician_active === 1) return;
+  await options.alertOnce?.({
+    key: `booked_unassigned:${visitId}`,
+    message: `A visit booked for ${booked.date} has no technician: the one it was held with was switched off. Give it to someone on the board.`,
+    link: "/dispatch",
+  });
 }
 
 /**

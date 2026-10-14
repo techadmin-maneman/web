@@ -1,6 +1,6 @@
 // The technician's photographs (docs/decisions/0028-photographs-from-the-app.md).
 //
-// "Captured in our app, stored in mm-{env}-client-photos." The bytes come
+// Photographs are taken in our app and kept in mm-{env}-client-photos. The bytes come
 // through this API, never straight to R2, and one visit's photographs are one
 // set under the visit's prefix.
 //

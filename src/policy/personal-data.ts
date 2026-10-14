@@ -123,7 +123,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     ],
     whyLeftOut:
       "Our and FSM's keys, when each visit was last checked against FSM and Books, and ops letting the technician " +
-      "check in past the geofence, which is about his arrival. The technician is given by name.",
+      "check in past the geofence, which is about their arrival. The technician is given by name.",
     erasure: {
       blanks: ["client_note", "client_note_at"],
       why: "The visits stay, as the record of the service and its invoice; the client's notes to the technician go.",

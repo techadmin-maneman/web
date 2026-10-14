@@ -1,8 +1,6 @@
 // What a referral earns now, as ops set it in the console (docs/decisions/0107-referral-rewards-in-the-console.md).
 // mm-site's Worker writes it into the invite's page and /book, as it writes the prices, and the landing's island
 // asks for it itself where the Worker could not (docs/decisions/0073-prices-from-the-price-book.md).
-//
-//   GET /api/referral-reward    each side's free service visits and how long they last
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";

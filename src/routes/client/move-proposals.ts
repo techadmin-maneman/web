@@ -1,7 +1,5 @@
 // A client accepting the move to another day ops asked of them (src/domain/dispatch/move-proposals.ts,
-// docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md):
-//
-//   POST /api/visits/:id/proposed-move/accept   the visit moves where the proposal puts it, its checks run again
+// docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
 //
 // The proposal itself is the visit's proposed_move, on Home and on Visits. Picking another time instead is the
 // client's own move (POST /api/holds with moving), which makes the proposal moot.

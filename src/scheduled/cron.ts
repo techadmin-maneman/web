@@ -46,7 +46,7 @@ import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { MeteredDatabase } from "../lib/d1-meter.ts";
 import type { Logger } from "../log.ts";
-import { enqueue, enqueueBatch } from "../domain/platform/enqueue.ts";
+import { enqueueBatch, notifyMessage } from "../domain/platform/enqueue.ts";
 import { analyticsJob } from "./analytics.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
@@ -186,8 +186,7 @@ async function queueMessages(
 /** Holds paid for, or booked free, whose request failed before they were booked: booked here half an hour on. */
 async function unbookedHoldsJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const notify = (messageId: string) => {
-    const body = { message_id: messageId, request_id: "unbooked-holds" } satisfies MessagingMessage;
-    return enqueue(env.MESSAGE_QUEUE, body, { log, ifLost: "sweeper" });
+    return notifyMessage(env.MESSAGE_QUEUE, { id: messageId, requestId: "unbooked-holds" }, log);
   };
   const pass = { ...deps, notify, budget, log };
   const booked = await bookUnbookedHolds(env.DB, pass, deps.now());
@@ -350,8 +349,8 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
 const youcamUnitsJob = (context: CronContext) => checkYoucamUnits(context, context.config.settings.tryon.unitFloor);
 
 /**
- * Every job, and when it runs (src/scheduled/schedule.ts). Minutes by their place in the five: 1 the WhatsApp bridge, 2 the try-ons and the heartbeat, 3 the holds and Books, 4 the hourly jobs. A run's jobs
- * run in this order.
+ * Every job, and when it runs (src/scheduled/schedule.ts): every `every` minutes, at minute `at` of each such stretch.
+ * The jobs a minute calls run in this order.
  */
 export const CRON_JOBS: readonly CronJob[] = [
   // Every five minutes. Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).
@@ -385,14 +384,15 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "youcam_units", needs: "nothing", every: 60, at: 14, run: youcamUnitsJob },
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
-  // The stock, a step a job, so one that throws stops none of the others; the morning's from 9 am in India.
+  // The stock, a step a job, so one that throws stops none of the others, each in a minute no other job of five or
+  // fifteen minutes runs in, the forecast, the heaviest, alone in its own; the morning's from 9 am in India.
   { name: "stock_risks", needs: "nothing", every: 60, at: 44, run: stockRisksJob },
-  { name: "forecast_accuracy", needs: "nothing", every: 60, at: 44, run: forecastAccuracyJob },
-  { name: "forecast", needs: "nothing", every: 60, at: 44, run: forecastJob },
-  { name: "kit_check", needs: "nothing", every: 60, at: 44, run: kitCheckJob },
-  { name: "cycle_counts", needs: "nothing", every: 60, at: 44, slot: { hour: 9 }, run: cycleCountsJob },
-  { name: "expiring_stock", needs: "nothing", every: 60, at: 44, slot: { hour: 9 }, run: expiringStockJob },
-  { name: "overdue_transfers", needs: "nothing", every: 60, at: 44, slot: { hour: 9 }, run: overdueTransfersJob },
+  { name: "forecast_accuracy", needs: "nothing", every: 60, at: 30, run: forecastAccuracyJob },
+  { name: "forecast", needs: "nothing", every: 60, at: 40, run: forecastJob },
+  { name: "kit_check", needs: "nothing", every: 60, at: 35, run: kitCheckJob },
+  { name: "cycle_counts", needs: "nothing", every: 60, at: 45, slot: { hour: 9 }, run: cycleCountsJob },
+  { name: "expiring_stock", needs: "nothing", every: 60, at: 55, slot: { hour: 9 }, run: expiringStockJob },
+  { name: "overdue_transfers", needs: "nothing", every: 60, at: 25, slot: { hour: 9 }, run: overdueTransfersJob },
   { name: "missed_jobs", needs: "nothing", every: 60, at: 34, run: missedJobsJob },
   // The grievances raised in the hour, in one message, so one client cannot flood the chat.
   { name: "grievance_alerts", needs: "nothing", every: 60, at: 24, run: grievanceAlertsJob },

@@ -1,14 +1,10 @@
-// Custom orders, on the client's page in the console (docs/decisions/0174-custom-orders.md):
-//   GET  /api/clients/{id}/custom-orders       the client's custom orders, and the suppliers one may be raised with
-//   POST /api/clients/{id}/custom-orders       a custom order raised to their profile, and its payment link sent
-//   POST /api/custom-orders/{id}/send-link     the link sent again, where it could not be made
-//   POST /api/custom-orders/{id}/cancel        an order not yet paid, cancelled, and its link with it
-//   POST /api/custom-orders/{id}/refund        a paid order refunded in full, where its reason holds
+// Custom orders, on the client's page in the console (docs/decisions/0174-custom-orders.md).
 //
 // Within the reader's places, as the client's page is: reading with Customer care VIEW, refunding with MANAGE, the rest
 // with ACT. Each write answers the client's whole list.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import {
   cancelCustomOrder,
@@ -26,7 +22,7 @@ import { json } from "../../http/openapi.ts";
 import { clientInReach } from "../../http/staff-access.ts";
 import { WAVES } from "../../policy/hair-profile.ts";
 import { MAX_NOTE } from "../../config/consumables.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import { paymentsTab } from "../../domain/platform/alerts.ts";
 
 const Note = z
@@ -35,8 +31,6 @@ const Note = z
   .min(1)
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const OrderSchema = z.object({
   id: z.string(),
@@ -79,7 +73,7 @@ const orderPath = { params: z.object({ id: z.string().min(1).max(64) }) };
 const ACCESS = errorResponse("access_required");
 const MISSING = errorResponse("not_found: no such client, or custom order, within the reader's places");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/clients/{id}/custom-orders",
   summary: "The client's custom orders, and the suppliers one may be raised with",
@@ -87,7 +81,7 @@ const listRoute = createRoute({
   responses: { 200: ORDERS, 403: ACCESS, 404: MISSING },
 });
 
-const raiseRoute = createRoute({
+const raiseRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/custom-orders",
   summary: "A custom order raised to the client's profile, and its payment link sent",
@@ -128,7 +122,7 @@ const raiseRoute = createRoute({
 });
 
 const stepRoute = (step: "send-link" | "cancel", summary: string) =>
-  createRoute({
+  opsRoute({
     method: "post",
     path: `/api/custom-orders/{id}/${step}`,
     summary,
@@ -190,7 +184,7 @@ async function reachedOrder(c: Context<AppEnv>, id: string): Promise<CustomOrder
   return order;
 }
 
-const refundRoute = createRoute({
+const refundRoute = opsRoute({
   method: "post",
   path: "/api/custom-orders/{id}/refund",
   summary: "A paid custom order refunded in full: not yet ordered, late past the grace, or failed its check",

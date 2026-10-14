@@ -1,9 +1,7 @@
-// Partners' monthly statements, behind Access (Finance; docs/decisions/0124-partner-statements.md):
-//   GET  /api/partner-statements?month=YYYY-MM                each partner's month, and what each is owed
-//   POST /api/partner-statements/:id/payouts                  record a month's payment to a partner
-//   POST /api/partner-statements/:id/payouts/:month/delete    take off a payment recorded by mistake
+// Partners' monthly statements, behind Access (Finance; docs/decisions/0124-partner-statements.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -74,7 +72,7 @@ const StatementsSchema = z
 const ok = { description: "The month's statements, as they now stand", ...json(StatementsSchema) };
 const Id = z.object({ id: z.uuid() });
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/partner-statements",
   summary: "Each partner's month, and what each is owed",
@@ -83,10 +81,10 @@ const listRoute = createRoute({
       month: Month.optional().openapi({ description: "Last month, the one to pay, when left out." }),
     }),
   },
-  responses: { 200: ok, 400: errorResponse("invalid_request"), 403: errorResponse("access_required") },
+  responses: { 200: ok, 400: errorResponse("invalid_request") },
 });
 
-const recordRoute = createRoute({
+const recordRoute = opsRoute({
   method: "post",
   path: "/api/partner-statements/{id}/payouts",
   summary: "Record a month's payment to a partner, made from the payout tool",
@@ -110,18 +108,17 @@ const recordRoute = createRoute({
   responses: {
     200: ok,
     400: errorResponse("invalid_request: fields names month (one that has ended), amount, paid_on or reference"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found"),
     409: errorResponse("taken: the month's payment is already recorded"),
   },
 });
 
-const deleteRoute = createRoute({
+const deleteRoute = opsRoute({
   method: "post",
   path: "/api/partner-statements/{id}/payouts/{month}/delete",
   summary: "Take off a payment recorded by mistake; the month is owed again",
   request: { params: Id.extend({ month: Month }) },
-  responses: { 200: ok, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
+  responses: { 200: ok, 404: errorResponse("not_found") },
 });
 
 export function registerOpsPartnerStatements(app: App): void {

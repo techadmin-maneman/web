@@ -1,5 +1,4 @@
-// The ops console's task queue (docs/prompts/phase2-backend.md, "Endpoints" and
-// "Pieces tab"): its groups, and how long a task may wait.
+// The ops console's task queue: its groups, and how long a task may wait.
 //
 // There is no `tasks` table and there is not going to be one. Every group below
 // is a queue the database already keeps: a consultation asked for, a held grant,
@@ -15,7 +14,7 @@
 // owner ruled; queues the board does not draw do have one. What is built and
 // what is not is open point 61 of docs/open-points.md.
 //
-// A draft invoice is ours, not the prompt's (docs/decisions/0067-alerts-and-silent-failures.md):
+// A draft invoice (docs/decisions/0067-alerts-and-silent-failures.md):
 // a finished visit whose invoice is still a draft in Books, which the client
 // cannot open until somebody sends it, including one held back because it does
 // not total what the visit was sold for, or a credit paid for the visit
@@ -56,8 +55,7 @@
 // them, or that could not be sent (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md): it is paid for at
 // the visit, so one unpaid after it is owed, and ops follow it up.
 //
-// A visit left partly done is the prompt's own: "Partial reasons. …
-// ops need the full set because these drive the task queue." It waits with the
+// A visit left partly done waits with the
 // technician's reason until the client has another visit booked after it to
 // finish what was left. A no-show is its own outcome, and its own group.
 //

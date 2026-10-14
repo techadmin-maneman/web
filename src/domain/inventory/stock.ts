@@ -25,7 +25,7 @@
 // src/domain/inventory/stock-view.ts.
 
 import { countDifference } from "../../policy/stock.ts";
-import { auditStatement, auditStatementIfWritten, type AuditActor } from "../platform/audit.ts";
+import { auditStatement, auditStatementIfWritten, type Written, opsEntry } from "../platform/audit.ts";
 import { lotMoves, receivedLotMoves, type ReceivedLot } from "./stock-lots.ts";
 import { placeById, WAREHOUSE, type Place, type PlaceKind } from "./stock-places.ts";
 import { hairSystemProduct, MAX_LABELLED, newUnits, takenFrom, unitChanges } from "./stock-units.ts";
@@ -35,11 +35,7 @@ export const MOVEMENT_REASONS = ["received", "transferred", "used", "counted", "
 export type Reason = (typeof MOVEMENT_REASONS)[number];
 
 /** What ops write, with who and why, so every movement lands with its audit entry. */
-export interface Written {
-  readonly actor: AuditActor;
-  readonly requestId: string;
-  readonly now: Date;
-}
+export type { Written };
 
 /** A movement written, or the fields refused. `lowered` names the places whose stock went down. */
 export type Moved =
@@ -444,14 +440,7 @@ function entry(
   written: Written,
   detail: Record<string, string | number>,
 ) {
-  return {
-    surface: "ops" as const,
-    actor: written.actor,
-    action,
-    subject: { kind: "consumable", id: code },
-    requestId: written.requestId,
-    detail,
-  };
+  return opsEntry(written, action, { kind: "consumable", id: code }, detail);
 }
 
 export { tellOfLowStock } from "./low-stock.ts";

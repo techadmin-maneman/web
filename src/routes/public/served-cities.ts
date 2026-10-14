@@ -1,7 +1,5 @@
 // The cities the site says it comes to: each with a pincode ops serve, in the console's order. mm-site's Worker
 // writes them into the home page's answer and the areas page, so a launch reaches the site without a rebuild.
-//
-//   GET /api/served-cities    the cities served today
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";

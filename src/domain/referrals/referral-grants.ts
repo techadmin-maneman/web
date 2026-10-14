@@ -234,7 +234,7 @@ export const FIRST_FIT_COUNTS = `(a.one_visit IS NULL OR a.nothing_owed_at IS NO
 
 // Each referral with its friend's first fit done.
 // CROSS JOIN keeps the referrals as the outer loop. Left to itself, SQLite walks every visit ever made to
-// save sorting the few pending referrals, and the five-minute cron would read them all on each run.
+// save sorting the few pending referrals, and the cron would read them all on each run.
 const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased_at AS referrer_erased,
     r.referred_person_id, fp.name AS friend_name, fp.erased_at AS friend_erased, a.id AS first_fit_id,
     a.window_start, r.via, pin.launched_at, r.referrer_visits, r.friend_visits, r.credit_valid_days, ${FIRST_FIT_COUNTS} AS paid

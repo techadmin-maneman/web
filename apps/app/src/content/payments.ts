@@ -132,7 +132,6 @@ export const payments = {
   /** Said to a screen reader only, since a document opens outside the app. */
   newTab: "PDF, opens in a new tab",
   receipt: "Receipt",
-  voucher: "Refund voucher",
   /**
    * The documents' line for a document not yet raised. An invoice is raised once the visit is done, so what it says
    * depends on when that was (ADR 0056). Our words: every line but the invoice's first.
@@ -141,9 +140,7 @@ export const payments = {
     invoice: "The invoice is still generating. Usually ready within the hour.",
     invoiceAfterVisit: "The tax invoice is raised once the visit is done.",
     invoiceLate: "The invoice is taking longer than it should.",
-    // Receipts and vouchers wait for the invoicing route (docs/open-points.md, item 3).
     receipt: "The receipt isn’t ready yet.",
-    voucher: "The refund voucher isn’t ready yet.",
     notify: "Ask us for it",
   },
 } as const;

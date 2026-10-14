@@ -1,8 +1,7 @@
-// A chat from a number we don't know, behind Access (Customer Care Act; docs/decisions/0138-strangers-in-the-inbox.md):
-//   POST /api/conversations/:id/link   the chat linked to the client it turns out to be
-//   POST /api/conversations/:id/save   the person saved as someone new, by the name they gave, and their WhatsApp lead
+// A chat from a number we don't know, behind Access (Customer Care Act; docs/decisions/0138-strangers-in-the-inbox.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -16,7 +15,7 @@ import { enqueue } from "../../domain/platform/enqueue.ts";
 const Id = z.object({ id: z.uuid() });
 const linked = errorResponse("invalid_request: fields names conversation when the chat is a client's already");
 
-const linkRoute = createRoute({
+const linkRoute = opsRoute({
   method: "post",
   path: "/api/conversations/{id}/link",
   summary: "Link a chat from a number we don't know to the client it turns out to be",
@@ -27,12 +26,11 @@ const linkRoute = createRoute({
   responses: {
     200: { description: "Linked", ...json(z.object({ person_id: z.uuid() }).strict()) },
     400: linked,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such chat, or no such client"),
   },
 });
 
-const saveRoute = createRoute({
+const saveRoute = opsRoute({
   method: "post",
   path: "/api/conversations/{id}/save",
   summary: "Save the person behind a chat from a number we don't know as someone new, and their WhatsApp lead",
@@ -57,7 +55,6 @@ const saveRoute = createRoute({
   responses: {
     200: { description: "Saved", ...json(z.object({ person_id: z.uuid() }).strict()) },
     400: linked,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such chat"),
     409: errorResponse("number_in_use: one of our people has this number already; link the chat to them"),
   },

@@ -1,13 +1,8 @@
 // The Care team's days off, behind Access (Customer Care Manage; docs/decisions/0134-care-cover.md):
-//   POST /api/care-team/days-off           a member's weekly days off, replaced whole
-//   POST /api/care-team/leave              leave for a member, from one date to another
-//   POST /api/care-team/leave/:id/delete   leave taken back
-//   POST /api/care-team/name               the first name a member is known by to clients (docs/decisions/0136-care-names.md)
-//   POST /api/care-team/shift              the caller on shift or off it, as they mark it (docs/decisions/0139-care-shifts.md)
-//   POST /api/care-team/move-all           every client of one member moved to another (docs/decisions/0142-moving-every-client.md)
 // The team as it stands, with who covers whom today, is GET /api/care-team (./care-people.ts).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -21,7 +16,7 @@ const DATE = z.iso.date();
 const done = { description: "Done", ...json(z.object({ ok: z.literal(true) }).strict()) };
 const notCare = errorResponse("invalid_request: fields names email when it is not one of the Care team");
 
-const daysOffRoute = createRoute({
+const daysOffRoute = opsRoute({
   method: "post",
   path: "/api/care-team/days-off",
   summary: "A Care team member's weekly days off, replaced whole",
@@ -36,10 +31,10 @@ const daysOffRoute = createRoute({
       ),
     },
   },
-  responses: { 200: done, 400: notCare, 403: errorResponse("access_required") },
+  responses: { 200: done, 400: notCare },
 });
 
-const leaveRoute = createRoute({
+const leaveRoute = opsRoute({
   method: "post",
   path: "/api/care-team/leave",
   summary: "Leave for a Care team member, from one India date to another, both included",
@@ -54,19 +49,18 @@ const leaveRoute = createRoute({
     400: errorResponse(
       "invalid_request: fields names email when it is not one of the Care team, and to when it is before from or today",
     ),
-    403: errorResponse("access_required"),
   },
 });
 
-const deleteRoute = createRoute({
+const deleteRoute = opsRoute({
   method: "post",
   path: "/api/care-team/leave/{id}/delete",
   summary: "Leave taken back",
   request: { params: z.object({ id: z.uuid() }) },
-  responses: { 200: done, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
+  responses: { 200: done, 404: errorResponse("not_found") },
 });
 
-const nameRoute = createRoute({
+const nameRoute = opsRoute({
   method: "post",
   path: "/api/care-team/name",
   summary: "The first name a Care team member is known by to clients, as their Support card shows it",
@@ -81,10 +75,10 @@ const nameRoute = createRoute({
       ),
     },
   },
-  responses: { 200: done, 400: notCare, 403: errorResponse("access_required") },
+  responses: { 200: done, 400: notCare },
 });
 
-const shiftRoute = createRoute({
+const shiftRoute = opsRoute({
   method: "post",
   path: "/api/care-team/shift",
   summary: "Go on shift, or off it: the caller, as a member of the Care team",
@@ -92,11 +86,10 @@ const shiftRoute = createRoute({
   responses: {
     200: done,
     400: errorResponse("invalid_request: fields names on when the caller is not one of the Care team"),
-    403: errorResponse("access_required"),
   },
 });
 
-const moveAllRoute = createRoute({
+const moveAllRoute = opsRoute({
   method: "post",
   path: "/api/care-team/move-all",
   summary: "Move every client of one member to another of the Care team, as when someone leaves",
@@ -109,7 +102,6 @@ const moveAllRoute = createRoute({
   responses: {
     200: { description: "How many moved", ...json(z.object({ moved: z.number().int() }).strict()) },
     400: errorResponse("invalid_request: fields names to when it is not one of the Care team, or the same as from"),
-    403: errorResponse("access_required"),
   },
 });
 

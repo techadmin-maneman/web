@@ -1,9 +1,4 @@
-// Logging in to the client app with a one-time code (docs/decisions/0030-one-time-codes.md):
-//   POST /api/auth/otp          a code on WhatsApp to a number
-//   POST /api/auth/otp/resend   a fresh code on WhatsApp, 30 seconds after the last
-//   POST /api/auth/otp/sms      a fresh code by SMS instead, 30 seconds after the first
-//   POST /api/auth/verify       the code, for a session
-//   POST /api/auth/logout
+// Logging in to the client app with a one-time code (docs/decisions/0030-one-time-codes.md).
 //
 // Every answer is the same whether or not the number has a booking, and takes
 // the same time: a number without one gets a challenge that sends nothing and

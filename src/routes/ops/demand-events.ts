@@ -1,14 +1,12 @@
-// The events calendar, behind Access (docs/decisions/0182-the-events-calendar.md):
-//   GET  /api/demand-events                the events still to end, and the cities one may be set in
-//   POST /api/demand-events                an event added: a name, a city or every city, its days, and its lift
-//   POST /api/demand-events/{id}/remove    an event taken off
+// The events calendar, behind Access (docs/decisions/0182-the-events-calendar.md).
 //
 // Read with Operations VIEW, changed with MANAGE. Each write answers the whole of GET's answer.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { addEvent, removeEvent, upcomingEvents } from "../../domain/purchasing/demand-events.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -29,14 +27,14 @@ const EVENTS = {
 };
 const ACCESS = errorResponse("access_required");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/demand-events",
   summary: "The events still to end, and the cities one may be set in",
   responses: { 200: EVENTS, 403: ACCESS },
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/demand-events",
   summary: "An event added to the calendar",
@@ -64,15 +62,13 @@ const addRoute = createRoute({
   },
 });
 
-const removeRoute = createRoute({
+const removeRoute = opsRoute({
   method: "post",
   path: "/api/demand-events/{id}/remove",
   summary: "An event taken off the calendar",
   request: { params: z.object({ id: z.string().min(1).max(64) }) },
   responses: { 200: EVENTS, 403: ACCESS, 404: errorResponse("not_found: no such event on the calendar") },
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 async function eventsAnswer(c: Context<AppEnv>) {
   const [events, cities] = await Promise.all([

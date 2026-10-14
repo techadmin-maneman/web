@@ -27,10 +27,9 @@ import { failJob, loadJob, type JobRow } from "../domain/try-on/tryon.ts";
 import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
 import type { Logger } from "../log.ts";
 import type { DownloadResult, RenderFailure } from "../providers/image/index.ts";
-import { enqueue } from "../domain/platform/enqueue.ts";
+import { notifyMessage } from "../domain/platform/enqueue.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
 import { TRYON_PAUSED_KEYS } from "../policy/alerts.ts";
-import { type MessagingMessage } from "../config/pipeline.ts";
 import { DONE, runConsumer, type Settle } from "./consumer.ts";
 
 const RenderMessageSchema = z.object({ job_id: z.uuid(), request_id: z.string() });
@@ -348,8 +347,7 @@ async function storeResult(
   if (from === "downloading") await Promise.all(Object.values(TRYON_PAUSED_KEYS).map((key) => deps.resolveAlert(key)));
 
   for (const row of (queued?.results ?? []) as { id: string }[]) {
-    const body = { message_id: row.id, request_id: job.request_id } satisfies MessagingMessage;
-    await enqueue(env.MESSAGE_QUEUE, body, { log, ifLost: "sweeper" });
+    await notifyMessage(env.MESSAGE_QUEUE, { id: row.id, requestId: job.request_id }, log);
   }
   return DONE;
 }

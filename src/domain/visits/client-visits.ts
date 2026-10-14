@@ -1,5 +1,5 @@
 // A client's visits and photographs, read for the client
-// app (docs/prompts/phase2-backend.md, "Read endpoints"). Only the signed-in
+// app. Only the signed-in
 // client's own rows are ever read; a visit or photograph of anyone else is
 // "not found".
 
@@ -24,7 +24,7 @@ import { MINUTE_MS, minutesBetween } from "../../lib/durations.ts";
 import { PAYMENT_HELD, statusIn } from "../../config/statuses.ts";
 import { creditSpentOn } from "./visit-facts.ts";
 
-/** The three windows the client app offers (docs/prompts/phase2-frontend.md), by the hour a visit starts in India. */
+/** The three windows the client app offers, by the hour a visit starts in India. */
 type VisitWindowLabel = "morning" | "afternoon" | "evening";
 
 /** A photograph's link lasts this long; the app asks again for a fresh one. */

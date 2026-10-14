@@ -2,7 +2,8 @@
 // which pincodes we go to and what their areas are called; and a pincode added unserved. Serving a pincode
 // launches it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { addPincode, serviceArea, setServiceArea } from "../../domain/clients/service-area.ts";
 import { listCities } from "../../domain/cities/cities.ts";
 import { actorOf } from "../../http/audit.ts";
@@ -35,7 +36,7 @@ const AreaSchema = z
   .strict()
   .openapi("ServedPincode");
 
-const serviceAreaRoute = createRoute({
+const serviceAreaRoute = opsRoute({
   method: "get",
   path: "/api/service-area",
   summary: "Every pincode we hold, its city, and whether a technician goes there",
@@ -51,11 +52,10 @@ const serviceAreaRoute = createRoute({
           .strict(),
       ),
     },
-    403: errorResponse("access_required"),
   },
 });
 
-const addPincodeRoute = createRoute({
+const addPincodeRoute = opsRoute({
   method: "post",
   path: "/api/pincodes",
   summary: "Add a pincode the service area does not hold, unserved, in one of our cities",
@@ -82,7 +82,7 @@ const addPincodeRoute = createRoute({
   },
 });
 
-const setServiceAreaRoute = createRoute({
+const setServiceAreaRoute = opsRoute({
   method: "post",
   path: "/api/service-area",
   summary: "Which pincodes we go to, and from when. Only the pincodes named change",
@@ -133,7 +133,6 @@ const setServiceAreaRoute = createRoute({
       "invalid_request: fields names a pincode we do not hold. launch_in_future: fields names a pincode it would " +
         "serve from a day still to come. no_service_area: it would leave none served",
     ),
-    403: errorResponse("access_required"),
     409: errorResponse(
       "no_technician: fields names a pincode it would begin serving in a city no active technician works in",
     ),

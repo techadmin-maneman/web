@@ -1,31 +1,15 @@
-// The messaging consumer: the WhatsApp provider's caller for every message but
-// a login code, which src/http/send-code.ts hands to the provider itself once
-// the response has gone, never through this queue (ADR 0030), and the word that
-// an account is deleted, which goes the same way to a number the erasure has
-// just blanked (src/routes/ops/profile.ts). It sends a person the result they
-// asked for at the gate, as the result template with a signed result link that
-// expires an hour after sending; a client's messages about their visits
-// (src/domain/messages/visit-messages.ts) and the reminder of their next one
-// (src/domain/visits/next-visit.ts); the receipt for a hair system paid by its link
-// (src/domain/money/payment-links.ts); the referral, waitlist and launch messages; the
-// booking form's notices to a number we know; ops' rejection of a request to
-// delete an account; and the answer to a STOP reply, each composed where its
-// subject lives. A reminder or the launch alert ends with the signed link that
-// stops them (src/domain/messages/stop-messages.ts).
+// The messaging consumer: the WhatsApp provider's caller for every message but a login code, which src/http/send-code.ts
+// hands the provider once the response has gone (ADR 0030), and the word that an account is deleted, which goes the
+// same way to a number the erasure has just blanked. Each message is composed where its subject lives.
 //
-// Skipped, never sent: messaging off, a person erased, an automatic kind to a
-// number outside the staging allowlist (a kind that answers the person who
-// just acted reaches any number there, ADR 0097) or a test record one of our
-// own scripts made off the allowlist regardless of kind, the daily cap
-// reached, a reminder or arrival notice whose moment has passed, or a move a
-// later move's message tells.
+// Skipped, never sent: messaging off, a person erased, an automatic kind to a number outside the staging allowlist (a
+// kind that answers the person who just acted reaches any number there, ADR 0097) or a test record one of our own
+// scripts made off the allowlist, the daily cap reached, a reminder or arrival notice whose moment has passed, or a move
+// a later move's message tells.
 //
-// A transient failure is retried three times; then the message fails and an
-// alert names it, which ops may send again from Tasks. So does a message that
-// throws on each of four deliveries, such as one that cannot be composed. A
-// bridge that cannot send at all leaves the message queued: the sweeper sends
-// it again once the bridge is open, and fails it if it is still unsent a day on
-// (src/scheduled/unsent-messages.ts).
+// A transient failure is retried three times; then the message fails and an alert names it, which ops may send again
+// from Tasks. A bridge that cannot send at all leaves the message queued: the sweeper sends it again once the bridge is
+// open, and fails it if it is still unsent a day on (src/scheduled/unsent-messages.ts).
 
 import { CLIENT_ORIGIN, PUBLIC_ORIGIN } from "../config/environments.ts";
 import {

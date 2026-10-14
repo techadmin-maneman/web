@@ -11,6 +11,7 @@
 // the dispatch board's tray. Their phone is not revoked: it keeps the work it has not sent, should they be switched back
 // on (src/http/technician-session.ts).
 
+import { failedForeignKey } from "../../lib/d1-errors.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { initialsOf } from "../../lib/names.ts";
 import {
@@ -287,7 +288,7 @@ export async function deleteTechnician(
     ]);
   } catch (error) {
     // A row the question missed still names them; the foreign key refuses the whole batch, and nothing changes.
-    if (String(error).includes("FOREIGN KEY")) return "has_work";
+    if (failedForeignKey(error)) return "has_work";
     throw error;
   }
   const kept = await db.prepare("SELECT 1 FROM technicians WHERE id = ?1").bind(technicianId).first();

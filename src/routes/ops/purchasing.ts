@@ -1,14 +1,10 @@
-// Purchase orders, behind Access (docs/decisions/0166-purchase-orders.md):
-//   GET  /api/purchase-orders                  open orders and the latest settled, the suppliers to order from
-//   POST /api/purchase-orders                  a new order, drafted from a supplier's list
-//   POST /api/purchase-orders/{id}/approve     an approval: the first, or a second by another manager
-//   POST /api/purchase-orders/{id}/send        an approved order marked sent
-//   POST /api/purchase-orders/{id}/cancel      an order cancelled, with why, before anything arrived
+// Purchase orders, behind Access (docs/decisions/0166-purchase-orders.md).
 //
 // Operations' to keep: drafting and sending with ACT, approving and cancelling with MANAGE. Every write answers the
 // whole of GET's answer, so the screen follows without reading again.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import {
@@ -20,7 +16,7 @@ import {
 } from "../../domain/purchasing/purchase-orders.ts";
 import { receiptsOf } from "../../domain/purchasing/receipts.ts";
 import { allSuppliers } from "../../domain/purchasing/suppliers.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -135,7 +131,7 @@ const STATE = errorResponse(
   "order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second",
 );
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/purchase-orders",
   summary: "Open orders and the latest settled, with the suppliers to order from",
@@ -149,7 +145,7 @@ export const Note = z
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
 
-const draftRoute = createRoute({
+const draftRoute = opsRoute({
   method: "post",
   path: "/api/purchase-orders",
   summary: "A new order, drafted from a supplier's list at its prices",
@@ -191,7 +187,7 @@ const draftRoute = createRoute({
 const STEP_ANSWERS = { 200: ORDERS, 403: ACCESS, 404: MISSING, 409: STATE };
 
 const stepRoute = (step: "approve" | "send", summary: string) =>
-  createRoute({
+  opsRoute({
     method: "post",
     path: `/api/purchase-orders/{id}/${step}`,
     summary,
@@ -199,7 +195,7 @@ const stepRoute = (step: "approve" | "send", summary: string) =>
     responses: STEP_ANSWERS,
   });
 
-const cancelRoute = createRoute({
+const cancelRoute = opsRoute({
   method: "post",
   path: "/api/purchase-orders/{id}/cancel",
   summary: "An order cancelled, with why, before anything of it arrived",
@@ -289,11 +285,7 @@ export async function ordersAnswer(c: Context<AppEnv>) {
   };
 }
 
-export const written = (c: Context<AppEnv>) => ({
-  actor: actorOf(c),
-  requestId: c.var.requestId,
-  now: c.var.deps.now(),
-});
+export { written };
 
 export async function after(c: Context<AppEnv>, changed: Awaited<ReturnType<typeof markSent>>) {
   if (changed.ok) return c.json(await ordersAnswer(c), 200);

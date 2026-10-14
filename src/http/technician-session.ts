@@ -1,9 +1,8 @@
 // The technician app's session, from its cookie, mm_tech (src/http/session-cookie.ts), bound to the phone it was
 // opened on (docs/decisions/0052-technician-sessions.md).
 //
-// "Their sessions are bound to a device and can be revoked by ops. Revoking also
-// wipes the device's cached jobs on its next contact": a call from a revoked
-// phone is answered `device_revoked`, and the app drops what it cached.
+// A technician's session is bound to one phone, which ops can revoke; a revoked phone drops the jobs it cached on its
+// next call, which is answered `device_revoked`, so a lost phone stops carrying clients' addresses.
 
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";

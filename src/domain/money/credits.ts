@@ -293,7 +293,10 @@ export async function adjustCredits(
   return creditBalance(db, personId, now);
 }
 
-/** The adjust entries that take visits away, oldest-expiring grant first; null if the grants hold too few. */
+/**
+ * The adjust entries that take visits away, oldest-expiring grant first; null if the grants hold too few. Each takes
+ * what its grant has left as it is written, never more, so a redeem landing in between cannot overdraw a grant.
+ */
 async function takeAway(
   db: D1Database,
   input: { personId: string; visits: number; adjustmentId: string; now: Date },
@@ -308,9 +311,10 @@ async function takeAway(
       db
         .prepare(
           `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-           VALUES (?1, ?2, 'adjust', ?3, ?4, 'ops', ?5, ?6)`,
+           SELECT ?1, ?2, 'adjust', -MIN(?3, ${GRANT_REMAINING}), g.id, 'ops', ?5, ?6
+           FROM credit_ledger g WHERE g.id = ?4 AND ${GRANT_REMAINING} > 0`,
         )
-        .bind(crypto.randomUUID(), input.personId, -taken, grant.id, input.adjustmentId, input.now.toISOString()),
+        .bind(crypto.randomUUID(), input.personId, taken, grant.id, input.adjustmentId, input.now.toISOString()),
     );
   }
   return left === 0 ? statements : null;
@@ -409,12 +413,14 @@ async function moveExpiryCursor(db: D1Database, from: string, now: Date): Promis
     .run();
 }
 
-/** Takes back what is left of a source's grants: a referral whose first fit was refunded under the guarantee. */
+/**
+ * Takes back what is left of a source's grants: a referral whose first fit was refunded under the guarantee. What is
+ * left is worked out as each entry is written, so a redeem landing in between cannot overdraw the grant.
+ */
 export async function clawBack(db: D1Database, source: CreditSource, sourceId: string, now: Date): Promise<void> {
   const { results } = await db
     .prepare(
-      `SELECT g.id, g.person_id,
-         g.visits + COALESCE((SELECT SUM(e.visits) FROM credit_ledger e WHERE e.grant_id = g.id), 0) AS remaining
+      `SELECT g.id, g.person_id, ${GRANT_REMAINING} AS remaining
        FROM credit_ledger g WHERE g.kind = 'grant' AND g.source_kind = ?1 AND g.source_id = ?2`,
     )
     .bind(source, sourceId)
@@ -426,10 +432,11 @@ export async function clawBack(db: D1Database, source: CreditSource, sourceId: s
       db
         .prepare(
           `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-           VALUES (?1, ?2, 'clawback', ?3, ?4, ?5, ?6, ?7)
+           SELECT ?1, g.person_id, 'clawback', -(${GRANT_REMAINING}), g.id, ?3, ?4, ?5
+           FROM credit_ledger g WHERE g.id = ?2 AND ${GRANT_REMAINING} > 0
            ON CONFLICT DO NOTHING`,
         )
-        .bind(crypto.randomUUID(), grant.person_id, -grant.remaining, grant.id, source, sourceId, now.toISOString()),
+        .bind(crypto.randomUUID(), grant.id, source, sourceId, now.toISOString()),
     ),
   );
 }

@@ -1,5 +1,4 @@
 // A technician's word to the client from the job card (docs/decisions/0145-technician-presets.md):
-//   POST /api/tech/jobs/:id/updates   on the way, at the gate, or running late, sent from our number
 // It never refuses a word the phone could send again: one that reaches us too late is answered as not sent, so the
 // job's queue on the phone carries on.
 

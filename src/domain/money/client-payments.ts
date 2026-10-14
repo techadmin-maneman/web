@@ -287,7 +287,7 @@ export async function paymentEntry(db: D1Database, personId: string, id: string,
     return { ...paymentOf(payment, notes), documents: { invoice, receipt } };
   }
   const refund = await db.prepare(`${REFUND_QUERY} AND r.id = ?2`).bind(personId, id).first<RefundRow>();
-  return refund === null ? null : { ...refundOf(refund), voucher: null };
+  return refund === null ? null : refundOf(refund);
 }
 
 /** Where a payment of the person's is in Books, once it is recorded there; null when it is not theirs. */

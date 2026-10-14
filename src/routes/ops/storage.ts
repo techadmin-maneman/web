@@ -1,14 +1,12 @@
 // What clients' photographs and referral cards hold in R2, behind Access
-// (docs/decisions/0093-the-storage-meter.md), and what the database holds:
-//   GET /api/storage    the storage meter's figure, beside the photographs' share, and the database's size
-//                       beside D1's limit
+// (docs/decisions/0093-the-storage-meter.md), and what the database holds.
 //
 // Settings shows it, so ops can see how near each limit is before the alerts
 // tell them. It reads one row, never the buckets.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
-import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { readDatabaseBytes, readMeter } from "../../domain/platform/storage-meter.ts";
 import { DATABASE_LIMIT_BYTES } from "../../policy/database-size.ts";
@@ -29,14 +27,13 @@ const StorageSchema = z
   .strict()
   .openapi("Storage");
 
-const storageRoute = createRoute({
+const storageRoute = opsRoute({
   method: "get",
   path: "/api/storage",
   summary:
     "What the photographs and referral cards hold in R2, against their share, and the database against its limit",
   responses: {
     200: { description: "The storage meter", ...json(StorageSchema) },
-    403: errorResponse("access_required"),
   },
 });
 

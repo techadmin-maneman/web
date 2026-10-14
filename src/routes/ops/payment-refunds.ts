@@ -1,14 +1,13 @@
-// A payment refunded by ops, with why (src/domain/money/payment-refunds.ts), behind Access:
-//   POST /api/payments/{id}/refund   what is left of a captured payment, asked of Razorpay once
+// A payment refunded by ops, with why (src/domain/money/payment-refunds.ts), behind Access.
 //
 // Finance's to MANAGE. The refund shows on the client's Payments tab once Razorpay's webhook records it.
 
-import { createRoute, z } from "@hono/zod-openapi";
-import type { Context } from "hono";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { capturedPayment, refundPayment } from "../../domain/money/payment-refunds.ts";
-import { actorOf } from "../../http/audit.ts";
-import type { App, AppEnv } from "../../http/context.ts";
+import { written } from "../../http/audit.ts";
+import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { clientInReach } from "../../http/staff-access.ts";
@@ -20,9 +19,7 @@ const Note = z
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
 
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
-
-const refundRoute = createRoute({
+const refundRoute = opsRoute({
   method: "post",
   path: "/api/payments/{id}/refund",
   summary: "What is left of a captured payment refunded, with why: one the client made twice",
@@ -41,7 +38,6 @@ const refundRoute = createRoute({
       ),
     },
     400: errorResponse("invalid_request: no reason given"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no captured payment, or the client is outside the caller's cities"),
     409: errorResponse("refund_not_due: the payment is refunded already, or its refund is on its way"),
     503: errorResponse("unavailable: Razorpay did not make the refund; ops are told to make it by hand"),

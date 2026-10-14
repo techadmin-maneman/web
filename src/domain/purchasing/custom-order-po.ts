@@ -5,7 +5,7 @@
 
 import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { addHairSystem, hairSystemSpecs, matchingCode } from "../inventory/hair-systems.ts";
-import type { Written } from "../inventory/stock.ts";
+import type { Written } from "../platform/audit.ts";
 
 type PaidRow = {
   number: number;

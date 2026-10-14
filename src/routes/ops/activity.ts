@@ -1,9 +1,9 @@
 // The audit log, read by ops (docs/decisions/0031-access-and-audit.md), on the ops surface behind Access:
-//   GET /api/activity   every entry, newest first, fifty at a time, narrowed by who, what, a client, a visit or days
 // Admin's View reads it, nationally: it shows what everyone did, everywhere. Reading it is an ops call like any other,
 // written to the log it reads.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { SURFACES } from "../../config/environments.ts";
 import { activity } from "../../domain/ops/activity.ts";
 import { AUDIT_ACTIONS, type AuditActor } from "../../domain/platform/audit.ts";
@@ -47,7 +47,7 @@ const EntrySchema = z
   .strict()
   .openapi("ActivityEntry");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/activity",
   summary: "The audit log, newest first: who did what, on which record, when",

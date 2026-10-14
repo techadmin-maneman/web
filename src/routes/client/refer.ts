@@ -2,11 +2,6 @@
 // balance, and the tracker, which shows completed fits only: each friend's first name and the month they were
 // fitted, never opens, consultations or pending referrals.
 //
-//   GET    /api/refer
-//   POST   /api/refer/card    the client's card, made from their first fit's photographs, with their consent
-//   GET    /api/refer/card    the same card while it is live, for the app to show and to share as a photograph
-//   DELETE /api/refer/card    the revoke: new opens show the house card
-//
 // Refer is a fitted client's (ADR 0048; ADR 0083, withdrawn): the invite says "Had my hair system fitted", and a lead
 // could otherwise invite their own first number from a second. So every route but the revoke answers 403 not_fitted
 // before a first fit, as the app's tab shows its empty state; and a card of their own waits for that fit's photographs.

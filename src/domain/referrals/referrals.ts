@@ -192,7 +192,7 @@ async function partnerCodeOf(db: D1Database, personId: string): Promise<string |
  * invite they were held under has lapsed, which it is marked as, so it promises nothing more. It records the line
  * that told the friend their referrer hears of the fit, where the page showed one. An invite ops attach carries who
  * attached it and why, and its audit entry, written only if the attribution is; one ops attach after the friend's
- * first fit is held for their review (src/policy/fraud-holds.ts, LATE_ATTACH_RULE).
+ * first fit is held for their review (src/policy/fraud-holds.ts, attached_after_fit).
  */
 export async function attribute(
   db: D1Database,

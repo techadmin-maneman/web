@@ -1,8 +1,4 @@
-// Where a client is signed in, and a way to end it (docs/decisions/0029-sessions.md):
-//
-//   GET    /api/sessions          the browsers signed in, this one marked
-//   DELETE /api/sessions/others   signs out every browser but this one
-//   DELETE /api/sessions/:id      signs one out; this one's own ends the session here, as a sign-out does
+// Where a client is signed in, and a way to end it (docs/decisions/0029-sessions.md).
 //
 // A lost or handed-on phone stays signed in for 90 days from its last use; this ends it without erasing the account.
 

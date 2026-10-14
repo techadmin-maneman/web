@@ -1,15 +1,9 @@
-// The Staff page, behind Access (Settings · Staff):
-//   GET  /api/staff                          the people on the list and their grants, the service tokens let in, and
-//                                            whether the list is enforced; narrowed to the caller's own places
-//   POST /api/staff                          a member of staff added, or their grants and whether they are let in
-//   POST /api/staff/delete                   a member of staff taken off the list, with their grants
-//   POST /api/staff/enforcement              the list enforced, or not
-//   POST /api/staff/service-tokens           a service token let in, as every caller was before the list
-//   POST /api/staff/service-tokens/remove    a service token taken off
+// The Staff page, behind Access (Settings · Staff).
 //
 // Every change is audited under the person who made it, in the same batch (src/domain/ops/staff.ts).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { routePath } from "hono/route";
 import { actorOf } from "../../http/audit.ts";
@@ -126,14 +120,14 @@ const TokenSchema = z
 
 const book = { 200: { description: "The Staff page as it now stands", ...json(StaffBookSchema) } };
 
-const readRoute = createRoute({
+const readRoute = opsRoute({
   method: "get",
   path: "/api/staff",
   summary: "The Staff list, narrowed to the caller's own places",
   responses: { ...book, 403: errorResponse("access_required, or not_permitted") },
 });
 
-const saveRoute = createRoute({
+const saveRoute = opsRoute({
   method: "post",
   path: "/api/staff",
   summary: "Add a member of staff, or replace their grants and whether they are let in",
@@ -148,7 +142,7 @@ const saveRoute = createRoute({
   },
 });
 
-const deleteRoute = createRoute({
+const deleteRoute = opsRoute({
   method: "post",
   path: "/api/staff/delete",
   summary: "Take a member of staff off the list, with their grants. What they did stays in the audit log",
@@ -163,7 +157,7 @@ const deleteRoute = createRoute({
   },
 });
 
-const enforcementRoute = createRoute({
+const enforcementRoute = opsRoute({
   method: "post",
   path: "/api/staff/enforcement",
   summary: "Enforce the Staff list, or stop",
@@ -174,7 +168,7 @@ const enforcementRoute = createRoute({
   },
 });
 
-const addTokenRoute = createRoute({
+const addTokenRoute = opsRoute({
   method: "post",
   path: "/api/staff/service-tokens",
   summary: "Let a service token in, as every caller was before the Staff list",
@@ -185,7 +179,7 @@ const addTokenRoute = createRoute({
   },
 });
 
-const removeTokenRoute = createRoute({
+const removeTokenRoute = opsRoute({
   method: "post",
   path: "/api/staff/service-tokens/remove",
   summary: "Take a service token off",

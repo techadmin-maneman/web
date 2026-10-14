@@ -1,17 +1,11 @@
-// Ops changing a client's visit from the console, on the ops surface behind Access:
-//
-//   POST /api/visits/:id/cancel   { confirm: false }: what a cancel gives back, free to the client and on their own late
-//                                 terms; { confirm: true, notice, reason, on_client_terms? }: cancel it
-//   POST /api/visits/:id/close    close it as done or partly done, with its times and why, for work whose technician's
-//                                 phone was lost
-//   POST /api/visits/:id/let-in   let its technician check in wherever the geofence puts them, with why, where the
-//                                 address's pin is far from the door
+// Ops changing a client's visit from the console, on the ops surface behind Access.
 //
 // A cancel is free to the client unless ops apply the client's own late terms (src/policy/moving-a-visit.ts). Each is
 // audited in the batch that makes it (ADR 0031), with codes and amounts; ops' reason is kept with the change. Both keep
 // to the caller's cities: a visit elsewhere is answered as one that does not exist.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import type { AuditEntry } from "../../domain/platform/audit.ts";
@@ -84,7 +78,7 @@ const OpsCancelSchema = z
   .strict()
   .openapi("OpsCancel");
 
-const cancelRoute = createRoute({
+const cancelRoute = opsRoute({
   method: "post",
   path: "/api/visits/{id}/cancel",
   summary: "What cancelling a client's visit gives back, or cancel it: free to the client unless ops choose otherwise",
@@ -92,7 +86,6 @@ const cancelRoute = createRoute({
   responses: {
     200: { description: "The terms, or the cancelled visit", ...json(OpsCancelTermsSchema) },
     400: errorResponse("invalid_request: a cancel with no reason"),
-    403: errorResponse("access_required"),
     409: errorResponse(
       "not_changeable: the visit has begun, passed or gone, is no client's, or is not in the caller's cities; " +
         "terms_changed: the notice is not the one shown, so show the terms again",
@@ -119,7 +112,7 @@ const HandCloseSchema = z
   .strict()
   .openapi("HandClose");
 
-const closeRoute = createRoute({
+const closeRoute = opsRoute({
   method: "post",
   path: "/api/visits/{id}/close",
   summary: "Close a visit by hand, as done, partly done or a no-show, for work whose technician's phone was lost",
@@ -139,20 +132,19 @@ const closeRoute = createRoute({
       ),
     },
     400: errorResponse("invalid_request: no reason, or times that do not fit the visit's day or end after now"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such visit in the caller's cities"),
     409: errorResponse(
       "already_closed: the visit is closed or cancelled, or the technician's phone closed it; " +
-        "no_check_in: a no-show stands on the technician's check-in, and there is none",
+        "no_check_in: a no-show stands on the technician's check-in, and there is none; " +
+        "too_early_to_close: the visit's time, or a no-show's wait, has not come",
     ),
-    425: errorResponse("too_early_to_close: the visit's time, or a no-show's wait, has not come"),
   },
 });
 
-const letInRoute = createRoute({
+const letInRoute = opsRoute({
   method: "post",
   path: "/api/visits/{id}/let-in",
-  summary: "Let the visit's technician check in wherever his phone puts him, with why: a pin far from the door",
+  summary: "Let the visit's technician check in wherever their phone puts them, with why: a pin far from the door",
   request: {
     params: visitParams,
     body: {
@@ -170,11 +162,10 @@ const letInRoute = createRoute({
     },
   },
   responses: {
-    200: { description: "His next check-in lands", ...json(z.object({ let_in: z.literal(true) }).strict()) },
+    200: { description: "Their next check-in lands", ...json(z.object({ let_in: z.literal(true) }).strict()) },
     400: errorResponse("invalid_request: no reason"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such visit in the caller's cities"),
-    409: errorResponse("not_changeable: he has checked in already, or the visit is closed or cancelled"),
+    409: errorResponse("not_changeable: they have checked in already, or the visit is closed or cancelled"),
   },
 });
 
@@ -314,6 +305,5 @@ async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.
   if (closed.code === "bad_times") {
     return refuse(c, "invalid_request", ["started_at", "ended_at"]);
   }
-  if (closed.code === "too_early_to_close") return c.json(errorBody(closed.code, requestId), 425);
   return c.json(errorBody(closed.code, requestId), 409);
 }

@@ -7,7 +7,7 @@ import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { latestFits } from "../clients/hair-profiles.ts";
 import { auditStatement, auditStatementWhen } from "../platform/audit.ts";
 import { MATCHED_FIELDS } from "../inventory/stock-match.ts";
-import type { Written } from "../inventory/stock.ts";
+import type { Written } from "../platform/audit.ts";
 
 /** Where an order stands, as ops and the client read it: its own state, and its purchase order's once paid. */
 type CustomOrderStatus = "awaiting_payment" | "paid" | "ordered" | "arrived" | "refunded" | "cancelled";
