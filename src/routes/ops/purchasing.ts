@@ -15,7 +15,7 @@ import {
 } from "../../domain/purchasing/purchase-orders.ts";
 import { receiptsOf } from "../../domain/purchasing/receipts.ts";
 import { allSuppliers } from "../../domain/purchasing/suppliers.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -284,11 +284,7 @@ export async function ordersAnswer(c: Context<AppEnv>) {
   };
 }
 
-export const written = (c: Context<AppEnv>) => ({
-  actor: actorOf(c),
-  requestId: c.var.requestId,
-  now: c.var.deps.now(),
-});
+export { written };
 
 export async function after(c: Context<AppEnv>, changed: Awaited<ReturnType<typeof markSent>>) {
   if (changed.ok) return c.json(await ordersAnswer(c), 200);

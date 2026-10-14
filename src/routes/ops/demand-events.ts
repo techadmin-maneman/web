@@ -5,7 +5,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { addEvent, removeEvent, upcomingEvents } from "../../domain/purchasing/demand-events.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -68,8 +68,6 @@ const removeRoute = createRoute({
   request: { params: z.object({ id: z.string().min(1).max(64) }) },
   responses: { 200: EVENTS, 403: ACCESS, 404: errorResponse("not_found: no such event on the calendar") },
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 async function eventsAnswer(c: Context<AppEnv>) {
   const [events, cities] = await Promise.all([

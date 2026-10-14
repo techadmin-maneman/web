@@ -3,11 +3,10 @@
 // Finance's to MANAGE. The refund shows on the client's Payments tab once Razorpay's webhook records it.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { Context } from "hono";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { capturedPayment, refundPayment } from "../../domain/money/payment-refunds.ts";
-import { actorOf } from "../../http/audit.ts";
-import type { App, AppEnv } from "../../http/context.ts";
+import { written } from "../../http/audit.ts";
+import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { clientInReach } from "../../http/staff-access.ts";
@@ -18,8 +17,6 @@ const Note = z
   .min(1)
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const refundRoute = createRoute({
   method: "post",

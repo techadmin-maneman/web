@@ -24,7 +24,7 @@ import {
 } from "../../domain/inventory/consumables.ts";
 import { hairSystemSpecs, type HairSystemSpec } from "../../domain/inventory/hair-systems.ts";
 import { closeStaleLowStock } from "../../domain/inventory/low-stock.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -319,8 +319,6 @@ async function answer(c: Context<AppEnv>) {
     max_reorder_level: CONSUMABLE_BOUNDS.maxReorderLevel,
   };
 }
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 export function registerOpsConsumables(app: App): void {
   app.openapi(consumablesRoute, async (c) => c.json(await answer(c), 200));

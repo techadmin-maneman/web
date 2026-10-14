@@ -23,7 +23,7 @@ import { hairSystemSpecs } from "../../domain/inventory/hair-systems.ts";
 import { inTransit, sendStock } from "../../domain/inventory/stock-transit.ts";
 import { stockView } from "../../domain/inventory/stock-view.ts";
 import { isPlaceWithin, placeAreas, placesWithin, WAREHOUSE, type Place } from "../../domain/inventory/stock-places.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -232,8 +232,6 @@ export async function stockAnswer(c: Context<AppEnv>) {
     ...areas,
   };
 }
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 /** The fields that name a place outside the caller's cities; the warehouse is in none of them. */
 async function placesOutOfReach(c: Context<AppEnv>, places: Readonly<Record<string, Place>>): Promise<string[]> {

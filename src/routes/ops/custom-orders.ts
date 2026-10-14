@@ -21,7 +21,7 @@ import { json } from "../../http/openapi.ts";
 import { clientInReach } from "../../http/staff-access.ts";
 import { WAVES } from "../../policy/hair-profile.ts";
 import { MAX_NOTE } from "../../config/consumables.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import { paymentsTab } from "../../domain/platform/alerts.ts";
 
 const Note = z
@@ -30,8 +30,6 @@ const Note = z
   .min(1)
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const OrderSchema = z.object({
   id: z.string(),

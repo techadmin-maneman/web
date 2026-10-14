@@ -13,7 +13,7 @@ import {
   type Recall,
   type RecallDetail,
 } from "../../domain/inventory/recalls.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -122,8 +122,6 @@ const closeRoute = createRoute({
   request: recallPath,
   responses: { 200: DETAIL, 403: ACCESS, 404: errorResponse("not_found: no such recall open") },
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const recallJson = (recall: Recall) => ({
   id: recall.id,

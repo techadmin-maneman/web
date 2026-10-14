@@ -18,7 +18,7 @@ import {
 } from "../../domain/inventory/count-tasks.ts";
 import { countClasses, setCountClass, startCount } from "../../domain/inventory/cycle-counts.ts";
 import { allPlaces, isPlaceWithin, placeById, placesWithin } from "../../domain/inventory/stock-places.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -246,8 +246,6 @@ const classRoute = createRoute({
   },
   responses: { 200: TASKS, 403: ACCESS, 404: errorResponse("not_found: no such item, or it is retired") },
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const taskJson = (task: CountTask) => ({
   id: task.id,

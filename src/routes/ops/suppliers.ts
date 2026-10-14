@@ -11,7 +11,7 @@ import {
   retireSupplier,
   setSupplierItem,
 } from "../../domain/purchasing/suppliers.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -189,8 +189,6 @@ async function suppliersAnswer(c: Context<AppEnv>) {
     consumables: consumables.results,
   };
 }
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 const fieldsOf = (body: z.infer<typeof SupplierFieldsSchema>) => ({
   name: body.name,

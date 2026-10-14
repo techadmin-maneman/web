@@ -7,7 +7,7 @@ import type { Context } from "hono";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { draftPlan } from "../../domain/purchasing/supply-plan.ts";
 import { approvePlanLine, planLines, rejectPlanLine, type Decided } from "../../domain/purchasing/supply-plan-lines.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -97,8 +97,6 @@ const rejectRoute = createRoute({
   },
   responses: LINE_ANSWERS,
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 async function planAnswer(c: Context<AppEnv>) {
   const lines = await planLines(c.env.DB, c.var.deps.now());

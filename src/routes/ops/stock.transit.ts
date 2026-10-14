@@ -8,7 +8,7 @@ import type { Context } from "hono";
 import { tellOfLowStock } from "../../domain/inventory/stock.ts";
 import { placesWithin, isPlaceWithin } from "../../domain/inventory/stock-places.ts";
 import { receiveTransfer, sendBack, type Settled } from "../../domain/inventory/stock-transit.ts";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -77,8 +77,6 @@ const sendBackRoute = createRoute({
     409: SETTLED,
   },
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 /** Whether the transfer's end the caller settles it at is within their cities. */
 async function endWithin(c: Context<AppEnv>, id: string, end: "to_place" | "from_place"): Promise<boolean> {

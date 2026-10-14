@@ -4,10 +4,9 @@
 // without reading again. A technician's kit comes with them, under the warehouse until it is moved.
 
 import { createRoute, z } from "@hono/zod-openapi";
-import type { Context } from "hono";
 import { addPlace, changePlace } from "../../domain/inventory/stock-places.ts";
-import { actorOf } from "../../http/audit.ts";
-import type { App, AppEnv } from "../../http/context.ts";
+import { written } from "../../http/audit.ts";
+import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { PlaceId, STOCK } from "./stock.schemas.ts";
@@ -76,8 +75,6 @@ const changeRoute = createRoute({
     404: errorResponse("not_found: no such place"),
   },
 });
-
-const written = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
 export function registerOpsStockPlaces(app: App): void {
   app.openapi(addRoute, async (c) => {
