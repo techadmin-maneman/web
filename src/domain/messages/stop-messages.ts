@@ -37,7 +37,11 @@ export async function stopLink(
 }
 
 /** The subject of a stop link's token, or null when it is forged, expired or names no purpose we message under. */
-export async function readStopToken(signingKey: SigningSecret, token: string, now: Date): Promise<StopLinkSubject | null> {
+export async function readStopToken(
+  signingKey: SigningSecret,
+  token: string,
+  now: Date,
+): Promise<StopLinkSubject | null> {
   const subject = await verifyToken(signingKey, "stop_messages", token, now);
   if (subject === null) return null;
   const [purpose, personId] = subject.split(" ");
