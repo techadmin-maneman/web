@@ -205,7 +205,8 @@ export const tryOnTeaser = {
   sliderLabel: "Compare before and after",
   /** What a screen reader hears as the handle moves. */
   sliderValue: "{before}% before, {after}% after",
-  start_percent: 46,
+  /** Where the handle starts: the one place the teaser's stylesheet draws it before the page runs. */
+  start_percent: 46 as const,
 };
 
 export const discretionBand = {

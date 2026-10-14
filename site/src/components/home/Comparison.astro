@@ -8,8 +8,7 @@ import { comparison, type ComparisonCell } from "../../content/site.ts";
 import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import Icon from "../Icon.astro";
 
-const [firstColumn, secondColumn, thirdColumn] = comparison.columns;
-const columns = [firstColumn, secondColumn, thirdColumn];
+const { columns } = comparison;
 function isMark(cell: ComparisonCell): cell is boolean {
   return typeof cell === "boolean";
 }

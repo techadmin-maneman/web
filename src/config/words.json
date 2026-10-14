@@ -3213,13 +3213,6 @@
     "text": "Straight answers, before you book anything."
   },
   {
-    "key": "site:guides/guidesPage.read",
-    "surface": "site",
-    "group": "Guides",
-    "where": "guidesPage",
-    "text": "Read"
-  },
-  {
     "key": "site:guides/guidesPage.book",
     "surface": "site",
     "group": "Guides",

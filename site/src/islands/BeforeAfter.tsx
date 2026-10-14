@@ -17,8 +17,8 @@ interface Props {
   /** The two images, named slots from the Astro page. */
   before?: ComponentChildren;
   after?: ComponentChildren;
-  /** Where the handle starts, as the design's teaser draws it. */
-  start: number;
+  /** Where the handle starts: 46%, as the stylesheet draws it before the page runs, so the first paint matches. */
+  start: 46;
   beforeLabel: string;
   afterLabel: string;
   sliderLabel: string;

@@ -31,7 +31,6 @@ export const guidesPage = {
   description:
     "Straight answers on hair systems: how they compare with a transplant, and how they're fitted, cared for and priced.",
   lead: "Straight answers, before you book anything.",
-  read: "Read",
   book: "Book a free consultation",
 };
 
