@@ -7,10 +7,8 @@
 import type { Dependencies } from "../dependencies.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
+import { BRIDGE_CLOSED_READINGS } from "../policy/alerts.ts";
 import type { BridgeFault } from "../providers/messaging/index.ts";
-
-/** One closed reading can be the bridge reconnecting on its own; two in a row, ten minutes of it, are not. */
-const CLOSED_READINGS_BEFORE_ALERT = 2;
 
 const FIXES: Readonly<Record<BridgeFault, string>> = {
   no_instance: "Check EVOLUTION_API_URL and EVOLUTION_INSTANCE_NAME against the bridge's list of instances",
@@ -36,6 +34,6 @@ export async function checkWhatsAppBridge(
     message:
       `The WhatsApp bridge is not connected (${connection.detail}): no login code or message can be sent until ` +
       `it is. ${FIXES[connection.fault]} (runbook, "WhatsApp (Evolution) is down").`,
-    after: CLOSED_READINGS_BEFORE_ALERT,
+    after: BRIDGE_CLOSED_READINGS,
   });
 }

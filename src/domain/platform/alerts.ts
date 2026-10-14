@@ -22,7 +22,7 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { OPS_ORIGIN, type EnvironmentName } from "../../config/environments.ts";
 import { HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";
-import { alertKind, isUrgent, retellAfterHours } from "../../policy/alerts.ts";
+import { alertKind, BRIDGE_CLOSED_READINGS, isUrgent, retellAfterHours } from "../../policy/alerts.ts";
 import type { Alert } from "../../providers/alerts.ts";
 
 export interface RaisedAlert {
@@ -66,6 +66,18 @@ interface Sighting {
   readonly firstSeenAt: string;
   /** Null until the chat is first told of it. */
   readonly lastToldAt: string | null;
+}
+
+/**
+ * Whether the WhatsApp bridge stands closed: the five-minute check (src/scheduled/whatsapp-bridge.ts) read it so in a
+ * row and has not read it open since. Nothing sent on WhatsApp now would arrive.
+ */
+export async function whatsAppBridgeDown(db: D1Database): Promise<boolean> {
+  const open = await db
+    .prepare("SELECT 1 FROM alerts WHERE key = 'whatsapp_bridge' AND resolved_at IS NULL AND count >= ?1")
+    .bind(BRIDGE_CLOSED_READINGS)
+    .first();
+  return open !== null;
 }
 
 export function createAlertOnce(deps: {

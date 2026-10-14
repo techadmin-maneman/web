@@ -42,6 +42,9 @@ const URGENT_KINDS = [
   "tryon_paused",
 ];
 
+/** Readings of the WhatsApp bridge closed in a row before it counts as down: one can be it reconnecting by itself. */
+export const BRIDGE_CLOSED_READINGS = 2;
+
 /** Whether an alert goes to the urgent space too. */
 export const isUrgent = (key: string): boolean => URGENT_KINDS.includes(alertKind(key));
 

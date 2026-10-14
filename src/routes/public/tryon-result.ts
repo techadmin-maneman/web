@@ -6,6 +6,7 @@
 // GET /api/result/:token, the image behind the signed link a WhatsApp message
 // carries, which the WhatsApp bridge fetches to send it.
 
+import { whatsAppBridgeDown } from "../../domain/platform/alerts.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { FAILURE_CODES, JOB_STATES } from "../../config/tryon.ts";
@@ -75,7 +76,10 @@ const resultImageRoute = createRoute({
 });
 
 export function registerTryonResult(app: App): void {
-  app.openapi(availabilityRoute, (c) => c.json({ available: tryOnRuns(c.var.config.settings.messaging) }, 200));
+  app.openapi(availabilityRoute, async (c) => {
+    const available = tryOnRuns(c.var.config.settings.messaging, await whatsAppBridgeDown(c.env.DB));
+    return c.json({ available }, 200);
+  });
 
   app.openapi(lookRoute, async (c) => {
     const jobId = await lookCookieJob(c);

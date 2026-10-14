@@ -8,6 +8,7 @@
 // could not be sent is refused before anything is written. What a claim writes
 // is src/domain/try-on/tryon-claims.ts.
 
+import { whatsAppBridgeDown } from "../../domain/platform/alerts.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -156,6 +157,7 @@ async function claim(c: Context<AppEnv>, request: z.infer<typeof ClaimRequestSch
 
   const why = undelivered({
     messaging: settings.messaging,
+    bridgeDown: await whatsAppBridgeDown(db),
     heldBack: messageHeldBack(settings.messaging, {
       mobile_e164: mobileE164,
       test_record: (await isTestNumber(db, c.var.config.environment, mobileE164, request.name)) ? 1 : 0,
