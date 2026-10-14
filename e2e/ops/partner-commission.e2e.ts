@@ -103,7 +103,7 @@ test("deletes a payment recorded by mistake", async ({ page }) => {
   await row(page)
     .getByRole("button", { name: copy.deletePaymentLabel("Looks Salon, Sector 29") })
     .click();
-  await page.getByRole("button", { name: deleting.confirm }).click();
+  await page.getByRole("button", { name: deleting.confirm, exact: true }).click();
   await expect(page.getByRole("status")).toHaveText(copy.done.deleted);
 });
 

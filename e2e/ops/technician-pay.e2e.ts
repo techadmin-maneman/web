@@ -160,6 +160,6 @@ test("deletes a grade no technician holds, and says why one in use stays", async
   });
   await expect(page.getByRole("button", { name: copy.rates.deleteLabel("Senior") })).toHaveCount(0);
   await page.getByRole("button", { name: copy.rates.deleteLabel("Trainee") }).click();
-  await page.getByRole("button", { name: deleting.confirm }).click();
+  await page.getByRole("button", { name: deleting.confirm, exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText(copy.rates.inUse);
 });

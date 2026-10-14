@@ -176,7 +176,7 @@ test("asks once more before it charges, with what it keeps, and sends the reason
   await first.getByLabel("Your note · required").fill("Delivered the evening before; nobody came down");
   await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
 
-  const confirm = first.getByRole("group", { name: "Keep Rs. 2,360 of the Rs. 2,360 paid?" });
+  const confirm = first.getByRole("group", { name: "Keep all Rs. 2,360 paid?" });
   await expect(confirm).toBeFocused();
   await expect(confirm).toHaveAccessibleDescription(
     "Charging Vikram Sethi for the visit of Sun 19 Sep can’t be undone.",

@@ -260,7 +260,11 @@ test.describe("home sections", () => {
     await page.goto("/");
     const steps = page.locator('[data-section="how"] ol > li');
     await expect(steps).toHaveCount(3);
-    await expect(steps.locator("h3")).toHaveText(["Consultation at home", "The first fit", "Service visit, every month"]);
+    await expect(steps.locator("h3")).toHaveText([
+      "Consultation at home",
+      "The first fit",
+      "Service visit, every month",
+    ]);
   });
 
   test("technicians, the range and testimonials: three, four and three cards", async ({ page }) => {

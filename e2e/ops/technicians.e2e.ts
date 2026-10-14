@@ -130,7 +130,7 @@ test("says in the roster when a technician’s next leave begins, or until when 
 
   await page.clock.setFixedTime(new Date("2027-10-03T05:00:00.000Z"));
   await page.reload();
-  const away = page.getByRole("row").filter({ hasText: "Sandeep Yadav" }).getByText("Away to 6 Oct");
+  const away = page.getByRole("row").filter({ hasText: "Sandeep Yadav" }).getByText("Away until 6 Oct");
   await expect(away).toBeVisible();
   // In the board's small capitals, not in sans capitals.
   await expect(away).toHaveCSS("font-variant-caps", "all-small-caps");
