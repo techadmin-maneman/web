@@ -16,7 +16,8 @@ import { HomeScreen } from "./home/HomeScreen.tsx";
 import { ReplacementScreen } from "./home/ReplacementScreen.tsx";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
-import { nameInTitle } from "./lib/arrival.ts";
+import { titled } from "./lib/arrival.ts";
+import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { forgetSignedOut, rememberSignedOut, signedOutHere } from "./lib/signed-out.ts";
 import { ReferScreen } from "./refer/ReferScreen.tsx";
 import { TrackerScreen } from "./refer/TrackerScreen.tsx";
@@ -161,11 +162,11 @@ export function App({ linkedMobile }: { linkedMobile: string }) {
     document.body.dataset.ground = session.kind === "out" ? "ink" : "paper";
   }, [session.kind]);
 
-  // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind.
+  // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind. The
+  // login names its own steps.
+  useScreenTitle(signedIn ? titled(titles[routeOf(path).page]) : null);
   useEffect(() => {
-    if (!signedIn) return;
-    nameInTitle(titles[routeOf(path).page]);
-    focusIfLost(document.querySelector("h1"));
+    if (signedIn) focusIfLost(document.querySelector("h1"));
   }, [path, signedIn]);
 
   /** Only the API can end the session: with no answer from it, the client is still logged in, and is told so. */

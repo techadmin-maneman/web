@@ -2,14 +2,12 @@
 // system's pieces scanned one by one; what it holds, each lot's expiry beside it; and the pieces that came off clients
 // and any expired stock, handed back to the stockroom. Never a cost. Its writes need signal, and say so without it.
 
-import { Field, TextInput } from "@maneman/ui/Field";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { IconButton } from "@maneman/ui/IconButton";
-import { QrCamera } from "@maneman/ui/ScanField";
-import { scanned } from "@maneman/ui/scanned";
+import { ScanField } from "@maneman/ui/ScanField";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
@@ -41,73 +39,6 @@ function NotDone({ problem }: { problem: Problem | null }) {
       <p className={styles.expired}>{problem.words}</p>
       {problem.requestId !== null && <ErrorRef requestId={problem.requestId} words={reference} />}
     </div>
-  );
-}
-
-/** A label read in: typed and added, or read by the camera. */
-function ScanLabel({ onLabel }: { onLabel: (label: string) => void }) {
-  const [typed, setTyped] = useState("");
-  const [scanning, setScanning] = useState(false);
-  const add = (text: string) => {
-    const label = scanned(text);
-    if (label === "") return;
-    onLabel(label);
-    setTyped("");
-  };
-  return (
-    <>
-      <Field onInk className={styles.fieldLabel} label={copy.scan.label}>
-        {(control) => (
-          <TextInput
-            {...control}
-            onInk
-            value={typed}
-            autoCapitalize="characters"
-            autoComplete="off"
-            spellCheck={false}
-            onChange={(event) => {
-              setTyped(event.target.value);
-            }}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter") return;
-              event.preventDefault();
-              add(typed);
-            }}
-          />
-        )}
-      </Field>
-      <div className={styles.buttons}>
-        <Button
-          variant="outlineOnInk"
-          size="small"
-          disabled={typed.trim() === ""}
-          onClick={() => {
-            add(typed);
-          }}
-        >
-          {copy.scan.add}
-        </Button>
-        <Button
-          variant="outlineOnInk"
-          size="small"
-          aria-pressed={scanning}
-          onClick={() => {
-            setScanning(!scanning);
-          }}
-        >
-          {scanning ? copy.scan.stop : copy.scan.camera}
-        </Button>
-      </div>
-      {scanning && (
-        <QrCamera
-          words={steps.piece.camera}
-          onRead={(text) => {
-            setScanning(false);
-            add(text);
-          }}
-        />
-      )}
-    </>
   );
 }
 
@@ -168,8 +99,11 @@ function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onK
       <p className={styles.note}>{copy.coming.from(topUp.from, dayMonth(indiaDate(topUp.sent_at)))}</p>
       {pieces && (
         <>
-          <ScanLabel
-            onLabel={(scan) => {
+          <ScanField
+            onInk
+            className={styles.fieldLabel}
+            words={{ ...copy.scan, ...steps.piece.camera }}
+            onScan={(scan) => {
               if (!topUp.units.includes(scan)) {
                 setProblem({ words: copy.coming.notOnIt, requestId: null });
                 return;

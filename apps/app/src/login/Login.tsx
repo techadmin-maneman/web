@@ -13,7 +13,8 @@ import { useEffect, useRef, useState } from "react";
 import { api, type LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
-import { nameInTitle } from "../lib/arrival.ts";
+import { titled } from "../lib/arrival.ts";
+import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { apiNow } from "@maneman/web-kit/clock";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
@@ -95,8 +96,8 @@ export function Login({
   }, []);
 
   // Each screen is named, and its heading takes focus unless the screen put it in a field (the code's).
+  useScreenTitle(titled(TITLES[step.kind]));
   useEffect(() => {
-    nameInTitle(TITLES[step.kind]);
     focusIfLost(document.querySelector("h1"));
   }, [step.kind]);
   const [mobile, setMobile] = useState(linkedMobile);

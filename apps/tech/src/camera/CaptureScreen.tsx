@@ -20,7 +20,7 @@
 // one angle.
 //
 // The camera is let go while the app is hidden and opened again on the way
-// back (./useCamera.ts). A frame that fails to keep — the phone full, say, which
+// back (packages/ui/useCamera.ts). A frame that fails to keep — the phone full, say, which
 // App says above every screen — is said here and can be taken again: it is not
 // a camera that failed.
 //
@@ -37,8 +37,8 @@ import { capture as copy, job as jobCopy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } from "../store/outbox.ts";
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
-import { captureFrame } from "./capture.ts";
-import { useCamera } from "./useCamera.ts";
+import { captureFrame, openCamera } from "./capture.ts";
+import { useCamera } from "@maneman/ui/useCamera";
 import { useThumbnails } from "./useThumbnails.ts";
 import styles from "./capture.module.css";
 
@@ -72,7 +72,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const step = phase === "before" ? "before_photos" : "after_photos";
   const { loaded, retry, refused, finish, back } = useStep(id, step);
   const video = useRef<HTMLVideoElement | null>(null);
-  const [camera, reopen] = useCamera();
+  const [camera, reopen] = useCamera(openCamera);
   const stream = camera.state === "open" ? camera.stream : null;
   const [taken, setTaken] = useState<readonly TakenAngle[]>([]);
   const [refusedAngles, setRefusedAngles] = useState<readonly Angle[]>([]);

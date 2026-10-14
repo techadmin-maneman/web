@@ -74,7 +74,6 @@ export type Answer<T> = Answered<T, ErrorCode>;
 
 /** Named as in apps/app/sw/sw.ts. */
 const HOME_CACHE = "mm-app-home";
-const SERVED_FROM = "Mm-Served-From";
 const HOME_PATH = "/api/me";
 
 /** The kept Home is the one personal thing the app keeps on the phone: gone at logout, and once the session has ended. */
@@ -92,20 +91,6 @@ export async function keptHome(): Promise<Me | null> {
   return kept === undefined ? null : ((await kept.json()) as Me);
 }
 
-const sessionListeners = new Set<() => void>();
-
-/**
- * A 401 from any call means the session has ended: it ran out, or the client
- * logged out on another phone. App forgets the kept Home and shows the login
- * (apps/app/src/App.tsx), wherever the client was, so no page has to handle it.
- */
-export function onSessionEnded(listener: () => void): () => void {
-  sessionListeners.add(listener);
-  return () => {
-    sessionListeners.delete(listener);
-  };
-}
-
 /**
  * How long a call waits before the screen says there is no connection: a stalled signal must not leave Pay,
  * Continue or Cancel busy until the page is reloaded.
@@ -119,14 +104,17 @@ const client = createClient<paths, ErrorCode>({
   patience: PATIENCE_MS,
   // Staging's Access sign-in ran out: the page goes back through it, past the service worker's copy.
   onAccessLapsed: signInAgain,
-  onSessionEnded: () => {
-    for (const listener of sessionListeners) listener();
-  },
   // A hold is counted on the API's clock. The Home the phone kept is as old as the day it was kept, so it is not asked.
-  onAnswer: (response) => {
-    if (response.ok && response.headers.get(SERVED_FROM) !== "cache") heardFromApi(response.headers.get("Date"));
+  onFreshAnswer: (response) => {
+    if (response.ok) heardFromApi(response.headers.get("Date"));
   },
 });
+
+/**
+ * A 401 from any call means the session has ended: it ran out, or the client logged out on another phone. App forgets
+ * the kept Home and shows the login (apps/app/src/App.tsx).
+ */
+export const onSessionEnded = (listener: () => void) => client.onSessionEnded(listener);
 
 export const api = {
   sendCode: (mobile: string, turnstileToken: string) =>

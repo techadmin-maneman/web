@@ -3,7 +3,5 @@
 
 import { app } from "../content.ts";
 
-/** "Visits · Mane Man". */
-export function nameInTitle(screen: string): void {
-  document.title = `${screen} · ${app.name}`;
-}
+/** "Visits · Mane Man", as a screen names itself in the title (@maneman/ui/useScreenTitle). */
+export const titled = (screen: string): string => `${screen} · ${app.name}`;

@@ -2,8 +2,9 @@
 // goes in the browser's title, and the focus goes to its heading when it opens,
 // rather than being dropped on the page when the last screen went.
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { focusIfLost } from "@maneman/ui/arrival";
+import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { titles } from "../content.ts";
 
 /**
@@ -11,12 +12,7 @@ import { titles } from "../content.ts";
  * unless the screen has put it in a field of its own.
  */
 export function useScreen(name: string | null): (heading: HTMLHeadingElement | null) => void {
-  useEffect(() => {
-    document.title = name === null ? titles.app : titles.of(name);
-    return () => {
-      document.title = titles.app;
-    };
-  }, [name]);
+  useScreenTitle(name === null ? titles.app : titles.of(name), titles.app);
 
   const focused = useRef(false);
   return useCallback((heading: HTMLHeadingElement | null) => {

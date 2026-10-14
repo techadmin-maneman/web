@@ -40,7 +40,8 @@ describe.each(APPS)("%s", (app) => {
 
   it("bundles one React, its own, for the shared components as for its own", () => {
     // packages/ui would otherwise find the repository root's React 18, kept there for the fidelity runs.
-    expect(read(`${app}/vite.config.ts`)).toMatch(/dedupe:\s*\["react",\s*"react-dom"\]/);
+    expect(read(`${app}/vite.config.ts`)).toContain("appViteConfig(");
+    expect(read("scripts/build/app-vite-config.ts")).toMatch(/dedupe:\s*\["react",\s*"react-dom"\]/);
   });
 
   it("starts its stylesheet from the shared base, and repeats none of it", () => {

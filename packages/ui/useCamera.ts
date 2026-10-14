@@ -1,20 +1,23 @@
-// The camera, held open only while the capture screen is in front of the
-// technician.
+// A camera, held open only while its screen is in front of the person, for the technician app's photographs and any
+// label read by camera (./ScanField.tsx).
 //
-// A phone that goes to the background keeps its camera busy for nothing, and
-// an iPhone hands back a black or frozen picture when it returns to a stream
-// it held all along. A track can also end on its own — another app took the
-// camera, or the system did. So the camera is let go whenever the app is
-// hidden, opened afresh when it comes back, and opened again when its track
-// ends. A refusal is not the end either: `retry` asks again.
+// A phone that goes to the background keeps its camera busy for nothing, and an iPhone hands back a black or frozen
+// picture when it returns to a stream it held all along. A track can also end on its own: another app took the
+// camera, or the system did. So the camera is let go whenever the page is hidden, opened afresh when it comes back,
+// and opened again when its track ends. A refusal is not the end either: `retry` asks again.
 
 import { useCallback, useEffect, useState } from "react";
-import { cameraAvailable, closeCamera, openCamera } from "./capture.ts";
 
-type Camera =
+export type Camera =
   | { readonly state: "opening" }
   | { readonly state: "open"; readonly stream: MediaStream }
   | { readonly state: "refused" };
+
+const cameraAvailable = () => "mediaDevices" in navigator && typeof navigator.mediaDevices.getUserMedia === "function";
+
+const closeCamera = (stream: MediaStream | null) => {
+  for (const track of stream?.getTracks() ?? []) track.stop();
+};
 
 function useVisible(): boolean {
   const [visible, setVisible] = useState(() => document.visibilityState === "visible");
@@ -30,7 +33,8 @@ function useVisible(): boolean {
   return visible;
 }
 
-export function useCamera(): readonly [Camera, () => void] {
+/** `open` asks for the stream the screen wants; it keeps its identity from one render to the next, as a module's does. */
+export function useCamera(open: () => Promise<MediaStream>): readonly [Camera, () => void] {
   const [camera, setCamera] = useState<Camera>({ state: "opening" });
   const [attempt, setAttempt] = useState(0);
   const visible = useVisible();
@@ -49,7 +53,7 @@ export function useCamera(): readonly [Camera, () => void] {
     }
     let current = true;
     let opened: MediaStream | null = null;
-    void openCamera().then(
+    void open().then(
       (stream) => {
         opened = stream;
         if (!current) {
@@ -67,7 +71,7 @@ export function useCamera(): readonly [Camera, () => void] {
       current = false;
       closeCamera(opened);
     };
-  }, [visible, attempt, retry]);
+  }, [open, visible, attempt, retry]);
 
   return [camera, retry];
 }

@@ -101,20 +101,7 @@ const PATIENCE_MS = {
   upload: 60_000,
 } as const;
 
-const sessionListeners = new Set<(code: string) => void>();
 const reachListeners = new Set<(reached: boolean) => void>();
-
-/**
- * A 401 from any call ends the session: ops revoked the phone, or it ran out.
- * App wipes the phone and shows the sign-in (apps/tech/src/App.tsx), wherever
- * the technician was, so no screen has to handle it.
- */
-export function onSessionEnded(listener: (code: string) => void): () => void {
-  sessionListeners.add(listener);
-  return () => {
-    sessionListeners.delete(listener);
-  };
-}
 
 /** After every call: whether anything answered, which is truer than whether the phone says it has a network. */
 export function onReach(listener: (reached: boolean) => void): () => void {
@@ -132,13 +119,12 @@ const client = createClient<paths, ErrorCode>({
   // Staging's Access sign-in ran out: the page goes back through it, past the service worker. The outbox keeps every
   // write it had, as it does with no connection.
   onAccessLapsed: signInAgain,
-  onSessionEnded: (code) => {
-    for (const listener of sessionListeners) listener(code);
+  onAnswer: () => {
+    reached(true);
   },
   // The technician's day, the no-show wait and the close-out are dated on the API's clock.
-  onAnswer: (response) => {
+  onFreshAnswer: (response) => {
     if (response.ok) void heardClock(response.headers.get("Date")).catch(() => undefined);
-    reached(true);
   },
   onUnreached: () => {
     reached(false);
@@ -146,6 +132,12 @@ const client = createClient<paths, ErrorCode>({
   // The job changed under the phone and the answer lost its body on the way: still a job to stop.
   missingCode: (status) => (status === 409 ? SUPERSEDED : "unknown"),
 });
+
+/**
+ * A 401 from any call ends the session: ops revoked the phone, or it ran out. App wipes the phone and shows the sign-in
+ * (apps/tech/src/App.tsx).
+ */
+export const onSessionEnded = (listener: (code: string) => void) => client.onSessionEnded(listener);
 
 /** The headers that make a write idempotent, and say which start of the job the phone held. */
 function headersOf(write: Write): Record<string, string> {

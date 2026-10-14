@@ -15,10 +15,6 @@
 
 import { SMALL_JPEG_LONG_EDGE, smallJpeg, still, thumbnailJpeg, type SmallJpeg } from "@maneman/web-kit/small-jpeg";
 
-export function cameraAvailable(): boolean {
-  return "mediaDevices" in navigator && typeof navigator.mediaDevices.getUserMedia === "function";
-}
-
 /** The back camera, held open for the whole of one step's five angles. */
 export function openCamera(): Promise<MediaStream> {
   return navigator.mediaDevices.getUserMedia({
@@ -29,10 +25,6 @@ export function openCamera(): Promise<MediaStream> {
     },
     audio: false,
   });
-}
-
-export function closeCamera(stream: MediaStream | null): void {
-  for (const track of stream?.getTracks() ?? []) track.stop();
 }
 
 interface Captured {
