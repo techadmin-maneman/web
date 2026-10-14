@@ -269,7 +269,7 @@ describe("CRON_JOBS", () => {
     for (let run = 0; run < 2; run += 1) {
       await runCronJobs(meter, { env: halfFull, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
-    expect(deps.alerts).toEqual([expect.stringContaining("The database holds 5.20 GB, 50% of the 10 GB")]);
+    expect(deps.alerts).toEqual([expect.stringContaining("it holds 5.20 GB, 50% of the 10 GB")]);
   });
 });
 

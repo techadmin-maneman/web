@@ -24,9 +24,14 @@ import { isNoShow, landsAfterClose, stepBefore, type JobEventKind } from "../../
 import { namesTheOtherTechnician } from "../../policy/job-visibility.ts";
 import { earliestCheckIn, doneOn, isOnVisitDay, tooEarlyToArrive, type PhoneClock } from "../../policy/phone-clock.ts";
 import type { WorkableJob } from "./workable-job.ts";
+import { z } from "zod";
+import { storedJson } from "../../lib/stored-json.ts";
 
 /** As job_events.write_state holds it: "written" once landed, "rejected" when superseded. */
 type WriteState = "pending" | "written" | "rejected";
+
+/** A step's body as the phone sent it, which each step's own schema reads (./job-event-bodies.ts). */
+const BODY = z.record(z.string(), z.unknown());
 
 const EVENT_COLUMNS = "id, appointment_id, event_id, kind, body, occurred_at, write_state, superseded";
 
@@ -314,7 +319,7 @@ function eventOf(row: EventRow): JobEvent {
     appointmentId: row.appointment_id,
     eventId: row.event_id,
     kind: row.kind,
-    body: JSON.parse(row.body) as Record<string, unknown>,
+    body: storedJson(BODY, row.body, "job_events.body"),
     occurredAt: row.occurred_at,
     writeState: row.write_state,
     superseded: row.superseded === 1,

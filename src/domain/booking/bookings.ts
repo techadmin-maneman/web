@@ -29,6 +29,7 @@ import { giveBack, giveBackUnkept } from "./give-back.ts";
 import { tellOfStockGap } from "../inventory/stock-gap.ts";
 import { isAFitting } from "../../config/visit-types.ts";
 import { visitUpkeep } from "../visits/visit-upkeep.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 type Started = { readonly kind: "free" } | { readonly kind: "pay"; readonly orderId: string };
 
@@ -370,7 +371,7 @@ async function alertIfUnassigned(booked: HoldRow, visitId: string, options: Conf
   if (booked.appointment_id !== visitId || booked.technician_active === 1) return;
   await options.alertOnce?.({
     key: `booked_unassigned:${visitId}`,
-    message: `A visit booked for ${booked.date} has no technician: the one it was held with was switched off. Give it to someone on the board.`,
+    message: ALERT_WORDS.booked_unassigned({ day: booked.date, visit: visitId }),
     link: "/dispatch",
   });
 }
@@ -395,9 +396,7 @@ async function alertIfNoCreditPaid(db: D1Database, booked: HoldRow, options: Con
   options.log.warn("credit_visit_without_credit", { hold_id: booked.id });
   await options.alertOnce?.({
     key: `credit_visit_without_credit:${booked.id}`,
-    message:
-      `Booking ${booked.id} was booked on a visit credit, but the client had none left by then, ` +
-      "so nothing has paid for it. Decide whether to charge for the visit.",
+    message: ALERT_WORDS.credit_visit_without_credit({ booking: booked.id }),
     link: paymentsTab(booked.person_id),
   });
 }

@@ -10,7 +10,6 @@
 // ops hear of a refusal at once and of any other failure on its third time.
 
 import { shortDate } from "@maneman/web-kit/dates";
-import { rupees } from "@maneman/web-kit/money";
 import type { GstRegistration } from "../../config/gst.ts";
 import { STANDARD_TIER, VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
@@ -28,6 +27,7 @@ import { codeOnVisit, priceAfterCode } from "../money/discount-code-uses.ts";
 import { priceOf, type Price } from "../money/price-book.ts";
 import { PAYMENT_HELD, statusIn } from "../../config/statuses.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /**
  * Outside calls one visit may cost: the invoice kept on it, the look for one under our reference, the client's
@@ -350,30 +350,23 @@ async function tellHeld({
   hold: InvoiceHold;
   sold: SoldVisit;
 }): Promise<void> {
-  const held = `Invoice ${named(invoice)} of visit ${visit.id} is held as a draft in Books:`;
-  const why: Record<InvoiceHold, string> = {
-    price_differs:
-      `it totals ${rupees(invoice.total)}, and the visit was sold for ${rupees(sold.soldFor ?? 0)}. ` +
-      "Correct the draft in Books: once it totals what was sold, it is sent within the hour.",
-    price_unknown:
-      `nothing here says what the visit was sold for, so its ${rupees(invoice.total)} cannot be checked. ` +
-      "Check the draft in Books and send it there.",
-    paid_with_credit:
-      "the visit was paid with a referral credit, and how such a visit is invoiced waits for the accountant. " +
-      "Leave the draft until then.",
-    credit_missing:
-      "the visit was booked on a referral credit the client no longer had, so nothing paid for it. Decide whether to " +
-      "charge, send or delete the draft in Books.",
-  };
-  await pass.deps.alertOnce({ key: `invoice_draft:${visit.id}`, message: `${held} ${why[hold]}`, link: linkTo(visit) });
+  await pass.deps.alertOnce({
+    key: `invoice_draft:${visit.id}`,
+    message: ALERT_WORDS.invoice_draft({
+      invoice: named(invoice),
+      visit: visit.id,
+      held: hold,
+      total: invoice.total,
+      soldFor: sold.soldFor ?? 0,
+    }),
+    link: linkTo(visit),
+  });
 }
 
 async function tellNotSent(pass: Pass, visit: Visit, invoice: BooksInvoice): Promise<void> {
   await pass.deps.alertOnce({
     key: `invoice_draft:${visit.id}`,
-    message:
-      `Books would not mark invoice ${named(invoice)} sent, so visit ${visit.id} has no tax invoice the client can ` +
-      "open. It is tried again within the hour, or send it in Books.",
+    message: ALERT_WORDS.invoice_not_sent({ invoice: named(invoice), visit: visit.id }),
     link: linkTo(visit),
   });
 }
@@ -381,9 +374,7 @@ async function tellNotSent(pass: Pass, visit: Visit, invoice: BooksInvoice): Pro
 async function tellHandMade(pass: Pass, visit: Visit, invoice: BooksInvoice): Promise<void> {
   await pass.deps.alertOnce({
     key: `invoice_draft:${visit.id}`,
-    message:
-      `Invoice ${named(invoice)} of visit ${visit.id} is still a draft in Books an hour after the visit, so the ` +
-      "client cannot open it. It was not raised here: send it in Books, since nothing here sends a draft made by hand.",
+    message: ALERT_WORDS.invoice_hand_made({ invoice: named(invoice), visit: visit.id }),
     link: linkTo(visit),
   });
 }
@@ -391,9 +382,7 @@ async function tellHandMade(pass: Pass, visit: Visit, invoice: BooksInvoice): Pr
 async function tellVoid(pass: Pass, visit: Visit, invoice: BooksInvoice): Promise<void> {
   await pass.deps.alertOnce({
     key: `invoice_draft:${visit.id}`,
-    message:
-      `Invoice ${named(invoice)} of visit ${visit.id} is void in Books, so the client has no tax invoice for it. ` +
-      "Nothing here raises another: raise one in Books by hand if it is owed.",
+    message: ALERT_WORDS.invoice_void({ invoice: named(invoice), visit: visit.id }),
     link: linkTo(visit),
   });
 }
@@ -402,9 +391,7 @@ async function tellUnpriced(pass: Pass, visit: Visit): Promise<void> {
   pass.log.warn("invoice_unpriced", { appointment_id: visit.id, type: visit.type, tier: visit.tier });
   await pass.deps.alertOnce({
     key: `invoice_unpriced:${visit.id}`,
-    message:
-      `Visit ${visit.id} has no price in the price book for its day, so no invoice was raised for it. Raise it in ` +
-      "Books by hand.",
+    message: ALERT_WORDS.invoice_unpriced({ visit: visit.id }),
     link: linkTo(visit),
   });
 }
@@ -418,11 +405,13 @@ const tellFailure = (pass: Pass, visit: Visit, error: unknown): Promise<void> =>
       id: visit.id,
       idField: "appointment_id",
       link: linkTo(visit),
-      refused: (said) =>
-        `Books refused the invoice of visit ${visit.id}, saying "${said}". It is tried again each hour, or raise it in ` +
-        "Books by hand.",
+      refused: (said) => ALERT_WORDS.invoice_refused({ visit: visit.id, said }),
       failed: (failure) =>
-        `The invoice pass has failed ${String(FAILURES_BEFORE_ALERT)} times on visit ${visit.id}: ${failureReason(failure, 200)}.`,
+        ALERT_WORDS.invoice_failed({
+          visit: visit.id,
+          times: FAILURES_BEFORE_ALERT,
+          reason: failureReason(failure, 200),
+        }),
     },
     error,
   );

@@ -129,7 +129,7 @@ describe("POST /api/clients/:id/referral", () => {
     crm = { ...fakeQueue(), send: () => Promise.reject(new Error("queue down")) };
     expect((await attach({ code: "RM4K7P", reason: REASON })).status).toBe(201);
     expect((await attributions()).results).toHaveLength(1);
-    expect(deps.alerts).toEqual([expect.stringContaining(`Client ${FRIEND}'s invite could not be sent on to the CRM`)]);
+    expect(deps.alerts).toEqual([expect.stringContaining(`client ${FRIEND}'s invite did not reach the CRM`)]);
     // The org has the referral fields since 2 October 2026 (src/config/crm.ts), so the alert asks for the code there too.
     expect(deps.alerts[0]).toContain("add a note to their CRM lead that ops attached a friend's invite");
     expect(deps.alerts[0]).toContain("write the invite's code, shown on their page, in Referral_Code");

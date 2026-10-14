@@ -16,6 +16,7 @@ import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
 import { addTheWeek } from "./kit-week.ts";
 import { tierOf } from "../../config/visit-types.ts";
 import { bookedAhead } from "../../config/statuses.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 type UseRow = { technician_id: string; code: string; quantity: number };
 type FitRow = {
@@ -135,14 +136,13 @@ function shortLine(
   kit: { readonly id: string; readonly sourceName: string | null; readonly forTheWeek: boolean },
   gaps: readonly Gap[],
 ): string {
-  const lacks = gaps.map((gap) => `${String(gap.gap)} ${gap.code}`).join(", ");
-  const nowhere = gaps.filter((gap) => gap.atSource < gap.gap).map((gap) => gap.code);
-  const gapLine =
-    nowhere.length === 0
-      ? ""
-      : ` ${kit.sourceName ?? "Its stockroom"} can't cover ${nowhere.join(", ")}: order or move one.`;
-  const span = kit.forTheWeek ? "the week" : "tomorrow";
-  return `Short for ${span} in technician ${kit.id}'s kit: ${lacks}. A top-up waits on the Supply plan.${gapLine}`;
+  return ALERT_WORDS.kit_short({
+    kit: kit.id,
+    span: kit.forTheWeek ? "the week" : "tomorrow",
+    lacks: gaps.map((gap) => `${String(gap.gap)} ${gap.code}`).join(", "),
+    source: kit.sourceName,
+    nowhere: gaps.filter((gap) => gap.atSource < gap.gap).map((gap) => gap.code),
+  });
 }
 
 /** What each kit holds and has on its way of what it needs, and each kit's technician and the source of its top-ups. */

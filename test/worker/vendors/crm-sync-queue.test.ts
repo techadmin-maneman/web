@@ -158,7 +158,7 @@ describe("crm-sync: erasing a person", () => {
       .run();
     await eraseInCrm(env.DB, deps, log, personId);
     expect(deps.alerts).toEqual([
-      expect.stringContaining(`Erasing person ${personId} in the CRM failed 10 times`) as string,
+      expect.stringContaining(`Send person ${personId}'s erasure again from Tasks`) as string,
     ]);
     expect(await openAlertKeys()).toEqual([`crm_erasure:${personId}`]);
 
@@ -331,7 +331,7 @@ describe("crm-sync: a changed number, address or invite", () => {
     await last.done;
     expect(last.message.ack).toHaveBeenCalled();
     expect(last.deps.alerts).toEqual([
-      expect.stringContaining(`Client ${PERSON}'s new number, city or invite`) as string,
+      expect.stringContaining(`Update client ${PERSON}'s CRM lead by hand: their new number, city or invite`) as string,
     ]);
   });
 });

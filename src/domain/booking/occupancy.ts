@@ -2,7 +2,13 @@
 // holds' claims, live visits and leave. Days ops black out are never offered.
 
 import { keepingItsTime, ownAtCheckout, ownUnpaid } from "./hold-stages.ts";
-import { UNITS_PER_DAY, VISIT_BLOCKS, WINDOW_SLOT_MAP, type BookingWindow } from "../../config/scheduling.ts";
+import {
+  BOOKING_WINDOWS,
+  UNITS_PER_DAY,
+  VISIT_BLOCKS,
+  WINDOW_SLOT_MAP,
+  type BookingWindow,
+} from "../../config/scheduling.ts";
 import { isAFitting, tierOf, type VisitType } from "../../config/visit-types.ts";
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { clashes } from "../../policy/dispatch.ts";
@@ -12,6 +18,7 @@ import { loadSlotSchedule } from "./slot-times.ts";
 import { minutesBetween } from "../../lib/durations.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 import { fitCode } from "../inventory/stock-gap.ts";
+import { isOneOf } from "../../lib/one-of.ts";
 
 /** What one technician's day already holds. */
 export interface Day {
@@ -263,7 +270,8 @@ export async function occupancy({
     const [kind, value = ""] = claim.split(":");
     const day = dayOf(technicianId, date);
     if (kind === "unit") day.units.add(Number(value));
-    else day.windows.add(value as BookingWindow);
+    else if (isOneOf(BOOKING_WINDOWS, value)) day.windows.add(value);
+    else throw new Error(`slot_claims.claim names no window: ${claim}`);
   }
 
   // Leave takes the whole day, so the day is marked rather than its slots filled:

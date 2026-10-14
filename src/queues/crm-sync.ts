@@ -21,6 +21,7 @@ import { leadNotice } from "../domain/leads/lead-notice.ts";
 import { crmErasureKey, crmLeadKey } from "../policy/alerts.ts";
 import { backoffSeconds, DONE, runConsumer, type Settle } from "./consumer.ts";
 import { CrmSyncMessageSchema, MAX_SYNC_ATTEMPTS, QUICK_RETRY_DELAY_SECONDS } from "../config/pipeline.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 /** A lead written, an erased person blanked, or a contact updated; work that D1 fails is tried again shortly. */
 export function handleCrmSyncBatch(
@@ -118,9 +119,7 @@ async function updateContact(
     }
     await deps.alertOnce({
       key: `crm_contact_update:${personId}`,
-      message:
-        `Client ${personId}'s new number, city or invite did not reach their CRM lead after ` +
-        `${String(attempts)} attempts: ${reason}. Update the lead by hand.`,
+      message: ALERT_WORDS.crm_contact_update({ client: personId, attempts, reason }),
       link: `/clients/${personId}`,
     });
     return DONE;
@@ -283,9 +282,7 @@ async function keepOutOfCrm(db: D1Database, deps: Dependencies, log: Logger, row
 async function alertLeadGivenUp(deps: Dependencies, row: LeadRow, attempts: number, description: string) {
   await deps.alertOnce({
     key: crmLeadKey(row.lead_id),
-    message:
-      `Lead ${row.lead_id} did not reach the CRM after ${String(attempts)} attempts: ${description}. ` +
-      "Send it again from Tasks once Zoho is back.",
+    message: ALERT_WORDS.crm_lead({ lead: row.lead_id, attempts, reason: description }),
     link: `/clients/${row.person_id}`,
   });
 }
@@ -393,9 +390,7 @@ export async function eraseInCrm(
     if (attempts >= MAX_SYNC_ATTEMPTS) {
       await deps.alertOnce({
         key: crmErasureKey(personId),
-        message:
-          `Erasing person ${personId} in the CRM failed ${String(attempts)} times (${description}). ` +
-          "Send it again from Tasks, or blank the record by hand and mark it done there.",
+        message: ALERT_WORDS.crm_erasure({ person: personId, attempts, reason: description }),
       });
     }
     return { retrySoon: attempts === 1 };

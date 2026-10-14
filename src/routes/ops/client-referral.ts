@@ -28,6 +28,7 @@ import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../../config/crm.ts";
 import { REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
 import { type CrmSyncMessage } from "../../config/pipeline.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** The invite a client came with, as their page shows it. */
 export const ClientInviteSchema = z
@@ -115,7 +116,7 @@ async function queueCrmUpdate(c: Context<AppEnv>, personId: string): Promise<voi
   const { requestId, log, deps } = c.var;
   const alert = {
     key: `crm_contact_update:${personId}`,
-    message: `Client ${personId}'s invite could not be sent on to the CRM. By hand, ${writtenByHand()}.`,
+    message: ALERT_WORDS.crm_invite({ client: personId, byHand: writtenByHand() }),
     link: `/clients/${personId}/referrals`,
   };
   const body = { update_person_id: personId, request_id: requestId, invite_attached: true } satisfies CrmSyncMessage;

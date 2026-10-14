@@ -3,6 +3,7 @@
 // earlier minute. Still on after an hour, it is a step forgotten, and ops are told.
 
 import type { AlertOnce } from "./alerts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 interface Maintenance {
   readonly reason: string;
@@ -29,8 +30,6 @@ export async function alertIfForgotten(maintenance: Maintenance, alertOnce: Aler
   if (onFor < FORGOTTEN_AFTER_MS) return;
   await alertOnce({
     key: `maintenance:${maintenance.startedAt}`,
-    message:
-      `The cron and the queue consumers have stood still since ${maintenance.startedAt} for maintenance ` +
-      `(${maintenance.reason}). Once the restore is done, switch it off: runbook, "Restoring D1".`,
+    message: ALERT_WORDS.maintenance({ since: maintenance.startedAt, reason: maintenance.reason }),
   });
 }

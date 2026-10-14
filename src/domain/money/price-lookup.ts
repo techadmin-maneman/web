@@ -3,6 +3,8 @@
 // services, so both may use it.
 
 import { withGst } from "../../config/gst.ts";
+import { z } from "zod";
+import { storedJson } from "../../lib/stored-json.ts";
 
 /** A price: before GST, with GST, and the rate between them. */
 export interface Price {
@@ -25,9 +27,12 @@ export const priceInForce = (item: string, tier: string, on: string, city: strin
     WHERE b.item = ${item} AND b.tier = ${tier} AND b.valid_from <= ${on}
     ORDER BY b.valid_from DESC LIMIT 1))`;
 
+/** What priceInForce answers: the amount before GST, and the GST percent. */
+const PRICE_PAIR = z.tuple([z.number(), z.number()]);
+
 /** A price as priceInForce answers it; null for none. */
 export function priceFrom(json: string | null): Price | null {
   if (json === null) return null;
-  const [amountExGst, gstPercent] = JSON.parse(json) as [number, number];
+  const [amountExGst, gstPercent] = storedJson(PRICE_PAIR, json, "priceInForce");
   return { amount_ex_gst: amountExGst, amount: withGst(amountExGst, gstPercent), gst_percent: gstPercent };
 }

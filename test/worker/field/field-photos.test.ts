@@ -116,7 +116,7 @@ describe("the photographs", () => {
     const refused = await putPhoto(await opsFreeUploadLink(), syntheticJpeg(1200, 1600));
     expect(refused.status).toBe(503);
     expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
-    expect(deps.alerts).toEqual([expect.stringContaining("A technician's phone reached the day's limit of uploads")]);
+    expect(deps.alerts).toEqual([expect.stringContaining("a technician's phone reached the day's limit of uploads")]);
     expect(await env.DB.prepare("SELECT COUNT(*) AS photos FROM photos").first("photos")).toBe(0);
   });
 

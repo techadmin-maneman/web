@@ -5,6 +5,7 @@
 import { rupees } from "@maneman/web-kit/money";
 import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
 import { PER_PASS } from "./vendor-pass.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 interface KeptRow {
   id: string;
@@ -86,9 +87,7 @@ export async function tellUnapplied(
 ): Promise<void> {
   await alertOnce({
     key: `books_unapplied:${payment.id}`,
-    message:
-      `Payment ${payment.id} (Books ${payment.books_payment_id}) has nothing to be set against: ${why}. ` +
-      "It stays in Books as credit owed to the client.",
+    message: ALERT_WORDS.books_unapplied({ what: `payment ${payment.id}`, why, books: payment.books_payment_id }),
     link: paymentsTab(payment.person_id),
   });
 }

@@ -14,6 +14,7 @@ import type { Logger } from "../log.ts";
 import { enqueueBatch } from "../domain/platform/enqueue.ts";
 import { SENDING_LEASE_MS } from "../queues/messaging.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 /** Unsent this long after it was due, a message has lost its queue message or is waiting for the bridge. */
 const GRACE_MS = 5 * MINUTE_MS;
@@ -103,9 +104,7 @@ async function failDayOldMessages(run: UnsentMessagesRun): Promise<void> {
   run.log.warn("messages_unsent_failed", { count: results.length, example: results[0]?.id, kind: results[0]?.kind });
   await run.deps.alertOnce({
     key: `messages_unsent:${indiaDate(run.now)}`,
-    message:
-      `${String(results.length)} ${results.length === 1 ? "message" : "messages"} queued over a day ago never sent. ` +
-      'Replay those still worth sending once WhatsApp is back (runbook, "Replaying a failed message").',
+    message: ALERT_WORDS.messages_unsent({ count: results.length }),
   });
 }
 

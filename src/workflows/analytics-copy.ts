@@ -14,6 +14,7 @@ import { readOpsInputs } from "../domain/platform/ops-settings.ts";
 import { failureReason } from "../log.ts";
 import type { TableMeta, WarehouseProvider } from "../providers/warehouse/index.ts";
 import { STEP_RETRIES, type Steps, type WorkflowRun } from "./steps.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 export interface CopyRun extends WorkflowRun {
   /** The copy's store, opened for each step and closed after it; null where the copy is switched off. */
@@ -76,7 +77,7 @@ export async function copyNight(steps: Steps, run: CopyRun, date: string): Promi
     await steps.do("tell of the failure", STEP_RETRIES, async () => {
       await run.deps.alertOnce({
         key: "analytics_copy_failed",
-        message: `Last night's reporting copy failed: ${failureReason(error)}. The cron starts it again within the hour.`,
+        message: ALERT_WORDS.analytics_copy_failed({ reason: failureReason(error) }),
       });
       return true;
     });
@@ -91,14 +92,14 @@ async function tell({ deps }: CopyRun, swapped: Swapped): Promise<boolean> {
   else {
     await deps.alertOnce({
       key: "analytics_totals",
-      message: "Last night's reporting copy does not match the bookings and payments it was sent. Reports may be off.",
+      message: ALERT_WORDS.analytics_totals(),
     });
   }
   if (swapped.bytes < WAREHOUSE_ALERT_BYTES) await deps.resolveAlert("analytics_size");
   else {
     await deps.alertOnce({
       key: "analytics_size",
-      message: "The reporting copy is near its 500 MB limit in Supabase. Trim the oldest rows or move up a plan.",
+      message: ALERT_WORDS.analytics_size(),
     });
   }
   return true;

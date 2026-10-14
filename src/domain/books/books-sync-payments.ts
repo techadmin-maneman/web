@@ -9,6 +9,7 @@ import { tellUnapplied } from "./books-kept.ts";
 import { type Pass, claimToRecord, tellFailure, closeFailures, claimToApply, markApplied } from "./books-pass.ts";
 import { type PaymentPaidFor, supplyOf } from "./receipt-supply.ts";
 import { PER_PASS } from "./vendor-pass.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 // ---------------------------------------------------------------------------
 // Recording a payment
@@ -160,10 +161,11 @@ async function tellLeftOver(pass: Pass, payment: PaymentToApply, owed: number): 
   const left = payment.amount - owed;
   await pass.deps.alertOnce({
     key: `books_unapplied:${payment.id}`,
-    message:
-      `Payment ${payment.id} (Books ${payment.books_payment_id}) was ${rupees(payment.amount)}, and invoice ` +
-      `${payment.books_invoice_id} owed ${rupees(owed)} of it, so ${rupees(left)} has nothing to be set against. ` +
-      "It stays in Books as credit owed to the client.",
+    message: ALERT_WORDS.books_unapplied({
+      what: `${rupees(left)} of payment ${payment.id}`,
+      why: `invoice ${payment.books_invoice_id} owed ${rupees(owed)} of its ${rupees(payment.amount)}`,
+      books: payment.books_payment_id,
+    }),
     link: paymentsTab(payment.person_id),
   });
 }

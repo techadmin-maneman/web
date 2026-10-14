@@ -20,9 +20,12 @@ import {
   type NorwoodStage,
   type Remedy,
   type Wave,
+  REMEDIES,
 } from "../../policy/hair-profile.ts";
 import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import { serviceOf } from "../booking/services.ts";
+import { z } from "zod";
+import { storedJson } from "../../lib/stored-json.ts";
 
 export interface FitSpec {
   readonly norwood_stage: NorwoodStage | null;
@@ -383,11 +386,14 @@ function fitOf(row: VersionRow): HairProfile["fit"] {
   };
 }
 
+/** The remedies a version's history keeps. */
+const REMEDIES_KEPT = z.array(z.enum(REMEDIES));
+
 /** The history a version holds; null where none was recorded, or it was blanked. */
 function storedHistory(row: VersionRow): History | null {
   if (row.remedies === null && row.transplant_year === null && row.skin_and_allergies === null) return null;
   return {
-    remedies: row.remedies === null ? [] : (JSON.parse(row.remedies) as Remedy[]),
+    remedies: row.remedies === null ? [] : storedJson(REMEDIES_KEPT, row.remedies, "hair_profile_versions.remedies"),
     transplant_year: row.transplant_year,
     skin_and_allergies: row.skin_and_allergies,
   };

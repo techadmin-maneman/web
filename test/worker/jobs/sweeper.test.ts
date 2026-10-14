@@ -201,7 +201,7 @@ describe("sweeper: YouCam units", () => {
   it("reads the balance and alerts below the floor", async () => {
     const deps = fakeDependencies();
     expect(await check(deps, 5000)).toBe(1000); // the stub's two pools, summed
-    expect(deps.alerts).toEqual([expect.stringContaining("YouCam is down to 1000 units") as string]);
+    expect(deps.alerts).toEqual([expect.stringContaining("Buy YouCam units before try-ons stop: 1000 left") as string]);
   });
 
   it("tells ops once, not every hour, until a top-up lifts the balance over the floor", async () => {

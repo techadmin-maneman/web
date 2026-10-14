@@ -71,6 +71,7 @@ import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -131,7 +132,7 @@ async function missedJobsJob({ env, deps, config }: CronContext): Promise<void> 
     if (since === undefined || now - Date.parse(since) <= missedAfterMs(job.slot)) continue;
     await deps.alertOnce({
       key: `cron_job_missed:${job.name}`,
-      message: `The cron's ${job.name} job has not run well since ${since}, past its time: runbook, "Alerts and the cron".`,
+      message: ALERT_WORDS.cron_job_missed({ job: job.name, since }),
     });
   }
 }
@@ -245,7 +246,7 @@ async function backupJob({ env, deps, config, slot }: CronContext): Promise<unkn
     if (config.environment !== "local") {
       await deps.alertOnce({
         key: "backup_not_configured",
-        message: "No weekly backup was written: no backup key is set. The runbook, Restoring D1, says how to make one.",
+        message: ALERT_WORDS.backup_not_configured(),
       });
     }
     return undefined;

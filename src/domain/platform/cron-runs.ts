@@ -7,6 +7,7 @@
 
 import { HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
 import type { AlertOnce, ResolveAlert } from "./alerts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 export const CUT_SHORT_ALERT = "cron_run_cut_short";
 
@@ -69,9 +70,7 @@ export async function startRun(deps: { db: D1Database; alertOnce: AlertOnce }, s
   await db.prepare("UPDATE cron_runs SET cut_short_at = ?1 WHERE id = 1").bind(startedAt).run();
   await alertOnce({
     key: CUT_SHORT_ALERT,
-    message:
-      `The cron run started at ${previous.started_at} never finished, so the jobs after where it stopped did not ` +
-      `run. Cloudflare may have stopped it for its CPU time: runbook, "A cron run cut short".`,
+    message: ALERT_WORDS.cron_run_cut_short({ started: previous.started_at }),
   });
   return { overlapping: null, cutShortAt: previous.started_at, failing };
 }

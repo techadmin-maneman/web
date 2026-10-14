@@ -336,8 +336,7 @@ describe("the invoice a finished visit gets", () => {
     const books = createStubBooks();
     expect(await invoicePass(books)).toEqual({ raised: 0, issued: 0 });
     expect(alerted).toEqual([
-      `Visit ${VISIT} has no price in the price book for its day, so no invoice was raised for it. Raise it in ` +
-        `Books by hand. ${CLIENT_LINK}`,
+      `Raise visit ${VISIT}'s invoice in Books by hand: the price book has no price for its day. ${CLIENT_LINK}`,
     ]);
   });
 
@@ -349,8 +348,8 @@ describe("the invoice a finished visit gets", () => {
     expect(await invoicePass(books)).toEqual({ raised: 0, issued: 0 });
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "invoice_refused", code: "4004" }));
     expect(alerted).toEqual([
-      `Books refused the invoice of visit ${VISIT}, saying "the stub Books refused createInvoice". It is tried ` +
-        `again each hour, or raise it in Books by hand. ${CLIENT_LINK}`,
+      `Raise visit ${VISIT}'s invoice in Books by hand, or correct what Books refused: "the stub Books refused ` +
+        `createInvoice". ${CLIENT_LINK}`,
     ]);
     expect(await invoicePass(books, later(RECHECK_AFTER_MS + 1000))).toEqual({ raised: 1, issued: 1 });
     const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
@@ -376,9 +375,8 @@ describe("sending it", () => {
     expect(await invoicePass(books.provider)).toEqual({ raised: 1, issued: 0 });
     const invoice = (await row())?.books_invoice_id ?? "";
     expect(alerted).toEqual([
-      `Invoice INV-000001 (${invoice}) of visit ${VISIT} is held as a draft in Books: it totals Rs. 15,750, and the ` +
-        "visit was sold for Rs. 15,000. Correct the draft in Books: once it totals what was sold, it is sent within " +
-        `the hour. ${CLIENT_LINK}`,
+      `Correct invoice INV-000001 (${invoice}) in Books to Rs. 15,000, what the visit was sold for: it totals ` +
+        `Rs. 15,750, so it is held as a draft until it matches. Visit ${VISIT}. ${CLIENT_LINK}`,
     ]);
 
     // Still held an hour on, and ops are not told again.
@@ -448,7 +446,7 @@ describe("sending it", () => {
     expect(await invoicePass(books)).toEqual({ raised: 1, issued: 0 });
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "invoice_not_issued" }));
     expect(alerted).toHaveLength(1);
-    expect(alerted[0]).toContain("Books would not mark invoice");
+    expect(alerted[0]).toContain("Books would not mark it sent");
 
     refusing = false;
     expect(await invoicePass(books, later(RECHECK_AFTER_MS + 1000))).toEqual({ raised: 0, issued: 1 });
@@ -465,9 +463,8 @@ describe("sending it", () => {
     expect(books.made.issued).toEqual([]);
     expect(books.made.invoices).toEqual([]);
     expect(alerted).toEqual([
-      `Invoice INV-hand-made (stub-hand-made) of visit ${VISIT} is still a draft in Books an hour after the visit, ` +
-        "so the client cannot open it. It was not raised here: send it in Books, since nothing here sends a draft " +
-        `made by hand. ${CLIENT_LINK}`,
+      "Send invoice INV-hand-made (stub-hand-made) in Books: it was made there by hand, and is still a draft an " +
+        `hour after the visit. Visit ${VISIT}. ${CLIENT_LINK}`,
     ]);
 
     await books.issueInvoice("stub-hand-made");

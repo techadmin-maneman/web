@@ -11,6 +11,7 @@ import { type ConfirmOptions, type HoldRow, type Confirmed, type BookingContext 
 import { giveBack, AUTO_REFUND_NOTES, autoRefundMarked, giveBackUnkept } from "./give-back.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import { visitUpkeep } from "../visits/visit-upkeep.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 interface VisitToMove {
   id: string;
@@ -146,9 +147,7 @@ export async function retireReplaced(db: D1Database, hold: HoldRow, now: Date, o
   if (old.begun === 1) {
     await options.alertOnce?.({
       key: `replaced_after_begun:${old.id}`,
-      message:
-        `The client moved visit ${old.id} to a new one (booking ${hold.id}), but the technician had already begun ` +
-        `it, so it was not cancelled. Both visits stand: ask the client which to keep.`,
+      message: ALERT_WORDS.replaced_after_begun({ visit: old.id, booking: hold.id }),
       link: `/clients/${hold.person_id}`,
     });
     return;

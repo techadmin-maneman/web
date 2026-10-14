@@ -12,6 +12,7 @@ import { saveAddress, type Address, type AddressPin, type GivenToOps } from "../
 import { takeOne } from "../domain/sign-in/rate-limit.ts";
 import type { LookupFailure } from "../providers/geocode/index.ts";
 import { queueContactSync } from "./contact-sync.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 /**
  * Counts one Google request against the day's ceiling; false, with one alert a
@@ -40,9 +41,7 @@ async function lookupFailed(
   if (failure.reason !== "refused") return;
   await c.var.deps.alertOnce({
     key: GOOGLE_REFUSED,
-    message:
-      `Google refused the address search (${failure.detail}). Clients can still type an address, but none gets ` +
-      "a pin. Check the key, its APIs and its quotas (provisioning, step 13).",
+    message: ALERT_WORDS.google_refused({ detail: failure.detail }),
   });
 }
 

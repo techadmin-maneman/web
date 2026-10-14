@@ -39,8 +39,8 @@ describe("the WhatsApp bridge", () => {
     await check(closed.deps);
     await check(closed.deps);
     expect(closed.deps.alerts).toEqual([
-      "The WhatsApp bridge is not connected (state close): no login code or message can be sent until it is. " +
-        'Reconnect it by scanning its QR code with the business phone (runbook, "WhatsApp (Evolution) is down").',
+      'Reconnect it by scanning its QR code with the business phone (runbook, "WhatsApp (Evolution) is down"): ' +
+        "the WhatsApp bridge is not connected (state close), so no login code or message can be sent.",
     ]);
   });
 
@@ -53,10 +53,9 @@ describe("the WhatsApp bridge", () => {
     await check(missing.deps);
     await check(missing.deps);
     expect(missing.deps.alerts).toEqual([
-      'The WhatsApp bridge is not connected (the bridge has no instance named "mane man": wrong URL or port, or the ' +
-        "instance was deleted): no login code or message can be sent until it is. Check EVOLUTION_API_URL and " +
-        "EVOLUTION_INSTANCE_NAME against the bridge's list of instances " +
-        '(runbook, "WhatsApp (Evolution) is down").',
+      "Check EVOLUTION_API_URL and EVOLUTION_INSTANCE_NAME against the bridge's list of instances (runbook, " +
+        '"WhatsApp (Evolution) is down"): the WhatsApp bridge is not connected (the bridge has no instance named ' +
+        '"mane man": wrong URL or port, or the instance was deleted), so no login code or message can be sent.',
     ]);
   });
 

@@ -348,9 +348,9 @@ describe("the cron's cancel_refunds job", () => {
 
     expect(asked).toBe(2);
     expect(deps.alerts).toEqual([
-      `Razorpay did not answer the refund of Rs. 2,000 for visit ${VISIT}, cancelled by the client (payment ` +
-        "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 2,000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
+      "Look at payment pay_visit in Razorpay first: Razorpay did not say whether it made the refund of Rs. 2,000 " +
+        `for visit ${VISIT}, cancelled by the client. Refund it by hand only if no refund of Rs. 2,000 is there. ` +
+        `http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -366,7 +366,7 @@ describe("the cron's cancel_refunds job", () => {
     await run(deps);
 
     expect(deps.alerts).toHaveLength(1);
-    expect(deps.alerts[0]).toContain(`Rs. 2,000 for visit ${VISIT}, cancelled by ops (payment pay_visit)`);
+    expect(deps.alerts[0]).toContain(`the refund of Rs. 2,000 for visit ${VISIT}, cancelled by ops.`);
   });
 
   it("leaves alone a claim whose visit was never cancelled, and one the Worker before it refunded", async () => {

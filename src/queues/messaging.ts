@@ -57,6 +57,7 @@ import { MessagingMessageSchema } from "../config/pipeline.ts";
 import { runConsumer, type Settle } from "./consumer.ts";
 import { composeRecallNotice } from "../domain/inventory/recall-notice.ts";
 import { composeFollowUp } from "../domain/visits/follow-ups.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 const RETRY_DELAY_SECONDS = 30;
 /** A send claimed longer ago than this is taken to have died, and may be claimed again. */
@@ -135,7 +136,12 @@ async function alertFailed(
 ): Promise<void> {
   await deps.alertOnce({
     key: messageFailedKey(failed.messageId),
-    message: `Message ${failed.messageId} (${failed.kind}) failed after ${String(failed.attempts)} attempts: ${failed.detail}`,
+    message: ALERT_WORDS.message_failed({
+      message: failed.messageId,
+      kind: failed.kind,
+      attempts: failed.attempts,
+      detail: failed.detail,
+    }),
     link: `/clients/${failed.personId}`,
   });
 }

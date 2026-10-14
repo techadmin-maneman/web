@@ -13,6 +13,8 @@ import {
 } from "../../policy/slot-times.ts";
 import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
+import { z } from "zod";
+import { storedJson } from "../../lib/stored-json.ts";
 
 /** A change of times, from the day it applies. */
 interface SlotTimesChange extends SlotTimes {
@@ -55,6 +57,9 @@ interface ChangeRow {
   set_at: string;
 }
 
+/** The start of each slot of a day, as each change of slot times keeps them. */
+const UNIT_STARTS = z.array(z.string());
+
 export async function loadSlotSchedule(db: D1Database): Promise<SlotSchedule> {
   const { results } = await db
     .prepare("SELECT applies_from, unit_starts, day_end, set_by, set_at FROM slot_times ORDER BY applies_from")
@@ -62,7 +67,7 @@ export async function loadSlotSchedule(db: D1Database): Promise<SlotSchedule> {
   return scheduleOf(
     results.map((row) => ({
       appliesFrom: row.applies_from,
-      unitStarts: JSON.parse(row.unit_starts) as string[],
+      unitStarts: storedJson(UNIT_STARTS, row.unit_starts, "slot_times.unit_starts"),
       dayEnd: row.day_end,
       setBy: row.set_by,
       setAt: row.set_at,

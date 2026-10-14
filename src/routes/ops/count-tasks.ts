@@ -29,6 +29,7 @@ import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
 import { COUNT_CLASSES } from "../../policy/cycle-counts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** How long a done task stays on the list. */
 const DONE_SHOWN_DAYS = 7;
@@ -314,7 +315,7 @@ async function after(c: Context<AppEnv>, stepped: Stepped) {
   if (task.state === "sign_off") {
     await c.var.deps.alertOnce({
       key: `${COUNT_DIFFERS}${task.id}`,
-      message: `${task.place}'s count still differs on ${String(stepped.waiting)} after a recount. It waits for a manager's sign-off on Counts.`,
+      message: ALERT_WORDS.count_differs({ place: task.place, lines: stepped.waiting }),
       link: "/counts",
     });
   }

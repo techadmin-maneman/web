@@ -113,7 +113,7 @@ describe("a job that keeps failing", () => {
 
     await runs(2, failing(), deps);
     expect(await failedRuns()).toMatchObject({ failed_runs: 4 });
-    expect(deps.alerts).toEqual(["The cron's books_sync job has failed 3 runs in a row: Books 500."]);
+    expect(deps.alerts).toEqual(["Look into the cron's books_sync job: it failed 3 runs in a row (Books 500)."]);
   });
 
   it("starts counting afresh once it works, and closes its alert", async () => {
@@ -207,8 +207,8 @@ describe("the run record", () => {
     await runAt(15, told);
 
     expect(told).toEqual([
-      `The cron run started at ${at(5).toISOString()} never finished, so the jobs after where it stopped did not run. ` +
-        `Cloudflare may have stopped it for its CPU time: runbook, "A cron run cut short".`,
+      `Look into the cron (runbook, "A cron run cut short"): the run started at ${at(5).toISOString()} never ` +
+        "finished, so the jobs after where it stopped did not run.",
     ]);
     expect(await record()).toMatchObject({ completed_at: at(15).toISOString(), cut_short_at: at(10).toISOString() });
   });

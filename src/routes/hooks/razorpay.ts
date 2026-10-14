@@ -19,7 +19,6 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { paymentsTab, type AlertOnce } from "../../domain/platform/alerts.ts";
 import { recordBookingConsents } from "../../domain/privacy/booking-consents.ts";
-import { rupees } from "@maneman/web-kit/money";
 import {
   keptRefund,
   otherCaptureOf,
@@ -45,6 +44,7 @@ import {
   type RazorpayPaymentLink,
   type RazorpayRefund,
 } from "../../providers/payments/razorpay.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 const EventSchema = z.object({
   event: z.string(),
@@ -97,9 +97,7 @@ async function holdLinkPaid(
     log.warn("razorpay_hook_hold_link_without_order", { hold_id: hold.id });
     await deps.alertOnce({
       key: `hold_link_without_order:${hold.id}`,
-      message:
-        `The client paid the payment link for booking ${hold.id} (payment ${payment.id}), but Razorpay named no ` +
-        "order for it, so the visit was not booked. Book it for them, or refund the payment in Razorpay's dashboard.",
+      message: ALERT_WORDS.hold_link_without_order({ booking: hold.id, payment: payment.id }),
       link: paymentsTab(hold.personId),
     });
     return;
@@ -118,9 +116,7 @@ async function tellIfFailed(db: D1Database, razorpayRefundId: string, alertOnce:
   if (kept?.status !== "failed") return;
   await alertOnce({
     key: `refund_failed:${razorpayRefundId}`,
-    message:
-      `Razorpay failed refund ${razorpayRefundId} of ${rupees(kept.amount)} for payment ${kept.paymentId}. ` +
-      "Refund the payment again from Razorpay's dashboard: the client's app says the refund is being redone.",
+    message: ALERT_WORDS.refund_failed({ refund: razorpayRefundId, payment: kept.paymentId, amount: kept.amount }),
     ...(kept.personId === null ? {} : { link: paymentsTab(kept.personId) }),
   });
 }
@@ -135,9 +131,12 @@ async function tellIfPaidTwice(db: D1Database, payment: RazorpayPayment, alertOn
     .first<string | null>("person_id");
   await alertOnce({
     key: `second_capture:${payment.id}`,
-    message:
-      `Order ${String(payment.order_id)} was paid twice: payment ${payment.id} of ${rupees(payment.amount)} after ` +
-      `${other}. Refund the second from Razorpay's dashboard.`,
+    message: ALERT_WORDS.second_capture({
+      order: String(payment.order_id),
+      payment: payment.id,
+      amount: payment.amount,
+      other,
+    }),
     ...(personId === null ? {} : { link: paymentsTab(personId) }),
   });
 }
@@ -162,10 +161,12 @@ async function tellIfPaidOffItsOrder(
   if (hold === null || hold.razorpay_order_id === payment.order_id) return;
   await alertOnce({
     key: `paid_off_its_order:${payment.id}`,
-    message:
-      `Payment ${payment.id} of ${rupees(payment.amount)} was made on order ${payment.order_id}, which booking ` +
-      `${holdId} no longer uses since a discount code changed its price, so nothing was booked for it. Refund it ` +
-      "from Razorpay's dashboard, or book the visit for the client.",
+    message: ALERT_WORDS.paid_off_its_order({
+      payment: payment.id,
+      amount: payment.amount,
+      order: payment.order_id,
+      booking: holdId,
+    }),
     link: paymentsTab(hold.person_id),
   });
 }
@@ -200,10 +201,7 @@ async function refundTaken(
   await tellIfFailed(db, refund.id, deps.alertOnce);
   await deps.alertOnce({
     key: `razorpay_refund_unheard:${payment.id}`,
-    message:
-      `Payment ${payment.id} was refunded in Razorpay before we heard it was paid. The payment and its refund ` +
-      `${refund.id} are recorded now; no visit was booked for it. If no one here refunded it, Razorpay's ` +
-      `payment messages are not reaching us (runbook, "Razorpay's webhook is not arriving").`,
+    message: ALERT_WORDS.razorpay_refund_unheard({ payment: payment.id, refund: refund.id }),
     ...(personId === null ? {} : { link: paymentsTab(personId) }),
   });
   return true;

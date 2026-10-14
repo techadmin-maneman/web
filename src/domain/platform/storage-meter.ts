@@ -22,6 +22,7 @@ import type { RateLimitScope } from "../../policy/rate-limits.ts";
 import { markReached, SHARE_BYTES, UNUSUAL_DAILY_GROWTH_BYTES } from "../../policy/storage-share.ts";
 import { takeOne, type CountedAt } from "../sign-in/rate-limit.ts";
 import type { AlertOnce } from "./alerts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;
@@ -180,9 +181,7 @@ export async function tellOfStorage(
   if (claimed === null) return;
   await alertOnce({
     key: `r2_share:${String(mark)}`,
-    message:
-      `Photos and referral cards use ${gigabytes(meter.bytes)} GB, ${ofTheShare(mark)} their ` +
-      `${String(share / 1e9)} GB of free storage. Uploads go on past it, on paid storage.`,
+    message: ALERT_WORDS.r2_share({ gigabytes: gigabytes(meter.bytes), share: ofTheShare(mark), free: share / 1e9 }),
     link: STORAGE_LINK,
   });
 }
@@ -208,10 +207,7 @@ export async function tellOfDatabaseSize(db: D1Database, alertOnce: AlertOnce, h
   if (claimed === null) return;
   await alertOnce({
     key: `d1_size:${String(mark)}`,
-    message:
-      `The database holds ${gigabytes(heldBytes)} GB, ${String(mark)}% of the ` +
-      `${String(DATABASE_LIMIT_BYTES / 1e9)} GB Cloudflare allows it. Past that every write fails, and ` +
-      'bookings, payments and the console stop with them (runbook, "D1 growing").',
+    message: ALERT_WORDS.d1_size({ gigabytes: gigabytes(heldBytes), percent: mark, limit: DATABASE_LIMIT_BYTES / 1e9 }),
     link: STORAGE_LINK,
   });
 }
@@ -231,9 +227,7 @@ async function tellOfUnusualGrowth(db: D1Database, alertOnce: AlertOnce, meter: 
   if (grown <= UNUSUAL_DAILY_GROWTH_BYTES) return;
   await alertOnce({
     key: `r2_growth:${today}`,
-    message:
-      `Photos and referral cards grew by ${gigabytes(grown)} GB since ${meter.growth?.date ?? ""}, more than a day's ` +
-      'work makes. Find what is writing them (runbook, "R2 storage growing").',
+    message: ALERT_WORDS.r2_growth({ gigabytes: gigabytes(grown), since: meter.growth?.date ?? "" }),
     link: STORAGE_LINK,
   });
 }
@@ -252,10 +246,10 @@ export async function mayUpload(db: D1Database, alertOnce: AlertOnce, uploader: 
   if (await takeOne(db, uploader.scope, uploader.key, uploader)) return true;
   await alertOnce({
     key: `photo_uploads:${uploader.key}`,
-    message:
-      `${uploader.scope === "photo_upload:technician" ? "A technician's phone" : "The stock photographs"} reached ` +
-      "the day's limit of uploads, more than a day's work makes, so further photographs are refused and wait on the " +
-      `phone. Find what is sending them (runbook, "R2 storage growing"; ${uploader.key}).`,
+    message: ALERT_WORDS.photo_uploads({
+      who: uploader.scope === "photo_upload:technician" ? "a technician's phone" : "the stock photographs",
+      key: uploader.key,
+    }),
     link: STORAGE_LINK,
   });
   return false;

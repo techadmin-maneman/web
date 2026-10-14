@@ -7,6 +7,7 @@ import { markCustomerChanged } from "../domain/books/books-customers.ts";
 import type { AppEnv } from "./context.ts";
 import { enqueue, type IfLost } from "../domain/platform/enqueue.ts";
 import { type CrmSyncMessage } from "../config/pipeline.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 export async function queueContactSync(c: Context<AppEnv>, personId: string): Promise<void> {
   await markCustomerChanged(c.env.DB, personId, c.var.deps.now());
@@ -22,7 +23,7 @@ export async function queueCrmContact(c: Context<AppEnv>, personId: string): Pro
     alertOnce: deps.alertOnce,
     alert: {
       key: alertKey,
-      message: `Client ${personId}'s new number, address or last chat could not be sent on to the CRM. Update their CRM lead by hand.`,
+      message: ALERT_WORDS.contact_sync({ client: personId }),
       link: `/clients/${personId}`,
     },
   };

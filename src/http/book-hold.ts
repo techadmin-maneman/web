@@ -1,6 +1,5 @@
 // A hold the client has paid for, or booked free, booked at once, in this request.
 
-import { rupees } from "@maneman/web-kit/money";
 import type { Context } from "hono";
 import { paymentsTab } from "../domain/platform/alerts.ts";
 import { confirmBooking } from "../domain/booking/bookings.ts";
@@ -8,6 +7,7 @@ import { RefundNotDone } from "../domain/booking/give-back.ts";
 import { failureReason } from "../log.ts";
 import type { AppEnv } from "./context.ts";
 import { queueMessage } from "./queue-message.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 /**
  * Books the hold. Never throws: a booking that fails here keeps its time and its payment, and the cron books it within
@@ -36,16 +36,14 @@ export async function bookHold(c: Context<AppEnv>, holdId: string): Promise<void
 }
 
 async function tellRefundOwed(c: Context<AppEnv>, holdId: string, error: RefundNotDone): Promise<void> {
-  const owed = `Booking ${holdId} owes back payment ${error.paymentId} of ${rupees(error.amount)}`;
-  // A refund Razorpay never answered may have been made: ops look before they refund, so it is not made twice.
-  const message =
-    error.outcome === "refused"
-      ? `${owed}, and Razorpay refused the refund. Refund it from Razorpay's dashboard.`
-      : `${owed}, and Razorpay did not say whether it refunded it. Check Razorpay's dashboard, and refund it there ` +
-        "only if no refund of it shows.";
   await c.var.deps.alertOnce({
     key: `hold_refund_failed:${holdId}`,
-    message,
+    message: ALERT_WORDS.hold_refund_failed({
+      outcome: error.outcome,
+      booking: holdId,
+      payment: error.paymentId,
+      amount: error.amount,
+    }),
     link: paymentsTab(error.personId),
   });
 }

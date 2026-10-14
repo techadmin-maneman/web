@@ -262,13 +262,17 @@ describe("low stock", () => {
     );
     expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 4, low: true });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining(`Tape strips is low in technician ${IMRAN}'s kit: 4 strip, at or below its level of 5.`),
+      expect.stringContaining(
+        `of Tape strips for technician ${IMRAN}'s kit on the Stock page: 4 strip left, at or below its level of 5.`,
+      ),
     ]);
     expect(job.deps.alerts[0]).not.toContain("Imran");
     // The console names the kit by its technician, as the chat is never told.
     const listed = await (await request(job.ops, "/api/alerts")).json<{ alerts: { message: string }[] }>();
     expect(listed.alerts.map((alert) => alert.message)).toEqual([
-      expect.stringContaining("Tape strips is low in Imran Qureshi's kit: 4 strip, at or below its level of 5."),
+      expect.stringContaining(
+        "of Tape strips for Imran Qureshi's kit on the Stock page: 4 strip left, at or below its level of 5.",
+      ),
     ]);
 
     // Lower still, and the same alert is counted, not told again.
@@ -308,7 +312,9 @@ describe("low stock", () => {
       to: IMRAN,
     });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining("Tape strips is low in National warehouse: 8 strip, at or below its level of 20."),
+      expect.stringContaining(
+        "of Tape strips for National warehouse on the Stock page: 8 strip left, at or below its level of 20.",
+      ),
     ]);
   });
 
@@ -321,7 +327,7 @@ describe("low stock", () => {
       from: "central",
       to: IMRAN,
     });
-    expect(job.deps.alerts).toEqual([expect.stringContaining("Tape strips is low in National warehouse")]);
+    expect(job.deps.alerts).toEqual([expect.stringContaining("of Tape strips for National warehouse")]);
     expect(await lowPlaces()).toBe(1);
 
     const retired = await job.opsPost("/api/consumables/tape_strips/retire", { from: "2026-09-21" });
@@ -367,8 +373,8 @@ describe("low stock", () => {
     await job.opsPost("/api/stock/counts", { consumable_code: "tape_strips", place_id: IMRAN, counted: 3 });
     await job.opsPost("/api/stock/counts", { consumable_code: "adhesive", place_id: IMRAN, counted: 40 });
     expect(job.deps.alerts).toEqual([
-      expect.stringContaining("Tape strips is low in technician"),
-      expect.stringContaining("Adhesive is low in technician"),
+      expect.stringContaining("of Tape strips for technician"),
+      expect.stringContaining("of Adhesive for technician"),
     ]);
     expect(await openKeys()).toEqual([`low_stock:kit:${IMRAN}:adhesive`, `low_stock:kit:${IMRAN}:tape_strips`]);
     expect(await lowPlaces()).toBe(1);

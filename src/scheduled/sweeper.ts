@@ -36,6 +36,7 @@ import type { RenderMessage } from "../queues/render.ts";
 import { requeueUnsentMessages } from "./unsent-messages.ts";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../config/pipeline.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
@@ -306,7 +307,7 @@ export async function checkYoucamUnits(context: SweepContext, unitFloor: number)
   // Told once, not every hour, until a top-up lifts the balance over the floor.
   await deps.alertOnce({
     key: "youcam_units_low",
-    message: `YouCam is down to ${String(credits)} units, below the floor of ${String(unitFloor)}. Top up before try-ons stop.`,
+    message: ALERT_WORDS.youcam_units_low({ units: credits, floor: unitFloor }),
   });
   return credits;
 }

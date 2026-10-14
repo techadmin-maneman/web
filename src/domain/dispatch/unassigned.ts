@@ -5,6 +5,7 @@
 import { addDays, INDIA_OFFSET_MINUTES, indiaDate, indiaDateSql, indiaInstant } from "../../lib/india-time.ts";
 import { statusIn, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 const KEY = "unassigned_visit:";
 
@@ -25,7 +26,7 @@ export async function tellOfUnassignedToday(
   for (const visit of results) {
     await deps.alertOnce({
       key: `${KEY}${visit.id}`,
-      message: `Visit ${visit.id} today has no technician. Send someone from the Dispatch board.`,
+      message: ALERT_WORDS.unassigned_visit({ visit: visit.id }),
       link: "/dispatch",
     });
   }

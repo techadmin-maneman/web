@@ -196,8 +196,8 @@ describe("crm-sync: syncing a lead", () => {
 
     const personId = await env.DB.prepare("SELECT person_id FROM leads WHERE id = ?1").bind(leadId).first("person_id");
     expect(deps.alerts).toEqual([
-      `Lead ${leadId} did not reach the CRM after 10 attempts: Zoho 401 invalid_code: could not refresh the access ` +
-        `token. Send it again from Tasks once Zoho is back. http://ops.localhost:4323/clients/${String(personId)}`,
+      `Send lead ${leadId} again from Tasks once Zoho is back: it did not reach the CRM after 10 attempts (Zoho 401 ` +
+        `invalid_code: could not refresh the access token). http://ops.localhost:4323/clients/${String(personId)}`,
     ]);
     expect(await openAlertKeys()).toEqual([`crm_lead:${leadId}`]);
   });

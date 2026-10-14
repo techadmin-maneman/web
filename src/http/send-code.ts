@@ -27,6 +27,7 @@ import { scrubString } from "../log.ts";
 import { isMessageHeldBack, skipsAddressLimits } from "../policy/staging-test-records.ts";
 import type { CodeChannel } from "../providers/codes.ts";
 import { afterResponse } from "./after-response.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 /** Failed sends in one hour before ops are told: one is a mistyped number, three is the bridge. */
 const FAILURES_PER_HOUR_TO_ALERT = 3;
@@ -193,9 +194,7 @@ async function countFailure(c: Context<AppEnv>, detail: string): Promise<void> {
   if (failed < FAILURES_PER_HOUR_TO_ALERT) return;
   await c.var.deps.alertOnce({
     key: "login_codes_failing",
-    message:
-      `${String(failed)} login codes failed to send in the last hour, the latest with ${detail}. Clients and ` +
-      'technicians cannot sign in. Check the WhatsApp bridge (runbook, "WhatsApp (Evolution) is down").',
+    message: ALERT_WORDS.login_codes_failing({ failed, detail }),
   });
 }
 
