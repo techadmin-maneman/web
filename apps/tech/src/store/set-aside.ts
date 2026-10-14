@@ -30,7 +30,7 @@ export async function leaveSignedOut(code: string | null, now: number = Date.now
   }
   // A delete the browser refused is tried once more, and told to us if it fails again: clients' details may be left.
   if (!(await wipe()) && !(await wipe())) {
-    reportClientError({ kind: "error", message: "the phone's store could not be wiped when its session ended" });
+    reportClientError({ kind: "error", message: "IndexedDB could not be wiped when its session ended" });
   }
   return false;
 }

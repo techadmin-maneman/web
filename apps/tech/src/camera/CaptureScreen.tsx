@@ -1,31 +1,6 @@
-// The guided capture of five angles, one tap each. It is step 1 of
-// the job for the before set and step 5 for the after set; the screen is the
-// same one.
-//
-// The board's layout: the viewfinder with its framing guide — the head's
-// dashed outline, the hairline, the corners — so every visit's photos
-// are framed alike and the client's comparison lines up; the five angle tiles,
-// each showing its photograph once taken, and a tap on one still on the phone
-// takes that angle again; and at the foot, where every screen keeps its action,
-// Retake beside Capture.
-// Once the five are in, the same key finishes the step. Nothing slides here:
-// nothing moves while the camera is capturing.
-//
-// The frame comes from the camera into a canvas (./capture.ts), never from a
-// file input, so nothing is written to the phone's gallery. Each frame goes
-// into the app's own store with its thumbnail, one per angle, and stays there
-// until the outbox has PUT both to the link the API hands out and the set itself
-// has landed
-// (apps/tech/src/store/outbox.ts). A double tap keeps one frame and moves on by
-// one angle.
-//
-// The camera is let go while the app is hidden and opened again on the way
-// back (packages/ui/useCamera.ts). A frame that fails to keep — the phone full, say, which
-// App says above every screen — is said here and can be taken again: it is not
-// a camera that failed.
-//
-// A set the API refused opens here again with the photographs that reached us
-// counted, and only the refused angles to take.
+// The guided capture of five angles, for the before set (step 1) and the after set (step 5), as the technician board
+// draws it. Frames go from the camera to a canvas and into IndexedDB, never the gallery, and wait there until the
+// outbox has uploaded them (./capture.ts, ../store/outbox.ts; docs/decisions/0053-the-technician-app-offline.md).
 
 import { Tile } from "@maneman/ui/Tile";
 import { StepFrame, useSettled, useStep } from "../steps/index.ts";

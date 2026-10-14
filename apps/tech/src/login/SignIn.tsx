@@ -1,27 +1,7 @@
-// The technician's sign-in, from the Prototype's technician screen: the mark,
-// the mobile number, the code's six boxes, and one 64 px action at the bottom.
-// There is no spec board for it, so the Prototype is the reference.
-//
-// The Prototype draws both fields at once. The code has to be asked for before
-// it can be typed, so the one action is "Send the code" until the backend has
-// sent one, and "Sign in" after. The phone names itself on both calls, and
-// verifying binds the session to it (docs/decisions/0052-technician-sessions.md).
-//
-// A wrong code is not an error: the API answers 200 with the tries left, and
-// only a closed challenge is refused. The screen follows that, and a closed
-// code — refused, or out of tries — takes it back to sending one.
-//
-// Once a code is out there is always a way on: "Change number" for a number
-// typed wrong, and "Send a new code" for one that never came, offered once
-// WhatsApp has had time to deliver the first. An installed app has no reload
-// button, so a sign-in with no way back would be a dead end.
-//
-// It also says why it is showing. A phone whose session ended simply signs in
-// again; a revoked one is told to ask ops, as is a technician ops switched off,
-// with how long their unsent work stays; and a store that has never held a
-// session, in an app opened from the home screen, is the iPhone case — the
-// installed app has its own cookie jar, so this is a second sign-in on a phone
-// already signed in, and saying nothing would read as a lost account.
+// The technician's sign-in, from the Prototype's technician screen: the number, then the code, the session bound to
+// this phone (docs/decisions/0052-technician-sessions.md). Once a code is out there is always a way on, since an
+// installed app has no reload, and the screen says why it is showing: ended, revoked, switched off, or an iPhone's
+// second sign-in.
 
 import { useOtpChallenge } from "@maneman/ui/useOtpChallenge";
 import { InlineMessage } from "@maneman/ui/InlineMessage";

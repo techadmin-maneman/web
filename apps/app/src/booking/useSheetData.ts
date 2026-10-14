@@ -4,7 +4,7 @@
 import { useEffect, useEffectEvent, useRef, useState, type Dispatch } from "react";
 import { api, type Address, type BookingWindow, type OfferedService, type Profile, type Wanted } from "../api.ts";
 import type { BookingEvent } from "./flow.ts";
-import { useDays } from "./use-days.ts";
+import { useDays } from "./useDays.ts";
 
 /** Whether the client has switched on WhatsApp about their visits, the purpose the day-before reminder is sent under. */
 const remindersOn = (profile: Profile) =>

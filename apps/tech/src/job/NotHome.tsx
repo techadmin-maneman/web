@@ -1,22 +1,6 @@
-// The evidence chain, beneath the job's card.
-//
-//   1 · Arrived       the phone's position, checked against the address, from the earliest check-in
-//   Check-in failed   how far away it was, and no way to close a no-show from there
-//   2 · Waiting       what is left of the wait, from the booked start at the earliest, and Close as no-show,
-//                     dim until it runs out
-//   Client's here     the timer stops and the job starts
-//
-// The stage's one action — I have arrived, then Start job — sits at the foot of
-// the screen where every screen keeps it. Close as no-show is never gold and
-// never beside it: it is outlined in the waiting stage, and it asks first,
-// because it can bring the client a charge.
-//
-// The check-in goes through the outbox like every other write, so an arrival in
-// a basement is not lost. The wait runs to the end the API gave — in the
-// check-in's answer, kept beside the job (apps/tech/src/store/jobs.ts), or on
-// the card, for a phone that lost its copy — and with no signal it counts from
-// the tap. A no-show can close only once the API holds the check-in, since it
-// runs the wait on its own clock too (ADR 0065).
+// The evidence chain beneath a job's card: arrived (the check-in, measured against the address), the no-show wait on
+// the API's clock, and the client at the door. Close as no-show is outlined and asks first, since it can bring the
+// client a charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";

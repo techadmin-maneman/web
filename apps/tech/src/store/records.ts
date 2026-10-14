@@ -1,4 +1,4 @@
-// What each of the phone's stores holds (./db.ts): one record type per store, so a read says what it gets.
+// What each IndexedDB store holds (./db.ts): one record type per store, so a read says what it gets.
 
 import type { FitForm, HistoryForm } from "@maneman/web-kit/hair-profile";
 import type { Angle, CheckIn, Job, JobSummary, Me, Phase } from "../api.ts";

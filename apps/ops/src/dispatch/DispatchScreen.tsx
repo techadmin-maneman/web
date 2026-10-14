@@ -45,8 +45,8 @@ import { NoticeLine } from "./NoticeLine.tsx";
 import { OpenedDrawer } from "./OpenedDrawer.tsx";
 import { DayRoutes } from "./DayRoutes.tsx";
 import { isBlackout, kmFrom, landsAtFrom, windowsFrom } from "./rooms.ts";
-import { useAskedVisit, useClientCalls } from "./use-board-calls.ts";
-import { useMove, type Move } from "./use-move.ts";
+import { useAskedVisit, useClientCalls } from "./useBoardCalls.ts";
+import { useMove, type Move } from "./useMove.ts";
 
 export function DispatchScreen() {
   const [asked] = useState(() => dispatchAsked(window.location.search));

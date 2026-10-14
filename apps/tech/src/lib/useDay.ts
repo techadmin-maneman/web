@@ -3,7 +3,7 @@
 // and whatever the phone no longer needs is let go of at the same moment.
 //
 // The phone's copy stands in only when the API cannot be reached. Any other
-// answer is the API's word: a 401 ends the session, and App wipes the phone
+// answer is the API's: a 401 ends the session, and App wipes the phone
 // (apps/tech/src/App.tsx); a 404 says the job is not this technician's. Showing
 // what the phone kept after either would show what the API has just refused.
 
@@ -20,7 +20,7 @@ interface Failed {
   readonly requestId: string | null;
 }
 
-export type Loaded<T> =
+export type KeptLoad<T> =
   | { readonly state: "loading" }
   | Failed
   /** `fromPhone` is true when this is what the phone kept, not what the API just said. */
@@ -36,7 +36,7 @@ async function forgetStale(): Promise<void> {
 // In both loads, keeping is for the next basement: a phone with no room to keep
 // an answer (App says so) still shows it now, so a failed keep is let pass.
 
-export async function loadDay(date: string): Promise<Loaded<readonly JobSummary[]>> {
+export async function loadDay(date: string): Promise<KeptLoad<readonly JobSummary[]>> {
   const answer = await api.jobs(date);
   if (answer.ok) {
     await keepDay(date, answer.body.jobs).catch(() => undefined);
@@ -68,7 +68,7 @@ function fetchCard(id: string): ReturnType<typeof api.job> {
   return fetching;
 }
 
-export async function loadJob(id: string): Promise<Loaded<Job>> {
+export async function loadJob(id: string): Promise<KeptLoad<Job>> {
   const answer = await fetchCard(id);
   if (answer.ok) {
     await keepJob(answer.body).catch(() => undefined);
@@ -80,16 +80,16 @@ export async function loadJob(id: string): Promise<Loaded<Job>> {
 }
 
 /** A load that throws, as a store that would not open can, fails as one nothing answered. */
-function useKept<T>(load: () => Promise<Loaded<T>>, watch: unknown = null): readonly [Loaded<T>, () => void] {
+function useKept<T>(load: () => Promise<KeptLoad<T>>, watch: unknown = null): readonly [KeptLoad<T>, () => void] {
   const [settled, retry] = useAsync(load, watch);
-  const loaded = useMemo((): Loaded<T> => {
+  const loaded = useMemo((): KeptLoad<T> => {
     if (settled.state === "pending") return { state: "loading" };
     return settled.state === "failed" ? failed(null) : settled.value;
   }, [settled]);
   return [loaded, retry];
 }
 
-export function useDay(date: string): readonly [Loaded<readonly JobSummary[]>, () => void] {
+export function useDay(date: string): readonly [KeptLoad<readonly JobSummary[]>, () => void] {
   const load = useCallback(() => loadDay(date), [date]);
   return useKept(load);
 }
@@ -121,7 +121,7 @@ async function keepCard(id: string): Promise<void> {
  * has done, and the card is where the screens read that from, so the outbox's
  * own signature is passed in (apps/tech/src/lib/useOutbox.ts).
  */
-export function useJob(id: string, watch: unknown = null): readonly [Loaded<Job>, () => void] {
+export function useJob(id: string, watch: unknown = null): readonly [KeptLoad<Job>, () => void] {
   const load = useCallback(() => loadJob(id), [id]);
   return useKept(load, watch);
 }
@@ -129,7 +129,7 @@ export function useJob(id: string, watch: unknown = null): readonly [Loaded<Job>
 const NO_NAMES: ReadonlyMap<string, string> = new Map();
 const NO_JOBS: ReadonlyMap<string, HeldJob> = new Map();
 
-/** What a read of the phone's store answers, read again whenever `watch` changes. A store that will not open gives nothing. */
+/** What a read of IndexedDB answers, read again whenever `watch` changes. A store that will not open gives nothing. */
 function useStored<T>(read: () => Promise<T>, nothing: T, watch: unknown): T {
   return valueOr(useAsync(read, watch)[0], nothing);
 }

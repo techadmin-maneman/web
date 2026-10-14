@@ -42,7 +42,7 @@ function settle<T>(request: IDBRequest<T>): Promise<T> {
       resolve(request.result);
     };
     request.onerror = () => {
-      reject(request.error ?? new Error("the phone's store refused the request"));
+      reject(request.error ?? new Error("IndexedDB refused the request"));
     };
   });
 }
@@ -54,7 +54,7 @@ function committed(transaction: IDBTransaction): Promise<void> {
       resolve();
     };
     transaction.onabort = () => {
-      reject(transaction.error ?? new Error("the phone's store did not keep the write"));
+      reject(transaction.error ?? new Error("IndexedDB did not keep the write"));
     };
   });
 }
@@ -82,7 +82,7 @@ function connect(): Promise<IDBDatabase> {
       resolve(db);
     };
     request.onerror = () => {
-      reject(request.error ?? new Error("the phone's store could not be opened"));
+      reject(request.error ?? new Error("IndexedDB could not be opened"));
     };
   });
 }
@@ -195,7 +195,7 @@ export async function addUnless(
     (target) =>
       new Promise((resolve, reject) => {
         const failed = (request: IDBRequest) => () => {
-          reject(request.error ?? new Error("the phone's store refused the request"));
+          reject(request.error ?? new Error("IndexedDB refused the request"));
         };
         const found = target.index(index).getKey(key);
         found.onerror = failed(found);

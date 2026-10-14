@@ -1,29 +1,6 @@
-// Step 4: the piece. A replacement's and a first fit's step only —
-// the API leaves it out of the other types' `steps`, so this screen is never
-// reached for them.
-//
-// A consultation and fit in one visit comes here straight after the before
-// photographs, and asks first for the client's choice, which no board draws: the
-// product they chose, by name and never by price, or that they decided against
-// the fit, when nothing is fitted and no label is asked for. The checklist that
-// follows lists the fit's items only for a client being fitted
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Any other visit
-// says first what the client paid for, and warns when the hair profile names
-// another product.
-//
-// "Scan the piece": the label's QR code is read by the camera, or the label
-// typed, or picked from the client's pieces the card carries, and checked against
-// the API's format before Next will take it. A label one of the kit's pieces
-// carries picks its hair system and fills its lot, with no signal needed, and one
-// that has expired keeps Next dim (docs/decisions/0163-pieces-scanned-from-the-kit.md).
-// A check against the mirror needs signal; a label the mirror does not know, or
-// one checked with none, still goes on the job as the technician entered it.
-//
-// The pieces tab keeps each piece's base and supplier lot, and on a
-// replacement the piece that came off and why it failed, so the step asks for
-// them: a lookup fills the base and lot in when it knows them. The hair system
-// picked from the kit comes out of it as the step lands, those made to the
-// client's profile listed first (docs/decisions/0156-hair-systems-in-stock.md).
+// Step 4, the piece, for a replacement and a first fit only: its label scanned, typed or picked from the kit, and on a
+// replacement the piece that came off (docs/decisions/0163-pieces-scanned-from-the-kit.md). A consultation and fit in
+// one visit asks first for the client's choice (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
 
 import { Button } from "@maneman/ui/Button";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";

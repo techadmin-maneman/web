@@ -1,27 +1,6 @@
-// Step 6: Done, or Partial with a reason. The reasons are ops', set
-// in the console and read with the job, words and all
-// (docs/decisions/0087-consumables-and-stock.md); the app invents none and
-// sends back the id it was given.
-//
-// Nothing is chosen for the technician. The board draws Done already chosen,
-// in gold beside a gold Next, which let a gloved tap close a job they had not
-// finished; here both are outlined until they pick, and Next stays dim until they
-// have (ADR 0025, "The technician boards").
-//
-// The duration runs from Start job to here, and the technician never types a
-// time: the phone records the instant this screen's action was taken
-// (apps/tech/src/store/jobs.ts).
-//
-// After a consultation, Done asks whether the client is going ahead with a fit, and
-// a Not now asks why, from ops' list; a one visit's fit declined offers the reasons,
-// to pick or leave (docs/decisions/0149-lost-reasons.md). Not answering leaves it unsaid.
-//
-// On a consultation and fit in one visit, Done says what closing it does, by
-// the client's choice at the piece step, which no board draws: a client who
-// decided against the fit ends with a free consultation and is asked for no
-// code; one fitted is texted a payment link for their product, and a discount
-// code they give is taken first, unless one is on the visit already
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md, 0108-discount-codes.md).
+// Step 6: Done, or Partial with one of ops' reasons (docs/decisions/0087-consumables-and-stock.md). Nothing is chosen
+// for the technician, so a gloved tap cannot close a job they have not finished (ADR 0025, "The technician boards").
+// After a consultation, Done asks whether the client goes ahead (docs/decisions/0149-lost-reasons.md).
 
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { useState } from "react";

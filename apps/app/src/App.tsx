@@ -1,7 +1,7 @@
 // The client app: the login until there is a session, then Home and its tabs.
 // Whether there is a session is the API's to say: the cookie is HttpOnly, and
 // the app keeps no token of its own. A 401 from any call means the session has
-// ended, wherever the client is: the kept Home is forgotten and the login
+// ended, wherever the client is: the cached Home is forgotten and the login
 // shown on the same page, saying why. Offline, Home is the last one the
 // service worker kept, until the connection is back.
 //
@@ -148,7 +148,7 @@ export function App({ linkedMobile }: { linkedMobile: string }) {
     void check();
   }, [check]);
 
-  // Signed in, a 401 from any call ends the session: the screens go first, then the kept Home.
+  // Signed in, a 401 from any call ends the session: the screens go first, then the cached Home.
   const signedIn = session.kind === "in";
   useEffect(() => {
     if (!signedIn) return;

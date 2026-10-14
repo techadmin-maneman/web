@@ -92,7 +92,7 @@ function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
   );
 }
 
-function Fitted() {
+function FittedInvite() {
   const [loaded, retry] = useLoad(useCallback(() => api.refer(), []));
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PageFailed onRetry={retry} />;
@@ -104,7 +104,7 @@ export function ReferScreen() {
   return (
     <Shell header={{ kind: "tab", title: refer.title }} tab="/refer">
       {me.state === "fitted" ? (
-        <Fitted />
+        <FittedInvite />
       ) : (
         <EmptyState look="page" lines={empty.refer.lines(rewardOf(me), pendingInviteOf(me))} />
       )}

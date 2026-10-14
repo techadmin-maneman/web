@@ -1,30 +1,6 @@
-// Booking a visit in the app, while self-serve booking is on
-// (docs/decisions/0045-self-serve-booking.md). A sheet rises: the date, the
-// window, then paying through Razorpay Checkout. Paid, the sheet waits while
-// Razorpay's webhook confirms and the visit is booked, polling the hold.
-// Closed before Checkout was opened on it, the hold is let go; after, a payment
-// may still land on its order, and the API lets it go once its grace ends.
-// Moving a visit takes the same steps, with its own technician and
-// at what the move costs.
-//
-// With more than one service open to them, a client picks theirs first, from
-// every one ops offer (docs/decisions/0085-services-ops-can-edit.md). A client
-// who has given no address is asked for it before the date, since no slot is
-// held without one (ADR 0079); one whose address is in a pincode we do not come
-// to is offered no day, and changes the address or joins the waitlist. The pay
-// step of a new visit says what booking also agrees to, and its tap sends that
-// on (ADR 0080).
-//
-// Opened with the visit the app offers next, the sheet starts its strip a week
-// before the day offered and has that day and window chosen where they are
-// free, for the client to take or change (ADR 0086). With the day offered full,
-// the next open day is chosen. Later days are added to the strip on asking, up
-// to the last a visit may be booked on.
-//
-// The steps, and the step each answer, tap or clock leads to, are flow.ts's; the
-// hold's countdown and the wait for a paid one to be booked are hold-clocks.ts's.
-// When the phone sees the countdown end it lets the hold go too, but not while
-// Checkout is open: it waits for Checkout's answer.
+// Booking or moving a visit in the app (docs/decisions/0045-self-serve-booking.md): the service, the address where
+// none is saved, the date, the window, then paying through Razorpay Checkout. The steps are ./flow.ts's, the hold's
+// clocks ./hold-clocks.ts's, and the day it opens on docs/decisions/0086-the-next-visit-is-offered.md's.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
@@ -43,9 +19,9 @@ import { booking } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { drawsItsOwnClose, nextStep, type Step } from "./flow.ts";
 import { hasLaterDays } from "./days.ts";
-import type { Days } from "./use-days.ts";
-import { useSheetData } from "./use-sheet-data.ts";
-import { usePay } from "./use-pay.ts";
+import type { Days } from "./useDays.ts";
+import { useSheetData } from "./useSheetData.ts";
+import { usePay } from "./usePay.ts";
 import { AddressStep, NotServedStep } from "./steps/AddressStep.tsx";
 import { ConfirmedStep, ExpiredStep, FailedStep, WaitStep } from "./steps/OutcomeSteps.tsx";
 import { DateStep } from "./steps/DateStep.tsx";

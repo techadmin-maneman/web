@@ -83,7 +83,7 @@ export async function forgetHome(): Promise<void> {
 
 /**
  * The Home the phone kept, if any: the error state can then say the visit is still booked. It is this release's own:
- * the service worker drops the kept Home when a new release takes over (apps/app/sw/sw.ts).
+ * the service worker drops the cached Home when a new release takes over (apps/app/sw/sw.ts).
  */
 export async function keptHome(): Promise<Me | null> {
   if (!("caches" in window)) return null;
@@ -112,7 +112,7 @@ const client = createClient<paths, ErrorCode>({
 
 /**
  * A 401 from any call means the session has ended: it ran out, or the client logged out on another phone. App forgets
- * the kept Home and shows the login (apps/app/src/App.tsx).
+ * the cached Home and shows the login (apps/app/src/App.tsx).
  */
 export const onSessionEnded = (listener: () => void) => client.onSessionEnded(listener);
 
