@@ -92,7 +92,8 @@ export const refer = {
     },
     domain: "maneman.in",
     // In place of the board's message.
-    message: (link: string) => `Got my hair system fitted at home by Mane Man. Worth a look: ${link}`,
+    // A first line that says nothing of the sender's own hair: the landing page says what Mane Man does.
+    message: (link: string) => `Thought you’d like this: Mane Man, at home. ${link}`,
     via: "Share via",
     whatsapp: "WhatsApp",
     other: "Other apps",
