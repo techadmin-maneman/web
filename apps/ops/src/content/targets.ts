@@ -23,12 +23,12 @@ export const targets = {
   set: "Set",
   none: "No targets for this month.",
   columns: { city: "City", measure: "Measure", target: "Target", by: "Set by" },
-  remove: "Take off",
-  /** "Take off: Gurgaon · New clients" */
-  removeLabel: (city: string, measure: string) => `Take off: ${city} · ${measure}`,
+  remove: "Remove",
+  /** "Remove: Gurgaon · New clients" */
+  removeLabel: (city: string, measure: string) => `Remove: ${city} · ${measure}`,
   errors: {
-    month: "Pick a month from the list.",
-    city: "Pick a city from the list.",
+    month: "Choose a month from the list.",
+    city: "Choose a city from the list.",
     target: "That is more than this measure takes.",
     invalid_request: "Type a whole number.",
     not_found: changed("Already taken off."),

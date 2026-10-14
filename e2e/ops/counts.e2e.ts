@@ -66,6 +66,7 @@ test("signs off a difference with why", async ({ page }) => {
       {
         consumable_code: PIECE.consumable_code,
         name: PIECE.name,
+        unit: "piece",
         held: 2,
         counted: 1,
         recounted: 1,

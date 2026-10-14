@@ -255,7 +255,7 @@ export const care = {
     dayOff: "Day off",
     /** Beside who is off: "covered by ravi@maneman.in". */
     coveredBy: (cover: string) => ` · covered by ${cover}`,
-    you: { on: (since: string) => `You're on shift since ${since}.`, off: "You're off shift." },
+    you: { on: (since: string) => `On shift since ${since}.`, off: "Off shift." },
     goOn: "Go on shift",
     goOff: "Go off shift",
     editDays: "Days off",
@@ -267,8 +267,8 @@ export const care = {
     save: "Save",
     add: "Add",
     cancel: "Cancel",
-    takeBack: "Take back",
-    takeBackLabel: (period: string) => `Take back leave ${period}`,
+    takeBack: "Cancel leave",
+    takeBackLabel: (period: string) => `Cancel leave ${period}`,
     errors: {
       email: changed("No longer on the Care team."),
       to: "The leave must end today or later, and not before it starts.",

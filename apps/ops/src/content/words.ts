@@ -6,7 +6,7 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 export const words = {
   title: "Words",
   narrow: "Find words",
-  columns: { page: "Page", where: "Where", wording: "Wording", actions: "Change" },
+  columns: { page: "Page", where: "Where", wording: "Wording", actions: "Actions" },
   /** The site's parts as the Where column names them; any other is its own name in words. */
   places: {
     header: "Header",
@@ -81,7 +81,7 @@ export const words = {
     visits: "No visit counts: what a referral earns is set in the console.",
     placeholder: "No placeholder text.",
     length: "Too long for where it sits.",
-    first_line: "The first line shows on a locked phone: no hair system, fitting or visit, and only its own details.",
+    first_line: "The first line shows on a locked phone. Keep hair systems, fittings and visits out of it.",
     ends_on_detail: "End on words, not a detail.",
     not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,

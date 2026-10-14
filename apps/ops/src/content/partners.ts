@@ -40,7 +40,7 @@ export const partners = {
     name: "Partner",
     friendVisits: "Free visits for the friend",
     validDays: "Days to use them",
-    commission: "Commission per fit, in rupees",
+    commission: "Commission per fit, Rs.",
     discountCode: "Discount code, if any",
     next: "Review",
     cancel: "Cancel",

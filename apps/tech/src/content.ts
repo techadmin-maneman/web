@@ -339,8 +339,8 @@ export const job = {
     },
     none: "No piece recorded for this client yet.",
     lastVisit: (date: string, who: string | null) =>
-      who === null ? `Last visit, after. ${date}.` : `Last visit, after. ${date}, ${who}.`,
-    lastVisitImage: "Last visit, after",
+      who === null ? `Last visit’s after photo · ${date}` : `Last visit’s after photo · ${date} · ${who}`,
+    lastVisitImage: "Last visit’s after photo",
   },
   // The board draws no failure for a job's card.
   failed: "This job’s card didn’t load.",
@@ -502,9 +502,9 @@ export const steps = {
     camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
     expired: "This piece has expired. Hand it in and use another.",
     expiredAction: "That piece has expired",
-    placeholder: "MM-STD-4417-B",
+    placeholder: "MM-ESS-0000123-K",
     // The board draws no label typed wrong.
-    malformed: "Type it as on the tag, like MM-STD-4417-B.",
+    malformed: "Type it as on the label, like MM-ESS-0000123-K.",
     checkFirst: "Check the label to continue",
     look: "Check the label",
     unknown: "Unknown label. It’s saved as you typed it.",

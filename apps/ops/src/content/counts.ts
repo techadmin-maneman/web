@@ -7,7 +7,7 @@ export const counts = {
   title: "Counts",
   tasks: "Count tasks",
   none: "Nothing to count today.",
-  columns: ["Place", "Class", "Due", "Stands", ""],
+  columns: ["Place", "Class", "Due", "Status", ""],
   classes: { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" },
   states: {
     open: "To count",
@@ -18,7 +18,7 @@ export const counts = {
   open: "Open",
   /** "Imran Qureshi · Weekly" */
   heading: (place: string, countClass: string) => `${place} · ${countClass}`,
-  countNote: "Count what is there.",
+  countNote: "Count what's there.",
   recountNote: "These differed. Count them again.",
   counted: (name: string) => `Count of ${name}`,
   /** A hair system held under labels: each one scanned, and any with no label counted beside them. */
@@ -57,7 +57,7 @@ export const counts = {
     counted: "That's fewer than the labels scanned.",
     consumable_code: "This place holds none of that.",
     order_state: changed("Someone else counted this first."),
-    not_found: changed("That is gone."),
+    not_found: changed("That's gone."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

@@ -10,6 +10,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import form from "../components/forms.module.css";
+import { stock } from "../content/stock.ts";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -62,7 +63,7 @@ function Lines({
                 <td>{line.supplier ?? ""}</td>
               )}
               <td>{line.city ?? copy.everyCity}</td>
-              <td className={form.figure}>{line.quantity ?? line.proposed}</td>
+              <td className={form.figure}>{stock.held(line.quantity ?? line.proposed, line.unit)}</td>
               <td>
                 <PlanLineSteps line={line} onAnswer={onAnswer} />
               </td>

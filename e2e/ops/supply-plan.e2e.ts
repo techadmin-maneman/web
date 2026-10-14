@@ -14,6 +14,7 @@ const LOAN = {
   kind: "transfer" as const,
   consumable_code: "solvent",
   name: "Solvent",
+  unit: "ml",
   city: "Gurgaon",
   from: "Delhi stockroom",
   to: "Gurgaon stockroom",

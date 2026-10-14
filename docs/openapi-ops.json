@@ -4993,6 +4993,10 @@
                 "name": {
                   "type": "string"
                 },
+                "unit": {
+                  "type": "string",
+                  "description": "What one is counted in: strip, ml, sachet."
+                },
                 "city": {
                   "type": [
                     "string",
@@ -5061,6 +5065,7 @@
                 "kind",
                 "consumable_code",
                 "name",
+                "unit",
                 "city",
                 "from",
                 "to",
@@ -5480,6 +5485,10 @@
                 "name": {
                   "type": "string"
                 },
+                "unit": {
+                  "type": "string",
+                  "description": "What one is counted in: strip, ml, piece."
+                },
                 "held": {
                   "type": "integer"
                 },
@@ -5510,6 +5519,7 @@
               "required": [
                 "consumable_code",
                 "name",
+                "unit",
                 "held",
                 "counted",
                 "recounted",
@@ -5819,6 +5829,10 @@
                 "name": {
                   "type": "string"
                 },
+                "unit": {
+                  "type": "string",
+                  "description": "What one of the lot's item is counted in: strip, ml, piece."
+                },
                 "reason": {
                   "type": "string"
                 },
@@ -5839,6 +5853,7 @@
                 "lot_code",
                 "consumable_code",
                 "name",
+                "unit",
                 "reason",
                 "raised_at",
                 "closed_at"
@@ -5897,6 +5912,10 @@
           },
           "name": {
             "type": "string"
+          },
+          "unit": {
+            "type": "string",
+            "description": "What one of the lot's item is counted in: strip, ml, piece."
           },
           "reason": {
             "type": "string"
@@ -5974,6 +5993,7 @@
           "lot_code",
           "consumable_code",
           "name",
+          "unit",
           "reason",
           "raised_at",
           "closed_at",

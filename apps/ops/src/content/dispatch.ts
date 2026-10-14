@@ -137,7 +137,7 @@ export const dispatch = {
       type: "Type",
       service: "Service",
       area: "Area",
-      state: "State",
+      state: "Status",
       referred: "Referred by",
       // The board draws no note; the technician reads it on the client's card.
       note: "Client's note",
@@ -282,7 +282,7 @@ export const dispatch = {
     stop: "Stop moving",
     /** What happened, from the move's own answer: a message is claimed only where one was queued. */
     moved: {
-      messaged: (job: string) => `Moved. ${job} is told on WhatsApp.`,
+      messaged: (job: string) => `Moved. ${job} gets the new window on WhatsApp.`,
       call: (job: string, name: string, mobile: string) =>
         `${job} moved. ${name} isn't on WhatsApp updates: call ${mobile} with the new window.`,
       unchanged: (job: string, technician: string) => `${job} is now with ${technician}. Same window.`,

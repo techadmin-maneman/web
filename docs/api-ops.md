@@ -15115,6 +15115,10 @@ Request body:
           "name": {
             "type": "string"
           },
+          "unit": {
+            "type": "string",
+            "description": "What one is counted in: strip, ml, sachet."
+          },
           "city": {
             "type": [
               "string",
@@ -15183,6 +15187,7 @@ Request body:
           "kind",
           "consumable_code",
           "name",
+          "unit",
           "city",
           "from",
           "to",
@@ -15642,6 +15647,10 @@ Request body:
           "name": {
             "type": "string"
           },
+          "unit": {
+            "type": "string",
+            "description": "What one is counted in: strip, ml, piece."
+          },
           "held": {
             "type": "integer"
           },
@@ -15672,6 +15681,7 @@ Request body:
         "required": [
           "consumable_code",
           "name",
+          "unit",
           "held",
           "counted",
           "recounted",
@@ -16011,6 +16021,10 @@ Request body:
           "name": {
             "type": "string"
           },
+          "unit": {
+            "type": "string",
+            "description": "What one of the lot's item is counted in: strip, ml, piece."
+          },
           "reason": {
             "type": "string"
           },
@@ -16031,6 +16045,7 @@ Request body:
           "lot_code",
           "consumable_code",
           "name",
+          "unit",
           "reason",
           "raised_at",
           "closed_at"
@@ -16094,6 +16109,10 @@ Request body:
     },
     "name": {
       "type": "string"
+    },
+    "unit": {
+      "type": "string",
+      "description": "What one of the lot's item is counted in: strip, ml, piece."
     },
     "reason": {
       "type": "string"
@@ -16171,6 +16190,7 @@ Request body:
     "lot_code",
     "consumable_code",
     "name",
+    "unit",
     "reason",
     "raised_at",
     "closed_at",

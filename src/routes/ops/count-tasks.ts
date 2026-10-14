@@ -192,6 +192,7 @@ const differencesRoute = opsRoute({
               z.object({
                 consumable_code: z.string(),
                 name: z.string(),
+                unit: z.string().openapi({ description: "What one is counted in: strip, ml, piece." }),
                 held: z.number().int(),
                 counted: z.number().int(),
                 recounted: z.number().int().nullable(),
@@ -351,6 +352,7 @@ export function registerOpsCountTasks(app: App): void {
         lines: lines.map((line) => ({
           consumable_code: line.code,
           name: line.name,
+          unit: line.unit,
           held: line.held,
           counted: line.counted,
           recounted: line.recounted,

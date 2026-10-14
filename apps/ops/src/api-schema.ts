@@ -16163,6 +16163,8 @@ export interface components {
                 kind: "transfer" | "order";
                 consumable_code: string;
                 name: string;
+                /** @description What one is counted in: strip, ml, sachet. */
+                unit: string;
                 city: string | null;
                 from: string | null;
                 to: string | null;
@@ -16274,6 +16276,8 @@ export interface components {
             lines: {
                 consumable_code: string;
                 name: string;
+                /** @description What one is counted in: strip, ml, piece. */
+                unit: string;
                 held: number;
                 counted: number;
                 recounted: number | null;
@@ -16350,6 +16354,8 @@ export interface components {
                 lot_code: string;
                 consumable_code: string;
                 name: string;
+                /** @description What one of the lot's item is counted in: strip, ml, piece. */
+                unit: string;
                 reason: string;
                 raised_at: string;
                 closed_at: string | null;
@@ -16368,6 +16374,8 @@ export interface components {
             lot_code: string;
             consumable_code: string;
             name: string;
+            /** @description What one of the lot's item is counted in: strip, ml, piece. */
+            unit: string;
             reason: string;
             raised_at: string;
             closed_at: string | null;

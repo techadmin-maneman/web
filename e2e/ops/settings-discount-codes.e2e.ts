@@ -92,7 +92,7 @@ test.describe("the discount codes", () => {
     await expect(check).toBeDisabled();
     await form.getByLabel("Code", { exact: true }).fill("diwali");
     await form.getByLabel(settingsCopy.discountCodes.value).fill("10");
-    await form.getByLabel("Cap, in rupees").fill("1500");
+    await form.getByLabel("Cap, Rs.").fill("1500");
     await form.getByLabel("Service visits").check();
     await check.click();
 

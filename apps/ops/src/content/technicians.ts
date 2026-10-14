@@ -13,10 +13,10 @@ export const technicians = {
    * Four of the design's five columns, and Leave where it draws Skill: nothing
    * records a skill, and a day off is what ops need to see down the roster.
    */
-  columns: ["Technician", "City", "Jobs", "Avg service", "Leave"],
+  columns: ["Technician", "City", "Jobs", "Average visit", "Leave"],
   narrow: "Filter technicians",
   /** The Leave column: away today until when, the first day of leave to come, or nothing. */
-  away: (until: string) => `Away to ${until}`,
+  away: (until: string) => `Away until ${until}`,
   from: (date: string) => `From ${date}`,
   /** A zone a technician has none of, written as the design's tables write a gap. */
   unknown: "—",
@@ -66,7 +66,7 @@ export const technicians = {
     none: "No phones signed in.",
     revoke: "Revoke",
     /** The button's whole name, since a roster holds many phones and each button says "Revoke". */
-    revokeLabel: (phone: string, technician: string) => `Revoke ${phone} of ${technician}`,
+    revokeLabel: (phone: string, technician: string) => `Revoke ${technician}'s phone (${phone})`,
     confirm: "Revoke this phone",
     cancel: "Cancel",
     revoking: "Revoking",

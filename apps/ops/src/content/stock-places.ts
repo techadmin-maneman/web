@@ -30,9 +30,9 @@ export const stockPlaces = {
   },
   errors: {
     name: "Another place has that name.",
-    parent_id: "Pick an open place above it.",
-    zone: "Pick a zone from the list.",
-    city: "Pick a city from the list.",
+    parent_id: "Choose an open place above it.",
+    zone: "Choose a zone from the list.",
+    city: "Choose a city from the list.",
     active: "Empty it, and move what's under it, first.",
     not_found: changed("That place is gone."),
     invalid_request: "Check the details.",

@@ -169,7 +169,7 @@ export const clients = {
     },
     upcoming: "To come",
     past: "Done",
-    columns: ["Date", "Time", "Visit", "Technician", "State", "Discount code"],
+    columns: ["Date", "Time", "Visit", "Technician", "Status", "Discount code"],
     onBoard: "Show on board",
     /** The link's whole name, since every row's says the same. */
     onBoardLabel: (visit: string) => `Show on board: the visit of ${visit}`,
@@ -410,7 +410,7 @@ export const clients = {
    */
   payments: {
     title: "Payments and refunds",
-    columns: { date: "Date", what: "What", amount: "Amount", state: "State" },
+    columns: { date: "Date", what: "What", amount: "Amount", state: "Status" },
     none: "No payments yet.",
     /** "Service visit of 22 Aug 2027", and a late fee named as one. */
     visit: (type: string, date: string) => `${type} of ${date}`,
@@ -451,7 +451,7 @@ export const clients = {
   /* Our words, all of them: the payment links Razorpay texted the client, and an open one's address to send again. */
   links: {
     title: "Payment links",
-    columns: { sent: "Sent", for: "For", amount: "Amount", state: "State" },
+    columns: { sent: "Sent", for: "For", amount: "Amount", state: "Status" },
     none: "No payment links yet.",
     unsent: "Not sent",
     /** "Natural hair system, visit of 25 Sep 2027". */
@@ -597,7 +597,7 @@ export const clients = {
       product: "Product",
       attachment: "Tape or glue",
       remedies: "Remedies tried",
-      transplant_year: "Transplant's year",
+      transplant_year: "Transplant year",
       skin_and_allergies: "Skin conditions and allergies",
     },
     stages: { I: "I", II: "II", III: "III", IV: "IV", V: "V", VI: "VI", VII: "VII" },
@@ -671,7 +671,7 @@ export const clients = {
   consents: {
     title: "Consents",
     /** The board's four columns. */
-    columns: { purpose: "Purpose", state: "State", date: "Date", source: "Source" },
+    columns: { purpose: "Purpose", state: "Status", date: "Date", source: "Source" },
     purposes: {
       photos_own_record: "Photos for the visit record",
       photos_referral_cards: "Photos on referral cards",

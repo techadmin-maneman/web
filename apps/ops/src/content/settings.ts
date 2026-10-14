@@ -36,8 +36,8 @@ export const settings = {
     percent: "Percentage",
     amount: "Amount",
     value: "Per cent",
-    rupeesOff: "Rupees",
-    cap: "Cap, in rupees (optional)",
+    rupeesOff: "Amount off, Rs.",
+    cap: "Cap, Rs. (optional)",
     covers: "Applies to",
     coverNames: {
       first_fit: "First fits, and consultation-and-fit visits",
@@ -429,7 +429,7 @@ export const settings = {
     form: {
       priceTitle: (name: string) => `New price: ${name}`,
       correctTitle: (name: string, from: string) => `Correct the ${name} price from ${from}`,
-      amount: "Price before GST, in rupees",
+      amount: "Price before GST, Rs.",
       gst: "GST",
       from: "Starts",
       /** A day typed before tomorrow, said beside the box before anything is checked. */
@@ -485,7 +485,7 @@ export const settings = {
       send: "Confirm",
       back: "Back",
       takeBackConfirm: "Confirm withdrawal",
-      keep: "Keep",
+      keep: "Keep price",
     },
     saving: "Saving",
     done: {
@@ -650,7 +650,7 @@ export const settings = {
       colour: "Colour",
       grey: "Grey, %",
       density: "Density",
-      cost: "Cost each, in rupees",
+      cost: "Cost each, Rs.",
       kit: "Kit low at (optional)",
       store: "Hub or stockroom low at (optional)",
       central: "Warehouse low at (optional)",
@@ -659,7 +659,7 @@ export const settings = {
       adding: (spec: string, cost: string) => `${spec}, at ${cost} each`,
       added: "Added.",
       errors: {
-        product: "Pick a product from the list.",
+        product: "Choose a product from the list.",
         hair_system: "That spec is already in stock.",
         invalid_request: "Check the figures.",
         not_permitted: NOT_PERMITTED,
@@ -673,7 +673,7 @@ export const settings = {
       changeTitle: (name: string) => `Change ${name}`,
       name: "Name",
       unit: "Unit",
-      cost: "Cost each, in rupees",
+      cost: "Cost each, Rs.",
       kit: "Kit low at (optional)",
       store: "Hub or stockroom low at (optional)",
       central: "Warehouse low at (optional)",

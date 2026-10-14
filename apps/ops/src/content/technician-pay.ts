@@ -21,7 +21,7 @@ export const technicianPay = {
     none: "No grades yet.",
     grade: "Grade",
     technicians: "Technicians",
-    actions: "Change",
+    actions: "Actions",
     empty: "—",
     /** A city's cell with no rate of its own: every city's stands in. */
     inherited: (amount: string) => `${amount} (every city)`,
@@ -53,7 +53,7 @@ export const technicianPay = {
     rateTitle: (grade: string) => `New rate: ${grade}`,
     kind: "Visit",
     city: "City",
-    amount: "Per visit, in rupees",
+    amount: "Per visit, Rs.",
     none: "No rate from this day",
     from: "Starts",
     gradeTitle: (name: string) => `Grade: ${name}`,

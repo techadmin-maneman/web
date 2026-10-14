@@ -7,7 +7,7 @@ export const quality = {
   title: "Quality",
   recalls: "Recalls",
   none: "No recalls.",
-  columns: ["Recall", "Item", "Lot", "Raised", "Stands", ""],
+  columns: ["Recall", "Item", "Lot", "Raised", "Status", ""],
   /** "RC-0003" */
   number: (number: number) => `RC-${String(number).padStart(4, "0")}`,
   open: "Open",
@@ -18,7 +18,7 @@ export const quality = {
   lot: "Lot",
   /** "Essential 8x10 · BAD-0921" */
   lotLabel: (name: string, lotCode: string) => `${name} · ${lotCode}`,
-  reason: "Why it is recalled",
+  reason: "Reason",
   confirmRaise: "Recall it",
   raisedSaid: "Recalled. Its pieces are blocked, and their wearers are due a replacement.",
   held: "Where it is",
@@ -44,7 +44,7 @@ export const quality = {
   /** "Rs. 1,234 will expire before it is used." */
   riskTotal: (value: string) => `${value} will expire before it is used.`,
   noRisk: "Everything held will be used before it expires.",
-  riskColumns: ["Place", "Item", "Lot", "Expires", "Left over", "Value", "Do"],
+  riskColumns: ["Place", "Item", "Lot", "Expires", "Left over", "Value", "Actions"],
   suggestions: {
     write_off: "Write off",
     use_first: "Use first",

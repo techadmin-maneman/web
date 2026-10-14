@@ -139,7 +139,7 @@ export const noShows = {
      */
     waited: (minutes: number, closed: string) => `${String(minutes)} min · closed ${closed}`,
     waitedBoth: (minutes: number, withUs: number, closed: string) =>
-      `${String(minutes)} min by phone, ${String(withUs)} after it reached us · closed ${closed}`,
+      `${String(minutes)} min by phone, ${String(withUs)} min after it reached us · closed ${closed}`,
     notClosed: "Not closed",
     // The board draws no case closed before the booked start's wait had run.
     closedEarly: "Closed before the wait ended. Waive it, or explain in your note.",
@@ -163,7 +163,7 @@ export const noShows = {
      * cannot be taken back here.
      */
     confirm: {
-      keepsAll: (paid: string) => `Keep ${paid} of the ${paid} paid?`,
+      keepsAll: (paid: string) => `Keep all ${paid} paid?`,
       keepsPart: (kept: string, paid: string, refund: string) =>
         `Keep ${kept} of the ${paid} paid, and refund ${refund}?`,
       keepsNone: (paid: string) => `Keep nothing, and refund the ${paid} paid?`,
@@ -180,7 +180,7 @@ export const noShows = {
     back: "Back",
     deciding: "Saving",
     /** The board draws no empty queue. */
-    empty: "No no-shows to decide.",
+    empty: "Nothing to decide.",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already decided."),

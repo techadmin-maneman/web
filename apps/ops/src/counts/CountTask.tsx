@@ -13,6 +13,7 @@ import { useCallback, useState } from "react";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
+import { stock } from "../content/stock.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PieceScans } from "../stock/index.ts";
@@ -121,9 +122,9 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
           {loaded.value.lines.map((line) => (
             <tr key={line.consumable_code}>
               <RowHead>{line.name}</RowHead>
-              <td className={form.figure}>{line.held}</td>
-              <td className={form.figure}>{line.counted}</td>
-              <td className={form.figure}>{line.recounted ?? ""}</td>
+              <td className={form.figure}>{stock.held(line.held, line.unit)}</td>
+              <td className={form.figure}>{stock.held(line.counted, line.unit)}</td>
+              <td className={form.figure}>{line.recounted === null ? "" : stock.held(line.recounted, line.unit)}</td>
             </tr>
           ))}
         </tbody>

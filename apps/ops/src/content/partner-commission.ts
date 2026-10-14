@@ -33,7 +33,7 @@ export const partnerCommission = {
   paymentTo: (name: string, month: string) => `the payment to ${name} for ${month}`,
   form: {
     title: (name: string, month: string) => `Payment to ${name}, ${month}`,
-    amount: "Paid, in rupees",
+    amount: "Paid, Rs.",
     paidOn: "Paid on",
     reference: "Reference",
     next: "Review",

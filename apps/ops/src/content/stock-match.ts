@@ -25,8 +25,8 @@ export const stockMatch = {
   custom: "No stocked hair system matches. Raise a custom order.",
   matched: (name: string) => `Matches ${name}.`,
   noneHeld: "None held yet.",
-  /** "1 · Imran Qureshi, Gurgaon" */
+  /** "1 piece · Imran Qureshi, Gurgaon" */
   held: (pieces: number, place: string, city: string | null) =>
-    `${String(pieces)} · ${city === null ? place : `${place}, ${city}`}`,
+    `${String(pieces)} ${pieces === 1 ? "piece" : "pieces"} · ${city === null ? place : `${place}, ${city}`}`,
   inTransit: (pieces: number) => `${String(pieces)} on the way`,
 };

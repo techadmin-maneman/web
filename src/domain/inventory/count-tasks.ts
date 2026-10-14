@@ -37,6 +37,8 @@ export interface CountItem {
 export interface Difference {
   readonly code: string;
   readonly name: string;
+  /** What one is counted in: strip, ml, piece. */
+  readonly unit: string;
   readonly held: number;
   readonly counted: number;
   readonly recounted: number | null;
@@ -177,7 +179,7 @@ type LineRow = {
 export async function differences(db: D1Database, id: string): Promise<Difference[]> {
   const { results } = await db
     .prepare(
-      `SELECT l.consumable_code AS code, i.name, l.held, l.counted, l.recounted, l.labels, l.missing_labels,
+      `SELECT l.consumable_code AS code, i.name, i.unit, l.held, l.counted, l.recounted, l.labels, l.missing_labels,
          l.unknown_labels
        FROM count_lines l JOIN consumables i ON i.code = l.consumable_code
        WHERE l.task_id = ?1 AND l.state = 'sign_off' ORDER BY i.name COLLATE NOCASE`,
@@ -187,6 +189,7 @@ export async function differences(db: D1Database, id: string): Promise<Differenc
   return results.map((row) => ({
     code: row.code,
     name: row.name,
+    unit: row.unit,
     held: row.held,
     counted: row.counted,
     recounted: row.recounted,
@@ -196,7 +199,7 @@ export async function differences(db: D1Database, id: string): Promise<Differenc
   }));
 }
 
-type DifferenceRow = Pick<Difference, "code" | "name" | "held" | "counted" | "recounted"> & {
+type DifferenceRow = Pick<Difference, "code" | "name" | "unit" | "held" | "counted" | "recounted"> & {
   labels: string | null;
   missing_labels: string | null;
   unknown_labels: string | null;
