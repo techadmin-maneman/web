@@ -52,8 +52,9 @@ const receiptRoute = opsRoute({
   responses: {
     200: ORDERS,
     400: errorResponse(
-      `invalid_request: fields names lines.N for a line not of the order or more than ${String(MAX_LABELLED)} pieces of a hair system, lines for nothing received, rupee_rate for none on an order in another currency, or id for no such order`,
+      `invalid_request: fields names lines.N for a line not of the order or more than ${String(MAX_LABELLED)} pieces of a hair system, lines for nothing received, or rupee_rate for none on an order in another currency`,
     ),
+    404: errorResponse("not_found: no such order"),
     409: errorResponse("order_state: the order is not sent or part received"),
   },
 });
@@ -93,6 +94,7 @@ export function registerOpsReceipts(app: App): void {
       written(c),
     );
     if (!received.ok) {
+      if ("missing" in received) return refuse(c, "not_found");
       return "state" in received ? refuse(c, "order_state") : refuse(c, "invalid_request", received.fields);
     }
     return c.json(await ordersAnswer(c), 200);

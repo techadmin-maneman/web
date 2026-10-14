@@ -8934,7 +8934,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, rupee_rate for none on an order in another currency, or id for no such order
+**400**: invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, or rupee_rate for none on an order in another currency
 
 ```json
 {
@@ -8943,6 +8943,14 @@ Request body:
 ```
 
 **403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: no such order
 
 ```json
 {
