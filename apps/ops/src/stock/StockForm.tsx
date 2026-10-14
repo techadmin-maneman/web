@@ -258,6 +258,53 @@ const EMPTY = {
 };
 
 /** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
+/** What moved: the kind of movement, the item, and the places it moved between or was counted or lost at. */
+function WhatMoved(props: {
+  stock: Stock;
+  draft: Draft;
+  kinds: readonly Kind[];
+  places: readonly (readonly [string, string])[];
+  onEdit: (field: Exclude<keyof Draft, "units" | "waitForScan">) => (value: string) => void;
+}) {
+  const { stock, draft, kinds, places } = props;
+  const edit = props.onEdit;
+  return (
+    <>
+      <ChoiceGroup className={styles.kinds} legend={copy.record.what} inline>
+        {kinds.map((kind) => (
+          <Radio
+            key={kind}
+            label={copy.record.kinds[kind]}
+            name="stock-kind"
+            value={kind}
+            checked={draft.kind === kind}
+            onChange={() => {
+              edit("kind")(kind);
+            }}
+          />
+        ))}
+      </ChoiceGroup>
+      <div className={form.fields}>
+        <StockChoice
+          label={copy.record.consumable}
+          value={draft.code}
+          options={stock.consumables.map((each) => [each.code, each.name] as const)}
+          onChange={edit("code")}
+        />
+        {draft.kind === "transfer" && (
+          <>
+            <StockChoice label={copy.record.from} value={draft.from} options={places} onChange={edit("from")} />
+            <StockChoice label={copy.record.to} value={draft.to} options={places} onChange={edit("to")} />
+          </>
+        )}
+        {(draft.kind === "count" || draft.kind === "write_off") && (
+          <StockChoice label={copy.record.place} value={draft.place} options={places} onChange={edit("place")} />
+        )}
+      </div>
+    </>
+  );
+}
+
 export function StockForm({
   stock,
   kinds,
@@ -312,37 +359,7 @@ export function StockForm({
   return (
     <Panel titleId="stock-record" title={copy.record.title}>
       <div className={form.group}>
-        <ChoiceGroup className={styles.kinds} legend={copy.record.what} inline>
-          {kinds.map((kind) => (
-            <Radio
-              key={kind}
-              label={copy.record.kinds[kind]}
-              name="stock-kind"
-              value={kind}
-              checked={draft.kind === kind}
-              onChange={() => {
-                edit("kind")(kind);
-              }}
-            />
-          ))}
-        </ChoiceGroup>
-        <div className={form.fields}>
-          <StockChoice
-            label={copy.record.consumable}
-            value={draft.code}
-            options={stock.consumables.map((each) => [each.code, each.name] as const)}
-            onChange={edit("code")}
-          />
-          {draft.kind === "transfer" && (
-            <>
-              <StockChoice label={copy.record.from} value={draft.from} options={places} onChange={edit("from")} />
-              <StockChoice label={copy.record.to} value={draft.to} options={places} onChange={edit("to")} />
-            </>
-          )}
-          {(draft.kind === "count" || draft.kind === "write_off") && (
-            <StockChoice label={copy.record.place} value={draft.place} options={places} onChange={edit("place")} />
-          )}
-        </div>
+        <WhatMoved stock={stock} draft={draft} kinds={kinds} places={places} onEdit={edit} />
         <LotFields stock={stock} draft={draft} onEdit={edit} />
         {scans(stock, draft) && <PieceScans units={draft.units} onUnits={scan} />}
         <WaitForScan stock={stock} draft={draft} onDraft={setDraft} />

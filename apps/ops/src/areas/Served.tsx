@@ -43,6 +43,72 @@ import { areasApi } from "./areas-api.ts";
 
 const copy = areas.served;
 
+// Sorted and narrowed by what is saved, so a row stays put while its boxes are typed in.
+const servedWord = (row: ServedPincode) => (row.served ? copy.yes : copy.no);
+const [PIN, NAME, SERVED, LAUNCH, WAITING] = copy.columns;
+const COLUMNS: readonly Column<ServedPincode>[] = [
+  { label: PIN, sort: (row) => row.pincode },
+  { label: NAME, sort: (row) => row.area },
+  { label: SERVED, sort: servedWord, choice: servedWord },
+  { label: LAUNCH, sort: (row) => row.launch_on ?? "" },
+  { label: WAITING, sort: (row) => row.waiting },
+];
+
+/** A city's pincodes, narrowed and sorted as ops ask, each row's boxes holding the draft. */
+function PincodeTable(props: {
+  view: ReturnType<typeof useTableView<ServedPincode>>;
+  draft: Draft;
+  mayChange: boolean;
+  onEdit: (next: Draft) => void;
+}) {
+  const { view, draft, mayChange, onEdit } = props;
+  return (
+    <>
+      <Narrowing view={view} label={copy.narrow} />
+      <Table className={form.table}>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((each) => (
+            <PincodeRow
+              key={each.pincode}
+              pincode={each}
+              row={draft[each.pincode] ?? rowOf(each)}
+              mayChange={mayChange}
+              onChange={(next) => {
+                onEdit({ ...draft, [each.pincode]: next });
+              }}
+            />
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
+  );
+}
+
+/** A pincode the file does not hold, added beneath the table, and what was added last. */
+function AddBeneath(props: {
+  cities: readonly string[];
+  added: ServedPincode | null;
+  onAdded: (held: ServedPincode) => void;
+}) {
+  const { added } = props;
+  return (
+    <Fieldset className={form.group} legend={areas.add.title} legendLook="title">
+      <AddPincode pincode={null} cities={props.cities} onAdded={props.onAdded} />
+      {added !== null && (
+        <InlineMessage tone="saved" className={form.saved}>
+          {areas.add.added(added.pincode, added.city)}
+        </InlineMessage>
+      )}
+    </Fieldset>
+  );
+}
+
 function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedPincode[]; cities: readonly string[] }) {
   const [pincodes, setPincodes] = useState(loadedPincodes);
   const [city, setCity] = useState(pincodes[0]?.city ?? "");
@@ -56,17 +122,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   const today = todayInIndia(Date.now());
 
   const inCity = pincodes.filter((each) => each.city === city);
-  // Sorted and narrowed by what is saved, so a row stays put while its boxes are typed in.
-  const servedWord = (row: ServedPincode) => (row.served ? copy.yes : copy.no);
-  const [pin, name, served, launch, waiting] = copy.columns;
-  const columns: readonly Column<ServedPincode>[] = [
-    { label: pin, sort: (row) => row.pincode },
-    { label: name, sort: (row) => row.area },
-    { label: served, sort: servedWord, choice: servedWord },
-    { label: launch, sort: (row) => row.launch_on ?? "" },
-    { label: waiting, sort: (row) => row.waiting },
-  ];
-  const view = useTableView(inCity, columns, { search: (row) => `${row.pincode} ${row.area}` });
+  const view = useTableView(inCity, COLUMNS, { search: (row) => `${row.pincode} ${row.area}` });
   const changes = changesIn(pincodes, draft);
   const badName = changes.find((change) => change.area !== undefined && !AREA_NAME.test(change.area));
   const later = changes.find((change) => servesLater(pincodes, change, today));
@@ -142,28 +198,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         }}
       />
 
-      <Narrowing view={view} label={copy.narrow} />
-      <Table className={form.table}>
-        <thead>
-          <tr>
-            <SortHeads view={view} />
-          </tr>
-        </thead>
-        <tbody>
-          {view.shown.map((each) => (
-            <PincodeRow
-              key={each.pincode}
-              pincode={each}
-              row={draft[each.pincode] ?? rowOf(each)}
-              mayChange={mayChange}
-              onChange={(next) => {
-                edit({ ...draft, [each.pincode]: next });
-              }}
-            />
-          ))}
-        </tbody>
-      </Table>
-      <TableEnd view={view} />
+      <PincodeTable view={view} draft={draft} mayChange={mayChange} onEdit={edit} />
 
       {checking && (
         <div className={styles.inPanel}>
@@ -202,16 +237,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         />
       )}
 
-      {mayAdd && (
-        <Fieldset className={form.group} legend={areas.add.title} legendLook="title">
-          <AddPincode pincode={null} cities={cities} onAdded={addedHere} />
-          {added !== null && (
-            <InlineMessage tone="saved" className={form.saved}>
-              {areas.add.added(added.pincode, added.city)}
-            </InlineMessage>
-          )}
-        </Fieldset>
-      )}
+      {mayAdd && <AddBeneath cities={cities} added={added} onAdded={addedHere} />}
     </Panel>
   );
 }

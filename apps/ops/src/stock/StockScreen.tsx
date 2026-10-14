@@ -7,10 +7,9 @@ import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
-import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
-import { api, type Stock } from "../api.ts";
+import { type Stock } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
@@ -23,6 +22,7 @@ import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import type { LabelsFor } from "./Labels.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
+import { useStock } from "./useStock.ts";
 import { RowHead } from "../components/RowHead.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
@@ -247,9 +247,7 @@ function Movements({ stock }: { stock: Stock }) {
 }
 
 export function StockScreen() {
-  const [loaded, retry] = useLoad(api.stock);
-  /** The stock after a movement, so the table follows without reading it again. */
-  const [stock, setStock] = useState<Stock | null>(null);
+  const { loaded, retry, current, setStock } = useStock();
   const [by, setBy] = useState<"place" | "zone" | "city">("place");
   /** A hair system's delivery opens its labels at the warehouse, afresh each time. */
   const [labelsFor, setLabelsFor] = useState<{ readonly at: LabelsFor; readonly time: number } | null>(null);
@@ -260,26 +258,26 @@ export function StockScreen() {
     <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
-      {loaded.state === "loaded" && (
+      {current !== null && (
         <div className={styles.screen}>
           <Panel titleId="stock-on-hand" title={copy.onHand}>
             <Grouping by={by} onBy={setBy} />
             {by === "place" ? (
-              <OnHand stock={stock ?? loaded.value} />
+              <OnHand stock={current} />
             ) : (
               <Suspense fallback={<Loading />}>
-                <Totals stock={stock ?? loaded.value} by={by} />
+                <Totals stock={current} by={by} />
               </Suspense>
             )}
           </Panel>
-          {anyExpiring(stock ?? loaded.value) && (
+          {anyExpiring(current) && (
             <Suspense fallback={<Loading />}>
-              <Expiring stock={stock ?? loaded.value} />
+              <Expiring stock={current} />
             </Suspense>
           )}
-          {firstKind !== undefined && (stock ?? loaded.value).consumables.length > 0 && (
+          {firstKind !== undefined && current.consumables.length > 0 && (
             <StockForm
-              stock={stock ?? loaded.value}
+              stock={current}
               kinds={[firstKind, ...otherKinds]}
               onRecorded={(after, recorded) => {
                 setStock(after);
@@ -291,22 +289,22 @@ export function StockScreen() {
             />
           )}
           <Suspense fallback={<Loading />}>
-            <Demand stock={stock ?? loaded.value} />
+            <Demand stock={current} />
           </Suspense>
-          {(stock ?? loaded.value).in_transit.length > 0 && (
+          {current.in_transit.length > 0 && (
             <Suspense fallback={<Loading />}>
-              <InTransit stock={stock ?? loaded.value} onChanged={setStock} />
+              <InTransit stock={current} onChanged={setStock} />
             </Suspense>
           )}
           {access.mayCall("GET /api/stock/units") && (
             <Suspense fallback={<Loading />}>
-              <Labels key={String(labelsFor?.time ?? 0)} stock={stock ?? loaded.value} focus={labelsFor?.at ?? null} />
+              <Labels key={String(labelsFor?.time ?? 0)} stock={current} focus={labelsFor?.at ?? null} />
             </Suspense>
           )}
-          <Movements stock={stock ?? loaded.value} />
+          <Movements stock={current} />
           {access.mayCall("POST /api/stock/places") && (
             <Suspense fallback={<Loading />}>
-              <PlacesPanel stock={stock ?? loaded.value} onChanged={setStock} />
+              <PlacesPanel stock={current} onChanged={setStock} />
             </Suspense>
           )}
         </div>

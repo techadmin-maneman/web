@@ -24,7 +24,7 @@ import {
   type FitForm,
   type HistoryForm,
 } from "@maneman/web-kit/hair-profile";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useId, useState, type Dispatch, type SetStateAction } from "react";
 import { type ClientHairProfile, type HairProfileVersion, type HairProfileView } from "../api.ts";
 import { clients, dispatch, NOT_PERMITTED } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -165,8 +165,124 @@ function wronglyTyped(draft: Draft, thisYear: number): string[] {
 }
 
 /** The fields the API refused, by the name the form gives them. */
+/** The options a select offers. */
+type SelectOptions = readonly { value: string; label: string }[];
+
 const refusedFields = (fields: readonly string[]): string[] =>
   fields.map((field) => field.replace(/^(fit|history)\./, ""));
+
+interface SectionProps {
+  readonly draft: Draft;
+  readonly onDraft: Dispatch<SetStateAction<Draft>>;
+  /** The boxes the API, or the form itself, refused. */
+  readonly refused: readonly string[];
+  readonly busy: boolean;
+}
+
+/** The fit a replacement is ordered to: each choice from its list, and each figure. */
+function FitFields({ draft, onDraft, refused, busy, products }: SectionProps & { readonly products: SelectOptions }) {
+  const select = (field: Code, options: SelectOptions) => (
+    <Field label={copy.rows[field]} error={refused.includes(field) ? copy.invalid : null} key={field}>
+      {(control) => (
+        <Select
+          {...control}
+          className={styles.select}
+          value={String(draft.fit.choices[field] ?? "")}
+          disabled={busy}
+          onChange={(event) => {
+            const value = event.currentTarget.value;
+            onDraft((was) => ({ ...was, fit: { ...was.fit, choices: choicesWith(was.fit.choices, field, value) } }));
+          }}
+        >
+          <option value="">{copy.notRecorded}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
+  );
+
+  const figure = (field: Figure) => (
+    <Field label={copy.rows[field]} error={refused.includes(field) ? copy.invalid : null} key={field}>
+      {(control) => (
+        <TextInput
+          {...control}
+          className={styles.input}
+          inputMode="decimal"
+          value={draft.fit.figures[field]}
+          disabled={busy}
+          onChange={(event) => {
+            const value = event.target.value;
+            onDraft((was) => ({ ...was, fit: { ...was.fit, figures: { ...was.fit.figures, [field]: value } } }));
+          }}
+        />
+      )}
+    </Field>
+  );
+  return (
+    <div className={styles.fields}>
+      {FIT_ROWS.map((field) => {
+        if (!isCode(field)) return figure(field);
+        return select(field, field === "product" ? products : listOf(field));
+      })}
+    </div>
+  );
+}
+
+/** What the client has tried before, the year of a transplant, and their skin and allergies. */
+function HistoryFields({ draft, onDraft, refused, busy }: SectionProps) {
+  return (
+    <ChoiceGroup className={styles.history} legend={copy.history} legendLook="caps">
+      {REMEDIES.map((remedy) => (
+        <Checkbox
+          key={remedy}
+          label={copy.remedies[remedy]}
+          checked={draft.history.remedies.includes(remedy)}
+          disabled={busy}
+          onChange={() => {
+            const remedies = toggleRemedy(draft.history.remedies, remedy);
+            onDraft((was) => ({ ...was, history: { ...was.history, remedies } }));
+          }}
+        />
+      ))}
+      {draft.history.remedies.includes("transplant") && (
+        <Field label={copy.rows.transplant_year} error={refused.includes("transplant_year") ? copy.invalid : null}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.input}
+              inputMode="numeric"
+              value={draft.history.year}
+              disabled={busy}
+              onChange={(event) => {
+                const year = event.target.value;
+                onDraft((was) => ({ ...was, history: { ...was.history, year } }));
+              }}
+            />
+          )}
+        </Field>
+      )}
+      <Field label={copy.rows.skin_and_allergies} error={refused.includes("skin_and_allergies") ? copy.invalid : null}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={styles.input}
+            maxLength={200}
+            value={draft.history.skin}
+            disabled={busy}
+            onChange={(event) => {
+              const skin = event.target.value;
+              onDraft((was) => ({ ...was, history: { ...was.history, skin } }));
+            }}
+          />
+        )}
+      </Field>
+    </ChoiceGroup>
+  );
+}
 
 function CorrectionForm({
   clientId,
@@ -213,48 +329,6 @@ function CorrectionForm({
       else setProblem(fields.length > 0 ? copy.refused : copy.failed);
     });
 
-  const select = (field: Code, options: readonly { value: string; label: string }[]) => (
-    <Field label={copy.rows[field]} error={refused.includes(field) ? copy.invalid : null} key={field}>
-      {(control) => (
-        <Select
-          {...control}
-          className={styles.select}
-          value={String(draft.fit.choices[field] ?? "")}
-          disabled={busy}
-          onChange={(event) => {
-            const value = event.currentTarget.value;
-            setDraft((was) => ({ ...was, fit: { ...was.fit, choices: choicesWith(was.fit.choices, field, value) } }));
-          }}
-        >
-          <option value="">{copy.notRecorded}</option>
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
-  );
-
-  const figure = (field: Figure) => (
-    <Field label={copy.rows[field]} error={refused.includes(field) ? copy.invalid : null} key={field}>
-      {(control) => (
-        <TextInput
-          {...control}
-          className={styles.input}
-          inputMode="decimal"
-          value={draft.fit.figures[field]}
-          disabled={busy}
-          onChange={(event) => {
-            const value = event.target.value;
-            setDraft((was) => ({ ...was, fit: { ...was.fit, figures: { ...was.fit.figures, [field]: value } } }));
-          }}
-        />
-      )}
-    </Field>
-  );
-
   const products = productOptions(page.products, page.latest);
 
   return (
@@ -271,61 +345,8 @@ function CorrectionForm({
       <h4 className={capsLook(styles.subtitle)} id={`${formId}-title`}>
         {copy.formTitle}
       </h4>
-      <div className={styles.fields}>
-        {FIT_ROWS.map((field) => {
-          if (!isCode(field)) return figure(field);
-          return select(field, field === "product" ? products : listOf(field));
-        })}
-      </div>
-      <ChoiceGroup className={styles.history} legend={copy.history} legendLook="caps">
-        {REMEDIES.map((remedy) => (
-          <Checkbox
-            key={remedy}
-            label={copy.remedies[remedy]}
-            checked={draft.history.remedies.includes(remedy)}
-            disabled={busy}
-            onChange={() => {
-              const remedies = toggleRemedy(draft.history.remedies, remedy);
-              setDraft((was) => ({ ...was, history: { ...was.history, remedies } }));
-            }}
-          />
-        ))}
-        {draft.history.remedies.includes("transplant") && (
-          <Field label={copy.rows.transplant_year} error={refused.includes("transplant_year") ? copy.invalid : null}>
-            {(control) => (
-              <TextInput
-                {...control}
-                className={styles.input}
-                inputMode="numeric"
-                value={draft.history.year}
-                disabled={busy}
-                onChange={(event) => {
-                  const year = event.target.value;
-                  setDraft((was) => ({ ...was, history: { ...was.history, year } }));
-                }}
-              />
-            )}
-          </Field>
-        )}
-        <Field
-          label={copy.rows.skin_and_allergies}
-          error={refused.includes("skin_and_allergies") ? copy.invalid : null}
-        >
-          {(control) => (
-            <TextInput
-              {...control}
-              className={styles.input}
-              maxLength={200}
-              value={draft.history.skin}
-              disabled={busy}
-              onChange={(event) => {
-                const skin = event.target.value;
-                setDraft((was) => ({ ...was, history: { ...was.history, skin } }));
-              }}
-            />
-          )}
-        </Field>
-      </ChoiceGroup>
+      <FitFields draft={draft} onDraft={setDraft} refused={refused} busy={busy} products={products} />
+      <HistoryFields draft={draft} onDraft={setDraft} refused={refused} busy={busy} />
       {problem !== null && <Refusal className={styles.error} said={problem} />}
       <div className={styles.actions}>
         <Button variant="primary" size="small" type="submit" busy={busy}>
