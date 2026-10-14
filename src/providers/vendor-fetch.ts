@@ -14,6 +14,7 @@ const VENDOR_NAMES = {
   evolution: "WhatsApp bridge",
   msg91: "MSG91",
   ailabtools: "AILabTools",
+  youcam: "YouCam",
   google: "Google",
   turnstile: "Turnstile",
   "cloudflare-access": "Cloudflare Access",

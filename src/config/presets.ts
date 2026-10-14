@@ -1,60 +1,26 @@
-// The six looks the design offers, and what each asks AILabTools for.
-//
-// PLACEHOLDERS. The hair styles are real catalog ids, chosen as rough matches
-// for the design's wording; the preset bake-off replaces them. A test fails if
-// any id is missing from data/ailabtools-catalog.json.
-//
-// Pro is the default: it keeps the face, while Premium visibly changed face
-// shape in the harness's tests (docs/reference/ailabtools-api-notes.md, 7.7).
+// The six looks the try-on offers: each a hairstyle, made from one reference photograph of ours, whose hair YouCam
+// puts on the visitor's photograph (docs/decisions/0201-the-try-on-on-youcam.md). The photographs are one synthetic
+// man, final and tested; their bytes are checked against data/tryon-refs-v1.json. They are served at
+// TRYON_REFS_URL, whose path ends in REFERENCE_VERSION: a new photograph changes the look, so it goes under a new
+// version, and the render cache keys on it.
 
-export type Endpoint = "pro" | "premium";
+export const REFERENCE_VERSION = "v1";
 
 export interface Preset {
   readonly id: string;
-  /** The design's words for the look. */
+  /** The look's name in the picker. */
   readonly label: string;
-  readonly endpoint: Endpoint;
-  /** A male style id from the AILabTools catalog. */
-  readonly hairStyle: string;
+  /** The reference photograph's file under TRYON_REFS_URL. */
+  readonly reference: string;
 }
 
 export const PRESETS = [
-  {
-    id: "full-natural-short",
-    label: "Full density · Natural hairline · short",
-    endpoint: "pro",
-    hairStyle: "Natural_Side-Part",
-  },
-  {
-    id: "full-straight-medium",
-    label: "Full density · Straight hairline · medium",
-    endpoint: "pro",
-    hairStyle: "Side-Parted_Textured",
-  },
-  {
-    id: "medium-natural-short",
-    label: "Medium density · Natural hairline · short",
-    endpoint: "pro",
-    hairStyle: "Side-Part_Crop",
-  },
-  {
-    id: "medium-receded-medium",
-    label: "Medium density · Receded hairline · medium",
-    endpoint: "pro",
-    hairStyle: "CombOver",
-  },
-  {
-    id: "light-natural-short",
-    label: "Light density · Natural hairline · short",
-    endpoint: "pro",
-    hairStyle: "Smooth_Crop",
-  },
-  {
-    id: "light-receded-cropped",
-    label: "Light density · Receded hairline · cropped",
-    endpoint: "pro",
-    hairStyle: "BuzzCut",
-  },
+  { id: "side-part", label: "Side part", reference: "side-part.jpg" },
+  { id: "slick-back", label: "Slick back", reference: "slick-back.jpg" },
+  { id: "textured-crop", label: "Textured crop · Low fade", reference: "textured-crop.jpg" },
+  { id: "french-crop", label: "French crop", reference: "french-crop.jpg" },
+  { id: "quiff", label: "Quiff", reference: "quiff.jpg" },
+  { id: "crew-cut", label: "Crew cut · Ivy League", reference: "crew-cut.jpg" },
 ] as const satisfies readonly Preset[];
 
 export type PresetId = (typeof PRESETS)[number]["id"];
@@ -63,3 +29,6 @@ export const PRESET_IDS = PRESETS.map((preset) => preset.id) as [PresetId, ...Pr
 export function findPreset(id: string): Preset | undefined {
   return PRESETS.find((preset) => preset.id === id);
 }
+
+/** Where YouCam fetches a look's reference photograph. */
+export const referenceUrlOf = (refsUrl: string, preset: Preset): string => `${refsUrl}/${preset.reference}`;
