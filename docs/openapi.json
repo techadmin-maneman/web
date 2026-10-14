@@ -3512,6 +3512,27 @@
         }
       }
     },
+    "/api/csp-reports": {
+      "post": {
+        "summary": "Report what a page's content security policy refused",
+        "description": "A browser's own report, application/reports+json from report-to or application/csp-report from report-uri. Anything else, or more than 16 KB, is let go unread.",
+        "responses": {
+          "204": {
+            "description": "Logged, or let go"
+          },
+          "429": {
+            "description": "rate_limited: this address has sent its reports for the hour, or every address has",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/hooks/evolution": {
       "post": {
         "summary": "Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages; the token as \"Authorization: Bearer <token>\"",

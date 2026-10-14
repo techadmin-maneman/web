@@ -68,6 +68,9 @@ export const RATE_LIMITS = {
   // The apps' error reports: per address, and from every address together.
   "client_error:ip": { per: "hour", limit: 20 },
   "client_error:all": { per: "hour", limit: 300 },
+  // What the site's pages' policies refused, as their browsers report it.
+  "csp_report:ip": { per: "hour", limit: 20 },
+  "csp_report:all": { per: "hour", limit: 300 },
 
   // The global daily ceilings (src/domain/platform/ceilings.ts), and their one alert a day each.
   "ceiling:upload": { per: "day", limit: (settings) => settings.tryon.uploadDailyCeiling },

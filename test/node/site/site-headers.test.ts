@@ -57,6 +57,8 @@ describe("the content security policy", () => {
         "base-uri 'self'",
         "form-action 'self'",
         "frame-ancestors 'none'",
+        "report-uri /api/csp-reports",
+        "report-to csp",
       ].join("; "),
     );
   });
@@ -91,6 +93,18 @@ describe("the headers file", () => {
     expect(file).toMatch(/\/\*\n[\s\S]*Permissions-Policy: camera=\(\),/);
     expect(file).toContain("/try\n  ! Permissions-Policy\n  Permissions-Policy: camera=(self),");
     expect(file).not.toContain("X-Robots-Tag");
+  });
+
+  // A refusal in a real browser left no trace, and nothing kept a page opened from the site from reaching back into it.
+  it("has every refusal reported, Trusted Types' only reported for now, and keeps an opened page apart", () => {
+    const policy = contentSecurityPolicy({ scripts: [], styles: [] }, NO_TAGS);
+    expect(policy).toMatch(/; report-uri \/api\/csp-reports; report-to csp$/);
+    const file = headersFile(true, policy);
+    expect(file).toContain('  Reporting-Endpoints: csp="/api/csp-reports"\n');
+    expect(file).toContain(
+      "  Content-Security-Policy-Report-Only: require-trusted-types-for 'script'; report-uri /api/csp-reports; report-to csp\n",
+    );
+    expect(file).toContain("  Cross-Origin-Opener-Policy: same-origin\n");
   });
 
   it("keeps staging and local out of search engines", () => {

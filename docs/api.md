@@ -1442,6 +1442,20 @@ Request body:
 }
 ```
 
+### POST /api/csp-reports
+
+Report what a page's content security policy refused
+
+**204**: Logged, or let go
+
+**429**: rate_limited: this address has sent its reports for the hour, or every address has
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/hooks/evolution
 
 Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages; the token as "Authorization: Bearer <token>"

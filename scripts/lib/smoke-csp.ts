@@ -2,6 +2,7 @@
 // Access token to. Cloudflare adds scripts to pages at its edge, such as its bot checks and Web Analytics' beacon,
 // which no local run can see; only a page loaded from the deployed host shows whether its policy refuses one.
 
+import { PRODUCTION_LIVE } from "../../site/src/lib/flags.ts";
 import {
   ENABLED_SURFACES,
   SURFACE_HOSTS,
@@ -17,11 +18,16 @@ const PATHS: Readonly<Record<Surface, readonly string[]>> = {
   tech: ["/"],
 };
 
-/** Every page the check opens in an environment, on each surface switched on there. */
-export function pagesToCheck(environment: RemoteEnvironmentName): string[] {
+/**
+ * Every page the check opens in an environment, on each surface switched on there. Production's site is its
+ * coming-soon page alone until it goes live (site/src/lib/flags.ts).
+ */
+export function pagesToCheck(environment: RemoteEnvironmentName, siteLive = PRODUCTION_LIVE): string[] {
   const hosts = SURFACE_HOSTS[environment];
+  const pathsOf = (surface: Surface) =>
+    surface === "public" && environment === "production" && !siteLive ? ["/"] : PATHS[surface];
   return ENABLED_SURFACES[environment].flatMap((surface) =>
-    PATHS[surface].map((path) => `https://${hosts[surface]}${path}`),
+    pathsOf(surface).map((path) => `https://${hosts[surface]}${path}`),
   );
 }
 

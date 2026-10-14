@@ -17,6 +17,25 @@ export const HEADER_LINE_LIMIT = 2000;
 
 const TURNSTILE = "https://challenges.cloudflare.com";
 
+/** Where a page's browser reports what its policy refused (src/routes/public/csp-reports.ts), by both ways browsers have. */
+const REPORTS = "/api/csp-reports";
+
+type Directive = readonly [name: string, sources: readonly string[]];
+
+const REPORTING: readonly Directive[] = [
+  ["report-uri", [REPORTS]],
+  ["report-to", ["csp"]],
+];
+
+/**
+ * Trusted Types, reported on and not yet enforced: Turnstile's and the analytics tags' scripts may write HTML in ways
+ * it refuses, and the reports say which before it is switched on.
+ */
+const TRUSTED_TYPES_REPORTED: readonly Directive[] = [["require-trusted-types-for", ["'script'"]], ...REPORTING];
+
+const policyOf = (directives: readonly Directive[]): string =>
+  directives.map(([name, sources]) => [name, ...new Set(sources)].join(" ")).join("; ");
+
 /** The hash source for an inline script or style, as a policy writes it. */
 export function cspHash(content: string): string {
   return `'sha256-${createHash("sha256").update(content, "utf8").digest("base64")}'`;
@@ -60,7 +79,7 @@ function analyticsSources(ids: AnalyticsIds) {
 export function contentSecurityPolicy(inline: { scripts: string[]; styles: string[] }, ids: AnalyticsIds): string {
   const analytics = analyticsSources(ids);
   const hashes = (contents: string[]) => [...new Set(contents.map(cspHash))].sort();
-  const directives: [string, string[]][] = [
+  const directives: Directive[] = [
     ["default-src", ["'self'"]],
     ["script-src", ["'self'", ...hashes(inline.scripts), TURNSTILE, ...analytics.script]],
     ["style-src", ["'self'", ...hashes(inline.styles)]],
@@ -74,8 +93,9 @@ export function contentSecurityPolicy(inline: { scripts: string[]; styles: strin
     ["base-uri", ["'self'"]],
     ["form-action", ["'self'"]],
     ["frame-ancestors", ["'none'"]],
+    ...REPORTING,
   ];
-  return directives.map(([name, sources]) => [name, ...new Set(sources)].join(" ")).join("; ");
+  return policyOf(directives);
 }
 
 /** The camera is allowed on /try only, for "Use the camera". */
@@ -85,6 +105,10 @@ const PERMISSIONS = (camera: string) => `camera=${camera}, microphone=(), geoloc
 export function headersFile(indexed: boolean, csp: string): string {
   const everyPage = [
     `Content-Security-Policy: ${csp}`,
+    `Content-Security-Policy-Report-Only: ${policyOf(TRUSTED_TYPES_REPORTED)}`,
+    `Reporting-Endpoints: csp="${REPORTS}"`,
+    // No page the site opens, WhatsApp's or a calendar's, can reach back into it.
+    "Cross-Origin-Opener-Policy: same-origin",
     // Two years, for every host under the site's, as the apps send it (packages/web-kit/headers.ts). No preload: the
     // owner's call, since leaving the preload list takes months (ADR 0023, 1).
     "Strict-Transport-Security: max-age=63072000; includeSubDomains",
