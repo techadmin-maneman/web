@@ -1,10 +1,4 @@
-// Claims on suppliers and returned pieces, behind Access (docs/decisions/0169-supplier-claims.md):
-//   GET  /api/supplier-claims                     open claims and the latest settled, and the pieces handed in to settle
-//   POST /api/supplier-claims/{id}/send           a drafted claim marked sent to its supplier
-//   POST /api/supplier-claims/{id}/withdraw       a drafted claim withdrawn, with why
-//   POST /api/supplier-claims/{id}/decide         a sent claim settled: a credit, a replacement, or rejected
-//   POST /api/returned-pieces/{id}/claim          a returned piece inside its warranty claimed on its supplier
-//   POST /api/returned-pieces/{id}/write-off      a returned piece written off, with why
+// Claims on suppliers and returned pieces, behind Access (docs/decisions/0169-supplier-claims.md).
 //
 // Sending, withdrawing and settling pieces with Operations ACT; settling a claim with MANAGE. Each answers the whole of
 // GET's answer.

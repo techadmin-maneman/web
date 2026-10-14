@@ -2,12 +2,6 @@
 // minutes while the client pays, and its booking. With self-serve booking off, every route answers ops_assisted. No
 // window is held before the client has given the visit's address, and with `moving` a hold moves one of their visits.
 // The windows open are ./availability.ts; holding one, and booking it, are here.
-//
-//   GET    /api/availability?type=&tier=&from=   14 days of the windows the visit can start in, and who could come
-//   POST   /api/holds                      hold a window
-//   GET    /api/holds/:id                  a hold: lapsed, paid, or booked as a visit
-//   DELETE /api/holds/:id                  let it go
-//   POST   /api/bookings                   book a hold: Checkout's order, or, if free, sent to be booked
 
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";

@@ -1,5 +1,4 @@
-// A payment refunded by ops, with why (src/domain/money/payment-refunds.ts), behind Access:
-//   POST /api/payments/{id}/refund   what is left of a captured payment, asked of Razorpay once
+// A payment refunded by ops, with why (src/domain/money/payment-refunds.ts), behind Access.
 //
 // Finance's to MANAGE. The refund shows on the client's Payments tab once Razorpay's webhook records it.
 

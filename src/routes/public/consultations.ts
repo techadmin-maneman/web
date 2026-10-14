@@ -1,8 +1,4 @@
-// Booking from the public site (docs/decisions/0051-booking-from-the-site.md):
-//
-//   GET  /api/availability/public   the form's days and windows, open or not, naming nobody
-//   POST /api/consultation          a free consultation on a real date and window
-//   POST /api/waitlist              the number, for a pincode we do not serve yet
+// Booking from the public site (docs/decisions/0051-booking-from-the-site.md).
 //
 // These are the referral landing's two routes without the invite, and they share
 // their whole path (src/domain/booking/public-booking.ts, and src/http/public-form.ts for

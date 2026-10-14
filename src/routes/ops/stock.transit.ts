@@ -1,6 +1,4 @@
-// Transfers in transit, behind Access (docs/decisions/0158-transfers-in-transit.md):
-//   POST /api/stock/transfers/{id}/receive      received at the place it was sent to, in full or short
-//   POST /api/stock/transfers/{id}/send-back    sent back to where it left, before it arrived
+// Transfers in transit, behind Access (docs/decisions/0158-transfers-in-transit.md).
 //
 // Receiving keeps to the caller's cities at the place it was sent to, and sending back at the place it left. Each
 // answers the whole of GET /api/stock, so the screen follows without reading again.

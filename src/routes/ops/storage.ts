@@ -1,7 +1,5 @@
 // What clients' photographs and referral cards hold in R2, behind Access
-// (docs/decisions/0093-the-storage-meter.md), and what the database holds:
-//   GET /api/storage    the storage meter's figure, beside the photographs' share, and the database's size
-//                       beside D1's limit
+// (docs/decisions/0093-the-storage-meter.md), and what the database holds.
 //
 // Settings shows it, so ops can see how near each limit is before the alerts
 // tell them. It reads one row, never the buckets.

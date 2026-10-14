@@ -1,6 +1,4 @@
-// What the weeks ahead will use, behind Access (docs/decisions/0160-demand-and-opening-counts.md):
-//   GET /api/stock/demand      each stock code's expected use by city over the next four weeks, beside what the city
-//                              holds, and the fits booked whose hair system is not in their city
+// What the weeks ahead will use, behind Access (docs/decisions/0160-demand-and-opening-counts.md).
 //
 // It keeps to the caller's cities: a city reached, and visits of no city found only with a national grant.
 

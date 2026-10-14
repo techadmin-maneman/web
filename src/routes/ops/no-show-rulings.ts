@@ -1,6 +1,4 @@
-// Either side of ops' ruling on a no-show, behind Access (src/routes/ops/no-shows.ts rules on it):
-//   GET /api/no-shows/:id/charge     what charging the case would keep of the visit's payment, and refund
-//   GET /api/no-shows/decided        the cases ruled on today, with their rulings
+// Either side of ops' ruling on a no-show, behind Access (src/routes/ops/no-shows.ts rules on it).
 //
 // The charge is asked about once more before it is sent, with these figures, worked out as charging works them out.
 

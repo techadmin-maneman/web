@@ -1,9 +1,6 @@
 // An address a client gives ops on the phone, recorded on their page
 // (docs/decisions/0092-task-owners.md; open point 62). On the ops surface behind
-// Access:
-//
-//   POST /api/clients/:id/address/suggestions   buildings matching what ops have typed so far
-//   POST /api/clients/:id/address               save it as the client's address, marked as given to ops
+// Access.
 //
 // It is saved as the client's own save in the app saves one (src/http/address-save.ts): the same fields and checks,
 // the building geocoded once within the day's ceiling, and the address sent on to Books and the CRM. It is

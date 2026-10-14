@@ -1,7 +1,4 @@
-// Receipts against purchase orders, behind Access (docs/decisions/0167-receipts-and-landed-cost.md):
-//   POST /api/purchase-orders/{id}/receipts    what arrived of each line at the warehouse, its lot, what was damaged or
-//                                              failed its check, and the receipt's freight, duty and clearing
-//   POST /api/purchase-orders/{id}/close       an order part received closed short
+// Receipts against purchase orders, behind Access (docs/decisions/0167-receipts-and-landed-cost.md).
 //
 // Receiving with Operations ACT, closing with MANAGE. Each answers the whole of GET /api/purchase-orders.
 

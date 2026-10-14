@@ -1,5 +1,4 @@
 // A matter sent from a chat to its client's city, behind Access (Customer Care Act; docs/decisions/0135-city-matters.md):
-//   POST /api/conversations/:id/city-matter   a City matter on the city's Tasks, with what they need to know
 // The city closes it from Tasks, with what was done (POST /api/tasks/city_matter/:id/close).
 
 import { createRoute, z } from "@hono/zod-openapi";

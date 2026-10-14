@@ -1,7 +1,4 @@
-// A month's targets, city by city, behind Access (Admin; docs/decisions/0154-targets-and-reporting-access.md):
-//   GET /api/targets?month=YYYY-MM   the month's targets, with the cities and measures a target may name
-//   POST /api/targets                a target set, or set again
-//   POST /api/targets/remove         a target taken off
+// A month's targets, city by city, behind Access (Admin; docs/decisions/0154-targets-and-reporting-access.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";

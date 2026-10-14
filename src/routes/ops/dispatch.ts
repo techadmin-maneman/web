@@ -1,12 +1,6 @@
 // The dispatch board on the ops console, behind Access (Ops Console, board A;
 // src/policy/dispatch.ts). The board's reads are here; assigning and moving a job, and a call to a client, are
 // ./dispatch-moves.ts.
-//   GET  /api/dispatch?from=&city=   the grid, blocks, unassigned tray, leave and utilisation
-//   GET  /api/dispatch/version       whether anything the board draws has changed since it was read
-//   GET  /api/dispatch/room?appointment_id=&from=   where a job in hand would land this week, and how near
-//   POST /api/dispatch/assign        put an unassigned job on a technician
-//   POST /api/dispatch/move          move a job, with a reason from the design's list
-//   POST /api/dispatch/moves/:id/told   ops called a client who had not heard of a move
 //
 // Each keeps to the caller's cities: the board shows their visits and technicians, and a visit or move elsewhere is
 // not found.
@@ -35,7 +29,8 @@ const ClientSchema = z
     name: z.string().openapi({ description: "In full, as the drawer heads it." }),
     mobile: z.string().openapi({ description: "E.164, for WhatsApp and for a call." }),
     whatsapp_visits: z.boolean().openapi({
-      description: "Their latest word on WhatsApp about their visits is yes, so a move's new window reaches them there.",
+      description:
+        "Their latest word on WhatsApp about their visits is yes, so a move's new window reaches them there.",
     }),
     referred_by: z
       .union([z.string(), z.null()])

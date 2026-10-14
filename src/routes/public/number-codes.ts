@@ -1,9 +1,6 @@
 // A WhatsApp code that proves a number typed into the site before a form acts on it: /book's consultation and fit
 // in one visit, and /try's gate (src/policy/number-proof.ts).
 //
-//   POST /api/number-code          a code on WhatsApp to the number
-//   POST /api/number-code/verify   the code, which proves the number for 30 minutes
-//
 // The code goes to whatever number is typed, so asking for one needs Turnstile and counts against the number's day
 // and the address's hour, as a login code does, and against a day's ceiling of its own, so that codes asked for
 // here never stop clients and technicians signing in.

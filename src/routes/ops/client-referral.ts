@@ -1,8 +1,6 @@
 // Ops attaching an invite to a client who booked away from the invite's own page: in the app, by messaging ops, or
 // on /book in a browser that no longer remembers it (docs/decisions/0089-an-invite-is-not-lost.md). On the ops
-// surface behind Access:
-//
-//   POST /api/clients/:id/referral   { code, reason }: attach the invite, under the landing's own rules
+// surface behind Access.
 //
 // The client is attributed through the landing's own function, so its rules hold here too: never the code's own
 // referrer, never a client who came with an invite already; one attached after the friend's first fit waits for ops'

@@ -1,8 +1,5 @@
 // A client's hair profile on their page in the console (docs/decisions/0106-a-clients-hair-profile.md). On the ops
-// surface behind Access:
-//
-//   GET  /api/clients/:id/hair-profile   the profile as it stands, and every version
-//   POST /api/clients/:id/hair-profile   ops' correction: a new version under the member of staff
+// surface behind Access.
 //
 // The technician records the profile at a visit (POST /api/tech/jobs/:id/profile); ops correct it here. A correction
 // names the version it started from, and is refused, 409 superseded, once another has become the latest since, so

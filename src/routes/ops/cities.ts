@@ -1,14 +1,4 @@
 // Admin › Cities, behind Access (docs/decisions/0198-cities-as-data.md):
-//   GET    /api/cities                                        every city, its state and zone, the GST registrations,
-//                                                            and each city's own rules and prices
-//   POST   /api/cities                                        a city added
-//   PATCH  /api/cities/{name}                                 a city changed, or renamed with every row naming it
-//   PATCH  /api/cities/{name}/rules/{rule}                    a rule the city sets for itself
-//   DELETE /api/cities/{name}/rules/{rule}                    the national rule back in the city
-//   POST   /api/cities/{name}/prices                          a price of the city's own, from a day
-//   DELETE /api/cities/{name}/prices/{item}/{tier}/{from}     one still to come taken back
-//   POST   /api/gst-registrations                             a state's GST registration, or a change to it
-//   DELETE /api/gst-registrations/{state}                     a state's registration taken off
 // Every change is audited under the member of staff who made it, in the same batch.
 
 import { createRoute, z } from "@hono/zod-openapi";

@@ -1,6 +1,4 @@
-// The places stock is kept, behind Access (docs/decisions/0155-the-stock-place-tree.md):
-//   POST /api/stock/places          a hub for a zone, or a stockroom in a city, under a place above it
-//   POST /api/stock/places/{id}     a place renamed, moved under another, or closed or opened again; a kit only moved
+// The places stock is kept, behind Access (docs/decisions/0155-the-stock-place-tree.md).
 //
 // Both need a national grant to manage operations, and answer the whole of GET /api/stock, so the screen follows
 // without reading again. A technician's kit comes with them, under the warehouse until it is moved.

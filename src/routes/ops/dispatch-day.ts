@@ -1,7 +1,4 @@
-// The dispatch board's day on the road (ADR 0120), behind Access:
-//   GET  /api/dispatch/day?date=&city=       each technician's visits in order, the drive between each two, and
-//                                            whether it fits the gap the board left
-//   GET  /api/dispatch/day/map?date=&city=   the picture of it, from Google through us: the console never holds the key
+// The dispatch board's day on the road (ADR 0120), behind Access.
 //
 // Both keep to the caller's cities, as the board does.
 

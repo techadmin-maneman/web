@@ -1,8 +1,4 @@
-// Logging in to the technician app (src/domain/dispatch/technicians.ts):
-//   POST /api/tech/auth/otp     a code on WhatsApp to a technician's number
-//   POST /api/tech/auth/verify  the code and the phone, for a session bound to it
-//   POST /api/tech/auth/logout
-//   GET  /api/tech/me           who is signed in, and on which phone
+// Logging in to the technician app (src/domain/dispatch/technicians.ts).
 //
 // "Mobile number plus a one-time code, the same flow as clients but a separate
 // role." A technician is recognised only while ops have them switched on. A

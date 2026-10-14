@@ -1,9 +1,4 @@
-// Custom orders, on the client's page in the console (docs/decisions/0174-custom-orders.md):
-//   GET  /api/clients/{id}/custom-orders       the client's custom orders, and the suppliers one may be raised with
-//   POST /api/clients/{id}/custom-orders       a custom order raised to their profile, and its payment link sent
-//   POST /api/custom-orders/{id}/send-link     the link sent again, where it could not be made
-//   POST /api/custom-orders/{id}/cancel        an order not yet paid, cancelled, and its link with it
-//   POST /api/custom-orders/{id}/refund        a paid order refunded in full, where its reason holds
+// Custom orders, on the client's page in the console (docs/decisions/0174-custom-orders.md).
 //
 // Within the reader's places, as the client's page is: reading with Customer care VIEW, refunding with MANAGE, the rest
 // with ACT. Each write answers the client's whole list.

@@ -1,6 +1,4 @@
-// The times of a working day's half-slots, behind Access (docs/decisions/0102-window-times.md):
-//   GET  /api/slot-times   the times in force today, every change set, and the earliest day a change may apply from
-//   POST /api/slot-times   a change of times from a day nothing is booked or bookable on
+// The times of a working day's half-slots, behind Access (docs/decisions/0102-window-times.md).
 //
 // A change is kept for good under the member of staff who made it, audited in the same batch (ADR 0031). Which
 // half-slots each window has stays in code; the windows are read from the times.

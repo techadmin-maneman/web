@@ -1,7 +1,5 @@
 // Ops putting a client's service-visit credits right by hand, behind Access
-// (docs/decisions/0033-credit-ledger.md, 0068-a-paid-hold-is-kept.md):
-//
-//   POST /api/clients/:id/credits   { visits, reason }: add visits, or take them away
+// (docs/decisions/0033-credit-ledger.md, 0068-a-paid-hold-is-kept.md).
 //
 // The ledger stays append-only: this writes a grant from ops, or adjust entries
 // against the grants the client holds, with its audit entry in the same batch.

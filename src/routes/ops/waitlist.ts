@@ -1,8 +1,5 @@
 // Ops' waitlist, the pincode launch and the referrers' funnel (Ops Console, C2 and C3;
 // docs/decisions/0048-referrals.md), on the ops surface behind Access:
-//   GET  /api/waitlist                 who is waiting, by pincode, and the cities a pincode may be added in
-//   POST /api/pincodes/:pin/launch     what a launch would send, then the launch itself
-//   GET  /api/referrers                every referrer's figures: opens, consultations, fits, granted, redeemed
 // A launch is audited, and its alerts leave in a paced line.
 
 import { createRoute, z } from "@hono/zod-openapi";

@@ -1,8 +1,4 @@
-// Partners who send us clients on their own code, behind Access (Growth; docs/decisions/0123-partner-referral-channels.md):
-//   GET   /api/referral-channels             every partner, with what has come through each
-//   POST  /api/referral-channels             add one, with its friend's reward and its commission
-//   PATCH /api/referral-channels/:id         change its name or terms
-//   POST  /api/referral-channels/:id/pause   pause it, or take the pause off
+// Partners who send us clients on their own code, behind Access (Growth; docs/decisions/0123-partner-referral-channels.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";

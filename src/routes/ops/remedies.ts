@@ -1,8 +1,4 @@
-// Remedies, behind Access (Customer Care; docs/decisions/0143-remedies.md):
-//   POST /api/clients/:id/remedies      free visits for a client, with why: at once within the limit, else awaiting
-//   GET  /api/remedies                  those awaiting a manager, and the last 30 days' given or declined
-//   POST /api/remedies/:id/approve      a Customer Care manager's yes, and the visits granted
-//   POST /api/remedies/:id/decline      or no
+// Remedies, behind Access (Customer Care; docs/decisions/0143-remedies.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";

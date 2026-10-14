@@ -1,6 +1,4 @@
-// What each hair system costs us, behind Access (Finance; docs/decisions/0152-standard-costs.md):
-//   GET /api/standard-costs     each first fit and replacement product still sold, with its cost today
-//   POST /api/standard-costs    a product's cost, from today
+// What each hair system costs us, behind Access (Finance; docs/decisions/0152-standard-costs.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { COSTED_KINDS, productCosts, setProductCost } from "../../domain/money/standard-costs.ts";

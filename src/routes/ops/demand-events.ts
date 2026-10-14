@@ -1,7 +1,4 @@
-// The events calendar, behind Access (docs/decisions/0182-the-events-calendar.md):
-//   GET  /api/demand-events                the events still to end, and the cities one may be set in
-//   POST /api/demand-events                an event added: a name, a city or every city, its days, and its lift
-//   POST /api/demand-events/{id}/remove    an event taken off
+// The events calendar, behind Access (docs/decisions/0182-the-events-calendar.md).
 //
 // Read with Operations VIEW, changed with MANAGE. Each write answers the whole of GET's answer.
 

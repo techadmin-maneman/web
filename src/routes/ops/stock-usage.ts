@@ -1,6 +1,4 @@
-// Usage against expected, and shrinkage, behind Access (docs/decisions/0186-usage-and-shrinkage.md):
-//   GET /api/stock/usage   over the last weeks, each technician's use beside what their visits were expected to use,
-//                          and each place's losses, write-offs and first-time counts, the flagged first
+// Usage against expected, and shrinkage, behind Access (docs/decisions/0186-usage-and-shrinkage.md).
 //
 // Read with Operations MANAGE in the caller's places: it values stock at cost.
 

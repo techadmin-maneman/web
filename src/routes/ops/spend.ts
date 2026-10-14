@@ -1,7 +1,4 @@
-// Offline spend, behind Access (Growth; docs/decisions/0150-spend.md):
-//   GET /api/spend                 the last thirteen months' entries, the latest first, with the cities to put them under
-//   POST /api/spend                a month's spend added, for a city or national, by channel
-//   POST /api/spend/:id/remove     an entry taken off the figures
+// Offline spend, behind Access (Growth; docs/decisions/0150-spend.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";

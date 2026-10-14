@@ -1,7 +1,5 @@
 // Ops' review of held referral grants (Ops Console, C1; docs/decisions/0048-referrals.md), on the ops surface
 // behind Access:
-//   GET  /api/referrals/held               grants waiting for review, with the fraud rules each met
-//   POST /api/referrals/:id/decision       approve, and the credits follow, or reject; either with its reason
 // Each decision is audited under the member of staff who made it.
 
 import { createRoute, z } from "@hono/zod-openapi";

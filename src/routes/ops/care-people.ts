@@ -1,6 +1,4 @@
-// Each client's Care person, behind Access (Customer Care; docs/decisions/0131-care-people.md):
-//   GET /api/care-team                  the Care team: each one's clients, days off, and who covers them today
-//   POST /api/clients/:id/care-person   a client moved to another of the team, as a Customer Care manager does
+// Each client's Care person, behind Access (Customer Care; docs/decisions/0131-care-people.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";

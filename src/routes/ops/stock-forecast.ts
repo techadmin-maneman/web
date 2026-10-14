@@ -1,8 +1,4 @@
-// The demand forecast, behind Access (docs/decisions/0179-demand-forecast.md):
-//   GET /api/stock/forecast?city=   the latest run: its period and horizon, the rates it learned, and each stock code's
-//                                   expected use in each city and period, with what each layer gave
-//   GET /api/stock/forecast-accuracy?city=   how right it was: the city's last measured periods, and each item across
-//                                   them (docs/decisions/0183-forecast-accuracy.md)
+// The demand forecast, behind Access (docs/decisions/0179-demand-forecast.md).
 //
 // Read with Operations VIEW.
 

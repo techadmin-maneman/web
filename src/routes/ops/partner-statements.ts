@@ -1,7 +1,4 @@
-// Partners' monthly statements, behind Access (Finance; docs/decisions/0124-partner-statements.md):
-//   GET  /api/partner-statements?month=YYYY-MM                each partner's month, and what each is owed
-//   POST /api/partner-statements/:id/payouts                  record a month's payment to a partner
-//   POST /api/partner-statements/:id/payouts/:month/delete    take off a payment recorded by mistake
+// Partners' monthly statements, behind Access (Finance; docs/decisions/0124-partner-statements.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";

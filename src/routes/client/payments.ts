@@ -1,11 +1,6 @@
 // The client app's payments and documents, from the payments mirror (docs/decisions/0044-payments-mirror.md)
 // and Zoho Books (docs/decisions/0032-fsm-mirror.md).
 //
-//   GET /api/payments                what is owed, then one list of payments and refunds, newest first
-//   GET /api/payments/:id            one entry: a payment with its documents, or a refund with its destination
-//   GET /api/payments/:id/receipt    a payment's receipt, as a PDF from Books
-//   GET /api/documents/:id           a visit's invoice, as a PDF from Books
-//
 // Amounts are in paise, as Razorpay charged them, GST included; each carries
 // its ex-GST part at the rate it was sold at: the hold's or the link's, kept on
 // the payment when it was captured. A payment neither priced has no split. A

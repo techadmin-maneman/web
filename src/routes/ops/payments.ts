@@ -1,5 +1,4 @@
-// A day's money, behind Access (src/domain/money/day-money.ts):
-//   GET /api/payments?date=   what was collected and refunded, and each charge
+// A day's money, behind Access (src/domain/money/day-money.ts).
 //
 // Nothing here takes or gives back money. The figures are read from the rows
 // Razorpay's webhook already wrote, so this route cannot make the books say

@@ -1,8 +1,4 @@
-// Booking a visit for a client from the console (src/domain/booking/visit-booking.ts), on the ops surface behind Access:
-//
-//   GET  /api/visits/availability   a client's 14 days of windows for a kind of visit, who is free in each, the kind's
-//                                   services, and how the visit would be paid
-//   POST /api/visits                book it: at once when nothing is paid at booking, else a payment link goes out
+// Booking a visit for a client from the console (src/domain/booking/visit-booking.ts), on the ops surface behind Access.
 //
 // Both keep to the caller's cities: a client elsewhere is not found, and only the technicians there are offered. The
 // booking is audited in the batch that holds its slot (ADR 0031).

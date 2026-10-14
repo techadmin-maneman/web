@@ -1,9 +1,4 @@
-// Purchase orders, behind Access (docs/decisions/0166-purchase-orders.md):
-//   GET  /api/purchase-orders                  open orders and the latest settled, the suppliers to order from
-//   POST /api/purchase-orders                  a new order, drafted from a supplier's list
-//   POST /api/purchase-orders/{id}/approve     an approval: the first, or a second by another manager
-//   POST /api/purchase-orders/{id}/send        an approved order marked sent
-//   POST /api/purchase-orders/{id}/cancel      an order cancelled, with why, before anything arrived
+// Purchase orders, behind Access (docs/decisions/0166-purchase-orders.md).
 //
 // Operations' to keep: drafting and sending with ACT, approving and cancelling with MANAGE. Every write answers the
 // whole of GET's answer, so the screen follows without reading again.

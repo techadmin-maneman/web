@@ -1,6 +1,4 @@
-// The supplier scorecard, behind Access (docs/decisions/0172-supplier-scorecard.md):
-//   GET /api/supplier-scorecard    each supplier's year: on time in full, lead time against promised, what arrived
-//                                  damaged or failed its check, and its claims
+// The supplier scorecard, behind Access (docs/decisions/0172-supplier-scorecard.md).
 //
 // Read with Operations VIEW.
 

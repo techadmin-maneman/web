@@ -1,7 +1,4 @@
 // The Tasks board's "Needs a hand", behind Access (src/domain/ops/needs-a-hand.ts):
-//   GET  /api/alerts                    the open alerts ops have been told of, of the caller's departments
-//   POST /api/alerts/:id/resolve        mark one done
-//   POST /api/alerts/:id/send-again     send again the message, lead or CRM erasure it gave up on
 // Each department sees and acts on its own kinds of alert (src/policy/alerts.ts); every action is audited under the
 // member of staff who took it.
 

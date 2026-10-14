@@ -1,5 +1,4 @@
-// A one visit's payment link, behind Access:
-//   POST /api/payment-links/:id/resend   Razorpay texts the client the link again, or makes it now if it never did
+// A one visit's payment link, behind Access.
 //
 // The Tasks board's "Payment owed" row names the link by its own ID. The call is audited as every ops call is.
 

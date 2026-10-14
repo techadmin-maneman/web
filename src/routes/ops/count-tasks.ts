@@ -1,14 +1,4 @@
-// Cycle counts, behind Access (docs/decisions/0185-cycle-counts.md):
-//   GET  /api/count-tasks                     the tasks still to finish and those done in the last week, in the
-//                                             caller's places, and every item with its class
-//   GET  /api/count-tasks/{id}                one task and its items, never a figure
-//   POST /api/count-tasks                     a count of one item at one place, started now
-//   GET  /api/count-tasks/{id}/differences    the lines waiting for a sign-off, with what was held and both counts
-//   POST /api/count-tasks/{id}/counts         an open task counted, every item it lists; a hair system held under
-//                                             labels by the labels scanned
-//   POST /api/count-tasks/{id}/recounts       the lines that differed counted again
-//   POST /api/count-tasks/{id}/sign-off       a recount that still differs signed off, with why
-//   POST /api/consumables/{code}/count-class  an item's class set, or put back to its kind's own
+// Cycle counts, behind Access (docs/decisions/0185-cycle-counts.md).
 //
 // Read with Operations VIEW in the caller's places; started and counted with ACT; the differences and the sign-off
 // with MANAGE; the classes with Operations MANAGE.

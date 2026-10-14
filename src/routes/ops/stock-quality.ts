@@ -1,8 +1,4 @@
-// Failure rates and value at risk, behind Access (docs/decisions/0188-failure-rates-and-value-at-risk.md):
-//   GET /api/quality/failures   the labelled pieces fitted in the last year and how many failed, by stock code, lot,
-//                               supplier and technician
-//   GET /api/stock/expiry-risk  each lot that will not all be used before it expires at its place's pace, valued at
-//                               its landed cost, with what to do about it
+// Failure rates and value at risk, behind Access (docs/decisions/0188-failure-rates-and-value-at-risk.md).
 //
 // Failure rates read with Operations VIEW; the value at risk with MANAGE in the caller's places, since it values stock.
 

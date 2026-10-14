@@ -1,8 +1,4 @@
-// What ops still have to do, behind Access (src/policy/tasks.ts):
-//   GET /api/tasks                        the groups of the caller's departments, their counts, how many have run
-//                                         over, and whose each task is; ?person= narrows it to one client
-//   PUT /api/tasks/:group/:id/owner       make a task a member of staff's, or nobody's
-//   POST /api/tasks/:group/:id/close      close a visit left partly done without a follow-up, with why
+// What ops still have to do, behind Access (src/policy/tasks.ts).
 //
 // A task is not a record. It is a row in a queue the database already keeps,
 // read at the moment ops look: a held grant, an undecided no-show, a number

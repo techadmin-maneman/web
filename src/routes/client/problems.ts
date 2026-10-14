@@ -1,7 +1,5 @@
 // Something wrong with a client's hair system, or with a visit, told to Care from the app
-// (src/domain/care/app-reports.ts):
-//
-//   POST /api/me/problems   { about, visit_id, text }: filed in the client's Care thread, a note for Care beside it
+// (src/domain/care/app-reports.ts).
 //
 // It sends nothing; Care answer on WhatsApp, where the client's photographs follow.
 

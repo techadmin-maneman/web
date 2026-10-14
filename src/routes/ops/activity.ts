@@ -1,5 +1,4 @@
 // The audit log, read by ops (docs/decisions/0031-access-and-audit.md), on the ops surface behind Access:
-//   GET /api/activity   every entry, newest first, fifty at a time, narrowed by who, what, a client, a visit or days
 // Admin's View reads it, nationally: it shows what everyone did, everywhere. Reading it is an ops call like any other,
 // written to the log it reads.
 

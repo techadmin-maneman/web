@@ -1,5 +1,4 @@
-// The Care numbers, behind Access (Customer Care; docs/decisions/0144-care-numbers.md):
-//   GET /api/care-numbers?days=   reply times, same-day closes, the backlog, reasons and remedies over a period
+// The Care numbers, behind Access (Customer Care; docs/decisions/0144-care-numbers.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";

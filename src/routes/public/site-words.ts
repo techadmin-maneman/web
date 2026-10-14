@@ -1,8 +1,6 @@
 // The site's words as the Words page last published them (docs/decisions/0127-publishing-the-words.md), which each
 // build of this environment's site fetches and lays over its copy (scripts/build/build-site.ts). Published words are
 // the site's own text, so nothing here is private; staging's hosts sit behind Access as ever.
-//
-//   GET /api/site-words    the latest publish: each changed line's key and words
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";

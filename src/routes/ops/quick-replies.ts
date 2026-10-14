@@ -1,7 +1,4 @@
-// Saved answers for the Care inbox, behind Access (Customer Care; docs/decisions/0141-quick-replies.md):
-//   GET /api/quick-replies                the answers on the list, by title
-//   POST /api/quick-replies               an answer added, as a Customer Care manager does
-//   POST /api/quick-replies/:id/retire    an answer taken off the list
+// Saved answers for the Care inbox, behind Access (Customer Care; docs/decisions/0141-quick-replies.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";

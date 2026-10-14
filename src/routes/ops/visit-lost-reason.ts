@@ -1,6 +1,5 @@
 // Why a client is not going ahead after their consultation, set or cleared on the client's page, behind Access
-// (Customer Care; docs/decisions/0149-lost-reasons.md):
-//   POST /api/visits/:id/lost-reason   { lost_reason: a code from the job sheet's list, or null to clear it }
+// (Customer Care; docs/decisions/0149-lost-reasons.md).
 //
 // It keeps to the caller's cities: a visit elsewhere is answered as one that does not exist.
 

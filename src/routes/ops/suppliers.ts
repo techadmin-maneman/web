@@ -1,10 +1,4 @@
-// Suppliers, behind Access (docs/decisions/0165-suppliers.md):
-//   GET  /api/suppliers                              every supplier, by name, with what each supplies
-//   POST /api/suppliers                              a new supplier
-//   POST /api/suppliers/{id}                         a supplier's record changed
-//   POST /api/suppliers/{id}/retire, /restore        taken off new orders, or put back
-//   POST /api/suppliers/{id}/items                   what it supplies of one stock code, set afresh
-//   POST /api/suppliers/{id}/items/{code}/remove     a stock code taken off its list
+// Suppliers, behind Access (docs/decisions/0165-suppliers.md).
 //
 // Admin's to keep. Every write answers the whole of GET's answer, so the screen follows without reading again.
 

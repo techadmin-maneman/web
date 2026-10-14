@@ -1,9 +1,5 @@
 // The job sheet the technician app reads, set by ops behind Access
-// (docs/decisions/0087-consumables-and-stock.md; docs/open-points.md, item 28):
-//   GET  /api/job-sheet                              each kind of visit's checklist, and the partial reasons
-//   POST /api/job-sheet/checklists/:visit_type       one kind's checklist, the whole list in its order
-//   POST /api/job-sheet/partial-reasons              the partial reasons, the whole list in their order
-//   POST /api/job-sheet/lost-reasons                 why a client is not going ahead after a consultation
+// (docs/decisions/0087-consumables-and-stock.md; docs/open-points.md, item 28).
 //
 // A list nobody has saved is the committed one (src/config/job-sheet.ts). A
 // phone keeps the list it was given with the job, and an item ops take off is

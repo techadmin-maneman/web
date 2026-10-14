@@ -1,7 +1,4 @@
-// A discount code at the app's pay step (docs/decisions/0108-discount-codes.md):
-//
-//   POST   /api/holds/:id/discount-code   { code }: the code comes off the hold's price before GST
-//   DELETE /api/holds/:id/discount-code   the code comes off again, and the hold is back at its price
+// A discount code at the app's pay step (docs/decisions/0108-discount-codes.md).
 //
 // Only while the hold's price is open: while nothing is paid, so Checkout's order is made for what is left; an order
 // Checkout was closed on unpaid is let go, and the next Pay makes another. A code that does not apply is answered code_not_applicable and nothing more, whatever the reason, which is logged; every

@@ -3,8 +3,6 @@
 // Worker writes them into each page that shows a price, and the booking form
 // asks for them itself where the Worker could not.
 //
-//   GET /api/published-prices    the standard service visit and replacement, and every service offered
-//
 // A first fit is priced only as the hair systems ops offer in the console: the
 // first-fit services among `services`, which the site takes its first-fit
 // figures from. With none offered, the site gives no first-fit price, and

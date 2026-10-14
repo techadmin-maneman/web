@@ -1,12 +1,5 @@
 // The consumables ops keep, and what each service is expected to use, behind Access
-// (docs/decisions/0087-consumables-and-stock.md):
-//   GET  /api/consumables                   every consumable, and each service's expected use
-//   POST /api/consumables                   add one
-//   POST /api/consumables/:code             rename it, or change its unit, its cost or its reorder levels
-//   POST /api/consumables/:code/retire      no longer offered, from a day
-//   POST /api/consumables/:code/restore     offered again
-//   POST /api/consumables/:code/delete      one added by mistake, while no stock of it has moved
-//   POST /api/service-usage                 what one service is expected to use, the whole list at once
+// (docs/decisions/0087-consumables-and-stock.md).
 //
 // A change here needs no release. Each records the Access identity behind it,
 // with what it changed, in the same batch as the change (ADR 0031). Every

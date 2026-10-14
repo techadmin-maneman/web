@@ -1,11 +1,4 @@
-// The Staff page, behind Access (Settings · Staff):
-//   GET  /api/staff                          the people on the list and their grants, the service tokens let in, and
-//                                            whether the list is enforced; narrowed to the caller's own places
-//   POST /api/staff                          a member of staff added, or their grants and whether they are let in
-//   POST /api/staff/delete                   a member of staff taken off the list, with their grants
-//   POST /api/staff/enforcement              the list enforced, or not
-//   POST /api/staff/service-tokens           a service token let in, as every caller was before the list
-//   POST /api/staff/service-tokens/remove    a service token taken off
+// The Staff page, behind Access (Settings · Staff).
 //
 // Every change is audited under the person who made it, in the same batch (src/domain/ops/staff.ts).
 

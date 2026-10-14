@@ -1,9 +1,4 @@
-// The supply plan, behind Access (docs/decisions/0180-supply-plan.md):
-//   GET  /api/supply-plan                     the latest draft's lines: transfers by city and orders by supplier, each
-//                                             with the figures behind it and what was decided
-//   POST /api/supply-plan/draft               the plan drafted again now, from the latest forecast
-//   POST /api/supply-plan/lines/{id}/approve  a proposal approved at a quantity: its transfer sent or its order drafted
-//   POST /api/supply-plan/lines/{id}/reject   a proposal rejected, with why
+// The supply plan, behind Access (docs/decisions/0180-supply-plan.md).
 //
 // Read with Operations VIEW, decided and drafted with MANAGE. Each write answers the whole of GET's answer.
 

@@ -1,11 +1,4 @@
-// What technicians are paid for each visit, behind Access (Finance; docs/decisions/0122-technician-pay-per-visit.md):
-//   GET   /api/technician-pay                       the grades, each technician's grade, and the rates
-//   POST  /api/technician-pay/grades                add a grade
-//   PATCH /api/technician-pay/grades/:id            rename one
-//   POST  /api/technician-pay/grades/:id/delete     delete one added by mistake, while nothing uses it
-//   POST  /api/technician-pay/rates                 set a grade's rate for a kind of visit, from today or later
-//   POST  /api/technician-pay/technicians/:id       give a technician a grade, or take theirs away
-//   GET   /api/technician-pay/statement?month=      each technician's visits closed in a month, at the rates then
+// What technicians are paid for each visit, behind Access (Finance; docs/decisions/0122-technician-pay-per-visit.md).
 //
 // Grades and every city's rates are national: they need a national Finance grant. A city's own rate, and a
 // technician's grade, keep to the caller's cities.

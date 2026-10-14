@@ -1,15 +1,6 @@
 // The business inputs ops set for themselves, behind Access (Ops Console, the
 // Settings section the design draws; docs/decisions/0061-ops-editable-inputs.md). The rules are here; the price
 // book is ./prices.ts and the service area ./service-area.ts.
-//   GET  /api/settings              every rule ops may change, with its unit and its bounds
-//   POST /api/settings/:name        set one, or send null to put the default back
-//   GET  /api/prices                the price book, with the row in force marked
-//   POST /api/prices                a price from the date it applies, for a service or a late fee
-//   POST /api/prices/withdraw       a price still to come, taken back
-//   POST /api/prices/correct        a price still to come, taken back and set again, in one batch
-//   GET  /api/service-area          every pincode, its city, whether we go there and who waits there
-//   POST /api/service-area          which pincodes we go to, from when, and what their areas are called
-//   POST /api/pincodes              a pincode the service area does not hold, added unserved
 //
 // A change here needs no release. Every one records the Access identity behind
 // it, what the value was and what it is now, in the same batch as the change

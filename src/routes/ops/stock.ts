@@ -1,10 +1,5 @@
 // Stock of consumables at each place it is kept, behind Access
 // (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md; src/policy/stock.ts):
-//   GET  /api/stock                 every place, what each holds of each consumable, what is low, the latest movements
-//   POST /api/stock/deliveries      stock received into the national warehouse
-//   POST /api/stock/transfers       stock handed to a kit, or sent to any other place to be received there
-//   POST /api/stock/counts          what ops counted at a place: the ledger takes the difference
-//   POST /api/stock/write-offs      a loss somebody saw, with what happened
 // the places themselves (src/routes/ops/stock.places.ts), transfers received or sent back
 // (src/routes/ops/stock.transit.ts), what the weeks ahead will use (src/routes/ops/stock.read.ts), and the units and
 // labels of pieces (src/routes/ops/stock.units.ts).

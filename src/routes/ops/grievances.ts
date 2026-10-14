@@ -1,6 +1,4 @@
 // Ops' side of grievances (docs/decisions/0049-dpdp.md), on the ops surface behind Access:
-//   GET  /api/grievances               open grievances, oldest first, with who raised them
-//   POST /api/grievances/:id/resolve   the answer ops gave, which closes it
 // Each answer is audited under the member of staff who gave it. Both keep to the caller's cities.
 
 import { createRoute, z } from "@hono/zod-openapi";

@@ -1,9 +1,4 @@
-// The technician's kit (docs/decisions/0164-the-kit-screen.md):
-//
-//   GET  /api/tech/kit                          what the kit holds, what is on its way to it, and the pieces to hand back
-//   POST /api/tech/kit/transfers/:id/receive    a top-up received, all of it, or of a hair system the pieces scanned,
-//                                               the rest still to come or missing
-//   POST /api/tech/kit/hand-back                returned pieces, and the kit's expired stock, back to its place
+// The technician's kit (docs/decisions/0164-the-kit-screen.md).
 //
 // Each is the technician's own kit alone, and no cost reaches the phone. The writes are made with signal, as a discount
 // code is: the technician hears at once whether they landed, and they are no job's steps for the outbox to hold.

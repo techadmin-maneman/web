@@ -1,6 +1,4 @@
-// A client's dispute of a no-show's charge, behind Access (src/domain/no-shows/no-show-disputes.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md):
-//   GET  /api/no-shows/disputes                  the disputes still to rule on, each with its case's evidence
-//   POST /api/no-shows/disputes/:id/ruling       Refund or Uphold, with a reason
+// A client's dispute of a no-show's charge, behind Access (src/domain/no-shows/no-show-disputes.ts, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
 //
 // Refunded gives back what the charge took, the money it kept and the credit it spent; upheld keeps them. Either
 // way the client is told on WhatsApp, with their consent to messages about visits, never with ops' reason, which

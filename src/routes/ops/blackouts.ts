@@ -1,8 +1,4 @@
-// Blackout days, behind Access (Settings; docs/decisions/0088-every-policy-in-the-console.md):
-//   GET  /api/blackouts          every day from today on that no visit is offered, and what is still booked on it
-//   GET  /api/blackouts/booked   the visits booked on days ops are about to close, for the check before they do
-//   POST /api/blackouts          black out the days from one date to another, with a reason
-//   POST /api/blackouts/remove   offer the days from one date to another again
+// Blackout days, behind Access (Settings; docs/decisions/0088-every-policy-in-the-console.md).
 //
 // They were edited by the runbook's own SQL. A change here needs no release,
 // and each records the Access identity behind it in the same batch

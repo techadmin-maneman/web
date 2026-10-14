@@ -1,10 +1,4 @@
-// The technicians themselves, behind Access:
-//   GET   /api/technicians/work?from=&to=   jobs finished, and how long they took
-//   POST  /api/technicians                  add a technician
-//   PATCH /api/technicians/:id              change their name, number, zone or city
-//   POST  /api/technicians/:id/deactivate   switch them off: signed out, their visits still to come unassigned
-//   POST  /api/technicians/:id/reactivate   switch them back on
-//   POST  /api/technicians/:id/delete       delete one added by mistake, while nothing records any work of theirs
+// The technicians themselves, behind Access.
 //
 // Each keeps to the caller's cities: a technician elsewhere, or with no city
 // when the caller's grants name cities, is not found, and is given only a city

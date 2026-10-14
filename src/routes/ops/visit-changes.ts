@@ -1,11 +1,4 @@
-// Ops changing a client's visit from the console, on the ops surface behind Access:
-//
-//   POST /api/visits/:id/cancel   { confirm: false }: what a cancel gives back, free to the client and on their own late
-//                                 terms; { confirm: true, notice, reason, on_client_terms? }: cancel it
-//   POST /api/visits/:id/close    close it as done or partly done, with its times and why, for work whose technician's
-//                                 phone was lost
-//   POST /api/visits/:id/let-in   let its technician check in wherever the geofence puts them, with why, where the
-//                                 address's pin is far from the door
+// Ops changing a client's visit from the console, on the ops surface behind Access.
 //
 // A cancel is free to the client unless ops apply the client's own late terms (src/policy/moving-a-visit.ts). Each is
 // audited in the batch that makes it (ADR 0031), with codes and amounts; ops' reason is kept with the change. Both keep

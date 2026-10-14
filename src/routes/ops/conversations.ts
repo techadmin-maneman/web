@@ -1,10 +1,4 @@
-// The Care inbox, behind Access (Customer Care; docs/decisions/0129-the-care-inbox.md):
-//   GET /api/conversations?view=   the threads of a view, the latest first, a page at a time: mine (my clients'), open,
-//                                  waiting, closed or all; &search= a client's name or number
-//   GET /api/conversations/:id     one thread: what the client wrote, our replies and notes, and our automatic messages
-//   POST /api/conversations/:id/replies   a reply from our number, kept in the thread whether it went or not
-//   POST /api/conversations/:id/notes     a note for staff alone
-//   POST /api/conversations/:id/close     the thread closed with what it was about
+// The Care inbox, behind Access (Customer Care; docs/decisions/0129-the-care-inbox.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";

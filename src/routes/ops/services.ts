@@ -1,15 +1,6 @@
 // The services clients book, behind Access (docs/decisions/0085-services-ops-can-edit.md): each kind of visit's
 // services, with every price each has had, is to have, and has now, and the two late fees beside their kinds.
 //
-//   GET  /api/services                            every service, offered or retired, and its dated prices
-//   POST /api/services                            a service added to a kind
-//   POST /api/services/{kind}/{tier}/name         renamed; its code, and so its prices, stay
-//   POST /api/services/{kind}/{tier}/description  the line clients read under its name
-//   POST /api/services/{kind}/{tier}/length       how long it is booked for, from now on
-//   POST /api/services/{kind}/order               a kind's services in another order
-//   POST /api/services/{kind}/{tier}/retire       no longer offered from a day, today or later
-//   POST /api/services/{kind}/{tier}/restore      offered again
-//
 // A kind is code, and so is what it decides: the technician's steps, the booking rules and the fees. Every change
 // here is audited in the same batch as the change itself (ADR 0031), and nothing already sold moves with it: a hold
 // keeps the service's price, late fee and length it was made with. Books' items follow the services at the hourly

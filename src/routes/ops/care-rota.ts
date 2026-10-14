@@ -1,10 +1,4 @@
 // The Care team's days off, behind Access (Customer Care Manage; docs/decisions/0134-care-cover.md):
-//   POST /api/care-team/days-off           a member's weekly days off, replaced whole
-//   POST /api/care-team/leave              leave for a member, from one date to another
-//   POST /api/care-team/leave/:id/delete   leave taken back
-//   POST /api/care-team/name               the first name a member is known by to clients (docs/decisions/0136-care-names.md)
-//   POST /api/care-team/shift              the caller on shift or off it, as they mark it (docs/decisions/0139-care-shifts.md)
-//   POST /api/care-team/move-all           every client of one member moved to another (docs/decisions/0142-moving-every-client.md)
 // The team as it stands, with who covers whom today, is GET /api/care-team (./care-people.ts).
 
 import { createRoute, z } from "@hono/zod-openapi";

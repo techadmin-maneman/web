@@ -1,6 +1,4 @@
-// Photographs of stock, behind Access (docs/decisions/0170-stock-photos.md):
-//   POST /api/stock-photos         a JPEG or PNG the console made small, stored; its ID, for the write that uses it
-//   GET  /api/stock-photos/{id}    the photograph
+// Photographs of stock, behind Access (docs/decisions/0170-stock-photos.md).
 //
 // Storing with Operations ACT, reading with VIEW.
 

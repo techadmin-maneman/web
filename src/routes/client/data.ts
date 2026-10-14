@@ -1,10 +1,4 @@
 // A client's rights over their data (docs/decisions/0049-dpdp.md), on the client surface:
-//   GET  /api/me/export       everything we hold about them, as a JSON file: the right of access, with who in ops
-//                             opened their photographs and when (docs/open-points.md, item 68)
-//   GET  /api/me/export.html  the same, as a page they can read, which the app's "Download my data" gives
-//   POST /api/grievances      a grievance, for ops to answer: the right of redress. The same words,
-//                             still open, are one grievance however often they are sent (ADR 0058),
-//                             and a client may raise GRIEVANCES_PER_DAY new ones a day
 // Correction is the profile itself (address, number change); erasure is the deletion request (ADR 0042).
 // Each is audited under the client.
 

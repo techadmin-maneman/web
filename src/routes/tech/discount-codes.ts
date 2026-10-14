@@ -1,7 +1,5 @@
 // A discount code the technician enters on a consultation and fit in one visit, before its payment link is made
-// (docs/decisions/0108-discount-codes.md):
-//
-//   POST /api/tech/jobs/:id/discount-code   { code }: the code comes off the product's price at the link
+// (docs/decisions/0108-discount-codes.md).
 //
 // The link is made as the visit closes as done, so the code is entered before that, while the phone is online: it is
 // not one of the outbox's steps, since the technician must hear at once whether it applies. A code that does not

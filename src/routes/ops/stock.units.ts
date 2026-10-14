@@ -1,10 +1,4 @@
-// Labels, behind Access (docs/decisions/0161-pieces-as-units.md):
-//   GET  /api/stock/units               the units a place holds of a hair system, to print their labels, and how many
-//                                       pieces it holds that were never labelled
-//   POST /api/stock/units               labels for pieces a place held before labels
-//   POST /api/stock/lots/{id}/label     a lot's label, for its boxes, made the first time it is asked for
-//   GET  /api/stock/units/{code}        the piece a label names, where it is, and its history
-//                                       (docs/decisions/0162-scanning-labels.md)
+// Labels, behind Access (docs/decisions/0161-pieces-as-units.md).
 //
 // The units keep to the caller's cities, as the place does; a piece that has left the stock, by the last place it was.
 

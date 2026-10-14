@@ -1,5 +1,4 @@
-// Who is signed in to the ops console, behind Access:
-//   GET /api/whoami    the identity Access let through, where signing out goes, and what the Staff list lets them do
+// Who is signed in to the ops console, behind Access.
 //
 // The console holds no session of its own (docs/decisions/0031-access-and-audit.md),
 // so it cannot know who is working unless it asks. The design draws them at the

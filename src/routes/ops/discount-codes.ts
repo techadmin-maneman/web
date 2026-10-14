@@ -1,12 +1,5 @@
 // Discount codes, behind Access (Settings · Discount codes, and a client's Visits tab;
-// docs/decisions/0108-discount-codes.md):
-//
-//   GET  /api/discount-codes                        the latest codes made, with their uses and what they gave
-//   POST /api/discount-codes                        one code, typed or generated, or a batch of single-use codes
-//   POST /api/discount-codes/{id}/off               switched off: no booking takes it from then on
-//   POST /api/discount-codes/{id}/delete            one made by mistake, while no booking has ever taken it
-//   POST /api/visits/{id}/discount-code             a code entered on a client's visit, before it is paid or invoiced
-//   POST /api/visits/{id}/discount-code/remove      the code taken off the visit again
+// docs/decisions/0108-discount-codes.md).
 //
 // Each change is audited in the batch that makes it, with IDs and codes only (ADR 0031). A code ops enter that does
 // not apply is answered as it is to the client, code_not_applicable, save one switched off, code_off, since ops

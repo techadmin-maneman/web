@@ -1,8 +1,4 @@
-// Recalls, behind Access (docs/decisions/0187-recalls.md):
-//   GET  /api/recalls             every recall, and the lots one may be raised on
-//   GET  /api/recalls/{id}        one recall: where its lot's stock is, and who wears its pieces
-//   POST /api/recalls             a lot recalled, with why: blocked, and its worn pieces made due today
-//   POST /api/recalls/{id}/close  a recall closed once dealt with; the lot stays blocked
+// Recalls, behind Access (docs/decisions/0187-recalls.md).
 //
 // Read with Operations VIEW; raised and closed with MANAGE. Each write answers the recall as GET /api/recalls/{id} does.
 

@@ -1,7 +1,4 @@
-// A client's custom orders, for their Home (docs/decisions/0177-custom-orders-in-the-app.md):
-//
-//   GET /api/me/custom-orders   each order still in hand: where it stands, the day it was promised, and while it waits
-//                               for payment, the link to pay by
+// A client's custom orders, for their Home (docs/decisions/0177-custom-orders-in-the-app.md).
 //
 // Their own orders alone, never what the supplier charges us.
 

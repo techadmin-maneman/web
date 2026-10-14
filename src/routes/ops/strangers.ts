@@ -1,6 +1,4 @@
-// A chat from a number we don't know, behind Access (Customer Care Act; docs/decisions/0138-strangers-in-the-inbox.md):
-//   POST /api/conversations/:id/link   the chat linked to the client it turns out to be
-//   POST /api/conversations/:id/save   the person saved as someone new, by the name they gave, and their WhatsApp lead
+// A chat from a number we don't know, behind Access (Customer Care Act; docs/decisions/0138-strangers-in-the-inbox.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";

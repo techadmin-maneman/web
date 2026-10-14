@@ -1,5 +1,4 @@
-// A hair system's stock code, behind Access (docs/decisions/0156-hair-systems-in-stock.md):
-//   POST /api/hair-systems      a stock code for a spec no other has, counted in pieces
+// A hair system's stock code, behind Access (docs/decisions/0156-hair-systems-in-stock.md).
 //
 // It answers the new code; the console reads GET /api/consumables again, where the code is listed with the
 // consumables, and its cost, levels and retirement change as any consumable's do.

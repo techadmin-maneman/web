@@ -1,15 +1,6 @@
 // What ops do about field work, behind Access (src/policy/no-show.ts,
 // technician-login.ts). The roster is here; the no-shows are ./no-shows.ts, the pieces tab
 // ./client-pieces.ts, leave ./technician-leave.ts and a technician's phones ./technician-phones.ts.
-//   GET  /api/no-shows                                   the cases, with their evidence
-//   POST /api/no-shows/:id/decision                      charge or waive, from the evidence
-//   GET  /api/clients/:id/pieces                         the pieces tab
-//   GET  /api/technicians                                who works, their phones and leave, and who is switched off
-//   POST /api/technicians/:id/devices/:device/revoke     revoke a phone; it drops its cached jobs, and they are stopped signing in
-//   POST /api/technicians/:id/allow-sign-in              let them sign in again after a revoke
-//   GET  /api/technicians/:id/leave                      their leave still to end, each with the jobs booked on it
-//   POST /api/technicians/:id/leave                      record leave; the board and booking both refuse those days
-//   POST /api/technicians/:id/leave/:leave/cancel        take it back
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { listCities } from "../../domain/cities/cities.ts";
@@ -64,7 +55,8 @@ const TechniciansSchema = z
           fits_trained: FITS_TRAINED,
           visits_to_come: VISITS_TO_COME,
           sign_in_stopped_at: z.union([z.iso.datetime(), z.null()]).openapi({
-            description: "When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again.",
+            description:
+              "When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again.",
           }),
           devices: z.array(
             z

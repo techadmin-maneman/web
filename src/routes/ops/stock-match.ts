@@ -1,6 +1,4 @@
-// A client matched to stock, on their page in the console (docs/decisions/0173-matching-a-client-to-stock.md):
-//   GET /api/clients/{id}/stock-match    the stock code their profile matches exactly, and where its pieces are held;
-//                                        or what their profile lacks; or that theirs is a custom order
+// A client matched to stock, on their page in the console (docs/decisions/0173-matching-a-client-to-stock.md).
 //
 // Read as their hair profile is, within the reader's places.
 

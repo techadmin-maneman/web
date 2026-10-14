@@ -1,8 +1,4 @@
-// The Words page, behind Access (Growth; docs/decisions/0126-the-words-page.md, 0127-publishing-the-words.md):
-//   GET  /api/words                every line of the site and every WhatsApp message to a client, with its wording
-//   GET  /api/words/history?key=   every wording one line has had
-//   POST /api/words                a line given new words, or put back to the code's
-//   POST /api/words/publish        the site's changed words published, for its next build
+// The Words page, behind Access (Growth; docs/decisions/0126-the-words-page.md, 0127-publishing-the-words.md).
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
