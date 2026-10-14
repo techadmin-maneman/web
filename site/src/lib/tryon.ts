@@ -23,7 +23,6 @@ export type Outcome<T> = { readonly ok: true; readonly value: T } | ({ readonly 
 
 export interface Uploaded {
   readonly jobId: string;
-  readonly hairColor: PreparedPhoto["hairColor"];
 }
 
 const failed = (failure: Failure) => ({ ok: false, ...failure }) as const;
@@ -65,12 +64,12 @@ export async function startUpload(
   const sent = await uploadPhoto(link.body.upload_url, photo.blob);
   if (!sent.ok) return refused(sent.code);
   if (photo.copy !== null) await uploadCopy(link.body.upload_url, photo.copy);
-  return { ok: true, value: { jobId: link.body.job_id, hairColor: photo.hairColor } };
+  return { ok: true, value: { jobId: link.body.job_id } };
 }
 
 /** Starts the render of a claimed try-on, for the stage its claim gave. The value is the job to follow. */
 export async function startRender(uploaded: Uploaded, preset: GenerateRequest["preset"]): Promise<Outcome<string>> {
-  const answer = await generateLook({ job_id: uploaded.jobId, hair_color: uploaded.hairColor, preset });
+  const answer = await generateLook({ job_id: uploaded.jobId, preset });
   if (!answer.ok) return refused(answer.code);
   const problem = jobProblem(answer.body);
   return problem === null ? { ok: true, value: answer.body.job_id } : failed(problem);

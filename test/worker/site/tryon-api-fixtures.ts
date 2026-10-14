@@ -66,7 +66,7 @@ export function visitor(
       cookies.set(name, value);
     },
     uploadLink: (body: Record<string, unknown> = {}) =>
-      post("/api/tryon/upload-url", { photo_consent: true, notice_version: "photo-v4", turnstile_token: "t", ...body }),
+      post("/api/tryon/upload-url", { photo_consent: true, notice_version: "photo-v5", turnstile_token: "t", ...body }),
     put: (path: string, bytes: Uint8Array, contentType = "image/jpeg") =>
       call(path, { method: "PUT", headers: { "Content-Type": contentType }, body: bytes }),
     async uploaded(bytes: Uint8Array = syntheticJpeg(800, 800)): Promise<string> {
@@ -91,8 +91,7 @@ export function visitor(
     generate: (jobId: string, body: Record<string, unknown> = {}) =>
       post("/api/tryon/generate", {
         job_id: jobId,
-        preset: "full-natural-short",
-        hair_color: "black",
+        preset: "side-part",
         ...body,
       }),
   };

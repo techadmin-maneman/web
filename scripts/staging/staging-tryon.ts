@@ -3,7 +3,7 @@
 // accepts), and reports what happened at each step. Used for the M3 proofs.
 //
 //   node --env-file=.env.staging-access scripts/staging/staging-tryon.ts --photo <path> \
-//     [--preset full-natural-short] [--color black] [--stage crown]
+//     [--preset side-part] [--stage crown]
 //
 // The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so the gate is
 // claimed before the render, and the look is checked on the handset, not here: the script follows the job until it
@@ -21,8 +21,7 @@ import { TURNSTILE_TEST_TOKEN } from "../../src/providers/turnstile.ts";
 const { values } = parseArgs({
   options: {
     photo: { type: "string" },
-    preset: { type: "string", default: "full-natural-short" },
-    color: { type: "string", default: "black" },
+    preset: { type: "string", default: "side-part" },
     stage: { type: "string", default: "crown" },
     base: { type: "string", default: "https://staging.maneman.in" },
   },
@@ -32,14 +31,14 @@ const testRecordCode = process.env.STAGING_TEST_RECORD_CODE;
 if (values.photo === undefined || mobile === undefined || testRecordCode === undefined) {
   console.error(
     "usage: STAGING_TEST_MOBILE=<allowlisted number> STAGING_TEST_RECORD_CODE=<staging's known code> " +
-      "staging-tryon.ts --photo <path> [--preset …] [--color …]",
+      "staging-tryon.ts --photo <path> [--preset …]",
   );
   process.exit(2);
 }
 
 const POLL_EVERY_MS = 3_000;
-// The render consumer follows a render for 15 minutes (src/config/pipeline.ts).
-const GIVE_UP_AFTER_MS = 16 * 60 * 1000;
+// The render consumer follows a render for 2 minutes, twice at most (src/config/pipeline.ts).
+const GIVE_UP_AFTER_MS = 5 * 60 * 1000;
 const started = Date.now();
 const elapsed = () => `${((Date.now() - started) / 1000).toFixed(1)} s`;
 
@@ -80,7 +79,7 @@ async function waitForResult(jobId: string): Promise<string> {
 // 1. Consent and an upload link; 2. the photo.
 const link = await post("/api/tryon/upload-url", {
   photo_consent: true,
-  notice_version: "photo-v4",
+  notice_version: "photo-v5",
   turnstile_token: TURNSTILE_TEST_TOKEN,
 });
 step("upload link", { status: link.status, job_id: link.body.job_id });
@@ -109,6 +108,6 @@ const gate = await post("/api/tryon/claim", {
   stage: values.stage,
 });
 step("claim", { status: gate.status, ...gate.body, mobile: `…${mobile.slice(-4)}` });
-const look = { job_id: jobId, preset: values.preset, hair_color: values.color };
+const look = { job_id: jobId, preset: values.preset };
 step("generate", await post("/api/tryon/generate", look));
 step("result", { state: await waitForResult(jobId), check: "the look on the handset's WhatsApp" });

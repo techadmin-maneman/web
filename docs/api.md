@@ -2789,7 +2789,7 @@ Razorpay's webhook: payments and refunds
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "example": "photo-v4",
+      "example": "photo-v5",
       "description": "The photo notice shown: the current one, the only one recorded."
     },
     "turnstile_token": {
@@ -2838,6 +2838,19 @@ Razorpay's webhook: payments and refunds
         "busy"
       ],
       "description": "Only when state is failed."
+    },
+    "failure_reason": {
+      "type": "string",
+      "enum": [
+        "no_face",
+        "no_shoulders",
+        "face_angle",
+        "several_people",
+        "not_styleable",
+        "refused",
+        "unavailable"
+      ],
+      "description": "Only when state is failed, and only where YouCam named the fault, or the try-on is paused."
     }
   },
   "required": [
@@ -2861,12 +2874,12 @@ Razorpay's webhook: payments and refunds
     "preset": {
       "type": "string",
       "enum": [
-        "full-natural-short",
-        "full-straight-medium",
-        "medium-natural-short",
-        "medium-receded-medium",
-        "light-natural-short",
-        "light-receded-cropped"
+        "side-part",
+        "slick-back",
+        "textured-crop",
+        "french-crop",
+        "quiff",
+        "crew-cut"
       ]
     },
     "hair_color": {
@@ -2880,13 +2893,13 @@ Razorpay's webhook: payments and refunds
         "white",
         "unknown"
       ],
-      "description": "From the browser's detector; unknown if it could not tell."
+      "deprecated": true,
+      "description": "Ignored: the look keeps the visitor's own colour. Taken from the site of the release before."
     }
   },
   "required": [
     "job_id",
-    "preset",
-    "hair_color"
+    "preset"
   ],
   "additionalProperties": false,
   "description": "The look, for the stage the gate's claim gave the try-on."

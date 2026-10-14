@@ -2399,7 +2399,7 @@ export interface components {
             photo_consent: true;
             /**
              * @description The photo notice shown: the current one, the only one recorded.
-             * @example photo-v4
+             * @example photo-v5
              */
             notice_version: string;
             turnstile_token: string;
@@ -2414,18 +2414,24 @@ export interface components {
              * @enum {string}
              */
             failure_code?: "photo_unreadable" | "photo_invalid_file" | "render_failed" | "busy";
+            /**
+             * @description Only when state is failed, and only where YouCam named the fault, or the try-on is paused.
+             * @enum {string}
+             */
+            failure_reason?: "no_face" | "no_shoulders" | "face_angle" | "several_people" | "not_styleable" | "refused" | "unavailable";
         };
         /** @description The look, for the stage the gate's claim gave the try-on. */
         GenerateRequest: {
             /** Format: uuid */
             job_id: string;
             /** @enum {string} */
-            preset: "full-natural-short" | "full-straight-medium" | "medium-natural-short" | "medium-receded-medium" | "light-natural-short" | "light-receded-cropped";
+            preset: "side-part" | "slick-back" | "textured-crop" | "french-crop" | "quiff" | "crew-cut";
             /**
-             * @description From the browser's detector; unknown if it could not tell.
+             * @deprecated
+             * @description Ignored: the look keeps the visitor's own colour. Taken from the site of the release before.
              * @enum {string}
              */
-            hair_color: "black" | "brown" | "lightBrown" | "grey" | "silver" | "white" | "unknown";
+            hair_color?: "black" | "brown" | "lightBrown" | "grey" | "silver" | "white" | "unknown";
         };
         /** @description Saved: the look goes to this number on WhatsApp once it is made. */
         ClaimResponse: {

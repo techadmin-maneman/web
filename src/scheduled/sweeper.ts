@@ -8,7 +8,7 @@
 //               and failed after a day (src/scheduled/unsent-messages.ts)
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
-//   credits     the AILabTools balance, against AILAB_CREDIT_FLOOR
+//   units       YouCam's balance, against YOUCAM_UNIT_FLOOR
 //   expiry      abandoned uploads after an hour, results once RESULT_RETENTION_DAYS is up (14 in production,
 //               3 on staging), photos once their jobs are done; a client's try-on is kept on its look's day, and
 //               any other photo's small copy goes with the photo or the look (docs/decisions/0084)
@@ -214,7 +214,7 @@ export async function requeueTryons(
        ORDER BY created_at LIMIT ?3`,
       )
       .bind(before(PENDING_GRACE_MS), before(RENDER_GIVE_UP_MS + PENDING_GRACE_MS), BATCH_LIMIT),
-    // A submit that started and never finished cannot be resumed: we do not know whether AILabTools took it.
+    // A submit that started and never finished cannot be resumed: we do not know whether YouCam took it.
     db
       .prepare(
         "SELECT id FROM tryon_jobs WHERE state = 'queued' AND submit_started_at < ?1 AND provider_task_id IS NULL LIMIT ?2",
@@ -288,13 +288,10 @@ export async function deleteExpiredRecords(context: SweepContext): Promise<void>
 }
 
 /**
- * The AILabTools balance against its floor: an exhausted balance would otherwise fail every try-on quietly. Undefined
- * when the run has no outside call left for it; null when it could not be read.
+ * YouCam's balance against its floor: an exhausted balance would otherwise fail every try-on. Undefined when the run
+ * has no outside call left for it; null when it could not be read.
  */
-export async function checkAilabCredits(
-  context: SweepContext,
-  creditFloor: number,
-): Promise<number | null | undefined> {
+export async function checkYoucamUnits(context: SweepContext, unitFloor: number): Promise<number | null | undefined> {
   const { deps, log, budget } = context;
   if (!budget.spend(1)) return undefined;
   const credits = await deps.image.credits();
@@ -302,14 +299,14 @@ export async function checkAilabCredits(
     log.warn("credits_unreadable");
     return null;
   }
-  if (credits >= creditFloor) {
-    await deps.resolveAlert("ailab_credits_low");
+  if (credits >= unitFloor) {
+    await deps.resolveAlert("youcam_units_low");
     return credits;
   }
   // Told once, not every hour, until a top-up lifts the balance over the floor.
   await deps.alertOnce({
-    key: "ailab_credits_low",
-    message: `AILabTools credits are down to ${String(credits)}, below the floor of ${String(creditFloor)}.`,
+    key: "youcam_units_low",
+    message: `YouCam is down to ${String(credits)} units, below the floor of ${String(unitFloor)}. Top up before try-ons stop.`,
   });
   return credits;
 }

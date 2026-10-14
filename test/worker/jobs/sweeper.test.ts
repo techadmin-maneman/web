@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
-import { checkAilabCredits, sweep } from "../../../src/scheduled/sweeper.ts";
+import { checkYoucamUnits, sweep } from "../../../src/scheduled/sweeper.ts";
 import { NOW, captureLogs, fakeDependencies, markDatabase } from "../helpers.ts";
 import { insertPerson } from "../tryon-fixtures.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../../src/config/pipeline.ts";
@@ -193,15 +193,15 @@ describe("sweeper: leads", () => {
   });
 });
 
-describe("sweeper: AILabTools credits", () => {
+describe("sweeper: YouCam units", () => {
   /** The balance check, as the cron's hourly job runs it. */
   const check = (deps: ReturnType<typeof fakeDependencies>, floor: number, budget = createCallBudget(Infinity)) =>
-    checkAilabCredits({ env: sweepEnv().bindings, deps, log: createLogger(), budget }, floor);
+    checkYoucamUnits({ env: sweepEnv().bindings, deps, log: createLogger(), budget }, floor);
 
   it("reads the balance and alerts below the floor", async () => {
     const deps = fakeDependencies();
     expect(await check(deps, 5000)).toBe(1000); // the stub's two pools, summed
-    expect(deps.alerts).toEqual([expect.stringContaining("credits are down to 1000") as string]);
+    expect(deps.alerts).toEqual([expect.stringContaining("YouCam is down to 1000 units") as string]);
   });
 
   it("tells ops once, not every hour, until a top-up lifts the balance over the floor", async () => {

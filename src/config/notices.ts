@@ -158,6 +158,21 @@ export const NOTICES = [
       "I understand, and I agree to my photograph being used this way.",
     ],
   },
+  // photo-v4's words with who makes the look now: YouCam, which keeps its own copy for thirty days. PLACEHOLDER: awaits
+  // counsel.
+  {
+    version: "photo-v5",
+    purpose: "tryon_photo",
+    text: [
+      "What happens to your photograph.",
+      "Used for: Generating your simulation, which is sent to your WhatsApp and never shown on this site. If you book a visit, a small copy is also kept in your Mane Man account as your before photo.",
+      "Kept for: An hour, then deleted automatically. The small copy stays with your simulation for fourteen days at most. If you book a visit in that time, we keep it until you ask us to delete it, and the simulation until the photographs of your first fit are taken.",
+      "Training: Never used to train any model.",
+      "Shared with: YouCam (Perfect Corp), which makes the look and keeps its copy of your photograph for thirty days, and WhatsApp, which delivers it.",
+      "To withdraw: Message us and it is deleted the same day.",
+      "I understand, and I agree to my photograph being used this way.",
+    ],
+  },
   {
     version: "gate-v4",
     purpose: "result_delivery",
@@ -306,7 +321,7 @@ export type ToldNotice = (typeof TOLD_NOTICES)[keyof typeof TOLD_NOTICES];
  */
 export const CURRENT_NOTICE: Readonly<Record<NoticePurpose, NoticeVersion>> = {
   contact: "booking-v1",
-  tryon_photo: "photo-v4",
+  tryon_photo: "photo-v5",
   result_delivery: "gate-v5",
   photos_own_record: "photos-own-record-v2",
   photos_referral_cards: "photos-referral-cards-v2",

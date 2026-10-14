@@ -10,7 +10,7 @@
 import {
   POLL_DELAY_SECONDS,
   POLL_SLOWDOWN_AFTER_MS,
-  POLL_SLOW_AFTER_MS,
+  RENDER_ATTEMPTS,
   RENDER_GIVE_UP_MS,
 } from "../../src/config/pipeline.ts";
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES, MAX_UPLOAD_BYTES, PHOTO_RETENTION_MS } from "../../src/config/tryon.ts";
@@ -113,12 +113,11 @@ export interface Ceilings {
   readonly resultRetentionDays: number;
 }
 
-/** The polls of a render followed to its give-up time, without the final one past it. */
+/** The polls of a job followed to its give-up time on every render it may take, without the final one past it. */
 export function pollsPerRender(): number {
   const earlyPolls = Math.ceil(POLL_SLOWDOWN_AFTER_MS / 1000 / POLL_DELAY_SECONDS.early);
-  const latePolls = Math.ceil((POLL_SLOW_AFTER_MS - POLL_SLOWDOWN_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.late);
-  const slowPolls = Math.ceil((RENDER_GIVE_UP_MS - POLL_SLOW_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.slow);
-  return earlyPolls + latePolls + slowPolls;
+  const latePolls = Math.ceil((RENDER_GIVE_UP_MS - POLL_SLOWDOWN_AFTER_MS) / 1000 / POLL_DELAY_SECONDS.late);
+  return (earlyPolls + latePolls) * RENDER_ATTEMPTS;
 }
 
 export interface Usage {

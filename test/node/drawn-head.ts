@@ -1,5 +1,4 @@
-// A drawn head, for testing the hair-colour detector without a photograph of
-// anyone: a skin-coloured oval face on a plain wall, with hair of the given
+// A drawn head, for the try-on's tests without a photograph of anyone: a skin-coloured oval face on a plain wall, with hair of the given
 // colour over the crown and down both sides. RGBA, 300 × 400.
 
 export type Rgb = readonly [number, number, number];

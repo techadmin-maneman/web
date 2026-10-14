@@ -5,16 +5,15 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { NO_GST } from "../../../src/config/gst.ts";
-import { PRESETS } from "../../../src/config/presets.ts";
 import type { ZohoBooksSettings } from "../../../src/config/settings.ts";
 import { createLogger } from "../../../src/log.ts";
 import {
   API_BASE_URL,
-  CREDITS_PATH,
-  ENDPOINT_PATHS,
-  POLL_PATH,
-  createAilabtoolsProvider,
-} from "../../../src/providers/image/ailabtools.ts";
+  CREDIT_PATH,
+  FILE_PATH,
+  TASK_PATH,
+  createYoucamProvider,
+} from "../../../src/providers/image/youcam.ts";
 import { createAlert, createLeadNotice } from "../../../src/providers/alerts.ts";
 import { createBooksProvider } from "../../../src/providers/books/index.ts";
 import { createAccessVerifier, ACCESS_TOKEN_HEADER } from "../../../src/providers/cloudflare-access.ts";
@@ -72,39 +71,51 @@ describe("the WhatsApp bridge", () => {
   });
 });
 
-describe("AILabTools", () => {
+describe("YouCam", () => {
   const KEY = "live-key-that-must-never-leak";
-  const RESULT_URL = "https://ailab-outputs.oss-accelerate.aliyuncs.com/abc.png";
-  const preset = PRESETS[0];
+  const UPLOAD_URL = "https://storage.youcam.test/upload/f1";
+  const RESULT_URL = "https://results.youcam.test/r1.jpg";
+  const REFERENCE = "https://maneman.in/refs/v1/side-part.jpg";
 
-  function ailab(routes: Parameters<typeof fakeFetch>[0]) {
-    return createAilabtoolsProvider({ apiKey: KEY, fetch: fakeFetch(routes).fetch, log });
+  function youcam(routes: Parameters<typeof fakeFetch>[0]) {
+    return createYoucamProvider({ apiKey: KEY, fetch: fakeFetch(routes).fetch, log });
   }
-
-  it("logs a submit, a poll, a download and a look at the credits, and never the key", async () => {
-    const image = ailab({
-      [`${API_BASE_URL}${ENDPOINT_PATHS.pro}`]: () => json({ error_code: 422, error_msg: "No face detected" }, 422),
-      [`${API_BASE_URL}${POLL_PATH}`]: () => json({ error_code: 0, task_status: 1 }),
-      [RESULT_URL]: () => new Response("not an image"),
-      [`${API_BASE_URL}${CREDITS_PATH}`]: () => json({ data: [{ balance: 10 }] }),
+  const uploadUrl = () =>
+    json({
+      status: 200,
+      data: { files: [{ file_id: "f1", requests: [{ method: "PUT", url: UPLOAD_URL, headers: {} }] }] },
     });
 
-    await image.submit(syntheticJpeg(800, 800), preset, "black", "pro");
-    await image.poll("task-1", "pro");
+  it("logs the upload, the task, a poll, a download and a look at the units, and never the key", async () => {
+    const image = youcam({
+      [`${API_BASE_URL}${FILE_PATH}`]: uploadUrl,
+      [UPLOAD_URL]: () => new Response(null, { status: 200 }),
+      [`${API_BASE_URL}${TASK_PATH}`]: (call) =>
+        call.method === "POST"
+          ? json({ status: 400, error: "bad", error_code: "InvalidParameters" }, 400)
+          : json({ status: 200, data: { task_status: "running" } }),
+      [RESULT_URL]: () => new Response("not an image"),
+      [`${API_BASE_URL}${CREDIT_PATH}`]: () => json({ status: 200, results: [{ amount_dec: 10 }] }),
+    });
+
+    await image.submit(syntheticJpeg(800, 800), REFERENCE);
+    await image.poll("task-1");
     await image.download(RESULT_URL);
     await image.credits();
 
     expect(vendorCalls()).toEqual([
-      { vendor: "ailabtools", step: "submit", status: 422 },
-      { vendor: "ailabtools", step: "poll", status: 200 },
-      { vendor: "ailabtools", step: "download", status: 200 },
-      { vendor: "ailabtools", step: "credits", status: 200 },
+      { vendor: "youcam", step: "upload_url", status: 200 },
+      { vendor: "youcam", step: "upload", status: 200 },
+      { vendor: "youcam", step: "submit", status: 400 },
+      { vendor: "youcam", step: "poll", status: 200 },
+      { vendor: "youcam", step: "download", status: 200 },
+      { vendor: "youcam", step: "credits", status: 200 },
     ]);
-    expect(logs.lines().find((line) => line.step === "submit")).toMatchObject({ code: "422" });
+    expect(logs.lines().find((line) => line.step === "submit")).toMatchObject({ code: "InvalidParameters" });
     expect(JSON.stringify(logs.lines())).not.toContain(KEY);
   });
 
-  it("tries a result again whose body stopped arriving, and answers no credits where none could be asked", async () => {
+  it("tries a result again whose body stopped arriving, and answers no units where none could be asked", async () => {
     const brokenBody = () =>
       new Response(
         new ReadableStream({
@@ -113,17 +124,17 @@ describe("AILabTools", () => {
           },
         }),
       );
-    const image = createAilabtoolsProvider({ apiKey: KEY, fetch: timedOut, log });
+    const image = createYoucamProvider({ apiKey: KEY, fetch: timedOut, log });
 
-    expect(await ailab({ [RESULT_URL]: brokenBody }).download(RESULT_URL)).toEqual({
+    expect(await youcam({ [RESULT_URL]: brokenBody }).download(RESULT_URL)).toEqual({
       ok: false,
       detail: "download failed after 3 tries: TypeError",
       transient: true,
     });
     expect(await image.credits()).toBeNull();
-    expect(await image.poll("task-1", "pro")).toMatchObject({
+    expect(await image.poll("task-1")).toMatchObject({
       state: "failed",
-      failure: { transient: true, detail: "AILabTools 0 TIMEOUT: poll got no answer within 15 s" },
+      failure: { transient: true, detail: "YouCam 0 TIMEOUT: poll got no answer within 30 s" },
     });
   });
 });

@@ -1,54 +1,27 @@
 import { describe, expect, it } from "vitest";
-import catalog from "../../../data/ailabtools-catalog.json";
 import { isKnownTemplate, RESULT_TEMPLATE, renderMessage } from "../../../src/config/message-templates.ts";
 import { leadNotice } from "../../../src/domain/leads/lead-notice.ts";
 import { PRESETS, findPreset } from "../../../src/config/presets.ts";
 import { MAX_UPLOAD_BYTES } from "../../../src/config/tryon.ts";
 import { checkPhoto } from "../../../src/domain/try-on/photo.ts";
-import { chooseRender } from "../../../src/domain/try-on/render-choice.ts";
 import { inspectImage } from "../../../src/lib/image-bytes.ts";
 import { signToken, verifyToken } from "../../../src/lib/signed-token.ts";
 import { NOW } from "../helpers.ts";
 import { syntheticJpeg, syntheticPng } from "../tryon-fixtures.ts";
 
 describe("presets", () => {
-  it("are the design's six looks, each a style in the AILabTools male catalog", () => {
-    const maleStyles = new Set(catalog.styles.male.map((style) => style.id));
-    expect(PRESETS).toHaveLength(6);
-    expect(new Set(PRESETS.map((preset) => preset.id)).size).toBe(6);
-    for (const preset of PRESETS) expect(maleStyles, preset.id).toContain(preset.hairStyle);
-  });
-
-  it("default to Pro, which keeps the face (API notes, 7.7)", () => {
-    const endpoints: readonly string[] = PRESETS.map((preset) => preset.endpoint);
-    expect(new Set(endpoints)).toEqual(new Set(["pro"]));
-    expect(findPreset("full-natural-short")?.hairStyle).toBe("Natural_Side-Part");
+  it("are the six hairstyles, each made from a reference photograph of its own", () => {
+    expect(PRESETS.map((preset) => preset.label)).toEqual([
+      "Side part",
+      "Slick back",
+      "Textured crop · Low fade",
+      "French crop",
+      "Quiff",
+      "Crew cut · Ivy League",
+    ]);
+    expect(new Set(PRESETS.map((preset) => preset.reference)).size).toBe(6);
+    expect(findPreset("quiff")?.reference).toBe("quiff.jpg");
     expect(findPreset("nope")).toBeUndefined();
-  });
-});
-
-describe("colour routing", () => {
-  const preset = PRESETS[0];
-
-  it("sends a detected colour as it is, to the preset's endpoint", () => {
-    expect(chooseRender("crown", preset, "grey", "premium_original")).toMatchObject({
-      endpoint: "pro",
-      providerColor: "grey",
-      colorRoute: "as_detected",
-    });
-  });
-
-  it("routes an unknown colour by UNKNOWN_COLOR_ROUTE", () => {
-    expect(chooseRender("crown", preset, "unknown", "premium_original")).toMatchObject({
-      endpoint: "premium",
-      providerColor: "original",
-      colorRoute: "premium_original",
-    });
-    expect(chooseRender("crown", preset, "unknown", "pro_black")).toMatchObject({
-      endpoint: "pro",
-      providerColor: "black",
-      colorRoute: "pro_black",
-    });
   });
 });
 
@@ -85,10 +58,11 @@ describe("inspectImage", () => {
 describe("checkPhoto", () => {
   it.each([
     [syntheticJpeg(200, 200), null],
-    [syntheticPng(4090, 3000), null],
+    [syntheticJpeg(1024, 768), null],
     [syntheticJpeg(199, 400), "photo is 199x400 px"],
-    [syntheticPng(4091, 400), "photo is 4091x400 px"],
-    [new TextEncoder().encode("not an image"), "photo is not a JPEG or PNG"],
+    [syntheticJpeg(1025, 400), "photo is 1025x400 px"],
+    [syntheticPng(800, 600), "photo is not a JPEG"],
+    [new TextEncoder().encode("not an image"), "photo is not a JPEG"],
     [new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), "photo size unreadable"],
   ])("checks size and type (%#)", (bytes, problem) => {
     const result = checkPhoto(bytes);

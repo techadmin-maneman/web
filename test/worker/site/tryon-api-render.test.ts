@@ -34,18 +34,10 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     const browser = visitor();
     const jobId = await browser.claimed("98100 00001", "receding");
 
-    const response = await browser.generate(jobId, { preset: "light-receded-cropped", hair_color: "grey" });
+    const response = await browser.generate(jobId, { preset: "crew-cut" });
     expect(response.status).toBe(202);
     expect(await response.json()).toEqual({ job_id: jobId, state: "queued" });
-    expect(await jobRow(jobId)).toMatchObject({
-      state: "queued",
-      stage: "receding",
-      preset: "light-receded-cropped",
-      hair_color: "grey",
-      endpoint: "pro",
-      provider_color: "grey",
-      color_route: "as_detected",
-    });
+    expect(await jobRow(jobId)).toMatchObject({ state: "queued", stage: "receding", preset: "crew-cut" });
     expect(browser.queues.RENDER_QUEUE.sent).toEqual([{ job_id: jobId, request_id: expect.any(String) as string }]);
 
     const status = await browser.call(`/api/tryon/status/${jobId}`);
@@ -61,14 +53,16 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     expect(await jobRow(jobId)).toMatchObject({ state: "awaiting_upload", stage: "crown" });
   });
 
-  it("routes an unknown colour to Pro in black, and records why", async () => {
+  // The look keeps the visitor's own colour; the site of the release before still sends one.
+  it("takes a colour from the earlier site and ignores it", async () => {
     const browser = visitor();
     const jobId = await browser.claimed();
-    await browser.generate(jobId, { hair_color: "unknown" });
+    expect((await browser.generate(jobId, { hair_color: "grey" })).status).toBe(202);
     expect(await jobRow(jobId)).toMatchObject({
-      endpoint: "pro",
-      provider_color: "black",
-      color_route: "pro_black",
+      hair_color: null,
+      endpoint: null,
+      provider_color: null,
+      color_route: null,
     });
   });
 
@@ -85,7 +79,7 @@ describe("POST /api/tryon/generate and GET /api/tryon/status", () => {
     const browser = visitor();
     const jobId = await browser.claimed();
     await browser.generate(jobId);
-    const other = await browser.generate(jobId, { preset: "light-natural-short" });
+    const other = await browser.generate(jobId, { preset: "quiff" });
     expect(other.status).toBe(403);
     expect(await other.json()).toMatchObject({ error: { code: "look_limit_reached" } });
   });
@@ -169,7 +163,7 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
     expect(none.status).toBe(204);
     expect(await none.text()).toBe("");
     const jobId = await browser.claimed("98100 00001", "receding");
-    await browser.generate(jobId, { preset: "light-natural-short" });
+    await browser.generate(jobId, { preset: "quiff" });
 
     const look = await browser.call("/api/tryon/look");
     expect(look.status).toBe(200);
@@ -177,7 +171,7 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
 
     // Erased, and so expired, the browser has still had its look: the upload link refuses it another.
     expect(await eraseByMobile("+919810000001")).not.toBeNull();
-    expect(await jobRow(jobId)).toMatchObject({ state: "expired", stage: "receding", preset: "light-natural-short" });
+    expect(await jobRow(jobId)).toMatchObject({ state: "expired", stage: "receding", preset: "quiff" });
     expect(await (await browser.call("/api/tryon/look")).json()).toEqual({ job_id: jobId, state: "expired" });
     expect((await browser.uploadLink()).status).toBe(403);
   });

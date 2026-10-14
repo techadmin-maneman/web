@@ -3,6 +3,7 @@
 
 import type { Reader } from "./env-reader.ts";
 import { ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
+import { REFERENCE_VERSION } from "./presets.ts";
 import { MAX_RESULT_RETENTION_DAYS } from "./tryon.ts";
 import type {
   Settings,
@@ -260,10 +261,17 @@ export function readTryon(read: Reader, providers: ProvidersRead, isLocal: boole
     uploadDailyCeiling: read.count("UPLOAD_DAILY_CEILING"),
     resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
     resultRetentionDays: read.count("RESULT_RETENTION_DAYS"),
-    creditFloor: read.count("AILAB_CREDIT_FLOOR"),
+    unitFloor: read.count("YOUCAM_UNIT_FLOOR"),
     linkSigningKey: read.key("RESULT_SIGNING_KEY"),
-    ailabApiKey: providers.IMAGE_PROVIDER === "ailabtools" ? read.text("AILAB_API_KEY") : null,
+    youcamApiKey: providers.IMAGE_PROVIDER === "youcam" ? read.text("YOUCAM_API_KEY") : null,
+    refsUrl: read.text("TRYON_REFS_URL"),
   };
+  if (!tryon.refsUrl.endsWith(`/refs/${REFERENCE_VERSION}`)) {
+    read.problems.push(`TRYON_REFS_URL must end in /refs/${REFERENCE_VERSION}, the references' version`);
+  }
+  if (!isLocal && !tryon.refsUrl.startsWith("https://")) {
+    read.problems.push("TRYON_REFS_URL must be https: YouCam fetches each reference from it");
+  }
   if (tryon.resultRetentionDays < 1 || tryon.resultRetentionDays > MAX_RESULT_RETENTION_DAYS) {
     read.problems.push(
       `RESULT_RETENTION_DAYS must be 1 to ${String(MAX_RESULT_RETENTION_DAYS)}: the photo notice promises the look is deleted within fourteen days`,

@@ -22,7 +22,7 @@ flowchart LR
   CRON --> BOOKS["Zoho Books<br/>customers, items, invoices,<br/>receipts, refunds"]
   BOOKS --> CRM
   Q --> WA["WhatsApp<br/>through Evolution"]
-  Q --> AIL["AILabTools<br/>try-on renders"]
+  Q --> YC["YouCam<br/>try-on renders"]
   API <--> RZP["Razorpay<br/>payments, refunds"]
   API --> GMAP["Google Maps<br/>address search"]
 ```
@@ -68,7 +68,7 @@ The CRM holds no products, and we write none there (the owner's ruling, item 1).
 
 ## A client's life, step by step
 
-**1. The try-on.** A visitor opens `/try`, agrees to the photograph's notice, uploads a photograph and chooses a look. Before the look is made the site asks for a name and number, since the look goes to WhatsApp only and is never shown on the site (ADR 0104): that creates the person, their two try-on consents and a lead the CRM marks "Try-on — delivery only", never chased. Then the render goes to AILabTools (billed per image), the look comes back to R2, and the WhatsApp message carries it. While WhatsApp is off, as in production until its number goes live, the try-on does not run. The photograph is deleted an hour after its last render; the look after fourteen days, unless the person books a visit, when a small copy of the photograph and the look are kept for their account (ADR 0084).
+**1. The try-on.** A visitor opens `/try`, agrees to the photograph's notice, uploads a photograph and chooses a look. Before the look is made the site asks for a name and number, since the look goes to WhatsApp only and is never shown on the site (ADR 0104): that creates the person, their two try-on consents and a lead the CRM marks "Try-on — delivery only", never chased. Then the render goes to YouCam, which puts the hair of the look's reference photograph on the visitor's own (2 units a render, ADR 0201), the look comes back to R2, and the WhatsApp message carries it. While WhatsApp is off, as in production until its number goes live, the try-on does not run. The photograph is deleted an hour after its last render; the look after fourteen days, unless the person books a visit, when a small copy of the photograph and the look are kept for their account (ADR 0084).
 
 **2. The consultation.** On `/book` the visitor first leaves their name and number, kept at once as a lead (ADR 0116), then checks their pincode; on a friend's invite at `/r/CODE` they check the pincode first. Where we serve it, they choose a consultation, or the consultation and their fit in one visit (three hours, in the morning or the afternoon); then their full address, a day and a window. Where we do not serve it, they join the waitlist for their area. A booking writes the person, their consent to WhatsApp about the visit, their address and a lead for the CRM. The site takes no money: a fit booked later is booked and paid in the app, and one in the same visit is paid for once the client is fitted, by a Razorpay payment link texted to them (ADR 0105). With self-serve booking on, a technician's window is held for the consultation's length and the visit is booked at once, and the confirmation goes on WhatsApp. With it off, the booking is a request on ops' Tasks board, which ops book from the console. An invite records who sent it.
 

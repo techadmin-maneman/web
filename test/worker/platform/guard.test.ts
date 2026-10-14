@@ -48,7 +48,7 @@ describe("validateStaticConfig: environment and providers", () => {
   it("refuses a missing or unknown provider", () => {
     const { IMAGE_PROVIDER: _omitted, ...withoutImage } = STUBS;
     expect(problemsOf({ ENVIRONMENT: "local", ...withoutImage, ...SETTINGS })).toEqual([
-      "IMAGE_PROVIDER must be one of ailabtools, stub",
+      "IMAGE_PROVIDER must be one of youcam, stub",
     ]);
     expect(problemsOf({ ENVIRONMENT: "local", ...STUBS, ...SETTINGS, CRM_PROVIDER: "salesforce" })).toEqual([
       "CRM_PROVIDER must be one of zoho, stub",
@@ -199,11 +199,21 @@ describe("validateStaticConfig: the limits fixed in src/config", () => {
 describe("validateStaticConfig: try-on and messaging", () => {
   const local = { ENVIRONMENT: "local", ...STUBS, ...SETTINGS };
 
-  it("needs the AILabTools key only for the real image provider", () => {
-    const { AILAB_API_KEY: _omitted, ...withoutKey } = production;
-    expect(problemsOf(withoutKey)).toEqual(["AILAB_API_KEY is not set"]);
-    expect(validateStaticConfig(production).settings.tryon.ailabApiKey).toBe("ailab-key");
-    expect(validateStaticConfig(local).settings.tryon.ailabApiKey).toBeNull();
+  it("needs the YouCam key only for the real image provider", () => {
+    const { YOUCAM_API_KEY: _omitted, ...withoutKey } = production;
+    expect(problemsOf(withoutKey)).toEqual(["YOUCAM_API_KEY is not set"]);
+    expect(validateStaticConfig(production).settings.tryon.youcamApiKey).toBe("youcam-key");
+    expect(validateStaticConfig(local).settings.tryon.youcamApiKey).toBeNull();
+  });
+
+  it("needs the references' address over https outside local runs, ending in their version", () => {
+    expect(problemsOf({ ...production, TRYON_REFS_URL: "https://maneman.in/refs/v2" })).toEqual([
+      "TRYON_REFS_URL must end in /refs/v1, the references' version",
+    ]);
+    expect(problemsOf({ ...production, TRYON_REFS_URL: "http://maneman.in/refs/v1" })).toEqual([
+      "TRYON_REFS_URL must be https: YouCam fetches each reference from it",
+    ]);
+    expect(problemsOf({ ...local, TRYON_REFS_URL: "http://localhost:4321/refs/v1" })).toEqual([]);
   });
 
   it("needs every Evolution setting for Evolution, over https, and trims the URL", () => {

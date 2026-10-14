@@ -2,7 +2,7 @@
 
 Part of the [runbook](../runbook.md), whose opening says how its commands are written.
 
-The render consumer is the only caller of AILabTools and the messaging consumer the only caller of WhatsApp (`docs/decisions/0015-render-pipeline.md`), but for login codes: those go straight to the provider once the response has gone (ADR 0030), and only the Worker's log records them, as `login_code_sent`, `login_code_not_sent` with its reason, or `login_code_failed`. D1 records where every job and message stands:
+The render consumer is the only caller of YouCam and the messaging consumer the only caller of WhatsApp (`docs/decisions/0015-render-pipeline.md`), but for login codes: those go straight to the provider once the response has gone (ADR 0030), and only the Worker's log records them, as `login_code_sent`, `login_code_not_sent` with its reason, or `login_code_failed`. D1 records where every job and message stands:
 
 ```sql
 SELECT state, failure_code, COUNT(*) AS jobs FROM tryon_jobs GROUP BY state, failure_code;
@@ -11,18 +11,22 @@ SELECT state, COUNT(*) AS messages FROM outbound_messages GROUP BY state;
 SELECT id, attempts, last_error FROM outbound_messages WHERE state = 'failed' ORDER BY created_at DESC LIMIT 10;
 ```
 
-`provider_error_detail` holds AILabTools' status and message, with the key scrubbed out. `last_error` holds the WhatsApp provider's status and code, never the number.
+`provider_error_detail` holds YouCam's status and its own code, verbatim, with the key scrubbed out; `failure_reason` is what the visitor was told (ADR 0201). `last_error` holds the WhatsApp provider's status and code, never the number.
 
-## AILabTools is down, or refuses the key
+## YouCam is down, or refuses the key
 
-Symptoms: jobs fail as `render_failed`. A refused key (401 or 403), a retired endpoint (404) or an empty balance also raise an alert naming the job.
+Symptoms: jobs fail as `render_failed`. A refused key or an empty balance pages the urgent space (`tryon_paused:key`, `tryon_paused:credits`), and visitors see the try-on as paused; the page closes itself once a render is made.
 
-- **Down (5xx, timeouts).** Nothing to do. Each submit is tried three times, and failed calls bill nothing. Customers see "failed" and can try again later.
-- **Refused key.** Put a working key in place with `W secret put AILAB_API_KEY --env <env>`. New jobs use it at once.
+- **Down (5xx, 429, timeouts).** Nothing to do. Each submit is tried three times, backing off, and a refused call bills nothing; a render YouCam's model fails, or one past 2 minutes, is made once more. Visitors see "failed" and can try again.
+- **Refused key.** Put a working key in place with `W secret put YOUCAM_API_KEY --env <env>`. New jobs use it at once.
+- **A head YouCam would not style** (`error_hair_too_short`, `error_bald_image`) alerts loudly: it never came in testing, and would turn away the clients the try-on is for. Tell engineering with the job's ID.
+- **A photograph our preparation should not have sent** (`exceed_max_filesize`, `error_decode_image` and the like) alerts too: a fault in the browser's preparation, for engineering.
 
-## Credits are low
+## Units are low
 
-The sweeper reads the balance once an hour and alerts once when it is below `AILAB_CREDIT_FLOOR`, not every hour; a top-up that lifts it over the floor closes the alert. Top up in the AILabTools dashboard. At zero, every render fails.
+The sweeper reads YouCam's balance once an hour and alerts once when it is below `YOUCAM_UNIT_FLOOR`, not every hour; a top-up that lifts it over the floor closes the alert. Top up in the YouCam API console. A render takes 2 units; at zero, every render fails and the try-on shows as paused.
+
+`node --env-file=<secrets> scripts/staging/youcam-probe.ts units` reads the balance by hand.
 
 ## A ceiling was reached
 

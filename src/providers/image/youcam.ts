@@ -11,10 +11,11 @@
 import { z } from "zod";
 import type { FailureReason } from "../../config/tryon.ts";
 import { inspectImage } from "../../lib/image-bytes.ts";
+import { TRYON_PAUSED_KEYS } from "../../policy/alerts.ts";
 import type { Logger } from "../../log.ts";
 import type { ImageProvider, PollResult, RenderFailure, SubmitResult } from "./index.ts";
 import { downloadResult } from "./result-download.ts";
-import { vendorFetch, VendorUnreachable } from "../vendor-fetch.ts";
+import { vendorFetch, VendorUnreachable, type VendorFetchDependencies } from "../vendor-fetch.ts";
 
 export const API_BASE_URL = "https://yce-api-01.makeupar.com";
 export const FILE_PATH = "/s2s/v2.0/file";
@@ -116,7 +117,13 @@ export function classifyTaskError(code: string): Omit<RenderFailure, "detail"> {
 /** A call's failed answer, by its HTTP status and YouCam's code. */
 export function classifyHttpError(status: number, code: string | null): Omit<RenderFailure, "detail"> {
   if (status === 401 || (code !== null && KEY_REFUSALS.has(code))) {
-    return { code: "render_failed", reason: "unavailable", transient: false, alert: true, urgentKey: "tryon_paused:key" };
+    return {
+      code: "render_failed",
+      reason: "unavailable",
+      transient: false,
+      alert: true,
+      urgentKey: TRYON_PAUSED_KEYS.key,
+    };
   }
   if (code === "CreditInsufficiency") {
     return {
@@ -124,11 +131,11 @@ export function classifyHttpError(status: number, code: string | null): Omit<Ren
       reason: "unavailable",
       transient: false,
       alert: true,
-      urgentKey: "tryon_paused:credits",
+      urgentKey: TRYON_PAUSED_KEYS.credits,
     };
   }
   if (status === 429 || status >= 500) return { code: "render_failed", transient: true, alert: false };
-  if (code !== null && code.startsWith("error_")) return classifyTaskError(code);
+  if (code?.startsWith("error_") === true) return classifyTaskError(code);
   // Any other refusal is a request we built wrongly.
   return { code: "render_failed", transient: false, alert: true };
 }
@@ -144,6 +151,44 @@ const unreachable = (error: VendorUnreachable): RenderFailure => ({
 async function readBody(response: Response): Promise<ApiBody | null> {
   const answer = ApiBody.safeParse(await response.json().catch(() => null));
   return answer.success ? answer.data : null;
+}
+
+/** What a call to YouCam needs: the fetch and log, the call with the key, and how a failed answer reads. */
+interface Api {
+  readonly http: VendorFetchDependencies;
+  readonly call: (step: string, path: string, init?: RequestInit) => Promise<Response | VendorUnreachable>;
+  readonly failed: (status: number, body: ApiBody | null, step: string) => RenderFailure;
+}
+
+/** The photograph uploaded through a signed URL: its file ID, or why it is not there. */
+async function uploadPhoto(
+  api: Api,
+  image: Uint8Array,
+): Promise<{ ok: true; fileId: string } | { ok: false; failure: RenderFailure }> {
+  const file = { content_type: "image/jpg", file_name: "selfie.jpg", file_size: image.byteLength };
+  const asked = await api.call("upload_url", FILE_PATH, { method: "POST", body: JSON.stringify({ files: [file] }) });
+  if (asked instanceof VendorUnreachable) return { ok: false, failure: unreachable(asked) };
+  const body = await readBody(asked);
+  const target = UploadData.safeParse(body?.data).data?.files[0];
+  const request = target?.requests[0];
+  if (!asked.ok || target === undefined || request === undefined) {
+    return { ok: false, failure: api.failed(asked.status, body, "upload_url") };
+  }
+
+  // A signed storage URL: exactly the headers it was given, and no key.
+  const put = await vendorFetch(
+    api.http,
+    { vendor: "youcam", step: "upload", timeoutMs: UPLOAD_TIMEOUT_MS },
+    request.url,
+    { method: request.method, headers: request.headers, body: image },
+  );
+  if (put instanceof VendorUnreachable) return { ok: false, failure: unreachable(put) };
+  if (!put.ok) {
+    const transient = put.status === 429 || put.status >= 500;
+    const detail = `signed upload refused: HTTP ${String(put.status)}`;
+    return { ok: false, failure: { code: "render_failed", transient, alert: !transient, detail } };
+  }
+  return { ok: true, fileId: target.file_id };
 }
 
 export function createYoucamProvider(options: { apiKey: string; fetch: typeof fetch; log: Logger }): ImageProvider {
@@ -162,38 +207,17 @@ export function createYoucamProvider(options: { apiKey: string; fetch: typeof fe
   };
 
   const call = (step: string, path: string, init: RequestInit = {}) =>
-    vendorFetch(http, { vendor: "youcam", step, timeoutMs: CALL_TIMEOUT_MS, codeOf: errorCodeOf }, API_BASE_URL + path, {
-      ...init,
-      headers: { ...authorised, ...(init.body === undefined ? {} : { "Content-Type": "application/json" }) },
-    });
-
-  /** The photograph uploaded through a signed URL: its file ID, or why it is not there. */
-  async function upload(image: Uint8Array): Promise<{ ok: true; fileId: string } | { ok: false; failure: RenderFailure }> {
-    const file = { content_type: "image/jpg", file_name: "selfie.jpg", file_size: image.byteLength };
-    const asked = await call("upload_url", FILE_PATH, { method: "POST", body: JSON.stringify({ files: [file] }) });
-    if (asked instanceof VendorUnreachable) return { ok: false, failure: unreachable(asked) };
-    const body = await readBody(asked);
-    const target = UploadData.safeParse(body?.data).data?.files[0];
-    const request = target?.requests[0];
-    if (!asked.ok || target === undefined || request === undefined) {
-      return { ok: false, failure: failed(asked.status, body, "upload_url") };
-    }
-
-    // A signed storage URL: exactly the headers it was given, and no key.
-    const put = await vendorFetch(
+    vendorFetch(
       http,
-      { vendor: "youcam", step: "upload", timeoutMs: UPLOAD_TIMEOUT_MS },
-      request.url,
-      { method: request.method, headers: request.headers, body: image },
+      { vendor: "youcam", step, timeoutMs: CALL_TIMEOUT_MS, codeOf: errorCodeOf },
+      API_BASE_URL + path,
+      {
+        ...init,
+        headers: { ...authorised, ...(init.body === undefined ? {} : { "Content-Type": "application/json" }) },
+      },
     );
-    if (put instanceof VendorUnreachable) return { ok: false, failure: unreachable(put) };
-    if (!put.ok) {
-      const transient = put.status === 429 || put.status >= 500;
-      const detail = `signed upload refused: HTTP ${String(put.status)}`;
-      return { ok: false, failure: { code: "render_failed", transient, alert: !transient, detail } };
-    }
-    return { ok: true, fileId: target.file_id };
-  }
+
+  const api: Api = { http, call, failed };
 
   return {
     async submit(image, referenceUrl): Promise<SubmitResult> {
@@ -204,7 +228,7 @@ export function createYoucamProvider(options: { apiKey: string; fetch: typeof fe
           failure: { code: "photo_invalid_file", transient: false, alert: true, detail: "not a JPEG" },
         };
       }
-      const uploaded = await upload(image);
+      const uploaded = await uploadPhoto(api, image);
       if (!uploaded.ok) return uploaded;
 
       // The customer keeps their own colour: no colour is ever chosen.

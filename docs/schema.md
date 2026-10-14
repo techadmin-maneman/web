@@ -3150,7 +3150,7 @@ Triggers: `technicians_board_added`, `technicians_board_changed`, `technicians_k
 
 One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 
-Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0074_number_codes.sql`.
+Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons.sql`, `0074_number_codes.sql`, `0171_tryon_on_youcam.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -3192,10 +3192,14 @@ Made by `0003_tryon.sql`; changed by `0037_cron_indexes.sql`, `0045_kept_try_ons
 | `kept_at` | TEXT | yes |  |  |
 | `kept_look_key` | TEXT | yes |  |  |
 | `number_proved_at` | TEXT | yes |  |  |
+| `failure_reason` | TEXT | yes |  |  |
+| `render_key` | TEXT | yes |  |  |
+| `renders` | INTEGER | no | `0` |  |
 
 Indexes:
 
 - `tryon_jobs_by_person`: on (`person_id`), where `person_id IS NOT NULL`
+- `tryon_jobs_by_render`: on (`render_key`), where `state = 'ready' AND result_key IS NOT NULL`
 - `tryon_jobs_by_session`: on (`session_id`)
 - `tryon_jobs_by_state`: on (`state`, `created_at`)
 - `tryon_jobs_by_upload`: on (`upload_key`)

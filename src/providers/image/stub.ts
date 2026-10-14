@@ -33,7 +33,7 @@ const TASK_ERRORS: Partial<Record<Scenario, string>> = {
 };
 
 /** A synthetic 1×1 grey PNG, standing in for a rendered result. */
-export const STUB_RESULT_PNG = Uint8Array.from(
+const STUB_RESULT_PNG = Uint8Array.from(
   atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNoAAAAggCBd81ytgAAAABJRU5ErkJggg=="),
   (char) => char.charCodeAt(0),
 );
@@ -78,16 +78,19 @@ async function uploadUrl(request: Request, fileId: string): Promise<Response> {
 
 async function upload(request: Request, url: URL, uploads: Map<string, Uint8Array>): Promise<Response> {
   // A signed URL is refused a key, as storage refuses a second credential.
-  if (request.method !== "PUT" || request.headers.has("Authorization")) return new Response("Bad request", { status: 400 });
+  if (request.method !== "PUT" || request.headers.has("Authorization"))
+    return new Response("Bad request", { status: 400 });
   uploads.set(url.pathname.slice(1), new Uint8Array(await request.arrayBuffer()));
   return new Response(null, { status: 200 });
 }
 
 async function startTask(request: Request, uploads: Map<string, Uint8Array>, now: () => Date): Promise<Response> {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  const image = uploads.get(String(body?.src_file_id ?? ""));
-  const reference = String(body?.ref_file_url ?? "");
-  if (image === undefined || !reference.startsWith("https://") || body?.hair_color !== "src") {
+  const text = (value: unknown) => (typeof value === "string" ? value : "");
+  const image = uploads.get(text(body?.src_file_id));
+  const reference = text(body?.ref_file_url);
+  // A local run's references are on localhost, which the stub never fetches; YouCam itself takes only https.
+  if (image === undefined || !/^https?:\/\//.test(reference) || body?.hair_color !== "src") {
     return json({ status: 400, error: "Invalid parameters", error_code: "InvalidParameters" }, 400);
   }
   const taskId = `stub.${scenarioOf(image)}.${String(now().getTime())}`;

@@ -143,7 +143,7 @@ export const ZONE_ID = "d33891be281c088bf3e0e927d7ed20f9";
 
 /** Provider implementations selectable per environment. Production may not hold a stub. */
 export const PROVIDER_VARS = {
-  IMAGE_PROVIDER: ["ailabtools", "stub"],
+  IMAGE_PROVIDER: ["youcam", "stub"],
   CRM_PROVIDER: ["zoho", "stub"],
   // Evolution's bridge, or the WhatsApp Business Platform through MSG91 once the business number's templates are
   // approved (docs/decisions/0114-whatsapp-business-platform-through-msg91.md).

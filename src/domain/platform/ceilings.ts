@@ -1,4 +1,4 @@
-// Global daily ceilings. The render ceiling caps AILabTools spend; the upload,
+// Global daily ceilings. The render ceiling caps YouCam spend; the upload,
 // render and result-read ceilings together cap R2 use within its monthly budget
 // (docs/decisions/0194-the-build-on-workers-paid.md); the geocode
 // ceiling caps what the address search can spend on the Google account's card

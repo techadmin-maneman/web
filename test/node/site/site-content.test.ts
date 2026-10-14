@@ -77,9 +77,10 @@ describe("content", () => {
     expect(statSync(path ?? "").size).toBeLessThan(800 * 1024);
   });
 
-  it("offers the backend's six presets in its order, split as the design labels them", () => {
+  it("offers the backend's six looks in its order, each split at its first dot", () => {
     expect(site.looks.map((look) => look.id)).toEqual(PRESETS.map((preset) => preset.id));
-    expect(site.looks[0]).toMatchObject({ density: "Full density", detail: "Natural hairline · short" });
+    expect(site.looks[0]).toMatchObject({ name: "Side part", detail: "" });
+    expect(site.looks[2]).toMatchObject({ name: "Textured crop", detail: "Low fade" });
   });
 
   it("builds the consent screen and the gate from the backend's notices, word for word", () => {
@@ -99,7 +100,7 @@ describe("content", () => {
   // ADR 0104: the look goes to WhatsApp only, never to the site, so every build shows the notices that say so, which
   // await counsel and still keep a client's try-on (ADR 0084).
   it("says on every page of the try-on that the look goes to WhatsApp only, and never promises it on screen", () => {
-    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v4", "gate-v5"]);
+    expect([site.notices.photo.version, site.notices.gate.version]).toEqual(["photo-v5", "gate-v5"]);
     expect([site.notices.photo.approved, site.notices.gate.approved]).toEqual([false, false]);
     expect(site.tryOnSendsCopy).toBe(true);
     const privacy = textOf(site.legalPages.privacy);
@@ -244,7 +245,7 @@ describe("the second copy round", () => {
   // No empty "Preview" box stands in for a look's picture.
   it("draws the looks' pictures only once all six have one, and labels no empty box", () => {
     expect(site.tryOn.looks).not.toHaveProperty("preview");
-    expect(site.lookPictures()).toBeNull();
+    expect(site.lookPictures()).toEqual(site.looks.map((look) => `look-${look.id}.jpg`));
     const six = site.looks.map((look) => ({ picture: `${look.id}.jpg` }));
     expect(site.lookPictures(six)).toEqual(site.looks.map((look) => `${look.id}.jpg`));
     expect(site.lookPictures([...six.slice(1), { picture: undefined }])).toBeNull();
@@ -331,7 +332,7 @@ describe("the publish gate", () => {
   // wording for the apps, and for nothing else.
   it("stops production on what awaits counsel alone: every published block is real", () => {
     expect(publishProblems()).toEqual([
-      "the photo notice (photo-v4) is not approved",
+      "the photo notice (photo-v5) is not approved",
       "the gate notice (gate-v5) is not approved",
       "the privacy page's wording is not approved",
       "the terms page's wording is not approved",

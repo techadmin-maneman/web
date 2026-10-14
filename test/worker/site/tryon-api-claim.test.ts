@@ -32,7 +32,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     ).all();
     expect(consents.results).toEqual([
       { purpose: "result_delivery", notice_version: "gate-v5", created_at: NOW.toISOString(), source: "try_on" },
-      { purpose: "tryon_photo", notice_version: "photo-v4", created_at: NOW.toISOString(), source: "try_on" },
+      { purpose: "tryon_photo", notice_version: "photo-v5", created_at: NOW.toISOString(), source: "try_on" },
     ]);
     // The job keeps the claim's stage, which its render is made for.
     expect(await jobRow(jobId)).toMatchObject({
@@ -79,7 +79,7 @@ describe("POST /api/tryon/claim, before the look is made", () => {
     const consents = await env.DB.prepare("SELECT purpose, notice_version FROM consents ORDER BY purpose").all();
     expect(consents.results).toEqual([
       { purpose: "result_delivery", notice_version: "gate-v5" },
-      { purpose: "tryon_photo", notice_version: "photo-v4" },
+      { purpose: "tryon_photo", notice_version: "photo-v5" },
     ]);
   });
 

@@ -2258,126 +2258,98 @@
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Full density · Natural hairline · short"
+    "text": "Side part"
   },
   {
-    "key": "site:tryon/looks.0.density",
+    "key": "site:tryon/looks.0.name",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Full density"
-  },
-  {
-    "key": "site:tryon/looks.0.detail",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "looks",
-    "text": "Natural hairline · short"
+    "text": "Side part"
   },
   {
     "key": "site:tryon/looks.1.label",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Full density · Straight hairline · medium"
+    "text": "Slick back"
   },
   {
-    "key": "site:tryon/looks.1.density",
+    "key": "site:tryon/looks.1.name",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Full density"
-  },
-  {
-    "key": "site:tryon/looks.1.detail",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "looks",
-    "text": "Straight hairline · medium"
+    "text": "Slick back"
   },
   {
     "key": "site:tryon/looks.2.label",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Medium density · Natural hairline · short"
+    "text": "Textured crop · Low fade"
   },
   {
-    "key": "site:tryon/looks.2.density",
+    "key": "site:tryon/looks.2.name",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Medium density"
+    "text": "Textured crop"
   },
   {
     "key": "site:tryon/looks.2.detail",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Natural hairline · short"
+    "text": "Low fade"
   },
   {
     "key": "site:tryon/looks.3.label",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Medium density · Receded hairline · medium"
+    "text": "French crop"
   },
   {
-    "key": "site:tryon/looks.3.density",
+    "key": "site:tryon/looks.3.name",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Medium density"
-  },
-  {
-    "key": "site:tryon/looks.3.detail",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "looks",
-    "text": "Receded hairline · medium"
+    "text": "French crop"
   },
   {
     "key": "site:tryon/looks.4.label",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Light density · Natural hairline · short"
+    "text": "Quiff"
   },
   {
-    "key": "site:tryon/looks.4.density",
+    "key": "site:tryon/looks.4.name",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Light density"
-  },
-  {
-    "key": "site:tryon/looks.4.detail",
-    "surface": "site",
-    "group": "Try-on",
-    "where": "looks",
-    "text": "Natural hairline · short"
+    "text": "Quiff"
   },
   {
     "key": "site:tryon/looks.5.label",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Light density · Receded hairline · cropped"
+    "text": "Crew cut · Ivy League"
   },
   {
-    "key": "site:tryon/looks.5.density",
+    "key": "site:tryon/looks.5.name",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Light density"
+    "text": "Crew cut"
   },
   {
     "key": "site:tryon/looks.5.detail",
     "surface": "site",
     "group": "Try-on",
     "where": "looks",
-    "text": "Receded hairline · cropped"
+    "text": "Ivy League"
   },
   {
     "key": "site:tryon/tryOn.back",
@@ -2811,14 +2783,154 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We cannot use this photograph."
+    "text": "We couldn't see your face clearly."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.photo.body",
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Your face may be turned, your hairline covered, or the light too low. Face a window and shoot straight on."
+    "text": "Try a well-lit photograph, taken straight on."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.shoulders.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Show your shoulders"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.shoulders.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Shoulders out of frame"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.shoulders.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We need to see your shoulders."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.shoulders.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Use a photograph that shows your head and shoulders."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.facing.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Face the camera"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.facing.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Face turned away"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.facing.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Face the camera straight on."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.facing.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Then take the photograph again."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.onePerson.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Just you, please"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.onePerson.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "More than one person"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.onePerson.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Only you in the photograph, please."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.onePerson.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Use a photograph with no one else in it."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.notStyleable.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Try another photograph"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.notStyleable.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Cannot style this one"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.notStyleable.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We couldn't style this photograph."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.notStyleable.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Please try another one."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.refused.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Try another photograph"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.refused.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Photograph not accepted"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.refused.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Please try another photograph."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.refused.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "We can't use this one."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.renderFailed.step",
@@ -2903,6 +3015,34 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "We send every look on WhatsApp, and that isn't switched on yet. Book a free consultation and see the real thing."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.paused.step",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Not available right now"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.paused.frame",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Paused"
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.paused.title",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Try-on is temporarily unavailable."
+  },
+  {
+    "key": "site:tryon/tryOn.error.kinds.paused.body",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Book a free consultation and see the real thing."
   },
   {
     "key": "site:tryon/numberCode.label",

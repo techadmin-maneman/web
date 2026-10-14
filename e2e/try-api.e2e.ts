@@ -1,5 +1,5 @@
 // The try-on end to end against the real local API, whose renderer is the
-// AILabTools stub (playwright.config.ts): a drawn photograph goes up, the gate
+// YouCam stub (playwright.config.ts): a drawn photograph goes up, the gate
 // is given a number, and only then is the look made, to go to WhatsApp alone
 // (ADR 0104). The page never asks for the look.
 

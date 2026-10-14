@@ -1,46 +1,7 @@
-// The try-on's browser-side helpers: the hair-colour detector, on drawn
-// images (never photographs of people), and what the error screen says.
+// The try-on's browser-side helpers: what the error screen says.
 
 import { describe, expect, it } from "vitest";
-import { apiColour, detectHairColour, nearestShade } from "../../../site/src/lib/hair-colour.ts";
 import { errorKindOf, failureKindOf, jobProblem } from "../../../site/src/lib/tryon-errors.ts";
-import { drawnHead, HEAD_HEIGHT, HEAD_WIDTH } from "../drawn-head.ts";
-
-describe("the hair-colour detector", () => {
-  it("names the nearest natural shade", () => {
-    expect(nearestShade([22, 20, 18])).toBe("black");
-    expect(nearestShade([52, 40, 30])).toBe("brown");
-    expect(nearestShade([214, 210, 205])).toBe("white");
-  });
-
-  it("sends the API only its six shades, and unknown for the rest", () => {
-    expect(apiColour("lightBrown")).toBe("lightBrown");
-    expect(apiColour("silver")).toBe("silver");
-    expect(apiColour("blonde")).toBe("unknown");
-    expect(apiColour("burgundy")).toBe("unknown");
-  });
-
-  it("reads brown hair above a face, ignoring the wall", () => {
-    expect(detectHairColour(drawnHead([49, 37, 29]), HEAD_WIDTH, HEAD_HEIGHT)).toBe("brown");
-  });
-
-  it("reads grey hair", () => {
-    expect(detectHairColour(drawnHead([114, 109, 105]), HEAD_WIDTH, HEAD_HEIGHT)).toBe("grey");
-  });
-
-  it("calls a dyed shade unknown", () => {
-    expect(detectHairColour(drawnHead([113, 22, 17]), HEAD_WIDTH, HEAD_HEIGHT)).toBe("unknown");
-  });
-
-  it("does not mistake the wall behind a bare head for hair", () => {
-    expect(detectHairColour(drawnHead(null), HEAD_WIDTH, HEAD_HEIGHT)).toBe("unknown");
-  });
-
-  it("calls an image with no face unknown", () => {
-    const wall = new Uint8ClampedArray(HEAD_WIDTH * HEAD_HEIGHT * 4).fill(180);
-    expect(detectHairColour(wall, HEAD_WIDTH, HEAD_HEIGHT)).toBe("unknown");
-  });
-});
 
 describe("the try-on's error screen", () => {
   it("blames the photograph only when the photograph is the problem", () => {
@@ -49,6 +10,19 @@ describe("the try-on's error screen", () => {
     expect(failureKindOf("photo_invalid_file")).toBe("photo");
     expect(failureKindOf("render_failed")).toBe("renderFailed");
     expect(failureKindOf("busy")).toBe("busy");
+  });
+
+  it("says what YouCam found wrong with the photograph, and that the try-on is paused when it cannot run", () => {
+    expect(failureKindOf("photo_unreadable", "no_face")).toBe("photo");
+    expect(failureKindOf("photo_unreadable", "no_shoulders")).toBe("shoulders");
+    expect(failureKindOf("photo_unreadable", "face_angle")).toBe("facing");
+    expect(failureKindOf("photo_unreadable", "several_people")).toBe("onePerson");
+    expect(failureKindOf("photo_unreadable", "not_styleable")).toBe("notStyleable");
+    expect(failureKindOf("photo_unreadable", "refused")).toBe("refused");
+    expect(failureKindOf("render_failed", "unavailable")).toBe("paused");
+    expect(
+      jobProblem({ job_id: "j", state: "failed", failure_code: "photo_unreadable", failure_reason: "face_angle" }),
+    ).toEqual({ kind: "facing", code: "face_angle" });
   });
 
   // ADR 0104: the look goes to WhatsApp only, so while WhatsApp cannot send it the try-on is not available.

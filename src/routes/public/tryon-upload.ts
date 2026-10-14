@@ -35,7 +35,7 @@ const UploadUrlRequestSchema = z
       .string()
       .min(1)
       .max(40)
-      .openapi({ example: "photo-v4", description: "The photo notice shown: the current one, the only one recorded." }),
+      .openapi({ example: "photo-v5", description: "The photo notice shown: the current one, the only one recorded." }),
     turnstile_token: z.string().min(1).max(2048),
   })
   .strict()
