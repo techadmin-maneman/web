@@ -10,7 +10,7 @@
 
 import { createRoute } from "@hono/zod-openapi";
 import { RazorpayEventMessageSchema, type RazorpayEventMessage } from "../../config/pipeline.ts";
-import { RazorpayEventSchema } from "../../domain/money/razorpay-events.ts";
+import { claimEvent, RazorpayEventSchema, releaseEvent } from "../../domain/money/razorpay-events.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
 import type { App } from "../../http/context.ts";
 import { cappedBody } from "../../http/capped-body.ts";
@@ -63,15 +63,7 @@ export function registerRazorpayHook(app: App): void {
     const eventId = c.req.header("X-Razorpay-Event-Id") ?? `body:${await sha256Hex(body)}`;
     const db = c.env.DB;
 
-    // The claim is one statement, so of two deliveries at once only one queues the event.
-    const claimed = await db
-      .prepare(
-        `INSERT INTO razorpay_events (event_id, event, received_at) VALUES (?1, ?2, ?3) ON CONFLICT DO NOTHING
-         RETURNING event_id`,
-      )
-      .bind(eventId, event.slice(0, 60), deps.now().toISOString())
-      .first();
-    if (claimed === null) {
+    if (!(await claimEvent(db, { id: eventId, name: event, at: deps.now() }))) {
       log.info("razorpay_hook_repeat", { event });
       return c.body(null, 200);
     }
@@ -82,7 +74,7 @@ export function registerRazorpayHook(app: App): void {
     } satisfies RazorpayEventMessage);
     if (!(await enqueue(c.env.RAZORPAY_QUEUE, message, { log, ifLost: "sender" }))) {
       // Let go, so Razorpay's next delivery is claimed and queued.
-      await db.prepare("DELETE FROM razorpay_events WHERE event_id = ?1").bind(eventId).run();
+      await releaseEvent(db, eventId);
       return refuse(c, "unavailable");
     }
     log.info("razorpay_hook_queued", { event });

@@ -185,7 +185,7 @@ this map, or when the map names something that no longer exists.
 
 ### Referrals
 
-- **Database work** (`src/domain/referrals/`): `referrals`, `referral-grants`, `referral-cards`, `referral-messages`,
+- **Database work** (`src/domain/referrals/`): `refer-page` (what Refer reads), `referrals`, `referral-grants`, `referral-cards`, `referral-messages`,
   `invite-lookups`, `channels`, `channel-grants`, `partner-statements`
 - **Rules** (`src/policy/`): `referral-reward`, `invites`
 - **Data** (`src/config/`): `referral-cards`, `invite-codes`, `house-card`, `card-overlay`
@@ -196,7 +196,7 @@ this map, or when the map names something that no longer exists.
 
 ### The try-on
 
-- **Database work** (`src/domain/try-on/`): `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`,
+- **Database work** (`src/domain/try-on/`): `tryon-uploads` (a photograph's one write, claimed), `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`,
   `photo`
 - **Rules** (`src/policy/`): `tryon-delivery`, `kept-try-ons`
 - **Data** (`src/config/`): `tryon`

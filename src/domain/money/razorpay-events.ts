@@ -43,6 +43,29 @@ export const RazorpayEventSchema = z.object({
 });
 export type RazorpayEvent = z.infer<typeof RazorpayEventSchema>;
 
+/**
+ * The event claimed by its ID, in one statement, so of two deliveries at once only one is queued: whether this one
+ * claimed it.
+ */
+export async function claimEvent(
+  db: D1Database,
+  event: { readonly id: string; readonly name: string; readonly at: Date },
+) {
+  const claimed = await db
+    .prepare(
+      `INSERT INTO razorpay_events (event_id, event, received_at) VALUES (?1, ?2, ?3) ON CONFLICT DO NOTHING
+       RETURNING event_id`,
+    )
+    .bind(event.id, event.name.slice(0, 60), event.at.toISOString())
+    .first();
+  return claimed !== null;
+}
+
+/** A claim let go, as when its queue would not take the event, so Razorpay's next delivery claims it again. */
+export async function releaseEvent(db: D1Database, eventId: string): Promise<void> {
+  await db.prepare("DELETE FROM razorpay_events WHERE event_id = ?1").bind(eventId).run();
+}
+
 /** What an event is applied with. */
 export interface EventBasis {
   readonly db: D1Database;

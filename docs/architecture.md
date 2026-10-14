@@ -105,6 +105,10 @@ reports its own page's errors) and the local `dev-visits.ts` stay at the top. A 
 with goes in `routes/schemas/`, and a helper two routes share goes to the domain or `http/`. `test/node/architecture/route-imports.test.ts`
 holds the routes to that, from a baseline of today's imports that only shrinks.
 
+A route reads its request, asks the domain, and answers: the SQL is the domain's, as a function taking what it works
+with (the database, the clock, who writes). `test/node/architecture/route-sql.test.ts` counts what is left in each route
+file, from a baseline that only shrinks, and a new route holds none.
+
 ## A hold's stages
 
 A hold (`slot_holds`) keeps a window while the client pays, and its stage is read from a few columns. Every query

@@ -22,15 +22,16 @@ interface PersonRow {
   readonly zoho_lead_id: string | null;
   readonly city: string | null;
   readonly invite_code: string | null;
-  /** "<closed_at> <close_reason>" of their last closed chat. */
-  readonly last_contact: string | null;
+  /** When their last closed chat closed, and why; both empty where none has. */
+  readonly last_closed_at: string | null;
+  readonly last_close_reason: string | null;
 }
 
 /** Their last closed chat, as the CRM records it: India's date, and what it was about. */
-function lastContactOf(row: string | null): { date: string; reason: string | null } | null {
-  if (row === null) return null;
-  const [closedAt = "", reason = ""] = row.split(" ");
-  return { date: indiaDate(new Date(closedAt)), reason: LAST_CONTACT_REASONS[reason] ?? null };
+function lastContactOf(row: PersonRow): { date: string; reason: string | null } | null {
+  if (row.last_closed_at === null) return null;
+  const reason = row.last_close_reason === null ? null : (LAST_CONTACT_REASONS[row.last_close_reason] ?? null);
+  return { date: indiaDate(new Date(row.last_closed_at)), reason };
 }
 
 /**
@@ -52,9 +53,11 @@ export async function updateContact(
          (SELECT city FROM addresses a WHERE a.person_id = p.id AND a.replaced_at IS NULL
           ORDER BY a.created_at DESC LIMIT 1) AS city,
          (SELECT r.code FROM referral_attributions r WHERE r.referred_person_id = p.id) AS invite_code,
-         (SELECT c.closed_at || ' ' || COALESCE(c.close_reason, '') FROM conversations c
-          WHERE c.person_id = p.id AND c.closed_at IS NOT NULL ORDER BY c.closed_at DESC LIMIT 1) AS last_contact
-       FROM people p WHERE p.id = ?1 AND p.erased_at IS NULL`,
+         last.closed_at AS last_closed_at, last.close_reason AS last_close_reason
+       FROM people p
+       LEFT JOIN conversations last ON last.id = (SELECT c.id FROM conversations c
+         WHERE c.person_id = p.id AND c.closed_at IS NOT NULL ORDER BY c.closed_at DESC LIMIT 1)
+       WHERE p.id = ?1 AND p.erased_at IS NULL`,
     )
     .bind(personId)
     .first<PersonRow>();
@@ -76,7 +79,7 @@ export async function updateContact(
         city: person.city,
         inviteCode: person.invite_code,
         inviteAttached: inviteAttached || owed?.inviteAttached === true,
-        lastContact: lastContactOf(person.last_contact),
+        lastContact: lastContactOf(person),
       },
       person.zoho_lead_id,
     );

@@ -3,16 +3,14 @@
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
-import { actorOf } from "../../http/audit.ts";
+import { written } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
-import { auditStatement } from "../../domain/platform/audit.ts";
-import { reachBinding, withinReach } from "../../domain/clients/places.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { capped, More } from "../../http/paging.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { queueMessage } from "../../http/queue-message.ts";
-import { concernAnsweredMessage } from "../../domain/ops/grievances.ts";
+import { openGrievances, resolveGrievance } from "../../domain/ops/grievances.ts";
 import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { dueAt } from "../../policy/tasks.ts";
 
@@ -77,15 +75,7 @@ const resolveRoute = opsRoute({
 
 export function registerOpsGrievances(app: App): void {
   app.openapi(openRoute, async (c) => {
-    const reached = await routeReach(c);
-    const { results } = await c.env.DB.prepare(
-      `SELECT g.id, g.person_id, p.name, p.mobile_e164, g.text, g.created_at FROM grievances g
-       JOIN people p ON p.id = g.person_id
-       WHERE g.state = 'open' AND p.erased_at IS NULL AND ${withinReach("grievance", "g", "?1")}
-       ORDER BY g.created_at LIMIT ?2`,
-    )
-      .bind(reachBinding(reached), LIMIT + 1)
-      .all<{ id: string; person_id: string; name: string; mobile_e164: string; text: string; created_at: string }>();
+    const results = await openGrievances(c.env.DB, await routeReach(c), LIMIT + 1);
     const sla = (await opsInputs(c)).taskSlaHours;
     const { rows, more } = capped(results, LIMIT);
     return c.json(
@@ -107,39 +97,10 @@ export function registerOpsGrievances(app: App): void {
 
   app.openapi(resolveRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const staff = actorOf(c);
-    const now = c.var.deps.now();
-    const db = c.env.DB;
-    const open = await db
-      .prepare("SELECT person_id FROM grievances WHERE id = ?1 AND state = 'open'")
-      .bind(id)
-      .first<{ person_id: string }>();
-    if (open === null || !(await withinRouteReach(c, "grievance", id))) {
-      return refuse(c, "not_found");
-    }
-    const told = concernAnsweredMessage(db, { grievanceId: id, personId: open.person_id, now });
-    // The answer, its audit entry and the client's message, together or not at all (src/domain/platform/audit.ts).
-    await db.batch([
-      db
-        .prepare(
-          `UPDATE grievances SET state = 'resolved', response = ?2, resolved_by = ?3, resolved_at = ?4
-           WHERE id = ?1 AND state = 'open'`,
-        )
-        .bind(id, c.req.valid("json").response, staff.id, now.toISOString()),
-      auditStatement(
-        db,
-        {
-          surface: "ops",
-          actor: staff,
-          action: "grievance.resolve",
-          subject: { kind: "grievance", id },
-          requestId: c.var.requestId,
-        },
-        now,
-      ),
-      told.statement,
-    ]);
-    await queueMessage(c, told.id);
+    if (!(await withinRouteReach(c, "grievance", id))) return refuse(c, "not_found");
+    const told = await resolveGrievance(c.env.DB, { id, response: c.req.valid("json").response }, written(c));
+    if (told === null) return refuse(c, "not_found");
+    await queueMessage(c, told);
     return c.json({ state: "resolved" as const }, 200);
   });
 }

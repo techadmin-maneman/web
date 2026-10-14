@@ -7,6 +7,9 @@ import { queueMessage } from "../messages/queued-messages.ts";
 import type { Composed } from "../messages/visit-message-text.ts";
 import { DECISION_SHOWN_DAYS } from "../../policy/decision-reasons.ts";
 import { GRIEVANCES_SHOWN } from "../../policy/grievances.ts";
+import type { PlacesReached } from "../../policy/access.ts";
+import { reachBinding, withinReach } from "../clients/places.ts";
+import { auditStatement, opsEntry, type Written } from "../platform/audit.ts";
 
 export interface ShownGrievance {
   readonly id: string;
@@ -111,4 +114,57 @@ export async function composeConcernAnswered(db: D1Database, grievanceId: string
     .first<{ name: string }>();
   if (row === null) return { skip: "the concern was not answered" };
   return { template: "concern_answered_v1", params: [firstNameOf(row.name)] };
+}
+
+/** A concern still open, as the console lists it. */
+export interface OpenGrievance {
+  readonly id: string;
+  readonly person_id: string;
+  readonly name: string;
+  readonly mobile_e164: string;
+  readonly text: string;
+  readonly created_at: string;
+}
+
+/** The concerns still open in the caller's places, the oldest first, up to `limit`. */
+export async function openGrievances(db: D1Database, reached: PlacesReached, limit: number): Promise<OpenGrievance[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT g.id, g.person_id, p.name, p.mobile_e164, g.text, g.created_at FROM grievances g
+       JOIN people p ON p.id = g.person_id
+       WHERE g.state = 'open' AND p.erased_at IS NULL AND ${withinReach("grievance", "g", "?1")}
+       ORDER BY g.created_at LIMIT ?2`,
+    )
+    .bind(reachBinding(reached), limit)
+    .all<OpenGrievance>();
+  return results;
+}
+
+/**
+ * Ops' answer to a concern still open: written with its audit entry and the client's message, together or not at all
+ * (src/domain/platform/audit.ts). The message to queue; null for a concern not open.
+ */
+export async function resolveGrievance(
+  db: D1Database,
+  answer: { readonly id: string; readonly response: string },
+  written: Written,
+): Promise<string | null> {
+  const open = await db
+    .prepare("SELECT person_id FROM grievances WHERE id = ?1 AND state = 'open'")
+    .bind(answer.id)
+    .first<{ person_id: string }>();
+  if (open === null) return null;
+  const now = written.now;
+  const told = concernAnsweredMessage(db, { grievanceId: answer.id, personId: open.person_id, now });
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE grievances SET state = 'resolved', response = ?2, resolved_by = ?3, resolved_at = ?4
+         WHERE id = ?1 AND state = 'open'`,
+      )
+      .bind(answer.id, answer.response, written.actor.id, now.toISOString()),
+    auditStatement(db, opsEntry(written, "grievance.resolve", { kind: "grievance", id: answer.id }), now),
+    told.statement,
+  ]);
+  return told.id;
 }
