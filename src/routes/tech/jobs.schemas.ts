@@ -4,6 +4,7 @@ import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
+import { APPOINTMENT_STATUSES } from "../../domain/visits/visit-status.ts";
 import { CARD_STEPS } from "../../policy/in-job-steps.ts";
 import { PAYMENT_BADGES } from "../../policy/job-visibility.ts";
 import { BasedOnSchema, FitSpecSchema, HairProfileSchema, HistorySchema } from "../schemas/hair-profile.ts";
@@ -63,7 +64,7 @@ const JobSummarySchema = z
         "The area, never the street: the one the visit's pincode is in, from the service area; else the address's " +
         "locality, or the city.",
     }),
-    status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
+    status: z.enum(APPOINTMENT_STATUSES),
     badge: z.enum(PAYMENT_BADGES).openapi({
       description:
         "Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is " +

@@ -18,6 +18,7 @@ import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
 import { BOARD_DAYS, boardVersion, dispatchBoard } from "../../domain/dispatch/dispatch-board.ts";
 import { dispatchRoomFor } from "../../domain/dispatch/dispatch.ts";
 import { nearestKm } from "../../domain/dispatch/nearest.ts";
+import { APPOINTMENT_STATUSES } from "../../domain/visits/visit-status.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -58,7 +59,7 @@ const VISIT = {
   }),
   pincode: z.union([z.string(), z.null()]),
   person: z.union([ClientSchema, z.null()]).openapi({
-    description: "Null for a visit with no client on our records, and for a client who has been erased.",
+    description: "Null for a client who has been erased.",
   }),
   badge: z.enum(PAYMENT_BADGES).openapi({ description: "Never an amount: prepaid, credit, or free." }),
   slots: z.number().openapi({ description: "Consultation 1, service 1, replacement 1.5, first fit 2." }),
@@ -72,7 +73,7 @@ const BlockSchema = z
   .object({
     ...VISIT,
     window: z.enum(BOOKING_WINDOWS),
-    status: z.enum(["scheduled", "dispatched", "in_progress", "completed", "cancelled", "terminated", "other"]),
+    status: z.enum(APPOINTMENT_STATUSES),
     notice_hours: z.number().int().openapi({
       description:
         "The notice the visit was sold under, in hours, or the one in force for a visit no hold sold: a change of the client's own inside it costs them, one ops make never does.",

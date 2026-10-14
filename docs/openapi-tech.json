@@ -593,8 +593,7 @@
               "in_progress",
               "completed",
               "cancelled",
-              "terminated",
-              "other"
+              "terminated"
             ]
           },
           "badge": {
@@ -816,8 +815,7 @@
               "in_progress",
               "completed",
               "cancelled",
-              "terminated",
-              "other"
+              "terminated"
             ]
           },
           "badge": {
@@ -4382,7 +4380,7 @@
         },
         "responses": {
           "202": {
-            "description": "Recorded; or, for a job with no client of ours, taken and nothing written. One taken from an older version than the latest still lands, and ops are told.",
+            "description": "Recorded. One taken from an older version than the latest still lands, and ops are told.",
             "content": {
               "application/json": {
                 "schema": {

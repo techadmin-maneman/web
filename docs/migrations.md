@@ -19,13 +19,13 @@ D1 runs each file in `migrations/` once, in order, in one transaction, with fore
 
 What a later release drops, once no deployed Worker reads it. Each waits for the release named, in **production** as well as staging.
 
-| What                                                                                                                             | Replaced by                                                               | Dropped once production has run                   | ADR  |
-| -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------- | ---- |
-| `zoho_token` (0002) and `zoho_tokens` (0010)                                                                                     | `zoho_access_tokens` (0041, seeded from both)                             | #125 (6ef2ddb): the code before it reads them     | 0070 |
-| `appointments.fsm_invoice_id`, and `fsm_write_state` on `dispatch_moves` and `job_events`                                        | `books_invoice_id` and `write_state` (0104, written alongside)            | the release that reads the new columns            | 0113 |
-| The ten unread `fsm_*` columns, and `fsm_items`                                                                                  | Nothing                                                                   | the release after 0104                            | 0113 |
-| `detail` on each task of `GET /api/tasks`, words read by position                                                                | `facts`, by the task's group (`src/domain/ops/task-facts.ts`)             | the release whose console reads `facts`           | —    |
-| The nineteen derived triggers on `appointments`; its client, kind and times made `NOT NULL` and its statuses narrowed to our own | `visitUpkeep` in each write's batch (`src/domain/visits/visit-upkeep.ts`) | the release that writes `visitUpkeep`, on staging | 0199 |
+| What                                                                                                | Replaced by                                                                              | Dropped once production has run               | ADR  |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------- | ---- |
+| `zoho_token` (0002) and `zoho_tokens` (0010)                                                        | `zoho_access_tokens` (0041, seeded from both)                                            | #125 (6ef2ddb): the code before it reads them | 0070 |
+| `appointments.fsm_invoice_id`, and `fsm_write_state` on `dispatch_moves` and `job_events`           | `books_invoice_id` and `write_state` (0104, written alongside)                           | the release that reads the new columns        | 0113 |
+| The ten unread `fsm_*` columns, and `fsm_items`                                                     | Nothing                                                                                  | the release after 0104                        | 0113 |
+| `detail` on each task of `GET /api/tasks`, words read by position                                   | `facts`, by the task's group (`src/domain/ops/task-facts.ts`)                            | the release whose console reads `facts`       | —    |
+| A visit with no client, kind, start or end, or a status not ours; the outcome table's name `visits` | A guard on `appointments`; `visit_outcomes`, with a view of the old name for one release | the release after 0168                        | 0199 |
 
 ## Comments an applied migration cannot correct
 

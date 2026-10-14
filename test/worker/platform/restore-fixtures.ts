@@ -1,6 +1,9 @@
 // A row in every table, as the database held them at <T>, and what was written since: for test/worker/platform/restore-carry.test.ts.
 // The rows at <T> fire every trigger, so the carry-back meets each table that refuses a delete and each one a trigger
-// writes to. A new table needs a row here; the test names any table left empty.
+// writes to; the visits' upkeep follows them, as the domain writes it. A new table needs a row here; the test names any
+// table left empty.
+
+import { EVERY_VISIT_UPKEEP } from "../../../scripts/lib/every-visit-upkeep.ts";
 
 const AT = "2026-09-21T06:30:00.000Z";
 const SINCE = "2026-10-02T06:30:00.000Z";
@@ -268,6 +271,7 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO stock_lots (id, consumable_code, lot_code, expires_on, received_at) VALUES ('lot-recalled', 'hs1', 'BAD-1', NULL, '${AT}')`,
   `INSERT INTO recalls (id, number, lot_id, reason, raised_by, raised_at) VALUES ('rcl1', 1, 'lot-recalled', 'Shedding', 'ops@example.com', '${AT}')`,
   `INSERT INTO recall_pieces (recall_id, piece_id, due_before) VALUES ('rcl1', 'piece-gone', '2027-03-01')`,
+  ...EVERY_VISIT_UPKEEP,
 ];
 
 /** What was written between <T> and the export: rows added, changed and deleted, in tables of every kind. */
@@ -321,4 +325,5 @@ export const WRITTEN_SINCE_T: readonly string[] = [
   `DELETE FROM sessions WHERE id = 's2'`,
   `DELETE FROM counters`,
   `INSERT INTO staff (email, active, added_by, added_at) VALUES ('care@example.com', 1, 'owner@example.com', '${SINCE}')`,
+  ...EVERY_VISIT_UPKEEP,
 ];

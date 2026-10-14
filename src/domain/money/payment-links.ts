@@ -216,7 +216,7 @@ function notMade(visit: FittedVisit, product: string, why: "unpriced" | "code_ch
 interface UnsentRow extends LinkRow {
   appointment_id: string;
   tier: string;
-  person_id: string | null;
+  person_id: string;
   window_start: string;
 }
 
@@ -238,18 +238,16 @@ export async function sendUnsentLinks(db: D1Database, deps: LinkDeps, now: Date,
     .all<UnsentRow>();
   let sent = 0;
   for (const row of results) {
-    if (row.person_id === null) continue;
     if (!budget.spend(CALLS_PER_LINK)) break;
-    if ((await askRazorpay({ db, deps, link: row, visit: fittedVisitOf(row, row.person_id), now })) === "sent")
-      sent += 1;
+    if ((await askRazorpay({ db, deps, link: row, visit: fittedVisitOf(row), now })) === "sent") sent += 1;
   }
   return sent;
 }
 
-function fittedVisitOf(row: UnsentRow, personId: string): FittedVisit {
+function fittedVisitOf(row: UnsentRow): FittedVisit {
   return {
     appointmentId: row.appointment_id,
-    personId,
+    personId: row.person_id,
     tier: row.tier,
     day: indiaDate(new Date(row.window_start)),
   };
@@ -259,7 +257,6 @@ function fittedVisitOf(row: UnsentRow, personId: string): FittedVisit {
 type Resent = "resent" | "sent" | "not_texted" | "paid" | "refused" | "unavailable" | "not_found";
 
 interface ResendRow extends UnsentRow {
-  person_id: string;
   razorpay_link_id: string | null;
   paid_at: string | null;
 }
@@ -283,8 +280,7 @@ export async function resendLink(db: D1Database, deps: LinkDeps, linkId: string,
   if (row === null) return "not_found";
   if (row.paid_at !== null) return "paid";
   if (row.refused_at !== null) return "refused";
-  if (row.razorpay_link_id === null)
-    return askRazorpay({ db, deps, link: row, visit: fittedVisitOf(row, row.person_id), now });
+  if (row.razorpay_link_id === null) return askRazorpay({ db, deps, link: row, visit: fittedVisitOf(row), now });
   const client = await db.prepare("SELECT mobile_e164 FROM people WHERE id = ?1").bind(row.person_id).first<{
     mobile_e164: string;
   }>();

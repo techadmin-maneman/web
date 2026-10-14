@@ -37,6 +37,7 @@ import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { sqlLiteral, sqlRow } from "../../scripts/lib/sql-literal.ts";
 import { addDays, indiaDate } from "../../src/lib/india-time.ts";
+import { EVERY_VISIT_UPKEEP } from "../../scripts/lib/every-visit-upkeep.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -200,6 +201,8 @@ export async function seedStaging(): Promise<StagingFixture> {
        ${appointment(jobs.today, dates.today)},
        ${appointment(jobs.tomorrow, dates.tomorrow)},
        ${appointment(jobs.later, dates.later)};`,
+    // What the visits written here keep up beside them, as the domain's own writes keep it.
+    ...EVERY_VISIT_UPKEEP,
     `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at, device_label)
        VALUES ${sqlRow(sessionId, "technician", technicianId, now, now, expiresAt, "Chrome on the proof's desktop")};`,
     `INSERT INTO technician_devices (id, technician_id, device_id, session_id, label, created_at, last_seen_at)

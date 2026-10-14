@@ -6,6 +6,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { EnvironmentName } from "../../../src/config/environments.ts";
 import { EXPECTED_DATABASE_NAME } from "../../../src/config/environments.ts";
+import { aVisit } from "../fixtures/index.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -13,12 +14,7 @@ const START = "2026-09-21T04:30:00.000Z";
 const END = "2026-09-21T06:00:00.000Z";
 
 async function booked(status = "scheduled"): Promise<void> {
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, type, window_start, window_end, status, synced_at)
-     VALUES (?1, ?1, 'service', ?2, ?3, ?4, ?5)`,
-  )
-    .bind(VISIT, START, END, status, NOW.toISOString())
-    .run();
+  await aVisit({ id: VISIT, window_start: START, window_end: END, status, synced_at: NOW.toISOString() });
 }
 
 const close = (environment: EnvironmentName, body: object, devRoutes = true) =>

@@ -230,7 +230,7 @@ export async function queueReminders(
     .prepare(
       `SELECT a.id, a.person_id FROM appointments a
        WHERE a.window_start >= ?1 AND a.window_start < ?2 AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
-         AND a.deleted_at IS NULL AND a.person_id IS NOT NULL AND a.type IS NOT NULL
+         AND a.deleted_at IS NULL
          AND NOT EXISTS (SELECT 1 FROM outbound_messages m
            WHERE m.subject_id = a.id AND m.kind = 'visit_reminder' AND m.created_at >= ?3)
          AND ${came.sql}

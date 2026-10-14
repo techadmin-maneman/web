@@ -35,7 +35,7 @@ const CITY = "COALESCE(t.city, sp.city)";
 
 interface FitRow {
   readonly id: string;
-  readonly person_id: string | null;
+  readonly person_id: string;
   readonly type: string;
   readonly tier: string | null;
   readonly window_start: string;
@@ -93,12 +93,12 @@ async function codedFits(
   if (fits.length === 0) return [];
   const profiles = await latestFits(
     db,
-    fits.flatMap((fit) => fit.person_id ?? []),
+    fits.map((fit) => fit.person_id),
   );
   const specs = await hairSystemSpecs(db);
   return fits.map((fit) => ({
     fit,
-    code: codeFor(fit, fit.person_id === null ? undefined : profiles.get(fit.person_id), specs),
+    code: codeFor(fit, profiles.get(fit.person_id), specs),
   }));
 }
 

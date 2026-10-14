@@ -40,8 +40,8 @@ async function cancelledFirstFit(personId: string, cancel: CancelOwing): Promise
   const at = NOW.toISOString();
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
-       VALUES ('visit-cancelled', 'visit-cancelled', ?1, 'first_fit', 'cancelled', '2026-09-22T03:30:00.000Z', ?2)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+       VALUES ('visit-cancelled', 'visit-cancelled', ?1, 'first_fit', 'cancelled', '2026-09-22T03:30:00.000Z', '2026-09-22T05:00:00.000Z', ?2)`,
     ).bind(personId, at),
     env.DB.prepare(
       `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, status,

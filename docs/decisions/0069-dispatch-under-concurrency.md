@@ -47,8 +47,7 @@ A move still open five minutes on (`MOVE_CLAIM_SECONDS`) never finished; the Wor
 
 - `messaged`: the client agreed, and the new window was queued to go on WhatsApp;
 - `call`: he has not agreed, or never answered; nothing is queued, ops call him;
-- `unchanged`: only the technician changed;
-- `no_client`: the visit has no client on our records.
+- `unchanged`: only the technician changed.
 
 A move whose client has not heard of it waits on the Tasks board as **Call about a move** (`untold_move`) until ops say they called (`POST /api/dispatch/moves/{id}/told`, audited as `dispatch.client_told`). It is read from the rows, as every group is: a written move that changed the day or window, with no message queued or one that was never sent (`skipped` or `failed`), not yet marked told, still standing (no later change of time), on a visit still to happen. A message the consumer skips later, because the consent was withdrawn in between, puts the move back on the board. The group waits four hours, a placeholder (`docs/open-points.md`, item 61): a client who does not know his visit moved will not be home for it.
 

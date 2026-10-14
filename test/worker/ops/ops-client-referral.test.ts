@@ -175,9 +175,9 @@ describe("POST /api/clients/:id/referral", () => {
     async function fitted() {
       await env.DB.batch([
         env.DB.prepare(
-          `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
+          `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, fsm_modified_at,
              synced_at)
-           VALUES ('fit-1', 'fsm-fit-1', ?1, 'first_fit', 'completed', 'Completed', '2026-09-10T03:30:00.000Z', ?2, ?2)`,
+           VALUES ('fit-1', 'fsm-fit-1', ?1, 'first_fit', 'completed', 'Completed', '2026-09-10T03:30:00.000Z', '2026-09-10T05:00:00.000Z', ?2, ?2)`,
         ).bind(FRIEND, NOW.toISOString()),
         env.DB.prepare(
           "INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES ('visit-1', 'fit-1', 'done', ?1)",

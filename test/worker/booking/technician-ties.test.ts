@@ -26,11 +26,11 @@ async function person(): Promise<string> {
 async function booked(technicianId: string, date: string): Promise<void> {
   const id = crypto.randomUUID();
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, type, status, fsm_status, window_start, window_end, technician_id,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
        fsm_modified_at, synced_at)
-     VALUES (?1, ?1, 'service', 'scheduled', 'scheduled', ?2, ?3, ?4, ?5, ?5)`,
+     VALUES (?1, ?1, ?2, 'service', 'scheduled', 'scheduled', ?3, ?4, ?5, ?6, ?6)`,
   )
-    .bind(id, `${date}T06:30:00.000Z`, `${date}T08:00:00.000Z`, technicianId, NOW.toISOString())
+    .bind(id, await person(), `${date}T06:30:00.000Z`, `${date}T08:00:00.000Z`, technicianId, NOW.toISOString())
     .run();
 }
 

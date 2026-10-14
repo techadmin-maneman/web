@@ -72,8 +72,8 @@ describe("ops, when the audit entry cannot be written", () => {
   it("leaves a no-show undecided", async () => {
     await env.DB.batch([
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
-         VALUES (?1, ?1, ?2, 'service', 'terminated', ?3, ?3)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+         VALUES (?1, ?1, ?2, 'service', 'terminated', ?3, strftime('%Y-%m-%dT%H:%M:%fZ', ?3, '+90 minutes'), ?3)`,
       ).bind(VISIT, PERSON, AT),
       env.DB.prepare(
         `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, distance_m, radius_m, passed, created_at)
@@ -164,8 +164,8 @@ describe("ops, when the audit entry cannot be written", () => {
         "INSERT INTO referral_codes (code, person_id, created_at, updated_at) VALUES ('ROHIT1', ?1, ?2, ?2)",
       ).bind(PERSON, AT),
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
-         VALUES (?1, ?1, ?2, 'first_fit', 'completed', ?3, ?3)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+         VALUES (?1, ?1, ?2, 'first_fit', 'completed', ?3, strftime('%Y-%m-%dT%H:%M:%fZ', ?3, '+90 minutes'), ?3)`,
       ).bind(VISIT, FRIEND, AT),
       env.DB.prepare(
         "INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES ('v-1', ?1, 'done', ?2)",
@@ -278,8 +278,8 @@ describe("ops, when the audit entry cannot be written", () => {
          VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'TENPC', 'percent', 10, 0, 1, 0, 1, 'ops@localhost', ?1)`,
       ).bind(AT),
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
-         VALUES (?1, ?1, ?2, 'service', 'scheduled', '2026-09-23T04:30:00.000Z', ?3)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+         VALUES (?1, ?1, ?2, 'service', 'scheduled', '2026-09-23T04:30:00.000Z', '2026-09-23T06:00:00.000Z', ?3)`,
       ).bind(VISIT, PERSON, AT),
     ]);
     expect((await send(ops, "POST", "/api/discount-codes/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/off")).status).toBe(500);

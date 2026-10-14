@@ -331,11 +331,10 @@ function writtenBy(sql: string): Set<string> {
 }
 
 /**
- * Whether a table the statement never reads by that name has rows pointing at one it writes. An upsert into a table
- * with triggers, as appointments has since migration 0053, plans a look through each such table for rows pointing at
- * a key it changes; SQLite takes that look only when the key did change, and no upsert here changes its row's key
- * (test/worker/jobs/cron-reads.test.ts counts what is read). A table the statement reads under an alias shows in the plan
- * by the alias, so its own name there is the look.
+ * Whether a table the statement never reads by that name has rows pointing at one it writes. An insert whose rows
+ * come from a SELECT plans a look through each table pointing at the one it writes, for rows pointing at the key it
+ * writes; SQLite plans it and does not take it (test/worker/jobs/cron-reads.test.ts counts what is read). A table the
+ * statement reads under an alias shows in the plan by the alias, so its own name there is the look.
  */
 function pointsAtWritten(db: DatabaseSync, sql: string, table: string): boolean {
   if (tablesOf(sql).has(table)) return false;
@@ -452,27 +451,29 @@ describe("the check itself", () => {
     ]);
   });
 
-  it("lets through the look an upsert plans for rows pointing at a key it does not change", () => {
-    const upsert = `INSERT INTO appointments (id, fsm_id, status, fsm_status, fsm_modified_at, synced_at)
-      VALUES (?1, ?2, 'scheduled', 'Scheduled', ?3, ?3) ON CONFLICT (fsm_id) DO UPDATE SET status = excluded.status`;
-    const plan = (db.prepare(`EXPLAIN QUERY PLAN ${upsert}`).all() as { detail: string }[]).map((step) => step.detail);
-    expect(plan).toContain("SCAN stock_movements");
-    expect(fullReads(db, upsert)).toEqual([]);
+  it("lets through the look a write plans for rows pointing at the key it writes", () => {
+    const write = `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state,
+        queued_at)
+      SELECT ?1, ?2, ?3, 'visit_reminder', 'appointment', ?4, 'queued', ?2
+      WHERE NOT EXISTS (SELECT 1 FROM outbound_messages WHERE subject_id = ?4 AND kind = 'visit_reminder')`;
+    const plan = (db.prepare(`EXPLAIN QUERY PLAN ${write}`).all() as { detail: string }[]).map((step) => step.detail);
+    expect(plan).toContain("SCAN dispatch_moves");
+    expect(fullReads(db, write)).toEqual([]);
     // One that does read the table names it, and is caught.
-    expect(fullReads(db, `${upsert} RETURNING (SELECT MAX(note) FROM stock_movements)`)).toContain(
-      "SCAN stock_movements",
+    expect(fullReads(db, `${write} RETURNING (SELECT MAX(reason) FROM dispatch_moves)`)).toContain(
+      "SCAN dispatch_moves",
     );
   });
 
-  it("tells that look from the upsert's own read of the same table under an alias", () => {
-    const upsert = `INSERT INTO appointments (id, fsm_id, status, fsm_status, fsm_modified_at, synced_at, tier)
-      VALUES (?1, ?2, 'scheduled', 'Scheduled', ?3, ?3,
-        (SELECT h.tier FROM slot_holds h WHERE h.appointment_id = ?1 AND h.state = 'booked' LIMIT 1))
-      ON CONFLICT (fsm_id) DO UPDATE SET status = excluded.status`;
-    const plan = (db.prepare(`EXPLAIN QUERY PLAN ${upsert}`).all() as { detail: string }[]).map((step) => step.detail);
-    expect(plan).toContain("SCAN slot_holds");
-    expect(fullReads(db, upsert)).toEqual([]);
-    expect(fullReads(db, upsert.replace("h.appointment_id = ?1", "h.tier IS NOT NULL"))).toEqual(["SCAN h"]);
+  it("tells that look from the write's own read of the same table under an alias", () => {
+    const write = `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state,
+        queued_at)
+      SELECT ?1, ?2, ?3, 'visit_moved', 'appointment', ?4, 'queued', ?2
+      WHERE EXISTS (SELECT 1 FROM dispatch_moves m WHERE m.appointment_id = ?4)`;
+    const plan = (db.prepare(`EXPLAIN QUERY PLAN ${write}`).all() as { detail: string }[]).map((step) => step.detail);
+    expect(plan).toContain("SCAN dispatch_moves");
+    expect(fullReads(db, write)).toEqual([]);
+    expect(fullReads(db, write.replace("m.appointment_id = ?4", "m.reason IS NOT NULL"))).toEqual(["SCAN m EXISTS"]);
   });
 
   it("lets through a result SQLite makes itself from a subquery", () => {

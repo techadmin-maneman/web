@@ -147,7 +147,7 @@ export async function moveFromTheBoard(
   if (planned.kind !== "planned") return planned;
   const { move } = planned;
   const sameDay = move.date === indiaDate(new Date(move.job.window_start));
-  if (asksTheClient({ reason: input.reason, sameDay, hasClient: move.job.person_id !== null })) {
+  if (asksTheClient({ reason: input.reason, sameDay })) {
     return { kind: "ask_the_client" };
   }
   return writeMove(db, deps, move, now);
@@ -350,9 +350,9 @@ async function clientToldOf(
   const { job } = move;
   const notice = clientNotice({
     timeChanged: !move.keepsTime,
-    client: job.person_id === null ? null : { agreedToWhatsApp: await agreedToVisitMessages(db, job.id) },
+    client: { agreedToWhatsApp: await agreedToVisitMessages(db, job.id) },
   });
-  if (notice !== "messaged" || job.person_id === null) return { notice, message: null };
+  if (notice !== "messaged") return { notice, message: null };
   return {
     notice,
     message: visitMessage(db, { personId: job.person_id, appointmentId: job.id, kind: "visit_moved", now }),

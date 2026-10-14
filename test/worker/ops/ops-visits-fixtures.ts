@@ -3,6 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { makeCodes, type NewCodes } from "../../../src/domain/money/discount-codes.ts";
+import { aPerson } from "../fixtures/index.ts";
 import { fakeQueue, NOW, savedAddress } from "../helpers.ts";
 
 export const IMRAN = "t1";
@@ -28,6 +29,7 @@ export async function technician(id: string, name: string, initials: string) {
     .run();
 }
 
+/** A visit with a technician, the client's own or, given none, another client's. Its ID. */
 export async function visit(
   personId: string | null,
   type: string,
@@ -40,7 +42,15 @@ export async function visit(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
      VALUES (?1, ?1, ?2, ?3, ?4, ?5, ?5, ?6, ?7)`,
   )
-    .bind(id, personId, type, status, startsAt, technicianId, NOW.toISOString())
+    .bind(
+      id,
+      personId ?? (await aPerson({ name: "Kabir Sood" })).id,
+      type,
+      status,
+      startsAt,
+      technicianId,
+      NOW.toISOString(),
+    )
     .run();
   return id;
 }

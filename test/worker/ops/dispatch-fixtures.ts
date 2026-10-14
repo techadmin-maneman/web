@@ -43,7 +43,7 @@ export const insertJob = (
     type: Kind;
     start: string;
     technician: string | null;
-    person?: string | null;
+    person?: string;
     status?: string;
     city?: string;
     pincode?: string;
@@ -51,7 +51,7 @@ export const insertJob = (
 ) =>
   visit(id, {
     ...options,
-    person: options.person === undefined ? ROHIT : options.person,
+    person: options.person ?? ROHIT,
     minutes: MINUTES[options.type],
   });
 

@@ -50,7 +50,7 @@ export function blockOn(board: Pick<Board, "technicians">, appointmentId: string
 /** The client the board writes on a block: "Rohit M.". */
 const clientOf = (job: Job): string | null => (job.kind === "block" ? job.block.client : job.job.client);
 
-/** The client in full, with what reaches them; none for a visit with no client, or one erased. */
+/** The client in full, with what reaches them; none for one erased. */
 export const personOf = (job: Job): BoardClient | null => (job.kind === "block" ? job.block.person : job.job.person);
 
 /** The kind of visit a job is, where it has one. */
@@ -105,7 +105,7 @@ export function changesTime(job: Job, to: Target, landsAt: string | null = null)
 export function asksTheClientOf(job: Job, to: Target, reason: MoveReason | null): boolean {
   const { date } = whenOf(job);
   if (reason === null || date === null) return false;
-  return asksTheClient({ reason, sameDay: date === to.date, hasClient: personOf(job) !== null });
+  return asksTheClient({ reason, sameDay: date === to.date });
 }
 
 /** A visit done stays where it was worked, and one the technician has begun where they are working it. */

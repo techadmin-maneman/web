@@ -14,6 +14,7 @@ import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
 import { wrangler } from "./fitted.ts";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";
+import { EVERY_VISIT_UPKEEP } from "../../scripts/lib/every-visit-upkeep.ts";
 
 export interface Changing {
   /** Ten digits, as the login's field takes it. */
@@ -47,6 +48,8 @@ export async function seedChanging(): Promise<void> {
       `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end,
          technician_id, status, fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
          ${sqlRow(visit, `e2e-${visit}`, `e2e-order-${visit}`, person, "service", starts.toISOString(), ends.toISOString(), technician, "scheduled", "Scheduled", "Gurgaon", "122018", at, at)};`,
+      // What the visits written here keep up beside them, as the domain's own writes keep it.
+      ...EVERY_VISIT_UPKEEP,
       `INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, currency, method, status,
          captured_at, created_at, updated_at) VALUES
          ${sqlRow(payment, person, visit, `pay_${payment}`, 200000, "INR", "upi", "captured", at, at, at)};`,

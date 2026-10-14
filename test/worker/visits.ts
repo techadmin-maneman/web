@@ -4,8 +4,8 @@
 import { aVisit } from "./fixtures/index.ts";
 
 export interface VisitSeed {
-  /** Its client; null for one whose client was erased. */
-  readonly person: string | null;
+  /** Its client: every visit has one (migration 0168). */
+  readonly person: string;
   /** Its technician; null for one nobody is booked on yet. */
   readonly technician: string | null;
   /** When its window starts. */

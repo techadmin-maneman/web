@@ -1353,7 +1353,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Recorded; or, for a job with no client of ours, taken and nothing written. One taken from an older version than the latest still lands, and ops are told. */
+                /** @description Recorded. One taken from an older version than the latest still lands, and ops are told. */
                 202: {
                     headers: {
                         [name: string]: unknown;
@@ -2028,7 +2028,7 @@ export interface components {
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
-            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /**
              * @description Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount.
              * @enum {string}
@@ -2076,7 +2076,7 @@ export interface components {
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             /** @enum {string} */
-            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /**
              * @description Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount.
              * @enum {string}

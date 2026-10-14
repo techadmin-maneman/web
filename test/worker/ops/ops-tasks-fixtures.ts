@@ -119,9 +119,9 @@ export async function consultationRequest() {
 /** The consultation ops booked for them, which takes the request off the board. */
 export async function consultationFor(personId: string, status: string) {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, status, fsm_status, fsm_modified_at,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status, fsm_modified_at,
        synced_at)
-     VALUES (?1, 'fsm-appt-consult', ?2, 'consultation', '2026-09-23T03:30:00.000Z', ?3, 'Scheduled', ?4, ?4)`,
+     VALUES (?1, 'fsm-appt-consult', ?2, 'consultation', '2026-09-23T03:30:00.000Z', '2026-09-23T05:00:00.000Z', ?3, 'Scheduled', ?4, ?4)`,
   )
     .bind(CONSULTATION, personId, status, NOW.toISOString())
     .run();

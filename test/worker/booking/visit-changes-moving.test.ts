@@ -10,6 +10,7 @@ import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { appFor, failingAfterTheFirstBatch, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
 import { createLogger } from "../../../src/log.ts";
+import { aVisit } from "../fixtures/index.ts";
 import {
   PERSON,
   VISIT,
@@ -115,12 +116,14 @@ describe("moving a visit", () => {
   it("moves a visit to another technician in the city where its own is busy at the time chosen", async () => {
     await booked("service", THURSDAY_NOON, 200000);
     // Another client's visit fills Imran's Friday evening.
-    await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, type, status, window_start, window_end, technician_id, synced_at)
-       VALUES ('other', 'other', 'service', 'scheduled', '2026-09-25T10:30:00.000Z', '2026-09-25T12:00:00.000Z', 't1', ?1)`,
-    )
-      .bind(NOW.toISOString())
-      .run();
+    await aVisit({
+      id: "other",
+      window_start: "2026-09-25T10:30:00.000Z",
+      window_end: "2026-09-25T12:00:00.000Z",
+      technician_id: "t1",
+      service_city: null,
+      service_pincode: null,
+    });
     const app = client();
     const held = await hold(app, "service", "2026-09-25", "evening");
     expect(held).toMatchObject({ price: { amount: 0 }, technician: { name: "Vikram Sethi" } });

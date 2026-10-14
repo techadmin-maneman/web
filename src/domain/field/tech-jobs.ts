@@ -94,13 +94,13 @@ interface JobService {
 export interface JobRow {
   id: string;
   window_start: string;
-  window_end: string | null;
-  type: VisitType | null;
+  window_end: string;
+  type: VisitType;
   /** The visit's service within its kind; null where it names none. */
   tier: string | null;
   one_visit: OneVisitState | null;
   status: AppointmentStatus;
-  person_id: string | null;
+  person_id: string;
   service_city: string | null;
   /** The area of the pincode the visit is booked for, where the service area names it. */
   pincode_area: string | null;
@@ -257,8 +257,8 @@ export function listingOf({
     sector: row.pincode_area ?? row.locality ?? row.service_city,
     status: row.status,
     badge: badgeOf(row),
-    slots: row.type === null ? null : slotsFor(unitsFor(bookedMinutes(row))),
-    minutes: row.type === null ? null : bookedMinutes(row),
+    slots: slotsFor(unitsFor(bookedMinutes(row))),
+    minutes: bookedMinutes(row),
     unlocked: open,
     unlocks_at: unlocksAt(starts, unlockHour).toISOString(),
     client_name: open ? row.client_name : null,

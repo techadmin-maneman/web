@@ -9,7 +9,7 @@ export const aPerson = (row: RowOf<"people"> = {}) =>
     {
       id: crypto.randomUUID(),
       created_at: AT,
-      mobile_e164: `+91981${String(nextSerial()).padStart(7, "0")}`,
+      mobile_e164: `+91966${String(nextSerial()).padStart(7, "0")}`,
       name: "Rohit Malhotra",
     },
     row,

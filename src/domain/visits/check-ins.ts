@@ -61,9 +61,8 @@ export interface LatestArrival {
 /** The address a visit goes to, with the coordinates to measure against. */
 export async function visitAddress(
   db: D1Database,
-  personId: string | null,
+  personId: string,
 ): Promise<{ id: string; point: Point | null } | null> {
-  if (personId === null) return null;
   const row = await db
     .prepare(
       `SELECT id, lat, lng FROM addresses WHERE person_id = ?1 AND replaced_at IS NULL
@@ -78,7 +77,7 @@ export async function visitAddress(
 /** Measures the phone's position against the visit's address, and ops' waiver of the geofence. Nothing is written. */
 export async function measureArrival(
   db: D1Database,
-  input: { appointmentId: string; personId: string | null; device: Point; radiusM: number },
+  input: { appointmentId: string; personId: string; device: Point; radiusM: number },
 ): Promise<Measured> {
   const address = await visitAddress(db, input.personId);
   const point = address?.point ?? null;

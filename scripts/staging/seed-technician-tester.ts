@@ -28,6 +28,7 @@ import { indiaDate } from "../../src/lib/india-time.ts";
 import { d1Execute, d1Query } from "../lib/d1.ts";
 import { clearTester } from "../lib/technician-tester.ts";
 import { sqlLiteral, sqlRow } from "../lib/sql-literal.ts";
+import { EVERY_VISIT_UPKEEP } from "../lib/every-visit-upkeep.ts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -152,6 +153,8 @@ execute([
      ${appointment(jobs.today, dates.today)},
      ${appointment(jobs.tomorrow, dates.tomorrow)},
      ${appointment(jobs.later, dates.later)};`,
+  // What the visits written here keep up beside them, as the domain's own writes keep it.
+  ...EVERY_VISIT_UPKEEP,
 ]);
 
 // Never the numbers.

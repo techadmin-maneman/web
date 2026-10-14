@@ -31,10 +31,10 @@ export let deps: TestDependencies;
 export let messageQueue: ReturnType<typeof fakeQueue>;
 export let cookie: string;
 
-/** A job, Rohit's unless `person` says whose: null for a job that fills a technician's day for nobody we name. */
+/** A job, Rohit's unless `person` says whose. */
 export const insertJob = (
   id: string,
-  options: { start: string; technician?: string | null; type?: string; person?: string | null },
+  options: { start: string; technician?: string | null; type?: string; person?: string },
 ) =>
   visit(id, { person: PERSON, ...options, technician: options.technician === undefined ? IMRAN : options.technician });
 

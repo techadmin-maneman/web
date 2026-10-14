@@ -1057,8 +1057,7 @@
               "in_progress",
               "completed",
               "cancelled",
-              "terminated",
-              "other"
+              "terminated"
             ]
           },
           "not_home": {
@@ -2293,8 +2292,7 @@
               "in_progress",
               "completed",
               "cancelled",
-              "terminated",
-              "other"
+              "terminated"
             ]
           },
           "not_home": {

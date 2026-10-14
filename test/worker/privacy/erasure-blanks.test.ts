@@ -44,8 +44,8 @@ describe("erasure blanks what ops wrote about the client", () => {
         "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
       ).bind(at),
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, technician_id, synced_at)
-         VALUES ('visit-9', 'visit-9', ?1, 'service', 'terminated', '2026-09-19T03:30:00.000Z', 't1', ?2)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+         VALUES ('visit-9', 'visit-9', ?1, 'service', 'terminated', '2026-09-19T03:30:00.000Z', '2026-09-19T05:00:00.000Z', 't1', ?2)`,
       ).bind(FRIEND, at),
       env.DB.prepare(
         `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, radius_m, passed, created_at)
@@ -68,8 +68,8 @@ describe("erasure blanks what ops wrote about the client", () => {
          VALUES ('visit-row-9', 'visit-9', 'partial', ?1, 'ops@localhost', 'He had to leave for the hospital')`,
       ).bind(at),
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
-         VALUES ('visit-10', 'visit-10', ?1, 'service', 'cancelled', '2026-09-24T03:30:00.000Z', ?2)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+         VALUES ('visit-10', 'visit-10', ?1, 'service', 'cancelled', '2026-09-24T03:30:00.000Z', '2026-09-24T05:00:00.000Z', ?2)`,
       ).bind(FRIEND, at),
       env.DB.prepare(
         `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, created_at, cancelled_by,
@@ -199,8 +199,8 @@ describe("erasure blanks a check-in's coordinates", () => {
         "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('other', ?1, '+919810000077', 'Kabir Anand')",
       ).bind(at),
       env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, technician_id, synced_at)
-         VALUES ('visit-other', 'visit-other', 'other', 'service', 'completed', ?1, 't1', ?1)`,
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+         VALUES ('visit-other', 'visit-other', 'other', 'service', 'completed', ?1, strftime('%Y-%m-%dT%H:%M:%fZ', ?1, '+90 minutes'), 't1', ?1)`,
       ).bind(at),
       env.DB.prepare(
         `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, accuracy_m, radius_m, passed, created_at)

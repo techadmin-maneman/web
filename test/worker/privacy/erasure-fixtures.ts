@@ -93,8 +93,8 @@ export async function clientWithEverything(): Promise<string> {
       "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at) VALUES ('t1', 't1', 'Imran Qureshi', 'IQ', 1, ?1)",
     ).bind(at),
     env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, technician_id, synced_at)
-       VALUES (?1, ?1, ?2, 'service', 'completed', '2026-09-01T06:30:00.000Z', 't1', ?3)`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, technician_id, synced_at)
+       VALUES (?1, ?1, ?2, 'service', 'completed', '2026-09-01T06:30:00.000Z', '2026-09-01T08:00:00.000Z', 't1', ?3)`,
     ).bind(VISIT, personId, at),
     env.DB.prepare(
       `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode, lat, lng, access_notes, flat)
@@ -165,8 +165,8 @@ export async function databaseRefusesErasure(): Promise<void> {
 /** A visit still to happen, paid for, as a client's Monday service is. */
 export async function bookedVisit(personId: string): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
-     VALUES ('visit-live', 'visit-live', ?1, 'service', 'scheduled', '2026-09-28T03:30:00.000Z', ?2)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+     VALUES ('visit-live', 'visit-live', ?1, 'service', 'scheduled', '2026-09-28T03:30:00.000Z', '2026-09-28T05:00:00.000Z', ?2)`,
   )
     .bind(personId, NOW.toISOString())
     .run();
@@ -177,8 +177,8 @@ export async function fittedVisitUnpaid(personId: string): Promise<void> {
   const at = NOW.toISOString();
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at, one_visit)
-       VALUES ('visit-fitted', 'visit-fitted', ?1, 'first_fit', 'completed', '2026-09-14T03:30:00.000Z', ?2, 'booked')`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at, one_visit)
+       VALUES ('visit-fitted', 'visit-fitted', ?1, 'first_fit', 'completed', '2026-09-14T03:30:00.000Z', '2026-09-14T05:00:00.000Z', ?2, 'booked')`,
     ).bind(personId, at),
     env.DB.prepare(
       `INSERT INTO payment_links (id, appointment_id, tier, amount, amount_ex_gst, gst_percent, razorpay_link_id,

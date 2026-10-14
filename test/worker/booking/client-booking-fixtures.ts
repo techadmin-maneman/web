@@ -3,6 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
+import { aPerson } from "../fixtures/index.ts";
 import { appFor, fakeDependencies, NOW, savedAddress } from "../helpers.ts";
 
 export const IMRAN = "t1";
@@ -59,6 +60,7 @@ export async function client(
   return { id, cookie: `mm_app=${session}` };
 }
 
+/** A visit with a technician, the client's own or, given none, another client's. Its ID. */
 export async function visit(
   personId: string | null,
   type: string,
@@ -72,7 +74,16 @@ export async function visit(
        fsm_modified_at, synced_at)
      VALUES (?1, ?2, ?3, ?4, ?5, ?5, ?6, ?6, ?7, ?8, ?8)`,
   )
-    .bind(id, `fsm-${id}`, personId, type, status, startsAt, technicianId, NOW.toISOString())
+    .bind(
+      id,
+      `fsm-${id}`,
+      personId ?? (await aPerson({ name: "Kabir Sood" })).id,
+      type,
+      status,
+      startsAt,
+      technicianId,
+      NOW.toISOString(),
+    )
     .run();
   return id;
 }

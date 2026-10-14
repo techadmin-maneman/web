@@ -15,6 +15,7 @@ import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS } from "../technicians.ts";
 import { wrangler } from "./fitted.ts";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";
+import { EVERY_VISIT_UPKEEP } from "../../scripts/lib/every-visit-upkeep.ts";
 
 export interface Booker {
   /** Ten digits, as the login's field takes it. */
@@ -45,6 +46,8 @@ function bookerRows(mobile: string, fitted: string, now: string): string[] {
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
        ${sqlRow(fit, `e2e-${fit}`, person, "first_fit", `${fitted}T03:30:00.000Z`, `${fitted}T06:30:00.000Z`, E2E_TECHNICIANS.fitted.id, "completed", "Completed", "Gurgaon", "122018", now, now)};`,
+    // What the visits written here keep up beside them, as the domain's own writes keep it.
+    ...EVERY_VISIT_UPKEEP,
     `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode) VALUES
        ${sqlRow(crypto.randomUUID(), person, now, "House 4417, Tower C", "Sector 65", "Gurgaon", "122018")};`,
     // Both photograph consents already given in Profile, so the pay step asks for neither (ADR 0080) and is as

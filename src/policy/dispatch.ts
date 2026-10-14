@@ -55,11 +55,11 @@ export const keepsTheClientsNotice = (reason: MoveReason): boolean => reason !==
 
 /**
  * Whether a move ops make must be asked of the client rather than made
- * (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md): one to another day, of a visit with a client,
- * that the client did not ask for. Within the visit's own day the board moves at once.
+ * (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md): one to another day that the client did not
+ * ask for. Within the visit's own day the board moves at once.
  */
-export const asksTheClient = (move: { reason: MoveReason; sameDay: boolean; hasClient: boolean }): boolean =>
-  !move.sameDay && move.hasClient && move.reason !== "client_asked";
+export const asksTheClient = (move: { reason: MoveReason; sameDay: boolean }): boolean =>
+  !move.sameDay && move.reason !== "client_asked";
 
 /**
  * How far the technician has got on a visit, by the steps their phone has sent: they have arrived, started, or closed it (a no-show closes it too).
@@ -147,9 +147,8 @@ export function moveRefusal(day: TechnicianDay, window: BookingWindow, check: Mo
  *   messaged    the new window was queued to go on WhatsApp
  *   call        the client has not agreed to WhatsApp about their visits: ops call them
  *   unchanged   only the technician changed: the client's day and window are as they were
- *   no_client   the visit has no client on our records to tell
  */
-export const CLIENT_NOTICES = ["messaged", "call", "unchanged", "no_client"] as const;
+export const CLIENT_NOTICES = ["messaged", "call", "unchanged"] as const;
 export type ClientNotice = (typeof CLIENT_NOTICES)[number];
 
 /**
@@ -163,9 +162,8 @@ export type UntoldReason = (typeof UNTOLD_REASONS)[number];
 
 export function clientNotice(move: {
   readonly timeChanged: boolean;
-  readonly client: { readonly agreedToWhatsApp: boolean } | null;
+  readonly client: { readonly agreedToWhatsApp: boolean };
 }): ClientNotice {
   if (!move.timeChanged) return "unchanged";
-  if (move.client === null) return "no_client";
   return move.client.agreedToWhatsApp ? "messaged" : "call";
 }

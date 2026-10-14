@@ -27,7 +27,7 @@ export function doneNotice(job: Job, to: Target, moved: Moved): Notice {
   if (moved.client_notice === "unchanged") {
     return { tone: "done", text: copy.unchanged(name, to.technician.name), call: null };
   }
-  if (moved.client_notice === "call" && person !== null) {
+  if (person !== null) {
     return {
       tone: "done",
       text: copy.call(name, person.name, phoneWords(person.mobile)),

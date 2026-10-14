@@ -74,7 +74,7 @@ const MovedSchema = z
     move_id: z.uuid(),
     client_notice: z.enum(CLIENT_NOTICES).openapi({
       description:
-        "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.",
+        "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell.",
     }),
   })
   .strict()
@@ -270,7 +270,6 @@ async function propose(c: Context<AppEnv>, request: MoveRequest) {
   const input = inputOf(c, request);
   const now = c.var.deps.now();
   const outcome = await proposeMove(c.env.DB, { notify: (messageId) => queueMessage(c, messageId) }, input, now);
-  if (outcome.kind === "no_client") return refuse(c, "invalid_request", ["appointment_id"]);
   if (outcome.kind === "same_day") return refuse(c, "invalid_request", ["date"]);
   if (outcome.kind !== "proposed") return refusedMove(c, outcome);
   await auditStatement(

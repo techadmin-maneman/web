@@ -65,7 +65,7 @@ const WORK = `SELECT t.id AS technician_id, a.type AS type, sv.minutes AS servic
 
 interface Row {
   technician_id: string;
-  /** Null on the row a technician with no job in the period answers with, and on a visit of none of our four kinds. */
+  /** Null on the row a technician with no job in the period answers with. */
   type: VisitType | null;
   /** The length of the service its jobs were, where one is. */
   service_minutes: number | null;
@@ -86,8 +86,6 @@ export async function technicianWork(db: D1Database, period: { from: string; to:
 
   return [...byTechnician].map(([technicianId, rows]) => {
     const jobs = rows.reduce((total, row) => total + row.jobs, 0);
-    // A visit of none of our four kinds was planned for no length we know, so it
-    // counts as a job done and stands outside the average.
     const known = rows.flatMap((row) => (row.type === null ? [] : [{ ...row, type: row.type }]));
     const timed = known.reduce((total, row) => total + row.timed, 0);
     const minutes = known.reduce((total, row) => total + row.minutes, 0);

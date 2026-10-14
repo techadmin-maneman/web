@@ -10495,8 +10495,7 @@ Request body:
         "in_progress",
         "completed",
         "cancelled",
-        "terminated",
-        "other"
+        "terminated"
       ]
     },
     "not_home": {
@@ -10918,8 +10917,7 @@ Request body:
         "in_progress",
         "completed",
         "cancelled",
-        "terminated",
-        "other"
+        "terminated"
       ]
     },
     "not_home": {
@@ -19289,7 +19287,7 @@ Request body:
                 "type": "null"
               }
             ],
-            "description": "Null for a visit with no client on our records, and for a client who has been erased."
+            "description": "Null for a client who has been erased."
           },
           "badge": {
             "type": "string",
@@ -19561,7 +19559,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "Null for a visit with no client on our records, and for a client who has been erased."
+      "description": "Null for a client who has been erased."
     },
     "badge": {
       "type": "string",
@@ -19608,8 +19606,7 @@ Request body:
         "in_progress",
         "completed",
         "cancelled",
-        "terminated",
-        "other"
+        "terminated"
       ]
     },
     "notice_hours": {
@@ -20179,10 +20176,9 @@ Request body:
       "enum": [
         "messaged",
         "call",
-        "unchanged",
-        "no_client"
+        "unchanged"
       ],
-      "description": "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records."
+      "description": "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell."
     }
   },
   "required": [

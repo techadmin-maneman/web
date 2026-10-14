@@ -8,7 +8,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { NOW, markDatabase, request } from "../helpers.ts";
-import { IMRAN, JOB, SAMEER, working, type Working } from "../job-fixtures.ts";
+import { IMRAN, JOB, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 
 interface Usage {
   technicians: { technician_id: string; visits: number; over_percent: number | null; flagged: boolean }[];
@@ -31,8 +31,8 @@ const visits = (technician: string, count: number) =>
     env.DB.prepare(
       `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
          service_city, synced_at)
-       VALUES (?1, ?1, NULL, 'service', NULL, 'completed', ?2, ?2, ?3, 'Gurgaon', ?2)`,
-    ).bind(`${technician}-${String(index)}`, daysAgo(index + 1), technician),
+       VALUES (?1, ?1, ?4, 'service', NULL, 'completed', ?2, ?2, ?3, 'Gurgaon', ?2)`,
+    ).bind(`${technician}-${String(index)}`, daysAgo(index + 1), technician, PERSON),
   );
 
 /** What a technician's consumables step took from their kit. */

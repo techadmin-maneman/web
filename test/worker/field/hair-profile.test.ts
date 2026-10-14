@@ -241,21 +241,6 @@ describe("the technician's profile step", () => {
     expect(await card(job)).toMatchObject({ client: null, profile: null });
   });
 
-  it("is no step of a job with no client of ours, and a write for one stops nothing behind it", async () => {
-    const job = await consultation();
-    await env.DB.prepare("UPDATE appointments SET person_id = NULL WHERE id = ?1").bind(JOB).run();
-    expect((await card(job)).steps).not.toContain("profile");
-
-    // A phone that queued it before the client was unlinked: answered as taken, so its outcome follows.
-    const answer = await job.post(PROFILE, fromPhone(FIT, HISTORY), "event-profile-01");
-    expect(answer.status).toBe(202);
-    expect((await versions()).results).toEqual([]);
-    await job.post(`/api/tech/jobs/${JOB}/checklist`, { done: [] }, "event-checklist-01");
-    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [] }, "event-consumables-01");
-    const outcome = await job.post(`/api/tech/jobs/${JOB}/outcome`, { outcome: "done" }, "event-outcome-01");
-    expect(outcome.status).toBe(202);
-  });
-
   it("is refused on a visit that takes no profile, as the piece is on one that takes no piece", async () => {
     const job = await working("service");
     await job.workTo("checklist");

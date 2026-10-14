@@ -9,6 +9,7 @@ import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { PaymentUnanswered } from "../../../src/providers/provider-error.ts";
+import { aPerson } from "../fixtures/index.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
 import {
   PERSON,
@@ -258,8 +259,9 @@ describe("POST /api/appointments/:id/cancel", () => {
     await env.DB.prepare("UPDATE appointments SET status = 'in_progress' WHERE id = ?1").bind(VISIT).run();
     const app = client();
     expect((await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: false })).status).toBe(409);
-    await env.DB.prepare("UPDATE appointments SET status = 'scheduled', person_id = NULL WHERE id = ?1")
-      .bind(VISIT)
+    const other = await aPerson({ name: "Kabir Sood" });
+    await env.DB.prepare("UPDATE appointments SET status = 'scheduled', person_id = ?2 WHERE id = ?1")
+      .bind(VISIT, other.id)
       .run();
     expect((await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: false })).status).toBe(409);
     const off = client({}, { selfServeBooking: false });

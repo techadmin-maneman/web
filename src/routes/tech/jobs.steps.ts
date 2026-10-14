@@ -145,7 +145,7 @@ function registerArrival(app: App): void {
     }
     const landed = await resultOf(c, checkIn, landing);
     if (!landed.ok) return c.json(refusalOf(c, landed), 409);
-    if (job.personId !== null) await tellOfArrival(c, { personId: job.personId, appointmentId: job.id, arrivedAt: at });
+    await tellOfArrival(c, { personId: job.personId, appointmentId: job.id, arrivedAt: at });
     const waitEndsAt = noShowWaitEnds({ at, receivedAt: now }, job.windowStart, job.type, inputs.noShowWaitMin);
     return c.json({ passed: true, ...answer, wait_ends_at: waitEndsAt.toISOString(), accepted: landed.accepted }, 200);
   });
@@ -268,8 +268,7 @@ function registerSteps(app: App): void {
 function registerProfileAndOutcome(app: App): void {
   // A new version of the client's profile, once however often the phone sends it. Like a step it is refused for a
   // job that changed under the phone, before the start, and on a visit that takes none; unlike one it is no job event,
-  // and goes to no queue. A job with no client of ours has no profile step on its card; a write for one is answered
-  // 202 and writes nothing, so the phone's queue for the job still sends its after photographs and its outcome.
+  // and goes to no queue.
   app.openapi(profileRoute, async (c) => {
     const { technicianId } = technicianOf(c);
     const { deps } = c.var;
@@ -278,10 +277,6 @@ function registerProfileAndOutcome(app: App): void {
     const headers = c.req.valid("header");
     const eventId = headers["x-client-event-id"];
     const { personId } = job;
-    if (personId === null) {
-      c.var.log.info("profile_without_client", { appointment_id: job.id });
-      return c.json(await profileRecorded(c, job, eventId, false), 202);
-    }
     if (await profileLanded(c.env.DB, job.id, eventId)) {
       return c.json(await profileRecorded(c, job, eventId, true), 202);
     }

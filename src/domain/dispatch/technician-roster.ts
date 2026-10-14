@@ -176,7 +176,7 @@ interface ReturnedVisit {
   readonly appointment_id: string;
   readonly starts_at: string;
   readonly type: VisitType | null;
-  /** The client's name; null for a visit with no client on our records. */
+  /** The client's name; null for one erased. */
   readonly client: string | null;
 }
 
