@@ -2513,6 +2513,13 @@
     "text": "Continue"
   },
   {
+    "key": "site:tryon/tryOn.consent.tickFirst",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Tick the box to agree first."
+  },
+  {
     "key": "site:tryon/tryOn.consent.privacy.before",
     "surface": "site",
     "group": "Try-on",
@@ -2637,6 +2644,13 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "Sending"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.photoOnItsWay",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your photo is still on its way."
   },
   {
     "key": "site:tryon/tryOn.gate.errors.rateLimited",
