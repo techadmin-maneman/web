@@ -9,16 +9,17 @@ import { logIn } from "./signed-in.ts";
 import { tab } from "./fitted-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
-/** Taps a document and answers the type of the file the tab it opened was given. */
+/**
+ * Taps a document and answers the name of the file the tab it opened was given. Headless Chromium has no PDF viewer,
+ * so the tab saves the file rather than showing it; a phone shows it.
+ */
 async function opensTheFile(page: Page, document: Locator): Promise<string> {
   const opened = page.waitForEvent("popup");
   await document.click();
   const tab = await opened;
-  await expect.poll(() => tab.url()).toMatch(/^blob:/);
-  // Read from the tab, whose app.localhost only the browser resolves.
-  const type = await tab.evaluate(async () => (await (await fetch(window.location.href)).blob()).type);
+  const saved = await tab.waitForEvent("download");
   await tab.close();
-  return type;
+  return saved.suggestedFilename();
 }
 
 // The invoice appears beside the visit, and a free visit says so
@@ -33,7 +34,7 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   const invoice = page.getByRole("button", { name: "Tax invoice PDF, opens in a new tab", exact: true });
   await expect(invoice).toBeVisible();
   // It opens in a tab of its own once the API has given the file (apps/app/src/lib/documents.ts).
-  expect(await opensTheFile(page, invoice)).toBe("application/pdf");
+  expect(await opensTheFile(page, invoice)).toMatch(/\.pdf$/);
 
   // The first fit is billed, and its invoice has not been raised in the sixty days since: "within the hour" is
   // no longer true of it, so the client is told it is late and how to ask for it.
@@ -68,7 +69,7 @@ test("a visit to come offers itself to the client's calendar, at its window; one
   expect(ics).toContain(`UID:${client.next.id}@maneman.in`);
 
   await page.goto(`/visits/${client.service.id}`);
-  await expect(page.getByRole("link", { name: "Tax invoice" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tax invoice PDF, opens in a new tab", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: appCopy.calendar.google })).toHaveCount(0);
 });
 
@@ -184,7 +185,7 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await expect(page.getByText(client.reference)).toBeVisible();
   for (const name of ["Tax invoice", "Receipt"]) {
     const document = page.getByRole("button", { name: `${name} PDF, opens in a new tab`, exact: true });
-    expect(await opensTheFile(page, document)).toBe("application/pdf");
+    expect(await opensTheFile(page, document)).toMatch(/\.pdf$/);
   }
 
   await page.getByRole("link", { name: appCopy.payments.back }).click();
@@ -242,7 +243,7 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await expect(page.getByText("Service visit · 12 to 4 pm · Imran")).toBeVisible();
   await scan();
   await page.goto(`/visits/${client.service.id}`);
-  await expect(page.getByRole("link", { name: "Tax invoice" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tax invoice PDF, opens in a new tab", exact: true })).toBeVisible();
   await scan();
   // The same screen with no invoice to open, which reads as a line rather than a link.
   await page.goto(`/visits/${client.consultation.id}`);

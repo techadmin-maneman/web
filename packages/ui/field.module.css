@@ -46,6 +46,11 @@
   }
 
   .labelOnInk,
+  /* The hidden label is placed against the field, not against the page, which it would otherwise make taller. */
+  .holdsHidden {
+    position: relative;
+  }
+
   .inkWords .label,
   .inkWords .hint {
     color: var(--ink-muted);

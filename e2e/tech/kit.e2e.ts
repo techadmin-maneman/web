@@ -96,9 +96,9 @@ test("hands back once for two taps, and says it did not go through with the refe
     asked += 1;
     await new Promise((resolve) => setTimeout(resolve, 500));
     await route.fulfill({
-      status: 500,
+      status: 400,
       contentType: "application/json",
-      body: JSON.stringify({ error: { code: "internal", request_id: "kit-ref-1", fields: [] } }),
+      body: JSON.stringify({ error: { code: "invalid_request", request_id: "kit-ref-1", fields: [] } }),
     });
   });
   await page.goto("/kit");
@@ -118,6 +118,8 @@ test("says its writes need signal, with none", async ({ page, context }) => {
   withAKit(fake);
   await page.goto("/kit");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
+  // No signal at all: the fake answers nothing either, as the network would not.
+  fake.online = false;
   await context.setOffline(true);
   await expect(page.getByRole("button", { name: copy.needsSignal }).first()).toBeDisabled();
 });

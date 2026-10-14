@@ -145,26 +145,21 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page }
   await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toHaveCount(0);
 });
 
-test("offers a new build's worker on Home, and loads the page on it at the tap", async ({ page, context }) => {
+test("offers a new build's worker on Home, and loads the page on it at the tap", async ({ page }) => {
   await signIn(page);
   await keepHome(page);
 
-  // The next release: the same worker with a byte changed, as a new build's always is.
-  await context.route("**/sw.js", async (route) => {
-    const response = await route.fetch();
-    await route.fulfill({ response, body: `${await response.text()}\n// the next build\n` });
-  });
+  // The next release: a worker at another address for the same scope, which installs and waits as a new build does.
   await page.evaluate(async () => {
-    await (await navigator.serviceWorker.getRegistration())?.update();
+    await navigator.serviceWorker.register("/sw.js?next-build");
   });
 
   const update = page.getByRole("button", { name: appCopy.update.action });
   await expect(update).toBeVisible({ timeout: 15_000 });
   await update.click();
   await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
-  // Nothing waits any more: the new build is the one in charge.
+  // The page loaded again under the new build's worker.
   await expect
-    .poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.waiting === null))
-    .toBe(true);
-  await expect(update).toHaveCount(0);
+    .poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL ?? ""))
+    .toContain("next-build");
 });

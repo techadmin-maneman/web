@@ -10,7 +10,8 @@ import { classes } from "@maneman/ui/classes";
 import { Mark } from "@maneman/ui/Mark";
 import { ARRIVE } from "@maneman/ui/motion";
 import { Link } from "@maneman/ui/router";
-import type { ReactNode } from "react";
+import { focusIfLost } from "@maneman/ui/arrival";
+import { useEffect, type ReactNode } from "react";
 import { home, states, tabs, tabsLabel } from "../content.ts";
 import { TAB_ICONS } from "../icons.ts";
 import type { Tab } from "../route.ts";
@@ -68,6 +69,10 @@ function PageHeader({ header }: { header: Header }) {
 }
 
 export function Shell({ header, tab, footer, kept = false, children }: Props) {
+  // A page that loaded after the path changed draws its heading after App looked for it, so the page itself asks.
+  useEffect(() => {
+    focusIfLost(document.querySelector("h1"));
+  }, []);
   const { offline } = useSession();
   return (
     <div className={styles.shell}>

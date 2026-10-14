@@ -29,6 +29,7 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 
 | Script                                          | What it does                                                                | Run as                 | Writes                                |
 | ----------------------------------------------- | --------------------------------------------------------------------------- | ---------------------- | ------------------------------------- |
+| `app-vite-config.ts`                            | what the three apps' Vite builds share, which each app's config calls       | each app's Vite config | no                                    |
 | `build.ts`                                      | the site for local and staging, and each app for every environment          | `npm run build`        | `dist/`                               |
 | `build-site.ts`                                 | the public site for one environment                                         | `npm run build:site`   | `site/dist/`                          |
 | `build-app.ts`, `build-ops.ts`, `build-tech.ts` | one app for one environment, with its budgets                               | `npm run build:<app>`  | `apps/<app>/dist/`                    |
