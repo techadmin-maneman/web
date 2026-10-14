@@ -219,8 +219,8 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO cron_jobs (job, failed_runs) VALUES ('sweeper', 1)`,
   `INSERT INTO cron_runs (id, started_at, completed_at, failed_jobs) VALUES (1, '${AT}', '${AT}', 0)`,
   `INSERT INTO credit_expiry_cursor (id, open_from_at, updated_at) VALUES (1, '${AT}', '${AT}')`,
-  `INSERT INTO checklist_items (visit_type, code, label, position, set_by, set_at)
-     VALUES ('first_fit', 'shave', 'Shave the area', 1, 'ops@example.com', '${AT}')`,
+  `INSERT INTO checklist_items (visit_type, code, label, client_label, position, set_by, set_at)
+     VALUES ('first_fit', 'shave', 'Shave the area', 'Area shaved', 1, 'ops@example.com', '${AT}')`,
   `INSERT INTO partial_reasons (code, label, position, set_by, set_at)
      VALUES ('client_left', 'The client had to leave', 1, 'ops@example.com', '${AT}')`,
   `INSERT INTO lost_reasons (code, label, position, set_by, set_at)

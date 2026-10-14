@@ -231,7 +231,7 @@ test("deletes a technician added by mistake, once asked, and goes back to the ro
   await main.getByRole("button", { name: "Delete Imran Qureshi" }).click();
   await expect(main.getByText("Delete Imran Qureshi? This can’t be undone.")).toBeVisible();
   roster.current = { ...TECHNICIANS, technicians: TECHNICIANS.technicians.filter((each) => each.id !== IMRAN) };
-  await main.getByRole("button", { name: "Delete permanently" }).click();
+  await main.getByRole("button", { name: "Delete", exact: true }).click();
 
   await expect(page).toHaveURL(/\/technicians$/);
   await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
@@ -241,7 +241,7 @@ test("says to switch off instead a technician with work on record", async ({ pag
   await openWith(page, { [DELETE_IT]: fails(409, "in_use") });
   const main = await pageOf(page, "Imran Qureshi");
   await main.getByRole("button", { name: "Delete Imran Qureshi" }).click();
-  await main.getByRole("button", { name: "Delete permanently" }).click();
+  await main.getByRole("button", { name: "Delete", exact: true }).click();
 
   await expect(main.getByRole("alert")).toHaveText(opsCopy.technicians.inUse);
   await expect(main.getByRole("button", { name: "Switch off Imran Qureshi" })).toBeVisible();

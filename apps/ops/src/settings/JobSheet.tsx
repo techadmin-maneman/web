@@ -83,6 +83,7 @@ export function JobSheet() {
           most={current.max_checklist_items}
           longest={current.max_label}
           itemLabel={copy.item}
+          clientLabel={copy.clientWords}
           addLabel={copy.add}
           send={(items) => settingsApi.setChecklist(kind, items)}
           pick={(saved) => saved.checklists.find((each) => each.visit_type === kind) ?? checklist}

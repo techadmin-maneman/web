@@ -496,7 +496,7 @@ Indexes:
 
 Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
 
-Made by `0049_consumables_and_stock.sql`.
+Made by `0049_consumables_and_stock.sql`; changed by `0177_checklist_client_words.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -507,6 +507,7 @@ Made by `0049_consumables_and_stock.sql`.
 | `retired_at` | TEXT | yes |  |  |  |
 | `set_by` | TEXT | no |  |  |  |
 | `set_at` | TEXT | no |  |  |  |
+| `client_label` | TEXT | yes |  |  | A checklist item's words on the client's record, under "What was done", which are not the technician's: "Refitted" where the technician ticks "Hair system refitted". Null for an item only the technician needs, such as checking a new hair system against its label. An item already saved keeps showing the client what it showed before. |
 
 ## cities
 

@@ -86,7 +86,7 @@ test("erases a client from their page, once ops confirm the request came from th
 
   const confirm = page.getByRole("group", { name: `Erasing ${CLIENT.name}` });
   await expect(confirm).toBeFocused();
-  await expect(confirm).toContainText("Invoices in Books, for eight years, by law");
+  await expect(confirm).toContainText("Invoices in Books, for 8 years, by law");
   const now = confirm.getByRole("button", { name: opsCopy.clients.erasure.confirm(CLIENT.name) });
   await expect(now).toBeDisabled();
   await confirm.getByRole("checkbox", { name: opsCopy.clients.erasure.checked }).check();

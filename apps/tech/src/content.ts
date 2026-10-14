@@ -13,7 +13,7 @@ export const signIn = {
   prefix: "+91",
   mobileLabel: "Mobile number",
   mobilePlaceholder: "98110 00000",
-  mobileError: "Enter your ten-digit mobile number.",
+  mobileError: "Enter your 10-digit mobile number.",
   codeLabel: "Code",
   submit: "Sign in",
   // The Prototype draws one screen and no errors.
@@ -30,7 +30,7 @@ export const signIn = {
   attemptsLeft: (left: number) => `That code didn’t match. ${String(left)} ${left === 1 ? "try" : "tries"} left.`,
   sendCode: "Send the code",
   // The Prototype shows the code field from the start.
-  codeSent: "A six-digit code is on its way.",
+  codeSent: "A 6-digit code is on its way.",
   // The Prototype draws no way back from a code sent to the wrong number, or one that never came.
   changeNumber: "Change number",
   resend: "Send a new code",

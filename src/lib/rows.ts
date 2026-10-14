@@ -171,6 +171,7 @@ export interface Rows {
     readonly retired_at: string | null;
     readonly set_by: string;
     readonly set_at: string;
+    readonly client_label: string | null;
   };
   readonly cities: {
     readonly name: string;

@@ -47,7 +47,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await expect(page.getByText("1 h 25 m")).toBeVisible();
   // The visit's "What was done": the checklist the technician ticked, from their phone.
   await expect(page.getByRole("term").filter({ hasText: appCopy.visits.detail.done }).locator("+ dd")).toHaveText(
-    "Hair system removed, Scalp cleaned, Hair system cleaned.",
+    "Hair system removed, scalp cleaned, hair system cleaned.",
   );
   // The row shows the thumbnail the technician's phone made, not the whole photograph (ADR 0093).
   const front = page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` });

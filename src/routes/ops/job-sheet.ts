@@ -9,7 +9,7 @@
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { JOB_SHEET_BOUNDS } from "../../config/job-sheet.ts";
+import { JOB_SHEET_BOUNDS, type JobSheetItem } from "../../config/job-sheet.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import {
   jobSheet,
@@ -25,21 +25,29 @@ import { json } from "../../http/openapi.ts";
 
 const ItemSchema = z.object({ code: z.string(), label: z.string() }).strict();
 
+const ChecklistItemSchema = ItemSchema.extend({
+  client: z.union([z.string(), z.null()]).openapi({
+    description: "What the client's record says was done; null for an item only the technician needs.",
+  }),
+}).strict();
+
 /** What every list carries, a checklist and the reasons alike. */
-const LIST = {
-  items: z.array(ItemSchema).openapi({ description: "What the technician is offered, in order." }),
-  retired: z.array(ItemSchema).openapi({
+const listOf = <Item extends z.ZodType>(item: Item) => ({
+  items: z.array(item).openapi({ description: "What the technician is offered, in order." }),
+  retired: z.array(item).openapi({
     description: "Taken off by ops, and still understood: a phone may have queued one before it knew.",
   }),
   set_by: z.union([z.string(), z.null()]).openapi({ description: "Null while the committed list stands." }),
   set_at: z.union([z.iso.datetime(), z.null()]),
-};
+});
+
+const LIST = listOf(ItemSchema);
 
 const JobSheetSchema = z
   .object({
     checklists: z.array(
       z
-        .object({ visit_type: z.enum(VISIT_TYPES), ...LIST })
+        .object({ visit_type: z.enum(VISIT_TYPES), ...listOf(ChecklistItemSchema) })
         .strict()
         .openapi("JobSheetChecklist"),
     ),
@@ -63,35 +71,54 @@ const Label = z
   .max(JOB_SHEET_BOUNDS.maxLabel)
   .regex(/^[^\p{Cc}]+$/u);
 
+const ItemSentSchema = z
+  .object({
+    code: z.string().min(1).max(64).optional().openapi({
+      description: "An item already on the list, or retired from it, keeps its code; a new one sends none.",
+    }),
+    label: Label,
+  })
+  .strict();
+
+const MOST = Math.max(
+  JOB_SHEET_BOUNDS.maxChecklistItems,
+  JOB_SHEET_BOUNDS.maxPartialReasons,
+  JOB_SHEET_BOUNDS.maxLostReasons,
+);
+
 const ListChangeSchema = z
+  .object({ items: z.array(ItemSentSchema).min(1).max(MOST) })
+  .strict()
+  .openapi("JobSheetListChange", { description: "The whole list, in its order. An item left out is retired." });
+
+const ChecklistChangeSchema = z
   .object({
     items: z
       .array(
-        z
-          .object({
-            code: z.string().min(1).max(64).optional().openapi({
-              description: "An item already on the list, or retired from it, keeps its code; a new one sends none.",
+        ItemSentSchema.extend({
+          client: z
+            .union([Label, z.null()])
+            .optional()
+            .openapi({
+              description:
+                "What the client's record says was done, null for an item only the technician needs. Sent without, " +
+                "the client reads the technician's words.",
             }),
-            label: Label,
-          })
-          .strict(),
+        }).strict(),
       )
       .min(1)
-      .max(
-        Math.max(
-          JOB_SHEET_BOUNDS.maxChecklistItems,
-          JOB_SHEET_BOUNDS.maxPartialReasons,
-          JOB_SHEET_BOUNDS.maxLostReasons,
-        ),
-      ),
+      .max(MOST),
   })
   .strict()
-  .openapi("JobSheetListChange", { description: "The whole list, in its order. An item left out is retired." });
+  .openapi("JobSheetChecklistChange", {
+    description: "The whole checklist, in its order. An item left out is retired.",
+  });
 
 const SHEET = { description: "The job sheet as it now stands", ...json(JobSheetSchema) };
 const REFUSED = errorResponse(
   "invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one " +
-    "that is empty, too long, twice on the list, or a code the list never held",
+    "that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a " +
+    "checklist item's client words empty or too long",
 );
 
 const sheetRoute = opsRoute({
@@ -107,7 +134,7 @@ const checklistRoute = opsRoute({
   summary: "One kind of visit's checklist, the whole list in its order",
   request: {
     params: z.object({ visit_type: z.enum(VISIT_TYPES) }),
-    body: { required: true, ...json(ListChangeSchema) },
+    body: { required: true, ...json(ChecklistChangeSchema) },
   },
   responses: { 200: SHEET, 400: REFUSED },
 });
@@ -135,8 +162,17 @@ const listBody = (list: JobSheetList) => ({
   set_at: list.setAt,
 });
 
+/** A checklist's item with its client words: the technician's, where neither the code nor ops have given any. */
+const checklistItem = (item: JobSheetItem) => ({ code: item.id, label: item.label, client: item.client ?? null });
+
+const checklistBody = (list: JobSheetList) => ({
+  ...listBody(list),
+  items: list.items.map(checklistItem),
+  retired: list.retired.map(checklistItem),
+});
+
 const sheetBody = (sheet: JobSheet) => ({
-  checklists: VISIT_TYPES.map((type) => ({ visit_type: type, ...listBody(sheet.checklists[type]) })),
+  checklists: VISIT_TYPES.map((type) => ({ visit_type: type, ...checklistBody(sheet.checklists[type]) })),
   partial_reasons: listBody(sheet.partialReasons),
   lost_reasons: listBody(sheet.lostReasons),
   max_checklist_items: JOB_SHEET_BOUNDS.maxChecklistItems,
@@ -146,7 +182,7 @@ const sheetBody = (sheet: JobSheet) => ({
 });
 
 /** Saves one list and answers the whole sheet, or the fields refused. */
-async function save(c: Context<AppEnv>, which: ListName, items: z.infer<typeof ListChangeSchema>["items"]) {
+async function save(c: Context<AppEnv>, which: ListName, items: z.infer<typeof ChecklistChangeSchema>["items"]) {
   const saved = await saveList(c.env.DB, {
     which,
     items,

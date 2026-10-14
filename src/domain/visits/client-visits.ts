@@ -333,10 +333,10 @@ async function invoiceHeld(
 
 /**
  * What was done: the items of the job sheet's checklist that the technician
- * ticked, in the words ops gave them in the console, from the last checklist their
+ * ticked, in the client's words ops gave them in the console, from the last checklist their
  * phone sent that was not superseded; an item ops have since taken off is still
- * named. The committed list (src/config/job-sheet.ts) stands until ops save one.
- * A visit closed with no checklist has none.
+ * named, and one only the technician needs is not. The committed list (src/config/job-sheet.ts) stands until ops
+ * save one. A visit closed with no checklist has none.
  */
 async function whatWasDone(db: D1Database, visitId: string, type: VisitType | null): Promise<string[] | null> {
   if (type === null) return null;
@@ -350,7 +350,10 @@ async function whatWasDone(db: D1Database, visitId: string, type: VisitType | nu
   if (event === null) return null;
   const ticked = new Set(tickedItemsOf(JSON.parse(event.body)));
   const list = (await jobSheet(db)).checklists[type];
-  return [...list.items, ...list.retired].filter((item) => ticked.has(item.id)).map((item) => item.label);
+  return [...list.items, ...list.retired].flatMap((item) => {
+    const words = item.client === undefined ? item.label : item.client;
+    return ticked.has(item.id) && words !== null ? [words] : [];
+  });
 }
 
 /** One of the client's visits with its photographs; null for a visit that is not theirs. */

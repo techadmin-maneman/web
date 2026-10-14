@@ -7,6 +7,7 @@ import { type VisitType } from "../../config/visit-types.ts";
 import { offeredForJob, serviceOfJob } from "../../domain/inventory/consumables.ts";
 import { kitHairSystems } from "../../domain/inventory/hair-systems.ts";
 import { kitUnits } from "../../domain/inventory/stock-units.ts";
+import type { JobSheetItem } from "../../config/job-sheet.ts";
 import { checklistOf, declinedChecklistOf, jobSheet } from "../../domain/field/job-sheet-settings.ts";
 import { jobsOn } from "../../domain/field/tech-jobs.ts";
 import { jobDetail, lastVisitPhoto } from "../../domain/field/job-card.ts";
@@ -48,6 +49,9 @@ async function kitOf(db: D1Database, technicianId: string, job: { readonly id: s
   }));
 }
 
+/** A checklist as the phone shows it: the technician's words, not the client's. */
+const forThePhone = (items: readonly JobSheetItem[]) => items.map(({ id, label }) => ({ id, label }));
+
 export function registerTechJobReads(app: App): void {
   app.openapi(jobsRoute, async (c) => {
     const { technicianId } = technicianOf(c);
@@ -86,8 +90,8 @@ export function registerTechJobReads(app: App): void {
       {
         ...job,
         checkin_radius_m: inputsIn(inputs, rules).checkinRadiusM,
-        checklist: [...checklistOf(sheet, { type, oneVisit: job.one_visit }).items],
-        checklist_if_declined: job.one_visit ? [...declinedChecklistOf(sheet).items] : [],
+        checklist: forThePhone(checklistOf(sheet, { type, oneVisit: job.one_visit }).items),
+        checklist_if_declined: job.one_visit ? forThePhone(declinedChecklistOf(sheet).items) : [],
         partial_reasons: [...sheet.partialReasons.items],
         lost_reasons: type === "consultation" || job.one_visit ? [...sheet.lostReasons.items] : [],
         consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),

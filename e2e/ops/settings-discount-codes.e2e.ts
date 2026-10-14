@@ -79,7 +79,7 @@ test.describe("the discount codes", () => {
     });
     await row(page, "TYPO10").getByRole("button", { name: "Delete TYPO10" }).click();
     await expect(page.getByText("Delete TYPO10? This can’t be undone.")).toBeVisible();
-    await page.getByRole("button", { name: "Delete permanently" }).click();
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
 
     await expect(page.getByRole("status").filter({ hasText: "Deleted." })).toBeVisible();
     await expect(row(page, "TYPO10")).toHaveCount(0);

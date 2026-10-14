@@ -45,8 +45,9 @@ export const visits = {
     duration: "Duration",
     type: "Type",
     done: "What was done",
-    /** The checklist the technician ticked, as one line, as the visit's record writes it. */
-    doneLine: (items: readonly string[]) => `${items.join(", ")}.`,
+    /** The checklist the technician ticked, as one sentence: "Hair system removed, scalp cleaned, cut and styled." */
+    doneLine: (items: readonly string[]) =>
+      `${items.map((item, index) => (index === 0 ? item : item.charAt(0).toLowerCase() + item.slice(1))).join(", ")}.`,
     /** The things a finished visit can say about its invoice (ADR 0056). */
     invoice: {
       open: "Tax invoice",

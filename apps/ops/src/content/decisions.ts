@@ -42,13 +42,13 @@ export const deletions = {
      * A queue holds many rows and each button says the same thing, so the
      * destructive one names whose account it is, as the Technicians page's revoke does.
      */
-    deleteLabel: (name: string) => `Delete the account of ${name}`,
+    deleteLabel: (name: string) => `Erase client: ${name}`,
     rejectLabel: (name: string) => `Reject the request of ${name}`,
     confirmLabel: (name: string) => `Erasing ${name}`,
     warning: "This erases the client now and tells them on WhatsApp. It can’t be undone.",
     /** What the erasure destroys, in the order src/domain/privacy/erasure.ts destroys it. */
     deleted: {
-      title: "Deleted",
+      title: "Erased",
       items: [
         "Every photo: visits and try-ons, files and records",
         "Their referral card. Invites they sent show the Mane Man example card",
@@ -57,12 +57,12 @@ export const deletions = {
         "Their sessions. They’re signed out at once",
       ],
     },
-    /** What stays, and why. The eight years are the app's own words to the client. */
+    /** What stays, and why. The 8 years are the app's own words to the client. */
     kept: {
       title: "Kept",
       items: [
         "Visits, payments, refunds and credits, as records",
-        "Invoices in Books, for eight years, by law",
+        "Invoices in Books, for 8 years, by law",
         "CRM and Books records, blanked within the hour",
       ],
     },
@@ -88,9 +88,9 @@ export const deletions = {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already decided."),
       /** The API refuses while something is still owed (docs/decisions/0066-erasure-all-or-nothing.md). */
-      visit_booked: "They have a visit booked. Cancel it on their Visits tab, which refunds them, then delete.",
-      payment_held: "A refund is still owed. Delete once Payments shows it refunded.",
-      payment_owed: "A payment link is still unpaid. Delete once it’s paid.",
+      visit_booked: "They have a visit booked. Cancel it on their Visits tab, which refunds them, then erase.",
+      payment_held: "A refund is still owed. Erase once Payments shows it refunded.",
+      payment_owed: "A payment link is still unpaid. Erase once it’s paid.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,

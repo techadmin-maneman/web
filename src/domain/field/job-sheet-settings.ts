@@ -43,6 +43,8 @@ interface Row {
   visit_type: VisitType | null;
   code: string;
   label: string;
+  /** A checklist's alone: the reasons are never on the client's record. */
+  client_label?: string | null;
   retired_at: string | null;
   set_by: string;
   set_at: string;
@@ -58,7 +60,10 @@ const committed = (items: readonly JobSheetItem[]): JobSheetList => ({
 /** A list from its rows, in their order; the committed one where there are none. */
 function listOf(rows: readonly Row[], fallback: readonly JobSheetItem[]): JobSheetList {
   if (rows.length === 0) return committed(fallback);
-  const item = (row: Row): JobSheetItem => ({ id: row.code, label: row.label });
+  const item = (row: Row): JobSheetItem =>
+    row.client_label === undefined
+      ? { id: row.code, label: row.label }
+      : { id: row.code, label: row.label, client: row.client_label };
   const latest = rows.reduce((last, row) => (row.set_at > last.set_at ? row : last));
   return {
     items: rows.filter((row) => row.retired_at === null).map(item),
@@ -72,7 +77,7 @@ function listOf(rows: readonly Row[], fallback: readonly JobSheetItem[]): JobShe
 export async function jobSheet(db: D1Database): Promise<JobSheet> {
   const [checklists, reasons, lost] = await db.batch<Row>([
     db.prepare(
-      `SELECT visit_type, code, label, retired_at, set_by, set_at FROM checklist_items
+      `SELECT visit_type, code, label, client_label, retired_at, set_by, set_at FROM checklist_items
        ORDER BY visit_type, position, code`,
     ),
     db.prepare(
@@ -127,10 +132,14 @@ export const knownCodes = (list: JobSheetList): Set<string> =>
 const labelsOf = (list: JobSheetList): Map<string, string> =>
   new Map([...list.retired, ...list.items].map((item) => [item.id, item.label]));
 
-/** One item ops send: one already on the list by its code, or a new one by its words alone. */
+/**
+ * One item ops send: one already on the list by its code, or a new one by its words alone. A checklist's item may say
+ * what the client reads, null for none; sent without, the client reads the technician's words.
+ */
 interface ItemSent {
   readonly code?: string | undefined;
   readonly label: string;
+  readonly client?: string | null | undefined;
 }
 
 /** Which list: a kind of visit's checklist, the partial reasons, or the lost reasons. */
@@ -173,6 +182,10 @@ function refusalsOf(which: ListName, sent: readonly ItemSent[], known: ReadonlyS
       fields.push(`items.${String(index)}.label`);
     }
     labels.add(label);
+    const client = item.client?.trim();
+    if (client !== undefined && (client === "" || client.length > JOB_SHEET_BOUNDS.maxLabel)) {
+      fields.push(`items.${String(index)}.client`);
+    }
     if (item.code === undefined) return;
     if (!known.has(item.code) || codes.has(item.code)) fields.push(`items.${String(index)}.code`);
     codes.add(item.code);
@@ -207,7 +220,9 @@ export async function saveList(
   const kept: JobSheetItem[] = items.map((item) => {
     const code = item.code ?? codeFor(item.label.trim(), taken);
     taken.add(code);
-    return { id: code, label: item.label.trim() };
+    const label = item.label.trim();
+    if (which.list !== "checklist") return { id: code, label };
+    return { id: code, label, client: item.client === undefined ? label : (item.client?.trim() ?? null) };
   });
   const keptCodes = new Set(kept.map((item) => item.id));
   const wasLabels = labelsOf(was);
@@ -247,12 +262,13 @@ export async function saveList(
       which.list === "checklist"
         ? db
             .prepare(
-              `INSERT INTO checklist_items (visit_type, code, label, position, retired_at, set_by, set_at)
-               VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-               ON CONFLICT (visit_type, code) DO UPDATE SET label = excluded.label, position = excluded.position,
+              `INSERT INTO checklist_items (visit_type, code, label, client_label, position, retired_at, set_by, set_at)
+               VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+               ON CONFLICT (visit_type, code) DO UPDATE SET label = excluded.label,
+                 client_label = excluded.client_label, position = excluded.position,
                  retired_at = ${RETIRED_AT("checklist_items")}, set_by = excluded.set_by, set_at = excluded.set_at`,
             )
-            .bind(which.visitType, row.id, row.label, row.position, row.retiredAt, actor.id, at)
+            .bind(which.visitType, row.id, row.label, row.client ?? null, row.position, row.retiredAt, actor.id, at)
         : db
             .prepare(
               `INSERT INTO ${REASON_LISTS[which.list].table} (code, label, position, retired_at, set_by, set_at)

@@ -138,7 +138,7 @@ test("the code request carries the phone’s own ID, and a wrong code is not an 
   const unlistedBody = (await unlisted).postDataJSON() as { device_id?: string };
   record("otp for an unlisted number", { device_id_sent: unlistedBody.device_id !== undefined });
   expect(unlistedBody.device_id ?? "").toMatch(/^[A-Za-z0-9_-]{8,64}$/);
-  await expect(page.getByText("A six-digit code is on its way.")).toBeVisible();
+  await expect(page.getByText("A 6-digit code is on its way.")).toBeVisible();
 
   // That request may read FSM's list again, which never names the seeded technician. They are written by hand, so
   // the sync leaves them active (migration 0046). Before, it could switch them off, and an inactive technician's

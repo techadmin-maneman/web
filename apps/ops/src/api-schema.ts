@@ -11802,7 +11802,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["JobSheetListChange"];
+                    "application/json": components["schemas"]["JobSheetChecklistChange"];
                 };
             };
             responses: {
@@ -11815,7 +11815,7 @@ export interface paths {
                         "application/json": components["schemas"]["JobSheet"];
                     };
                 };
-                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held */
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -11873,7 +11873,7 @@ export interface paths {
                         "application/json": components["schemas"]["JobSheet"];
                     };
                 };
-                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held */
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -11931,7 +11931,7 @@ export interface paths {
                         "application/json": components["schemas"]["JobSheet"];
                     };
                 };
-                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held */
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -18668,11 +18668,15 @@ export interface components {
             items: {
                 code: string;
                 label: string;
+                /** @description What the client's record says was done; null for an item only the technician needs. */
+                client: string | null;
             }[];
             /** @description Taken off by ops, and still understood: a phone may have queued one before it knew. */
             retired: {
                 code: string;
                 label: string;
+                /** @description What the client's record says was done; null for an item only the technician needs. */
+                client: string | null;
             }[];
             /** @description Null while the committed list stands. */
             set_by: string | null;
@@ -18692,6 +18696,16 @@ export interface components {
             /** @description Null while the committed list stands. */
             set_by: string | null;
             set_at: string | null;
+        };
+        /** @description The whole checklist, in its order. An item left out is retired. */
+        JobSheetChecklistChange: {
+            items: {
+                /** @description An item already on the list, or retired from it, keeps its code; a new one sends none. */
+                code?: string;
+                label: string;
+                /** @description What the client's record says was done, null for an item only the technician needs. Sent without, the client reads the technician's words. */
+                client?: string | null;
+            }[];
         };
         /** @description The whole list, in its order. An item left out is retired. */
         JobSheetListChange: {

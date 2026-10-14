@@ -770,6 +770,10 @@ export const settings = {
     /** Why a client is not going ahead after a consultation (docs/decisions/0149-lost-reasons.md). */
     lostReasons: "Reasons not going ahead",
     item: (position: number) => `Item ${String(position)}`,
+    clientWords: (position: number) => `Item ${String(position)}, as the client reads it`,
+    clientNote:
+      "The second box is what the client’s record says was done. Leave it empty for a step only the technician needs.",
+    clientNone: "Only the technician sees it",
     reason: (position: number) => `Reason ${String(position)}`,
     /** The buttons beside an item: each names the item after what it does, so a screen reader says which. */
     upButton: "Move up",
@@ -796,6 +800,8 @@ export const settings = {
       added: (label: string) => `Added: ${label}`,
       renamed: (was: string, now: string) => `Renamed: ${was} → ${now}`,
       takenOff: (label: string) => `Removed: ${label}`,
+      clientReads: (label: string, words: string) => `${label}: the client reads “${words}”`,
+      clientNone: (label: string) => `${label}: only the technician sees it`,
       moved: "Order changed.",
       send: "Confirm",
       back: "Edit",
@@ -805,11 +811,13 @@ export const settings = {
     limits: {
       items: (most: number) => `Keep 1 to ${String(most)} items.`,
       label: (longest: number) => `Give each item words, up to ${String(longest)} characters, with no repeats.`,
+      client: (longest: number) => `Keep the client’s words to ${String(longest)} characters.`,
     },
     errors: {
       not_permitted: NOT_PERMITTED,
       items: "Keep at least one item.",
       label: "Give each item words, with no repeats.",
+      client: "Shorten the client’s words.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,

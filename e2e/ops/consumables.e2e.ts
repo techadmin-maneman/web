@@ -135,7 +135,7 @@ test.describe("deleting one", () => {
     await expect(page.getByText("Delete Bonding glue? This can’t be undone.")).toBeVisible();
 
     const sent = posted(page, "/api/consumables/bonding_glue/delete");
-    await page.getByRole("button", { name: "Delete permanently" }).click();
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
     await sent;
     await expect(page.getByRole("status").filter({ hasText: "Deleted." })).toBeVisible();
     await expect(page.getByRole("rowheader", { name: /^Bonding glue/ })).toHaveCount(0);
@@ -144,7 +144,7 @@ test.describe("deleting one", () => {
   test("says to retire instead one whose stock has moved", async ({ page }) => {
     await open(page, { "POST /api/consumables/{code}/delete": fails(409, "in_use") });
     await page.getByRole("button", { name: "Delete Bonding glue" }).click();
-    await page.getByRole("button", { name: "Delete permanently" }).click();
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
 
     await expect(page.getByRole("alert")).toHaveText(settingsCopy.consumables.inUse);
     await page.getByRole("button", { name: "Cancel" }).click();

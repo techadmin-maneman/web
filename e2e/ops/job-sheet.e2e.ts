@@ -26,42 +26,47 @@ test("shows a kind’s checklist in its order, who set it, and what was taken of
   await expect(page).toHaveTitle("Job sheet · Settings · Mane Man operations");
 
   const list = checklist(page);
-  await expect(list.getByLabel("Item 1")).toHaveValue("Piece removed");
-  await expect(list.getByLabel("Item 3")).toHaveValue("Piece refitted");
+  await expect(list.getByLabel("Item 1", { exact: true })).toHaveValue("Piece removed");
+  await expect(list.getByLabel("Item 1, as the client reads it")).toHaveValue("Hair system removed");
+  await expect(list.getByLabel("Item 3", { exact: true })).toHaveValue("Piece refitted");
   await expect(list).toContainText("Set by ops@maneman.in on 20 Sep 2027");
   await expect(list).toContainText("Adhesive renewed");
   await expect(list.getByRole("button", { name: "Restore: Adhesive renewed" })).toBeVisible();
 
   await page.getByLabel(settingsCopy.jobSheet.kind).selectOption({ label: "Replacement" });
   const replacement = page.getByRole("group", { name: "Replacement checklist" });
-  await expect(replacement.getByLabel("Item 1")).toHaveValue("Old piece removed");
+  await expect(replacement.getByLabel("Item 1", { exact: true })).toHaveValue("Old piece removed");
   await expect(replacement).toContainText(settingsCopy.jobSheet.committed);
 });
 
 test("renames, moves, takes off and adds, shows each before it is sent, and keeps every code", async ({ page }) => {
   await open(page, { "POST /api/job-sheet/checklists/{visit_type}": json(JOB_SHEET) });
   const list = checklist(page);
-  await list.getByLabel("Item 2").fill("Scalp cleaned and dried");
+  await list.getByLabel("Item 2", { exact: true }).fill("Scalp cleaned and dried");
   await list.getByRole("button", { name: "Move up: Piece refitted" }).click();
   await list.getByRole("button", { name: "Remove: Piece removed" }).click();
   await list.getByRole("button", { name: settingsCopy.jobSheet.add }).click();
-  await list.getByLabel("Item 3").fill("Photo angles checked");
+  await list.getByLabel("Item 3", { exact: true }).fill("Photo angles checked");
+  await list.getByLabel("Item 1, as the client reads it").fill("Hair system refitted");
   await list.getByRole("button", { name: "Review" }).click();
 
   const check = list.getByRole("group", { name: "Review the change" });
   await expect(check).toBeFocused();
   await expect(check).toContainText("Renamed: Scalp cleaned → Scalp cleaned and dried");
+  await expect(check).toContainText("Piece refitted: the client reads “Hair system refitted”");
   await expect(check).toContainText("Added: Photo angles checked");
+  await expect(check).toContainText("Photo angles checked: only the technician sees it");
   await expect(check).toContainText("Removed: Piece removed");
   await expect(check).toContainText(settingsCopy.jobSheet.confirm.moved);
 
   const sent = posted(page, "/api/job-sheet/checklists/service");
   await check.getByRole("button", { name: "Confirm" }).click();
+  // The client's words stay their own through the technician's rename, and a new step with none is the technician's.
   expect((await sent).postDataJSON()).toEqual({
     items: [
-      { code: "piece_refitted", label: "Piece refitted" },
-      { code: "scalp_cleaned", label: "Scalp cleaned and dried" },
-      { label: "Photo angles checked" },
+      { code: "piece_refitted", label: "Piece refitted", client: "Hair system refitted" },
+      { code: "scalp_cleaned", label: "Scalp cleaned and dried", client: "Scalp cleaned" },
+      { label: "Photo angles checked", client: null },
     ],
   });
   await expect(list.getByRole("status")).toHaveText("Saved.");
@@ -71,13 +76,13 @@ test("puts an item taken off back on the list, under its own code", async ({ pag
   await open(page, { "POST /api/job-sheet/checklists/{visit_type}": json(JOB_SHEET) });
   const list = checklist(page);
   await list.getByRole("button", { name: "Restore: Adhesive renewed" }).click();
-  await expect(list.getByLabel("Item 4")).toHaveValue("Adhesive renewed");
+  await expect(list.getByLabel("Item 4", { exact: true })).toHaveValue("Adhesive renewed");
 
   await list.getByRole("button", { name: "Review" }).click();
   const sent = posted(page, "/api/job-sheet/checklists/service");
   await list.getByRole("button", { name: "Confirm" }).click();
   expect((await sent).postDataJSON()).toMatchObject({
-    items: [{}, {}, {}, { code: "adhesive_renewed", label: "Adhesive renewed" }],
+    items: [{}, {}, {}, { code: "adhesive_renewed", label: "Adhesive renewed", client: "Adhesive renewed" }],
   });
 });
 
@@ -87,9 +92,9 @@ test("will not save an item with no words, nor two alike", async ({ page }) => {
   await list.getByRole("button", { name: settingsCopy.jobSheet.add }).click();
   await expect(list.getByRole("button", { name: "Review" })).toBeDisabled();
 
-  await list.getByLabel("Item 4").fill("piece removed");
+  await list.getByLabel("Item 4", { exact: true }).fill("piece removed");
   await expect(list.getByRole("button", { name: "Review" })).toBeDisabled();
-  await list.getByLabel("Item 4").fill("Piece checked");
+  await list.getByLabel("Item 4", { exact: true }).fill("Piece checked");
   await expect(list.getByRole("button", { name: "Review" })).toBeEnabled();
 });
 
@@ -116,7 +121,7 @@ test("meets WCAG 2.2 AA, with a change being checked as well", async ({ page }) 
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
 
-  await checklist(page).getByLabel("Item 1").fill("Piece taken off");
+  await checklist(page).getByLabel("Item 1", { exact: true }).fill("Piece taken off");
   await checklist(page).getByRole("button", { name: "Review" }).click();
   await expect(checklist(page).getByRole("group", { name: "Review the change" })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);

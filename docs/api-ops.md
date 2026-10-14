@@ -7861,7 +7861,7 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/JobSheetListChange"
+  "$ref": "#/components/schemas/JobSheetChecklistChange"
 }
 ```
 
@@ -7873,7 +7873,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
 
 ```json
 {
@@ -7909,7 +7909,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
 
 ```json
 {
@@ -7945,7 +7945,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
 
 ```json
 {
@@ -26373,11 +26373,23 @@ Request body:
           },
           "label": {
             "type": "string"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the client's record says was done; null for an item only the technician needs."
           }
         },
         "required": [
           "code",
-          "label"
+          "label",
+          "client"
         ],
         "additionalProperties": false
       },
@@ -26393,11 +26405,23 @@ Request body:
           },
           "label": {
             "type": "string"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the client's record says was done; null for an item only the technician needs."
           }
         },
         "required": [
           "code",
-          "label"
+          "label",
+          "client"
         ],
         "additionalProperties": false
       },
@@ -26513,6 +26537,61 @@ Request body:
     "set_at"
   ],
   "additionalProperties": false
+}
+```
+
+### JobSheetChecklistChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "An item already on the list, or retired from it, keeps its code; a new one sends none."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\p{Cc}]+$/u"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[^\\p{Cc}]+$/u"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the client's record says was done, null for an item only the technician needs. Sent without, the client reads the technician's words."
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 20
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false,
+  "description": "The whole checklist, in its order. An item left out is retired."
 }
 ```
 
