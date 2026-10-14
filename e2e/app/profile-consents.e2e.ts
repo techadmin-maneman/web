@@ -89,7 +89,7 @@ test("a consent that did not go through says so, and the switch stays as it was"
   );
   const visits = page.getByRole("switch", { name: appCopy.profile.purposes.whatsapp_visits });
   await visits.click();
-  await expect(page.getByRole("alert")).toHaveText("That didn’t go through, so nothing has changed. Try again.");
+  await expect(page.getByRole("alert")).toHaveText("Couldn’t save that. Try again.");
   await expect(visits).toHaveAttribute("aria-checked", "false");
 });
 

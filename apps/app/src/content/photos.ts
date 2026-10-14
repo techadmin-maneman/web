@@ -20,7 +20,7 @@ export const photos = {
     `${String(percent)}% of ${from} on the left, ${String(100 - percent)}% of ${to} on the right`,
   compareNone: "Compare opens once two visits have photos.",
   download: "Download",
-  downloaded: "Downloaded photos sit in your gallery, outside the app.",
+  downloaded: "Saved to your phone’s photos.",
   photoOf: (angle: string, date: string) => `${angle} · ${date}`,
   close: "Close",
   /** A photograph whose link would not load, in its place in a row; a tap reads fresh links. */

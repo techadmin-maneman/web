@@ -65,7 +65,7 @@ export const profile = {
   // Every visit is photographed for the client's record, so there is no switch for it, only this line.
   visitPhotos: VISIT_PHOTOS,
   // A switch the API did not answer stays as it was.
-  switchFailed: "That didn’t go through, so nothing has changed. Try again.",
+  switchFailed: "Couldn’t save that. Try again.",
   /**
    * The four lines the design shows before a card is turned on, and the line beside them that names the referrer; the consent's notice carries them all.
    */
@@ -166,14 +166,14 @@ export const profile = {
   },
   deletion: {
     label: "Delete your account",
-    body: "Deleted within 30 days of your request. Invoices kept eight years, by law.",
+    body: "We act on your request within 30 days. Bookings and payments are settled first, and invoices are kept for eight years, as the law requires.",
     request: "Request deletion",
     // The design draws the button only.
     confirm: "Ask us to delete your account? We’ll confirm on WhatsApp before anything is deleted.",
     yes: "Yes, request deletion",
     no: "Keep my account",
     requested: (date: string) => `Deletion requested on ${date}. We’ll confirm on WhatsApp.`,
-    failed: "That didn’t go through, so nothing was requested. Try again.",
+    failed: "Couldn’t send your request. Try again.",
     // A request ops rejected, shown for 30 days with their reason, which is their own words.
     rejected: (date: string) => `On ${date} we didn’t delete your account.`,
     why: (reason: string) => `Our reason: ${reason}`,
@@ -182,5 +182,5 @@ export const profile = {
   // The design has no logout; it ends the session on this device.
   logout: "Sign out",
   // Only the API can end the session, so a logout it did not answer leaves the client logged in.
-  logoutFailed: "That didn’t go through, so you’re still signed in here. Try again.",
+  logoutFailed: "Couldn’t sign you out. Try again.",
 } as const;

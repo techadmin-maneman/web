@@ -103,9 +103,7 @@ test("logging out takes the API’s word for it: offline it waits, and a refusal
     route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "e2e" } } }),
   );
   await logOut.click();
-  await expect(page.getByRole("alert")).toHaveText(
-    "That didn’t go through, so you’re still signed in here. Try again.",
-  );
+  await expect(page.getByRole("alert")).toHaveText("Couldn’t sign you out. Try again.");
   await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
 });
 

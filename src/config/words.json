@@ -2930,7 +2930,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "The photograph looked fine; the simulation failed on our side. Try again with the same photograph or another, or book a consultation and see it in person."
+    "text": "We couldn’t make your look this time. Try again, or book a free consultation to see it in person."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.busy.step",
@@ -2986,7 +2986,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We send every look on WhatsApp, and that isn’t switched on yet. Book a free consultation and see the real thing."
+    "text": "Book a free consultation and see the real thing."
   },
   {
     "key": "site:tryon/tryOn.error.kinds.paused.step",

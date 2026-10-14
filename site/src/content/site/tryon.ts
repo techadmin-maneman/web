@@ -229,7 +229,7 @@ export const tryOn = {
         step: "Something went wrong",
         frame: "The simulation failed",
         title: "The simulation did not work this time.",
-        body: "The photograph looked fine; the simulation failed on our side. Try again with the same photograph or another, or book a consultation and see it in person.",
+        body: "We couldn’t make your look this time. Try again, or book a free consultation to see it in person.",
       },
       busy: {
         step: "Please try again shortly",
@@ -242,7 +242,7 @@ export const tryOn = {
         step: "Not available right now",
         frame: "Paused",
         title: "The try-on is paused.",
-        body: "We send every look on WhatsApp, and that isn’t switched on yet. Book a free consultation and see the real thing.",
+        body: "Book a free consultation and see the real thing.",
       },
       /** While the simulation itself cannot run. It has no Choose another either. */
       paused: {

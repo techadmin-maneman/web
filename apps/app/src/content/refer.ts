@@ -126,12 +126,12 @@ export const refer = {
     yes: "Switch off",
     no: "Keep it on",
     // A revoke the API did not answer leaves the card as it was.
-    failed: "That didn’t go through. Your photos are still on the card. Try again.",
+    failed: "Couldn’t switch your photos off. Try again.",
   },
   // The card is composed on the phone; the design does not draw its waiting or its failures.
   composing: "Making your card…",
   cardFailed: "We couldn’t make your card, so we’ve used our example instead.",
   /** Consent or the example did not go through: nothing changed, and nothing was shared. */
-  notChanged: "That didn’t go through, so nothing has changed. Try again.",
+  notChanged: "Couldn’t save that. Try again.",
   close: "Close",
 } as const;
