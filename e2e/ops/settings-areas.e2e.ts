@@ -15,6 +15,7 @@ import { open, posted } from "./settings-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 import { review } from "../../apps/ops/src/content/common.ts";
+import { pressTwice } from "./twice.ts";
 
 test.describe("the service area, Areas' Served tab", () => {
   const area = (page: Page, pincode: string) => page.getByRole("textbox", { name: `Area name for ${pincode}` });
@@ -170,10 +171,16 @@ test.describe("the service area, Areas' Served tab", () => {
     await form.getByLabel(opsCopy.areas.add.area).fill("Bandra West");
     await form.getByLabel("City").selectOption("Mumbai");
     const sent = posted(page, "/api/pincodes");
-    await form.getByRole("button", { name: "Add" }).click();
+    let adds = 0;
+    page.on("request", (request) => {
+      if (request.method() === "POST" && request.url().endsWith("/api/pincodes")) adds += 1;
+    });
+    // However fast Add is pressed twice, the pincode is sent once.
+    await pressTwice(form.getByRole("button", { name: "Add" }));
     expect((await sent).postDataJSON()).toEqual({ pincode: "400050", area: "Bandra West", city: "Mumbai" });
 
     await expect(form.getByRole("status")).toHaveText("400050 added to Mumbai.");
+    expect(adds).toBe(1);
     await expect(page.getByRole("button", { name: "Mumbai · 0 of 1" })).toHaveAttribute("aria-current", "true");
     await expect(area(page, "400050")).toHaveValue("Bandra West");
   });
@@ -183,6 +190,9 @@ test.describe("the service area, Areas' Served tab", () => {
     const form = page.getByRole("group", { name: opsCopy.areas.add.title });
     await form.getByLabel("Pincode").fill("012345");
     await expect(form.getByRole("alert")).toHaveText(opsCopy.areas.add.badPincode);
+    // The refusal is the box's own: a screen reader hears it with the box.
+    await expect(form.getByLabel("Pincode")).toHaveAccessibleDescription(opsCopy.areas.add.badPincode);
+    await expect(form.getByLabel("Pincode")).toHaveAttribute("aria-invalid", "true");
     await expect(form.getByRole("button", { name: "Add" })).toBeDisabled();
   });
 

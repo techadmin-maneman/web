@@ -1,10 +1,8 @@
-// Above the grid: the week, the city, and a way to find one row among many.
-// The brief asks for "a city and week picker"; the design letters the city
-// in its header and draws no control, so they stand in a row of their own
-// (docs/fidelity-method.md). Finding narrows the rows only: the figures at each
-// column's head stay the day's own.
+// Above the grid: the week, the city, and a search for one row among many, in a row of their own since the design draws
+// no control for them (docs/fidelity-method.md). The search narrows the rows only: each day's figures stay the day's
+// own.
 
-import { Label, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { classes } from "@maneman/ui/classes";
 import type { Board, BoardQuery } from "../api.ts";
@@ -61,34 +59,36 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
           {copy.next}
         </Button>
       </div>
-      <div className={styles.field}>
-        <Label htmlFor="dispatch-city">{copy.city}</Label>
-        <Select
-          id="dispatch-city"
-          value={query.city ?? ""}
-          onChange={(event) => {
-            onQuery({ ...query, city: event.currentTarget.value === "" ? null : event.currentTarget.value });
-          }}
-        >
-          <option value="">{copy.everyCity}</option>
-          {(board?.cities ?? []).map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <div className={classes(styles.field, styles.find)}>
-        <Label htmlFor="dispatch-find">{copy.find}</Label>
-        <TextInput
-          id="dispatch-find"
-          type="search"
-          value={find}
-          onChange={(event) => {
-            onFind(event.currentTarget.value);
-          }}
-        />
-      </div>
+      <Field label={copy.city} className={styles.field}>
+        {(control) => (
+          <Select
+            {...control}
+            value={query.city ?? ""}
+            onChange={(event) => {
+              onQuery({ ...query, city: event.currentTarget.value === "" ? null : event.currentTarget.value });
+            }}
+          >
+            <option value="">{copy.everyCity}</option>
+            {(board?.cities ?? []).map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <Field label={copy.find} className={classes(styles.field, styles.find)}>
+        {(control) => (
+          <TextInput
+            {...control}
+            type="search"
+            value={find}
+            onChange={(event) => {
+              onFind(event.currentTarget.value);
+            }}
+          />
+        )}
+      </Field>
     </div>
   );
 }

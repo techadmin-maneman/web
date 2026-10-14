@@ -1,7 +1,7 @@
 // The Care inbox's words (Customer Care; docs/decisions/0129-the-care-inbox.md). The page imports them itself, so
 // they stay out of the console's first load.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const care = {
   title: "Messages",
@@ -62,7 +62,7 @@ export const care = {
     sent: "Sent.",
     noted: "Note added.",
     closed: "Chat closed.",
-    failed: "Not sent. Try again, or call the client.",
+    failed: "That didn't send. Try again, or call the client.",
   },
   carePerson: {
     label: "Care person",
@@ -75,8 +75,8 @@ export const care = {
     moved: (email: string) => `Moved to ${email}.`,
     noTeam: "Nobody has Customer Care Act or Manage for all cities yet.",
     errors: {
-      email: "No longer on the Care team. Reload.",
-      not_found: "Not found. Reload.",
+      email: changed("No longer on the Care team."),
+      not_found: changed("Not found."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -139,7 +139,7 @@ export const care = {
     decline: "Decline",
     approveLabel: (name: string) => `Approve the remedy for ${name}`,
     declineLabel: (name: string) => `Decline the remedy for ${name}`,
-    errors: { not_found: "Not found. Reload.", not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },
+    errors: { not_found: changed("Not found."), not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },
   },
   /** Saved answers (docs/decisions/0141-quick-replies.md). */
   quick: {
@@ -198,10 +198,10 @@ export const care = {
     },
     save: "Save as someone new",
     errors: {
-      conversation: "This chat is a client's already. Reload.",
+      conversation: changed("This chat is a client's already."),
       number_in_use: "One of our clients has this number. Find them and link the chat instead.",
       invalid_request: "Type two letters of a name, or four digits of a number.",
-      not_found: "Not found. Reload.",
+      not_found: changed("Not found."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -217,7 +217,7 @@ export const care = {
     errors: {
       city: "We don't know this client's city yet. Add their address first.",
       note: "Write what they need to know.",
-      not_found: "Not found. Reload.",
+      not_found: changed("Not found."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -270,10 +270,10 @@ export const care = {
     takeBack: "Take back",
     takeBackLabel: (period: string) => `Take back leave ${period}`,
     errors: {
-      email: "No longer on the Care team. Reload.",
+      email: changed("No longer on the Care team."),
       to: "The leave must end today or later, and not before it starts.",
       on: "Only the Care team go on shift.",
-      not_found: "Not found. Reload.",
+      not_found: changed("Not found."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -294,7 +294,7 @@ export const care = {
   errors: {
     text: "Write something first.",
     unavailable: "Replies wait for the office number on MSG91.",
-    not_found: "Not found. Reload.",
+    not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

@@ -29,8 +29,6 @@ import { firstNameOf } from "@rules/lib/names.ts";
 
 type Piece = NonNullable<Job["pieces"]>[number];
 
-/** "Rohit M." → "Rohit", as the board writes the name on the door. */
-
 /** The piece on the client's head: the newest fitted one that has not failed or been replaced. */
 const onTheHead = (pieces: readonly Piece[]): Piece | null =>
   pieces.find((piece) => piece.fitted_at !== null && piece.failed_at === null && piece.replaced_at === null) ?? null;

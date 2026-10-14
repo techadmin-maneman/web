@@ -5,17 +5,18 @@ import { Button } from "@maneman/ui/Button";
 import { rupees } from "@maneman/web-kit/money";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { ReceiveForm } from "./ReceiveForm.tsx";
 import type { Order, Orders } from "./types.ts";
+import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
-function ReceiptList({ book, order }: { book: Orders; order: Order }) {
+function ReceiptList({ orders, order }: { orders: Orders; order: Order }) {
   const named = (lineId: string) => {
     const code = order.lines.find((line) => line.id === lineId)?.consumable_code ?? "";
-    return book.consumables.find((each) => each.code === code)?.name ?? code;
+    return orders.consumables.find((each) => each.code === code)?.name ?? code;
   };
   if (order.receipts.length === 0) return null;
   return (
@@ -44,27 +45,27 @@ function ReceiptList({ book, order }: { book: Orders; order: Order }) {
 }
 
 export function Receiving({
-  book,
+  orders,
   order,
   onChanged,
 }: {
-  book: Orders;
+  orders: Orders;
   order: Order;
-  onChanged: (book: Orders, said: string) => void;
+  onChanged: (orders: Orders, said: string) => void;
 }) {
   const access = useAccess();
   const [receiving, setReceiving] = useState(false);
   const receivable = order.state === "sent" || order.state === "part_received";
   const close = async () => {
-    const answer = await client.post("/api/purchase-orders/{id}/close", { path: { id: order.id } });
+    const answer = await purchasingApi.closeOrder(order.id);
     if (answer.ok) onChanged(answer.body, copy.receive.closed);
   };
   return (
     <>
-      <ReceiptList book={book} order={order} />
+      <ReceiptList orders={orders} order={order} />
       {receiving ? (
         <ReceiveForm
-          book={book}
+          orders={orders}
           order={order}
           onReceived={(next, said) => {
             setReceiving(false);
@@ -75,7 +76,7 @@ export function Receiving({
           }}
         />
       ) : (
-        <div className={form.actions}>
+        <FormActions>
           {receivable && access.mayCall("POST /api/purchase-orders/{id}/receipts") && (
             <Button
               variant="primary"
@@ -92,7 +93,7 @@ export function Receiving({
               {copy.receive.close}
             </Button>
           )}
-        </div>
+        </FormActions>
       )}
     </>
   );

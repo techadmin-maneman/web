@@ -2,7 +2,7 @@
 // itself, so they stay out of the console's first load.
 
 import { fullMonth } from "@maneman/web-kit/dates";
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const technicianPay = {
   kinds: {
@@ -98,7 +98,7 @@ export const technicianPay = {
     from: "A rate starts today or later, so a month already worked keeps its own.",
     city: "Choose one of our cities.",
     amount: "A whole amount, up to the most a visit may pay.",
-    not_found: "Already gone. Reload.",
+    not_found: changed("Already gone."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

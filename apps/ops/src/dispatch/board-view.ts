@@ -2,6 +2,7 @@
 // the technicians it keeps and the blocks it outlines.
 
 import { shortDate } from "@maneman/web-kit/dates";
+import { useDeferredValue, useMemo } from "react";
 import type { Block, Board, BoardRow } from "../api.ts";
 import { dispatch } from "../content.ts";
 
@@ -38,4 +39,18 @@ export function foundBy(board: Board | null, find: string): ((block: Block) => b
     row.days.some((day) => day.blocks.some((b) => blockAnswersTo(b, wanted))),
   );
   return any ? (block) => blockAnswersTo(block, wanted) : null;
+}
+
+/**
+ * What a search leaves on the board: the text it settled on, the technicians it keeps, and the blocks it outlines. The
+ * board follows once typing settles, so each key draws the box at once.
+ */
+export function useSearch(board: Board | null, find: string) {
+  const settled = useDeferredValue(find);
+  const rows = useMemo(
+    () => (board === null ? [] : board.technicians.filter((row) => answersTo(row, settled))),
+    [board, settled],
+  );
+  const found = useMemo(() => foundBy(board, settled), [board, settled]);
+  return { settled, rows, found };
 }

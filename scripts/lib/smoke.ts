@@ -128,13 +128,13 @@ const health: Check = ({ options, api }) =>
     return `${options.environment}, version ${String(body.version_id)}, d1 ok`;
   });
 
-/** Errors carry exactly a stable code and the request ID. */
 /**
  * How mm-api refuses a route a host does not open: not found, or, on a console whose Staff list is on, not permitted,
  * since the list refuses every route it does not name before any is looked for.
  */
 const REFUSED: Readonly<Record<number, string>> = { 404: "not_found", 403: "not_permitted" };
 
+/** Errors carry exactly a stable code and the request ID. */
 const errorShape: Check = async ({ api }) => {
   const response = await api("/api/__smoke/not-found");
   const expected = REFUSED[response.status];

@@ -1,18 +1,6 @@
-// The drawer one block on the board opens. The client in full, the
-// time and the technician, the payment badge, the visit's details, and the
-// board's two ways to the client: WhatsApp {client} and Open client.
-//
-// What the board draws and a block does not carry (the client's tier, access
-// note, payment and visit count) is on the client's page, one tap away
-// (docs/fidelity-method.md). A move the client has not heard of is named here,
-// with their number, and closed here once ops have called them.
-//
-// The drawer is also the keyboard way into a move: the design moves a block by
-// dragging it, and everything the drag does can be done from here. A visit the
-// technician has started has no move, and the drawer says why; one they have only
-// checked in at moves from here alone, after a warning that it clears their
-// check-in. A visit still ahead can be cancelled for the client here, and one
-// whose time has come closed by hand, each in its own panel.
+// The drawer a block on the board opens: the client, the time and technician, the payment badge, the visit's details,
+// and the ways to the client. It is also the keyboard's way into a move: a visit begun has none, and one only checked
+// in at moves after a warning. A visit ahead can be cancelled here, and one whose time has come closed by hand.
 
 import { badgeLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
@@ -48,8 +36,8 @@ interface Props {
 /** The State row: how far the technician has got, from their phone, until the visit is done. */
 function stateOf(block: BlockJob["block"]): string {
   const copy = dispatch.drawer;
-  if (block.begun !== null && block.status !== "completed") return copy.begun[block.begun] ?? block.begun;
-  return copy.states[block.status] ?? block.status;
+  if (block.begun !== null && block.status !== "completed") return copy.begun[block.begun];
+  return copy.states[block.status];
 }
 
 /** Why a visit under way has no ordinary move: it stays where it is, or moves only once the check-in is cleared. */
@@ -69,7 +57,7 @@ export function BlockDrawer(props: Props) {
   // A move the client has not heard of still stands, so the block is where it put the visit.
   const movedTo = `${shortDate(job.date)}, ${windowWord(block.window)}`;
   const referredBy = person === null ? null : person.referred_by;
-  const typeName = block.type === null ? dispatch.unknown : (dispatch.typeNames[block.type] ?? dispatch.unknown);
+  const typeName = block.type === null ? dispatch.unknown : dispatch.typeNames[block.type];
   const rows = [
     { key: copy.rows.type, value: copy.type(typeName, block.slots) },
     ...(block.service === null ? [] : [{ key: copy.rows.service, value: block.service }]),
@@ -84,8 +72,8 @@ export function BlockDrawer(props: Props) {
     <Drawer
       titleId="drawer-title"
       title={person?.name ?? nameOf(job)}
-      sub={copy.when(shortDate(job.date), dispatch.windowHours[block.window] ?? dispatch.unknown, job.technician.name)}
-      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge] ?? block.badge}</span>}
+      sub={copy.when(shortDate(job.date), dispatch.windowHours[block.window], job.technician.name)}
+      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge]}</span>}
       canClose
       onDismiss={onClose}
     >

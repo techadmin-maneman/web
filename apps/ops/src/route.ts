@@ -1,19 +1,6 @@
-// The console's pages, by path. Links change the path without a reload; the
-// Worker answers every path with the console, so a page can be opened directly.
-//
-// SECTIONS below is the one list of them, in the navigation's order: by
-// department, Tasks first. The navigation draws it, routeOf reads it, and each
-// page is titled from it. SECTION_GROUPS gathers sections of one job under one
-// entry, each section a tab of the others: inventory, Care, and the data requests.
-// Four sections have pages beneath them:
-//
-//   /clients/:id/:tab       a client's page, a tab at a time
-//   /technicians/:id/:tab   a technician's page: their week, leave, phones and kit
-//   /areas/:tab             who waits where, and the pincodes we serve
-//   /settings/:tab          the rules, closed days and the job sheet
-//
-// Anything else, "/" included, is where the console opens: Tasks, or for a
-// person who may not open Tasks, the first section they may.
+// The console's pages, by path. Links change the path without a reload, and the Worker answers every path with the
+// console, so a page can be opened directly. SECTIONS is the one list of them, in the navigation's order: the
+// navigation draws it, routeOf reads it, and each page is titled from it.
 
 import { areas, clients, settingsTabs, shell, technicians } from "./content.ts";
 import type { Department } from "./lib/grants.ts";
@@ -29,6 +16,10 @@ interface SectionShape {
   readonly reads: string;
 }
 
+/**
+ * Every section, by department, Tasks first. SECTION_GROUPS gathers the sections of one job under one entry, each a tab
+ * of the others: inventory, Care, and the data requests.
+ */
 export const SECTIONS = [
   { page: "tasks", path: "/tasks", department: "operations", reads: "GET /api/tasks" },
   { page: "dispatch", path: "/dispatch", department: "operations", reads: "GET /api/dispatch" },
@@ -122,6 +113,16 @@ export type SettingsTab = (typeof SETTINGS_TABS)[number];
 export const AREA_TABS = ["waiting", "served"] as const;
 export type AreaTab = (typeof AREA_TABS)[number];
 
+/**
+ * A page, as its path names it. Four sections have pages beneath them:
+ *
+ *   /clients/:id/:tab       a client's page, a tab at a time
+ *   /technicians/:id/:tab   a technician's page: their week, leave, phones and kit
+ *   /areas/:tab             who waits where, and the pincodes we serve
+ *   /settings/:tab          the rules, closed days and the job sheet
+ *
+ * Anything else, "/" included, is where the console opens: Tasks, or the first section the person may open.
+ */
 export type Route =
   | { readonly page: PlainPage }
   | { readonly page: "areas"; readonly tab: AreaTab }
@@ -130,11 +131,14 @@ export type Route =
   | { readonly page: "technicians"; readonly technicianId: string | null; readonly tab: TechnicianTab };
 
 const TASKS: Route = { page: "tasks" };
-const CLIENT_PATH =
-  /^\/clients(?:\/([0-9a-f-]{36})(?:\/(visits|pieces|payments|referrals|consents|photos|history))?)?$/;
-const SETTINGS_PATH = /^\/settings(?:\/(blackouts|job-sheet))?$/;
-const AREAS_PATH = /^\/areas(?:\/(served))?$/;
-const TECHNICIAN_PATH = /^\/technicians(?:\/([0-9a-f-]{36})(?:\/(week|leave|phones|kit))?)?$/;
+/** A path's tab, one of `tabs`, as a pattern's group; the tabs are words, so none needs escaping. */
+const oneOf = (tabs: readonly string[]): string => `(${tabs.join("|")})`;
+const ID = "([0-9a-f-]{36})";
+const CLIENT_PATH = new RegExp(`^/clients(?:/${ID}(?:/${oneOf(CLIENT_TABS)})?)?$`);
+// Rules and Waiting have their sections' own paths.
+const SETTINGS_PATH = new RegExp(`^/settings(?:/${oneOf(SETTINGS_TABS.slice(1))})?$`);
+const AREAS_PATH = new RegExp(`^/areas(?:/${oneOf(AREA_TABS.slice(1))})?$`);
+const TECHNICIAN_PATH = new RegExp(`^/technicians(?:/${ID}(?:/${oneOf(TECHNICIAN_TABS)})?)?$`);
 
 /**
  * Pages that moved, so a link or bookmark to one still lands: Settings tabs now in their own departments, the

@@ -12,8 +12,10 @@ import { agreedToVisitMessages, moveJob, planMove, type MoveInput } from "./disp
 
 type Refusal = Exclude<Awaited<ReturnType<typeof planMove>>, { readonly kind: "planned" }>;
 
-/** messaged: the client was sent the proposal on WhatsApp; call: they have not agreed to it, so ops call them. */
-/** same_day: the move keeps the visit's day, so the board makes it. */
+/**
+ * messaged: the client was sent the proposal on WhatsApp; call: they have not agreed to it, so ops call them.
+ * same_day: the move keeps the visit's day, so the board makes it.
+ */
 type ProposeOutcome =
   | { readonly kind: "same_day" }
   | { readonly kind: "proposed"; readonly proposalId: string; readonly clientNotice: "messaged" | "call" }

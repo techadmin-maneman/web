@@ -1,22 +1,12 @@
 /*
- * Settings. The design draws the section in the navigation column and letters
- * nothing inside it, so everything here follows the frames it does draw: board
- * the client page's tabs, the queues' panel with its head on a rule, the
- * referrers' table at 34 px a row, square boxes, and one ink button.
- *
- * The queues are drawn 484 px wide; Settings' tables carry six columns and a
- * row of boxes each, so the section takes the queues' wider 660 and never runs past
- * its panel.
- *
- * A form that sets a business rule is read before it is typed into, so each
- * field's unit stands beside the box and its bounds under it, in the muted
- * grey the boards use for a note.
+ * The console's forms and tables, as most screens draw them: a panel's room, a rule and its fields, the boxes' widths,
+ * what a form says once sent, and the tables' rows. A class one screen alone draws is in that screen's own sheet.
  */
 
 /* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
-  --local-control: 28px; /* a box or a button inside a table row, which keeps the row at --ops-row */
-  --local-amount: 120px; /* a price in whole rupees, up to ten lakh, beside the box's own arrows */
+  --local-control: var(--sp-28); /* a box or a button inside a table row, which keeps the row at --ops-row */
+  --local-amount: var(--ops-column-wide); /* a price in whole rupees, up to ten lakh, beside the box's own arrows */
 }
 
 .screen {
@@ -40,45 +30,11 @@
   color: var(--text-muted);
 }
 
-/* ---- The rules, a section per subject ------------------------------------- */
-
-.jump {
-  margin: var(--sp-16) var(--sp-20) 0;
-}
-
-.jumpList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-8) var(--sp-20);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--fs-14);
-}
-
 .link {
   color: var(--text);
   text-decoration: underline;
   text-decoration-color: var(--paper-line);
   text-underline-offset: var(--sp-4);
-}
-
-/* Each section is a link's target, not a control, so it takes focus without a ring. */
-.ruleGroup {
-  margin-top: var(--sp-24);
-  border-top: var(--hairline) solid var(--text);
-}
-
-.ruleGroup:focus {
-  outline: none;
-}
-
-.ruleGroupTitle {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20) 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-22);
 }
 
 /* ---- One rule ------------------------------------------------------------ */
@@ -156,11 +112,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* A price runs to seven figures, which a rule's box was never drawn for. */
-.amount {
-  width: var(--local-amount);
-}
-
 .text {
   width: var(--ops-area);
 }
@@ -189,31 +140,6 @@
   font-size: var(--fs-13);
 }
 
-/* A box's hint turned into what is wrong with what is in it. */
-.fieldError {
-  max-width: var(--measure-form);
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-13);
-  color: var(--error-on-paper);
-}
-
-/* What the item and tier chosen cost today: the figure the boxes beneath start from. */
-.formNow {
-  margin: var(--sp-12) 0 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.addKey {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--sp-12);
-  margin-top: var(--sp-16);
-  padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--paper-line);
-}
-
 .set {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-13);
@@ -227,6 +153,26 @@
   flex-wrap: wrap;
   gap: var(--sp-8);
   margin: var(--sp-12) var(--sp-20) 0;
+}
+
+/*
+ * A change that cannot be quietly taken back, shown before it is sent: the old
+ * figure beside the new, or who a launch will message. It takes focus as it
+ * opens, so it is read at once and never opens out of sight.
+ */
+.check {
+  margin: var(--sp-16) var(--sp-20) 0;
+  padding: var(--sp-16) var(--sp-20);
+  border: var(--hairline) solid var(--paper-line);
+  border-left: var(--rule-strong) solid var(--ink);
+  background: var(--paper-light);
+}
+
+.checkTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  line-height: var(--lh-115);
 }
 
 .rule .actions,
@@ -252,30 +198,10 @@
   margin-right: 0;
 }
 
-/*
- * A change that cannot be quietly taken back, shown before it is sent: the old
- * figure beside the new, or who a launch will message. It takes focus as it
- * opens, so it is read at once and never opens out of sight.
- */
-.check {
-  margin: var(--sp-16) var(--sp-20) 0;
-  padding: var(--sp-16) var(--sp-20);
-  border: var(--hairline) solid var(--paper-line);
-  border-left: var(--rule-strong) solid var(--ink);
-  background: var(--paper-light);
-}
-
 .group .check,
 .rule .check {
   margin-left: 0;
   margin-right: 0;
-}
-
-.checkTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-22);
-  line-height: var(--lh-115);
 }
 
 .checkLine,
@@ -287,14 +213,6 @@
 
 .checkWarning {
   color: var(--error-on-paper);
-}
-
-.checkList {
-  margin: var(--sp-8) 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
 }
 
 /* ---- The tables: 13 px heads over 14 px rows 34 px tall ------------------- */
@@ -335,48 +253,6 @@
   margin-left: var(--sp-8);
 }
 
-/* ---- The services, kind by kind ----------------------------------------- */
-
-/* A kind is a heading over its table of services, on the panel's rules. */
-.kind {
-  margin-top: var(--sp-20);
-  border-top: var(--hairline) solid var(--text);
-}
-
-.kindTitle {
-  margin: var(--sp-16) var(--sp-20) 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-18);
-}
-
-/* ---- The service area ---------------------------------------------------- */
-
-.cities {
-  margin: var(--sp-16) var(--sp-20) 0;
-}
-
-/* A row's own boxes, as tall as the row allows. */
-
-.cellText {
-  width: 100%;
-  min-width: var(--ops-area);
-}
-
-.cellDate {
-  width: var(--ops-date);
-  font-variant-numeric: tabular-nums;
-}
-
-.uploaded {
-  margin-top: var(--sp-12);
-}
-
-.uploaded .table th:first-child,
-.uploaded .table td:first-child {
-  padding-left: 0;
-}
-
 .file {
   display: block;
   margin-top: var(--sp-8);
@@ -386,35 +262,23 @@
   margin-right: var(--sp-12);
 }
 
-/* The rules' and service area's quieter buttons (packages/ui/Button.tsx) sit a little narrower than Save. */
+/* The quieter buttons (packages/ui/Button.tsx), a little narrower than Save. */
 .quiet {
   padding: 0 var(--sp-16);
 }
 
-/* What storage and the database hold, two plain lines under The console's heading; no board draws them. */
-.storage {
-  margin: var(--sp-8) var(--sp-20) var(--sp-4);
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
-}
+/* ---- A period ------------------------------------------------------------ */
 
-.storage p {
-  margin: 0;
-}
-
-/* ---- Blackout days ------------------------------------------------------- */
-
-/* Each period blacked out is laid out as a rule is: its days and why, who added it, and what is still booked on it. */
+/* A period laid out as a rule is: days blacked out, or a member of staff's time on the list. */
 .period {
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-18);
 }
 
-/* ---- Discount codes ------------------------------------------------------ */
+/* ---- Choices under a question -------------------------------------------- */
 
-/* What a code covers: one square box a kind of visit, each on its own line under the question. */
+/* One square box a choice, each on its own line under the question: what a discount code covers, say. */
 .choices {
   margin-top: var(--sp-16);
 }

@@ -10,29 +10,31 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ClaimSteps, type ClaimAnswer } from "./ClaimSteps.tsx";
 import { ReturnedPieces } from "./ReturnedPieces.tsx";
-import type { Claim, ClaimsBook, Orders } from "./types.ts";
+import type { Claim, SupplierClaims, Orders } from "./types.ts";
+import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
-const loadClaims = () => client.get("/api/supplier-claims");
+const loadClaims = () => purchasingApi.claims();
 
 /** What a claim is worth: the credit given, else what was claimed at the order's price. */
 const valueOf = (claim: Claim) => inCurrency(claim.credit_amount ?? claim.unit_price * claim.quantity, claim.currency);
 
 function ClaimsTable({
-  book,
+  claims,
   supplierOf,
   onOpen,
 }: {
-  book: ClaimsBook;
+  claims: SupplierClaims;
   supplierOf: (id: string) => string;
   onOpen: (id: string) => void;
 }) {
-  if (book.claims.length === 0) return <p className={form.note}>{copy.claims.none}</p>;
+  if (claims.claims.length === 0) return <p className={form.note}>{copy.claims.none}</p>;
   return (
     <Table className={form.table}>
       <thead>
@@ -45,9 +47,9 @@ function ClaimsTable({
         </tr>
       </thead>
       <tbody>
-        {book.claims.map((claim) => (
+        {claims.claims.map((claim) => (
           <tr key={claim.id}>
-            <th scope="row" className={form.rowHead}>
+            <RowHead>
               <RowButton
                 className={form.inline}
                 aria-label={copy.claims.open(copy.claims.number(claim.number))}
@@ -57,15 +59,11 @@ function ClaimsTable({
               >
                 {copy.claims.number(claim.number)}
               </RowButton>
-            </th>
+            </RowHead>
             <td>{supplierOf(claim.supplier_id)}</td>
             <td>{copy.claims.item(claim.name, claim.quantity, claim.piece_code)}</td>
-            <td>{copy.claims.reasons[claim.reason] ?? claim.reason}</td>
-            <td>
-              {claim.outcome === null
-                ? (copy.claims.states[claim.state] ?? claim.state)
-                : (copy.claims.outcomes[claim.outcome] ?? claim.outcome)}
-            </td>
+            <td>{copy.claims.reasons[claim.reason]}</td>
+            <td>{claim.outcome === null ? copy.claims.states[claim.state] : copy.claims.outcomes[claim.outcome]}</td>
             <td className={form.figure}>{valueOf(claim)}</td>
           </tr>
         ))}
@@ -76,15 +74,15 @@ function ClaimsTable({
 
 export function Claims({ orders }: { orders: Orders }) {
   const [loaded, retry] = useLoad(loadClaims);
-  const [book, setBook] = useState<ClaimsBook | null>(null);
+  const [claims, setClaims] = useState<SupplierClaims | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
-  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
+  const current = claims ?? (loaded.state === "loaded" ? loaded.value : null);
   const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;
   const answered = (answer: ClaimAnswer, words: string) => {
     if (answer.ok) {
-      setBook(answer.body);
+      setClaims(answer.body);
       setSaid(words);
       setFailure(null);
     } else setFailure({ code: answer.code, fields: answer.fields });
@@ -96,7 +94,7 @@ export function Claims({ orders }: { orders: Orders }) {
   return (
     <>
       <Panel titleId="claims" title={copy.claims.title}>
-        <ClaimsTable book={current} supplierOf={supplierOf} onOpen={setOpen} />
+        <ClaimsTable claims={current} supplierOf={supplierOf} onOpen={setOpen} />
         {opened !== null && (
           <div className={form.group}>
             <p className={form.note}>
@@ -118,11 +116,7 @@ export function Claims({ orders }: { orders: Orders }) {
             {said}
           </InlineMessage>
         )}
-        {failure !== null && (
-          <InlineMessage tone="error" className={form.error}>
-            {errorText(copy.errors, failure)}
-          </InlineMessage>
-        )}
+        {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       </Panel>
       <Panel titleId="returned-pieces" title={copy.returns.title}>
         <ReturnedPieces pieces={current.returns} onAnswer={answered} />

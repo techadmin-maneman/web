@@ -2,7 +2,7 @@
 
 import type { components } from "../api-schema.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
-import { FAILED, NOT_PERMITTED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED } from "./common.ts";
 import { DEPARTMENT_NAMES } from "./shell.ts";
 
 /** A task group as the API names it, from the generated schema, which the Worker-typed tests can read too. */
@@ -43,8 +43,8 @@ const DECIDE: Readonly<Partial<Record<Group, string>>> = {
  */
 export const tasks = {
   title: "Tasks",
-  /** The head's count, in oxblood, as the board writes "4 overdue". */
   // Not drawn: the list's heading, the tasks open, as the page's bar already says "Tasks".
+  /** The head's count, in oxblood, as the board writes "4 overdue". */
   openCount: (count: number) => `${String(count)} open`,
   overdue: (count: number) => `${String(count)} overdue`,
   /** The head's count as a screen reader names it, with what it does. */
@@ -170,10 +170,6 @@ export const tasks = {
       when === null
         ? `Consultation ${consulted} · not fitted`
         : `Consultation ${consulted}, ${when.toLowerCase()} · not fitted`,
-    /**
-     * "9 weeks since the last visit · due Sat 19 Sep", as the Tasks design writes "9 weeks since service": the day the next
-     * service fell due, from the cadence ops set. The task goes when the client books.
-     */
     /** "Service visit · Tue 22 Sep, 9:00 am · no technician": send someone from the board. */
     unassigned_visit: (visit: string, when: string) => `${visit} · ${when} · no technician`,
     /** "MM-ESS-0000041-R · recalled, replacement free": call them to book it. */
@@ -183,6 +179,10 @@ export const tasks = {
     /** "hs_essential_8x10_1b_g20_d100 · none in their city", or the profile that matches no stock code yet. */
     stock_at_risk: (code: string) =>
       code === "" ? "No hair system matched to their profile" : `${code} · none in their city`,
+    /**
+     * "9 weeks since the last visit · due Sat 19 Sep", as the Tasks design writes "9 weeks since service": the day the next
+     * service fell due, from the cadence ops set. The task goes when the client books.
+     */
     at_risk_client: (weeks: number, due: string) =>
       `${String(weeks)} ${weeks === 1 ? "week" : "weeks"} since last visit · due ${due}`,
     /**
@@ -249,10 +249,10 @@ export const tasks = {
     cancel: "Cancel",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Already handled. Reload.",
+      not_found: changed("Already handled."),
       invalid_request: "That person hasn't used the console recently.",
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /**
    * A visit left partly done closed without a follow-up, with why
@@ -268,10 +268,10 @@ export const tasks = {
     cancel: "Cancel",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Already booked or closed. Reload.",
+      not_found: changed("Already booked or closed."),
       invalid_request: "Give a reason.",
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /**
    * A one visit's payment link, copied to send by hand, or texted to the client again by Razorpay. No
@@ -288,13 +288,13 @@ export const tasks = {
       not_texted: "Not sent: this is a test number.",
       paid: "Already paid.",
       refused: "Razorpay refused this link. Send one from the Razorpay dashboard.",
-    } as Readonly<Record<string, string>>,
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "That link no longer exists. Reload.",
+      not_found: changed("That link no longer exists."),
       unavailable: "Razorpay isn't responding. Try again in a minute.",
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** The board draws twelve tasks and no empty list. */
   empty: "All clear.",
@@ -332,7 +332,7 @@ export const needsAHand = {
     whatsapp_bridge: "WhatsApp disconnected",
     login_codes_failing: "Login codes failing",
     cron_job: "Scheduled job failing",
-  } as Readonly<Record<string, string>>,
+  } as Readonly<Record<string, string | undefined>>,
   /** Books refusing or failing on a customer, a payment, its application or a refund. */
   books: "Books needs attention",
   /** Any other kind. */
@@ -347,7 +347,7 @@ export const needsAHand = {
   shown: (shown: number, count: number) => `Oldest ${String(shown)} of ${String(count)}.`,
   errors: {
     not_permitted: NOT_PERMITTED,
-    not_found: "Already closed. Reload.",
+    not_found: changed("Already closed."),
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 } as const;

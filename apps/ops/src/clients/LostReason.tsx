@@ -4,12 +4,13 @@
 import { Field, Select } from "@maneman/ui/Field";
 import type { Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client, type ClientRecord } from "../api.ts";
+import { type ClientRecord } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
-import forms from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import styles from "./clients.module.css";
+import { clientsApi } from "./clients-api.ts";
 
 type ClientVisit = ClientRecord["visits"]["past"][number];
 type Reason = NonNullable<ClientVisit["lost_reason"]>;
@@ -42,10 +43,7 @@ export function LostReason({
 
   const set = async (code: string) => {
     setFailure(null);
-    const answer = await client.post("/api/visits/{id}/lost-reason", {
-      path: { id: visit.id },
-      body: { lost_reason: code === "" ? null : code },
-    });
+    const answer = await clientsApi.setLostReason(visit.id, { lost_reason: code === "" ? null : code });
     if (answer.ok) onChanged();
     else setFailure({ code: answer.code, fields: answer.fields });
   };
@@ -55,7 +53,7 @@ export function LostReason({
         {(control) => (
           <Select
             {...control}
-            className={forms.choiceBox}
+            className={form.choiceBox}
             value={kept?.code ?? ""}
             onChange={(event) => void set(event.target.value)}
           >

@@ -2,9 +2,10 @@
 // windows, and the days ops blacked out.
 
 import { useEffect, useReducer, useState } from "react";
-import { api, type Room } from "../api.ts";
+import { type Room } from "../api.ts";
 import type { InHand } from "./Grid.tsx";
 import { WINDOWS, type Target } from "./job.ts";
+import { dispatchApi } from "./dispatch-api.ts";
 
 /** As the server answered; "unknown" if it could not, and every window is offered. */
 type Rooms =
@@ -25,7 +26,7 @@ export function useRooms(inHandId: string | null, weekFrom: string | null): [Roo
     setRooms({ state: "checking" });
     if (weekFrom === null) return undefined;
     let current = true;
-    void api.room(inHandId, weekFrom).then((answer) => {
+    void dispatchApi.room(inHandId, weekFrom).then((answer) => {
       if (!current) return;
       setRooms(
         answer.ok

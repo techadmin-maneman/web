@@ -112,7 +112,7 @@ test("lists each transfer and order with why, and approves one at a changed quan
   const request = posted(page, "/api/supply-plan/lines/pl-1/approve");
   await row.getByRole("button", { name: copy.approve }).click();
   expect((await request).postDataJSON()).toEqual({ quantity: 4 });
-  await expect(row).toContainText(copy.states.approved ?? "");
+  await expect(row).toContainText(copy.states.approved);
   expect(await axeViolations(page)).toEqual([]);
 });
 

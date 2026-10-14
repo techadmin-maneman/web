@@ -1,27 +1,25 @@
-// Recording a movement of stock (docs/decisions/0087-consumables-and-stock.md):
-// a delivery into the warehouse, a transfer between two places, a count,
-// or a loss somebody saw. Before anything is sent, the check shows what each
-// place holds now beside what it will hold (ADR 0071); a count shows the
-// figure it finds, and the ledger takes the difference. A place that would
-// hold less than nothing says so, since a delivery or a count is then missing.
-// A hair system's transfer or loss names its pieces by their labels, scanned
-// (docs/decisions/0162-scanning-labels.md), and counts them. A top-up to a kit
-// counts once the technician scans it in, unless handed over in person
-// (docs/decisions/0164-the-kit-screen.md).
+// Recording a movement of stock (docs/decisions/0087-consumables-and-stock.md): a delivery, a transfer, a count or a
+// loss, checked first with what each place holds beside what it will (ADR 0071). A hair system's pieces are named by
+// their scanned labels (docs/decisions/0162-scanning-labels.md); a top-up to a kit counts once the technician scans it
+// in (docs/decisions/0164-the-kit-screen.md).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
-import { Checkbox, ChoiceGroup, Field, Label, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
+import { Checkbox, ChoiceGroup, Field, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
-import { api, type Stock } from "../api.ts";
-import { stock as copy } from "../content.ts";
+import { type Stock } from "../api.ts";
+import { stock as copy } from "../content/stock.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
 import { LotFields } from "./LotFields.tsx";
 import { PieceScans } from "./PieceScans.tsx";
+import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
+import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { stockApi } from "./stock-api.ts";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
 export type Kind = (typeof KINDS)[number];
@@ -49,18 +47,18 @@ type Step = { readonly step: "editing" | "checking" | "saving" | "recorded" } | 
 const WHOLE = /^\d{1,6}$/;
 
 /** A place by name: a kit by its technician's, marked once they left, and a hub or a stockroom marked once closed. */
-export function placeName(book: Stock, id: string): string {
-  const place = [...book.places, ...book.other_places].find((each) => each.id === id);
+export function placeName(stock: Stock, id: string): string {
+  const place = [...stock.places, ...stock.other_places].find((each) => each.id === id);
   if (place === undefined) return id;
   if (place.active) return place.name;
   return place.kind === "kit" ? copy.left(place.name) : copy.closed(place.name);
 }
 
 /** The warehouse a delivery goes into, which is "central" in the ledger. */
-const warehouseOf = (book: Stock) => book.places.find((each) => each.kind === "warehouse")?.id ?? "central";
+const warehouseOf = (stock: Stock) => stock.places.find((each) => each.kind === "warehouse")?.id ?? "central";
 
 /** One of the consumables or the places, by name. */
-function Choice(props: {
+function StockChoice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
@@ -110,17 +108,16 @@ function Quantity(props: { label: string; hint?: string; value: string; onChange
 }
 
 /** What each place the movement touches holds now, beside what it will hold, and any that would go below nothing. */
-function effectOf(book: Stock, draft: Draft): { lines: string[]; warnings: string[] } {
-  const consumable = book.consumables.find((each) => each.code === draft.code);
+function effectOf(stock: Stock, draft: Draft): { lines: string[]; warnings: string[] } {
+  const consumable = stock.consumables.find((each) => each.code === draft.code);
   const unit = consumable?.unit ?? "";
-  const held = (place: string) =>
-    book.holdings.find((each) => each.consumable_code === draft.code && each.place_id === place)?.quantity ?? 0;
+  const held = (place: string) => holdingOf(stock, draft.code, place)?.quantity ?? 0;
   const said = (quantity: number) => copy.held(quantity, unit);
   const moved = Number(draft.quantity);
   const changes: [string, number][] = [];
-  if (draft.kind === "delivery") changes.push([warehouseOf(book), moved]);
+  if (draft.kind === "delivery") changes.push([warehouseOf(stock), moved]);
   // A top-up waiting for the technician's scan leaves now and arrives only then.
-  const waiting = toAKit(book, draft) && draft.waitForScan;
+  const waiting = toAKit(stock, draft) && draft.waitForScan;
   if (draft.kind === "transfer")
     changes.push([draft.from, -moved], ...(waiting ? [] : [[draft.to, moved] as [string, number]]));
   if (draft.kind === "write_off") changes.push([draft.place, -moved]);
@@ -133,13 +130,13 @@ function effectOf(book: Stock, draft: Draft): { lines: string[]; warnings: strin
   return {
     lines: [
       ...changes.map(([place, by]) =>
-        copy.confirm.line(placeName(book, place), said(held(place)), said(held(place) + by)),
+        copy.confirm.line(placeName(stock, place), said(held(place)), said(held(place) + by)),
       ),
-      ...(waiting ? [copy.confirm.onItsWay(placeName(book, draft.to))] : []),
+      ...(waiting ? [copy.confirm.onItsWay(placeName(stock, draft.to))] : []),
     ],
     warnings: changes
       .filter(([place, by]) => held(place) + by < 0)
-      .map(([place]) => copy.confirm.below(placeName(book, place))),
+      .map(([place]) => copy.confirm.below(placeName(stock, place))),
   };
 }
 
@@ -154,12 +151,12 @@ function readyOf(draft: Draft, max: number): boolean {
   return true;
 }
 
-async function sent(book: Stock, draft: Draft) {
+async function sent(stock: Stock, draft: Draft) {
   const code = draft.code;
   const note = draft.note.trim() === "" ? null : draft.note.trim();
   switch (draft.kind) {
     case "delivery":
-      return api.recordDelivery({
+      return stockApi.recordDelivery({
         consumable_code: code,
         quantity: Number(draft.quantity),
         note,
@@ -167,16 +164,16 @@ async function sent(book: Stock, draft: Draft) {
         expires_on: draft.expiresOn === "" ? null : draft.expiresOn,
       });
     case "transfer":
-      return api.recordTransfer({
+      return stockApi.recordTransfer({
         consumable_code: code,
         quantity: Number(draft.quantity),
         from: draft.from,
         to: draft.to,
         ...scannedOf(draft),
-        ...(toAKit(book, draft) ? { wait_for_scan: draft.waitForScan } : {}),
+        ...(toAKit(stock, draft) ? { wait_for_scan: draft.waitForScan } : {}),
       });
     case "count":
-      return api.recordCount({
+      return stockApi.recordCount({
         consumable_code: code,
         place_id: draft.place,
         counted: Number(draft.counted),
@@ -185,7 +182,7 @@ async function sent(book: Stock, draft: Draft) {
         expires_on: draft.expiresOn === "" ? null : draft.expiresOn,
       });
     case "write_off":
-      return api.recordWriteOff({
+      return stockApi.recordWriteOff({
         consumable_code: code,
         place_id: draft.place,
         quantity: Number(draft.quantity),
@@ -197,20 +194,20 @@ async function sent(book: Stock, draft: Draft) {
 }
 
 /** Whether a transfer goes to a technician's kit. */
-const toAKit = (book: Stock, draft: Draft) =>
-  draft.kind === "transfer" && book.places.some((place) => place.id === draft.to && place.kind === "kit");
+const toAKit = (stock: Stock, draft: Draft) =>
+  draft.kind === "transfer" && stock.places.some((place) => place.id === draft.to && place.kind === "kit");
 
 /** The pieces named, where any were scanned. */
 const scannedOf = (draft: Draft) => (draft.units.length === 0 ? {} : { units: [...draft.units] });
 
 /** Whether the movement names its pieces: a hair system's transfer or loss. */
-const scans = (book: Stock, draft: Draft) =>
+const scans = (stock: Stock, draft: Draft) =>
   (draft.kind === "transfer" || draft.kind === "write_off") &&
-  book.consumables.some((each) => each.code === draft.code && each.hair_system);
+  stock.consumables.some((each) => each.code === draft.code && each.hair_system);
 
 /** Whether a top-up to a kit waits for the technician to scan it in, as it does unless ops hand it over in person. */
-function WaitForScan({ book, draft, onDraft }: { book: Stock; draft: Draft; onDraft: (draft: Draft) => void }) {
-  if (!toAKit(book, draft)) return null;
+function WaitForScan({ stock, draft, onDraft }: { stock: Stock; draft: Draft; onDraft: (draft: Draft) => void }) {
+  if (!toAKit(stock, draft)) return null;
   return (
     <Checkbox
       label={copy.record.waitForScan}
@@ -260,20 +257,67 @@ const EMPTY = {
   waitForScan: true,
 };
 
+/** What moved: the kind of movement, the item, and the places it moved between or was counted or lost at. */
+function WhatMoved(props: {
+  stock: Stock;
+  draft: Draft;
+  kinds: readonly Kind[];
+  places: readonly (readonly [string, string])[];
+  onEdit: (field: Exclude<keyof Draft, "units" | "waitForScan">) => (value: string) => void;
+}) {
+  const { stock, draft, kinds, places } = props;
+  const edit = props.onEdit;
+  return (
+    <>
+      <ChoiceGroup className={styles.kinds} legend={copy.record.what} inline>
+        {kinds.map((kind) => (
+          <Radio
+            key={kind}
+            label={copy.record.kinds[kind]}
+            name="stock-kind"
+            value={kind}
+            checked={draft.kind === kind}
+            onChange={() => {
+              edit("kind")(kind);
+            }}
+          />
+        ))}
+      </ChoiceGroup>
+      <div className={form.fields}>
+        <StockChoice
+          label={copy.record.consumable}
+          value={draft.code}
+          options={stock.consumables.map((each) => [each.code, each.name] as const)}
+          onChange={edit("code")}
+        />
+        {draft.kind === "transfer" && (
+          <>
+            <StockChoice label={copy.record.from} value={draft.from} options={places} onChange={edit("from")} />
+            <StockChoice label={copy.record.to} value={draft.to} options={places} onChange={edit("to")} />
+          </>
+        )}
+        {(draft.kind === "count" || draft.kind === "write_off") && (
+          <StockChoice label={copy.record.place} value={draft.place} options={places} onChange={edit("place")} />
+        )}
+      </div>
+    </>
+  );
+}
+
 /** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 export function StockForm({
-  book,
+  stock,
   kinds,
   onRecorded,
 }: {
-  book: Stock;
+  stock: Stock;
   kinds: readonly [Kind, ...Kind[]];
-  onRecorded: (book: Stock, recorded: { readonly kind: Kind; readonly code: string }) => void;
+  onRecorded: (stock: Stock, recorded: { readonly kind: Kind; readonly code: string }) => void;
 }) {
-  const places = book.places.map((place) => [place.id, placeName(book, place.id)] as const);
+  const places = stock.places.map((place) => [place.id, placeName(stock, place.id)] as const);
   // The warehouse first where the caller's grants reach it, else their first place.
   const [first = "", second] = places.map(([value]) => value);
-  const offered = book.consumables.filter((each) => !each.retired);
+  const offered = stock.consumables.filter((each) => !each.retired);
   const [draft, setDraft] = useState<Draft>(() => ({
     ...EMPTY,
     kind: kinds[0],
@@ -296,13 +340,13 @@ export function StockForm({
     setDraft({ ...draft, units, quantity: units.length === 0 ? "" : String(units.length) });
     setStep({ step: "editing" });
   };
-  const unit = book.consumables.find((each) => each.code === draft.code)?.unit ?? "";
+  const unit = unitOf(stock, draft.code);
   const checking = step.step === "checking" || step.step === "saving";
-  const effect = effectOf(book, draft);
+  const effect = effectOf(stock, draft);
 
   const send = async () => {
     setStep({ step: "saving" });
-    const answer = await sent(book, draft);
+    const answer = await sent(stock, draft);
     if (!answer.ok) {
       setStep({ step: "failed", code: answer.code, fields: answer.fields });
       return;
@@ -315,55 +359,26 @@ export function StockForm({
   return (
     <Panel titleId="stock-record" title={copy.record.title}>
       <div className={form.group}>
-        <ChoiceGroup className={styles.kinds} legend={copy.record.what} inline>
-          {kinds.map((kind) => (
-            <Radio
-              key={kind}
-              label={copy.record.kinds[kind]}
-              name="stock-kind"
-              value={kind}
-              checked={draft.kind === kind}
-              onChange={() => {
-                edit("kind")(kind);
-              }}
-            />
-          ))}
-        </ChoiceGroup>
-        <div className={form.fields}>
-          <Choice
-            label={copy.record.consumable}
-            value={draft.code}
-            options={book.consumables.map((each) => [each.code, each.name] as const)}
-            onChange={edit("code")}
-          />
-          {draft.kind === "transfer" && (
-            <>
-              <Choice label={copy.record.from} value={draft.from} options={places} onChange={edit("from")} />
-              <Choice label={copy.record.to} value={draft.to} options={places} onChange={edit("to")} />
-            </>
-          )}
-          {(draft.kind === "count" || draft.kind === "write_off") && (
-            <Choice label={copy.record.place} value={draft.place} options={places} onChange={edit("place")} />
-          )}
-        </div>
-        <LotFields book={book} draft={draft} onEdit={edit} />
-        {scans(book, draft) && <PieceScans units={draft.units} onUnits={scan} />}
-        <WaitForScan book={book} draft={draft} onDraft={setDraft} />
+        <WhatMoved stock={stock} draft={draft} kinds={kinds} places={places} onEdit={edit} />
+        <LotFields stock={stock} draft={draft} onEdit={edit} />
+        {scans(stock, draft) && <PieceScans units={draft.units} onUnits={scan} />}
+        <WaitForScan stock={stock} draft={draft} onDraft={setDraft} />
         <div className={form.fields}>
           <HowMany draft={draft} unit={unit} onEdit={edit} />
           {draft.kind !== "transfer" && (
-            <div className={form.field}>
-              <Label htmlFor="stock-note">{draft.kind === "write_off" ? copy.record.lossNote : copy.record.note}</Label>
-              <TextInput
-                className={form.text}
-                id="stock-note"
-                maxLength={200}
-                value={draft.note}
-                onChange={(event) => {
-                  edit("note")(event.target.value);
-                }}
-              />
-            </div>
+            <Field label={draft.kind === "write_off" ? copy.record.lossNote : copy.record.note} className={form.field}>
+              {(control) => (
+                <TextInput
+                  {...control}
+                  className={form.text}
+                  maxLength={200}
+                  value={draft.note}
+                  onChange={(event) => {
+                    edit("note")(event.target.value);
+                  }}
+                />
+              )}
+            </Field>
           )}
         </div>
         {checking ? (
@@ -377,29 +392,25 @@ export function StockForm({
             }}
           />
         ) : (
-          <div className={form.actions}>
+          <FormActions>
             <Button
               variant="primary"
               size="small"
-              disabled={!readyOf(draft, book.max_quantity)}
+              disabled={!readyOf(draft, stock.max_quantity)}
               onClick={() => {
                 setStep({ step: "checking" });
               }}
             >
               {copy.record.check}
             </Button>
-          </div>
+          </FormActions>
         )}
         {step.step === "recorded" && (
           <InlineMessage tone="saved" className={form.saved}>
             {copy.recorded}
           </InlineMessage>
         )}
-        {step.step === "failed" && (
-          <InlineMessage tone="error" className={form.error}>
-            {errorText(copy.errors, step)}
-          </InlineMessage>
-        )}
+        {step.step === "failed" && <Refusal className={form.error} said={errorText(copy.errors, step)} />}
       </div>
     </Panel>
   );

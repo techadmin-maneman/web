@@ -1,23 +1,17 @@
-// Stock (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md): what each place holds of
-// each consumable (the warehouse, hubs, stockrooms and technicians' kits), which is low, the latest movements,
-// and, for national managers, the places themselves. Stock is kept in our own ledger, so a free consultation or a credit visit deducts what it used
-// as any other job does.
-//
-// What a place holds is the sum of its movements. A job's use comes out of the
-// kit of the technician who recorded it, as their step lands; ops record the
-// rest here. A place at or below its level is marked Low in words, and raises
-// one alert (src/domain/inventory/stock.ts), which is why there is no Tasks group for it.
+// Stock (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md): what each place holds of each
+// item, which is low, the latest movements, and, for national managers, the places. A place holds the sum of its
+// movements; a job's use comes out of its technician's kit. Low raises one alert (src/domain/inventory/stock.ts), so
+// Tasks has no group for it.
 
 import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
-import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
-import { api, type Stock } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
-import { stock as copy } from "../content.ts";
+import { type Stock } from "../api.ts";
+import { OpsLink } from "../components/Shell.tsx";
+import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
 import form from "../components/forms.module.css";
@@ -26,7 +20,10 @@ import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import type { LabelsFor } from "./Labels.tsx";
+import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
+import { useStock } from "./useStock.ts";
+import { RowHead } from "../components/RowHead.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
 const PlacesPanel = lazyScreen(() => import("./PlacesPanel.tsx").then((module) => module.PlacesPanel));
@@ -40,9 +37,9 @@ const Demand = lazyScreen(() => import("./Demand.tsx").then((module) => module.D
 const Labels = lazyScreen(() => import("./Labels.tsx").then((module) => module.Labels));
 
 /** Whether any lot within reach expires within the warning, so the Expiring panel is worth loading. */
-function anyExpiring(book: Stock): boolean {
-  const until = new Date(Date.parse(`${book.today}T00:00:00Z`) + book.expiry_warning_days * 86_400_000).toISOString();
-  return book.holdings.some((holding) =>
+function anyExpiring(stock: Stock): boolean {
+  const until = new Date(Date.parse(`${stock.today}T00:00:00Z`) + stock.expiry_warning_days * 86_400_000).toISOString();
+  return stock.holdings.some((holding) =>
     holding.lots.some((lot) => lot.expires_on !== null && lot.expires_on <= until.slice(0, 10)),
   );
 }
@@ -81,9 +78,9 @@ const RECORDING: Readonly<Record<Kind, OpsCall>> = {
 };
 
 /** One place's figure: what it holds, marked Low at or below its level, and when it was last counted. */
-function Held({ book, code, place }: { book: Stock; code: string; place: string }) {
-  const holding = book.holdings.find((each) => each.consumable_code === code && each.place_id === place);
-  const unit = book.consumables.find((each) => each.code === code)?.unit ?? "";
+function Held({ stock, code, place }: { stock: Stock; code: string; place: string }) {
+  const holding = holdingOf(stock, code, place);
+  const unit = unitOf(stock, code);
   const quantity = holding?.quantity ?? 0;
   // The lots come soonest to expire first.
   const soonest = holding?.lots.find((lot) => lot.expires_on !== null)?.expires_on ?? null;
@@ -115,8 +112,8 @@ function ToSettings() {
 const PLACES_SIDE_BY_SIDE = 6;
 
 /** The place the table shows beside the warehouse, past a handful: each named, and marked where any is low. */
-function PlacePicker({ book, place, onPlace }: { book: Stock; place: string; onPlace: (place: string) => void }) {
-  const lowIn = (id: string) => book.holdings.some((holding) => holding.place_id === id && holding.low);
+function PlacePicker({ stock, place, onPlace }: { stock: Stock; place: string; onPlace: (place: string) => void }) {
+  const lowIn = (id: string) => stock.holdings.some((holding) => holding.place_id === id && holding.low);
   return (
     <Field label={copy.place} className={styles.kitPicker}>
       {(control) => (
@@ -127,12 +124,12 @@ function PlacePicker({ book, place, onPlace }: { book: Stock; place: string; onP
             onPlace(event.target.value);
           }}
         >
-          {book.places.flatMap((each) =>
+          {stock.places.flatMap((each) =>
             each.kind === "warehouse"
               ? []
               : [
                   <option key={each.id} value={each.id}>
-                    {placeName(book, each.id)}
+                    {placeName(stock, each.id)}
                     {lowIn(each.id) ? copy.placeLow : ""}
                   </option>,
                 ],
@@ -143,12 +140,14 @@ function PlacePicker({ book, place, onPlace }: { book: Stock; place: string; onP
   );
 }
 
-function OnHand({ book }: { book: Stock }) {
+function OnHand({ stock }: { stock: Stock }) {
   const [picked, setPicked] = useState<string | null>(null);
-  const many = book.places.length > PLACES_SIDE_BY_SIDE;
-  const beside = picked ?? book.places.find((place) => place.kind !== "warehouse")?.id ?? "";
-  const places = many ? book.places.filter((place) => place.kind === "warehouse" || place.id === beside) : book.places;
-  if (book.consumables.length === 0) {
+  const many = stock.places.length > PLACES_SIDE_BY_SIDE;
+  const beside = picked ?? stock.places.find((place) => place.kind !== "warehouse")?.id ?? "";
+  const places = many
+    ? stock.places.filter((place) => place.kind === "warehouse" || place.id === beside)
+    : stock.places;
+  if (stock.consumables.length === 0) {
     return (
       <p className={form.note}>
         {copy.none} <ToSettings />
@@ -157,27 +156,27 @@ function OnHand({ book }: { book: Stock }) {
   }
   return (
     <div className={styles.scroll}>
-      {many && <PlacePicker book={book} place={beside} onPlace={setPicked} />}
+      {many && <PlacePicker stock={stock} place={beside} onPlace={setPicked} />}
       <Table className={form.table}>
         <thead>
           <tr>
             <th scope="col">{copy.consumable}</th>
             {places.map((place) => (
               <th scope="col" key={place.id}>
-                {placeName(book, place.id)}
+                {placeName(stock, place.id)}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {book.consumables.map((consumable) => (
+          {stock.consumables.map((consumable) => (
             <tr key={consumable.code}>
-              <th scope="row" className={form.rowHead}>
+              <RowHead>
                 {consumable.name}
                 {consumable.retired && <span className={styles.retired}>{copy.retired}</span>}
-              </th>
+              </RowHead>
               {places.map((place) => (
-                <Held key={place.id} book={book} code={consumable.code} place={place.id} />
+                <Held key={place.id} stock={stock} code={consumable.code} place={place.id} />
               ))}
             </tr>
           ))}
@@ -190,13 +189,13 @@ function OnHand({ book }: { book: Stock }) {
 type Movement = Stock["movements"][number];
 
 /** The latest movements, sorted and narrowed on the page: what moved, where, why and by whom. */
-function Movements({ book }: { book: Stock }) {
+function Movements({ stock }: { stock: Stock }) {
   const words = copy.movements;
   const consumable = (row: Movement) =>
-    book.consumables.find((each) => each.code === row.consumable_code)?.name ?? row.consumable_code;
-  const place = (row: Movement) => placeName(book, row.place_id);
-  const why = (row: Movement) => words.reasons[row.reason] ?? row.reason;
-  const who = (row: Movement) => (row.reason === "used" ? placeName(book, row.by) : recordedBy(row.by));
+    stock.consumables.find((each) => each.code === row.consumable_code)?.name ?? row.consumable_code;
+  const place = (row: Movement) => placeName(stock, row.place_id);
+  const why = (row: Movement) => words.reasons[row.reason];
+  const who = (row: Movement) => (row.reason === "used" ? placeName(stock, row.by) : recordedBy(row.by));
   const [when, what, where, change, reason, by] = words.columns;
   const columns: readonly Column<Movement>[] = [
     { label: when, sort: (row) => row.at },
@@ -206,13 +205,13 @@ function Movements({ book }: { book: Stock }) {
     { label: reason, sort: why, choice: why },
     { label: by, sort: who },
   ];
-  const view = useTableView(book.movements, columns, {
+  const view = useTableView(stock.movements, columns, {
     search: (row) => [consumable(row), place(row), why(row), who(row)].join(" "),
     sorted: { column: 0, direction: "descending" },
   });
   return (
     <Panel titleId="stock-movements" title={words.title}>
-      {book.movements.length === 0 ? (
+      {stock.movements.length === 0 ? (
         <p className={form.note}>{words.none}</p>
       ) : (
         <>
@@ -248,9 +247,7 @@ function Movements({ book }: { book: Stock }) {
 }
 
 export function StockScreen() {
-  const [loaded, retry] = useLoad(api.stock);
-  /** The stock after a movement, so the table follows without reading it again. */
-  const [book, setBook] = useState<Stock | null>(null);
+  const { loaded, retry, current, setStock } = useStock();
   const [by, setBy] = useState<"place" | "zone" | "city">("place");
   /** A hair system's delivery opens its labels at the warehouse, afresh each time. */
   const [labelsFor, setLabelsFor] = useState<{ readonly at: LabelsFor; readonly time: number } | null>(null);
@@ -258,32 +255,32 @@ export function StockScreen() {
   const [firstKind, ...otherKinds] = KINDS.filter((kind) => access.mayCall(RECORDING[kind]));
 
   return (
-    <Shell section="/stock" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
-      {loaded.state === "loaded" && (
+      {current !== null && (
         <div className={styles.screen}>
           <Panel titleId="stock-on-hand" title={copy.onHand}>
             <Grouping by={by} onBy={setBy} />
             {by === "place" ? (
-              <OnHand book={book ?? loaded.value} />
+              <OnHand stock={current} />
             ) : (
               <Suspense fallback={<Loading />}>
-                <Totals book={book ?? loaded.value} by={by} />
+                <Totals stock={current} by={by} />
               </Suspense>
             )}
           </Panel>
-          {anyExpiring(book ?? loaded.value) && (
+          {anyExpiring(current) && (
             <Suspense fallback={<Loading />}>
-              <Expiring book={book ?? loaded.value} />
+              <Expiring stock={current} />
             </Suspense>
           )}
-          {firstKind !== undefined && (book ?? loaded.value).consumables.length > 0 && (
+          {firstKind !== undefined && current.consumables.length > 0 && (
             <StockForm
-              book={book ?? loaded.value}
+              stock={current}
               kinds={[firstKind, ...otherKinds]}
               onRecorded={(after, recorded) => {
-                setBook(after);
+                setStock(after);
                 const hairSystem = after.consumables.some((each) => each.code === recorded.code && each.hair_system);
                 if (recorded.kind === "delivery" && hairSystem) {
                   setLabelsFor({ at: { code: recorded.code, place: "central" }, time: (labelsFor?.time ?? 0) + 1 });
@@ -292,26 +289,26 @@ export function StockScreen() {
             />
           )}
           <Suspense fallback={<Loading />}>
-            <Demand book={book ?? loaded.value} />
+            <Demand stock={current} />
           </Suspense>
-          {(book ?? loaded.value).in_transit.length > 0 && (
+          {current.in_transit.length > 0 && (
             <Suspense fallback={<Loading />}>
-              <InTransit book={book ?? loaded.value} onChanged={setBook} />
+              <InTransit stock={current} onChanged={setStock} />
             </Suspense>
           )}
           {access.mayCall("GET /api/stock/units") && (
             <Suspense fallback={<Loading />}>
-              <Labels key={String(labelsFor?.time ?? 0)} book={book ?? loaded.value} focus={labelsFor?.at ?? null} />
+              <Labels key={String(labelsFor?.time ?? 0)} stock={current} focus={labelsFor?.at ?? null} />
             </Suspense>
           )}
-          <Movements book={book ?? loaded.value} />
+          <Movements stock={current} />
           {access.mayCall("POST /api/stock/places") && (
             <Suspense fallback={<Loading />}>
-              <PlacesPanel book={book ?? loaded.value} onChanged={setBook} />
+              <PlacesPanel stock={current} onChanged={setStock} />
             </Suspense>
           )}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

@@ -237,7 +237,7 @@ test.describe("hair systems", () => {
     await form.getByLabel(words.cost).fill("12000");
     await form.getByRole("button", { name: review.next }).click();
     await form.getByRole("button", { name: review.send }).click();
-    await expect(form.getByRole("alert")).toHaveText(words.errors.hair_system ?? "");
+    await expect(form.getByRole("alert")).toHaveText(words.errors.hair_system);
   });
 });
 

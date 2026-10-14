@@ -2,12 +2,12 @@
 // city at a time, and the events calendar the next forecast reads.
 
 import { useLoad } from "@maneman/ui/useLoad";
-import { client } from "../api.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { EventsPanel } from "./DemandEvents.tsx";
 import { ForecastPanel } from "./Forecast.tsx";
+import { supplyPlanApi } from "./supply-plan-api.ts";
 
-const loadCalendar = () => client.get("/api/demand-events");
+const loadCalendar = () => supplyPlanApi.demandEvents();
 
 export function Planning() {
   const [loaded, retry] = useLoad(loadCalendar);

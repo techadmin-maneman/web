@@ -36,6 +36,7 @@ import { typeLook, type TextStyle } from "@maneman/ui/type";
 import { useState, type ReactNode } from "react";
 import { kit as words } from "../content/kit.ts";
 import styles from "./kit.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const SIZES: readonly ButtonSize[] = ["action", "control", "small", "compact"];
 const STYLES: readonly TextStyle[] = [
@@ -181,7 +182,7 @@ function Fields() {
 function Messages() {
   const lines = (
     <>
-      <InlineMessage tone="error">{words.errorLine}</InlineMessage>
+      <Refusal said={words.errorLine} />
       <InlineMessage tone="saved">{words.savedLine}</InlineMessage>
       <InlineMessage tone="note">{words.noteLine}</InlineMessage>
     </>

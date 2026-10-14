@@ -33,6 +33,18 @@ const HAND_BUSY = {
     "Run a write through useOneAtATime (@maneman/ui/useOneAtATime): a busy flag alone lets a second tap through.",
 };
 
+/** What the front ends may not import: the backend's own code, but for the rules it shares with them. */
+const FRONT_IMPORTS = [
+  {
+    regex: "^(\\.\\./)+src/",
+    message: "Import the backend's shared rules as @rules/config/…, @rules/policy/… or @rules/lib/….",
+  },
+  {
+    regex: "^@rules/(?!(config|policy|lib)/)",
+    message: "Only the backend's config, policy and lib are shared with the front ends.",
+  },
+];
+
 /** A size rule at a level, counting code lines alone. */
 const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
   level,
@@ -186,18 +198,22 @@ export default defineConfig(
     // routes or vendors. An app's Vite config runs in Node, before any alias, so it reaches src/ as Node does.
     files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
     ignores: ["apps/*/vite.config.ts"],
+    rules: { "no-restricted-imports": ["error", { patterns: FRONT_IMPORTS }] },
+  },
+  {
+    // A screen calls the API through its feature's module (care-api.ts, purchasing-api.ts) or api.ts's functions,
+    // never through the client itself, so a call is found, and changed, in one place.
+    files: ["apps/ops/src/**/*.tsx"],
     rules: {
       "no-restricted-imports": [
         "error",
         {
           patterns: [
+            ...FRONT_IMPORTS,
             {
-              regex: "^(\\.\\./)+src/",
-              message: "Import the backend's shared rules as @rules/config/…, @rules/policy/… or @rules/lib/….",
-            },
-            {
-              regex: "^@rules/(?!(config|policy|lib)/)",
-              message: "Only the backend's config, policy and lib are shared with the front ends.",
+              regex: "(^|/)api\\.ts$",
+              importNames: ["client"],
+              message: "Call the API through the feature's own module (<feature>-api.ts) or api.ts's functions.",
             },
           ],
         },
@@ -211,7 +227,7 @@ export default defineConfig(
   },
   {
     // A hook called conditionally breaks React at runtime, and an effect's missing dependency reads stale values, so
-    // both are errors (FE-02). Adding a dependency blindly can loop: read the newest value without restarting the
+    // both are errors. Adding a dependency blindly can loop: read the newest value without restarting the
     // effect with useEffectEvent in the apps, or useLatest (site/src/islands/useLatest.ts) on the site.
     files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
     // Its rules alone: the plugin's legacy configs do not fit flat config's types.
@@ -222,7 +238,7 @@ export default defineConfig(
     },
   },
   {
-    // Accessibility, read in every component (TOOL-01): axe in the browser tests sees only the states a test reaches.
+    // Accessibility, read in every component: axe in the browser tests sees only the states a test reaches.
     files: ["apps/**/*.tsx", "packages/**/*.tsx", "site/src/**/*.tsx"],
     ...jsxA11y.configs.recommended,
     rules: {
@@ -285,7 +301,7 @@ export default defineConfig(
     rules: { "no-nested-ternary": "error", "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY] },
   },
   {
-    files: ["apps/app/src/**/*.{ts,tsx}", "apps/tech/src/**/*.{ts,tsx}"],
+    files: ["apps/app/src/**/*.{ts,tsx}", "apps/tech/src/**/*.{ts,tsx}", "apps/ops/src/**/*.{ts,tsx}"],
     rules: { "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY, HAND_BUSY] },
   },
   {

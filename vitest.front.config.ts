@@ -16,8 +16,9 @@ export default defineConfig({
       reportsDirectory: "coverage-front",
       reporter: ["text-summary", "json-summary"],
       // Just under the 32% of lines and 23% of branches the suite reached when the report began: a fall shows, and the
-      // floor rises as screens' logic moves into node-tested modules (P3-30).
-      thresholds: { lines: 31, branches: 22 },
+      // floor rises as screens' logic moves into node-tested modules. The console has a floor of its own, just
+      // under the 31.8% and 25% its own tests reach, so its share cannot fall behind the other front ends' gains.
+      thresholds: { lines: 31, branches: 22, "apps/ops/src/**": { lines: 31, branches: 24 } },
     },
   },
 });

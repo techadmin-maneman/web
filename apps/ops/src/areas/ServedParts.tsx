@@ -2,16 +2,20 @@
 // message, what sits beneath Save, and a file read with its changes shown before they go into the table.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Checkbox, DateInput, Fieldset, FileInput, Label, TextInput } from "@maneman/ui/Field";
+import { Field, Checkbox, DateInput, Fieldset, FileInput, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import type { AreaChange, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
+import styles from "./areas.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import type { Draft, FileChange, Row } from "./served-draft.ts";
+import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = areas.served;
 const launch = areas.launch;
@@ -39,9 +43,7 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
   const id = pincode.pincode;
   return (
     <tr>
-      <th scope="row" className={styles.rowHead}>
-        {id}
-      </th>
+      <RowHead>{id}</RowHead>
       <td>
         <TextInput
           compact
@@ -78,7 +80,7 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
           }}
         />
       </td>
-      <td className={styles.figure}>{pincode.waiting}</td>
+      <td className={form.figure}>{pincode.waiting}</td>
     </tr>
   );
 }
@@ -131,17 +133,17 @@ function FilePreview({
   const describe = (row: Row) => copy.upload.state(row.served, row.launch_on);
   if (rows.length === 0) {
     return (
-      <InlineMessage tone="saved" className={styles.saved}>
+      <InlineMessage tone="saved" className={form.saved}>
         {copy.upload.none}
       </InlineMessage>
     );
   }
   return (
     <div className={styles.uploaded}>
-      <InlineMessage tone="saved" className={styles.saved}>
+      <InlineMessage tone="saved" className={form.saved}>
         {copy.upload.read(rows.length)}
       </InlineMessage>
-      <Table className={styles.table}>
+      <Table className={form.table}>
         <thead>
           <tr>
             {copy.upload.columns.map((column) => (
@@ -154,9 +156,7 @@ function FilePreview({
         <tbody>
           {rows.map((row) => (
             <tr key={row.pincode.pincode}>
-              <th scope="row" className={styles.rowHead}>
-                {row.pincode.pincode}
-              </th>
+              <RowHead>{row.pincode.pincode}</RowHead>
               <td>{row.pincode.area}</td>
               <td>{describe(row.now)}</td>
               <td>{describe(row.file)}</td>
@@ -164,14 +164,14 @@ function FilePreview({
           ))}
         </tbody>
       </Table>
-      <div className={styles.actions}>
+      <FormActions>
         <Button variant="primary" size="small" onClick={onApply}>
           {copy.upload.apply}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>
+        <Button variant="outline" size="small" className={form.quiet} onClick={onCancel}>
           {copy.upload.cancel}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }
@@ -189,23 +189,20 @@ export function UploadFile({
   onCancel: () => void;
 }) {
   return (
-    <Fieldset className={styles.group} legend={copy.upload.title} legendLook="title">
-      <div className={styles.field}>
-        <Label htmlFor="area-file">{copy.upload.label}</Label>
-        <FileInput
-          className={styles.file}
-          id="area-file"
-          accept=".csv,text/csv"
-          aria-describedby="area-file-hint"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file !== undefined) onFile(file);
-          }}
-        />
-        <p className={styles.hint} id="area-file-hint">
-          {copy.upload.hint}
-        </p>
-      </div>
+    <Fieldset className={form.group} legend={copy.upload.title} legendLook="title">
+      <Field label={copy.upload.label} hint={copy.upload.hint} className={form.field} look={{ hint: form.hint }}>
+        {(control) => (
+          <FileInput
+            {...control}
+            className={form.file}
+            accept=".csv,text/csv"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file !== undefined) onFile(file);
+            }}
+          />
+        )}
+      </Field>
       {upload?.step === "read" && (
         <FilePreview
           rows={upload.rows}
@@ -216,15 +213,11 @@ export function UploadFile({
         />
       )}
       {upload?.step === "applied" && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {copy.upload.applied}
         </InlineMessage>
       )}
-      {upload?.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {upload.says}
-        </InlineMessage>
-      )}
+      {upload?.step === "failed" && <Refusal className={form.error} said={upload.says} />}
     </Fieldset>
   );
 }
@@ -267,13 +260,13 @@ export function CityTabs({
       </Tabs>
 
       {mayChange && (
-        <div className={styles.actions}>
+        <FormActions>
           {[true, false].map((served) => (
             <Button
               variant="outline"
               size="small"
               key={String(served)}
-              className={styles.quiet}
+              className={form.quiet}
               onClick={() => {
                 onBulk(served);
               }}
@@ -281,7 +274,7 @@ export function CityTabs({
               {served ? copy.bulk.serve(city) : copy.bulk.stop(city)}
             </Button>
           ))}
-        </div>
+        </FormActions>
       )}
     </>
   );
@@ -303,26 +296,16 @@ export function SaveNotes({
 }) {
   return (
     <>
-      {badName !== undefined && (
-        <InlineMessage tone="error" className={styles.error}>
-          {copy.badName(badName.pincode)}
-        </InlineMessage>
-      )}
-      {later !== undefined && (
-        <InlineMessage tone="error" className={styles.error}>
-          {copy.later(later.pincode)}
-        </InlineMessage>
-      )}
-      {mayChange && changes.length === 0 && saving.step === "editing" && <p className={styles.hint}>{copy.nothing}</p>}
+      {badName !== undefined && <Refusal className={form.error} said={copy.badName(badName.pincode)} />}
+      {later !== undefined && <Refusal className={form.error} said={copy.later(later.pincode)} />}
+      {mayChange && changes.length === 0 && saving.step === "editing" && <p className={form.hint}>{copy.nothing}</p>}
       {saving.step === "saved" && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {copy.saved(saving.changed, saving.alerted)}
         </InlineMessage>
       )}
       {saving.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: saving.code })}
-        </InlineMessage>
+        <Refusal className={form.error} said={errorText(copy.errors, { code: saving.code })} />
       )}
     </>
   );

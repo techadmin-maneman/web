@@ -6,20 +6,23 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { client, type Stock } from "../api.ts";
+import { type Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./stock.module.css";
+import { unitOf } from "./holdings.ts";
+import { RowHead } from "../components/RowHead.tsx";
+import { stockApi } from "./stock-api.ts";
 
-const loadDemand = () => client.get("/api/stock/demand");
+const loadDemand = () => stockApi.demand();
 
-export function Demand({ book }: { book: Stock }) {
+export function Demand({ stock }: { stock: Stock }) {
   const [loaded, retry] = useLoad(loadDemand);
   const words = stockViews.demand;
   const named = (code: string | null) =>
-    code === null ? words.noProfile : (book.consumables.find((each) => each.code === code)?.name ?? code);
-  const unit = (code: string) => book.consumables.find((each) => each.code === code)?.unit ?? "";
+    code === null ? words.noProfile : (stock.consumables.find((each) => each.code === code)?.name ?? code);
+  const unit = (code: string) => unitOf(stock, code);
   return (
     <Panel titleId="stock-demand" title={words.title}>
       {loaded.state === "loading" && <Loading />}
@@ -43,9 +46,7 @@ export function Demand({ book }: { book: Stock }) {
                 <tbody>
                   {loaded.value.demand.map((row) => (
                     <tr key={`${row.consumable_code}/${row.city ?? ""}`}>
-                      <th scope="row" className={form.rowHead}>
-                        {named(row.consumable_code)}
-                      </th>
+                      <RowHead>{named(row.consumable_code)}</RowHead>
                       <td>{row.city ?? words.noCity}</td>
                       <td className={form.figure}>{`${String(row.expected)} ${unit(row.consumable_code)}`}</td>
                       <td className={form.figure}>

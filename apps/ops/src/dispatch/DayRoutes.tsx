@@ -4,9 +4,10 @@
 import { Drawer } from "@maneman/ui/Drawer";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useEffect, useState } from "react";
-import { api, type DispatchDay } from "../api.ts";
+import { type DispatchDay } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "./dispatch.module.css";
+import { dispatchApi } from "./dispatch-api.ts";
 
 type Loaded =
   | { readonly state: "loading" }
@@ -21,7 +22,7 @@ function useDayMap(date: string, city: string | null): string | null {
   useEffect(() => {
     let current = true;
     let made: string | null = null;
-    void api.dayMap(date, city).then((answer) => {
+    void dispatchApi.dayMap(date, city).then((answer) => {
       if (!current || !answer.ok) return;
       made = URL.createObjectURL(answer.body);
       setUrl(made);
@@ -78,7 +79,7 @@ export function DayRoutes({ date, city, onClose }: { date: string; city: string 
 
   useEffect(() => {
     let current = true;
-    void api.dispatchDay(date, city).then((answer) => {
+    void dispatchApi.dispatchDay(date, city).then((answer) => {
       if (current) setLoaded(answer.ok ? { state: "loaded", day: answer.body } : { state: "failed" });
     });
     return () => {

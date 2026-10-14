@@ -19,8 +19,9 @@ import { RemedyForm } from "./Remedies.tsx";
 import { ClientPanel } from "./ClientPanel.tsx";
 import { Stranger } from "./Stranger.tsx";
 import { Composer } from "./Composer.tsx";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
+import { FormActions } from "../components/FormActions.tsx";
 
 const thread = copy.thread;
 
@@ -53,20 +54,20 @@ function Item({ item }: { item: ThreadItem }) {
       item.read_at === null ? null : thread.read,
     ].filter((each) => each !== null);
     return (
-      <li className={own.auto}>
-        <span className={own.when}>{whenOf(item.at)}</span> {thread.auto(kindName(item.message), seen)}
+      <li className={styles.auto}>
+        <span className={styles.when}>{whenOf(item.at)}</span> {thread.auto(kindName(item.message), seen)}
       </li>
     );
   }
   const from = fromOf(item);
   return (
-    <li className={item.kind === "in" ? own.theirs : own.ours}>
-      <span className={own.when}>
+    <li className={item.kind === "in" ? styles.theirs : styles.ours}>
+      <span className={styles.when}>
         {item.kind === "note" ? `${thread.note} · ` : ""}
         {from} · {whenOf(item.at)}
       </span>
-      <span className={own.text}>{item.text ?? thread.erased}</span>
-      {item.kind === "out" && item.delivery === "failed" && <span className={own.failed}>{thread.notSent}</span>}
+      <span className={styles.text}>{item.text ?? thread.erased}</span>
+      {item.kind === "out" && item.delivery === "failed" && <span className={styles.failed}>{thread.notSent}</span>}
     </li>
   );
 }
@@ -76,7 +77,7 @@ function About({ conversation }: { conversation: Conversation }) {
   const { person, technician } = conversation;
   if (technician !== null) {
     return (
-      <p className={styles.note}>
+      <p className={form.note}>
         {thread.technician}{" "}
         <OpsLink className={textLinkLook()} to={technicianPath(technician.id)}>
           {thread.technicianPage}
@@ -87,7 +88,7 @@ function About({ conversation }: { conversation: Conversation }) {
   if (person === null) return null;
   return (
     <>
-      <p className={styles.note}>
+      <p className={form.note}>
         <OpsLink className={textLinkLook()} to={clientPath(person.id, "visits")}>
           {thread.page}
         </OpsLink>
@@ -121,13 +122,13 @@ export function Thread({
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { items } = changed ?? loaded.value;
   return (
-    <section className={styles.group} aria-label={thread.title(whoOf(conversation))}>
-      <h3 className={styles.ruleTitle}>{thread.title(whoOf(conversation))}</h3>
+    <section className={form.group} aria-label={thread.title(whoOf(conversation))}>
+      <h3 className={form.ruleTitle}>{thread.title(whoOf(conversation))}</h3>
       <About conversation={conversation} />
       {items.length === 0 ? (
-        <p className={styles.note}>{thread.empty}</p>
+        <p className={form.note}>{thread.empty}</p>
       ) : (
-        <ol className={own.items}>
+        <ol className={styles.items}>
           {items.map((item) => (
             <Item
               key={`${item.kind}-${item.at}-${item.kind === "auto" ? item.message : (item.text ?? "")}`}
@@ -137,7 +138,7 @@ export function Thread({
         </ol>
       )}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
@@ -158,11 +159,11 @@ export function Thread({
           }}
         />
       )}
-      <div className={styles.actions}>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={onClose}>
+      <FormActions>
+        <Button variant="outline" size="small" className={form.quiet} onClick={onClose}>
           {thread.close}
         </Button>
-      </div>
+      </FormActions>
     </section>
   );
 }

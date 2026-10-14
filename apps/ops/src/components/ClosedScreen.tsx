@@ -2,15 +2,10 @@
 // every page already, so the page says nothing more to them.
 
 import { shell } from "../content.ts";
-import { sectionOf, SECTION_NAMES, type Page } from "../route.ts";
-import { Shell, useNotListed } from "./Shell.tsx";
+import { useNotListed } from "./Shell.tsx";
 import styles from "./shell.module.css";
 
-export function ClosedScreen({ page }: { page: Page }) {
+export function ClosedScreen() {
   const notListed = useNotListed();
-  return (
-    <Shell section={sectionOf(page).path} title={SECTION_NAMES[page]}>
-      {!notListed && <p className={styles.closed}>{shell.closed}</p>}
-    </Shell>
-  );
+  return notListed ? null : <p className={styles.closed}>{shell.closed}</p>;
 }

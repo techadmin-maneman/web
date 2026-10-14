@@ -3,10 +3,11 @@
 
 import { Table } from "@maneman/ui/Table";
 import type { Stock } from "../api.ts";
-import { stock as copy } from "../content.ts";
+import { stock as copy } from "../content/stock.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
 import styles from "./stock.module.css";
+import { RowHead } from "../components/RowHead.tsx";
 
 export type Grouping = "zone" | "city";
 
@@ -17,13 +18,13 @@ function groupOf(place: Stock["places"][number], by: Grouping): string {
   return place.city ?? words.noCity;
 }
 
-export function Totals({ book, by }: { book: Stock; by: Grouping }) {
-  const groups = [...new Set(book.places.map((place) => groupOf(place, by)))].sort();
+export function Totals({ stock, by }: { stock: Stock; by: Grouping }) {
+  const groups = [...new Set(stock.places.map((place) => groupOf(place, by)))].sort();
   const sum = (code: string, group: string | null) =>
-    book.holdings
+    stock.holdings
       .filter((holding) => holding.consumable_code === code)
       .filter((holding) => {
-        const place = book.places.find((each) => each.id === holding.place_id);
+        const place = stock.places.find((each) => each.id === holding.place_id);
         return place !== undefined && (group === null || groupOf(place, by) === group);
       })
       .reduce((total, holding) => total + holding.quantity, 0);
@@ -42,11 +43,9 @@ export function Totals({ book, by }: { book: Stock; by: Grouping }) {
           </tr>
         </thead>
         <tbody>
-          {book.consumables.map((consumable) => (
+          {stock.consumables.map((consumable) => (
             <tr key={consumable.code}>
-              <th scope="row" className={form.rowHead}>
-                {consumable.name}
-              </th>
+              <RowHead>{consumable.name}</RowHead>
               <td className={styles.held}>{copy.held(sum(consumable.code, null), consumable.unit)}</td>
               {groups.map((group) => (
                 <td className={styles.held} key={group}>

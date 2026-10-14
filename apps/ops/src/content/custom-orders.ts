@@ -1,7 +1,7 @@
 // A client's custom orders, on their Pieces tab (docs/decisions/0174-custom-orders.md). Only that panel reads it,
 // loaded when the tab opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const customOrders = {
   title: "Custom orders",
@@ -27,7 +27,7 @@ export const customOrders = {
     arrived: "Arrived",
     refunded: "Refunded in full",
     cancelled: "Cancelled",
-  } as Readonly<Record<string, string>>,
+  },
   link: "Payment link",
   sendAgain: "Send link again",
   cancel: "Cancel",
@@ -39,7 +39,7 @@ export const customOrders = {
     not_ordered: "Not yet ordered",
     late: "Supplier late past the grace",
     failed_check: "Failed its check",
-  } as Readonly<Record<string, string>>,
+  },
   sent: "Link sent.",
   raise: {
     open: "Raise a custom order",
@@ -59,14 +59,14 @@ export const customOrders = {
   errors: {
     profile: "Complete their hair profile first.",
     supplier_id: "That supplier is retired. Choose another.",
-    order_state: "That order has moved on. Reload.",
+    order_state: changed("That order has moved on."),
     refund_not_due: "That reason does not hold for this order yet.",
-    unavailable: "Razorpay did not make the refund. Ops are told to make it by hand.",
+    unavailable: "Refund failed. Refund it in Razorpay.",
     not_found: "That client is outside your places.",
     invalid_request: "Check the order.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 };

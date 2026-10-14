@@ -3,14 +3,13 @@
 // consumable lot's label, for its boxes, in as many copies as there are boxes. Any label scanned here finds its piece
 // (docs/decisions/0162-scanning-labels.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, ChoiceGroup, Field, NumberInput, Select } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { client, type Stock, type StockUnits } from "../api.ts";
+import { type Stock, type StockUnits } from "../api.ts";
 import { stockLabels as copy } from "../content/stock-labels.ts";
 import { useAccess } from "../lib/access.ts";
 import form from "../components/forms.module.css";
@@ -19,6 +18,10 @@ import { LabelFound } from "./LabelFound.tsx";
 import { LabelSheet, type PrintedLabel } from "./LabelSheet.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./labels.module.css";
+import { holdingOf } from "./holdings.ts";
+import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { stockApi } from "./stock-api.ts";
 
 /** The item and place whose labels the panel shows. */
 export interface LabelsFor {
@@ -71,7 +74,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
         ))}
       </ChoiceGroup>
       {toPrint.length > 0 && (
-        <div className={form.actions}>
+        <FormActions>
           <Button
             variant="primary"
             size="small"
@@ -84,7 +87,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
           >
             {printing === null ? copy.print(toPrint.length) : copy.printing}
           </Button>
-        </div>
+        </FormActions>
       )}
       {printing !== null && (
         <LabelSheet
@@ -99,10 +102,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
 }
 
 function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
-  const load = useCallback(
-    () => client.get("/api/stock/units", { query: { consumable_code: at.code, place_id: at.place } }),
-    [at.code, at.place],
-  );
+  const load = useCallback(() => stockApi.units({ consumable_code: at.code, place_id: at.place }), [at.code, at.place]);
   const [loaded, retry] = useLoad(load);
   /** The units after a labelling, and how many labellings: each ticks its own batch afresh. */
   const [after, setAfter] = useState<{ readonly units: StockUnits; readonly times: number } | null>(null);
@@ -116,7 +116,7 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
   const label = async () => {
     setLabelling("busy");
     const body = { consumable_code: at.code, place_id: at.place, quantity: toLabel };
-    const answer = await client.post("/api/stock/units", { body });
+    const answer = await stockApi.addUnits(body);
     if (!answer.ok) {
       setLabelling("failed");
       return;
@@ -137,11 +137,7 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
           )}
         </p>
       )}
-      {labelling === "failed" && (
-        <InlineMessage tone="error" className={form.error}>
-          {copy.notLabelled}
-        </InlineMessage>
-      )}
+      {labelling === "failed" && <Refusal className={form.error} said={copy.notLabelled} />}
       <Batches key={String(after?.times ?? 0)} units={units.units} name={name} />
     </>
   );
@@ -149,8 +145,11 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
 
 const MAX_COPIES = 200;
 
-function LotLabels({ book, name, at }: { book: Stock; name: string; at: LabelsFor }) {
-  const lots = book.holdings.find((each) => each.consumable_code === at.code && each.place_id === at.place)?.lots ?? [];
+/** The lots a place holds of one consumable. */
+const lotsAt = (stock: Stock, at: LabelsFor) => holdingOf(stock, at.code, at.place)?.lots ?? [];
+
+function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: LabelsFor }) {
+  const lots = lotsAt(stock, at);
   const [lotId, setLotId] = useState(lots[0]?.id ?? "");
   const [copies, setCopies] = useState("1");
   const [failed, setFailed] = useState(false);
@@ -162,7 +161,7 @@ function LotLabels({ book, name, at }: { book: Stock; name: string; at: LabelsFo
   const print = async () => {
     if (lot === undefined) return;
     setFailed(false);
-    const answer = await client.post("/api/stock/lots/{id}/label", { path: { id: lot.id } });
+    const answer = await stockApi.labelLot(lot.id);
     if (!answer.ok) {
       setFailed(true);
       return;
@@ -205,12 +204,8 @@ function LotLabels({ book, name, at }: { book: Stock; name: string; at: LabelsFo
           )}
         </Field>
       </div>
-      {failed && (
-        <InlineMessage tone="error" className={form.error}>
-          {copy.noLabel}
-        </InlineMessage>
-      )}
-      <div className={form.actions}>
+      {failed && <Refusal className={form.error} said={copy.noLabel} />}
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -219,7 +214,7 @@ function LotLabels({ book, name, at }: { book: Stock; name: string; at: LabelsFo
         >
           {printing === null ? copy.print(count) : copy.printing}
         </Button>
-      </div>
+      </FormActions>
       {printing !== null && (
         <LabelSheet
           labels={printing}
@@ -233,7 +228,7 @@ function LotLabels({ book, name, at }: { book: Stock; name: string; at: LabelsFo
 }
 
 /** One of the items or the places, by name. */
-function Choice(props: {
+function LabelChoice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
@@ -261,37 +256,37 @@ function Choice(props: {
 }
 
 /** The panel, opened on `focus` where given: a hair system's delivery opens its labels at the warehouse. */
-export function Labels({ book, focus }: { book: Stock; focus: LabelsFor | null }) {
-  const [code, setCode] = useState(focus?.code ?? book.consumables.find((each) => !each.retired)?.code ?? "");
-  const [place, setPlace] = useState(focus?.place ?? book.places[0]?.id ?? "");
+export function Labels({ stock, focus }: { stock: Stock; focus: LabelsFor | null }) {
+  const [code, setCode] = useState(focus?.code ?? stock.consumables.find((each) => !each.retired)?.code ?? "");
+  const [place, setPlace] = useState(focus?.place ?? stock.places[0]?.id ?? "");
   const panel = useRef<HTMLElement>(null);
   useEffect(() => {
     if (focus !== null) panel.current?.scrollIntoView({ block: "start" });
   }, [focus]);
-  const consumable = book.consumables.find((each) => each.code === code);
+  const consumable = stock.consumables.find((each) => each.code === code);
   const at = { code, place };
   const access = useAccess();
   return (
     <Panel titleId="stock-labels" title={copy.title} ref={panel}>
-      {access.mayCall("GET /api/stock/units/{code}") && <LabelFound book={book} />}
+      {access.mayCall("GET /api/stock/units/{code}") && <LabelFound stock={stock} />}
       <div className={form.fields}>
-        <Choice
+        <LabelChoice
           label={copy.item}
           value={code}
-          options={book.consumables.map((each) => [each.code, each.name] as const)}
+          options={stock.consumables.map((each) => [each.code, each.name] as const)}
           onChange={setCode}
         />
-        <Choice
+        <LabelChoice
           label={copy.place}
           value={place}
-          options={book.places.map((each) => [each.id, placeName(book, each.id)] as const)}
+          options={stock.places.map((each) => [each.id, placeName(stock, each.id)] as const)}
           onChange={setPlace}
         />
       </div>
       {consumable?.hair_system === true ? (
         <PieceLabels key={`${code}:${place}`} name={consumable.name} at={at} />
       ) : (
-        <LotLabels key={`${code}:${place}`} book={book} name={consumable?.name ?? code} at={at} />
+        <LotLabels key={`${code}:${place}`} stock={stock} name={consumable?.name ?? code} at={at} />
       )}
     </Panel>
   );

@@ -4,13 +4,14 @@
 
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useState } from "react";
-import { api, type Word } from "../api.ts";
+import { type Word } from "../api.ts";
 import { words as copy } from "../content/words.ts";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import styles from "../components/forms.module.css";
-import own from "./words.module.css";
+import form from "../components/forms.module.css";
+import styles from "./words.module.css";
+import { wordsApi } from "./words-api.ts";
 
-const { form, check } = copy;
+const { form: formWords, check } = copy;
 
 /** What the page or the sender fills: "{city}", "{{2}}". */
 const holesOf = (text: string): string[] => [...new Set(text.match(/\{\{\d+\}\}|\{[a-zA-Z]+\}/g) ?? [])];
@@ -52,7 +53,8 @@ export function WordForm(props: {
   const { word } = props;
   const [text, setText] = useState(props.start);
   const steps = useSteps(
-    async () => sentOf(await api.setWord(word.key, text === word.text ? null : text), (body) => ({ word: body.word })),
+    async () =>
+      sentOf(await wordsApi.setWord(word.key, text === word.text ? null : text), (body) => ({ word: body.word })),
     (sent) => {
       props.onDone(sent.word);
     },
@@ -60,25 +62,25 @@ export function WordForm(props: {
   const holes = holesOf(word.text);
   return (
     <SettingForm
-      title={form.title(placeOf(word))}
+      title={formWords.title(placeOf(word))}
       steps={steps}
       ready={text.trim() !== "" && text !== word.now}
       errors={copy.errors}
       onCancel={props.onCancel}
-      above={<p className={own.code}>{form.inCode(word.text)}</p>}
+      above={<p className={styles.code}>{formWords.inCode(word.text)}</p>}
       checking={
         <>
-          <p className={styles.checkLine}>{check.was(word.now)}</p>
-          <p className={styles.checkLine}>{check.now(text)}</p>
+          <p className={form.checkLine}>{check.was(word.now)}</p>
+          <p className={form.checkLine}>{check.now(text)}</p>
         </>
       }
     >
-      <div className={styles.fields}>
-        <Field label={form.wording} className={own.wording}>
+      <div className={form.fields}>
+        <Field label={formWords.wording} className={styles.wording}>
           {(control) => (
             <TextArea
               {...control}
-              className={own.box}
+              className={styles.box}
               rows={word.surface === "message" ? 5 : 3}
               maxLength={word.longest}
               value={text}
@@ -90,12 +92,12 @@ export function WordForm(props: {
           )}
         </Field>
       </div>
-      <p className={own.hint}>
-        {holes.length > 0 && `${form.keep(holes.join(", "))} `}
-        {form.longest(word.longest)}
+      <p className={styles.hint}>
+        {holes.length > 0 && `${formWords.keep(holes.join(", "))} `}
+        {formWords.longest(word.longest)}
       </p>
       {word.surface === "message" && (
-        <p className={own.hint}>{props.messages === "at_once" ? form.atOnce : form.afterApproval}</p>
+        <p className={styles.hint}>{props.messages === "at_once" ? formWords.atOnce : formWords.afterApproval}</p>
       )}
     </SettingForm>
   );

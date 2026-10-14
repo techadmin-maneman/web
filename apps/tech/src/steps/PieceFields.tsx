@@ -177,7 +177,6 @@ function Picker(props: {
   );
 }
 
-/** The new piece's label: typed, checked against the format, looked up, or picked; and what the lookup found. */
 /** "Scan the label": the camera, open until it reads a label, which goes in the box. */
 function ScanButton({ onCode }: { onCode: (code: string) => void }) {
   const [scanning, setScanning] = useState(false);
@@ -207,6 +206,7 @@ function ScanButton({ onCode }: { onCode: (code: string) => void }) {
   );
 }
 
+/** The new piece's label: typed, checked against the format, looked up, or picked; and what the lookup found. */
 export function LabelField(props: {
   code: string;
   looked: Looked;

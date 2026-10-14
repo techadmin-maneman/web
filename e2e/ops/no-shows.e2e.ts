@@ -209,7 +209,7 @@ test("says so when someone else has ruled on the dispute already", async ({ page
   const card = disputeCard(page);
   await card.getByLabel("Your note · required").fill("The bell was broken");
   await card.getByRole("button", { name: opsCopy.noShows.dispute.uphold }).click();
-  await expect(card.getByRole("alert")).toContainText("Already ruled on. Reload.");
+  await expect(page.getByText("Already ruled on. Here's the latest.")).toBeVisible();
 });
 
 test("says so when nothing was charged on the day", async ({ page }) => {

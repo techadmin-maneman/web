@@ -1,9 +1,6 @@
-// Whether Cloudflare Access still lets the console through. The console holds
-// no session of its own; Access's lapses after the time the team sets, and from
-// then on Access answers every call by sending it to the team's login page, on
-// another origin (docs/decisions/0031-access-and-audit.md). A call can see that
-// only as a redirect it was not allowed to follow, so api.ts marks it here and
-// the frame says so once, over whichever screen is open.
+// Whether Cloudflare Access still lets the console through (docs/decisions/0031-access-and-audit.md). Once Access's
+// session lapses it sends every call to its login page on another origin, which a call sees only as a redirect it may
+// not follow; api.ts marks that here, and the frame says so once.
 
 import { useSyncExternalStore } from "react";
 

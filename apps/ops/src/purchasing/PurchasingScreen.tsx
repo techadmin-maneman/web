@@ -8,10 +8,9 @@ import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
+import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
@@ -21,12 +20,14 @@ import { DraftOrder } from "./DraftOrder.tsx";
 import { OrderPanel } from "./OrderPanel.tsx";
 import { SupplierScores } from "./SupplierScores.tsx";
 import type { Orders } from "./types.ts";
+import { RowHead } from "../components/RowHead.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
-const loadOrders = () => client.get("/api/purchase-orders");
+const loadOrders = () => purchasingApi.orders();
 
-function OrdersTable({ book, onOpen }: { book: Orders; onOpen: (id: string) => void }) {
-  const supplierOf = (id: string) => book.suppliers.find((each) => each.id === id)?.name ?? id;
-  if (book.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
+function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) {
+  const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;
+  if (orders.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
       <thead>
@@ -39,21 +40,19 @@ function OrdersTable({ book, onOpen }: { book: Orders; onOpen: (id: string) => v
         </tr>
       </thead>
       <tbody>
-        {book.orders.map((order) => (
+        {orders.orders.map((order) => (
           <tr key={order.id}>
-            <th scope="row" className={form.rowHead}>
+            <RowHead>
               <RowButton
                 className={form.inline}
                 aria-label={copy.open(copy.number(order.number))}
-                onClick={() => {
-                  onOpen(order.id);
-                }}
+                {...opener(order.id)}
               >
                 {copy.number(order.number)}
               </RowButton>
-            </th>
+            </RowHead>
             <td>{supplierOf(order.supplier_id)}</td>
-            <td>{copy.states[order.state] ?? order.state}</td>
+            <td>{copy.states[order.state]}</td>
             <td className={form.figure}>{inCurrency(order.total, order.currency)}</td>
             <td>{order.expected_on === null ? "" : fullDate(order.expected_on)}</td>
           </tr>
@@ -65,34 +64,36 @@ function OrdersTable({ book, onOpen }: { book: Orders; onOpen: (id: string) => v
 
 export function PurchasingScreen() {
   const [loaded, retry] = useLoad(loadOrders);
-  const [book, setBook] = useState<Orders | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [orders, setOrders] = useState<Orders | null>(null);
+  const { open, setOpen, panelId, opener } = useRowPanel();
   const [said, setSaid] = useState<string | null>(null);
   const access = useAccess();
-  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
+  const current = orders ?? (loaded.state === "loaded" ? loaded.value : null);
   const changed = (next: Orders, words: string) => {
-    setBook(next);
+    setOrders(next);
     setSaid(words);
   };
   const opened = current?.orders.find((each) => each.id === open) ?? null;
   return (
-    <Shell section="/purchasing" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="orders" title={copy.orders}>
-            <OrdersTable book={current} onOpen={setOpen} />
+            <OrdersTable orders={current} opener={opener} />
             {said !== null && (
               <InlineMessage tone="saved" className={form.saved}>
                 {said}
               </InlineMessage>
             )}
           </Panel>
-          {opened !== null && <OrderPanel key={opened.id} book={current} order={opened} onChanged={changed} />}
+          {opened !== null && (
+            <OrderPanel key={opened.id} id={panelId} orders={current} order={opened} onChanged={changed} />
+          )}
           {access.mayCall("POST /api/purchase-orders") && (
             <DraftOrder
-              book={current}
+              orders={current}
               onDrafted={(next, words) => {
                 changed(next, words);
                 setOpen(next.orders[0]?.id ?? null);
@@ -103,6 +104,6 @@ export function PurchasingScreen() {
           {access.mayCall("GET /api/supplier-scorecard") && <SupplierScores />}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

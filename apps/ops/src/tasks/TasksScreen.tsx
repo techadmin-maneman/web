@@ -1,35 +1,7 @@
-// Tasks: what ops still have to do, in groups, with whose
-// each is and how long it has left. Nothing is decided here. A task is a row in a queue the
-// database already keeps — a consultation asked for, a held grant, an
-// undecided no-show, a disputed charge, a number change, an erasure, a grievance, a piece past its
-// replacement date, an invoice still a draft, a moved visit whose client has not
-// heard of it, a visit left partly done, a
-// visit to come with no address, a job on its technician's day off, a client
-// past their next service with nothing booked, a client consulted and not
-// fitted, a one visit's payment still owed — so it leaves the list when that row
-// is decided, on the section that decides it, when the client books, or when
-// they pay (src/policy/tasks.ts).
-//
-// Each task leads to where it is done: the client's page, and the row in the
-// section that decides it; a task the dispatch board settles opens its visit's
-// drawer there. A consultation asked for, a first fit to book and a replacement
-// due are booked from the row itself (BookFromTask.tsx), a payment owed has its
-// link copied or texted again there (PaymentLinkActions.tsx), and the call about a
-// move is recorded there too (CallAboutMove.tsx). Each group's count is the whole
-// queue's, and a group longer than the board lists says so.
-//
-// The groups stand under the department that decides them, in the navigation's
-// order, side by side where the screen is wide enough (sections.ts). A group
-// shows its five longest waits until ops ask for the rest, and the head's
-// overdue count takes the keyboard to the first task past its day.
-//
-// The board writes an owner in ops against every task, in its own column. Ops
-// take a task, give it to another member of staff or hand it back, and close a
-// visit left partly done without a follow-up, from the row (TaskActions.tsx;
-// docs/decisions/0092-task-owners.md).
-//
-// Above the tasks, "Needs a hand" lists the alerts ops were told of and not yet
-// put right (NeedsAHand.tsx).
+// Tasks: what ops still have to do, in groups under the department that decides each, with whose it is and how long it
+// has left. A task is a row in a queue the database keeps (src/policy/tasks.ts), so it leaves when that row is decided;
+// each leads to where it is done, some on the row itself (BookFromTask.tsx, PaymentLinkActions.tsx, CallAboutMove.tsx,
+// TaskActions.tsx).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { TextButton } from "@maneman/ui/TextLink";
@@ -40,7 +12,7 @@ import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { tasks } from "../content.ts";
 import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
@@ -57,6 +29,7 @@ import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./secti
 import { subOf } from "./task-subs.ts";
 import { TaskActions } from "./TaskActions.tsx";
 import styles from "./tasks.module.css";
+import { nameParts } from "../lib/who.ts";
 
 type Group = TaskGroup["group"];
 
@@ -73,7 +46,7 @@ function unnamedSubject(group: Group, task: Task): string {
 
 /** "priya.sharma@maneman.in" reads "Priya", as the board names an owner in ops by their first name. */
 function ownerName(email: string): string {
-  const [first = email] = (email.split("@")[0] ?? email).split(/[._-]+/);
+  const [first = email] = nameParts(email);
   return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
@@ -105,7 +78,7 @@ interface RowProps {
   readonly marked: boolean;
 }
 
-function Row({ group, task, now, acting, marked }: RowProps) {
+function TaskRow({ group, task, now, acting, marked }: RowProps) {
   const subject = task.person?.name ?? unnamedSubject(group, task);
   const where = decidedAt(group, task);
   const action = tasks.decide[group];
@@ -234,7 +207,6 @@ function sinceRead(board: Tasks, closed: readonly string[], now: Date): Tasks {
   return { ...board, overdue: board.overdue - closedOverdue.length, groups };
 }
 
-/** The set with the group in it if it was not, and without it if it was. */
 function toggled(groups: ReadonlySet<Group>, group: Group): ReadonlySet<Group> {
   const next = new Set(groups);
   if (next.has(group)) next.delete(group);
@@ -242,7 +214,7 @@ function toggled(groups: ReadonlySet<Group>, group: Group): ReadonlySet<Group> {
   return next;
 }
 
-function Queue() {
+function TaskQueue() {
   const [loaded, retry] = useLoad(readTasks);
   const [signedIn] = useLoad(whoami);
   const access = useAccess();
@@ -302,7 +274,7 @@ function Queue() {
         setUnfolded((was) => toggled(was, group.group));
       }}
       rowOf={(task) => (
-        <Row
+        <TaskRow
           key={task.id}
           group={group.group}
           task={task}
@@ -317,7 +289,6 @@ function Queue() {
   return (
     <section className={styles.queue} aria-labelledby="tasks">
       <div className={styles.queueHead}>
-        {/* The bar above names the page; the list says how much is open, beside how much is late. */}
         <h2 className={styles.panelTitle} id="tasks" ref={heading} tabIndex={-1}>
           {tasks.openCount(groups.reduce((sum, group) => sum + group.count, 0))}
         </h2>
@@ -339,11 +310,9 @@ function Queue() {
 
 export function TasksScreen() {
   return (
-    <Shell section="/tasks" title={tasks.title}>
-      <div className={styles.board}>
-        <NeedsAHand />
-        <Queue />
-      </div>
-    </Shell>
+    <div className={styles.board}>
+      <NeedsAHand />
+      <TaskQueue />
+    </div>
   );
 }

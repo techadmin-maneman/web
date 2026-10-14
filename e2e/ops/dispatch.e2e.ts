@@ -10,8 +10,8 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
   const grid = page.getByRole("table");
   await expect(grid.getByRole("columnheader")).toHaveText([
     "Fri 1964%Routes",
-    "Sat 2092%Routes",
-    "Sun 2188%Routes",
+    "Sat 2092%, peak dayRoutes",
+    "Sun 2188%, peak dayRoutes",
     "Mon 2258%Routes",
     "Tue 2364%Routes",
     "Wed 2461%Routes",

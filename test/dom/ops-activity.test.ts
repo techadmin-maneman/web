@@ -13,6 +13,20 @@ let reads: string[];
 
 const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 10)));
 
+const show = () => {
+  act(() => {
+    [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === activity.filters.show)?.click();
+  });
+};
+
+function choose(select: HTMLSelectElement | null, value: string) {
+  act(() => {
+    if (select === null) return;
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set?.call(select, value);
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
 beforeEach(() => {
   reads = [];
   vi.stubGlobal("fetch", (url: string) => {
@@ -57,5 +71,25 @@ describe("the Activity page", () => {
     await settle();
     await settle();
     expect(reads).toEqual(["?person=p-1", ""]);
+  });
+
+  it("reads nothing while the boxes are filled, once when they are applied, and not again for the same", async () => {
+    await act(async () => {
+      root.render(createElement(ActivityScreen));
+      await Promise.resolve();
+    });
+    await settle();
+    const who = page.querySelector<HTMLSelectElement>(`form[aria-label="${activity.filters.label}"] select`);
+    const kind = who?.options[1]?.value ?? "";
+    choose(who, kind);
+    await settle();
+    expect(reads).toEqual(["?person=p-1"]);
+
+    show();
+    await settle();
+    expect(reads).toEqual(["?person=p-1", `?actor_kind=${kind}&person=p-1`]);
+    show();
+    await settle();
+    expect(reads).toHaveLength(2);
   });
 });

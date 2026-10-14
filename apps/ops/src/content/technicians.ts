@@ -1,6 +1,6 @@
 // Technicians: the roster, a technician's page, their leave and phones, and the waiting list's line.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 /**
  * The Technicians roster. The design draws five columns; four are answered, and the
@@ -80,11 +80,11 @@ export const technicians = {
     allowed: "They can sign in again.",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "That phone is no longer theirs. Reload.",
+      not_found: changed("That phone is no longer theirs."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /**
    * The design draws no leave anywhere. Leave is recorded here
@@ -125,7 +125,7 @@ export const technicians = {
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "The last day must follow the first, within a year.",
-      not_found: "No longer exists. Reload.",
+      not_found: changed("No longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
@@ -204,7 +204,7 @@ export const technicians = {
     unreadable_mobile: "Enter a 10-digit Indian mobile.",
     name_taken: "Another technician goes by that name. Add a surname or an initial.",
     invalid_request: "Enter their name and a 10-digit Indian mobile.",
-    not_found: "No longer on the roster. Reload.",
+    not_found: changed("No longer on the roster."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

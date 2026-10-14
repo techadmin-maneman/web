@@ -422,5 +422,3 @@ export const ProfileRecordedSchema = z
   })
   .strict()
   .openapi("TechnicianProfileRecorded", { description: "Kept in our records alone." });
-
-/** A step that landed, or had landed before. */

@@ -1,6 +1,6 @@
 // Settings: the rules, the services and their prices, discount codes, the consumables, the job sheet and staff.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 import { grantPhrasing, settingsTabs } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
 import { tasks } from "./tasks.ts";
@@ -43,7 +43,7 @@ export const settings = {
       first_fit: "First fits, and consultation-and-fit visits",
       service: "Service visits",
       replacement: "Replacements",
-    } as Readonly<Record<string, string>>,
+    },
     expires: "Last valid day (optional)",
     maxUses: "Total uses (optional)",
     oncePerClient: "Once per client",
@@ -90,7 +90,7 @@ export const settings = {
       first_fit: "First fit",
       service: "Service",
       replacement: "Replacement",
-    } as Readonly<Record<string, string>>,
+    },
     noEnd: "No end",
     ends: (day: string) => day,
     ended: (day: string) => `Ended ${day}`,
@@ -126,11 +126,11 @@ export const settings = {
       expires_on: "The last day can't be in the past.",
       max_uses: "Generated codes are single-use.",
       code_exists: "That code already exists.",
-      not_found: "That code no longer exists. Reload.",
+      not_found: changed("That code no longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   rules: {
     title: "Policies",
@@ -290,15 +290,15 @@ export const settings = {
       back: "Edit",
     },
     /** A section's Save sends its rules one by one, so a refusal speaks for its own rule only. */
-    outside: (field: string) => `${field}: out of range. Not saved.`,
-    conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”. Not saved.`,
+    outside: (field: string) => `${field}: out of range.`,
+    conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "Out of range. Not saved.",
+      invalid_request: "Out of range.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** No board draws the days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). */
   blackouts: {
@@ -341,16 +341,12 @@ export const settings = {
       to: "The last day must follow the first, within a month.",
       reason: "Up to 60 letters or digits.",
       city: "Choose one of our cities.",
-      not_found: "Already reopened. Reload.",
+      not_found: changed("Already reopened."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
-  /**
-   * No board draws the services (docs/decisions/0085-services-ops-can-edit.md). What a price or a change was is
-   * shown beside what it will be before anything is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
-   */
   /** What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md). */
   standardCosts: {
     title: "Hair system costs",
@@ -364,13 +360,17 @@ export const settings = {
     change: (product: string, was: string, now: string) => `${product}: ${was} → ${now}, from today`,
     errors: {
       invalid_request: "Type whole rupees.",
-      not_found: "That product is no longer sold. Reload.",
+      not_found: changed("That product is no longer sold."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
   },
+  /**
+   * No board draws the services (docs/decisions/0085-services-ops-can-edit.md). What a price or a change was is
+   * shown beside what it will be before anything is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+   */
   services: {
     title: "Services and prices",
     /** The four kinds, as the rest of the console names them. */
@@ -394,7 +394,7 @@ export const settings = {
     lateFees: {
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
-    } as Readonly<Record<string, string>>,
+    },
     /** The link to the rule that says when a late fee is charged. */
     lateFeeRule: "When it's charged",
     actions: {
@@ -501,7 +501,7 @@ export const settings = {
       description: "One line, within the limit.",
       minutes: "Outside the allowed range.",
       retired_date: "Retire from today or later. Restore a retired service first.",
-      order: "The order changed elsewhere. Reload.",
+      order: changed("The order changed elsewhere."),
       amount_ex_gst: "Whole rupees, within the range.",
       gst_percent: "A whole percentage, within the range.",
       valid_from: "A new price starts tomorrow at the earliest.",
@@ -509,19 +509,19 @@ export const settings = {
       service_exists: "That name or code is already in use.",
       last_of_kind: "Each kind needs one priced service. Add and price its replacement first.",
       service_retired: "It's retired by then, so it can't be priced.",
-      not_found: "No longer exists. Reload.",
+      not_found: changed("No longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
     /** Taking back a price that applies already, or has applied: it may stand on an invoice. */
     takeBackErrors: {
       not_permitted: NOT_PERMITTED,
       valid_from: "That price is already in effect, so it stays.",
-    } as Readonly<Record<string, string>>,
+    },
   },
-  /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
   // No design draws them (docs/decisions/0165-suppliers.md).
+  /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
   suppliers: {
     title: "Suppliers",
     columns: ["Supplier", "Country · currency", "Terms", "Warranty", "Status"],
@@ -598,15 +598,15 @@ export const settings = {
     },
     errors: {
       name: "Another supplier has that name.",
-      consumable_code: "That item is no longer listed. Reload.",
-      id: "That supplier is gone. Reload.",
-      not_found: "That supplier is gone. Reload.",
+      consumable_code: changed("That item is no longer listed."),
+      id: changed("That supplier is gone."),
+      not_found: changed("That supplier is gone."),
       invalid_request: "Check the details.",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   consumables: {
     title: "Consumables",
@@ -666,7 +666,7 @@ export const settings = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
     form: {
       addTitle: "Add a consumable",
@@ -742,11 +742,11 @@ export const settings = {
       from: "Today or later.",
       tier: "That service no longer exists.",
       items: "Unknown or repeated consumable.",
-      not_found: "No longer listed. Reload.",
+      not_found: changed("No longer listed."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** The job sheet the technician app reads: each kind of visit's checklist and the partial reasons. */
   jobSheet: {
@@ -795,7 +795,7 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** No board draws the Staff page. A change is shown before it is saved. */
   staff: {
@@ -858,7 +858,7 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
     enforcement: {
       title: "Access control",
       off: "Off. Everyone signed in sees every section.",
@@ -878,7 +878,7 @@ export const settings = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
     tokens: {
       title: "Service tokens",
@@ -897,12 +897,12 @@ export const settings = {
       errors: {
         client_id: "Paste the client ID exactly as shown.",
         label: "Give it a short name.",
-        not_found: "No longer listed. Reload.",
+        not_found: changed("No longer listed."),
         not_permitted: "Only national Admin · Manage can change service tokens.",
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
   },
 } as const;

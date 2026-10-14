@@ -3,7 +3,7 @@
 // call to it goes ahead.
 
 import { Tabs, TAB } from "@maneman/ui/Tabs";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { areas } from "../content.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { AREA_TAB_NAMES, AREA_TABS, areasPath, type AreaTab } from "../route.ts";
@@ -27,17 +27,15 @@ export function AreasScreen({ tab }: { tab: AreaTab }) {
   const access = useAccess();
   const open = AREA_TABS.filter((each) => access.mayCall(TAB_READS[each]));
   return (
-    <Shell section="/areas" title={areas.title}>
-      <div className={styles.screen}>
-        <Tabs label={areas.title}>
-          {open.map((each) => (
-            <OpsLink key={each} className={TAB} to={areasPath(each)} current={each === tab}>
-              {AREA_TAB_NAMES[each]}
-            </OpsLink>
-          ))}
-        </Tabs>
-        <Panel tab={tab} mayOpen={open.includes(tab)} />
-      </div>
-    </Shell>
+    <div className={styles.screen}>
+      <Tabs label={areas.title}>
+        {open.map((each) => (
+          <OpsLink key={each} className={TAB} to={areasPath(each)} current={each === tab}>
+            {AREA_TAB_NAMES[each]}
+          </OpsLink>
+        ))}
+      </Tabs>
+      <Panel tab={tab} mayOpen={open.includes(tab)} />
+    </div>
   );
 }

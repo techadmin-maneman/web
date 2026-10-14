@@ -97,7 +97,7 @@ test("says so when someone else has decided the grant already", async ({ page })
   await grant.getByRole("button", { name: opsCopy.referrals.queue.approve, exact: true }).click();
   await grant.getByLabel(opsCopy.referrals.queue.reason.label.approve).fill("Two households at one address");
   await grant.getByRole("button", { name: opsCopy.referrals.queue.reason.confirm.approve }).click();
-  await expect(page.getByRole("alert")).toContainText("Already decided. Reload.");
+  await expect(page.getByText("Already decided. Here's the latest.")).toBeVisible();
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 

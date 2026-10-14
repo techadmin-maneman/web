@@ -6,21 +6,22 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
+import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { useState } from "react";
-import { client } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { CountClasses, type Book } from "./CountClasses.tsx";
+import { CountClasses, type CountTasks } from "./CountClasses.tsx";
 import { CountTaskPanel, whatOf } from "./CountTask.tsx";
 import { StartCount } from "./StartCount.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { countsApi } from "./counts-api.ts";
 
-const loadTasks = () => client.get("/api/count-tasks");
+const loadTasks = () => countsApi.countTasks();
 
-function Tasks({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
-  if (book.tasks.length === 0) return <p className={form.note}>{copy.none}</p>;
+function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpener }) {
+  if (countTasks.tasks.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
       <thead>
@@ -33,22 +34,18 @@ function Tasks({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
         </tr>
       </thead>
       <tbody>
-        {book.tasks.map((task) => (
+        {countTasks.tasks.map((task) => (
           <tr key={task.id}>
-            <th scope="row" className={form.rowHead}>
-              {task.place}
-            </th>
+            <RowHead>{task.place}</RowHead>
             <td>{whatOf(task)}</td>
             <td>{fullDate(task.due_on)}</td>
-            <td>{copy.states[task.state] ?? task.state}</td>
+            <td>{copy.states[task.state]}</td>
             <td>
               <Button
                 variant="outline"
                 size="small"
                 aria-label={`${copy.open} ${copy.heading(task.place, whatOf(task))}`}
-                onClick={() => {
-                  onOpen(task.id);
-                }}
+                {...opener(task.id)}
               >
                 {copy.open}
               </Button>
@@ -62,39 +59,43 @@ function Tasks({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
 
 export function CountsScreen() {
   const [loaded, retry] = useLoad(loadTasks);
-  const [book, setBook] = useState<Book | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [countTasks, setCountTasks] = useState<CountTasks | null>(null);
+  const { open, setOpen, panelId, opener } = useRowPanel();
   const access = useAccess();
-  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
+  const current = countTasks ?? (loaded.state === "loaded" ? loaded.value : null);
+  // The list read again after a count changed: a failed read says so, with the way to read it again.
+  const [rereadFailed, setRereadFailed] = useState<{ requestId: string | null } | null>(null);
   const reload = () => {
     void loadTasks().then((answer) => {
-      if (answer.ok) setBook(answer.body);
+      setRereadFailed(answer.ok ? null : { requestId: answer.requestId });
+      if (answer.ok) setCountTasks(answer.body);
     });
   };
   return (
-    <Shell section="/counts" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
+      {rereadFailed !== null && <PanelFailed onRetry={reload} requestId={rereadFailed.requestId} />}
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="count-tasks" title={copy.tasks}>
-            <Tasks book={current} onOpen={setOpen} />
+            <Tasks countTasks={current} opener={opener} />
           </Panel>
           {access.mayCall("POST /api/count-tasks") && (
             <StartCount
-              book={current}
+              countTasks={current}
               onStarted={(id) => {
                 setOpen(id);
                 reload();
               }}
             />
           )}
-          {open !== null && <CountTaskPanel key={open} id={open} onChanged={reload} />}
+          {open !== null && <CountTaskPanel key={open} id={open} panelId={panelId} onChanged={reload} />}
           {access.mayCall("POST /api/consumables/{code}/count-class") && (
-            <CountClasses book={current} onBook={setBook} />
+            <CountClasses countTasks={current} onChanged={setCountTasks} />
           )}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

@@ -395,5 +395,3 @@ async function eraseAgain({
     log.error("crm_erasure_failed", { person_id: personId, error });
   }
 }
-
-/** A short error for last_sync_error: no personal data, no stack. */

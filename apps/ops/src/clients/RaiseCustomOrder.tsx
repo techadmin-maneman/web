@@ -1,24 +1,26 @@
 // Raising a custom order (docs/decisions/0174-custom-orders.md): made to the client's profile, from a supplier at its
 // price, with what the client pays and when the supplier promised it. Raising it sends the client the payment link.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import type { Success } from "@maneman/web-kit/api";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { clients } from "../content.ts";
 import { customOrders as copy } from "../content/custom-orders.ts";
+import { paiseFromRupees } from "@maneman/web-kit/money";
+import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { clientsApi } from "./clients-api.ts";
 
-export type CustomOrdersBook =
-  paths["/api/clients/{id}/custom-orders"]["get"]["responses"][200]["content"]["application/json"];
+export type CustomOrders = Success<paths["/api/clients/{id}/custom-orders"]["get"]>;
 
 const WAVES = ["straight", "slight_wave", "wavy", "curly"] as const;
 
 /** A figure typed in a currency's main unit, in its smallest: "150.50" is 15050. */
-const smallest = (typed: string) => Math.round(Number(typed) * 100);
+const smallest = paiseFromRupees;
 
 interface Draft {
   supplierId: string;
@@ -29,7 +31,7 @@ interface Draft {
   note: string;
 }
 
-function Entry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
+function OrderEntry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
   return (
     <Field label={props.label} className={form.field}>
       {(control) => (
@@ -49,15 +51,15 @@ function Entry(props: { label: string; value: string; type?: string; onChange: (
 
 /** The order's boxes, each holding what was typed or chosen. */
 function OrderBoxes({
-  book,
+  customOrders,
   draft,
   edit,
 }: {
-  book: CustomOrdersBook;
+  customOrders: CustomOrders;
   draft: Draft;
   edit: (field: keyof Draft) => (text: string) => void;
 }) {
-  const currency = book.suppliers.find((each) => each.id === draft.supplierId)?.currency ?? "";
+  const currency = customOrders.suppliers.find((each) => each.id === draft.supplierId)?.currency ?? "";
   return (
     <>
       <Field label={copy.raise.supplier} className={form.field}>
@@ -69,7 +71,7 @@ function OrderBoxes({
               edit("supplierId")(event.target.value);
             }}
           >
-            {book.suppliers.map((supplier) => (
+            {customOrders.suppliers.map((supplier) => (
               <option key={supplier.id} value={supplier.id}>
                 {supplier.name}
               </option>
@@ -77,9 +79,13 @@ function OrderBoxes({
           </Select>
         )}
       </Field>
-      <Entry label={copy.raise.supplierPrice(currency)} value={draft.supplierPrice} onChange={edit("supplierPrice")} />
-      <Entry label={copy.raise.amount} value={draft.amount} onChange={edit("amount")} />
-      <Entry label={copy.raise.promised} type="date" value={draft.promised} onChange={edit("promised")} />
+      <OrderEntry
+        label={copy.raise.supplierPrice(currency)}
+        value={draft.supplierPrice}
+        onChange={edit("supplierPrice")}
+      />
+      <OrderEntry label={copy.raise.amount} value={draft.amount} onChange={edit("amount")} />
+      <OrderEntry label={copy.raise.promised} type="date" value={draft.promised} onChange={edit("promised")} />
       <Field label={copy.raise.wave} className={form.field}>
         {(control) => (
           <Select
@@ -98,24 +104,24 @@ function OrderBoxes({
           </Select>
         )}
       </Field>
-      <Entry label={copy.raise.note} value={draft.note} onChange={edit("note")} />
+      <OrderEntry label={copy.raise.note} value={draft.note} onChange={edit("note")} />
     </>
   );
 }
 
 export function RaiseCustomOrder({
   clientId,
-  book,
+  customOrders,
   onRaised,
   onClose,
 }: {
   clientId: string;
-  book: CustomOrdersBook;
-  onRaised: (book: CustomOrdersBook, said: string) => void;
+  customOrders: CustomOrders;
+  onRaised: (customOrders: CustomOrders, said: string) => void;
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState<Draft>({
-    supplierId: book.suppliers[0]?.id ?? "",
+    supplierId: customOrders.suppliers[0]?.id ?? "",
     supplierPrice: "",
     amount: "",
     promised: "",
@@ -128,16 +134,13 @@ export function RaiseCustomOrder({
   };
   const ready = draft.supplierId !== "" && draft.supplierPrice !== "" && smallest(draft.amount) >= 100;
   const raise = async () => {
-    const answer = await client.post("/api/clients/{id}/custom-orders", {
-      path: { id: clientId },
-      body: {
-        supplier_id: draft.supplierId,
-        supplier_price: smallest(draft.supplierPrice),
-        amount: smallest(draft.amount),
-        promised_on: draft.promised === "" ? null : draft.promised,
-        wave: WAVES.find((each) => each === draft.wave) ?? null,
-        note: draft.note.trim() === "" ? null : draft.note.trim(),
-      },
+    const answer = await clientsApi.raiseCustomOrder(clientId, {
+      supplier_id: draft.supplierId,
+      supplier_price: smallest(draft.supplierPrice),
+      amount: smallest(draft.amount),
+      promised_on: draft.promised === "" ? null : draft.promised,
+      wave: WAVES.find((each) => each === draft.wave) ?? null,
+      note: draft.note.trim() === "" ? null : draft.note.trim(),
     });
     if (answer.ok) onRaised(answer.body, copy.raise.raised);
     else setFailure({ code: answer.code, fields: answer.fields });
@@ -145,20 +148,16 @@ export function RaiseCustomOrder({
   return (
     <div className={form.group}>
       <h3 className={form.fieldLabel}>{copy.raise.title}</h3>
-      <OrderBoxes book={book} draft={draft} edit={edit} />
-      <div className={form.actions}>
+      <OrderBoxes customOrders={customOrders} draft={draft} edit={edit} />
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void raise()}>
           {copy.raise.send}
         </Button>
         <Button variant="outline" size="small" onClick={onClose}>
           {copy.raise.keep}
         </Button>
-      </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      </FormActions>
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </div>
   );
 }

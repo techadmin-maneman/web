@@ -64,7 +64,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await page.getByRole("button", { name: opsCopy.dispatch.tools.next }).click();
   await page.getByLabel("City", { exact: true }).selectOption("Delhi");
   await page.getByLabel(opsCopy.dispatch.tools.find).fill("Rohit");
-  await press(page, ROHIT_BLOCK);
+  await press(page, opsCopy.dispatch.board.found(ROHIT_BLOCK));
   const kept = `?from=2025-09-26&city=Delhi&find=Rohit&visit=${ROHIT_JOB?.appointment_id ?? ""}`;
   await expect.poll(() => new URL(page.url()).search).toBe(kept);
 
@@ -104,11 +104,11 @@ test("finds a visit by its area or its client, and outlines the blocks it found"
   await find.fill("dlf 4");
   await expect(page.getByRole("rowheader")).toHaveCount(2);
   await expect(found).toHaveCount(2);
-  await expect(found.first()).toHaveAccessibleName("Vikram S., Fri 19 Sep, afternoon");
+  await expect(found.first()).toHaveAccessibleName("Vikram S., Fri 19 Sep, afternoon, matches the search");
 
   await find.fill("Sanjay");
   await expect(found).toHaveCount(1);
-  await expect(found).toHaveAccessibleName("Sanjay B., Sat 20 Sep, morning");
+  await expect(found).toHaveAccessibleName("Sanjay B., Sat 20 Sep, morning, matches the search");
 
   // A technician found by name has no one block to point at.
   await find.fill("Faizan");

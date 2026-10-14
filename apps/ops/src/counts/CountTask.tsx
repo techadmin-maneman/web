@@ -1,6 +1,7 @@
 // One count task (docs/decisions/0185-cycle-counts.md): counted blind, item by item; what differed counted again; and
 // a recount that still differs signed off by a manager, who alone sees what the ledger held.
 
+import type { Success } from "@maneman/web-kit/api";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -9,15 +10,18 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PieceScans } from "../stock/index.ts";
+import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { countsApi } from "./counts-api.ts";
 
-type Task = paths["/api/count-tasks/{id}"]["get"]["responses"][200]["content"]["application/json"];
+type Task = Success<paths["/api/count-tasks/{id}"]["get"]>;
 
 type Item = Task["items"][number];
 
@@ -50,10 +54,9 @@ function Counting({
     const body = {
       lines: items.map((item) => lineOf(item, figures[item.consumable_code] ?? "", scans[item.consumable_code] ?? [])),
     };
-    const path = { path: { id: task.task.id } };
     const answer = recount
-      ? await client.post("/api/count-tasks/{id}/recounts", { ...path, body })
-      : await client.post("/api/count-tasks/{id}/counts", { ...path, body });
+      ? await countsApi.askRecount(task.task.id, body)
+      : await countsApi.recordCounts(task.task.id, body);
     onAnswer(answer, recount ? copy.recountSaid : copy.countSaid);
   };
   return (
@@ -86,21 +89,18 @@ function Counting({
           </Field>
         </div>
       ))}
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void save()}>
           {recount ? copy.saveRecount : copy.saveCount}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }
 
 /** What the ledger held beside both counts, and the sign-off with why: for a manager. */
 function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, said: () => string) => void }) {
-  const load = useCallback(
-    () => client.get("/api/count-tasks/{id}/differences", { path: { id: task.task.id } }),
-    [task.task.id],
-  );
+  const load = useCallback(() => countsApi.differences(task.task.id), [task.task.id]);
   const [loaded, retry] = useLoad(load);
   const [note, setNote] = useState("");
   if (loaded.state === "loading") return <Loading />;
@@ -120,9 +120,7 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
         <tbody>
           {loaded.value.lines.map((line) => (
             <tr key={line.consumable_code}>
-              <th scope="row" className={form.rowHead}>
-                {line.name}
-              </th>
+              <RowHead>{line.name}</RowHead>
               <td className={form.figure}>{line.held}</td>
               <td className={form.figure}>{line.counted}</td>
               <td className={form.figure}>{line.recounted ?? ""}</td>
@@ -151,22 +149,20 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
           />
         )}
       </Field>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
           disabled={note.trim() === ""}
           onClick={() =>
-            void client
-              .post("/api/count-tasks/{id}/sign-off", { path: { id: task.task.id }, body: { note: note.trim() } })
-              .then((answer) => {
-                onAnswer(answer, () => copy.signedSaid);
-              })
+            void countsApi.signOff(task.task.id, note.trim()).then((answer) => {
+              onAnswer(answer, () => copy.signedSaid);
+            })
           }
         >
           {copy.signOff}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }
@@ -190,11 +186,10 @@ function Step({
 }
 
 /** What a task counts: its one item, or its class. */
-export const whatOf = (task: Task["task"]): string =>
-  task.item?.name ?? copy.classes[task.count_class] ?? task.count_class;
+export const whatOf = (task: Task["task"]): string => task.item?.name ?? copy.classes[task.count_class];
 
-export function CountTaskPanel({ id, onChanged }: { id: string; onChanged: () => void }) {
-  const load = useCallback(() => client.get("/api/count-tasks/{id}", { path: { id } }), [id]);
+export function CountTaskPanel({ id, panelId, onChanged }: { id: string; panelId: string; onChanged: () => void }) {
+  const load = useCallback(() => countsApi.countTask(id), [id]);
   const [loaded, retry] = useLoad(load);
   const [task, setTask] = useState<Task | null>(null);
   const [said, setSaid] = useState<string | null>(null);
@@ -214,7 +209,7 @@ export function CountTaskPanel({ id, onChanged }: { id: string; onChanged: () =>
     return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <Loading />;
   }
   return (
-    <Panel titleId="count-task" title={copy.heading(current.task.place, whatOf(current.task))}>
+    <Panel id={panelId} opened titleId="count-task" title={copy.heading(current.task.place, whatOf(current.task))}>
       <Step task={current} onAnswer={answered} />
       {current.items.map(
         (item) =>
@@ -229,11 +224,7 @@ export function CountTaskPanel({ id, onChanged }: { id: string; onChanged: () =>
           {said}
         </InlineMessage>
       )}
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

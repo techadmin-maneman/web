@@ -2,7 +2,7 @@
 
 /* This bar's own size, which nothing else draws (ADR 0077, as amended). */
 :root {
-  --local-table-filter: 176px; /* a list's narrowest: "Used on a job" and its arrow */
+  --local-table-filter: var(--ops-filter); /* a list's narrowest: "Used on a job" and its arrow */
 }
 
 .bar {

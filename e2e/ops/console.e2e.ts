@@ -232,13 +232,43 @@ test("moves between sections without a reload, and back", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA on its sections", async ({ page }) => {
-  for (const path of ["/", "/referrals", "/areas"]) {
+// Each page drew its own frame, so every move drew the navigation again and the header's search lost what was typed.
+test("keeps its frame as the page under it changes, the header's search holding what was typed", async ({ page }) => {
+  await page.goto("/");
+  const finder = page.getByLabel(opsCopy.shell.find.label);
+  await finder.fill("Rohit");
+  await navigation(page).evaluate((nav) => {
+    nav.dataset.drawn = "once";
+  });
+  await navigation(page).getByRole("link", { name: "Areas" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  await expect(navigation(page)).toHaveAttribute("data-drawn", "once");
+  await expect(finder).toHaveValue("Rohit");
+});
+
+// Eight sections had never met axe: Technician pay, Partner commission, Spend, Targets, Words, Messages, Care numbers
+// and Activity. Each page is a test of its own, so one that fails is named.
+for (const path of [
+  "/",
+  "/referrals",
+  "/areas",
+  "/technician-pay",
+  "/partner-commission",
+  "/spend",
+  "/targets",
+  "/words",
+  "/messages",
+  "/care-numbers",
+  "/activity",
+]) {
+  test(`meets WCAG 2.2 AA on ${path}`, async ({ page }) => {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    expect(await axeViolations(page), path).toEqual([]);
-  }
-});
+    // The frame's heading stands from the first paint: axe reads the page once its calls have answered.
+    await page.waitForLoadState("networkidle");
+    expect(await axeViolations(page)).toEqual([]);
+  });
+}
 
 // Inventory's nine sections were nine entries of Operations; the job is one entry now, its sections a page's tabs.
 test("heads each section of a group with the group's sections as tabs, and marks the one open", async ({ page }) => {

@@ -101,13 +101,13 @@ export const booking = {
      * visits, the reminder, moves and changes among them, on a notice of this line alone.
      */
     remind: "Send me visit updates on WhatsApp",
+    // Every visit is photographed for the client's record, which booking says and agrees to nothing more: referral
+    // cards are their choice when they first share an invite. PLACEHOLDER: awaits counsel (docs/open-points.md, 69).
     /**
      * No board draws them. Booking a visit also agrees to the photograph purposes the client has never
      * decided on, one tap away beneath Pay. With the referral card's lines (profile.referralCards), they are the
      * notice each consent is recorded under, word for word (src/config/notices.ts; booking/consents.ts).
      */
-    // Every visit is photographed for the client's record, which booking says and agrees to nothing more: referral
-    // cards are their choice when they first share an invite. PLACEHOLDER: awaits counsel (docs/open-points.md, 69).
     photos: { open: "Photos at your visits", lines: [VISIT_PHOTOS] },
     /**
      * Our words, all of them: no board draws a discount code (docs/decisions/0108-discount-codes.md).
@@ -203,10 +203,6 @@ export const note = {
   whatsapp: "Send it on WhatsApp",
 };
 
-/**
- * Disputing a no-show's charge, which no board draws (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md),
- * in the note sheet's frame.
- */
 /** Something wrong with the hair system or a visit, told to Care. */
 export const problem = {
   link: { hair_system: "Something wrong with your hair system?", visit: "Something wrong with this visit?" },

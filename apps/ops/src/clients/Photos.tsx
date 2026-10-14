@@ -1,27 +1,21 @@
-// The client's photographs, locked, then open. The locked state says
-// plainly what opening them does. Opening them asks the API to log the view
-// first, one entry for the whole opening, and nothing is fetched unless that
-// is written (docs/decisions/0031-access-and-audit.md). The time shown is the
-// one the API logged, by its own clock, and beside the photographs is the log
-// of who opened them before.
-//
-// The newest visits' photographs come first; earlier ones are fetched only when
-// asked for, since a client of some years has a great many. The opening is held
-// by the client's page, so leaving this tab and coming back is the same view.
+// The client's photographs, locked, then open. Opening logs the view first, one entry for the whole opening, and
+// nothing is fetched unless that is written (docs/decisions/0031-access-and-audit.md); beside them is who opened them
+// before. The newest visits come first, earlier ones when asked for.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Photo, type PhotoView, type PhotoVisit } from "../api.ts";
+import { type Photo, type PhotoView, type PhotoVisit } from "../api.ts";
 import { clients } from "../content.ts";
 import { whoWords } from "../lib/who.ts";
 import { Loading } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
+import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.photos;
 const PHASES = ["before", "after"] as const;
@@ -74,7 +68,7 @@ export function usePhotos(clientId: string) {
       visit,
       shown: await Promise.all(
         visit.photos.map(async (photo) => {
-          const image = await api.clientPhoto(clientId, photo.id);
+          const image = await clientsApi.clientPhoto(clientId, photo.id);
           if (!image.ok) return { photo, url: null, code: image.code };
           const url = URL.createObjectURL(image.body);
           urls.current.push(url);
@@ -87,7 +81,7 @@ export function usePhotos(clientId: string) {
 
   const open = useCallback(async () => {
     setState({ step: "opening" });
-    const listing = await api.clientPhotos(clientId);
+    const listing = await clientsApi.clientPhotos(clientId);
     if (!listing.ok) {
       setState({ step: "failed", code: listing.code });
       return;
@@ -98,7 +92,7 @@ export function usePhotos(clientId: string) {
       return;
     }
     // Logged before a single image is asked for; a view that could not be logged shows nothing.
-    const view = await api.openPhotos(clientId);
+    const view = await clientsApi.openPhotos(clientId);
     if (!view.ok) {
       setState({ step: "failed", code: view.code });
       return;
@@ -140,7 +134,7 @@ function Tile({ shown, visit }: { shown: Shown; visit: PhotoVisit }) {
   if (shown.url === null) {
     return (
       <p className={styles.tileFailed} role="alert">
-        {copy.errors[shown.code ?? "unknown"] ?? copy.errors.unknown}
+        {errorText(copy.errors, { code: shown.code ?? "unknown" })}
       </p>
     );
   }
@@ -245,9 +239,7 @@ export function Photos({ photos, name }: { photos: ReturnType<typeof usePhotos>;
         </Button>
       )}
       {state.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: state.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: state.code })} />
       )}
     </section>
   );

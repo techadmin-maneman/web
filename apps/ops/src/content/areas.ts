@@ -54,7 +54,7 @@ export const areas = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** Our words, all of them: adding a pincode the service area does not hold, on Waiting and on Served. */
   add: {
@@ -79,7 +79,7 @@ export const areas = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   served: {
     title: "All pincodes",
@@ -143,7 +143,7 @@ export const areas = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
 } as const;
 

@@ -1,10 +1,14 @@
 // What each task on the board turns on, by its group (src/domain/ops/task-facts.ts), as GET /api/tasks answers it.
 
 import { z } from "@hono/zod-openapi";
+import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
+import { VISIT_TYPES } from "../../config/visit-types.ts";
 
 const instant = z.iso.datetime();
 const day = z.iso.date();
 const paise = z.number().int();
+const window = z.enum(BOOKING_WINDOWS);
+const kind = z.enum(VISIT_TYPES);
 
 const facts = <Group extends string, Shape extends z.ZodRawShape>(group: Group, shape: Shape) =>
   z.object({ group: z.literal(group), ...shape }).strict();
@@ -18,13 +22,13 @@ export const TaskFactsSchema = z
       starts_at: instant.openapi({ description: "The start the visit moved to." }),
       reason: z.enum(["no_consent", "not_sent"]),
     }),
-    facts("move_unanswered", { date: day, window: z.string(), ran_out: z.boolean() }),
+    facts("move_unanswered", { date: day, window, ran_out: z.boolean() }),
     facts("consultation_request", {
       date: day,
-      window: z.string(),
+      window,
       one_visit: z.boolean(),
       discount_code: z.string().nullable(),
-      first_fit: z.object({ window: z.string().nullable() }).strict().nullable().openapi({
+      first_fit: z.object({ window: window.nullable() }).strict().nullable().openapi({
         description: "A first fit asked for with it, and the window wanted, null for either; null for none.",
       }),
     }),
@@ -37,20 +41,19 @@ export const TaskFactsSchema = z
     facts("erasure_request", {}),
     facts("no_show_decision", { technician: z.string().nullable() }),
     facts("draft_invoice", { invoice_id: z.string() }),
-    facts("unassigned_visit", { kind: z.string(), starts_at: instant }),
+    facts("unassigned_visit", { kind, starts_at: instant }),
     facts("visit_left_open", { status: z.string(), starts_at: instant }),
     facts("leave_conflict", { starts_at: instant, technician: z.string() }),
     facts("address_to_confirm", { starts_at: instant }),
     facts("partial_visit", {
-      kind: z.string(),
+      kind,
       reason_code: z.string().nullable(),
       reason: z.string().nullable().openapi({ description: "In the words ops gave it, or the job sheet's." }),
     }),
     facts("at_risk_client", { last_visit_at: instant, due_on: day }),
     facts("first_fit_to_book", {
       consulted_at: instant,
-      fit_window: z
-        .string()
+      fit_window: window
         .nullable()
         .openapi({ description: "The consultation's; null where a fit cannot start in it." }),
     }),

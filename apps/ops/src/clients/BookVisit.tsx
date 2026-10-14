@@ -2,34 +2,22 @@
 // choose or whoever is free. A paid visit goes out as a payment link and is booked once the client pays; anything
 // else is booked at once (src/routes/ops/visits.ts). No board draws it (docs/fidelity-method.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { addDays, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
-import {
-  api,
-  type BookingWindow,
-  type VisitAvailability,
-  type VisitBooked,
-  type VisitToBook,
-  type VisitType,
-} from "../api.ts";
-import { clients, dispatch } from "../content.ts";
+import { type BookingWindow, type VisitAvailability, type VisitBooked, type VisitToBook } from "../api.ts";
 import styles from "../components/visit-dialog.module.css";
-import { Choose, CoverChoice } from "./book-choices.tsx";
-
-const copy = clients.visits.book;
-
-/** What ops choose to book: a kind of visit, or a consultation and fit in one visit, which is a first fit. */
-type Choice = keyof typeof copy.kinds;
-
-const CHOICES = Object.keys(copy.kinds) as Choice[];
+import { CoverChoice } from "./book-choices.tsx";
+import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
+import { WhatIsBooked, WhenAndWho, StripButtons } from "./BookSteps.tsx";
+import { copy, type Choice, kindOf, type Picked, slotOf } from "./book-slot.ts";
 
 /** What a task starts the form with; the client's page starts it with a choice alone. */
 export interface Prefill {
@@ -40,21 +28,6 @@ export interface Prefill {
   /** What the visit makes good, free: one of availability's `owed`. */
   readonly covers?: string;
 }
-
-/** How many days the API offers at a time. */
-const STRIP_DAYS = 14;
-
-const kindOf = (choice: Choice): VisitType => (choice === "one_visit" ? "first_fit" : choice);
-
-/** A one visit's three hours do not fit in the evening. */
-const fitsWindow = (choice: Choice, window: string) => choice !== "one_visit" || window !== "evening";
-
-type Day = VisitAvailability["days"][number];
-type Window = Day["windows"][number];
-
-/** The windows of a day someone is free in, for what is being booked. */
-const openWindows = (day: Day, choice: Choice): Window[] =>
-  day.windows.filter((each) => each.technicians.length > 0 && fitsWindow(choice, each.window));
 
 /** "Wed 23 Sep, 9 am": when the link closes. */
 const whenOf = (instant: string) => `${shortDate(indiaDate(instant))}, ${indiaClock(instant)}`;
@@ -97,9 +70,7 @@ function Booked({ booked }: { booked: VisitBooked }) {
 function Unreadable({ onRetry }: { onRetry: () => void }) {
   return (
     <div>
-      <InlineMessage tone="error" className={styles.error}>
-        {copy.unreadable}
-      </InlineMessage>
+      <Refusal className={styles.error} said={copy.unreadable} />
       <Button variant="outline" size="small" className={styles.quiet} onClick={onRetry}>
         {copy.retry}
       </Button>
@@ -135,66 +106,11 @@ function visitOf(chosen: {
   };
 }
 
-/** The fortnight before the one shown, and the one after. */
-function StripButtons(props: {
-  readonly busy: boolean;
-  readonly from: string | undefined;
-  readonly firstDay: string | undefined;
-  readonly onFrom: (from: string | undefined) => void;
-}) {
-  const { busy, firstDay, onFrom } = props;
-  return (
-    <div className={styles.days}>
-      <Button
-        variant="outline"
-        size="small"
-        className={styles.quiet}
-        disabled={busy || props.from === undefined}
-        onClick={() => {
-          onFrom(firstDay === undefined ? undefined : addDays(firstDay, -STRIP_DAYS));
-        }}
-      >
-        {copy.earlier}
-      </Button>
-      <Button
-        variant="outline"
-        size="small"
-        className={styles.quiet}
-        disabled={busy || firstDay === undefined}
-        onClick={() => {
-          onFrom(firstDay === undefined ? undefined : addDays(firstDay, STRIP_DAYS));
-        }}
-      >
-        {copy.later}
-      </Button>
-    </div>
-  );
-}
-
-/** The choices that depend on what the API offered: the service, the day, the window and the technician. */
-interface Picked {
-  readonly tier: string | undefined;
-  readonly date: string | undefined;
-  readonly window: string | undefined;
-  readonly technician: string;
-}
-
-/** What the client may be booked into, from what the API offered and what ops have picked: the first of each where a pick is no longer open. */
-function slotOf(offered: VisitAvailability, choice: Choice, picked: Picked) {
-  const days = offered.days.filter((day) => openWindows(day, choice).length > 0);
-  const day = days.find((each) => each.date === picked.date) ?? days[0];
-  const windows = day === undefined ? [] : openWindows(day, choice);
-  const window = windows.find((each) => each.window === picked.window) ?? windows[0];
-  const technicians = window?.technicians ?? [];
-  const technician = technicians.some((each) => each.id === picked.technician) ? picked.technician : "";
-  return { days, day, windows, window, technicians, technician };
-}
-
 /** The fortnight's windows for what is being booked, read again as any of it changes. */
 function useAvailability(clientId: string, choice: Choice, tier: string | undefined, from: string | undefined) {
   const load = useCallback(
     () =>
-      api.visitAvailability({
+      clientsApi.visitAvailability({
         client: clientId,
         kind: kindOf(choice),
         ...(tier === undefined ? {} : { tier }),
@@ -205,7 +121,7 @@ function useAvailability(clientId: string, choice: Choice, tier: string | undefi
   return useLoad(load);
 }
 
-function Form({
+function BookingForm({
   clientId,
   prefill,
   onBooked,
@@ -237,7 +153,8 @@ function Form({
   if (loaded.state === "failed") return <Unreadable onRetry={retry} />;
 
   const offered = loaded.value;
-  const { days, day, windows, window, technicians, technician } = slotOf(offered, choice, picked);
+  const slot = slotOf(offered, choice, picked);
+  const { day, window, technician } = slot;
   const firstDay = offered.days[0]?.date;
   const cover = offered.owed.some((each) => each.id === covers) ? covers : "";
   const takesCode = kindOf(choice) !== "consultation" && cover === "";
@@ -246,7 +163,7 @@ function Form({
     once(async () => {
       if (day === undefined || window === undefined) return;
       setFailed(null);
-      const answer = await api.bookVisit(
+      const answer = await clientsApi.bookVisit(
         visitOf({
           clientId,
           choice,
@@ -269,73 +186,19 @@ function Form({
         void book();
       }}
     >
-      <Choose
-        label={copy.kind}
-        value={choice}
-        options={CHOICES.map((each) => ({ value: each, label: copy.kinds[each] }))}
+      <WhatIsBooked
+        choice={choice}
+        offered={offered}
         busy={busy}
-        onChoose={(next) => {
-          setChoice(next as Choice);
+        onChoice={(next) => {
+          setChoice(next);
           choose({ tier: undefined });
         }}
+        onTier={(tier) => {
+          choose({ tier });
+        }}
       />
-      {offered.services.length > 1 && (
-        <Choose
-          label={kindOf(choice) === "first_fit" ? copy.hairSystem : copy.service}
-          value={offered.service.tier}
-          options={offered.services.map((service) => ({ value: service.tier, label: service.name }))}
-          busy={busy}
-          onChoose={(tier) => {
-            choose({ tier });
-          }}
-        />
-      )}
-      {offered.recommended !== null && offered.recommended !== offered.service.tier && (
-        <InlineMessage tone="note">
-          {copy.notRecommended(
-            offered.services.find((service) => service.tier === offered.recommended)?.name ?? offered.recommended,
-          )}
-        </InlineMessage>
-      )}
-      {day === undefined ? (
-        <p className={styles.note}>{copy.noDays}</p>
-      ) : (
-        <>
-          <Choose
-            label={copy.day}
-            value={day.date}
-            options={days.map((each) => ({ value: each.date, label: shortDate(each.date) }))}
-            busy={busy}
-            onChoose={(date) => {
-              choose({ date });
-            }}
-          />
-          <Choose
-            label={copy.window}
-            value={window?.window ?? ""}
-            options={windows.map((each) => ({
-              value: each.window,
-              label: `${dispatch.windows[each.window] ?? each.window}, ${each.start} to ${each.end}`,
-            }))}
-            busy={busy}
-            onChoose={(next) => {
-              choose({ window: next });
-            }}
-          />
-          <Choose
-            label={copy.technician}
-            value={technician}
-            options={[
-              { value: "", label: copy.anyone },
-              ...technicians.map((each) => ({ value: each.id, label: each.name })),
-            ]}
-            busy={busy}
-            onChoose={(next) => {
-              choose({ technician: next });
-            }}
-          />
-        </>
-      )}
+      <WhenAndWho slot={slot} busy={busy} onPick={choose} />
       <StripButtons busy={busy} from={from} firstDay={firstDay} onFrom={setFrom} />
       <CoverChoice owed={offered.owed} value={cover} busy={busy} onChoose={setCovers} />
       {takesCode && (
@@ -369,11 +232,7 @@ function Form({
           {busy ? copy.booking : copy.book}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: failed })}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={errorText(copy.errors, { code: failed })} />}
     </form>
   );
 }
@@ -416,7 +275,7 @@ export function BookVisit({
       }}
     >
       {booked === null ? (
-        <Form clientId={clientId} prefill={prefill} onBooked={setBooked} />
+        <BookingForm clientId={clientId} prefill={prefill} onBooked={setBooked} />
       ) : (
         <Booked booked={booked} />
       )}

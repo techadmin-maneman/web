@@ -36,7 +36,7 @@ async function open(page: Page, extra: Answers = {}): Promise<void> {
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
-const opener = (place: string) => `${copy.open} ${copy.heading(place, copy.classes.weekly ?? "")}`;
+const opener = (place: string) => `${copy.open} ${copy.heading(place, copy.classes.weekly)}`;
 
 test("opens a task and counts it blind", async ({ page }) => {
   const task = {
@@ -49,7 +49,7 @@ test("opens a task and counts it blind", async ({ page }) => {
     "POST /api/count-tasks/{id}/counts": json(done),
   });
   await page.getByRole("button", { name: opener("Imran Qureshi") }).click();
-  const panel = page.getByRole("region", { name: copy.heading("Imran Qureshi", copy.classes.weekly ?? "") });
+  const panel = page.getByRole("region", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
   await expect(panel).toContainText(copy.countNote);
   await panel.getByLabel(copy.counted(PIECE.name)).fill("2");
   const request = posted(page, "/api/count-tasks/ct-1/counts");
@@ -81,7 +81,7 @@ test("signs off a difference with why", async ({ page }) => {
     "POST /api/count-tasks/{id}/sign-off": json(done),
   });
   await page.getByRole("button", { name: opener("Delhi stockroom") }).click();
-  const panel = page.getByRole("region", { name: copy.heading("Delhi stockroom", copy.classes.weekly ?? "") });
+  const panel = page.getByRole("region", { name: copy.heading("Delhi stockroom", copy.classes.weekly) });
   await expect(panel.getByRole("row").filter({ hasText: PIECE.name })).toContainText("2");
   await expect(panel).toContainText(copy.notScanned(["MM-ESS-0000041-R"]));
   await panel.getByLabel(copy.why).fill("One piece not found");
@@ -105,7 +105,7 @@ test("counts a hair system held under labels by scanning them, and flags one not
     "POST /api/count-tasks/{id}/counts": json(counted),
   });
   await page.getByRole("button", { name: opener("Imran Qureshi") }).click();
-  const panel = page.getByRole("region", { name: copy.heading("Imran Qureshi", copy.classes.weekly ?? "") });
+  const panel = page.getByRole("region", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
   await expect(panel).toContainText(copy.scanEach(PIECE.name));
   for (const label of ["MM-ESS-0000041-R", flagged[0] ?? ""]) {
     await panel.getByLabel("Label", { exact: true }).fill(label);

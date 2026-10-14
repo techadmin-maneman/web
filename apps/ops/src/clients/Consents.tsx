@@ -1,19 +1,18 @@
-// The client's consents: what they have agreed to, read only. Ops can never grant a
-// consent, and no route here would let them (src/routes/ops/client-consents.ts). The
-// board's fourth column is where each was given
-// (docs/decisions/0094-where-a-consent-was-given.md). Under them, erasing the
-// client, for a request made outside the app.
+// The client's consents, read only: ops can never grant one (src/routes/ops/client-consents.ts). The fourth column is
+// where each was given (docs/decisions/0094-where-a-consent-was-given.md). Beneath them, erasing the client, for a
+// request made outside the app.
 
 import { classes } from "@maneman/ui/classes";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
-import { api, type Consent } from "../api.ts";
+import { type Consent } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Erase } from "./Erase.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.consents;
 
@@ -48,7 +47,7 @@ function ConsentRow({ consent }: { consent: Consent }) {
 }
 
 export function Consents({ clientId, name, onErased }: { clientId: string; name: string; onErased: () => void }) {
-  const load = useCallback(() => api.clientConsents(clientId), [clientId]);
+  const load = useCallback(() => clientsApi.clientConsents(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
 
   if (loaded.state === "loading") return <Loading />;

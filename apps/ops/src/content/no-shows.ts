@@ -1,6 +1,6 @@
 // No-shows: the case, the charge, its ruling and a client's dispute.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 /**
  * The design's Payments: the day's money over "No-shows and late
@@ -183,11 +183,11 @@ export const noShows = {
     empty: "No no-shows to decide.",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Already decided. Reload.",
+      not_found: changed("Already decided."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** The board draws no list of the day's rulings. Each case ruled on today, the latest first. */
   decided: {
@@ -238,10 +238,10 @@ export const noShows = {
     none: "No disputed charges.",
     errors: {
       not_permitted: NOT_PERMITTED,
-      not_found: "Already ruled on. Reload.",
+      not_found: changed("Already ruled on."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
 } as const;

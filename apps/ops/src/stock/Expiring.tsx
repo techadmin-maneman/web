@@ -10,13 +10,14 @@ import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
+import { RowHead } from "../components/RowHead.tsx";
 
 /** The lots that expire by the warning's end, soonest first, each where it is held. */
-export function expiringLots(book: Stock) {
-  const until = new Date(Date.parse(`${book.today}T00:00:00Z`) + book.expiry_warning_days * 86_400_000)
+export function expiringLots(stock: Stock) {
+  const until = new Date(Date.parse(`${stock.today}T00:00:00Z`) + stock.expiry_warning_days * 86_400_000)
     .toISOString()
     .slice(0, 10);
-  return book.holdings
+  return stock.holdings
     .flatMap((holding) =>
       holding.lots.map((lot) => ({ ...lot, code: holding.consumable_code, place: holding.place_id })),
     )
@@ -24,11 +25,11 @@ export function expiringLots(book: Stock) {
     .sort((a, b) => (a.expires_on ?? "").localeCompare(b.expires_on ?? ""));
 }
 
-export function Expiring({ book }: { book: Stock }) {
+export function Expiring({ stock }: { stock: Stock }) {
   const words = stockViews.expiring;
   return (
     <Panel titleId="stock-expiring" title={words.title}>
-      <p className={form.note}>{words.intro(book.expiry_warning_days)}</p>
+      <p className={form.note}>{words.intro(stock.expiry_warning_days)}</p>
       <div className={styles.scroll}>
         <Table className={form.table}>
           <thead>
@@ -41,21 +42,19 @@ export function Expiring({ book }: { book: Stock }) {
             </tr>
           </thead>
           <tbody>
-            {expiringLots(book).map((lot) => {
-              const consumable = book.consumables.find((each) => each.code === lot.code);
-              const expired = (lot.expires_on ?? "") < book.today;
+            {expiringLots(stock).map((lot) => {
+              const consumable = stock.consumables.find((each) => each.code === lot.code);
+              const expired = (lot.expires_on ?? "") < stock.today;
               return (
                 <tr key={`${lot.id}/${lot.place}`}>
-                  <th scope="row" className={form.rowHead}>
-                    {consumable?.name ?? lot.code}
-                  </th>
+                  <RowHead>{consumable?.name ?? lot.code}</RowHead>
                   <td>{lot.lot_code}</td>
-                  <td>{placeName(book, lot.place)}</td>
+                  <td>{placeName(stock, lot.place)}</td>
                   <td className={form.figure}>
                     {lot.quantity} {consumable?.unit ?? ""}
                   </td>
                   <td>
-                    {fullDate(lot.expires_on ?? book.today)}
+                    {fullDate(lot.expires_on ?? stock.today)}
                     {expired && <span className={styles.low}>{words.expired}</span>}
                   </td>
                 </tr>

@@ -2,7 +2,6 @@
 // done with it now: approved, by a second manager where it needs one; marked sent; cancelled with why; printed.
 
 import { fullDate } from "@maneman/web-kit/dates";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -10,7 +9,6 @@ import { Table } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -18,8 +16,12 @@ import { useAccess, whoami } from "../lib/access.ts";
 import { OrderSheet } from "./OrderSheet.tsx";
 import { Receiving } from "./Receiving.tsx";
 import type { Order, Orders } from "./types.ts";
+import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
-type Answer = Awaited<ReturnType<typeof client.post<"/api/purchase-orders/{id}/send">>>;
+type Answer = Awaited<ReturnType<typeof purchasingApi.sendOrder>>;
 
 /** Whether the person signed in may approve the order now: not where they gave its first approval already. */
 function useApprovable(order: Order): boolean {
@@ -36,15 +38,14 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
   const approvable = useApprovable(order);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
-  const path = { path: { id: order.id } };
   const step = async (to: "approve" | "send", said: string) => {
-    onAnswer(await client.post(`/api/purchase-orders/{id}/${to}`, path), said);
+    onAnswer(await (to === "approve" ? purchasingApi.approveOrder(order.id) : purchasingApi.sendOrder(order.id)), said);
   };
   const cancellable =
     ["drafted", "approved", "sent"].includes(order.state) && access.mayCall("POST /api/purchase-orders/{id}/cancel");
   return (
     <>
-      <div className={form.actions}>
+      <FormActions>
         {approvable && (
           <Button variant="primary" size="small" onClick={() => void step("approve", copy.order.approved)}>
             {order.approved_by === null ? copy.order.approve : copy.order.secondApprove}
@@ -66,7 +67,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
             {copy.order.cancel}
           </Button>
         )}
-      </div>
+      </FormActions>
       {cancelling && (
         <div className={form.group}>
           <Field label={copy.order.reason} className={form.field}>
@@ -81,17 +82,15 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
               />
             )}
           </Field>
-          <div className={form.actions}>
+          <FormActions>
             <Button
               variant="destructive"
               size="small"
               disabled={reason.trim() === ""}
               onClick={() =>
-                void client
-                  .post("/api/purchase-orders/{id}/cancel", { ...path, body: { reason: reason.trim() } })
-                  .then((answer) => {
-                    onAnswer(answer, copy.order.cancelled);
-                  })
+                void purchasingApi.cancelOrder(order.id, reason.trim()).then((answer) => {
+                  onAnswer(answer, copy.order.cancelled);
+                })
               }
             >
               {copy.order.confirmCancel}
@@ -105,7 +104,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
             >
               {copy.order.keep}
             </Button>
-          </div>
+          </FormActions>
         </div>
       )}
     </>
@@ -128,9 +127,7 @@ function LinesTable({ order, named }: { order: Order; named: (code: string) => s
       <tbody>
         {order.lines.map((line) => (
           <tr key={line.id}>
-            <th scope="row" className={form.rowHead}>
-              {named(line.consumable_code)}
-            </th>
+            <RowHead>{named(line.consumable_code)}</RowHead>
             <td className={form.figure}>{line.quantity}</td>
             <td className={form.figure}>{inCurrency(line.unit_price, order.currency)}</td>
             <td className={form.figure}>{inCurrency(line.unit_price * line.quantity, order.currency)}</td>
@@ -142,18 +139,20 @@ function LinesTable({ order, named }: { order: Order; named: (code: string) => s
 }
 
 export function OrderPanel({
-  book,
+  id,
+  orders,
   order,
   onChanged,
 }: {
-  book: Orders;
+  id: string;
+  orders: Orders;
   order: Order;
-  onChanged: (book: Orders, said: string) => void;
+  onChanged: (orders: Orders, said: string) => void;
 }) {
   const [printing, setPrinting] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
-  const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
-  const supplier = book.suppliers.find((each) => each.id === order.supplier_id)?.name ?? order.supplier_id;
+  const named = (code: string) => orders.consumables.find((each) => each.code === code)?.name ?? code;
+  const supplier = orders.suppliers.find((each) => each.id === order.supplier_id)?.name ?? order.supplier_id;
   const answered = (answer: Answer, said: string) => {
     if (answer.ok) {
       setFailure(null);
@@ -161,9 +160,9 @@ export function OrderPanel({
     } else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <Panel titleId="order-panel" title={`${copy.number(order.number)} · ${supplier}`}>
+    <Panel id={id} opened titleId="order-panel" title={`${copy.number(order.number)} · ${supplier}`}>
       <p className={form.note}>
-        {copy.states[order.state] ?? order.state}
+        {copy.states[order.state]}
         {order.state === "drafted" && order.approved_by !== null && ` · ${copy.awaitingSecond}`}
         {order.expected_on !== null && ` · ${copy.order.expected(fullDate(order.expected_on))}`}
         {order.cancel_reason !== null && ` · ${copy.order.cancelledWhy(order.cancel_reason)}`}
@@ -173,8 +172,8 @@ export function OrderPanel({
         {copy.order.total}: {inCurrency(order.total, order.currency)}
       </p>
       <Steps order={order} onAnswer={answered} />
-      <Receiving book={book} order={order} onChanged={onChanged} />
-      <div className={form.actions}>
+      <Receiving orders={orders} order={order} onChanged={onChanged} />
+      <FormActions>
         <Button
           variant="outline"
           size="small"
@@ -184,15 +183,11 @@ export function OrderPanel({
         >
           {copy.order.print}
         </Button>
-      </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      </FormActions>
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       {printing && (
         <OrderSheet
-          book={book}
+          orders={orders}
           order={order}
           onPrinted={() => {
             setPrinting(false);

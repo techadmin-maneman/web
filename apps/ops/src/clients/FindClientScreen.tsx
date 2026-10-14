@@ -1,29 +1,22 @@
-// The way into a client's page. The board opens on a client and draws no way
-// of finding one, so this is the console's own: any part of a name, or four
-// digits or more of a number, sent in the request body, never in a path or a
-// query string, so a number stays out of URLs, referrers and logs
-// (src/routes/ops/clients.ts). The matches are listed by name, each with where
-// the client stands and their next visit, so two of one name can be told apart.
-//
-// Every other page's header searches here too. The words and what they found
-// are kept in the history entry, so Back from a client finds the results again;
-// before any search, the clients opened this session are offered
-// (lib/client-search.ts), and beneath them every client (./ClientList.tsx).
+// The way into a client's page: any part of a name, or four or more digits of a number, sent in the body so a number
+// stays out of URLs and logs (src/routes/ops/clients.ts). The search and its results are kept in the history entry, so
+// Back finds them; before a search, the clients opened this session (lib/client-search.ts), then every client
+// (./ClientList.tsx).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { keepSearch, keptSearch, recentClients, type KeptSearch } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { ClientList } from "./ClientList.tsx";
 import styles from "./clients.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = clients.find;
 
@@ -118,7 +111,7 @@ export function FindClientScreen() {
   }, [kept, find]);
 
   return (
-    <Shell section="/clients" title={clients.title} finder={false}>
+    <>
       <form
         className={styles.find}
         onSubmit={(event) => {
@@ -126,19 +119,20 @@ export function FindClientScreen() {
           void find(text.trim());
         }}
       >
-        <Label className={styles.findLabel} htmlFor="find">
-          {copy.label}
-        </Label>
-        <TextInput
-          id="find"
-          className={styles.findField}
-          type="search"
-          autoComplete="off"
-          value={text}
-          onChange={(event) => {
-            setText(event.target.value);
-          }}
-        />
+        <Field label={copy.label} look={{ label: styles.findLabel }}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.findField}
+              type="search"
+              autoComplete="off"
+              value={text}
+              onChange={(event) => {
+                setText(event.target.value);
+              }}
+            />
+          )}
+        </Field>
         <Button
           variant="primary"
           size="small"
@@ -149,14 +143,12 @@ export function FindClientScreen() {
           {finding.step === "finding" ? copy.finding : copy.submit}
         </Button>
         {finding.step === "failed" && (
-          <InlineMessage tone="error" className={styles.error}>
-            {errorText(copy.errors, { code: finding.code })}
-          </InlineMessage>
+          <Refusal className={styles.error} said={errorText(copy.errors, { code: finding.code })} />
         )}
       </form>
       {finding.step === "found" && <Found text={finding.text} found={finding.found} />}
       {finding.step === "idle" && <Recent />}
       {finding.step !== "found" && <ClientList />}
-    </Shell>
+    </>
   );
 }

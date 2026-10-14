@@ -1,12 +1,8 @@
-// An address a client gives ops on the phone, recorded on their page and saved
-// as theirs, marked as given to ops (docs/decisions/0092-task-owners.md; open
-// point 62). The form follows the client app's own (apps/app/src/profile/AddressForm.tsx):
-// the same fields (@maneman/web-kit/address) and checks, and the same building search, whose one session
-// token covers every keystroke and the save, so Google bills the search once
-// (docs/decisions/0054-address-capture.md). The search is an addition, never a
-// gate: an address typed without it saves, with no pin. No board draws any of it.
+// An address a client gives ops on the phone, saved as theirs and marked as given to ops
+// (docs/decisions/0092-task-owners.md; open point 62). It is the client app's form
+// (apps/app/src/profile/AddressForm.tsx), its building search one session token for every keystroke and the save
+// (docs/decisions/0054-address-capture.md); an address typed without the search saves with no pin.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -14,9 +10,11 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { AddressSearch, type AddressSuggestion } from "@maneman/ui/AddressSearch";
 import { useId, useRef, useState } from "react";
 import { ADDRESS_FIELDS, given, missingParts, type AddressField, type AddressPart } from "@maneman/web-kit/address";
-import { api, type AddressGiven, type ClientRecord } from "../api.ts";
+import { type AddressGiven, type ClientRecord } from "../api.ts";
 import { clients, NOT_PERMITTED } from "../content.ts";
 import styles from "./address.module.css";
+import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.given;
 
@@ -62,7 +60,7 @@ function BuildingSearch({
     <AddressSearch
       value={value}
       search={async (query) => {
-        const answer = await api.addressSuggestions(clientId, query, sessionToken);
+        const answer = await clientsApi.addressSuggestions(clientId, query, sessionToken);
         return answer.ok ? { ok: true, suggestions: answer.body.suggestions } : { ok: false };
       }}
       onType={onType}
@@ -110,7 +108,7 @@ export function GivenAddressForm({
         requestAnimationFrame(() => form.current?.querySelector<HTMLInputElement>("[aria-invalid]")?.focus());
         return;
       }
-      const answer = await api.saveGivenAddress(clientId, {
+      const answer = await clientsApi.saveGivenAddress(clientId, {
         ...sent,
         line2: orNull(sent.line2),
         access_notes: orNull(sent.access_notes),
@@ -177,11 +175,7 @@ export function GivenAddressForm({
       />
       {/* A building chosen from the search is line one, so line one is asked only where none was. */}
       {ADDRESS_FIELDS.filter(({ part }) => part !== "line1" || !given(draft.building)).map(field)}
-      {problem !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {problem}
-        </InlineMessage>
-      )}
+      {problem !== null && <Refusal className={styles.error} said={problem} />}
       <div className={styles.actions}>
         <Button variant="primary" size="small" type="submit" busy={busy}>
           {busy ? copy.saving : copy.save}

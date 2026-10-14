@@ -1,20 +1,7 @@
-// The reason a move must carry, asked for before anything is
-// written. The clash check runs on the server before anything is written
-// (docs/decisions/0034-clash-check.md), so this panel sends nothing until a
-// reason is chosen, and the server may still refuse what it sends.
-//
-// "The client's payment carries over and they are never charged for a move ops
-// make, including inside 24 hours" (src/policy/dispatch.ts), so no amount is
-// shown here, and inside the notice the visit was sold under the panel says so
-// in the board's own words, with that notice where the board writes 24 hours.
-// "Their payment carries over" follows only a visit that was paid for, in
-// money or credit: a free consultation, or one paid once the client is fitted,
-// has nothing to carry.
-//
-// The board's line promises a WhatsApp message. One goes only to a client who
-// agreed to WhatsApp about their visits, so for any other the panel says to call
-// them, with their number; and a change of technician alone, which leaves their
-// window as it was, tells them nothing (docs/decisions/0069-dispatch-under-concurrency.md).
+// The reason a move must carry, asked before anything is sent; the server still runs the clash check
+// (docs/decisions/0034-clash-check.md). No amount is shown, since a move ops make never charges the client
+// (src/policy/dispatch.ts), and the WhatsApp line shows only for a client who agreed to it, the panel saying to call
+// any other (docs/decisions/0069-dispatch-under-concurrency.md).
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { classes } from "@maneman/ui/classes";

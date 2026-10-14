@@ -1,13 +1,6 @@
-// One client's page: who they
-// are, the ways to reach them and who invited them, what waits on Tasks for
-// them, then their visits, pieces, payments, referrals, consents, photographs or
-// history. It opens on Visits.
-//
-// The record is read once for the page. Visits, Payments, Referrals and History
-// are drawn from it, so moving between them costs no request. The photographs'
-// opening is held here too, so leaving their tab and coming back is the same
-// view and not a second entry in the log. A client erased since has no tabs:
-// their page keeps only their visits and money (Erase.tsx).
+// One client's page: who they are, how to reach them, what waits for them on Tasks, then a tab each for visits, pieces,
+// payments, referrals, consents, photographs and history. The record is read once for the page, so moving between tabs
+// costs no request; an erased client's page keeps only their visits and money (Erase.tsx).
 
 import { TextLink } from "@maneman/ui/TextLink";
 import { ButtonLink } from "@maneman/ui/Button";
@@ -20,7 +13,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useEffect, useState } from "react";
 import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { rememberClient } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -196,15 +189,11 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   }, [clientId, opened]);
 
   if (erasedId === clientId) {
-    return (
-      <Shell section="/clients" title={clients.title} flush>
-        <Erased />
-      </Shell>
-    );
+    return <Erased />;
   }
 
   return (
-    <Shell section="/clients" title={clients.title} flush>
+    <>
       {whenLoaded(loaded, {
         loading: (
           <div className={styles.waiting}>
@@ -264,6 +253,6 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
             </div>
           ),
       })}
-    </Shell>
+    </>
   );
 }

@@ -249,7 +249,7 @@ test("says so when the phone is no longer that technician's", async ({ page }) =
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
   await main.getByRole("button", { name: opsCopy.technicians.phones.confirm }).click();
-  await expect(main.getByRole("alert")).toContainText("That phone is no longer theirs.");
+  await expect(page.getByText("That phone is no longer theirs. Here's the latest.")).toBeVisible();
 });
 
 test("says so when the roster cannot be loaded, and loads it on Try again", async ({ page }) => {

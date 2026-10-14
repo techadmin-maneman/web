@@ -86,13 +86,13 @@ function bookingTitle(answer: PincodeAnswer | null, plan: Plan): string {
   return booking.title;
 }
 
-/** The invite's heading, which for a code we do not know promises nothing the invite would have. */
 /** Who the invite is from: a partner, a client who agreed to be named, or no one named. */
 function fromLine(name: string | null, partner: string | null): string {
   if (partner !== null) return fill(referral.arrival.partner, { partner });
   return name === null ? referral.arrival.unnamed : fill(referral.arrival.invited, { name });
 }
 
+/** The invite's heading, which for a code we do not know promises nothing the invite would have. */
 function inviteHeading(invite: InviteAnswer | null): string {
   if (invite?.state === "unknown") return referral.arrival.unknown.title;
   return referral.arrival.title;

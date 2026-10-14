@@ -14,6 +14,13 @@
      that make one slot and a slot and a half read alike (ADR 0025, item 49). */
   --ops-slot: 42px;
   --ops-table-min: 960px; /* the narrowest a wide table goes before it scrolls */
+  /* A table's columns, by how much they hold: each screen names its own for what it holds, as one of these. */
+  --ops-column-narrow: 72px; /* an owner, a source */
+  --ops-cell: 88px; /* a day on the board, a figure with its unit */
+  --ops-column: 96px; /* a date, a city */
+  --ops-column-wide: calc(var(--ops-column) + var(--sp-24)); /* a date with its weekday, an amount */
+  --ops-filter: 176px; /* a list's narrowest filter, and a date with its time */
+  --ops-measure: 560px; /* the widest a line of words runs, and the narrowest a list of people goes */
 
   /* The shared parts' room, as the console draws them. */
   --drawer-width: var(--ops-panel);

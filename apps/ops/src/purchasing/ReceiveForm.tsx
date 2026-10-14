@@ -2,17 +2,18 @@
 // were accepted, damaged or failed their check, its lot and expiry; and the receipt's supplier invoice, rupee rate for an
 // order in another currency, and its freight, duty and clearing, which the landed cost shares out.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Fieldset, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import type { Order, Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
+import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
 interface LineDraft {
   readonly received: string;
@@ -25,7 +26,7 @@ interface LineDraft {
 const WHOLE = /^\d{1,7}$/;
 const RUPEES = /^\d{1,9}(?:\.\d{1,2})?$/;
 
-function Entry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
+function ReceiptEntry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
   return (
     <Field label={props.label} className={form.field}>
       {(control) => (
@@ -50,11 +51,11 @@ function LineFields(props: { name: string; draft: LineDraft; onDraft: (draft: Li
   };
   return (
     <Fieldset className={styles.line} legend={props.name}>
-      <Entry label={copy.receive.received} value={draft.received} onChange={set("received")} />
-      <Entry label={copy.receive.damaged} value={draft.damaged} onChange={set("damaged")} />
-      <Entry label={copy.receive.failed} value={draft.failed} onChange={set("failed")} />
-      <Entry label={copy.receive.lot} value={draft.lot} onChange={set("lot")} />
-      <Entry label={copy.receive.expires} value={draft.expires} type="date" onChange={set("expires")} />
+      <ReceiptEntry label={copy.receive.received} value={draft.received} onChange={set("received")} />
+      <ReceiptEntry label={copy.receive.damaged} value={draft.damaged} onChange={set("damaged")} />
+      <ReceiptEntry label={copy.receive.failed} value={draft.failed} onChange={set("failed")} />
+      <ReceiptEntry label={copy.receive.lot} value={draft.lot} onChange={set("lot")} />
+      <ReceiptEntry label={copy.receive.expires} value={draft.expires} type="date" onChange={set("expires")} />
     </Fieldset>
   );
 }
@@ -82,13 +83,13 @@ function ExtrasFields({
   };
   return (
     <div className={form.fields}>
-      <Entry label={copy.receive.invoice} value={extras.invoice} onChange={extra("invoice")} />
+      <ReceiptEntry label={copy.receive.invoice} value={extras.invoice} onChange={extra("invoice")} />
       {order.currency !== "INR" && (
-        <Entry label={copy.receive.rate(order.currency)} value={extras.rate} onChange={extra("rate")} />
+        <ReceiptEntry label={copy.receive.rate(order.currency)} value={extras.rate} onChange={extra("rate")} />
       )}
-      <Entry label={copy.receive.freight} value={extras.freight} onChange={extra("freight")} />
-      <Entry label={copy.receive.duty} value={extras.duty} onChange={extra("duty")} />
-      <Entry label={copy.receive.clearing} value={extras.clearing} onChange={extra("clearing")} />
+      <ReceiptEntry label={copy.receive.freight} value={extras.freight} onChange={extra("freight")} />
+      <ReceiptEntry label={copy.receive.duty} value={extras.duty} onChange={extra("duty")} />
+      <ReceiptEntry label={copy.receive.clearing} value={extras.clearing} onChange={extra("clearing")} />
     </div>
   );
 }
@@ -117,12 +118,12 @@ function receiptBody(order: Order, lines: readonly LineDraft[], extras: Extras) 
 }
 
 export function ReceiveForm(props: {
-  book: Orders;
+  orders: Orders;
   order: Order;
-  onReceived: (book: Orders, said: string) => void;
+  onReceived: (orders: Orders, said: string) => void;
   onCancel: () => void;
 }) {
-  const { book, order } = props;
+  const { orders, order } = props;
   const [lines, setLines] = useState<readonly LineDraft[]>(() =>
     order.lines.map((line) => ({
       received: String(Math.max(0, line.quantity - line.received)),
@@ -135,14 +136,14 @@ export function ReceiveForm(props: {
   const [extras, setExtras] = useState<Extras>({ invoice: "", rate: "", freight: "0", duty: "0", clearing: "0" });
   const [failure, setFailure] = useState<Failure | null>(null);
   const foreign = order.currency !== "INR";
-  const named = (code: string) => book.consumables.find((each) => each.code === code)?.name ?? code;
+  const named = (code: string) => orders.consumables.find((each) => each.code === code)?.name ?? code;
   const ready =
     lines.every((line) => [line.received, line.damaged, line.failed].every((figure) => WHOLE.test(figure.trim()))) &&
     [extras.freight, extras.duty, extras.clearing].every((amount) => RUPEES.test(amount.trim())) &&
     (!foreign || RUPEES.test(extras.rate.trim()));
   const send = async () => {
     const body = receiptBody(order, lines, extras);
-    const answer = await client.post("/api/purchase-orders/{id}/receipts", { path: { id: order.id }, body });
+    const answer = await purchasingApi.receive(order.id, body);
     if (answer.ok) props.onReceived(answer.body, copy.receive.done);
     else setFailure({ code: answer.code, fields: answer.fields });
   };
@@ -159,19 +160,15 @@ export function ReceiveForm(props: {
         />
       ))}
       <ExtrasFields order={order} extras={extras} onExtras={setExtras} />
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void send()}>
           {copy.receive.send}
         </Button>
         <Button variant="outline" size="small" onClick={props.onCancel}>
           {copy.receive.cancel}
         </Button>
-      </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      </FormActions>
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </div>
   );
 }

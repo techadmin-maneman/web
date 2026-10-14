@@ -90,7 +90,7 @@ test("says so when someone has answered it already", async ({ page }) => {
   const first = row(page, "Rohit Malhotra");
   await first.getByRole("textbox", { name: opsCopy.grievances.queue.label }).fill("Answered on WhatsApp.");
   await first.getByRole("button", { name: opsCopy.grievances.queue.send }).click();
-  await expect(page.getByRole("alert")).toContainText("Already answered. Reload.");
+  await expect(page.getByText("Already answered. Here's the latest.")).toBeVisible();
 });
 
 test("says when more are open than the queue holds", async ({ page }) => {

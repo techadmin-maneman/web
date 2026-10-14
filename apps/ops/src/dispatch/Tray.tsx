@@ -1,13 +1,6 @@
-// The board's unassigned tray: the jobs nobody holds yet, each with the client,
-// the kind of visit, the window the client asked for beside the one offered,
-// and who invited the client, where someone did (the brief's "referral
-// source"). A job still on a technician who was switched off waits here too,
-// saying whose it was. The asked window is what the client picked; a visit whose booking
-// recorded none says so rather than repeating the offered one, and the asked
-// window carries no day, since none was recorded with it (ADR 0063). An
-// offered window that is not the one asked for is lettered in oxblood, as the
-// board draws it. An empty tray folds to a rail, so a laptop's width goes to
-// the week's days.
+// The board's unassigned tray: the jobs nobody holds, each with the client, the kind of visit, the window asked for
+// beside the one offered, in oxblood where they differ (ADR 0063), and who invited the client. A job on a technician
+// switched off waits here too, saying whose it was. An empty tray folds to a rail, so the week gets the width.
 
 import { Tile } from "@maneman/ui/Tile";
 import { capsLook } from "@maneman/ui/Caps";
@@ -38,7 +31,7 @@ function TrayLines({ each }: { each: Unassigned }) {
       <span className={styles.trayTop}>
         <span>{each.person?.name ?? nameOf({ kind: "unassigned", job: each })}</span>
         <span className={capsLook(styles.trayType)}>
-          {each.type === null ? dispatch.unknown : (dispatch.typeNames[each.type] ?? each.type)}
+          {each.type === null ? dispatch.unknown : dispatch.typeNames[each.type]}
         </span>
       </span>
       <span className={styles.trayLine}>{askedWord(each)}</span>

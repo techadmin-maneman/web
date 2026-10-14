@@ -1,20 +1,20 @@
 // Operations · Counts (docs/decisions/0185-cycle-counts.md). No design draws it; every word here is ours. Only the
 // Counts page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const counts = {
   title: "Counts",
   tasks: "Count tasks",
   none: "Nothing to count today.",
   columns: ["Place", "Class", "Due", "Stands", ""],
-  classes: { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" } as Readonly<Record<string, string>>,
+  classes: { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" },
   states: {
     open: "To count",
     recount: "To count again",
     sign_off: "Waiting for sign-off",
     done: "Done",
-  } as Readonly<Record<string, string>>,
+  },
   open: "Open",
   /** "Imran Qureshi · Weekly" */
   heading: (place: string, countClass: string) => `${place} · ${countClass}`,
@@ -52,15 +52,15 @@ export const counts = {
   choose: "Choose",
   start: "Start count",
   errors: {
-    lines: "The items changed since this opened. Reload.",
+    lines: changed("The items changed since this opened."),
     labels: "Scan each labelled piece once.",
     counted: "That's fewer than the labels scanned.",
     consumable_code: "This place holds none of that.",
-    order_state: "Someone else counted this first. Reload.",
-    not_found: "That is gone. Reload.",
+    order_state: changed("Someone else counted this first."),
+    not_found: changed("That is gone."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 };

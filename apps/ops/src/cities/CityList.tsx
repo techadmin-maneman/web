@@ -7,9 +7,10 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useState } from "react";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import styles from "../components/forms.module.css";
-import type { CitiesBook, City } from "./book.ts";
+import form from "../components/forms.module.css";
+import type { Cities, City } from "./types.ts";
 import { CityForm } from "./CityForm.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = cities.list;
 
@@ -21,15 +22,15 @@ const statusOf = (city: City): string => {
   return city.served ? copy.served : copy.notServed;
 };
 
-export function CityList({ book, onSaved }: { book: CitiesBook; onSaved: () => void }) {
+export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
   const mayChange = useAccess().mayCall("PATCH /api/cities/{name}");
   const mayAdd = useAccess().mayCall("POST /api/cities");
   const [doing, setDoing] = useState<Doing>({ kind: "add" });
   const [said, setSaid] = useState<string | null>(null);
-  const changing = doing.kind === "change" ? book.cities.find((city) => city.name === doing.name) : undefined;
+  const changing = doing.kind === "change" ? cities.cities.find((city) => city.name === doing.name) : undefined;
   return (
-    <Panel titleId="cities" title={copy.panel} count={book.cities.length}>
-      <Table className={styles.table}>
+    <Panel titleId="cities" title={copy.panel} count={cities.cities.length}>
+      <Table className={form.table}>
         <thead>
           <tr>
             {copy.columns.map((column) => (
@@ -40,18 +41,16 @@ export function CityList({ book, onSaved }: { book: CitiesBook; onSaved: () => v
           </tr>
         </thead>
         <tbody>
-          {book.cities.map((city) => (
+          {cities.cities.map((city) => (
             <tr key={city.name}>
-              <th scope="row" className={styles.rowHead}>
-                {city.name}
-              </th>
+              <RowHead>{city.name}</RowHead>
               <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
               <td>{city.zone ?? copy.noZone}</td>
               <td>{statusOf(city)}</td>
               <td>
                 {mayChange && (
                   <RowButton
-                    className={styles.inline}
+                    className={form.inline}
                     aria-label={copy.changeLabel(city.name)}
                     onClick={() => {
                       setSaid(null);
@@ -67,7 +66,7 @@ export function CityList({ book, onSaved }: { book: CitiesBook; onSaved: () => v
         </tbody>
       </Table>
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
@@ -75,7 +74,7 @@ export function CityList({ book, onSaved }: { book: CitiesBook; onSaved: () => v
         <CityForm
           key={doing.kind === "add" ? "add" : doing.name}
           city={changing ?? null}
-          zones={book.zones}
+          zones={cities.zones}
           onSaved={(words) => {
             setSaid(words);
             setDoing({ kind: "add" });

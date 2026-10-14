@@ -2,7 +2,6 @@
 // what the cancel gives back before anything changes: free to the client, unless ops tick the client's own late terms.
 // It goes only with a reason, which is kept with the cancel (src/routes/ops/visit-changes.ts). No board draws it.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -11,9 +10,11 @@ import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
-import { api, type CancelOutcome, type CancelTerms } from "../api.ts";
+import { type CancelOutcome, type CancelTerms } from "../api.ts";
 import { clients } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
+import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.cancel;
 
@@ -47,7 +48,7 @@ function lateTermsDiffer(terms: CancelTerms): boolean {
   return free.refund !== client.refund || free.kept !== client.kept || free.credit !== client.credit;
 }
 
-function Form({
+function CancelForm({
   terms,
   onCancelled,
   onTermsChanged,
@@ -67,7 +68,7 @@ function Form({
   const cancel = () =>
     once(async () => {
       setFailed(null);
-      const answer = await api.cancelVisit(terms.visit_id, terms.notice, onClientTerms, reason.trim());
+      const answer = await clientsApi.cancelVisit(terms.visit_id, terms.notice, onClientTerms, reason.trim());
       if (answer.ok) {
         onCancelled(gives);
         return;
@@ -119,11 +120,7 @@ function Form({
           {busy ? copy.cancelling : copy.confirm}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );
 }
@@ -131,9 +128,9 @@ function Form({
 /** Why the terms could not be read, and whether reading them again could help. */
 function unreadableOf(code: string): { readonly said: string; readonly final: boolean } {
   if (code === "not_changeable" || code === "not_permitted") {
-    return { said: copy.errors[code] ?? copy.unreadable, final: true };
+    return { said: copy.errors[code], final: true };
   }
-  if (code === "offline") return { said: copy.errors.offline ?? copy.unreadable, final: false };
+  if (code === "offline") return { said: copy.errors.offline, final: false };
   return { said: copy.unreadable, final: false };
 }
 
@@ -144,7 +141,7 @@ function useTerms(visitId: string): readonly [Terms, () => void] {
 
   useEffect(() => {
     let current = true;
-    void api.cancelTerms(visitId).then((answer) => {
+    void clientsApi.cancelTerms(visitId).then((answer) => {
       if (!current) return;
       setTerms(answer.ok ? { state: "loaded", value: answer.body } : { state: "failed", code: answer.code });
     });
@@ -169,9 +166,7 @@ function Body({ visitId, onCancelled }: { visitId: string; onCancelled: (gives: 
     const unreadable = unreadableOf(terms.code);
     return (
       <div>
-        <InlineMessage tone="error" className={styles.error}>
-          {unreadable.said}
-        </InlineMessage>
+        <Refusal className={styles.error} said={unreadable.said} />
         {!unreadable.final && (
           <Button variant="outline" size="small" className={styles.quiet} onClick={readAgain}>
             {copy.retry}
@@ -182,12 +177,8 @@ function Body({ visitId, onCancelled }: { visitId: string; onCancelled: (gives: 
   }
   return (
     <>
-      {changed && (
-        <InlineMessage tone="error" className={styles.error}>
-          {copy.termsChanged}
-        </InlineMessage>
-      )}
-      <Form
+      {changed && <Refusal className={styles.error} said={copy.termsChanged} />}
+      <CancelForm
         terms={terms.value}
         onCancelled={onCancelled}
         onTermsChanged={() => {

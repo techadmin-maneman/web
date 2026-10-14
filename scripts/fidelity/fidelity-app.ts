@@ -296,7 +296,6 @@ const AVAILABILITY = {
       : [slot("morning", false), slot("afternoon", true), slot("evening", true)],
   })),
 } satisfies Schemas["Availability"];
-/** The clock for booking: Monday 16 September 2030, the strip's first day. */
 /**
  * The design's referrer: two credits left, and two friends fitted (boards F1 and F5). They have agreed to the
  * cards' lines, so their own card can be chosen (F2), and the invite names them (F4).
@@ -314,6 +313,7 @@ const REFER = {
   invite_credits: null,
 } satisfies Schemas["Refer"];
 
+/** The clock for booking: Monday 16 September 2030, the strip's first day. */
 const IN_2030 = new Date("2030-09-16T05:00:00Z");
 type Price = Schemas["Price"];
 
