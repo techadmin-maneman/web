@@ -4,12 +4,12 @@
 // The content security policy allows only the site itself, Turnstile and the
 // analytics tags in use. Astro's inline scripts and styles are allowed by their hashes, which
 // the build reads from the finished pages, so no 'unsafe-inline' is needed.
-// Staging and local are never indexed; the smoke check looks for it.
+// Only the live production site is indexed: staging, local and production's coming-soon page never are, and the smoke
+// check looks for it.
 
 import { createHash } from "node:crypto";
 import { WHATSAPP_NUMBER, whatsappChat } from "@maneman/web-kit/whatsapp";
 import type { AnalyticsIds } from "./analytics-ids.ts";
-import type { SiteEnvironment } from "./environment.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
 
 /** Cloudflare's own limit on a line of `_headers`. */
@@ -81,7 +81,8 @@ export function contentSecurityPolicy(inline: { scripts: string[]; styles: strin
 /** The camera is allowed on /try only, for "Use the camera". */
 const PERMISSIONS = (camera: string) => `camera=${camera}, microphone=(), geolocation=(), payment=(), usb=()`;
 
-export function headersFile(environment: SiteEnvironment, csp: string): string {
+/** The `_headers` file: `indexed` only for the live production site. */
+export function headersFile(indexed: boolean, csp: string): string {
   const everyPage = [
     `Content-Security-Policy: ${csp}`,
     // Two years, for every host under the site's, as the apps send it (packages/web-kit/headers.ts). No preload: the
@@ -90,7 +91,7 @@ export function headersFile(environment: SiteEnvironment, csp: string): string {
     "Referrer-Policy: strict-origin-when-cross-origin",
     "X-Content-Type-Options: nosniff",
     `Permissions-Policy: ${PERMISSIONS("()")}`,
-    ...(environment === "production" ? [] : ["X-Robots-Tag: noindex, nofollow"]),
+    ...(indexed ? [] : ["X-Robots-Tag: noindex, nofollow"]),
   ];
   const rules: [string, string[]][] = [
     ["/*", everyPage],
@@ -116,8 +117,8 @@ export function securityTxt(builtAt: Date): string {
 /** Where a weakness is reported. */
 const SECURITY_EMAIL = "security@maneman.in";
 
-export function robotsFile(environment: SiteEnvironment): string {
-  if (environment === "production") return `User-agent: *\nAllow: /\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`;
+export function robotsFile(indexed: boolean): string {
+  if (indexed) return `User-agent: *\nAllow: /\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`;
   return "User-agent: *\nDisallow: /\n";
 }
 

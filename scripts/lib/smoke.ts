@@ -5,6 +5,7 @@
 // Asked for an invite's code, it runs one check instead, which no deploy runs:
 // the invite as WhatsApp's crawler fetches it (linkPreview, below).
 
+import { PRODUCTION_LIVE } from "../../site/src/lib/flags.ts";
 import type { EnvironmentName, Surface } from "../../src/config/environments.ts";
 import { STATIC_WORKERS } from "./workers.ts";
 
@@ -22,6 +23,8 @@ export interface SmokeOptions {
   readonly headers?: Readonly<Record<string, string>>;
   /** An invite's code: the run checks only that invite's link preview, as WhatsApp's crawler fetches it. */
   readonly linkPreview?: string;
+  /** Whether production serves the site, not its coming-soon page: PRODUCTION_LIVE unless a test says. */
+  readonly siteLive?: boolean;
   readonly fetch?: typeof fetch;
   /** How many times a check that waits for a deploy to reach every edge tries. */
   readonly attempts?: number;
@@ -180,11 +183,19 @@ const siteRouting: Check = async ({ options, site }) => {
   return `mm-site serves the ${options.environment} page`;
 };
 
-/** Staging and local are noindex everywhere; production is indexable. */
+/** Production serving its coming-soon page, until the site goes live there (site/src/lib/flags.ts). */
+const comingSoon = (options: SmokeOptions) =>
+  options.environment === "production" && !(options.siteLive ?? PRODUCTION_LIVE);
+
+/** Staging, local and production's coming-soon page are noindex; the live production site is indexable. */
 const indexing: Check = async ({ options, api, site }) => {
   const siteTag = (await site("/")).headers.get("x-robots-tag") ?? "";
   const apiTag = (await api("/api/health")).headers.get("x-robots-tag") ?? "";
 
+  if (comingSoon(options)) {
+    assert(siteTag.includes("noindex"), `the coming-soon page's X-Robots-Tag is "${siteTag}"`);
+    return "production's coming-soon page is noindex";
+  }
   if (options.environment === "production") {
     assert(!siteTag.includes("noindex"), "production site is marked noindex");
     return "production is indexable";
@@ -202,17 +213,15 @@ const indexing: Check = async ({ options, api, site }) => {
  */
 const WORKER_PAGES = ["/", "/areas", "/book", "/r/SMOKE0"] as const;
 
-/** The only words on the page production serves until the site goes live there, which has no _headers. */
-const PRODUCTION_PLACEHOLDER = "Placeholder for the production site";
-
-/** Each page the site's Worker answers first keeps the site's security headers, and outside production its noindex. */
+/**
+ * Each page the site's Worker answers first keeps the site's security headers, and is noindex but on the live production
+ * site. Production's coming-soon page is one page, at /.
+ */
 const siteSecurityHeaders: Check = async ({ options, site }) => {
-  for (const path of WORKER_PAGES) {
+  const paths = comingSoon(options) ? ["/"] : WORKER_PAGES;
+  const indexed = options.environment === "production" && !comingSoon(options);
+  for (const path of paths) {
     const response = await site(path);
-    const html = await response.text();
-    if (options.environment === "production" && html.includes(PRODUCTION_PLACEHOLDER)) {
-      return "production still serves its placeholder (docs/site.md, Going live in production)";
-    }
     assert(response.status === 200, `${path} answered ${String(response.status)}`);
     const headers = response.headers;
     const policy = headers.get("content-security-policy") ?? "";
@@ -225,9 +234,9 @@ const siteSecurityHeaders: Check = async ({ options, site }) => {
     const sniffing = headers.get("x-content-type-options") ?? "";
     assert(sniffing === "nosniff", `${path} has X-Content-Type-Options "${sniffing}"`);
     const robots = headers.get("x-robots-tag") ?? "";
-    assert(options.environment === "production" || robots.includes("noindex"), `${path} is not noindex`);
+    assert(indexed || robots.includes("noindex"), `${path} is not noindex`);
   }
-  return `the policy, HSTS and nosniff on ${WORKER_PAGES.join(", ")}`;
+  return `the policy, HSTS and nosniff on ${paths.join(", ")}`;
 };
 
 /** An app surface's host serves none of the public site's routes. */

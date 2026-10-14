@@ -14,8 +14,8 @@ const Manifest = z.object({
 });
 const manifest = Manifest.parse(JSON.parse(readFileSync("data/tryon-refs-v1.json", "utf8")));
 
-/** Where each environment serves the references: the staging build's public files, and production's placeholder. */
-const HOSTED = [`site/public/refs/${REFERENCE_VERSION}`, `site/placeholder/production/refs/${REFERENCE_VERSION}`];
+/** Where the references are served from: the site's public files, which production's coming-soon page carries too. */
+const HOSTED = [`site/public/refs/${REFERENCE_VERSION}`];
 
 const sha256 = (path: string) => createHash("sha256").update(readFileSync(path)).digest("hex");
 

@@ -190,6 +190,10 @@ jobs:
           npm run smoke -- --base https://maneman.in --environment production
           --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
+      # The coming-soon page until the site goes live in production (PRODUCTION_LIVE, site/src/lib/flags.ts); then the
+      # site, with the words the Words page published for production.
+      - name: Build the site (production)
+        run: npm run build:site -- --env production --words
       - name: Deploy mm-site
         run: node scripts/release/release.ts ship --worker mm-site --env production --tag "$SHA" --message "release $SHA"
 

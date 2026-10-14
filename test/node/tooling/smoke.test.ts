@@ -81,6 +81,7 @@ function smokeOptions(
     fetch: fakeDeployment(environment, faults).fetch,
     attempts: 2,
     retryDelayMs: 1,
+    siteLive: true,
     ...extra,
   };
 }
@@ -181,18 +182,23 @@ describe("smoke suite", () => {
     },
   );
 
-  it("asks no headers of production's placeholder page, which it serves until the site goes live there", async () => {
-    const placeholder = {
-      html: '<meta name="mm-worker" content="mm-site" /><meta name="mm-environment" content="production" /><p>Mane Man. Placeholder for the production site.</p>',
-    };
-    const results = await runSmoke(
-      smokeOptions("production", { site: placeholder, lostHeader: { path: "/", header: "content-security-policy" } }),
-    );
+  // The placeholder production served had no headers at all, and was indexable.
+  it("holds production's coming-soon page to the headers and to noindex, at / alone", async () => {
+    const soon = { site: { robots: "noindex, nofollow" } };
+    const results = await runSmoke(smokeOptions("production", soon, { siteLive: false }));
     expect(results.filter((result) => !result.ok)).toEqual([]);
     expect(results.find((result) => result.name === "site security headers")?.detail).toBe(
-      "production still serves its placeholder (docs/site.md, Going live in production)",
+      "the policy, HSTS and nosniff on /",
     );
-    // Once the site is live there, production is held to them as staging is.
+    expect(await failures(smokeOptions("production", {}, { siteLive: false }))).toEqual([
+      `indexing: the coming-soon page's X-Robots-Tag is ""`,
+      "site security headers: / is not noindex",
+    ]);
+    const lost = { ...soon, lostHeader: { path: "/", header: "content-security-policy" } };
+    expect(await failures(smokeOptions("production", lost, { siteLive: false }))).toEqual([
+      expect.stringContaining("site security headers: /"),
+    ]);
+    // Once the site is live there, production is held to every page as staging is.
     expect(
       await failures(
         smokeOptions("production", { lostHeader: { path: "/book", header: "strict-transport-security" } }),

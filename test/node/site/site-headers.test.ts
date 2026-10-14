@@ -77,14 +77,14 @@ describe("the content security policy", () => {
 
   it("fits Cloudflare's line limit with every tag and a dozen inline scripts", () => {
     const scripts = Array.from({ length: 12 }, (_, i) => `console.log(${String(i)})`);
-    const file = headersFile("production", contentSecurityPolicy({ scripts, styles: ["a{}", "b{}"] }, EVERY_TAG));
+    const file = headersFile(true, contentSecurityPolicy({ scripts, styles: ["a{}", "b{}"] }, EVERY_TAG));
     for (const line of file.split("\n")) expect(line.length).toBeLessThanOrEqual(HEADER_LINE_LIMIT);
   });
 });
 
 describe("the headers file", () => {
   it("sends HSTS, the referrer policy and no camera, except on /try", () => {
-    const file = headersFile("production", "default-src 'self'");
+    const file = headersFile(true, "default-src 'self'");
     // The same as the apps send (packages/web-kit/headers.ts), for every host under the site's.
     expect(file).toContain("  Strict-Transport-Security: max-age=63072000; includeSubDomains\n");
     expect(file).toContain("  Referrer-Policy: strict-origin-when-cross-origin\n");
@@ -94,9 +94,9 @@ describe("the headers file", () => {
   });
 
   it("keeps staging and local out of search engines", () => {
-    expect(headersFile("staging", "x")).toContain("X-Robots-Tag: noindex, nofollow");
-    expect(robotsFile("staging")).toBe("User-agent: *\nDisallow: /\n");
-    expect(robotsFile("production")).toContain("Sitemap: https://maneman.in/sitemap.xml");
+    expect(headersFile(false, "x")).toContain("X-Robots-Tag: noindex, nofollow");
+    expect(robotsFile(false)).toBe("User-agent: *\nDisallow: /\n");
+    expect(robotsFile(true)).toContain("Sitemap: https://maneman.in/sitemap.xml");
   });
 });
 

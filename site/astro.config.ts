@@ -85,8 +85,9 @@ export default defineConfig({
           }
           const csp = contentSecurityPolicy(inline, ANALYTICS_IDS[environment]);
           const paths = pages.map(pagePath).filter((path) => path !== null);
-          await writeFile(new URL("_headers", dir), headersFile(environment, csp));
-          await writeFile(new URL("robots.txt", dir), robotsFile(environment));
+          const indexed = environment === "production";
+          await writeFile(new URL("_headers", dir), headersFile(indexed, csp));
+          await writeFile(new URL("robots.txt", dir), robotsFile(indexed));
           await mkdir(new URL(".well-known/", dir), { recursive: true });
           await writeFile(new URL(".well-known/security.txt", dir), securityTxt(new Date()));
           await writeFile(new URL("sitemap.xml", dir), sitemapFile(paths.sort()));

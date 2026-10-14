@@ -1,6 +1,6 @@
-// The publish gate, end to end: the production site builds only when every
-// notice and legal page is approved, and then ships none of the design's
-// placeholder material.
+// The publish gate, end to end: the production site, built as it will be once it
+// goes live (--live), builds only when every notice and legal page is approved,
+// and then ships none of the design's placeholder material.
 // The gate's refusals are proven in test/node/site/site-content.test.ts.
 //
 // The try-on's look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), and the only
@@ -25,7 +25,7 @@ describe("the production site build", () => {
   it.runIf(!BUILDS)("refuses what awaits counsel, and nothing else", { timeout: 180_000 }, () => {
     expect(AWAITING_COUNSEL.map((notice) => notice.version)).toEqual(["photo-v5", "gate-v5"]);
     expect(PAGES_AWAITING_COUNSEL.map((page) => page.title)).toEqual(["Privacy", "Terms"]);
-    const build = spawnSync(process.execPath, ["scripts/build/build-site.ts", "--env", "production"], {
+    const build = spawnSync(process.execPath, ["scripts/build/build-site.ts", "--env", "production", "--live"], {
       encoding: "utf8",
     });
     const output = `${build.stdout}${build.stderr}`;
@@ -44,7 +44,7 @@ describe("the production site build", () => {
   });
 
   it.runIf(BUILDS)("passes the publish gate", { timeout: 180_000 }, () => {
-    const build = spawnSync(process.execPath, ["scripts/build/build-site.ts", "--env", "production"], {
+    const build = spawnSync(process.execPath, ["scripts/build/build-site.ts", "--env", "production", "--live"], {
       encoding: "utf8",
     });
     expect(build.status, `${build.stdout}${build.stderr}`).toBe(0);

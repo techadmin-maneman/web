@@ -7,7 +7,7 @@ Nothing reaches production while a point in `docs/open-points.md` is open, excep
 ## Where production stands, checked 11 October 2026
 
 - **Code:** 268eaa4, of 21 September 2026, with migrations to 0004: no release since. The next release carries every migration since.
-- **Surfaces:** the public surface alone (`ENABLED_SURFACES`, `src/config/environments.ts`); `mm-site` serves `site/placeholder/production`.
+- **Surfaces:** the public surface alone (`ENABLED_SURFACES`, `src/config/environments.ts`); `mm-site` serves the coming-soon page (`PRODUCTION_LIVE`, `site/src/lib/flags.ts`) from the next release; until then, the bare placeholder of 21 September 2026.
 - **Providers** (`wrangler.jsonc`, `env.production.vars`): CRM `zoho`, WhatsApp `evolution` with `MESSAGING_ENABLED` `"false"`, Books, payments and the geocoder `none`, `SELF_SERVE_BOOKING` `"false"`.
 - **Apps:** `mm-app-production` exists with no route. The release leaves every app alone until its surface is switched on (item 152, fixed 27 September 2026).
 
