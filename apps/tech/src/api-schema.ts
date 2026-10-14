@@ -213,7 +213,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description sign_in_stopped: ops revoked a phone of his, and have not yet let him sign in again */
+                /** @description sign_in_stopped: ops revoked a phone of theirs, and have not yet let them sign in again */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -308,7 +308,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianMe"];
                     };
                 };
-                /** @description session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched him off, so drop the cards and set aside the work not yet sent */
+                /** @description session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched them off, so drop the cards and set aside the work not yet sent */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -1901,7 +1901,7 @@ export interface components {
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
-                /** @description superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92). */
+                /** @description superseded, to a technician's phone, for a job given to another technician: whom, and when. */
                 moved?: {
                     /** @description Their first name, and nothing else of theirs */
                     technician: string;
@@ -1931,7 +1931,7 @@ export interface components {
              * @enum {string}
              */
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
-            /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
+            /** @description When the cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
             cron_completed_at: string | null;
         };
         ClientErrorReport: {
@@ -1986,7 +1986,7 @@ export interface components {
         TechnicianMe: {
             /**
              * Format: uuid
-             * @description Whose work the phone holds: it keeps work it set aside only for him.
+             * @description Whose work the phone holds: it keeps work it set aside only for them.
              */
             id: string;
             name: string;

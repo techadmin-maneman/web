@@ -233,8 +233,8 @@ describe("POST /api/tech/auth/otp, its limits", () => {
       await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
 
     expect(deps.alerts).toEqual([
-      `Technician ${IMRAN} was refused a login code: his number has had its 5 codes for today, so he can sign in ` +
-        "again after midnight IST. If he did not ask for them all, someone else is asking for codes for his number. " +
+      `Technician ${IMRAN} was refused a login code: their number has had its 5 codes for today, so they can sign in ` +
+        "again after midnight IST. If they did not ask for them all, someone else is asking for codes for their number. " +
         "http://ops.localhost:4323/technicians",
     ]);
 
@@ -253,7 +253,7 @@ describe("POST /api/tech/auth/otp, its limits", () => {
 
     expect(refused.status).toBe(429);
     expect(deps.alerts).toEqual([
-      `Technician ${IMRAN} was refused a login code: his network has asked for 10 codes this hour. He can sign in ` +
+      `Technician ${IMRAN} was refused a login code: their network has asked for 10 codes this hour. They can sign in ` +
         "on mobile data now, or on this network from the next hour. http://ops.localhost:4323/technicians",
     ]);
   });

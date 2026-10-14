@@ -1,7 +1,7 @@
 // Google Maps Platform: the Routes API for a technician's drive through their day, and the Maps Static API for the
 // picture of it. Only this file knows Google.
 //
-// What each costs, from Google's India price list (October 2026):
+// What each costs, from Google's India price list:
 //   directions/v2:computeRoutes   Compute Routes Essentials (India)   70,000 a month free
 //   maps/api/staticmap            Static Maps (India)                 70,000 a month free
 // Essentials holds while the route ignores traffic and has at most ten stops between its ends, so both are kept to.

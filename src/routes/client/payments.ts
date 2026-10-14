@@ -183,11 +183,7 @@ const PaymentDetailSchema = PaymentEntrySchema.extend({
     .strict(),
 }).openapi("PaymentDetail");
 
-const RefundDetailSchema = RefundEntrySchema.extend({
-  voucher: z
-    .null()
-    .openapi({ description: "The refund voucher; arrives with the invoicing route (docs/open-points.md, item 3)." }),
-}).openapi("RefundDetail");
+const RefundDetailSchema = RefundEntrySchema.openapi("RefundDetail");
 
 const paymentsRoute = clientRoute({
   method: "get",

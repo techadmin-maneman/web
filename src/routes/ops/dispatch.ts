@@ -35,11 +35,11 @@ const ClientSchema = z
     name: z.string().openapi({ description: "In full, as the drawer heads it." }),
     mobile: z.string().openapi({ description: "E.164, for WhatsApp and for a call." }),
     whatsapp_visits: z.boolean().openapi({
-      description: "His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there.",
+      description: "Their latest word on WhatsApp about their visits is yes, so a move's new window reaches them there.",
     }),
     referred_by: z
       .union([z.string(), z.null()])
-      .openapi({ description: "Who invited him, by name; null when he came on his own." }),
+      .openapi({ description: "Who invited them, by name; null when they came on their own." }),
   })
   .strict()
   .openapi("DispatchClient");
@@ -85,7 +85,7 @@ const BlockSchema = z
       ])
       .openapi({
         description:
-          "The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told.",
+          "The latest move of this visit its client has not heard of, and why. no_consent: they have not agreed to WhatsApp about their visits; not_sent: the WhatsApp was skipped or failed. Ops call them, then POST /api/dispatch/moves/{id}/told.",
       }),
     proposal: z.union([ProposedMoveSchema, z.null()]).openapi({
       description:
@@ -94,7 +94,7 @@ const BlockSchema = z
     }),
     begun: z.union([z.enum(BEGUN), z.null()]).openapi({
       description:
-        "How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved.",
+        "How far the technician has got, from the steps their phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before they arrive. A visit they have begun, or one in progress, is not moved.",
     }),
   })
   .strict()
@@ -138,7 +138,7 @@ const BoardSchema = z
           was_technician: z.union([z.object({ id: z.uuid(), name: z.string() }).strict(), z.null()]).openapi({
             description:
               "The technician the job is still on, who was switched off and so has no row; null for a job nobody " +
-              "holds. A move of it names him as the expected technician.",
+              "holds. A move of it names them as the expected technician.",
           }),
         })
         .strict(),

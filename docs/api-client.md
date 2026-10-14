@@ -2096,7 +2096,7 @@ Request body:
             "at"
           ],
           "additionalProperties": false,
-          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when."
         },
         "earliest_at": {
           "type": "string",
@@ -2172,7 +2172,7 @@ Request body:
         "string",
         "null"
       ],
-      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
+      "description": "When the cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [
@@ -6189,10 +6189,6 @@ Request body:
         }
       ],
       "description": "normal (5 to 7 working days) or instant."
-    },
-    "voucher": {
-      "type": "null",
-      "description": "The refund voucher; arrives with the invoicing route (docs/open-points.md, item 3)."
     }
   },
   "required": [
@@ -6207,8 +6203,7 @@ Request body:
     "booking",
     "status",
     "destination",
-    "speed",
-    "voucher"
+    "speed"
   ],
   "additionalProperties": false
 }

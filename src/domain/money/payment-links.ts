@@ -7,7 +7,7 @@
 // written before Razorpay is asked, with the reference its payment will have (src/domain/money/payments.ts), which the client
 // reads on Razorpay's page. The close asks once and lands whatever Razorpay answers, so a phone is never held
 // up by it; a link the close could not have made, for a timeout, a 5xx or a missing key, is asked for again by the
-// five-minute cron, a few a run. Razorpay refuses a second link under the same reference, which is what a try whose
+// cron, a few a run. Razorpay refuses a second link under the same reference, which is what a try whose
 // answer never came leaves behind, so a refusal first looks for the link by its reference and keeps it if it is
 // there. A link Razorpay refuses outright is not asked for again, and ops are told once, with the visit's ID as the
 // reference of the link they then make by hand. Until it is paid, the Tasks board lists it (src/domain/ops/tasks.ts).

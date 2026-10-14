@@ -24,7 +24,6 @@ interface Row {
   average_minutes: number | null;
   average_planned_minutes: number | null;
   runs_over: boolean;
-  skill: null;
 }
 
 interface Body {
@@ -255,11 +254,6 @@ describe("GET /api/technicians/work", () => {
   it("leaves out a technician FSM no longer lists as active", async () => {
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANDEEP).run();
     expect((await work()).technicians.map((each) => each.technician_id)).toEqual([IMRAN]);
-  });
-
-  it("never answers a skill, because nothing records one", async () => {
-    await timedJob("aaaaaaaa-0000-4000-8000-000000000001", IMRAN, "service", "2026-09-18", 90);
-    for (const each of (await work()).technicians) expect(each.skill).toBeNull();
   });
 
   it("belongs to the ops surface alone", async () => {

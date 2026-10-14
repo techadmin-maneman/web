@@ -17,19 +17,19 @@ const revokeRoute = createRoute({
   responses: {
     200: { description: "Revoked", ...json(z.object({ revoked_at: z.iso.datetime() }).strict()) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such phone of that technician's, or he is not in the caller's cities"),
+    404: errorResponse("not_found: no such phone of that technician's, or they are not in the caller's cities"),
   },
 });
 
 const allowSignInRoute = createRoute({
   method: "post",
   path: "/api/technicians/{id}/allow-sign-in",
-  summary: "Let a technician sign in again, on any phone, after ops revoked one of his",
+  summary: "Let a technician sign in again, on any phone, after ops revoked one of theirs",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
-    200: { description: "He may sign in again", ...json(z.object({ allowed: z.literal(true) }).strict()) },
+    200: { description: "They may sign in again", ...json(z.object({ allowed: z.literal(true) }).strict()) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such technician stopped signing in, or he is not in the caller's cities"),
+    404: errorResponse("not_found: no such technician stopped signing in, or they are not in the caller's cities"),
   },
 });
 

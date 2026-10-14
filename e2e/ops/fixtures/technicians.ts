@@ -157,7 +157,6 @@ export const TECHNICIAN_WORK = {
       average_minutes: 84,
       average_planned_minutes: 90,
       runs_over: false,
-      skill: null,
     },
     {
       technician_id: "88000000-0000-4000-8000-000000000002",
@@ -166,7 +165,6 @@ export const TECHNICIAN_WORK = {
       average_minutes: 91,
       average_planned_minutes: 90,
       runs_over: false,
-      skill: null,
     },
     {
       technician_id: "88000000-0000-4000-8000-000000000003",
@@ -175,7 +173,6 @@ export const TECHNICIAN_WORK = {
       average_minutes: 108,
       average_planned_minutes: 90,
       runs_over: true,
-      skill: null,
     },
   ],
 } satisfies OpsReply<"/api/technicians/work">;

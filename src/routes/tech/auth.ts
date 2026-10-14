@@ -43,13 +43,13 @@ import { CODE_TEXT, newLoginCode } from "../../policy/one-time-code.ts";
 function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {
   if (refusal === "number_spent") {
     return (
-      `his number has had its ${String(login.codeMobileDailyLimit)} codes for today, so he can sign in again after ` +
-      "midnight IST. If he did not ask for them all, someone else is asking for codes for his number."
+      `their number has had its ${String(login.codeMobileDailyLimit)} codes for today, so they can sign in again after ` +
+      "midnight IST. If they did not ask for them all, someone else is asking for codes for their number."
     );
   }
   if (refusal === "address_spent") {
     return (
-      `his network has asked for ${String(login.codeIpHourlyLimit)} codes this hour. He can sign in on mobile data ` +
+      `their network has asked for ${String(login.codeIpHourlyLimit)} codes this hour. They can sign in on mobile data ` +
       "now, or on this network from the next hour."
     );
   }
@@ -134,7 +134,7 @@ const verifyRoute = createRoute({
   responses: {
     200: { description: "Right, with a session; or wrong, with the attempts left", ...json(TechVerifySchema) },
     400: errorResponse("invalid_request"),
-    403: errorResponse("sign_in_stopped: ops revoked a phone of his, and have not yet let him sign in again"),
+    403: errorResponse("sign_in_stopped: ops revoked a phone of theirs, and have not yet let them sign in again"),
     410: errorResponse("code_expired: expired, used, or void after five wrong codes"),
   },
 });
@@ -157,7 +157,7 @@ const logoutRoute = techRoute({
  */
 const TechMeSchema = z
   .object({
-    id: z.uuid().openapi({ description: "Whose work the phone holds: it keeps work it set aside only for him." }),
+    id: z.uuid().openapi({ description: "Whose work the phone holds: it keeps work it set aside only for them." }),
     name: z.string(),
     first_name: z.string(),
     initials: z.string().openapi({ description: "For the chip at the head of Today: the first and last initials." }),
@@ -180,7 +180,7 @@ const meRoute = techRoute({
     200: { description: "The signed-in technician", ...json(TechMeSchema) },
     401: errorResponse(
       "session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops " +
-        "switched him off, so drop the cards and set aside the work not yet sent",
+        "switched them off, so drop the cards and set aside the work not yet sent",
     ),
   },
 });

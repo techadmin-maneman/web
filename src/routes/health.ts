@@ -31,7 +31,7 @@ export const HealthSchema = z
     }),
     cron_completed_at: z.string().nullable().openapi({
       description:
-        "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it.",
+        "When the cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it.",
     }),
   })
   .strict()

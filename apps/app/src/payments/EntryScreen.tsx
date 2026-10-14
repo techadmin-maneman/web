@@ -39,7 +39,7 @@ import {
 } from "./entry.ts";
 import styles from "./payments.module.css";
 
-type Missing = "invoice" | "invoiceAfterVisit" | "invoiceLate" | "receipt" | "voucher";
+type Missing = "invoice" | "invoiceAfterVisit" | "invoiceLate" | "receipt";
 
 function Document(props: { name: string; href: string | null; missing: Missing; entry: string }) {
   const [asked, setAsked] = useState(false);
@@ -164,14 +164,14 @@ function Detail({ entry }: { entry: EntryDetail }) {
           {payments.message}
         </ButtonLink>
       )}
-      <h2 className={capsLook(styles.label)}>{payments.documents}</h2>
-      <div className={styles.documents}>
-        {entry.kind === "payment" ? (
-          <PaymentDocuments entry={entry} today={today} />
-        ) : (
-          <Document name={payments.voucher} href={entry.voucher} missing="voucher" entry={entryNamed(entry)} />
-        )}
-      </div>
+      {entry.kind === "payment" && (
+        <>
+          <h2 className={capsLook(styles.label)}>{payments.documents}</h2>
+          <div className={styles.documents}>
+            <PaymentDocuments entry={entry} today={today} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

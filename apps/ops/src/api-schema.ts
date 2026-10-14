@@ -941,7 +941,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Let the visit's technician check in wherever his phone puts him, with why: a pin far from the door */
+        /** Let the visit's technician check in wherever their phone puts them, with why: a pin far from the door */
         post: {
             parameters: {
                 query?: never;
@@ -958,7 +958,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description His next check-in lands */
+                /** @description Their next check-in lands */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -997,7 +997,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_changeable: he has checked in already, or the visit is closed or cancelled */
+                /** @description not_changeable: they have checked in already, or the visit is closed or cancelled */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -6954,7 +6954,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them */
+                /** @description past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One they have only checked in at moves with clear_check_in; one they have started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -6980,7 +6980,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ops called the client about a move he had not heard of; its task leaves the board */
+        /** Ops called the client about a move they had not heard of; its task leaves the board */
         post: {
             parameters: {
                 query?: never;
@@ -7242,7 +7242,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Add a technician. His number signs in to the technician app at once */
+        /** Add a technician. Their number signs in to the technician app at once */
         post: {
             parameters: {
                 query?: never;
@@ -7337,7 +7337,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such technician, or he is outside the caller's cities */
+                /** @description not_found: no such technician, or they are outside the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -7451,7 +7451,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such leave of that technician's, or he is not in the caller's cities */
+                /** @description not_found: no such leave of that technician's, or they are not in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -7511,7 +7511,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such phone of that technician's, or he is not in the caller's cities */
+                /** @description not_found: no such phone of that technician's, or they are not in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -7537,7 +7537,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Let a technician sign in again, on any phone, after ops revoked one of his */
+        /** Let a technician sign in again, on any phone, after ops revoked one of theirs */
         post: {
             parameters: {
                 query?: never;
@@ -7549,7 +7549,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description He may sign in again */
+                /** @description They may sign in again */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -7570,7 +7570,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description not_found: no such technician stopped signing in, or he is not in the caller's cities */
+                /** @description not_found: no such technician stopped signing in, or they are not in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -8534,7 +8534,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Switch a technician off: he is signed out at once, and his visits still to come are unassigned */
+        /** Switch a technician off: they are signed out at once, and their visits still to come are unassigned */
         post: {
             parameters: {
                 query?: never;
@@ -8590,7 +8590,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Switch a technician back on, so he can sign in again */
+        /** Switch a technician back on, so they can sign in again */
         post: {
             parameters: {
                 query?: never;
@@ -8632,7 +8632,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description number_in_use: another active technician signs in with his number now */
+                /** @description number_in_use: another active technician signs in with their number now */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -14766,7 +14766,7 @@ export interface components {
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
-                /** @description superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92). */
+                /** @description superseded, to a technician's phone, for a job given to another technician: whom, and when. */
                 moved?: {
                     /** @description Their first name, and nothing else of theirs */
                     technician: string;
@@ -14796,7 +14796,7 @@ export interface components {
              * @enum {string}
              */
             d1: "ok" | "unmarked" | "mismatch" | "unreachable";
-            /** @description When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
+            /** @description When the cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it. */
             cron_completed_at: string | null;
         };
         ClientErrorReport: {
@@ -15602,7 +15602,7 @@ export interface components {
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
-                /** @description superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92). */
+                /** @description superseded, to a technician's phone, for a job given to another technician: whom, and when. */
                 moved?: {
                     /** @description Their first name, and nothing else of theirs */
                     technician: string;
@@ -16830,7 +16830,7 @@ export interface components {
                 asked_window: ("morning" | "afternoon" | "evening") | null;
                 offered_window: ("morning" | "afternoon" | "evening") | null;
                 date: string | null;
-                /** @description The technician the job is still on, who was switched off and so has no row; null for a job nobody holds. A move of it names him as the expected technician. */
+                /** @description The technician the job is still on, who was switched off and so has no row; null for a job nobody holds. A move of it names them as the expected technician. */
                 was_technician: {
                     /** Format: uuid */
                     id: string;
@@ -16884,7 +16884,7 @@ export interface components {
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description The notice the visit was sold under, in hours, or the one in force for a visit no hold sold: a change of the client's own inside it costs them, one ops make never does. */
             notice_hours: number;
-            /** @description The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told. */
+            /** @description The latest move of this visit its client has not heard of, and why. no_consent: they have not agreed to WhatsApp about their visits; not_sent: the WhatsApp was skipped or failed. Ops call them, then POST /api/dispatch/moves/{id}/told. */
             untold: {
                 /** Format: uuid */
                 move_id: string;
@@ -16895,7 +16895,7 @@ export interface components {
             } | null;
             /** @description A move to another day the client has been asked to confirm (POST /api/dispatch/propose), still open: the visit stays where it is until they accept it. Ops may withdraw it. Null for none. */
             proposal: components["schemas"]["ProposedMove"] | null;
-            /** @description How far the technician has got, from the steps his phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before he arrives. A visit he has begun, or one in progress, is not moved. */
+            /** @description How far the technician has got, from the steps their phone sent: arrived (checked in), started, or closed (an outcome, a no-show among them). Null before they arrive. A visit they have begun, or one in progress, is not moved. */
             begun: ("arrived" | "started" | "closed") | null;
         };
         DispatchClient: {
@@ -16905,9 +16905,9 @@ export interface components {
             name: string;
             /** @description E.164, for WhatsApp and for a call. */
             mobile: string;
-            /** @description His latest word on WhatsApp about his visits is yes, so a move's new window reaches him there. */
+            /** @description Their latest word on WhatsApp about their visits is yes, so a move's new window reaches them there. */
             whatsapp_visits: boolean;
-            /** @description Who invited him, by name; null when he came on his own. */
+            /** @description Who invited them, by name; null when they came on their own. */
             referred_by: string | null;
         };
         DispatchBoardVersion: {
@@ -17019,7 +17019,7 @@ export interface components {
             /** @description Why the visit goes onto a day ops blacked out, as ops typed it: kept with the move, blanked if the client is erased. Without it, a move onto a blacked-out day answers 409 blackout. Ignored for any other day. */
             blackout_reason?: string;
             /**
-             * @description Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress.
+             * @description Ops were warned that the technician has checked in, and move the visit anyway: their check-in is cleared, and they check in again at the new time. The audit log names who chose it. Without it, a visit they have checked in at answers 409 in_progress.
              * @enum {boolean}
              */
             clear_check_in?: true;
@@ -17028,7 +17028,7 @@ export interface components {
             /** Format: uuid */
             move_id: string;
             /**
-             * @description messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell.
+             * @description messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about their visits, so ops call them, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell.
              * @enum {string}
              */
             client_notice: "messaged" | "call" | "unchanged";
@@ -17082,7 +17082,7 @@ export interface components {
             technician: string | null;
             /**
              * Format: date-time
-             * @description Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here, or from the booked start for an arrival before it.
+             * @description Fact one: when the technician arrived, by their phone, held within bounds. The wait ran from here, or from the booked start for an arrival before it.
              */
             checked_in_at: string;
             /** @description What the phone itself said, before the bounds; null when it said nothing. */
@@ -17095,16 +17095,16 @@ export interface components {
             /** @description The visit's booked window. */
             window_start: string | null;
             window_end: string | null;
-            /** @description Minutes from the booked start to the check-in; negative when he was early. */
+            /** @description Minutes from the booked start to the check-in; negative when they were early. */
             minutes_late: number | null;
-            /** @description Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured. */
+            /** @description Fact two: how far from the address they were; null where the address had no coordinates and nothing was measured. */
             distance_m: number | null;
-            /** @description Ops let him check in past the geofence for this visit: who, and why. Null when his check-in passed on its own. */
+            /** @description Ops let them check in past the geofence for this visit: who, and why. Null when their check-in passed on its own. */
             let_in: {
                 by: string;
                 reason: string | null;
             } | null;
-            /** @description The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since. */
+            /** @description The check-in radius in force when they checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since. */
             radius_m: number;
             /**
              * @description Fact three: what became of the day-before or arrival WhatsApp. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.
@@ -17159,15 +17159,15 @@ export interface components {
                 name: string;
                 initials: string;
                 zone: string | null;
-                /** @description The city he works in, which staff access by place reads; null for none. */
+                /** @description The city they work in, which staff access by place reads; null for none. */
                 city: string | null;
-                /** @description The number he signs in with, +91 and ten digits; null where none is recorded. */
+                /** @description The number they sign in with, +91 and ten digits; null where none is recorded. */
                 mobile: string | null;
                 /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
                 fits_trained: boolean;
                 /** @description Their visits still to come and not begun, which switching them off leaves with nobody. */
                 visits_to_come: number;
-                /** @description When revoking a phone of his stopped him signing in; null while he may. Ops let him again. */
+                /** @description When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again. */
                 sign_in_stopped_at: string | null;
                 devices: {
                     device_id: string;
@@ -17175,7 +17175,7 @@ export interface components {
                     /** Format: date-time */
                     last_seen_at: string;
                     revoked_at: string | null;
-                    /** @description Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it. */
+                    /** @description Whether the phone's last session is still live: false once they signed out, it ran out, or ops revoked it. */
                     signed_in: boolean;
                 }[];
                 /** @description Leave that has not ended yet, soonest first (ADR 0062). */
@@ -17187,9 +17187,9 @@ export interface components {
                 id: string;
                 name: string;
                 zone: string | null;
-                /** @description The city he works in, which staff access by place reads; null for none. */
+                /** @description The city they work in, which staff access by place reads; null for none. */
                 city: string | null;
-                /** @description The number he signs in with, +91 and ten digits; null where none is recorded. */
+                /** @description The number they sign in with, +91 and ten digits; null where none is recorded. */
                 mobile: string | null;
                 /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
                 fits_trained: boolean;
@@ -17212,7 +17212,7 @@ export interface components {
             note: string | null;
         };
         TechnicianStandingLeave: {
-            /** @description His leave that has not ended yet, soonest first. */
+            /** @description Their leave that has not ended yet, soonest first. */
             leave: {
                 /** Format: uuid */
                 id: string;
@@ -17314,7 +17314,7 @@ export interface components {
             window_start: string | null;
             /**
              * Format: date-time
-             * @description When he arrived, by his phone, held within bounds.
+             * @description When they arrived, by their phone, held within bounds.
              */
             checked_in_at: string;
             /** @description What the phone itself said, before the bounds; null when it said nothing. */
@@ -17322,7 +17322,7 @@ export interface components {
             /** Format: date-time */
             received_at: string;
             distance_m: number | null;
-            /** @description The check-in radius in force when he checked in. */
+            /** @description The check-in radius in force when they checked in. */
             radius_m: number;
             /**
              * @description What became of the day-before or arrival WhatsApp, as the no-show case reads it. none: nothing was queued; no_consent: not sent, the client never agreed to WhatsApp about visits; not_sent: skipped or failed; sent: no receipt came back; delivered.
@@ -17649,32 +17649,32 @@ export interface components {
             id: string;
         };
         NewTechnician: {
-            /** @description His whole name, as clients see it. */
+            /** @description Their whole name, as clients see it. */
             name: string;
-            /** @description The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp. */
+            /** @description The Indian mobile they sign in with; their sign-in code goes to it on WhatsApp. */
             mobile: string;
-            /** @description Where he mostly works, in ops' words; null for none. */
+            /** @description Where they mostly work, in ops' words; null for none. */
             zone?: string | null;
-            /** @description The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            /** @description The city they work in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see them; with none, only a national grant does. */
             city?: string | null;
             /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
             fits_trained?: boolean;
         };
         /** @description Only what is sent changes. */
         TechnicianChange: {
-            /** @description His whole name, as clients see it. */
+            /** @description Their whole name, as clients see it. */
             name?: string;
-            /** @description The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp. */
+            /** @description The Indian mobile they sign in with; their sign-in code goes to it on WhatsApp. */
             mobile?: string;
-            /** @description Where he mostly works, in ops' words; null for none. */
+            /** @description Where they mostly work, in ops' words; null for none. */
             zone?: string | null;
-            /** @description The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see him; with none, only a national grant does. */
+            /** @description The city they work in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with a grant of that city or its zone see them; with none, only a national grant does. */
             city?: string | null;
             /** @description Trained to fit: only such a technician is offered or given a first fit (ADR 0119). */
             fits_trained?: boolean;
         };
         TechnicianDeactivated: {
-            /** @description His visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays his. Empty when he was switched off already. */
+            /** @description Their visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to another. A visit already begun stays theirs. Empty when they were switched off already. */
             visits: {
                 /** Format: uuid */
                 appointment_id: string;
@@ -17709,8 +17709,6 @@ export interface components {
             average_planned_minutes: number | null;
             /** @description Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to begin with); false when the phone timed none of the jobs. */
             runs_over: boolean;
-            /** @description The board's "First fit" or "Service". Nothing records what a technician is trained for, so this is always null (docs/open-points.md, item 59). */
-            skill: null;
         };
         TechnicianPay: {
             /**

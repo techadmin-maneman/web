@@ -1,5 +1,4 @@
-// The referral landing at /r/:code (design/phase2/Referral and Waitlist, boards
-// C1 to C5), and the site's own /book, which is the same page without the
+// The referral landing at /r/:code, and the site's own /book, which is the same page without the
 // invite. One island holds the whole page, because the pincode decides what
 // the page is: a consultation form where we come, a waitlist where we do not.
 //

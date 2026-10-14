@@ -64,7 +64,7 @@ const MoveRequestSchema = z
     ...BLACKOUT_REASON,
     clear_check_in: z.literal(true).optional().openapi({
       description:
-        "Ops were warned that the technician has checked in, and move the visit anyway: his check-in is cleared, and he checks in again at the new time. The audit log names who chose it. Without it, a visit he has checked in at answers 409 in_progress.",
+        "Ops were warned that the technician has checked in, and move the visit anyway: their check-in is cleared, and they check in again at the new time. The audit log names who chose it. Without it, a visit they have checked in at answers 409 in_progress.",
     }),
   })
   .strict()
@@ -74,7 +74,7 @@ const MovedSchema = z
     move_id: z.uuid(),
     client_notice: z.enum(CLIENT_NOTICES).openapi({
       description:
-        "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell.",
+        "messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about their visits, so ops call them, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell.",
     }),
   })
   .strict()
@@ -109,7 +109,7 @@ const moveRoute = createRoute({
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such live job in the caller's cities"),
     409: errorResponse(
-      "past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One he has only checked in at moves with clear_check_in; one he has started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them",
+      "past_day; window_passed; clash; on_leave; back_to_back; does_not_fit; blackout; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded, with what changed in fields; in_progress: the technician has begun the visit. One they have only checked in at moves with clear_check_in; one they have started or closed stays where it is. ask_the_client: a client's visit to another day they did not ask for, which POST /api/dispatch/propose asks of them",
     ),
   },
 });
@@ -117,7 +117,7 @@ const moveRoute = createRoute({
 const toldRoute = createRoute({
   method: "post",
   path: "/api/dispatch/moves/{id}/told",
-  summary: "Ops called the client about a move he had not heard of; its task leaves the board",
+  summary: "Ops called the client about a move they had not heard of; its task leaves the board",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: { description: "Recorded", ...json(z.object({ told: z.literal(true) }).strict()) },

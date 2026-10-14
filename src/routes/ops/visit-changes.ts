@@ -152,7 +152,7 @@ const closeRoute = createRoute({
 const letInRoute = createRoute({
   method: "post",
   path: "/api/visits/{id}/let-in",
-  summary: "Let the visit's technician check in wherever his phone puts him, with why: a pin far from the door",
+  summary: "Let the visit's technician check in wherever their phone puts them, with why: a pin far from the door",
   request: {
     params: visitParams,
     body: {
@@ -170,11 +170,11 @@ const letInRoute = createRoute({
     },
   },
   responses: {
-    200: { description: "His next check-in lands", ...json(z.object({ let_in: z.literal(true) }).strict()) },
+    200: { description: "Their next check-in lands", ...json(z.object({ let_in: z.literal(true) }).strict()) },
     400: errorResponse("invalid_request: no reason"),
     403: errorResponse("access_required"),
     404: errorResponse("not_found: no such visit in the caller's cities"),
-    409: errorResponse("not_changeable: he has checked in already, or the visit is closed or cancelled"),
+    409: errorResponse("not_changeable: they have checked in already, or the visit is closed or cancelled"),
   },
 });
 

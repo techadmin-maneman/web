@@ -141,7 +141,6 @@ describe("GET /api/payments", () => {
       date: "2026-09-02",
       status: "processed",
       destination: "upi",
-      voucher: null,
     });
   });
 

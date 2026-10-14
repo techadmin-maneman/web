@@ -56,7 +56,7 @@ const StandingLeaveSchema = z
           })
           .strict(),
       )
-      .openapi({ description: "His leave that has not ended yet, soonest first." }),
+      .openapi({ description: "Their leave that has not ended yet, soonest first." }),
   })
   .strict()
   .openapi("TechnicianStandingLeave");
@@ -69,7 +69,7 @@ const standingLeaveRoute = createRoute({
   responses: {
     200: { description: "The leave", ...json(StandingLeaveSchema) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such technician, or he is outside the caller's cities"),
+    404: errorResponse("not_found: no such technician, or they are outside the caller's cities"),
   },
 });
 
@@ -94,7 +94,7 @@ const cancelLeaveRoute = createRoute({
   responses: {
     200: { description: "Cancelled", ...json(z.object({ cancelled: z.boolean() }).strict()) },
     403: errorResponse("access_required"),
-    404: errorResponse("not_found: no such leave of that technician's, or he is not in the caller's cities"),
+    404: errorResponse("not_found: no such leave of that technician's, or they are not in the caller's cities"),
   },
 });
 

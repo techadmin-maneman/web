@@ -350,8 +350,8 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
 const youcamUnitsJob = (context: CronContext) => checkYoucamUnits(context, context.config.settings.tryon.unitFloor);
 
 /**
- * Every job, and when it runs (src/scheduled/schedule.ts). Minutes by their place in the five: 1 the WhatsApp bridge, 2 the try-ons and the heartbeat, 3 the holds and Books, 4 the hourly jobs. A run's jobs
- * run in this order.
+ * Every job, and when it runs (src/scheduled/schedule.ts): every `every` minutes, at minute `at` of each such stretch.
+ * The jobs a minute calls run in this order.
  */
 export const CRON_JOBS: readonly CronJob[] = [
   // Every five minutes. Every login code goes through the WhatsApp bridge (src/scheduled/whatsapp-bridge.ts).

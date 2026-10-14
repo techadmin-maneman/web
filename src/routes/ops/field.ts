@@ -36,10 +36,10 @@ const LeaveSchema = z
 
 const MOBILE = z
   .union([z.string(), z.null()])
-  .openapi({ description: "The number he signs in with, +91 and ten digits; null where none is recorded." });
+  .openapi({ description: "The number they sign in with, +91 and ten digits; null where none is recorded." });
 const CITY = z
   .union([z.string(), z.null()])
-  .openapi({ description: "The city he works in, which staff access by place reads; null for none." });
+  .openapi({ description: "The city they work in, which staff access by place reads; null for none." });
 
 const FITS_TRAINED = z
   .boolean()
@@ -64,7 +64,7 @@ const TechniciansSchema = z
           fits_trained: FITS_TRAINED,
           visits_to_come: VISITS_TO_COME,
           sign_in_stopped_at: z.union([z.iso.datetime(), z.null()]).openapi({
-            description: "When revoking a phone of his stopped him signing in; null while he may. Ops let him again.",
+            description: "When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again.",
           }),
           devices: z.array(
             z
@@ -75,7 +75,7 @@ const TechniciansSchema = z
                 revoked_at: z.union([z.iso.datetime(), z.null()]),
                 signed_in: z.boolean().openapi({
                   description:
-                    "Whether the phone's last session is still live: false once he signed out, it ran out, or ops revoked it.",
+                    "Whether the phone's last session is still live: false once they signed out, it ran out, or ops revoked it.",
                 }),
               })
               .strict(),

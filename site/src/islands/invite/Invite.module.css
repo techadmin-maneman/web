@@ -1,5 +1,5 @@
 /*
- * The referral landing (design/phase2/Referral and Waitlist, C1 to C5), and /book, which is the same page without
+ * The referral landing, and /book, which is the same page without
  * the invite. On a phone it is one column: who sent it, the card, the headline and offer, the prices, the pincode
  * block, the form, then how it works, so the one field a friend must fill is above the fold. From 1024 px it is
  * the desktop design: the prices, the pincode block and the form on the left, the card and how it works on the right.
@@ -14,7 +14,7 @@
   padding-inline: var(--gutter);
 }
 
-/* ---- The page, one column on a phone (C1 to C3) ---------------------------- */
+/* ---- The page, one column on a phone ------------------------------------------ */
 
 .arrival {
   padding-block: var(--landing-pad-top) var(--sp-28);

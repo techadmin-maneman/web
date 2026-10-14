@@ -59,7 +59,7 @@ export const cronRowsReadPerQuietRun = (jobs: number): number => 150 + 4 * jobs;
 export const CRON_STATEMENTS_PER_RUN = 200;
 
 /**
- * What one load of each of the console's two boards reads. Measured on staging on 2 October 2026 with 31 visits in the
+ * What one load of each of the console's two boards reads. Measured on staging with 31 visits in the
  * board's week: a board load read 484 rows, about 66 and 13.5 for each visit, and a look at Tasks 364.
  * test/worker/jobs/cron-reads.test.ts holds one load of each, and one look at the version, to the figures below. A visit
  * worked through, whose card has everything on it (two answers on each kind of message, an invite, a credit, every step
@@ -72,7 +72,7 @@ export const TASKS_ROWS_READ_PER_LOOK = 400;
 /**
  * The most rows a request to a route may read, on average while a release soaks, before it is rolled back. The
  * dispatch board's is a load with 158 visits in its week: raise it as the week grows. A route not named has
- * OTHER_ROUTE_ROWS_READ, several times what the busiest of them read on 2 October 2026.
+ * OTHER_ROUTE_ROWS_READ, several times what the busiest of them read when measured.
  */
 export const ROUTE_ROWS_READ: Readonly<Record<string, number>> = {
   "/api/dispatch": 2_914,

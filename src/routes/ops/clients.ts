@@ -1,5 +1,4 @@
-// One client's record on the ops surface behind Access (Ops Console, B1 to B3;
-// docs/decisions/0031-access-and-audit.md). Finding a client is here; each section of their page has its file beside
+// One client's record on the ops surface behind Access (docs/decisions/0031-access-and-audit.md). Finding a client is here; each section of their page has its file beside
 // it: the record (./client-record.ts), the photographs (./client-photos.ts) and the consents (./client-consents.ts).
 //   GET  /api/clients                      every client in the caller's cities, the soonest next visit first, by
 //                                          where they stand and city, a page at a time

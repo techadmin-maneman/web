@@ -139,7 +139,7 @@ Request body:
 }
 ```
 
-**403**: sign_in_stopped: ops revoked a phone of his, and have not yet let him sign in again
+**403**: sign_in_stopped: ops revoked a phone of theirs, and have not yet let them sign in again
 
 ```json
 {
@@ -181,7 +181,7 @@ Who is signed in, and the phone this session is bound to
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched him off, so drop the cards and set aside the work not yet sent
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched them off, so drop the cards and set aside the work not yet sent
 
 ```json
 {
@@ -1275,7 +1275,7 @@ Request body:
             "at"
           ],
           "additionalProperties": false,
-          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when (docs/open-points.md, item 92)."
+          "description": "superseded, to a technician's phone, for a job given to another technician: whom, and when."
         },
         "earliest_at": {
           "type": "string",
@@ -1351,7 +1351,7 @@ Request body:
         "string",
         "null"
       ],
-      "description": "When the five-minute cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
+      "description": "When the cron last finished a run; null before its first, or when the database is not this environment's. Information only: status does not depend on it."
     }
   },
   "required": [
@@ -1577,7 +1577,7 @@ Request body:
     "id": {
       "type": "string",
       "format": "uuid",
-      "description": "Whose work the phone holds: it keeps work it set aside only for him."
+      "description": "Whose work the phone holds: it keeps work it set aside only for them."
     },
     "name": {
       "type": "string"

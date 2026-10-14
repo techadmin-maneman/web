@@ -130,7 +130,7 @@ function checkTriggers(file: MigrationFile): string[] {
 
 /**
  * A short header, no open point's number, no one environment's test data, and an estimate on a backfill of a whole
- * table: D1 stops a statement at 30 seconds, and the free plan allows 100,000 rows written a day (docs/migrations.md).
+ * table: D1 stops a statement at 30 seconds (docs/migrations.md).
  */
 function checkWriting(file: MigrationFile): string[] {
   const problems: string[] = [];

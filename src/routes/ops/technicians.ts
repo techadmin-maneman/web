@@ -14,11 +14,6 @@
 // GET /api/technicians (src/routes/ops/field.ts). The work route answers the two
 // figures the board draws beside it, over a period the roster has no business
 // carrying.
-//
-// The board's third figure, Skill, is not here and cannot be: nothing records
-// what a technician is trained for (docs/open-points.md, item 59). `skill` is
-// answered as null rather than left out, so the contract itself says the gap is
-// ours and not the technician's.
 
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -68,10 +63,6 @@ const TechnicianWorkSchema = z
         "Whether the average runs as far over the planned length as ops set (technician_work.over_by, 15 minutes to " +
         "begin with); false when the phone timed none of the jobs.",
     }),
-    skill: z.null().openapi({
-      description:
-        'The board\'s "First fit" or "Service". Nothing records what a technician is trained for, so this is always null (docs/open-points.md, item 59).',
-    }),
   })
   .strict()
   .openapi("TechnicianWork");
@@ -111,18 +102,18 @@ const workRoute = createRoute({
   },
 });
 
-const NameSchema = z.string().trim().min(1).max(80).openapi({ description: "His whole name, as clients see it." });
+const NameSchema = z.string().trim().min(1).max(80).openapi({ description: "Their whole name, as clients see it." });
 const MobileSchema = z
   .string()
   .regex(INDIAN_MOBILE_PATTERN)
-  .openapi({ description: "The Indian mobile he signs in with; his sign-in code goes to it on WhatsApp." });
+  .openapi({ description: "The Indian mobile they sign in with; their sign-in code goes to it on WhatsApp." });
 const ZoneSchema = z
   .union([z.string().trim().min(1).max(60), z.null()])
-  .openapi({ description: "Where he mostly works, in ops' words; null for none." });
+  .openapi({ description: "Where they mostly work, in ops' words; null for none." });
 const CitySchema = z.union([z.string().min(1).max(60), z.null()]).openapi({
   description:
-    "The city he works in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with " +
-    "a grant of that city or its zone see him; with none, only a national grant does.",
+    "The city they work in, one of GET /api/technicians' cities, which are those the caller's grants reach. Staff with " +
+    "a grant of that city or its zone see them; with none, only a national grant does.",
 });
 
 const FitsTrainedSchema = z
@@ -170,8 +161,8 @@ const ReturnedVisitsSchema = z
       )
       .openapi({
         description:
-          "His visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to " +
-          "another. A visit already begun stays his. Empty when he was switched off already.",
+          "Their visits still to come, now unassigned: each waits in the dispatch board's tray for ops to give it to " +
+          "another. A visit already begun stays theirs. Empty when they were switched off already.",
       }),
   })
   .strict()
@@ -184,7 +175,7 @@ const MANAGE_ONLY = "access_required, or not_permitted: changing a technician as
 const addRoute = createRoute({
   method: "post",
   path: "/api/technicians",
-  summary: "Add a technician. His number signs in to the technician app at once",
+  summary: "Add a technician. Their number signs in to the technician app at once",
   request: { body: { required: true, ...json(NewTechnicianSchema) } },
   responses: {
     201: { description: "Added", ...json(TechnicianIdSchema) },
@@ -219,7 +210,7 @@ const changeRoute = createRoute({
 const deactivateRoute = createRoute({
   method: "post",
   path: "/api/technicians/{id}/deactivate",
-  summary: "Switch a technician off: he is signed out at once, and his visits still to come are unassigned",
+  summary: "Switch a technician off: they are signed out at once, and their visits still to come are unassigned",
   request: technicianPath,
   responses: {
     200: { description: "Switched off", ...json(ReturnedVisitsSchema) },
@@ -231,13 +222,13 @@ const deactivateRoute = createRoute({
 const reactivateRoute = createRoute({
   method: "post",
   path: "/api/technicians/{id}/reactivate",
-  summary: "Switch a technician back on, so he can sign in again",
+  summary: "Switch a technician back on, so they can sign in again",
   request: technicianPath,
   responses: {
     200: { description: "Switched on", ...json(z.object({ active: z.literal(true) }).strict()) },
     403: errorResponse(MANAGE_ONLY),
     404: errorResponse("not_found: no such technician in the caller's cities"),
-    409: errorResponse("number_in_use: another active technician signs in with his number now"),
+    409: errorResponse("number_in_use: another active technician signs in with their number now"),
   },
 });
 
@@ -365,7 +356,7 @@ export function registerOpsTechnicians(app: App): void {
       each.average_minutes !== null &&
       each.average_planned_minutes !== null &&
       runsOver({ average: each.average_minutes, planned: each.average_planned_minutes }, figures.over_by);
-    const technicians = work.map((each) => ({ ...each, runs_over: runningOver(each), skill: null }));
+    const technicians = work.map((each) => ({ ...each, runs_over: runningOver(each) }));
     return c.json({ from, to, technicians }, 200);
   });
 }

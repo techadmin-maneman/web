@@ -1,4 +1,4 @@
-// The referral landing's API (design/phase2/Referral and Waitlist, C1 to C4; docs/decisions/0048-referrals.md),
+// The referral landing's API (docs/decisions/0048-referrals.md),
 // on the public host, for maneman.in/r/:code:
 //
 //   GET  /api/r/:code                 the invite: valid or unknown, with the referrer's first name if they agreed

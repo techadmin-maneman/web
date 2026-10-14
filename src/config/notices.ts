@@ -255,7 +255,7 @@ export const NOTICES = [
     text: ["WhatsApp about your visits"],
   },
   {
-    // The booking sheet's reminder box, until 4 October 2026: it named the reminder alone, though the yes covers every
+    // The booking sheet's reminder box as it first read: it named the reminder alone, though the yes covers every
     // message about a visit.
     version: "whatsapp-visits-booking-v1",
     purpose: "whatsapp_visits",

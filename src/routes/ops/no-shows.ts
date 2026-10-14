@@ -42,7 +42,7 @@ const NoShowCaseSchema = z
     technician: z.union([z.string(), z.null()]),
     checked_in_at: z.iso.datetime().openapi({
       description:
-        "Fact one: when the technician arrived, by his phone, held within bounds. The wait ran from here, or from " +
+        "Fact one: when the technician arrived, by their phone, held within bounds. The wait ran from here, or from " +
         "the booked start for an arrival before it.",
     }),
     phone_checked_in_at: z.union([z.iso.datetime(), z.null()]).openapi({
@@ -54,21 +54,21 @@ const NoShowCaseSchema = z
     window_start: z.union([z.iso.datetime(), z.null()]).openapi({ description: "The visit's booked window." }),
     window_end: z.union([z.iso.datetime(), z.null()]),
     minutes_late: z.union([z.number().int(), z.null()]).openapi({
-      description: "Minutes from the booked start to the check-in; negative when he was early.",
+      description: "Minutes from the booked start to the check-in; negative when they were early.",
     }),
     distance_m: z.union([z.number().int(), z.null()]).openapi({
       description:
-        "Fact two: how far from the address he was; null where the address had no coordinates and nothing was measured.",
+        "Fact two: how far from the address they were; null where the address had no coordinates and nothing was measured.",
     }),
     let_in: z
       .union([z.object({ by: z.string(), reason: z.union([z.string(), z.null()]) }).strict(), z.null()])
       .openapi({
         description:
-          "Ops let him check in past the geofence for this visit: who, and why. Null when his check-in passed on its own.",
+          "Ops let them check in past the geofence for this visit: who, and why. Null when their check-in passed on its own.",
       }),
     radius_m: z.number().int().openapi({
       description:
-        "The check-in radius in force when he checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since.",
+        "The check-in radius in force when they checked in, which the check-in keeps: the distance is read against it, not against the radius ops have set since.",
     }),
     message_state: z.enum(MESSAGE_STATES).openapi({
       description:

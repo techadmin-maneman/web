@@ -1,6 +1,6 @@
 // Payments and refunds written to Zoho Books, so Books issues their receipts
 // (docs/decisions/0044-payments-mirror.md, "Receipts in Books"). It runs on the
-// five-minute cron, not in the payment's path: Books is never on the way to a
+// cron, not in the payment's path: Books is never on the way to a
 // booking.
 //
 // Each pass does a little of six things, oldest first:
