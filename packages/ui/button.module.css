@@ -24,6 +24,10 @@
     font-weight: var(--weight-medium);
     text-decoration: none;
     cursor: pointer;
+    transition:
+      background-color var(--duration-quick) var(--ease-house),
+      border-color var(--duration-quick) var(--ease-house),
+      color var(--duration-quick) var(--ease-house);
   }
 
   .button:disabled,

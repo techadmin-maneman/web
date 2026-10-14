@@ -16,6 +16,22 @@
     border: var(--hairline) solid var(--border-subtle);
     background: var(--surface);
     color: var(--on-surface);
+    /* It slides in from the page's right edge and back out as it closes (./motion.module.css's spec). */
+    transform: translateX(100%);
+    transition:
+      transform var(--duration-travel) var(--ease-house),
+      overlay var(--duration-travel) var(--ease-house) allow-discrete,
+      display var(--duration-travel) var(--ease-house) allow-discrete;
+  }
+
+  .drawer[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .drawer[open] {
+      transform: translateX(100%);
+    }
   }
 
   .drawer::backdrop {

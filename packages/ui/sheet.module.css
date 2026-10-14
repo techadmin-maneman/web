@@ -60,12 +60,24 @@
     background: var(--sheet-scrim);
   }
 
-  .rises[open] {
-    animation: rise var(--duration-travel) var(--ease-house);
+  /*
+   * It rises from the foot as it opens and sinks back as it closes (./motion.module.css's spec): the dialog stays in
+   * the top layer while it leaves. A browser that cannot keep it there closes it at once.
+   */
+  .rises {
+    transform: translateY(100%);
+    transition:
+      transform var(--duration-travel) var(--ease-house),
+      overlay var(--duration-travel) var(--ease-house) allow-discrete,
+      display var(--duration-travel) var(--ease-house) allow-discrete;
   }
 
-  @keyframes rise {
-    from {
+  .rises[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .rises[open] {
       transform: translateY(100%);
     }
   }

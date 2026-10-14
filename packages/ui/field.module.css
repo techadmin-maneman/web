@@ -25,6 +25,7 @@
     font: inherit;
     font-size: var(--fs-15);
     color: var(--text);
+    transition: border-color var(--duration-quick) var(--ease-house);
   }
 
   /* One line: a text, a figure, a date or a choice, at the app's height (./base.css). */

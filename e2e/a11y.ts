@@ -10,6 +10,13 @@ export async function axeViolations(
   page: Page,
   scope: (axe: AxeBuilder) => AxeBuilder = (axe) => axe,
 ): Promise<string[]> {
-  const results = await scope(new AxeBuilder({ page }).withTags(WCAG_22_AA)).analyze();
-  return results.violations.map((violation) => violation.id);
+  // A colour fading between two states is judged at rest: under reduced motion nothing moves, on every surface.
+  const reduced = await page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  try {
+    const results = await scope(new AxeBuilder({ page }).withTags(WCAG_22_AA)).analyze();
+    return results.violations.map((violation) => violation.id);
+  } finally {
+    if (!reduced) await page.emulateMedia({ reducedMotion: "no-preference" });
+  }
 }

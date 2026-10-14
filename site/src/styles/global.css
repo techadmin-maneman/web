@@ -25,9 +25,17 @@
     /* Whatever the page scrolls to, a section or a focused control, stops below the fixed header. */
     scroll-padding-top: var(--header-h);
   }
+  /* Under prefers-reduced-motion nothing moves, as in the apps (packages/ui/base.css). */
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
     }
   }
 
