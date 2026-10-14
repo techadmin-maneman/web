@@ -140,6 +140,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0171](0171-vendor-credits.md) Vendor credits
 - [0176](0176-custom-order-refunds.md) Custom order refunds
 - [0192](0192-free-remakes.md) Free remakes
+- [0202](0202-razorpay-events-queued.md) Razorpay's events are queued, and every queue has its dead letters
 
 ### Privacy and accounts
 

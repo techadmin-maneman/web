@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-14
-- Topic: Payments
+- Topic: Money and Books
 - Amends [0044](0044-payments-mirror.md) on how the webhook answers
 
 ## Context
