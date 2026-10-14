@@ -50,6 +50,7 @@ export const shell = {
     words: "Words",
     settings: "Settings",
     staff: "Staff",
+    cities: "Cities",
     activity: "Activity",
   },
   /** Go to anything, by Ctrl K or ⌘K (../components/CommandPalette.tsx). */

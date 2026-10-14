@@ -31,6 +31,7 @@ interface VisitRow {
   type: VisitType | null;
   tier: string | null;
   window_start: string | null;
+  service_city: string | null;
   one_visit: OneVisitState | null;
   status: string;
   open: number;
@@ -40,7 +41,7 @@ interface VisitRow {
 async function visitOf(db: D1Database, visitId: string): Promise<VisitRow | null> {
   return db
     .prepare(
-      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.one_visit, a.status,
+      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.service_city, a.one_visit, a.status,
          (${openVisit("a.id")}) AS open,
          ${creditSpentOn("a.id")} AS on_credit
        FROM appointments a WHERE a.id = ?1 AND a.deleted_at IS NULL`,
@@ -54,7 +55,11 @@ const TAKES_A_CODE = new Set(["scheduled", "dispatched", "in_progress", "complet
 /** The visit's own price in the book on its day: its service's, or a one visit's product once chosen. */
 async function priceOfVisit(db: D1Database, visit: VisitRow): Promise<Price | null> {
   if (visit.type === null || visit.window_start === null || visit.one_visit === "booked") return null;
-  return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
+  return priceOf(db, visit.type, {
+    on: indiaDate(new Date(visit.window_start)),
+    tier: visit.tier ?? STANDARD_TIER,
+    city: visit.service_city,
+  });
 }
 
 /**

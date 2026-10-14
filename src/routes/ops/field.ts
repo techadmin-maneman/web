@@ -12,7 +12,7 @@
 //   POST /api/technicians/:id/leave/:leave/cancel        take it back
 
 import { createRoute, z } from "@hono/zod-openapi";
-import { listCities } from "../../domain/dispatch/cities.ts";
+import { listCities } from "../../domain/cities/cities.ts";
 import { leaveFrom } from "../../domain/dispatch/leave.ts";
 import { roster, type RosterTechnician } from "../../domain/dispatch/technician-roster.ts";
 import { devicesByTechnician } from "../../domain/dispatch/technicians.ts";

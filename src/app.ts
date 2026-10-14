@@ -39,6 +39,7 @@ import { registerClientMoveProposals } from "./routes/client/move-proposals.ts";
 import { registerClientErrors } from "./routes/client-errors.ts";
 import { registerClientRefer } from "./routes/client/refer.ts";
 import { registerOpsBlackouts } from "./routes/ops/blackouts.ts";
+import { registerOpsCities } from "./routes/ops/cities.ts";
 import { registerOpsClientAddress } from "./routes/ops/client-address.ts";
 import { registerOpsClientConsents } from "./routes/ops/client-consents.ts";
 import { registerOpsClientPhotos } from "./routes/ops/client-photos.ts";
@@ -287,6 +288,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerOpsSettings,
     registerOpsPrices,
     registerOpsServiceArea,
+    // Our cities, their GST registrations, and what a city sets apart (docs/decisions/0198-cities-as-data.md).
+    registerOpsCities,
     // The day's half-slot times, from a day nothing is booked or bookable on (docs/decisions/0102-window-times.md).
     registerOpsSlotTimes,
     // The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md).

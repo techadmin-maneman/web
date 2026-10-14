@@ -34,36 +34,12 @@ export const STATE_CODE_FORMAT = /^[A-Z]{2}$/;
 /** Services' accounting codes are six digits, e.g. 999721. */
 export const SAC_FORMAT = /^[0-9]{6}$/;
 
-interface IndianState {
-  readonly name: string;
-  /** Its GST code, as Books names a place of supply. */
-  readonly code: string;
-}
-
-const HARYANA: IndianState = { name: "Haryana", code: "HR" };
-const DELHI: IndianState = { name: "Delhi", code: "DL" };
-const UTTAR_PRADESH: IndianState = { name: "Uttar Pradesh", code: "UP" };
-
-/** The state each city we serve is in. */
-const CITY_STATES: Readonly<Record<string, IndianState>> = {
-  Gurgaon: HARYANA,
-  Faridabad: HARYANA,
-  Delhi: DELHI,
-  Noida: UTTAR_PRADESH,
-  Ghaziabad: UTTAR_PRADESH,
-};
-
-/** The state a city is in; null for a city we do not serve, or none. */
-export function stateOf(city: string | null): IndianState | null {
-  if (city === null) return null;
-  return CITY_STATES[city] ?? null;
-}
-
 /**
- * The GST code Books is given as a place of supply or of contact: the city's state, else the state registered in,
- * where no city is known. Null while GST is off.
+ * The GST code Books is given as a place of supply or of contact: the state of the client's city (its row in cities,
+ * docs/decisions/0198-cities-as-data.md), else the state registered in, where no city or state is known. Null while
+ * GST is off.
  */
-export function placeOfSupply(city: string | null, registration: GstRegistration): string | null {
+export function placeOfSupply(cityState: string | null, registration: GstRegistration): string | null {
   if (registration.gstin === null) return null;
-  return stateOf(city)?.code ?? registration.stateCode;
+  return cityState ?? registration.stateCode;
 }

@@ -6,6 +6,7 @@ import { type Plan, ONE_VISIT_TERMS } from "../../policy/one-visit.ts";
 import type { Price } from "../money/price-book.ts";
 import type { HeldService } from "./hold-slot.ts";
 import { offeredProducts, bookableService } from "./services.ts";
+import { cityOfPincode } from "../cities/cities.ts";
 
 /** What the site holds a slot for: the service, what is paid for it now, and the terms it is sold under. */
 export interface SiteVisit {
@@ -26,9 +27,16 @@ const nothingPaid = (price: Price): Price => ({ amount: 0, amount_ex_gst: 0, gst
  * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). Null when the day offers neither, and what the
  * person asked for waits for ops.
  */
-export async function siteVisit(db: D1Database, plan: Plan, date: string): Promise<SiteVisit | null> {
+export async function siteVisit(
+  db: D1Database,
+  plan: Plan,
+  date: string,
+  pincode: string | null = null,
+): Promise<SiteVisit | null> {
+  // The day's prices in the pincode's city, where it sets its own.
+  const city = await cityOfPincode(db, pincode);
   if (plan === "one_visit") {
-    const [fit] = await offeredProducts(db, date);
+    const [fit] = await offeredProducts(db, date, city);
     if (fit === undefined) return null;
     return {
       service: { type: "first_fit", tier: fit.tier, minutes: fit.minutes },
@@ -36,7 +44,7 @@ export async function siteVisit(db: D1Database, plan: Plan, date: string): Promi
       terms: ONE_VISIT_TERMS,
     };
   }
-  const consultation = await bookableService(db, { kind: "consultation", tier: undefined, on: date });
+  const consultation = await bookableService(db, { kind: "consultation", tier: undefined, on: date, city });
   if (consultation?.price.amount !== 0) return null;
   return {
     service: { type: "consultation", tier: consultation.tier, minutes: consultation.minutes },

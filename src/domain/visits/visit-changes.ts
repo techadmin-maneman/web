@@ -47,6 +47,7 @@ import { bookedMinutes } from "../booking/occupancy.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { visitBegun } from "./visit-begun.ts";
 import { PAYMENT_HELD, statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
+import { cityOfVisit } from "../cities/cities.ts";
 
 export interface ChangeableVisit {
   readonly id: string;
@@ -275,7 +276,9 @@ export async function termsOfVisit(
   if (sold === null && (await isOneVisit(db, visit.id))) return { terms: ONE_VISIT_TERMS, lateFee: null };
   const lateFeeItem = LATE_FEES[visit.type];
   const lateFee =
-    lateFeeItem === undefined ? null : (sold?.lateFee ?? (await lateFeeOn(db, lateFeeItem, indiaDate(visit.start))));
+    lateFeeItem === undefined
+      ? null
+      : (sold?.lateFee ?? (await lateFeeOn(db, lateFeeItem, indiaDate(visit.start), await cityOfVisit(db, visit.id))));
   return { terms: sold?.terms ?? inForce, lateFee };
 }
 
@@ -331,7 +334,7 @@ export async function changeTerms({
   const payment = await visitPayment(db, visit.id);
   const paid = payment?.paid ?? 0;
   // A charged move books a new visit of the same service, at its price on the day.
-  const visitPrice = await priceOf(db, visit.type, on, visit.tier);
+  const visitPrice = await priceOf(db, visit.type, { on, tier: visit.tier, city: await cityOfVisit(db, visit.id) });
   const gst = visitPrice?.gst_percent ?? 0;
 
   const cost = moveCost(visit.type, notice, "client", terms.lateCharge);

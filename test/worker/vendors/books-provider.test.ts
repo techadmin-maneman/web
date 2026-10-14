@@ -228,6 +228,7 @@ describe("Books: the invoices we raise", () => {
     reference: REFERENCE,
     date: "2026-10-02",
     placeOfSupply: null,
+    branchId: null,
     line: {
       itemId: "4242595000000245041",
       name: "Staging test: first fit",

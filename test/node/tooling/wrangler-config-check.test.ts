@@ -48,6 +48,13 @@ describe("mm-api wrangler config", () => {
     });
   });
 
+  // A staging bug must never write to production's books or take its payments (docs/provisioning.md, step 9).
+  it("refuses a Books organisation, refund account or Razorpay account that staging and production share", () => {
+    const shared = api(["env.production.vars.ZOHO_BOOKS_ORG_ID", "60088931635"]);
+    expect(shared).toContain('share ZOHO_BOOKS_ORG_ID "60088931635": staging needs a tenant of its own');
+    expect(api(["env.production.vars.RAZORPAY_KEY_ID", "rzp_test_Tf1Bf3ElRK6uNQ"])).toContain("share RAZORPAY_KEY_ID");
+  });
+
   it("the committed deliberately broken fixture fails", () => {
     const fixture = readJsonc("test/fixtures/wrangler/broken-staging-inherits-bindings.jsonc");
     expect(checkApiConfig(fixture)).toEqual([

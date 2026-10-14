@@ -70,6 +70,7 @@ import { startOrFollow } from "../workflows/steps.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
+import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 
 export interface CronContext {
   readonly env: Env;
@@ -269,9 +270,14 @@ async function referralsJob({ env, deps, log, inputs }: CronContext): Promise<vo
   await queueMessages({ env, log }, messages, "referrals");
 }
 
+/** The reminder hour, with the hours of the cities that set their own (src/domain/cities/city-rules.ts). */
+async function hoursOf(db: D1Database, national: number): Promise<ReminderHours> {
+  return { national, cities: await cityReminderHours(db) };
+}
+
 async function remindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const now = deps.now();
-  const reminders = await queueReminders(env.DB, now, (await inputs()).reminderHour);
+  const reminders = await queueReminders(env.DB, now, await hoursOf(env.DB, (await inputs()).reminderHour));
   await queueMessages({ env, log }, reminders, "reminders");
   if (reminders.length > 0) log.info("visit_reminders_queued", { count: reminders.length });
 }
@@ -279,7 +285,7 @@ async function remindersJob({ env, deps, log, inputs }: CronContext): Promise<vo
 async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const now = deps.now();
   const { nextVisitDays, reminderHour } = await inputs();
-  const reminders = await queueNextServiceReminders(env.DB, now, nextVisitDays, reminderHour);
+  const reminders = await queueNextServiceReminders(env.DB, now, nextVisitDays, await hoursOf(env.DB, reminderHour));
   await queueMessages({ env, log }, reminders, "next-service-reminders");
   if (reminders.length > 0) log.info("next_service_reminders_queued", { count: reminders.length });
 }
@@ -287,7 +293,8 @@ async function nextServiceRemindersJob({ env, deps, log, inputs }: CronContext):
 /** What follows a visit, once a visit, from the reminder hour (src/domain/visits/follow-ups.ts). */
 async function followUpsJob({ env, deps, log, inputs }: CronContext): Promise<void> {
   const { checkInDays, reminderHour } = await inputs();
-  await queueMessages({ env, log }, await queueFollowUps(env.DB, deps.now(), checkInDays, reminderHour), "follow-ups");
+  const followUps = await queueFollowUps(env.DB, deps.now(), checkInDays, await hoursOf(env.DB, reminderHour));
+  await queueMessages({ env, log }, followUps, "follow-ups");
 }
 
 async function creditRemindersJob({ env, deps, log, inputs }: CronContext): Promise<void> {

@@ -24,6 +24,7 @@ import { bookHold } from "./book-hold.ts";
 import type { AppEnv } from "./context.ts";
 import { opsInputs } from "./ops-inputs.ts";
 import { replacementWears } from "../domain/inventory/stock-gap.ts";
+import { cityOfPerson } from "../domain/cities/cities.ts";
 
 /**
  * The terms for moving one of the client's visits of this type now, and the visit as a move sees it; null if it
@@ -96,14 +97,17 @@ export async function bookable(
   on: string,
 ): Promise<PricedService | "no_product" | "not_bookable"> {
   const db = c.env.DB;
-  const wears = await replacementWears(db, { kind: wanted.type, tier: wanted.tier, personId });
+  const [wears, city] = await Promise.all([
+    replacementWears(db, { kind: wanted.type, tier: wanted.tier, personId }),
+    cityOfPerson(db, personId),
+  ]);
   const [types, service] = await Promise.all([
     bookableTypes(db, personId),
-    bookableService(db, { kind: wanted.type, tier: wanted.tier, on, wears }),
+    bookableService(db, { kind: wanted.type, tier: wanted.tier, on, wears, city }),
   ]);
   if (!types.includes(wanted.type)) return "not_bookable";
   if (service !== null) return service;
-  const noProduct = wanted.type === "first_fit" && (await offeredProducts(db, on)).length === 0;
+  const noProduct = wanted.type === "first_fit" && (await offeredProducts(db, on, city)).length === 0;
   return noProduct ? "no_product" : "not_bookable";
 }
 
@@ -120,13 +124,22 @@ export async function movedService(c: Context<AppEnv>, visit: ChangeableVisit) {
  */
 export async function soldAs(
   c: Context<AppEnv>,
-  hold: { type: VisitType; date: string; move: ChangeTerms | null; kind: "move" | "replace" | null },
+  hold: {
+    type: VisitType;
+    date: string;
+    move: ChangeTerms | null;
+    kind: "move" | "replace" | null;
+    personId: string;
+  },
   inputs: OpsInputs,
 ): Promise<{ terms: SoldTerms; lateFee: Price | null }> {
   if (hold.move !== null && hold.kind === "move") return { terms: hold.move.sold, lateFee: hold.move.lateFee };
   const lateFeeItem = LATE_FEES[hold.type];
   return {
     terms: termsInForce(inputs, hold.type),
-    lateFee: lateFeeItem === undefined ? null : await lateFeeOn(c.env.DB, lateFeeItem, hold.date),
+    lateFee:
+      lateFeeItem === undefined
+        ? null
+        : await lateFeeOn(c.env.DB, lateFeeItem, hold.date, await cityOfPerson(c.env.DB, hold.personId)),
   };
 }

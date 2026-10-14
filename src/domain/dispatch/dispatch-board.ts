@@ -20,7 +20,7 @@ import { NO_VISITS_CONSENT } from "../messages/visit-message-text.ts";
 import { latestConsentSql } from "../privacy/consents.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
 import type { AppointmentStatus } from "../visits/visit-status.ts";
-import { boardCities } from "./cities.ts";
+import { boardCities } from "../cities/cities.ts";
 import { leaveBetween } from "./leave.ts";
 import { openProposalJson, openProposalOf, type ProposedMove } from "../visits/open-proposals.ts";
 

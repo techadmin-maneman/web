@@ -178,6 +178,8 @@ export interface Rows {
     readonly active: number;
     readonly sort: number;
     readonly zone: string | null;
+    readonly state_code: string | null;
+    readonly state: string | null;
   };
   readonly city_blackouts: {
     readonly date: string;
@@ -194,6 +196,21 @@ export interface Rows {
     readonly note: string | null;
     readonly raised_by: string;
     readonly raised_at: string;
+  };
+  readonly city_prices: {
+    readonly item: string;
+    readonly tier: string;
+    readonly city: string;
+    readonly amount_ex_gst: number;
+    readonly gst_percent: number;
+    readonly valid_from: string;
+  };
+  readonly city_settings: {
+    readonly city: string;
+    readonly key: string;
+    readonly value: string;
+    readonly updated_by: string;
+    readonly updated_at: string;
   };
   readonly consents: {
     readonly id: string;
@@ -507,6 +524,13 @@ export interface Rows {
     readonly resolved_by: string | null;
     readonly resolved_at: string | null;
     readonly created_at: string;
+  };
+  readonly gst_registrations: {
+    readonly state_code: string;
+    readonly gstin: string;
+    readonly books_branch_id: string | null;
+    readonly added_by: string;
+    readonly added_at: string;
   };
   readonly hair_profiles: {
     readonly id: string;

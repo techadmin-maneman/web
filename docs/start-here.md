@@ -65,7 +65,7 @@ this map, or when the map names something that no longer exists.
 ### Dispatch
 
 - **Database work** (`src/domain/dispatch/`): `dispatch`, `move-proposals`, `dispatch-board`, `dispatch-landing`, `dispatch-utilisation`, `unassigned`, `technicians`, `technician-fit`, `technician-roster`,
-  `technician-work`, `leave`, `blackouts`, `cities`, `day-route`, `nearest`
+  `technician-work`, `leave`, `blackouts`, `day-route`, `nearest`
 - **Rules** (`src/policy/`): `dispatch`, `technician-work`
 - **Vendor** (`src/providers/`): `routes/`
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/dispatch-day`, `ops/blackouts`, `ops/technicians`,
@@ -118,6 +118,16 @@ this map, or when the map names something that no longer exists.
 - **Screens:** `apps/ops/src/stock/`
 - **Tests:** `test/worker/ops/`, `e2e/ops/stock.e2e.ts`
 
+### Cities, their GST and what a city sets apart
+
+- **Database work** (`src/domain/cities/`): `cities` (each city, its state and zone, where a visit, a pincode or a
+  client is), `city-changes` (a city added, changed or renamed), `city-rules` (the rules a city sets for itself),
+  `gst-registrations` (a state's registration, and what supplies a visit)
+- **Rules** (`src/policy/`): `city-settings`
+- **Data** (`src/config/`): `gst`
+- **Routes** (`src/routes/`): `ops/cities`
+- **Tests:** `test/worker/ops/cities.test.ts`, `test/node/policy/gst.test.ts`
+
 ### No-shows and disputes
 
 - **Database work** (`src/domain/no-shows/`): `no-shows`, `no-show-disputes`, `no-show-rulings`,
@@ -133,7 +143,8 @@ this map, or when the map names something that no longer exists.
 - **Database work** (`src/domain/money/`): `payments`, `payment-links`, `payment-links-paid`, `client-payments`,
   `client-billing`, `refunds`, `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
   `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `discount-code-figures`, `requested-codes`,
-  `day-money`, `one-visit-money`, `price-book`, `razorpay-catch-up`, `custom-order-links`, `custom-order-refunds`,
+  `day-money`, `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `city-prices`,
+  `razorpay-catch-up`, `custom-order-links`, `custom-order-refunds`,
   `payment-refunds`
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
   `fraud-holds`

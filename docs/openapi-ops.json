@@ -8700,6 +8700,15 @@
               "pincode.set",
               "pincode.rename",
               "pincode.add",
+              "city.add",
+              "city.change",
+              "city.rename",
+              "gst_registration.set",
+              "gst_registration.remove",
+              "city_rule.set",
+              "city_rule.clear",
+              "city_price.set",
+              "city_price.withdraw",
               "blackout.add",
               "blackout.remove",
               "service.add",
@@ -13458,6 +13467,382 @@
           "pincode",
           "area",
           "city"
+        ],
+        "additionalProperties": false
+      },
+      "Cities": {
+        "type": "object",
+        "properties": {
+          "cities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/City"
+            }
+          },
+          "zones": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "registrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GstRegistration"
+            }
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string"
+                },
+                "rule": {
+                  "type": "string",
+                  "enum": [
+                    "checkin_radius_m",
+                    "reminder_hour"
+                  ]
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    }
+                  ],
+                  "description": "As the national rule takes it: one figure, or one per key."
+                }
+              },
+              "required": [
+                "city",
+                "rule",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "rule_names": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "checkin_radius_m",
+                "reminder_hour"
+              ]
+            },
+            "description": "The rules a city may set."
+          },
+          "prices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CityPrice"
+            }
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "cities",
+          "zones",
+          "registrations",
+          "rules",
+          "rule_names",
+          "prices",
+          "today"
+        ],
+        "additionalProperties": false
+      },
+      "City": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "state_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The state's GST code, as HR."
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The zone a grant of staff access may name."
+          },
+          "served": {
+            "type": "boolean",
+            "description": "Whether we go there: its pincodes may be served."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Whether it is offered at all: on the forms and the board."
+          },
+          "sort": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "state_code",
+          "state",
+          "zone",
+          "served",
+          "active",
+          "sort"
+        ],
+        "additionalProperties": false
+      },
+      "GstRegistration": {
+        "type": "object",
+        "properties": {
+          "state_code": {
+            "type": "string"
+          },
+          "gstin": {
+            "type": "string"
+          },
+          "books_branch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Books branch its invoices are raised under; null for an organisation with no branches."
+          },
+          "added_by": {
+            "type": "string"
+          },
+          "added_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "state_code",
+          "gstin",
+          "books_branch_id",
+          "added_by",
+          "added_at"
+        ],
+        "additionalProperties": false
+      },
+      "CityPrice": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "item": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement",
+              "late_fee_first_fit",
+              "late_fee_replacement"
+            ]
+          },
+          "tier": {
+            "type": "string"
+          },
+          "amount_ex_gst": {
+            "type": "integer"
+          },
+          "gst_percent": {
+            "type": "integer"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "in_force": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "city",
+          "item",
+          "tier",
+          "amount_ex_gst",
+          "gst_percent",
+          "valid_from",
+          "in_force"
+        ],
+        "additionalProperties": false
+      },
+      "CityFields": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\p{L}[\\p{L} .'-]{0,59}$/u"
+          },
+          "state_code": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "state": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "served": {
+            "type": "boolean"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "state_code",
+          "state",
+          "zone",
+          "served",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "CityRule": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            ],
+            "description": "As the national rule takes it: one figure, or one per key."
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "CityPriceChange": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement",
+              "late_fee_first_fit",
+              "late_fee_replacement"
+            ]
+          },
+          "tier": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "amount_ex_gst": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "gst_percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 28
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "item",
+          "tier",
+          "amount_ex_gst",
+          "gst_percent",
+          "valid_from"
+        ],
+        "additionalProperties": false
+      },
+      "GstRegistrationChange": {
+        "type": "object",
+        "properties": {
+          "state_code": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "gstin": {
+            "type": "string",
+            "pattern": "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$"
+          },
+          "books_branch_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state_code",
+          "gstin",
+          "books_branch_id"
         ],
         "additionalProperties": false
       },
@@ -24161,6 +24546,15 @@
                 "pincode.set",
                 "pincode.rename",
                 "pincode.add",
+                "city.add",
+                "city.change",
+                "city.rename",
+                "gst_registration.set",
+                "gst_registration.remove",
+                "city_rule.set",
+                "city_rule.clear",
+                "city_price.set",
+                "city_price.withdraw",
                 "blackout.add",
                 "blackout.remove",
                 "service.add",
@@ -27782,6 +28176,614 @@
           },
           "409": {
             "description": "pincode_held: the service area holds that pincode already",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cities": {
+      "get": {
+        "summary": "Every city, its state and zone, the GST registrations, and each city's own rules and prices",
+        "responses": {
+          "200": {
+            "description": "Cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cities"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "A city added, last in the order",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CityFields"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The city added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "city": {
+                      "$ref": "#/components/schemas/City"
+                    }
+                  },
+                  "required": [
+                    "city"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names what was refused, zone where it is none of ours",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "taken: another city has that name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cities/{name}": {
+      "patch": {
+        "summary": "A city changed; a new name moves every row that names it, in one batch",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CityFields"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The city as it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "city": {
+                      "$ref": "#/components/schemas/City"
+                    }
+                  },
+                  "required": [
+                    "city"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names what was refused, zone where it is none of ours",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such city",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "taken: another city has the new name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cities/{name}/rules/{rule}": {
+      "patch": {
+        "summary": "A rule the city sets for itself, checked as the national rule is",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "checkin_radius_m",
+                "reminder_hour"
+              ]
+            },
+            "required": true,
+            "name": "rule",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CityRule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The rule as the city now sets it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "city": {
+                      "type": "string"
+                    },
+                    "rule": {
+                      "type": "string",
+                      "enum": [
+                        "checkin_radius_m",
+                        "reminder_hour"
+                      ]
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "number"
+                          }
+                        }
+                      ],
+                      "description": "As the national rule takes it: one figure, or one per key."
+                    }
+                  },
+                  "required": [
+                    "city",
+                    "rule",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names the figure refused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such city",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "The national rule back in the city",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "checkin_radius_m",
+                "reminder_hour"
+              ]
+            },
+            "required": true,
+            "name": "rule",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The city follows the national rule"
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such city",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cities/{name}/prices": {
+      "post": {
+        "summary": "A price of the city's own from a day, tomorrow at the earliest, before the book's there",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CityPriceChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The price set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "price": {
+                      "$ref": "#/components/schemas/CityPrice"
+                    }
+                  },
+                  "required": [
+                    "price"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: fields names what was refused; service_retired: retired by then",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no such city",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cities/{name}/prices/{item}/{tier}/{valid_from}": {
+      "delete": {
+        "summary": "A city's price still to come taken back. The one in force and the spent ones stay",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "consultation",
+                "first_fit",
+                "service",
+                "replacement",
+                "late_fee_first_fit",
+                "late_fee_replacement"
+              ]
+            },
+            "required": true,
+            "name": "item",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,31}$"
+            },
+            "required": true,
+            "name": "tier",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": true,
+            "name": "valid_from",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Taken back"
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: the city holds no such price still to come",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gst-registrations": {
+      "post": {
+        "summary": "A state's GST registration, or a change to it: its visits are supplied from it",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GstRegistrationChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The registrations as they now stand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registrations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GstRegistration"
+                      }
+                    }
+                  },
+                  "required": [
+                    "registrations"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "taken: another state has that GSTIN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/gst-registrations/{state_code}": {
+      "delete": {
+        "summary": "A state's registration taken off: its visits are supplied from the registration in BOOKS_GSTIN again",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            },
+            "required": true,
+            "name": "state_code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Taken off"
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: no registration for that state",
             "content": {
               "application/json": {
                 "schema": {

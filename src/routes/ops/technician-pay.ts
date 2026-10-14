@@ -13,7 +13,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
-import { listCities } from "../../domain/dispatch/cities.ts";
+import { listCities } from "../../domain/cities/cities.ts";
 import {
   addGrade,
   deleteGrade,

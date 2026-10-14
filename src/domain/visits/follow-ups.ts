@@ -3,13 +3,13 @@
 // is queued once a visit by the hourly job, from the reminder hour in India, and goes only with the client's consent
 // to WhatsApp about visits. A reply to a check-in reaches Customer Care's inbox as any reply does.
 
-import { indiaDate, indiaInstant, indiaTime, addDays } from "../../lib/india-time.ts";
+import { indiaDate, indiaInstant, addDays } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import type { MessageKind } from "../../config/message-kinds.ts";
 import { FOLLOW_UP_AFTER_HOURS, type CheckInDays } from "../../policy/follow-ups.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
-import { remindersFrom } from "../messages/visit-messages.ts";
 import { underVisitsConsent, type Composed } from "../messages/visit-message-text.ts";
+import { reminderHourCame, type ReminderHours } from "../cities/city-rules.ts";
 
 /** The kinds this sends, each once a visit. */
 const FOLLOW_UP_KINDS = [
@@ -63,8 +63,14 @@ function startedBetween(kind: FollowUpKind, now: Date, days: CheckInDays): { fro
  * Writes each follow-up due, once a visit, from the reminder hour in India. Returns the messages' IDs, for the queue;
  * the consumer decides at sending whether each goes.
  */
-export async function queueFollowUps(db: D1Database, now: Date, days: CheckInDays, hour: number): Promise<string[]> {
-  if (indiaTime(now) < remindersFrom(hour)) return [];
+export async function queueFollowUps(
+  db: D1Database,
+  now: Date,
+  days: CheckInDays,
+  hour: ReminderHours,
+): Promise<string[]> {
+  const came = reminderHourCame("a.service_city", 4, hour, now);
+  if (came === null) return [];
   const at = now.toISOString();
   const messages: { id: string; personId: string; visitId: string; kind: FollowUpKind }[] = [];
   for (const kind of FOLLOW_UP_KINDS) {
@@ -73,9 +79,10 @@ export async function queueFollowUps(db: D1Database, now: Date, days: CheckInDay
       .prepare(
         `SELECT a.id, a.person_id FROM appointments a JOIN people p ON p.id = a.person_id
          WHERE ${DUE[kind]} AND ${NOT_SENT(kind)} AND a.window_start >= ?1 AND a.window_start < ?2
+           AND ${came.sql}
          ORDER BY a.window_start LIMIT ?3`,
       )
-      .bind(from, to, PER_PASS)
+      .bind(from, to, PER_PASS, ...came.values)
       .all<{ id: string; person_id: string }>();
     for (const row of results)
       messages.push({ id: crypto.randomUUID(), personId: row.person_id, visitId: row.id, kind });

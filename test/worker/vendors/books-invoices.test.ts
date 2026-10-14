@@ -181,6 +181,7 @@ describe("the invoice a finished visit gets", () => {
         reference: VISIT,
         date: "2026-09-23",
         placeOfSupply: null,
+        branchId: null,
         line: {
           itemId: "item-first-fit",
           name: "First fit",

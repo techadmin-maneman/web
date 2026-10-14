@@ -14,6 +14,7 @@ import { refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { listableDate } from "../../policy/job-visibility.ts";
+import { inputsIn, rulesOfVisit } from "../../domain/cities/city-rules.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 
 import { jobsRoute, jobRoute, lastVisitPhotoRoute } from "./jobs.routes.ts";
@@ -64,24 +65,27 @@ export function registerTechJobReads(app: App): void {
   app.openapi(jobRoute, async (c) => {
     const { technicianId } = technicianOf(c);
     const inputs = await opsInputs(c);
-    // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day.
-    const [job, sheet] = await Promise.all([
+    // The job sheet and the consumables as ops set them, which the phone keeps with the job for the day, and the rules
+    // its city sets for itself.
+    const jobId = c.req.valid("param").id;
+    const [job, sheet, rules] = await Promise.all([
       jobDetail(c.env.DB, {
         technicianId,
-        jobId: c.req.valid("param").id,
+        jobId,
         now: c.var.deps.now(),
         unlockHour: inputs.addressUnlockHour,
         waits: inputs.noShowWaitMin,
         phoneClock: inputs.phoneClock,
       }),
       jobSheet(c.env.DB),
+      rulesOfVisit(c.env.DB, jobId),
     ]);
     if (job === null) return refuse(c, "not_found");
     const type: VisitType = job.type ?? "service";
     return c.json(
       {
         ...job,
-        checkin_radius_m: inputs.checkinRadiusM,
+        checkin_radius_m: inputsIn(inputs, rules).checkinRadiusM,
         checklist: [...checklistOf(sheet, { type, oneVisit: job.one_visit }).items],
         checklist_if_declined: job.one_visit ? [...declinedChecklistOf(sheet).items] : [],
         partial_reasons: [...sheet.partialReasons.items],

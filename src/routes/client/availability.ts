@@ -22,6 +22,7 @@ import { stripStart } from "../../policy/next-visit.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { PriceSchema, ServiceSchema, Tier } from "../schemas/booking.ts";
 import { fittingOf } from "../../domain/booking/occupancy.ts";
+import { cityOfPerson } from "../../domain/cities/cities.ts";
 
 const AvailabilitySchema = z
   .object({
@@ -155,10 +156,12 @@ export function registerClientAvailability(app: App): void {
       }),
       loadSlotSchedule(db),
     ]);
-    // A free or late-fee move costs the same whichever day it goes to; a new visit costs that day's price.
+    // A free or late-fee move costs the same whichever day it goes to; a new visit costs that day's price, in the
+    // client's city.
+    const city = await cityOfPerson(db, session.subjectId);
     const priceOn = async (date: string): Promise<Price> => {
       if (move !== null && move.terms.move.cost !== "charged") return price;
-      return (await priceOf(db, type, date, service.tier)) ?? price;
+      return (await priceOf(db, type, { on: date, tier: service.tier, city })) ?? price;
     };
     // A day before the bookable days open, or past the last, is offered to nobody. Each window says its hours that day,
     // and whether a visit booked in it now would already cost the client to change.

@@ -18,3 +18,4 @@ export * from "./content/decisions.ts";
 // Settings' screens import their words from ./content/settings.ts; the every-page part is here.
 export * from "./content/settings-shell.ts";
 export * from "./content/stock.ts";
+export * from "./content/cities.ts";

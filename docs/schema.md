@@ -29,7 +29,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
 | Referrals and credits | `referral_codes`, `referral_attributions`, `credit_ledger`, `waitlist_entries`, `referral_channels`, `channel_attributions`, `partner_payouts`, `spend_entries` | A credit, a grant, a partner, a partner's payment, an entry of offline spend or a place on a waitlist disappears | The rows since `<T>`. `credit_ledger` is only ever added to |
-| Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
+| Ops' settings and what we sell | `ops_settings`, `price_book`, `standard_costs`, `targets`, `services`, `slot_times`, `serviceable_pincodes`, `technician_leave`, `visit_blackouts`, `city_blackouts`, `cities`, `city_prices`, `city_settings`, `gst_registrations`, `zones`, `consumables`, `hair_systems`, `consumable_usage`, `suppliers`, `supplier_items`, `checklist_items`, `partial_reasons`, `lost_reasons`, `pay_grades`, `visit_pay_rates`, `word_versions`, `site_word_publishes` | A price, service, rule, area, day's times, day off, consumable, supplier, job-sheet list, pay rate or wording set since goes back | Setting it again in the console, which audits it |
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, and a fit's stock risk is found or cleared again within the hour | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
@@ -58,9 +58,11 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [chat_messages](#chat_messages): Every message in a Care inbox thread: what the client wrote, our replies, and notes only staff see (ADR 0129).
 - [checkins](#checkins): Each "I have arrived", passed or not, with the distance measured and the radius in force (ADR 0065); an erasure blanks where the phone was (ADR 0094).
 - [checklist_items](#checklist_items): Each kind of visit's checklist as ops set it, an item they took off kept as retired; a kind with no rows takes the committed list (ADR 0087).
-- [cities](#cities): The cities the site's first booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).
+- [cities](#cities): Our cities, each a row ops edit at Admin › Cities: its state for GST, its zone, whether it is served and offered. A lead, a pincode, a technician and a stock place name one, and a zone groups them for staff access (ADR 0109, ADR 0198).
 - [city_blackouts](#city_blackouts): Days on which no visit is offered in one city alone (ADR 0119).
 - [city_matters](#city_matters): A matter Customer Care sent from a chat to the client's city, on that city's Tasks until it is closed (ADR 0135).
+- [city_prices](#city_prices): A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).
+- [city_settings](#city_settings): A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).
 - [consents](#consents): What each person agreed to, under which notice's version, and where (ADR 0094). Rows are only ever added (ADR 0042, ADR 0049).
 - [consultation_requests](#consultation_requests): A consultation asked for while self-serve booking is off, for ops to fix the hour (ADR 0060).
 - [consumable_usage](#consumable_usage): What each service, a kind of visit at a tier of the price book, is expected to use of each consumable: where the technician's steppers start (ADR 0087).
@@ -88,6 +90,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [forecast_runs](#forecast_runs): Each demand forecast run, once a planning period: its period, horizon and the rates it learned (ADR 0179).
 - [fsm_items](#fsm_items): FSM's catalogue, to read each appointment's visit type from its service item and to compare FSM's prices with the price book (ADR 0032, ADR 0073).
 - [grievances](#grievances): A client's grievance, and the answer ops recorded (ADR 0049, ADR 0078).
+- [gst_registrations](#gst_registrations): A state's own GST registration, which supplies the visits in it, and its Books branch (ADR 0198).
 - [hair_profiles](#hair_profiles): Every version of a client's hair profile, the fit spec and the history: the technician's at a visit, once for each of the phone's events, and ops' corrections. Never changed, only blanked (ADR 0106).
 - [hair_systems](#hair_systems): Each hair system kept in stock: its product, base size, colour, grey and density, matched exactly to a client's profile; its stock code is a row of `consumables`, counted in pieces (ADR 0156).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
@@ -505,9 +508,9 @@ Made by `0049_consumables_and_stock.sql`.
 
 ## cities
 
-The cities the site's first booking form offered. The leads it left name one, a booking's lead names its pincode's, the dispatch board filters by them, and a zone groups them for staff access (ADR 0109).
+Our cities, each a row ops edit at Admin › Cities: its state for GST, its zone, whether it is served and offered. A lead, a pincode, a technician and a stock place name one, and a zone groups them for staff access (ADR 0109, ADR 0198).
 
-Made by `0002_lead_path.sql`; changed by `0069_staff_and_access.sql`.
+Made by `0002_lead_path.sql`; changed by `0069_staff_and_access.sql`, `0167_cities_as_data.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -516,6 +519,8 @@ Made by `0002_lead_path.sql`; changed by `0069_staff_and_access.sql`.
 | `active` | INTEGER | no | `1` |  |
 | `sort` | INTEGER | no |  |  |
 | `zone` | TEXT | yes |  | → `zones.name` |
+| `state_code` | TEXT | yes |  |  |
+| `state` | TEXT | yes |  |  |
 
 ## city_blackouts
 
@@ -550,6 +555,35 @@ Made by `0118_city_matters.sql`.
 Indexes:
 
 - `city_matters_by_person`: on (`person_id`)
+
+## city_prices
+
+A price a city sets apart from the book's, from a day, which comes first there (ADR 0198).
+
+Made by `0167_cities_as_data.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `item` | TEXT | no |  | primary key |
+| `tier` | TEXT | no | `'standard'` | primary key |
+| `city` | TEXT | no |  | primary key; → `cities.name` |
+| `amount_ex_gst` | INTEGER | no |  |  |
+| `gst_percent` | INTEGER | no |  |  |
+| `valid_from` | TEXT | no |  | primary key |
+
+## city_settings
+
+A rule a city sets apart from the national one: its check-in radius or reminder hour (ADR 0198).
+
+Made by `0167_cities_as_data.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `city` | TEXT | no |  | primary key; → `cities.name` |
+| `key` | TEXT | no |  | primary key |
+| `value` | TEXT | no |  |  |
+| `updated_by` | TEXT | no |  |  |
+| `updated_at` | TEXT | no |  |  |
 
 ## consents
 
@@ -1178,6 +1212,24 @@ Indexes:
 
 - `grievances_by_person`: on (`person_id`)
 - `grievances_by_state`: on (`state`, `created_at`)
+
+## gst_registrations
+
+A state's own GST registration, which supplies the visits in it, and its Books branch (ADR 0198).
+
+Made by `0167_cities_as_data.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `state_code` | TEXT | no |  | primary key |
+| `gstin` | TEXT | no |  |  |
+| `books_branch_id` | TEXT | yes |  |  |
+| `added_by` | TEXT | no |  |  |
+| `added_at` | TEXT | no |  |  |
+
+Indexes:
+
+- A `UNIQUE` constraint: unique on (`gstin`)
 
 ## hair_profiles
 
@@ -2278,7 +2330,7 @@ Indexes:
 
 Every NCR pincode, its area and city, and whether and since when we serve it (ADR 0048, ADR 0061).
 
-Made by `0021_referrals.sql`; changed by `0043_area_names.sql`.
+Made by `0021_referrals.sql`; changed by `0043_area_names.sql`, `0167_cities_as_data.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -2288,6 +2340,8 @@ Made by `0021_referrals.sql`; changed by `0043_area_names.sql`.
 | `served` | INTEGER | no | `0` |  |
 | `launched_at` | TEXT | yes |  |  |
 | `area_named_by` | TEXT | yes |  |  |
+
+Triggers: `serviceable_pincodes_in_a_city`, `serviceable_pincodes_moved_to_a_city`.
 
 ## services
 

@@ -380,6 +380,7 @@ function invoiceBody(invoice: NewBooksInvoice) {
     reference_number: invoice.reference,
     date: invoice.date,
     ...(place === null ? {} : { gst_treatment: "consumer", place_of_supply: place }),
+    ...(invoice.branchId === null ? {} : { branch_id: invoice.branchId }),
     is_inclusive_tax: true,
     is_discount_before_tax: true,
     discount_type: "item_level",

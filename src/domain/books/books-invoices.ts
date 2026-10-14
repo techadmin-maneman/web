@@ -11,7 +11,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { placeOfSupply, type GstRegistration } from "../../config/gst.ts";
+import type { GstRegistration } from "../../config/gst.ts";
 import { STANDARD_TIER, VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
 import type { CallBudget } from "../../lib/call-budget.ts";
 import { HOUR_MS } from "../../lib/durations.ts";
@@ -22,6 +22,7 @@ import { invoiceHold, type InvoiceHold, type SoldVisit } from "../../policy/prep
 import type { BooksInvoice, BooksProvider, NewBooksInvoice } from "../../providers/books/index.ts";
 import { FAILURES_BEFORE_ALERT, PER_PASS, RECHECK_AFTER_MS, tellFailure as tellPassFailure } from "./vendor-pass.ts";
 import { paymentsTab, type AlertOnce, type ResolveAlert } from "../platform/alerts.ts";
+import { supplyFor } from "../cities/gst-registrations.ts";
 import { customerFor } from "./books-customers.ts";
 import { codeOnVisit, priceAfterCode } from "../money/discount-code-uses.ts";
 import { priceOf, type Price } from "../money/price-book.ts";
@@ -57,6 +58,8 @@ interface PricedVisit {
   /** Its service's tier; null where none is known, which is the standard tier's. */
   readonly tier: string | null;
   readonly window_start: string | null;
+  /** Where it was, whose own price comes before the book's. */
+  readonly service_city: string | null;
 }
 
 interface Visit extends PricedVisit {
@@ -64,7 +67,6 @@ interface Visit extends PricedVisit {
   readonly type: VisitType;
   readonly window_start: string;
   readonly window_end: string | null;
-  readonly service_city: string | null;
   /** Books' ID of the invoice kept on it, once one was raised or found. */
   readonly fsm_invoice_id: string | null;
 }
@@ -210,11 +212,13 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
   const sold = discounted(price, code?.off ?? 0);
   const day = indiaDate(new Date(visit.window_start));
   const label = options.labelAsTest ? "Staging test: " : "";
+  const supply = (await supplyFor(db, options.gst))(visit.service_city);
   const invoice: NewBooksInvoice = {
     customerId,
     reference: visit.id,
     date: day,
-    placeOfSupply: placeOfSupply(visit.service_city, options.gst),
+    placeOfSupply: supply.placeOfSupply,
+    branchId: supply.branchId,
     line: {
       itemId: item.itemId,
       name: item.name,
@@ -319,7 +323,11 @@ async function soldVisit(db: D1Database, visit: PricedVisit, off: number): Promi
 /** The price book's price for the visit's own service on the day it happened in India; null where there is none. */
 function listPrice(db: D1Database, visit: PricedVisit): Promise<Price | null> {
   if (visit.type === null || visit.window_start === null) return Promise.resolve(null);
-  return priceOf(db, visit.type, indiaDate(new Date(visit.window_start)), visit.tier ?? STANDARD_TIER);
+  return priceOf(db, visit.type, {
+    on: indiaDate(new Date(visit.window_start)),
+    tier: visit.tier ?? STANDARD_TIER,
+    city: visit.service_city,
+  });
 }
 
 // ---------------------------------------------------------------------------

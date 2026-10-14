@@ -4,7 +4,7 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { addPincode, serviceArea, setServiceArea } from "../../domain/clients/service-area.ts";
-import { listCities } from "../../domain/dispatch/cities.ts";
+import { listCities } from "../../domain/cities/cities.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";

@@ -41,6 +41,7 @@ import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
 import { REMAKE_TERMS, remakeBookedStatement, remakesOwed, type Remake } from "./remakes.ts";
 import { replacementWears } from "../inventory/stock-gap.ts";
+import { cityOfPerson } from "../cities/cities.ts";
 
 /** What ops ask for. */
 export interface VisitAsked {
@@ -224,8 +225,8 @@ export async function saleFor(
   if (asked.date < opens || asked.date > last) return refused({ status: 422, code: "not_bookable" });
   if (await alreadyToCome(db, asked, now)) return refused({ status: 409, code: "already_booked" });
 
-  const wears = await replacementWears(db, asked);
-  const service = await bookableService(db, { kind: asked.kind, tier: asked.tier, on: asked.date, wears });
+  const [wears, city] = await Promise.all([replacementWears(db, asked), cityOfPerson(db, asked.personId)]);
+  const service = await bookableService(db, { kind: asked.kind, tier: asked.tier, on: asked.date, wears, city });
   if (service === null) return refused({ status: 422, code: await noServiceRefusal(db, asked) });
   if (asked.covers !== undefined) {
     const covers = await remakeAsked(db, asked);
@@ -237,8 +238,8 @@ export async function saleFor(
   if (code === false) return refused({ status: 422, code: "code_not_applicable" });
 
   const price = asked.oneVisit ? nothingPaid(service.price) : discounted(service.price, code?.amountOff ?? 0);
-  const lateFeeItem = LATE_FEES[asked.kind];
-  const lateFee = asked.oneVisit || lateFeeItem === undefined ? null : await lateFeeOn(db, lateFeeItem, asked.date);
+  const lateFeeItem = asked.oneVisit ? undefined : LATE_FEES[asked.kind];
+  const lateFee = lateFeeItem === undefined ? null : await lateFeeOn(db, lateFeeItem, asked.date, city);
   const terms = asked.oneVisit ? ONE_VISIT_TERMS : termsInForce(inputs, asked.kind);
   const pays = paysFor(asked.oneVisit, onCredit, price);
   return { ok: true, sale: { service, price, lateFee, terms, pays, code, covers: null } };

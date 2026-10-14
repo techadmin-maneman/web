@@ -23,6 +23,7 @@ import { graceEndOf, graceEnds, ownAtCheckout, type HoldState } from "./hold-sta
 import { heldMinutes, visitTimes } from "../visits/visit-times.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { paidNotBooked } from "./hold-stages.ts";
+import { cityOfPincode } from "../cities/cities.ts";
 
 interface HoldRow {
   id: string;
@@ -53,13 +54,15 @@ interface HoldRow {
   moves_appointment_id: string | null;
   use_credit: number;
   person_id: string;
+  /** Where the visit is to be, whose own late fee comes before the book's. */
+  pincode: string | null;
   paid: number;
 }
 
 const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
     h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.grace_seconds, h.confirmed_at, h.late_fee_ex_gst,
     h.late_fee_gst_percent, h.change_notice_hours, h.late_change_charge, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
-    h.moves_appointment_id, h.use_credit, h.person_id,
+    h.moves_appointment_id, h.use_credit, h.person_id, h.pincode,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
   FROM slot_holds h JOIN technicians t ON t.id = h.technician_id
   LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
@@ -72,7 +75,9 @@ const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_na
 async function lateFeeOf(db: D1Database, row: HoldRow, charge: Charge): Promise<Price | null> {
   const item = LATE_FEES[row.type];
   if (item === undefined || charge !== "late_fee") return null;
-  if (row.late_fee_ex_gst === null || row.late_fee_gst_percent === null) return lateFeeOn(db, item, row.date);
+  if (row.late_fee_ex_gst === null || row.late_fee_gst_percent === null) {
+    return lateFeeOn(db, item, row.date, await cityOfPincode(db, row.pincode));
+  }
   return {
     amount_ex_gst: row.late_fee_ex_gst,
     amount: withGst(row.late_fee_ex_gst, row.late_fee_gst_percent),

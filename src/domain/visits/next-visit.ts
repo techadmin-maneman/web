@@ -15,7 +15,7 @@
 import { shortDate } from "@maneman/web-kit/dates";
 import type { BookingWindow } from "../../config/scheduling.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
-import { addDays, indiaDate, indiaInstant, indiaTime } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import {
   firstFitDue,
@@ -35,11 +35,11 @@ import { loadSlotSchedule } from "../booking/slot-times.ts";
 import { consentGiven } from "../privacy/consents.ts";
 import { serviceToOffer } from "../booking/services.ts";
 import { recommendedProduct } from "../clients/hair-profiles.ts";
-import { remindersFrom } from "../messages/visit-messages.ts";
 import { NO_VISITS_CONSENT, type Composed } from "../messages/visit-message-text.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
 import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE } from "../../config/statuses.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
+import { reminderHourCame, type ReminderHours } from "../cities/city-rules.ts";
 
 /** A visit a next service follows: a first fit, a service or a replacement, done. Migration 0048 indexes these. */
 const DONE = "a.status = 'completed' AND a.type IN ('first_fit', 'service', 'replacement') AND a.deleted_at IS NULL";
@@ -209,10 +209,6 @@ const BOOKED_SINCE = `(EXISTS (SELECT 1 FROM appointments later WHERE later.pers
  * The visits whose next service is due within `reminder_before_due` days with nothing booked, and not yet reminded
  * of: the last visit of each client, done between ?1 and ?2.
  */
-const TO_REMIND = `SELECT a.id, a.person_id FROM appointments a JOIN people p ON p.id = a.person_id
-  WHERE ${DONE} AND a.window_start >= ?1 AND a.window_start < ?2 AND p.erased_at IS NULL AND NOT ${BOOKED_SINCE}
-    AND NOT EXISTS (SELECT 1 FROM outbound_messages m WHERE m.subject_id = a.id AND m.kind = 'next_service_reminder')
-  ORDER BY a.window_start LIMIT ?3`;
 
 /**
  * Writes the next service's reminder for each client it is due to, once a last visit, from the reminder hour in
@@ -223,17 +219,25 @@ export async function queueNextServiceReminders(
   db: D1Database,
   now: Date,
   days: NextVisitDays,
-  hour: number = DAY_BEFORE_REMINDER_HOUR,
+  hour: ReminderHours = DAY_BEFORE_REMINDER_HOUR,
 ): Promise<string[]> {
-  if (indiaTime(now) < remindersFrom(hour)) return [];
+  const came = reminderHourCame("a.service_city", 4, hour, now);
+  if (came === null) return [];
   const { from, to } = remindedIfDoneBetween(indiaDate(now), days);
   if (to < from) return [];
   const { results } = await db
-    .prepare(TO_REMIND)
+    .prepare(
+      `SELECT a.id, a.person_id FROM appointments a JOIN people p ON p.id = a.person_id
+       WHERE ${DONE} AND a.window_start >= ?1 AND a.window_start < ?2 AND p.erased_at IS NULL AND NOT ${BOOKED_SINCE}
+         AND NOT EXISTS (SELECT 1 FROM outbound_messages m WHERE m.subject_id = a.id AND m.kind = 'next_service_reminder')
+         AND ${came.sql}
+       ORDER BY a.window_start LIMIT ?3`,
+    )
     .bind(
       indiaInstant(from, "00:00").toISOString(),
       indiaInstant(addDays(to, 1), "00:00").toISOString(),
       REMINDERS_PER_PASS,
+      ...came.values,
     )
     .all<{ id: string; person_id: string }>();
   const at = now.toISOString();

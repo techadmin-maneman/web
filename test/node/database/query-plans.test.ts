@@ -117,6 +117,11 @@ const SMALL_TABLES = new Set([
   "staff",
   "staff_grants",
   "care_names",
+  // What a city sets apart (docs/decisions/0198-cities-as-data.md): a row a city and rule, a city's price as it
+  // changes, and a GST registration a state.
+  "city_settings",
+  "city_prices",
+  "gst_registrations",
 ]);
 
 /** Statements that do read a whole table, each with why that is all right. */

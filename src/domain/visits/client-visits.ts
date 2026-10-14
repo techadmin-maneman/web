@@ -303,7 +303,11 @@ type InvoiceHeld = "credit" | "checking";
 async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boolean> {
   if (row.status !== "completed") return false;
   if (row.type === null) return true;
-  const price = await priceOf(db, row.type, indiaDate(new Date(row.window_start)), row.tier ?? STANDARD_TIER);
+  const price = await priceOf(db, row.type, {
+    on: indiaDate(new Date(row.window_start)),
+    tier: row.tier ?? STANDARD_TIER,
+    city: row.service_city,
+  });
   return price === null || price.amount_ex_gst > 0;
 }
 

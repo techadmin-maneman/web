@@ -61,13 +61,13 @@ describe("the ops console's routes", () => {
     ]);
     expect(namesIn("finance")).toEqual(["Charges", "Prices", "Discount codes", "Technician pay", "Partner commission"]);
     expect(namesIn("growth")).toEqual(["Referrals", "Areas", "Spend", "Words"]);
-    expect(namesIn("admin")).toEqual(["Settings", "Staff", "Targets", "Activity"]);
+    expect(namesIn("admin")).toEqual(["Settings", "Staff", "Cities", "Targets", "Activity"]);
     expect(SECTIONS.map((section) => section.department)).toEqual([
       ...Array<string>(11).fill("operations"),
       ...Array<string>(7).fill("customer_care"),
       ...Array<string>(5).fill("finance"),
       ...Array<string>(4).fill("growth"),
-      ...Array<string>(4).fill("admin"),
+      ...Array<string>(5).fill("admin"),
     ]);
   });
 

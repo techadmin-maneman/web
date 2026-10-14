@@ -13,7 +13,6 @@
 // services table holds, and not from a day it is retired by. The two late fees
 // are items of their own, one figure a kind (docs/decisions/0085-services-ops-can-edit.md).
 
-import { withGst } from "../../config/gst.ts";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
 import { STANDARD_TIER, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -21,42 +20,38 @@ import { firstPriceDay } from "../../policy/prices.ts";
 import { isOffered } from "../../policy/services.ts";
 import { auditStatement, type AuditActor, type AuditEntry } from "../platform/audit.ts";
 import { serviceOf } from "../booking/services.ts";
+import { priceFrom, priceInForce, type Price } from "./price-lookup.ts";
 
 /** What the book prices: each kind of visit, by its services' tiers, and the two late fees. */
 export const PRICE_ITEMS = [...VISIT_TYPES, "late_fee_first_fit", "late_fee_replacement"] as const;
 export type PriceItem = (typeof PRICE_ITEMS)[number];
 
-export interface Price {
-  readonly amount_ex_gst: number;
-  /** GST included: what the client pays. */
-  readonly amount: number;
-  readonly gst_percent: number;
-}
+export type { Price };
 
-/** The price of an item's tier on a day (India's date, YYYY-MM-DD); null when the book has none. */
-export async function priceOf(db: D1Database, item: PriceItem, on: string, tier: string): Promise<Price | null> {
+/**
+ * The price of an item's tier on a day (India's date, YYYY-MM-DD) in a city: the city's own, else the book's; null
+ * when neither has one. A null city reads the book alone.
+ */
+export async function priceOf(
+  db: D1Database,
+  item: PriceItem,
+  { on, tier, city = null }: { readonly on: string; readonly tier: string; readonly city?: string | null },
+): Promise<Price | null> {
   const row = await db
-    .prepare(
-      `SELECT amount_ex_gst, gst_percent FROM price_book
-       WHERE item = ?1 AND tier = ?2 AND valid_from <= ?3 ORDER BY valid_from DESC LIMIT 1`,
-    )
-    .bind(item, tier, on)
-    .first<{ amount_ex_gst: number; gst_percent: number }>();
-  if (row === null) return null;
-  return {
-    amount_ex_gst: row.amount_ex_gst,
-    amount: withGst(row.amount_ex_gst, row.gst_percent),
-    gst_percent: row.gst_percent,
-  };
+    .prepare(`SELECT ${priceInForce("?1", "?2", "?3", "?4")} AS price`)
+    .bind(item, tier, on, city)
+    .first<{ price: string | null }>();
+  return priceFrom(row?.price ?? null);
 }
 
-/** A late fee on a day: one figure a kind, kept under the standard tier. */
+/** A late fee on a day in a city: one figure a kind, kept under the standard tier. */
 export function lateFeeOn(
   db: D1Database,
   item: "late_fee_first_fit" | "late_fee_replacement",
   on: string,
+  city: string | null = null,
 ): Promise<Price | null> {
-  return priceOf(db, item, on, STANDARD_TIER);
+  return priceOf(db, item, { on, tier: STANDARD_TIER, city });
 }
 
 /** One row of the book, as the console lists it. */
@@ -206,7 +201,7 @@ function takingBack(
  * corrects that day's figure rather than adding a row beside it.
  */
 async function setting(db: D1Database, price: PriceChange, write: PriceWrite): Promise<D1PreparedStatement[]> {
-  const was = await priceOf(db, price.item, indiaDate(write.now), price.tier);
+  const was = await priceOf(db, price.item, { on: indiaDate(write.now), tier: price.tier });
   const entry: AuditEntry = {
     surface: "ops",
     actor: write.actor,

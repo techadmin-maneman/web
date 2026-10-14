@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-14
-- Topic: Data
+- Topic: Platform
 - Amends [0113](0113-fsms-columns-go.md)
 
 ## Context

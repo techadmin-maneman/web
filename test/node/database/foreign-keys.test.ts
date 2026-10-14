@@ -12,7 +12,20 @@ import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 
 /** "child.column -> parent": how the rows pointing at a deleted row are dealt with first. */
+/** A city's row goes only in a rename, after every row naming it has moved to the new one. */
+const RENAMED = "src/domain/cities/cities.ts moves it to the city's new name before the old row goes";
+
 const HANDLED: Readonly<Record<string, string>> = {
+  // A city renamed (docs/decisions/0198-cities-as-data.md).
+  "leads.city -> cities": RENAMED,
+  "technicians.city -> cities": RENAMED,
+  "city_blackouts.city -> cities": RENAMED,
+  "visit_pay_rates.city -> cities": RENAMED,
+  "spend_entries.city -> cities": RENAMED,
+  "targets.city -> cities": RENAMED,
+  "stock_places.city -> cities": RENAMED,
+  "city_prices.city -> cities": RENAMED,
+  "city_settings.city -> cities": RENAMED,
   // A pay grade goes only once nothing uses it (docs/decisions/0122-technician-pay-per-visit.md).
   "technicians.pay_grade_id -> pay_grades":
     "src/domain/field/technician-pay.ts deletes a grade only while no technician holds it",

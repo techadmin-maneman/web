@@ -8,7 +8,6 @@
 // happen. Books' items follow the services, by each one's own item (src/domain/books/books-items.ts).
 
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
-import { withGst } from "../../config/gst.ts";
 import { VISIT_BLOCKS } from "../../config/scheduling.ts";
 import { hasStandardService, STANDARD_TIER, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import {
@@ -21,7 +20,7 @@ import {
 } from "../../policy/services.ts";
 import { isServiceLength } from "../../policy/visit-length.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
-import type { Price } from "../money/price-book.ts";
+import { priceFrom, priceInForce, type Price } from "../money/price-lookup.ts";
 import { replacementFor } from "../../policy/services.ts";
 
 /** A service, as the services table holds it. */
@@ -74,27 +73,16 @@ export function serviceOf(db: D1Database, kind: VisitType, tier: string): Promis
  * the book's row in force that day, read with its rate in one lookup a service, since the hourly catalogue check
  * reads this inside the cron run's budget of rows (scripts/lib/usage-budget.ts).
  */
-export async function servicesOnDay(db: D1Database, on: string): Promise<ServiceOnDay[]> {
+export async function servicesOnDay(db: D1Database, on: string, city: string | null = null): Promise<ServiceOnDay[]> {
   const { results } = await db
     .prepare(
       `SELECT s.kind, s.tier, s.name, s.description, s.minutes, s.sort, s.retired_date, s.updated_by, s.updated_at,
-         (SELECT json_array(b.amount_ex_gst, b.gst_percent) FROM price_book b
-           WHERE b.item = s.kind AND b.tier = s.tier AND b.valid_from <= ?1
-           ORDER BY b.valid_from DESC LIMIT 1) AS price
+         ${priceInForce("s.kind", "s.tier", "?1", "?2")} AS price
        FROM services s`,
     )
-    .bind(on)
+    .bind(on, city)
     .all<Service & { price: string | null }>();
-  return results
-    .map(({ price, ...service }) => {
-      if (price === null) return { ...service, price: null };
-      const [amountExGst, gstPercent] = JSON.parse(price) as [number, number];
-      return {
-        ...service,
-        price: { amount_ex_gst: amountExGst, amount: withGst(amountExGst, gstPercent), gst_percent: gstPercent },
-      };
-    })
-    .sort(inOrder);
+  return results.map(({ price, ...service }) => ({ ...service, price: priceFrom(price) })).sort(inOrder);
 }
 
 /**
@@ -121,8 +109,9 @@ export async function offeredServices(
   db: D1Database,
   on: string,
   kinds: readonly VisitType[] = VISIT_TYPES,
+  city: string | null = null,
 ): Promise<PricedService[]> {
-  return offeredAmong(await servicesOnDay(db, on), on, kinds);
+  return offeredAmong(await servicesOnDay(db, on, city), on, kinds);
 }
 
 /**
@@ -139,10 +128,12 @@ export async function bookableService(
     readonly on: string;
     /** The product of the hair system the client wears, which a replacement naming no tier is priced for. */
     readonly wears?: string | null;
+    /** Where the visit is, whose own price comes first; null for the book's. */
+    readonly city?: string | null;
   },
 ): Promise<PricedService | null> {
   const { kind, tier } = wanted;
-  const offered = await offeredServices(db, wanted.on, [kind]);
+  const offered = await offeredServices(db, wanted.on, [kind], wanted.city ?? null);
   if (tier !== undefined) return offered.find((service) => service.tier === tier) ?? null;
   if (!hasStandardService(kind)) return null;
   if (kind === "replacement") return replacementFor(offered, wanted.wears ?? null)[0] ?? null;
@@ -150,8 +141,8 @@ export async function bookableService(
 }
 
 /** The hair systems a first fit is sold as on a day: the first-fit services offered and priced then, in ops' order. */
-export function offeredProducts(db: D1Database, on: string): Promise<PricedService[]> {
-  return offeredServices(db, on, ["first_fit"]);
+export function offeredProducts(db: D1Database, on: string, city: string | null = null): Promise<PricedService[]> {
+  return offeredServices(db, on, ["first_fit"], city);
 }
 
 /**

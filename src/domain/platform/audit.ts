@@ -111,6 +111,17 @@ export const AUDIT_ACTIONS = [
   "pincode.rename",
   // A pincode ops add to the service area, unserved, in one of our cities.
   "pincode.add",
+  // Our cities, their GST registrations, and the rules and prices a city sets apart from the national ones
+  // (docs/decisions/0198-cities-as-data.md).
+  "city.add",
+  "city.change",
+  "city.rename",
+  "gst_registration.set",
+  "gst_registration.remove",
+  "city_rule.set",
+  "city_rule.clear",
+  "city_price.set",
+  "city_price.withdraw",
   // The days no visit is offered, which the runbook's SQL set before (docs/decisions/0088-every-policy-in-the-console.md).
   "blackout.add",
   "blackout.remove",

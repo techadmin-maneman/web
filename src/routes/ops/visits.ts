@@ -47,6 +47,7 @@ import { PRICE_TIER } from "../../policy/services.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { ServiceSchema } from "../schemas/booking.ts";
 import { fittingOf } from "../../domain/booking/occupancy.ts";
+import { cityOfPerson } from "../../domain/cities/cities.ts";
 
 /** A visit's price, as the client's app gives it; the console's own "Price" is a row of the price book. */
 const PriceSchema = z
@@ -363,7 +364,7 @@ export function registerOpsVisits(app: App): void {
 
     const range = bookableRange(now, await opsInputs(c));
     const start = stripStart(from, range, BOOKING_DAYS);
-    const services = await offeredServices(db, start, [kind]);
+    const services = await offeredServices(db, start, [kind], await cityOfPerson(db, client));
     const service = serviceAsked(services, tier);
     if (service === undefined) {
       const refusal = kind === "first_fit" && services.length === 0 ? "no_product" : "not_bookable";

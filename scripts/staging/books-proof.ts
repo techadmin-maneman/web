@@ -127,7 +127,7 @@ try {
     discount: 15_000,
   };
   const date = indiaDate(new Date());
-  const invoice = await books.createInvoice({ customerId, reference, date, placeOfSupply: null, line });
+  const invoice = await books.createInvoice({ customerId, reference, date, placeOfSupply: null, branchId: null, line });
   invoiceId = invoice.id;
   check("a draft for ₹2,000 less ₹150 totals ₹1,850", invoice.total === 185_000, `${invoice.number} ${invoice.status}`);
   const found = await books.findInvoice(reference);
