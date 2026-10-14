@@ -3,6 +3,7 @@
 // (apps/app/src/profile/AddressForm.tsx), its building search one session token for every keystroke and the save
 // (docs/decisions/0054-address-capture.md); an address typed without the search saves with no pin.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -11,7 +12,7 @@ import { AddressSearch, type AddressSuggestion } from "@maneman/ui/AddressSearch
 import { useId, useRef, useState } from "react";
 import { ADDRESS_FIELDS, given, missingParts, type AddressField, type AddressPart } from "@maneman/web-kit/address";
 import { type AddressGiven, type ClientRecord } from "../api.ts";
-import { clients, NOT_PERMITTED } from "../content.ts";
+import { clients, NOT_PERMITTED, OFFLINE } from "../content.ts";
 import styles from "./address.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { clientsApi } from "./clients-api.ts";
@@ -119,7 +120,7 @@ export function GivenAddressForm({
         session_token: sessionToken,
       });
       if (!answer.ok) {
-        setProblem(answer.code === "not_permitted" ? NOT_PERMITTED : copy.failed);
+        setProblem(errorText({ not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: copy.failed }, answer));
         return;
       }
       onSaved(answer.body);

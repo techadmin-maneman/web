@@ -258,5 +258,5 @@ test("says so when the API would take away more than the client holds", async ({
   await credits.getByLabel(opsCopy.clients.credits.change).fill("-5");
   await credits.getByRole("radio", { name: "Correction" }).check();
   await credits.getByRole("button", { name: opsCopy.clients.credits.save }).click();
-  await expect(credits.getByRole("alert")).toContainText("-12 to 12, and no more than they hold.");
+  await expect(credits.getByRole("alert")).toContainText(/^Enter -12 to 12\. They hold \d+, so remove at most \d+\.$/);
 });

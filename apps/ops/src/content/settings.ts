@@ -220,10 +220,10 @@ export const settings = {
       referral_reward: {
         referrer_visits: "Referrer",
         friend_visits: "Friend",
-        valid_days: "Free visits valid for",
+        valid_days: "Free service visits valid for",
       },
       // Remedies (docs/decisions/0143-remedies.md).
-      remedy_limit: { visits: "Free visits", days: "Over" },
+      remedy_limit: { visits: "Free service visits", days: "Over" },
       // The rest of the rules (docs/decisions/0193-the-rest-of-the-rules-in-the-console.md).
       payment_links: {
         holds_hours: "Holds the slot for",
@@ -290,7 +290,9 @@ export const settings = {
       back: "Edit",
     },
     /** A section's Save sends its rules one by one, so a refusal speaks for its own rule only. */
-    outside: (field: string) => `${field}: out of range.`,
+    outside: (field: string, range: string) => `${field}: ${range}`,
+    /** A choice refused: where the field is one of a list. */
+    chooseOne: "Choose one of its options.",
     conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”.`,
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -493,17 +495,24 @@ export const settings = {
       takenBack: "Price withdrawn.",
       saved: "Saved.",
     },
+    /** A refusal of a box with the limit the API gave the form, as the API checks it (src/routes/ops/services.ts). */
+    limits: {
+      description: (most: number) => `Up to ${String(most)} characters, on one line.`,
+      minutes: (min: number, max: number) => `Enter ${String(min)}–${String(max)} minutes.`,
+      amount: (most: string) => `Enter whole rupees, up to ${most}.`,
+      gst: (most: number) => `Enter a whole percentage, 0–${String(most)}.`,
+    },
     /** A refusal names the box it came from (src/routes/ops/services.ts, ops-settings.ts); these are said of each. */
     errors: {
       not_permitted: NOT_PERMITTED,
       tier: "No such code, or none can be made from that name.",
       name: "2–60 characters, starting with a letter or digit.",
-      description: "One line, within the limit.",
-      minutes: "Outside the allowed range.",
+      description: "Keep it to one line.",
+      minutes: "Enter the minutes allowed.",
       retired_date: "Retire from today or later. Restore a retired service first.",
       order: changed("The order changed elsewhere."),
-      amount_ex_gst: "Whole rupees, within the range.",
-      gst_percent: "A whole percentage, within the range.",
+      amount_ex_gst: "Enter whole rupees.",
+      gst_percent: "Enter a whole percentage.",
       valid_from: "A new price starts tomorrow at the earliest.",
       was_valid_from: "That price is already in effect, so it stays.",
       service_exists: "That name or code is already in use.",
@@ -518,6 +527,8 @@ export const settings = {
     takeBackErrors: {
       not_permitted: NOT_PERMITTED,
       valid_from: "That price is already in effect, so it stays.",
+      offline: OFFLINE,
+      unknown: FAILED,
     },
   },
   // No design draws them (docs/decisions/0165-suppliers.md).
@@ -601,7 +612,7 @@ export const settings = {
       consumable_code: changed("That item is no longer listed."),
       id: changed("That supplier is gone."),
       not_found: changed("That supplier is gone."),
-      invalid_request: "Check the details.",
+      invalid_request: "Check the name, the GSTIN (15 characters) and the phone (10 digits).",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -661,7 +672,7 @@ export const settings = {
       errors: {
         product: "Choose a product from the list.",
         hair_system: "That spec is already in stock.",
-        invalid_request: "Check the figures.",
+        invalid_request: "Check the size in inches, and grey and density as percentages, 0–100.",
         not_permitted: NOT_PERMITTED,
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
@@ -731,11 +742,13 @@ export const settings = {
       saved: "Saved.",
     },
     /** A refusal, said of the box it names (src/routes/ops/consumables.ts). */
+    /** The cost refused, with the most the API takes. */
+    unitCostUpTo: (most: string) => `Enter whole rupees, up to ${most}.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       name: "That name is taken, or doesn't start with a letter or digit.",
       unit: "Letters only: strip, ml, sachet.",
-      unit_cost: "Outside the allowed range.",
+      unit_cost: "Enter the cost in whole rupees.",
       reorder_kit: "A whole number, or blank.",
       reorder_store: "A whole number, or blank.",
       reorder_central: "A whole number, or blank.",
@@ -788,10 +801,15 @@ export const settings = {
       back: "Edit",
       nothing: "No changes.",
     },
+    /** A refusal of the list with the limits the API gave it. */
+    limits: {
+      items: (most: number) => `Keep 1 to ${String(most)} items.`,
+      label: (longest: number) => `Give each item words, up to ${String(longest)} characters, with no repeats.`,
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
-      items: "Too few or too many items.",
-      label: "Each item needs words, within the limit, with no repeats.",
+      items: "Keep at least one item.",
+      label: "Give each item words, with no repeats.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,

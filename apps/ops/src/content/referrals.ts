@@ -28,7 +28,7 @@ export const referrals = {
      */
     reason: {
       label: { approve: "Reason for approving", reject: "Reason for rejecting" },
-      confirm: { approve: "Approve grant", reject: "Reject grant" },
+      confirm: { approve: "Approve reward", reject: "Reject reward" },
       cancel: "Cancel",
     },
     /** The board draws no empty queue. */
@@ -51,7 +51,7 @@ export const referrals = {
     columns: {
       referrer: "Referrer",
       opens: "Opens",
-      consults: "Consults",
+      consults: "Consultations",
       fits: "Fits",
       granted: "Granted",
       redeemed: "Redeemed",

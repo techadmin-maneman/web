@@ -201,6 +201,10 @@ function InvoiceTable({ invoices }: { invoices: readonly ClientInvoice[] }) {
   );
 }
 
+/** A change refused: past what may be added or taken away, said with what they hold; any other by its code. */
+const creditRefusal = (code: string, held: number): string =>
+  code === "invalid_request" ? creditCopy.tooMany(MOST_VISITS, held) : errorText(creditCopy.errors, { code });
+
 /** Where the form is: being filled, sending, done with the balance it answered, or refused. */
 type Adjusting =
   | { readonly step: "open" }
@@ -318,7 +322,7 @@ function CreditForm({
             </p>
           )}
           {adjusting.step === "failed" && (
-            <Refusal className={styles.error} said={errorText(creditCopy.errors, { code: adjusting.code })} />
+            <Refusal className={styles.error} said={creditRefusal(adjusting.code, credits?.visits ?? 0)} />
           )}
         </form>
       )}

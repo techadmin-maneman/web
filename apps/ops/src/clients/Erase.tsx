@@ -129,7 +129,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
           message={copy.warning}
           lists
           check={copy.checked}
-          action={copy.confirm}
+          action={copy.confirm(name)}
           sending={sending}
           onErase={() => void erase(false)}
           onCancel={close}

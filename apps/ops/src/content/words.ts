@@ -77,7 +77,7 @@ export const words = {
   errors: {
     empty: "Write something, or go back to the code's wording.",
     holes: "Keep every {…} the page fills, and add none.",
-    price: "No prices: they come from the price book.",
+    price: "Take the price out: the site gives none.",
     visits: "No visit counts: what a referral earns is set in the console.",
     placeholder: "No placeholder text.",
     length: "Too long for where it sits.",

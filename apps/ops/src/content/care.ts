@@ -93,7 +93,7 @@ export const care = {
     /** "Mon 5 Oct to Mon 12 Oct" */
     span: (from: string, to: string) => `${from} to ${to}`,
     chats: "Chats",
-    firstReply: "First reply, middle",
+    firstReply: "Median first reply",
     withinTarget: "Answered on time",
     sameDay: "Closed the same day",
     waitingOnUs: "Waiting on us now",
@@ -106,16 +106,16 @@ export const care = {
     remedies: "Remedies given",
     /** "Fit problem · 4" */
     counted: (label: string, count: number) => `${label} · ${String(count)}`,
-    /** "Fit problem · 2 remedies, 3 free visits" */
+    /** "Fit problem · 2 remedies, 3 free service visits" */
     remedied: (label: string, remedies: number, visits: number) =>
-      `${label} · ${String(remedies)} ${remedies === 1 ? "remedy" : "remedies"}, ${String(visits)} free ${visits === 1 ? "visit" : "visits"}`,
+      `${label} · ${String(remedies)} ${remedies === 1 ? "remedy" : "remedies"}, ${String(visits)} free service ${visits === 1 ? "visit" : "visits"}`,
     columns: { person: "Care person" },
     noPeople: "No chats with a Care person yet.",
   },
-  /** Free visits Care give (docs/decisions/0143-remedies.md). */
+  /** Free service visits Care give (docs/decisions/0143-remedies.md). */
   remedy: {
     panel: "Remedies",
-    open: "Give free visits",
+    open: "Give free service visits",
     visits: "Free service visits",
     reason: "Why",
     note: "Note for the team",
@@ -124,9 +124,9 @@ export const care = {
       `Given: ${String(visits)} free service ${visits === 1 ? "visit" : "visits"}, on their account now.`,
     awaiting: "Above your limit, so a manager approves it first.",
     none: "No remedies in the last 30 days.",
-    /** "2 free visits · Fit problem · Mon 21 Sep" */
+    /** "2 free service visits · Fit problem · Mon 21 Sep" */
     line: (visits: number, reason: string, date: string) =>
-      `${String(visits)} free ${visits === 1 ? "visit" : "visits"} · ${reason} · ${date}`,
+      `${String(visits)} free service ${visits === 1 ? "visit" : "visits"} · ${reason} · ${date}`,
     states: { given: "Given", awaiting: "Awaiting approval", declined: "Declined" },
     reasons: {
       fit_problem: "Fit problem",
@@ -293,7 +293,7 @@ export const care = {
   },
   errors: {
     text: "Write something first.",
-    unavailable: "Replies wait for the office number on MSG91.",
+    unavailable: "Replies can't go from the console yet. Reply on the office WhatsApp.",
     not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

@@ -4,6 +4,8 @@
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const partnerCommission = {
+  /** The payout refused, with the most one payment may be. */
+  amountUpTo: (most: string) => `Enter whole rupees, up to ${most}.`,
   title: "Partner commission",
   month: "Month",
   soFar: (month: string) => `${month}, so far`,
@@ -75,7 +77,7 @@ export const partnerCommission = {
   errors: {
     month: "Only a month that has ended.",
     paid_on: "A day from the month's first to today.",
-    amount: "A whole amount, up to the most one payment may be.",
+    amount: "Enter whole rupees.",
     reference: "The payout's reference, in letters and digits.",
     taken: changed("Already recorded for this month."),
     not_found: changed("Not found."),

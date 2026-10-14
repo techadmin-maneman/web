@@ -156,8 +156,8 @@ test.describe("the rules", () => {
     await expect(radius).not.toHaveAttribute("aria-invalid", "true");
   });
 
-  // The refusal named its field and the console dropped it, so every refusal read the same.
-  test("names the box the API refused", async ({ page }) => {
+  // The refusal named its field and the console dropped it, so every refusal read the same; then it named no range.
+  test("names the box the API refused, and what it may hold", async ({ page }) => {
     await open(page, "/settings", {
       "POST /api/settings/no_show_wait_min": fails(400, "invalid_request", ["no_show_wait_min.first_fit"]),
     });
@@ -166,7 +166,7 @@ test.describe("the rules", () => {
     await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
-      "First fit: out of range.",
+      /^First fit: Enter \d+–\d+ minutes\.$/,
     );
   });
 
@@ -257,7 +257,7 @@ test.describe("the rules", () => {
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
 
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
-      "Service visit: out of range.",
+      /^Service visit: Enter \d+–\d+ minutes\.$/,
     );
     const radiusItem = page.getByRole("listitem").filter({ has: page.getByLabel("Check-in radius") });
     await expect(radiusItem.getByLabel("Check-in radius")).toHaveValue("150");
@@ -341,7 +341,7 @@ test.describe("the rules", () => {
     const reward = page.getByRole("group", { name: "Referral reward" });
     await expect(reward.getByLabel("Referrer")).toHaveValue("3");
     await expect(reward.getByLabel("Friend")).toHaveValue("3");
-    await expect(reward.getByLabel("Free visits valid for")).toHaveValue("365");
+    await expect(reward.getByLabel("Free service visits valid for")).toHaveValue("365");
 
     await reward.getByLabel("Referrer").fill("2");
     await reward.getByLabel("Friend").fill("0");

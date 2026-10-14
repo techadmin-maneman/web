@@ -10,9 +10,9 @@ export const supplyPlan = {
   none: "Nothing to approve.",
   transferColumns: ["Item", "From", "To", "For", "Quantity", ""],
   orderColumns: ["Item", "Supplier", "For", "Quantity", ""],
-  /** "Needs 12.5 with 4 safety · can use 3" */
+  /** "Needs 13 (4 buffer) · 3 on hand": the need, rounded up, with the buffer it holds. */
   why: (line: { need: number; safety: number; usable: number }) =>
-    `Needs ${String(line.need)} with ${String(line.safety)} safety · can use ${String(line.usable)}`,
+    `Needs ${String(Math.ceil(line.need))} (${String(Math.ceil(line.safety))} buffer) · ${String(line.usable)} on hand`,
   everyCity: "Every city",
   quantity: (name: string) => `Quantity of ${name}`,
   approve: "Approve",
@@ -42,7 +42,7 @@ export const supplyPlan = {
   accuracy: {
     title: "Accuracy",
     none: "Measured once a forecast's first period has passed.",
-    note: "Off by: each miss over what was used. Bias above nought: the forecast ran high.",
+    note: "Off by: how far the forecast missed what was used. A bias above zero means it ran high.",
     periodColumns: ["Period from", "Expected", "Used", "Off by", "Bias", "Within high case"],
     itemColumns: ["Item", "Expected", "Used", "Off by", "Bias"],
     /** "18%", or a dash where nothing was used */

@@ -150,13 +150,13 @@ describe("an erased client's page", () => {
 });
 
 describe("a deletion decided in the queue", () => {
-  it("says the account is deleted, and what follows", async () => {
+  it("says the client is erased, and what follows", async () => {
     answers.set("GET /api/deletion-requests", () => Response.json({ requests: [REQUEST] }));
     answers.set(`POST /api/deletion-requests/${REQUEST.id}/decision`, () => Response.json({ state: "done" }));
     await show(createElement(DeletionsScreen));
 
     act(() => {
-      buttonNamed("Delete account")?.click();
+      buttonNamed("Erase client")?.click();
     });
     const check = [...page.querySelectorAll("label")].find((label) =>
       label.textContent.includes("confirmed this with the client"),
@@ -165,11 +165,11 @@ describe("a deletion decided in the queue", () => {
       check?.click();
     });
     await act(async () => {
-      buttonNamed("Delete permanently")?.click();
+      buttonNamed(`Erase ${REQUEST.name}`)?.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(page.querySelector('[role="status"]')?.textContent).toBe("Account deleted. The client is told on WhatsApp.");
+    expect(page.querySelector('[role="status"]')?.textContent).toBe("Client erased. They're told on WhatsApp.");
     expect(page.textContent).toContain("No deletion requests.");
     expect(page.textContent).not.toContain("Rohit Malhotra");
   });

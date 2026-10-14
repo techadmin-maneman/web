@@ -183,7 +183,7 @@ export function PartnerForm(props: {
       title={partner === null ? formWords.addTitle : formWords.editTitle(partner.name)}
       steps={steps}
       ready={withinLimits(terms, props.limits)}
-      errors={copy.errors}
+      errors={{ ...copy.errors, commission: copy.commissionUpTo(rupees(props.limits.max_commission)) }}
       onCancel={props.onCancel}
       sendable={lines.length > 0}
       checking={(lines.length > 0 ? lines : [check.nothing]).map((line) => (

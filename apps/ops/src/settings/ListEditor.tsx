@@ -188,7 +188,7 @@ export function ListEditor(props: Props) {
       title={title}
       steps={steps}
       ready={ready}
-      errors={copy.errors}
+      errors={{ ...copy.errors, items: copy.limits.items(most), label: copy.limits.label(longest) }}
       onCancel={null}
       sendable={changes.length > 0}
       above={<p className={form.set}>{setLineOf(list)}</p>}

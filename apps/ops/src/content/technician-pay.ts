@@ -5,6 +5,8 @@ import { fullMonth } from "@maneman/web-kit/dates";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const technicianPay = {
+  /** The rate refused, with the most a visit may pay. */
+  amountUpTo: (most: string) => `Enter whole rupees, up to ${most} a visit.`,
   kinds: {
     consultation: "Consultation",
     one_visit: "Consultation and fit",
@@ -97,7 +99,7 @@ export const technicianPay = {
     in_use: "In use: a technician holds it, or a rate names it.",
     from: "A rate starts today or later, so a month already worked keeps its own.",
     city: "Choose one of our cities.",
-    amount: "A whole amount, up to the most a visit may pay.",
+    amount: "Enter whole rupees.",
     not_found: changed("Already gone."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

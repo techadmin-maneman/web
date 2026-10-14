@@ -36,7 +36,7 @@ export const deletions = {
     /** The 30 days a request is processed within, which run from the day it was made (ADR 0049). */
     processDays: 30,
     requested: (mobile: string, date: string) => `${mobile} · requested ${date}`,
-    delete: "Delete account",
+    delete: "Erase client",
     reject: "Reject",
     /**
      * A queue holds many rows and each button says the same thing, so the
@@ -44,14 +44,14 @@ export const deletions = {
      */
     deleteLabel: (name: string) => `Delete the account of ${name}`,
     rejectLabel: (name: string) => `Reject the request of ${name}`,
-    confirmLabel: (name: string) => `Deleting the account of ${name}`,
+    confirmLabel: (name: string) => `Erasing ${name}`,
     warning: "This erases the client now and tells them on WhatsApp. It can't be undone.",
     /** What the erasure destroys, in the order src/domain/privacy/erasure.ts destroys it. */
     deleted: {
       title: "Deleted",
       items: [
         "Every photo: visits and try-ons, files and records",
-        "Their referral card. Invites they sent show the house card",
+        "Their referral card. Invites they sent show the Mane Man example card",
         "Saved addresses, and any number change in progress",
         "Name, number, email, and the text of any concern. Open ones close",
         "Their sessions. They're signed out at once",
@@ -68,9 +68,9 @@ export const deletions = {
     },
     /** The runbook's first step, "Check the request comes from the number's owner". */
     checked: "I've confirmed this with the client, on their own number.",
-    confirm: "Delete permanently",
-    cancel: "Keep account",
-    deleting: "Deleting",
+    confirm: (name: string) => `Erase ${name}`,
+    cancel: "Keep client",
+    deleting: "Erasing…",
     reason: {
       label: "Reason",
       // The client is sent this reason on WhatsApp, and their app shows it for thirty days.
@@ -80,7 +80,7 @@ export const deletions = {
     rejecting: "Rejecting",
     /** Above the queue once a decision is made. */
     done: {
-      delete: "Account deleted. The client is told on WhatsApp.",
+      delete: "Client erased. They're told on WhatsApp.",
       reject: "Request rejected. The client is told why on WhatsApp.",
     },
     empty: "No deletion requests.",

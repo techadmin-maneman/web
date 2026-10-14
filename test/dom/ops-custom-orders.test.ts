@@ -102,7 +102,7 @@ describe("the client's custom orders", () => {
   it("lists each with its spec, price and where it stands", async () => {
     await show();
     expect(page.textContent).toContain(copy.number(7));
-    expect(page.textContent).toContain("7.5x9 1B, 30% grey, 120%, slight wave");
+    expect(page.textContent).toContain("7.5×9 in, 1B, 30% grey, 120% density, slight wave");
     expect(page.textContent).toContain("Rs. 45,000");
     expect(page.textContent).toContain(copy.statuses.awaiting_payment);
   });

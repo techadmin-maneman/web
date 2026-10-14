@@ -131,7 +131,7 @@ export const dispatch = {
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
     // at_visit: a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
-    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" },
+    badges: { prepaid: "Prepaid", credit: "Free visit", free: "No charge", at_visit: "Pays once fitted" },
     // The board draws no Service row; it names a first fit's hair system, say.
     rows: {
       type: "Type",
@@ -343,7 +343,7 @@ export const dispatch = {
     notTrained: (technician: string) => `${technician} isn't trained to fit.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "That move isn't possible.",
+      invalid_request: "That move isn't possible. Choose another technician or window.",
       not_found: "This visit no longer exists.",
       /** The technician began the visit after the board was read. */
       in_progress: "The technician has started this visit. It can't be moved.",

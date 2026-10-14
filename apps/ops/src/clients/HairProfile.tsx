@@ -2,6 +2,7 @@
 // spec a replacement is ordered to, every version with who recorded it at which visit, and the form ops correct it
 // with. A correction is the whole profile sent as a new version, so the form starts from the latest.
 
+import { errorText } from "@maneman/web-kit/refusal";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -26,7 +27,7 @@ import {
 } from "@maneman/web-kit/hair-profile";
 import { useCallback, useId, useState, type Dispatch, type SetStateAction } from "react";
 import { type ClientHairProfile, type HairProfileVersion, type HairProfileView } from "../api.ts";
-import { clients, dispatch, NOT_PERMITTED } from "../content.ts";
+import { clients, dispatch, NOT_PERMITTED, OFFLINE } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./profile.module.css";
@@ -325,8 +326,8 @@ function CorrectionForm({
       }
       const fields = answer.status === 400 ? refusedFields(answer.fields) : [];
       setRefused(fields);
-      if (answer.code === "not_permitted") setProblem(NOT_PERMITTED);
-      else setProblem(fields.length > 0 ? copy.refused : copy.failed);
+      if (fields.length > 0) setProblem(copy.refused);
+      else setProblem(errorText({ not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: copy.failed }, answer));
     });
 
   const products = productOptions(page.products, page.latest);

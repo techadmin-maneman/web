@@ -25,6 +25,9 @@ export const firstShown = (count: number) => `Showing the first ${String(count)}
 /** A refusal with no words of its own. */
 export const FAILED = "That didn't work. Try again.";
 
+/** Razorpay not answering, wherever a payment, refund or link waits on it. */
+export const RAZORPAY_DOWN = "Razorpay isn't responding. Try again in a minute.";
+
 /** The refusals that say what was acted on had changed or gone since the page opened. */
 const CHANGED = new Set<string>();
 
@@ -76,8 +79,8 @@ export const deleting = {
   open: "Delete",
   label: (name: string) => `Delete ${name}`,
   warning: (name: string) => `Delete ${name}? This can't be undone.`,
-  confirm: "Delete permanently",
-  sending: "Deleting",
+  confirm: "Delete",
+  sending: "Deleting…",
   cancel: "Cancel",
 } as const;
 

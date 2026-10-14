@@ -57,8 +57,8 @@ describe("the client's match to stock", () => {
       in_transit: 2,
     });
     expect(page.textContent).toContain(copy.matched("Mane Man Essential 8x10 1B, 20% grey, 100%"));
-    expect(page.textContent).toContain("1 · Imran Qureshi, Gurgaon");
-    expect(page.textContent).toContain("4 · National warehouse");
+    expect(page.textContent).toContain("1 piece · Imran Qureshi, Gurgaon");
+    expect(page.textContent).toContain("4 pieces · National warehouse");
     expect(page.textContent).toContain(copy.inTransit(2));
   });
 

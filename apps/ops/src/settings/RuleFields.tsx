@@ -7,7 +7,7 @@ import { Button } from "@maneman/ui/Button";
 import { useState, type ReactNode } from "react";
 import { type ChoiceRule, type NumberRule, type OpsSetting } from "../api.ts";
 import { settings } from "../content/settings.ts";
-import { keyLabel, boundsOf, choiceLabel, whole, READ_AS, type Draft } from "./rule-drafts.ts";
+import { keyLabel, boundsOf, choiceLabel, rangeWords, whole, READ_AS, type Draft } from "./rule-drafts.ts";
 import form from "../components/forms.module.css";
 import styles from "./rules.module.css";
 
@@ -32,10 +32,7 @@ function FigureField({
   if (reading !== undefined) unit = fits ? reading.say(Number(text)) : "";
   // A figure outside the bounds is not a change Save can send, so the box says why rather than Save going grey.
   const outside = text.trim() !== "" && !fits;
-  const why =
-    reading === undefined
-      ? copy.outOfBounds(String(bounds.min), `${String(bounds.max)} ${bounds.unit}`)
-      : copy.allowedWords(reading.say(bounds.min), reading.say(bounds.max), reading.range);
+  const why = rangeWords(bounds);
   return (
     <Field label={label} error={outside ? why : null} className={form.field}>
       {(control) => (

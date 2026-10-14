@@ -1,6 +1,6 @@
 // A client's page, and finding one (board B): their visits, pieces, consents, payments, photos and profile.
 
-import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN, UNCONFIRMED } from "./common.ts";
 
 export const clients = {
   title: "Clients",
@@ -286,7 +286,7 @@ export const clients = {
         code_not_applicable: "That code doesn't apply to this visit.",
         invalid_request: "Already made good, or not owed. Close and look again.",
         code_off: "That code is switched off.",
-        terms_changed: "Their credit was just used. Try again.",
+        terms_changed: "Their free service visit was just used. Try again.",
         unavailable: "Razorpay couldn't create the link. Try again in a minute.",
         not_found: "This client can't be booked.",
         offline: OFFLINE,
@@ -340,7 +340,7 @@ export const clients = {
         not_permitted: NOT_PERMITTED,
         not_changeable: "Started, passed or already cancelled.",
         invalid_request: "Give a reason.",
-        unavailable: "That didn't work. Try again in a minute.",
+        unavailable: RAZORPAY_DOWN,
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
@@ -490,12 +490,15 @@ export const clients = {
       { reason: "correction", label: "Correction" },
       { reason: "goodwill", label: "Goodwill" },
     ],
-    save: "Update credits",
+    save: "Save free visits",
+    /** The change refused, with what they hold: no more can be taken away. */
+    tooMany: (most: number, held: number) =>
+      `Enter -${String(most)} to ${String(most)}. They hold ${String(held)}, so remove at most ${String(held)}.`,
     saving: "Saving",
     saved: (count: number) => `Done. They now have ${String(count)} ${count === 1 ? "visit" : "visits"}.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "-12 to 12, and no more than they hold.",
+      invalid_request: "Enter -12 to 12, not 0.",
       not_found: "This client no longer exists.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -723,9 +726,9 @@ export const clients = {
     warning: "This erases them now. It can't be undone.",
     /** The runbook's first step, "Check the request comes from the number's owner". */
     checked: "I've confirmed this with them, on their own number.",
-    confirm: "Erase now",
+    confirm: (name: string) => `Erase ${name}`,
     cancel: "Cancel",
-    erasing: "Erasing",
+    erasing: "Erasing…",
     /** Why nothing was erased, and what ops may do about it. */
     owed: {
       visit_booked: "They have a visit booked. Cancel it on Visits, which refunds them, then erase.",
@@ -740,7 +743,7 @@ export const clients = {
     },
     anyway: "Erase anyway",
     done: {
-      title: "Erased",
+      title: "Client erased",
       body: "Tell them in the chat they asked in.",
       back: "Find a client",
     },

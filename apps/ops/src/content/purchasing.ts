@@ -186,7 +186,7 @@ export const purchasing = {
     photo_invalid_file: "That photo couldn't be read. Try another.",
     busy: "Photos are paused. Try again later.",
     not_found: changed("That order is gone."),
-    invalid_request: "Check the lines.",
+    invalid_request: "Each line needs an item, a quantity of 1 or more and a price.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

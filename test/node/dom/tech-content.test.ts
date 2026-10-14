@@ -34,11 +34,12 @@ describe("the technician app's content", () => {
     expect(DESIGN).toContain(today.empty.label);
   });
 
-  it("names the badges as the design does, and carries no amount", () => {
+  it("names the badges as the design does, in the glossary's words, and carries no amount", () => {
+    // The design's Credit and Free read as what they are: a free service visit, and a visit with nothing to charge.
+    expect(badges).toMatchObject({ prepaid: "Prepaid", credit: "Free visit", free: "No charge" });
+    expect(DESIGN).toContain(badges.prepaid);
     // The fourth, a consultation and fit in one visit paid for once fitted, is one no board draws (ADR 0105).
-    const { at_visit: undrawn, ...drawn } = badges;
-    for (const badge of Object.values(drawn)) expect(DESIGN).toContain(badge);
-    expect(DESIGN).not.toContain(undrawn);
+    expect(DESIGN).not.toContain(badges.at_visit);
     // "No money anywhere in the technician app": a Prepaid or Credit badge only.
     expect(sources.filter((path) => readFileSync(path, "utf8").includes("@maneman/web-kit/money"))).toEqual([]);
   });

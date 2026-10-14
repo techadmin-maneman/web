@@ -29,7 +29,7 @@ export const targets = {
   errors: {
     month: "Choose a month from the list.",
     city: "Choose a city from the list.",
-    target: "That is more than this measure takes.",
+    target: "Too high for this measure: a percentage goes up to 100, a count or an amount to 1,00,00,000.",
     invalid_request: "Type a whole number.",
     not_found: changed("Already taken off."),
     not_permitted: NOT_PERMITTED,

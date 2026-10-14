@@ -188,7 +188,11 @@ export function PriceForm(props: {
       }
       steps={steps}
       ready={ready}
-      errors={copy.errors}
+      errors={{
+        ...copy.errors,
+        amount_ex_gst: copy.limits.amount(rupees(props.maxAmount)),
+        gst_percent: copy.limits.gst(props.maxGst),
+      }}
       onCancel={props.onCancel}
       checking={<PriceCheck target={target} correcting={correcting} was={was} change={change} sameDay={sameDay} />}
     >

@@ -180,7 +180,7 @@ const stopped: Readonly<Record<string, string>> = {
   technician: "This job is someone else’s now.",
   time: "Ops moved this job to another time.",
   status: "This job was cancelled while the phone was offline.",
-  out_of_order: "A step arrived out of order.",
+  out_of_order: "Steps arrived out of order. Open the job again.",
   not_today: "This job is on another day. Arrive and start it on the day.",
   too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
   already_started: "This job was started, so it can’t close as a no-show.",
@@ -193,10 +193,10 @@ const stopped: Readonly<Record<string, string>> = {
   old_piece: "The label of the piece that came off wasn’t accepted.",
   // A one visit's product, no longer offered when the step reached us (ADR 0105).
   product: "That product isn’t offered that day.",
-  done: "A checklist item wasn’t recognised.",
+  done: "This job’s checklist changed. Open the job again.",
   reason: "That reason wasn’t accepted.",
-  invalid_request: "We couldn’t record this.",
-  unknown: "We couldn’t record this.",
+  invalid_request: "We couldn’t record this. Tap Retry, or call ops.",
+  unknown: "We couldn’t record this. Tap Retry, or call ops.",
 } as const;
 
 /**
@@ -589,8 +589,8 @@ export const closeOut = {
 /** The badge, and nothing else about money, anywhere in this app. */
 export const badges = {
   prepaid: "Prepaid",
-  credit: "Credit",
-  free: "Free",
+  credit: "Free visit",
+  free: "No charge",
   // No board draws a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
   at_visit: "Pays once fitted",
 } as const;

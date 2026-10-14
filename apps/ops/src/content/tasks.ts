@@ -2,7 +2,7 @@
 
 import type { components } from "../api-schema.ts";
 import type { LinkState } from "../tasks/payment-link.ts";
-import { changed, FAILED, NOT_PERMITTED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN } from "./common.ts";
 import { DEPARTMENT_NAMES } from "./shell.ts";
 
 /** A task group as the API names it, from the generated schema, which the Worker-typed tests can read too. */
@@ -251,6 +251,7 @@ export const tasks = {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already handled."),
       invalid_request: "That person hasn't used the console recently.",
+      offline: OFFLINE,
       unknown: FAILED,
     },
   },
@@ -270,6 +271,7 @@ export const tasks = {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already booked or closed."),
       invalid_request: "Give a reason.",
+      offline: OFFLINE,
       unknown: FAILED,
     },
   },
@@ -292,7 +294,8 @@ export const tasks = {
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("That link no longer exists."),
-      unavailable: "Razorpay isn't responding. Try again in a minute.",
+      unavailable: RAZORPAY_DOWN,
+      offline: OFFLINE,
       unknown: FAILED,
     },
   },
@@ -318,15 +321,15 @@ export const needsAHand = {
     crm_contact_erasure: "CRM contact erasure incomplete",
     cancel_refund_failed: "Refund failed",
     no_show_refund_failed: "Refund failed",
-    no_show_credit_not_back: "Visit credit not returned",
+    no_show_credit_not_back: "Free service visit not returned",
     payment_link: "Payment link refused",
     payment_link_failed: "Payment link failed",
     invoice_draft: "Invoice still a draft",
     invoice_unpriced: "Visit has no price to invoice",
     invoice_refused: "Books refused an invoice",
     invoice_failed: "Invoice didn't reach Books",
-    books_unapplied: "Payment has nothing to apply to",
-    razorpay_refund_unheard: "Refund arrived before its payment",
+    books_unapplied: "Payment not matched to an invoice",
+    razorpay_refund_unheard: "Refund seen before its payment",
     low_stock: "Stock low",
     technician_code_refused: "Technician login code refused",
     whatsapp_bridge: "WhatsApp disconnected",
@@ -348,6 +351,7 @@ export const needsAHand = {
   errors: {
     not_permitted: NOT_PERMITTED,
     not_found: changed("Already closed."),
+    offline: OFFLINE,
     unknown: FAILED,
   },
 } as const;

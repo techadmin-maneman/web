@@ -4,6 +4,8 @@
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const partners = {
+  /** The commission refused, with the most a fit may earn. */
+  commissionUpTo: (most: string) => `Enter whole rupees, up to ${most} a fit.`,
   title: "Partners",
   none: "No partners yet.",
   add: "Add partner",
@@ -13,7 +15,7 @@ export const partners = {
     friend: "Friend gets",
     commission: "Commission",
     opens: "Opens",
-    referred: "Came",
+    referred: "Booked",
     fitted: "Fitted",
     earned: "Earned",
     owed: "Owed",
@@ -38,7 +40,7 @@ export const partners = {
     addTitle: "New partner",
     editTitle: (name: string) => `Edit ${name}`,
     name: "Partner",
-    friendVisits: "Free visits for the friend",
+    friendVisits: "Free service visits for the friend",
     validDays: "Days to use them",
     commission: "Commission per fit, Rs.",
     discountCode: "Discount code, if any",
@@ -71,7 +73,7 @@ export const partners = {
     name: "Up to 60 letters or digits.",
     friend_visits: "Between 0 and 12.",
     valid_days: "Between 30 and 1,095 days.",
-    commission: "A whole amount, within the most a fit may earn.",
+    commission: "Enter whole rupees.",
     discount_code: "One of Finance's codes, switched on, that covers a first fit.",
     taken: "A partner has that name.",
     not_found: changed("Not found."),

@@ -71,7 +71,7 @@ function ConfirmDelete({
       />
       <div className={styles.actions}>
         <Button variant="destructive" size="small" disabled={sending || !checked} onClick={onDelete}>
-          {sending ? copy.deleting : copy.confirm}
+          {sending ? copy.deleting : copy.confirm(request.name)}
         </Button>
         <Button variant="outline" size="small" disabled={sending} onClick={onCancel}>
           {copy.cancel}
