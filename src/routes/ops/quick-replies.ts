@@ -1,6 +1,7 @@
 // Saved answers for the Care inbox, behind Access (Customer Care; docs/decisions/0141-quick-replies.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -19,17 +20,16 @@ const QuickReplySchema = z
   .strict()
   .openapi("QuickReply");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/quick-replies",
   summary: "The saved answers on the list, by title",
   responses: {
     200: { description: "The answers", ...json(z.object({ replies: z.array(QuickReplySchema) }).strict()) },
-    403: errorResponse("access_required"),
   },
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/quick-replies",
   summary: "Add a saved answer to the list",
@@ -47,14 +47,13 @@ const addRoute = createRoute({
   responses: { 200: { description: "Added", ...json(QuickReplySchema) }, 403: errorResponse("access_required") },
 });
 
-const retireRoute = createRoute({
+const retireRoute = opsRoute({
   method: "post",
   path: "/api/quick-replies/{id}/retire",
   summary: "Take a saved answer off the list",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: { description: "Taken off", ...json(z.object({ ok: z.literal(true) }).strict()) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such answer on the list"),
   },
 });

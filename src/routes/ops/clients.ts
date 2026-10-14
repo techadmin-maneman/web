@@ -10,7 +10,8 @@
 // the record answers only what is kept: when they were erased, their visits
 // and their money. Every other route here does not find them: their photographs, address and details are gone (ADR 0049).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
 import { CLIENTS_PER_PAGE, listClients, NEXT_VISIT_COLUMNS } from "../../domain/clients/client-list.ts";
 import { fittedSql } from "../../domain/clients/fitted.ts";
@@ -25,7 +26,7 @@ import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { unknownClient } from "../schemas/clients.ts";
 
 const UnderWay = z.boolean().openapi({ description: "Whether a visit of theirs has begun and is not yet closed." });
-const searchRoute = createRoute({
+const searchRoute = opsRoute({
   method: "post",
   path: "/api/clients/search",
   summary: "Find a client by mobile number. A POST, so the number stays out of the URL",
@@ -56,7 +57,7 @@ export const CLIENTS_FOUND = 20;
 const NAME_MIN = 2;
 const DIGITS_MIN = 4;
 
-const findRoute = createRoute({
+const findRoute = opsRoute({
   method: "post",
   path: "/api/clients/find",
   summary:
@@ -109,7 +110,7 @@ const findRoute = createRoute({
   },
 });
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/clients",
   summary: "Every client in the caller's cities, the soonest next visit first, then those with none, newest first",

@@ -2,7 +2,8 @@
 //
 // The Tasks board's "Payment owed" row names the link by its own ID. The call is audited as every ops call is.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { resendLink } from "../../domain/money/payment-links.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -21,7 +22,7 @@ const ResentSchema = z
   .strict()
   .openapi("PaymentLinkResent");
 
-const resendRoute = createRoute({
+const resendRoute = opsRoute({
   method: "post",
   path: "/api/payment-links/{id}/resend",
   summary: "Text the client their payment link again",

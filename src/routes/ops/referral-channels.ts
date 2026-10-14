@@ -1,6 +1,7 @@
 // Partners who send us clients on their own code, behind Access (Growth; docs/decisions/0123-partner-referral-channels.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -74,14 +75,14 @@ const invalid = errorResponse(
   "invalid_request: fields names name, friend_visits, valid_days, commission or discount_code (none switched on)",
 );
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/referral-channels",
   summary: "Every partner, with what has come through each",
   responses: { 200: ok, 403: errorResponse("access_required") },
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/referral-channels",
   summary: "Add a partner: its code is made for it",
@@ -89,12 +90,11 @@ const addRoute = createRoute({
   responses: {
     200: ok,
     400: invalid,
-    403: errorResponse("access_required"),
     409: errorResponse("taken: a partner has that name"),
   },
 });
 
-const changeRoute = createRoute({
+const changeRoute = opsRoute({
   method: "patch",
   path: "/api/referral-channels/{id}",
   summary: "Change a partner's name or terms; a friend fitted from now on earns the new terms",
@@ -102,13 +102,12 @@ const changeRoute = createRoute({
   responses: {
     200: ok,
     400: invalid,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found"),
     409: errorResponse("taken: another partner has that name"),
   },
 });
 
-const pauseRoute = createRoute({
+const pauseRoute = opsRoute({
   method: "post",
   path: "/api/referral-channels/{id}/pause",
   summary: "Pause a partner, so nobody new comes through its code, or take the pause off",

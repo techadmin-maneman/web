@@ -2,7 +2,8 @@
 //
 // Read with Operations VIEW, changed with MANAGE. Each write answers the whole of GET's answer.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { addEvent, removeEvent, upcomingEvents } from "../../domain/purchasing/demand-events.ts";
 import { written } from "../../http/audit.ts";
@@ -26,14 +27,14 @@ const EVENTS = {
 };
 const ACCESS = errorResponse("access_required");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/demand-events",
   summary: "The events still to end, and the cities one may be set in",
   responses: { 200: EVENTS, 403: ACCESS },
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/demand-events",
   summary: "An event added to the calendar",
@@ -61,7 +62,7 @@ const addRoute = createRoute({
   },
 });
 
-const removeRoute = createRoute({
+const removeRoute = opsRoute({
   method: "post",
   path: "/api/demand-events/{id}/remove",
   summary: "An event taken off the calendar",

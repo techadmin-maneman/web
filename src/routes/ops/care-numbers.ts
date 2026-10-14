@@ -1,8 +1,8 @@
 // The Care numbers, behind Access (Customer Care; docs/decisions/0144-care-numbers.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
-import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { careNumbers } from "../../domain/care/care-numbers.ts";
@@ -35,14 +35,13 @@ const NumbersSchema = z
   .strict()
   .openapi("CareNumbers");
 
-const numbersRoute = createRoute({
+const numbersRoute = opsRoute({
   method: "get",
   path: "/api/care-numbers",
   summary: "Whether the same-day promise holds: reply times, same-day closes, the backlog, reasons and remedies",
   request: { query: z.object({ days: z.enum(PERIODS).default("7") }) },
   responses: {
     200: { description: "The numbers", ...json(NumbersSchema) },
-    403: errorResponse("access_required"),
   },
 });
 

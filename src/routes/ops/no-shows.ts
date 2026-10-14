@@ -12,7 +12,8 @@
 // ruling keeps what it gave. Either way the client is told on WhatsApp, with
 // their consent to messages about visits.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { json } from "../../http/openapi.ts";
 import { capped, More } from "../../http/paging.ts";
 import { afterRuling } from "../../domain/no-shows/after-a-ruling.ts";
@@ -114,7 +115,7 @@ const DecisionRequestSchema = z
   .strict()
   .openapi("NoShowDecisionRequest");
 
-const noShowsRoute = createRoute({
+const noShowsRoute = opsRoute({
   method: "get",
   path: "/api/no-shows",
   summary: "No-show cases in the caller's cities: undecided first, each with its three facts",
@@ -122,7 +123,7 @@ const noShowsRoute = createRoute({
   responses: { 200: { description: "The cases", ...json(NoShowsSchema) }, 403: errorResponse("access_required") },
 });
 
-const decisionRoute = createRoute({
+const decisionRoute = opsRoute({
   method: "post",
   path: "/api/no-shows/{id}/decision",
   summary: "Charge or waive a no-show, from the evidence",

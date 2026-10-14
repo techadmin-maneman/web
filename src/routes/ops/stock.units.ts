@@ -2,7 +2,8 @@
 //
 // The units keep to the caller's cities, as the place does; a piece that has left the stock, by the last place it was.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { auditStatement } from "../../domain/platform/audit.ts";
 import { isPlaceWithin, placesWithin } from "../../domain/inventory/stock-places.ts";
@@ -52,7 +53,7 @@ const REFUSED = errorResponse(
   "invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities",
 );
 
-const unitsRoute = createRoute({
+const unitsRoute = opsRoute({
   method: "get",
   path: "/api/stock/units",
   summary: "The units a place holds of a hair system, and how many pieces it holds unlabelled",
@@ -60,7 +61,7 @@ const unitsRoute = createRoute({
   responses: { 200: UNITS, 400: REFUSED, 403: errorResponse("access_required") },
 });
 
-const labelRoute = createRoute({
+const labelRoute = opsRoute({
   method: "post",
   path: "/api/stock/units",
   summary: "Labels for pieces a place held before labels, soonest to expire first",
@@ -82,7 +83,7 @@ const labelRoute = createRoute({
   responses: { 200: UNITS, 400: REFUSED, 403: errorResponse("access_required") },
 });
 
-const lotLabelRoute = createRoute({
+const lotLabelRoute = opsRoute({
   method: "post",
   path: "/api/stock/lots/{id}/label",
   summary: "A lot's label, for its boxes, made the first time it is asked for",
@@ -97,7 +98,6 @@ const lotLabelRoute = createRoute({
           .openapi("StockLotLabel"),
       ),
     },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such lot"),
   },
 });
@@ -130,14 +130,13 @@ const UnitFoundSchema = z
   .strict()
   .openapi("StockUnitFound");
 
-const unitRoute = createRoute({
+const unitRoute = opsRoute({
   method: "get",
   path: "/api/stock/units/{code}",
   summary: "The piece a label names: its stock code and lot, where it is, and its history",
   request: { params: z.object({ code: z.string().min(1).max(32) }) },
   responses: {
     200: { description: "The piece", ...json(UnitFoundSchema) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no piece has that label, or none in the caller's cities"),
   },
 });

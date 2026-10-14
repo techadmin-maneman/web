@@ -146,6 +146,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -195,6 +204,15 @@ export interface paths {
                 };
                 /** @description invalid_request: not an Indian mobile number */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -260,6 +278,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -298,6 +325,15 @@ export interface paths {
                 };
                 /** @description invalid_request: the ID is not one */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -352,6 +388,15 @@ export interface paths {
                         "application/json": components["schemas"]["ClientPhotos"];
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
                 404: {
                     headers: {
@@ -399,6 +444,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["PhotoView"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
@@ -457,6 +511,15 @@ export interface paths {
                         "image/png": string;
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description not_found: no such photograph of this client's */
                 404: {
                     headers: {
@@ -511,6 +574,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ClientConsents"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description not_found: no such client, or the client has been erased or is outside the caller's cities */
@@ -575,7 +647,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -634,7 +706,7 @@ export interface paths {
                         "application/json": components["schemas"]["OpsAvailability"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -712,7 +784,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -809,7 +881,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -888,7 +960,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -979,7 +1051,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1057,7 +1129,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1144,7 +1216,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1276,7 +1348,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientHairProfile"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1394,7 +1466,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientStockMatch"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2759,7 +2831,7 @@ export interface paths {
                         "application/json": components["schemas"]["StockUsage"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3012,7 +3084,7 @@ export interface paths {
                         "application/json": components["schemas"]["FailureRates"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3057,7 +3129,7 @@ export interface paths {
                         "application/json": components["schemas"]["ExpiryRisk"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3202,6 +3274,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3251,6 +3332,15 @@ export interface paths {
                 };
                 /** @description invalid_request: a rejection needs a reason */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3326,6 +3416,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3375,6 +3474,15 @@ export interface paths {
                 };
                 /** @description invalid_request: a rejection needs a reason */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3462,6 +3570,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3511,6 +3628,15 @@ export interface paths {
                 };
                 /** @description invalid_request: a decision needs a reason */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3644,7 +3770,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3770,7 +3896,7 @@ export interface paths {
                         "application/json": components["schemas"]["ConversationThread"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -3966,7 +4092,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4013,7 +4139,7 @@ export interface paths {
                         "application/json": components["schemas"]["ConversationThread"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4067,7 +4193,7 @@ export interface paths {
                         "application/json": components["schemas"]["CareTeam"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4129,7 +4255,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4260,7 +4386,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4382,7 +4508,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4442,7 +4568,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4563,7 +4689,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4635,7 +4761,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4707,7 +4833,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4770,7 +4896,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4855,7 +4981,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4907,7 +5033,7 @@ export interface paths {
                         "application/json": components["schemas"]["SpendList"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -4951,7 +5077,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5001,7 +5127,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5053,7 +5179,7 @@ export interface paths {
                         "application/json": components["schemas"]["ProductCosts"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5088,7 +5214,7 @@ export interface paths {
                         "application/json": components["schemas"]["ProductCosts"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5151,7 +5277,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5195,7 +5321,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5244,7 +5370,7 @@ export interface paths {
                         "application/json": components["schemas"]["Targets"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5315,7 +5441,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5380,7 +5506,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5434,7 +5560,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5486,7 +5612,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5545,7 +5671,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5599,7 +5725,7 @@ export interface paths {
                         "application/json": components["schemas"]["CareNumbers"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5688,7 +5814,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5761,7 +5887,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5878,7 +6004,7 @@ export interface paths {
                         "application/json": components["schemas"]["Words"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5922,7 +6048,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -5976,7 +6102,7 @@ export interface paths {
                         "application/json": components["schemas"]["WordHistory"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6032,7 +6158,7 @@ export interface paths {
                         "application/json": components["schemas"]["WordsPublished"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6093,6 +6219,15 @@ export interface paths {
                         };
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -6138,6 +6273,15 @@ export interface paths {
                             /** @enum {string} */
                             state: "resolved";
                         };
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description not_found: no open grievance by that ID in the caller's cities */
@@ -6211,6 +6355,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -6263,6 +6416,15 @@ export interface paths {
                             /** @description Our cities the caller may add a pincode in: those their Growth MANAGE reaches. */
                             cities: string[];
                         };
+                    };
+                };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
             };
@@ -6414,6 +6576,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -6453,7 +6624,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchBoard"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6498,7 +6669,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchBoardVersion"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6546,7 +6717,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchRoom"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6603,7 +6774,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchDay"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6652,7 +6823,7 @@ export interface paths {
                         "image/svg+xml": string;
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6730,7 +6901,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6793,7 +6964,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6860,7 +7031,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6936,7 +7107,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7004,7 +7175,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7176,7 +7347,7 @@ export interface paths {
                         "application/json": components["schemas"]["ClientPieces"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7230,7 +7401,7 @@ export interface paths {
                         "application/json": components["schemas"]["Technicians"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7328,7 +7499,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianStandingLeave"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7383,7 +7554,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7442,7 +7613,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7502,7 +7673,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7561,7 +7732,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7615,7 +7786,7 @@ export interface paths {
                         "application/json": components["schemas"]["NoShowChargePreview"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7673,7 +7844,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -7722,7 +7893,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8207,7 +8378,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8269,7 +8440,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8689,7 +8860,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8790,7 +8961,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8850,7 +9021,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8923,7 +9094,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -8984,7 +9155,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianPay"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9120,7 +9291,7 @@ export interface paths {
                         "application/json": components["schemas"]["TechnicianPay"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9174,7 +9345,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9236,7 +9407,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9294,7 +9465,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9340,7 +9511,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9400,7 +9571,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9469,7 +9640,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9525,7 +9696,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9574,7 +9745,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9693,7 +9864,7 @@ export interface paths {
                         "application/json": components["schemas"]["Cities"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9739,7 +9910,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9814,7 +9985,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9875,7 +10046,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -9940,7 +10111,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10007,7 +10178,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10065,7 +10236,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10133,7 +10304,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10188,7 +10359,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10239,7 +10410,7 @@ export interface paths {
                         "application/json": components["schemas"]["SlotTimes"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10286,7 +10457,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10382,7 +10553,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10441,7 +10612,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10501,7 +10672,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10597,7 +10768,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10676,7 +10847,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10755,7 +10926,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10834,7 +11005,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10912,7 +11083,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -10991,7 +11162,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11066,7 +11237,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11231,7 +11402,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11300,7 +11471,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11356,7 +11527,7 @@ export interface paths {
                         "application/json": components["schemas"]["Consumables"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11412,7 +11583,7 @@ export interface paths {
                         "application/json": components["schemas"]["Consumables"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11488,7 +11659,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11548,7 +11719,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -11930,7 +12101,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -12234,7 +12405,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -12308,7 +12479,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -12369,7 +12540,7 @@ export interface paths {
                         "application/json": components["schemas"]["StockDemand"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -12516,7 +12687,7 @@ export interface paths {
                         "application/json": components["schemas"]["StockUnitFound"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -12574,7 +12745,7 @@ export interface paths {
                         "application/json": components["schemas"]["StockLotLabel"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -13320,7 +13491,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -13376,7 +13547,7 @@ export interface paths {
                         "application/json": components["schemas"]["PurchaseOrders"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -13852,7 +14023,7 @@ export interface paths {
                         "application/json": components["schemas"]["StockPhotoStored"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -13916,7 +14087,7 @@ export interface paths {
                         "image/png": string;
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -13970,7 +14141,7 @@ export interface paths {
                         "application/json": components["schemas"]["SupplierScorecard"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -14015,7 +14186,7 @@ export interface paths {
                         "application/json": components["schemas"]["Storage"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -14060,6 +14231,15 @@ export interface paths {
                         "application/json": components["schemas"]["Whoami"];
                     };
                 };
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         put?: never;
@@ -14098,7 +14278,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -14206,7 +14386,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -14260,7 +14440,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -14323,7 +14503,7 @@ export interface paths {
                         "application/json": components["schemas"]["VisitDiscountCode"];
                     };
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -14396,7 +14576,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description access_required */
+                /** @description access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token */
                 403: {
                     headers: {
                         [name: string]: unknown;

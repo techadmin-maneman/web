@@ -1,7 +1,8 @@
 // A client's photographs in the console (./clients.ts): which exist, by visit; opening them, which is logged; and one
 // photograph, served only within a logged opening (docs/decisions/0031-access-and-audit.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { PHOTO_VIEW_MINUTES, earlierViews, logPhotoView, viewInForce } from "../../domain/field/photo-views.ts";
 import { ANGLES, PHASES } from "../../domain/field/visit-photos.ts";
@@ -66,7 +67,7 @@ const photoOf = (row: PhotoListRow) => ({
   taken_at: row.taken_at,
 });
 
-const photosRoute = createRoute({
+const photosRoute = opsRoute({
   method: "get",
   path: "/api/clients/{id}/photos",
   summary: "Which photographs the client has, by visit, newest first. No image is served here",
@@ -74,7 +75,7 @@ const photosRoute = createRoute({
   responses: { 200: { description: "Visits that have photographs", ...json(ClientPhotosSchema) }, 404: unknownClient },
 });
 
-const viewRoute = createRoute({
+const viewRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/photos/view",
   summary: "Open the client's photographs: one audit entry, written before any image is served",
@@ -99,7 +100,7 @@ const viewRoute = createRoute({
   },
 });
 
-const photoRoute = createRoute({
+const photoRoute = opsRoute({
   method: "get",
   path: "/api/clients/{id}/photos/{photo_id}",
   summary: `One of the client's photographs, within an opening logged in the last ${String(PHOTO_VIEW_MINUTES)} minutes; asked for outside one, it logs one first`,

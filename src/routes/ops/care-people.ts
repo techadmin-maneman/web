@@ -1,6 +1,7 @@
 // Each client's Care person, behind Access (Customer Care; docs/decisions/0131-care-people.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -28,7 +29,7 @@ const MemberSchema = z
   .strict()
   .openapi("CareMember");
 
-const teamRoute = createRoute({
+const teamRoute = opsRoute({
   method: "get",
   path: "/api/care-team",
   summary: "The Care team, the fewest clients first, with each one's days off and who covers them today",
@@ -47,11 +48,10 @@ const teamRoute = createRoute({
           .openapi("CareTeam"),
       ),
     },
-    403: errorResponse("access_required"),
   },
 });
 
-const moveRoute = createRoute({
+const moveRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/care-person",
   summary: "Move a client to another member of the Care team",
@@ -68,7 +68,6 @@ const moveRoute = createRoute({
       ...json(z.object({ care_person: z.string() }).strict().openapi("CarePerson")),
     },
     400: errorResponse("invalid_request: fields names email when it is not one of the Care team"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client, or their record is erased"),
   },
 });

@@ -9,7 +9,8 @@
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The board's
 // disputed charge is GET /api/no-shows/disputes, since a dispute belongs to no day.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { dayMoney } from "../../domain/money/day-money.ts";
 import { errorResponse } from "../../http/errors.ts";
@@ -64,7 +65,7 @@ const DayMoneySchema = z
   .strict()
   .openapi("OpsDayMoney", { description: "Derived at read time from the payments themselves; no total is kept." });
 
-const dayRoute = createRoute({
+const dayRoute = opsRoute({
   method: "get",
   path: "/api/payments",
   summary: "A day's money in the caller's cities: what was collected, what went back, and each charge kept or ruled on",
@@ -76,7 +77,6 @@ const dayRoute = createRoute({
   responses: {
     200: { description: "The day", ...json(DayMoneySchema) },
     400: errorResponse("invalid_request"),
-    403: errorResponse("access_required"),
   },
 });
 

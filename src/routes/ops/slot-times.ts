@@ -3,7 +3,8 @@
 // A change is kept for good under the member of staff who made it, audited in the same batch (ADR 0031). Which
 // half-slots each window has stays in code; the windows are read from the times.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS, UNITS_PER_DAY } from "../../config/scheduling.ts";
 import { earliestChange, loadSlotSchedule, setSlotTimes } from "../../domain/booking/slot-times.ts";
 import { actorOf } from "../../http/audit.ts";
@@ -66,17 +67,16 @@ const SlotTimesSchema = z
   .strict()
   .openapi("SlotTimes");
 
-const slotTimesRoute = createRoute({
+const slotTimesRoute = opsRoute({
   method: "get",
   path: "/api/slot-times",
   summary: "The day's half-slot times in force, every change set, and the earliest a change may apply from",
   responses: {
     200: { description: "The times", ...json(SlotTimesSchema) },
-    403: errorResponse("access_required"),
   },
 });
 
-const setSlotTimesRoute = createRoute({
+const setSlotTimesRoute = opsRoute({
   method: "post",
   path: "/api/slot-times",
   summary: "A change of the day's half-slot times, from a day nothing is booked or bookable on",
@@ -98,7 +98,6 @@ const setSlotTimesRoute = createRoute({
         "half_slot_too_short (under 45 minutes, the last one to the day's end included) or outside_the_day " +
         "(06:00 to 22:00)",
     ),
-    403: errorResponse("access_required"),
     409: errorResponse("slot_times_too_soon: the day is before the earliest a change may apply from, which GET says"),
   },
 });

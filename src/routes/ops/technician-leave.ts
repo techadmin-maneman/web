@@ -1,7 +1,8 @@
 // A technician's leave (./field.ts): what is still to end, each with the jobs booked on it; leave recorded, which
 // the board and booking both refuse; and leave taken back.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { json } from "../../http/openapi.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { cancelLeave, LEAVE_MAX_DAYS, recordLeave, standingLeave } from "../../domain/dispatch/leave.ts";
@@ -61,19 +62,18 @@ const StandingLeaveSchema = z
   .strict()
   .openapi("TechnicianStandingLeave");
 
-const standingLeaveRoute = createRoute({
+const standingLeaveRoute = opsRoute({
   method: "get",
   path: "/api/technicians/{id}/leave",
   summary: "A technician's leave that has not ended, each with the jobs still booked on its days",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: { description: "The leave", ...json(StandingLeaveSchema) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such technician, or they are outside the caller's cities"),
   },
 });
 
-const leaveRoute = createRoute({
+const leaveRoute = opsRoute({
   method: "post",
   path: "/api/technicians/{id}/leave",
   summary: "Record leave. Those days are then refused to booking and to the dispatch board alike",
@@ -81,19 +81,17 @@ const leaveRoute = createRoute({
   responses: {
     200: { description: "Recorded", ...json(LeaveRecordedSchema) },
     400: errorResponse(`invalid_request: to is before from, or more than ${String(LEAVE_MAX_DAYS)} days ahead`),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such active technician in the caller's cities"),
   },
 });
 
-const cancelLeaveRoute = createRoute({
+const cancelLeaveRoute = opsRoute({
   method: "post",
   path: "/api/technicians/{id}/leave/{leave}/cancel",
   summary: "Take leave back, so those days can be worked again",
   request: { params: z.object({ id: z.uuid(), leave: z.uuid() }) },
   responses: {
     200: { description: "Cancelled", ...json(z.object({ cancelled: z.boolean() }).strict()) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such leave of that technician's, or they are not in the caller's cities"),
   },
 });

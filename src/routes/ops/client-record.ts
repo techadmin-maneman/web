@@ -1,7 +1,8 @@
 // A client's record in the console (./clients.ts): who they are, their address, visits, money, history and the invite
 // they came with. Of an erased client, only what is kept: when they were erased, their visits and their money.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { currentAddress } from "../../domain/clients/profile.ts";
 import { AUTO_REFUND_REASONS, autoRefundsOf, type AutoRefund } from "../../domain/money/auto-refunds.ts";
@@ -266,7 +267,7 @@ async function erasedRecord(db: D1Database, person: { id: string; erasedAt: stri
   };
 }
 
-const recordRoute = createRoute({
+const recordRoute = opsRoute({
   method: "get",
   path: "/api/clients/{id}",
   summary:

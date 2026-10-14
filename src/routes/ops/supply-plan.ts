@@ -2,7 +2,8 @@
 //
 // Read with Operations VIEW, decided and drafted with MANAGE. Each write answers the whole of GET's answer.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { draftPlan } from "../../domain/purchasing/supply-plan.ts";
@@ -46,21 +47,21 @@ const LINE_ANSWERS = {
   409: errorResponse("order_state: the line is decided already"),
 };
 
-const planRoute = createRoute({
+const planRoute = opsRoute({
   method: "get",
   path: "/api/supply-plan",
   summary: "The latest supply plan, each line with the figures behind it",
   responses: { 200: PLAN, 403: ACCESS },
 });
 
-const draftRoute = createRoute({
+const draftRoute = opsRoute({
   method: "post",
   path: "/api/supply-plan/draft",
   summary: "The supply plan drafted again now, from the latest forecast",
   responses: { 200: PLAN, 403: ACCESS, 409: errorResponse("order_state: no forecast has run yet") },
 });
 
-const approveRoute = createRoute({
+const approveRoute = opsRoute({
   method: "post",
   path: "/api/supply-plan/lines/{id}/approve",
   summary: "A proposal approved at a quantity: its transfer sent, or its order drafted",
@@ -79,7 +80,7 @@ const approveRoute = createRoute({
   responses: LINE_ANSWERS,
 });
 
-const rejectRoute = createRoute({
+const rejectRoute = opsRoute({
   method: "post",
   path: "/api/supply-plan/lines/{id}/reject",
   summary: "A proposal rejected, with why",

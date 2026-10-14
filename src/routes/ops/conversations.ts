@@ -1,6 +1,7 @@
 // The Care inbox, behind Access (Customer Care; docs/decisions/0129-the-care-inbox.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -79,7 +80,7 @@ const ThreadSchema = z
   .strict()
   .openapi("ConversationThread");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/conversations",
   summary: "The Care inbox's threads of a view, the latest first, a page at a time",
@@ -108,14 +109,13 @@ const listRoute = createRoute({
       ),
     },
     400: errorResponse("invalid_request: a cursor this list did not give"),
-    403: errorResponse("access_required"),
   },
 });
 
 /** A thread's place in the list, as the inbox gives it: when it last moved, and its id. */
 const THREAD_PLACE = /^[^_]+_[^_]+$/;
 
-const threadRoute = createRoute({
+const threadRoute = opsRoute({
   method: "get",
   path: "/api/conversations/{id}",
   summary: "One thread: the chat and our automatic messages to the client, in order",
@@ -125,7 +125,6 @@ const threadRoute = createRoute({
       description: "The thread",
       ...json(ThreadSchema),
     },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found"),
   },
 });
@@ -134,20 +133,19 @@ const Id = z.object({ id: z.uuid() });
 const TextBody = z.object({ text: z.string().trim().min(1).max(4096) }).strict();
 const answered = { description: "The thread as it now stands", ...json(ThreadSchema) };
 
-const replyRoute = createRoute({
+const replyRoute = opsRoute({
   method: "post",
   path: "/api/conversations/{id}/replies",
   summary: "Reply from our number; the reply is kept in the thread, sent or failed with why",
   request: { params: Id, body: { required: true, ...json(TextBody.openapi("ChatReply")) } },
   responses: {
     200: answered,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such thread, or its client's record is erased"),
     503: errorResponse("unavailable: the WhatsApp provider sends no free text yet"),
   },
 });
 
-const noteRoute = createRoute({
+const noteRoute = opsRoute({
   method: "post",
   path: "/api/conversations/{id}/notes",
   summary: "A note on the thread for staff alone, never sent",
@@ -155,7 +153,7 @@ const noteRoute = createRoute({
   responses: { 200: answered, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
 });
 
-const closeRoute = createRoute({
+const closeRoute = opsRoute({
   method: "post",
   path: "/api/conversations/{id}/close",
   summary: "Close the thread with what it was about; the client writing again reopens it",

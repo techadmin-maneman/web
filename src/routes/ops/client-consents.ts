@@ -1,7 +1,8 @@
 // A client's consents in the console (./clients.ts), each with its notice version, date and where it was given, and
 // any deletion request. Read only: ops never grant a consent.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { consentRecordsOf, type ConsentState } from "../../domain/clients/profile.ts";
 import type { App } from "../../http/context.ts";
 import { refuse } from "../../http/errors.ts";
@@ -53,7 +54,7 @@ function consentStateOf(consent: ConsentState): "given" | "not_given" | "withdra
   return consent.since === null ? "not_given" : "withdrawn";
 }
 
-const consentsRoute = createRoute({
+const consentsRoute = opsRoute({
   method: "get",
   path: "/api/clients/{id}/consents",
   summary: "The client's consents and any deletion request. Ops read them and never grant one",

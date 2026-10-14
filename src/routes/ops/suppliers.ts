@@ -2,7 +2,8 @@
 //
 // Admin's to keep. Every write answers the whole of GET's answer, so the screen follows without reading again.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import {
   allSuppliers,
@@ -107,14 +108,14 @@ const REFUSED = errorResponse(
 );
 const ADMIN = errorResponse("access_required");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/suppliers",
   summary: "Every supplier, by name, with what each supplies",
   responses: { 200: SUPPLIERS, 403: ADMIN },
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/suppliers",
   summary: "A new supplier",
@@ -122,7 +123,7 @@ const addRoute = createRoute({
   responses: { 200: SUPPLIERS, 400: REFUSED, 403: ADMIN },
 });
 
-const changeRoute = createRoute({
+const changeRoute = opsRoute({
   method: "post",
   path: "/api/suppliers/{id}",
   summary: "A supplier's record changed",
@@ -131,7 +132,7 @@ const changeRoute = createRoute({
 });
 
 const retirementRoute = (which: "retire" | "restore") =>
-  createRoute({
+  opsRoute({
     method: "post",
     path: `/api/suppliers/{id}/${which}`,
     summary: which === "retire" ? "A supplier taken off new orders" : "A retired supplier put back",
@@ -139,7 +140,7 @@ const retirementRoute = (which: "retire" | "restore") =>
     responses: { 200: SUPPLIERS, 403: ADMIN, 404: errorResponse("not_found: no such supplier") },
   });
 
-const itemRoute = createRoute({
+const itemRoute = opsRoute({
   method: "post",
   path: "/api/suppliers/{id}/items",
   summary: "What a supplier supplies of one stock code, set afresh",
@@ -147,7 +148,7 @@ const itemRoute = createRoute({
   responses: { 200: SUPPLIERS, 400: REFUSED, 403: ADMIN },
 });
 
-const removeRoute = createRoute({
+const removeRoute = opsRoute({
   method: "post",
   path: "/api/suppliers/{id}/items/{code}/remove",
   summary: "A stock code taken off a supplier's list",

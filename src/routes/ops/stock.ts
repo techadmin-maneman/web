@@ -15,7 +15,8 @@
 // stockrooms in them, a hub with every city of its zone, and the warehouse,
 // which is in no city, only with a national grant.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { CONSUMABLE_BOUNDS } from "../../config/consumables.ts";
 import { count, receiveStock, tellOfLowStock, writeOff, type Moved } from "../../domain/inventory/stock.ts";
@@ -36,14 +37,14 @@ const REFUSED = errorResponse(
   "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity",
 );
 
-const stockRoute = createRoute({
+const stockRoute = opsRoute({
   method: "get",
   path: "/api/stock",
   summary: "Every place, what each holds of each consumable, what is low, and the latest movements",
   responses: { 200: STOCK, 403: errorResponse("access_required") },
 });
 
-const deliveryRoute = createRoute({
+const deliveryRoute = opsRoute({
   method: "post",
   path: "/api/stock/deliveries",
   summary: "Stock received into the national warehouse",
@@ -69,7 +70,7 @@ const deliveryRoute = createRoute({
   responses: { 200: STOCK, 400: REFUSED, 403: errorResponse("access_required") },
 });
 
-const transferRoute = createRoute({
+const transferRoute = opsRoute({
   method: "post",
   path: "/api/stock/transfers",
   summary: "Stock moved from one place to another: out of one, into the other",
@@ -98,11 +99,10 @@ const transferRoute = createRoute({
     400: errorResponse(
       "invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, or units for a label the place does not hold or a count other than the quantity",
     ),
-    403: errorResponse("access_required"),
   },
 });
 
-const countRoute = createRoute({
+const countRoute = opsRoute({
   method: "post",
   path: "/api/stock/counts",
   summary: "What ops counted at a place. The ledger takes the difference from what it held",
@@ -129,7 +129,7 @@ const countRoute = createRoute({
   responses: { 200: STOCK, 400: REFUSED, 403: errorResponse("access_required") },
 });
 
-const writeOffRoute = createRoute({
+const writeOffRoute = opsRoute({
   method: "post",
   path: "/api/stock/write-offs",
   summary: "A loss somebody saw at a place, with what happened",

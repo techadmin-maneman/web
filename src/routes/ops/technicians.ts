@@ -9,7 +9,8 @@
 // figures the board draws beside it, over a period the roster has no business
 // carrying.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { isActiveCity } from "../../domain/cities/cities.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
@@ -72,7 +73,7 @@ const WorkSchema = z
   .strict()
   .openapi("TechniciansWork", { description: "Counted at read time from the appointments themselves." });
 
-const workRoute = createRoute({
+const workRoute = opsRoute({
   method: "get",
   path: "/api/technicians/work",
   summary: "Per technician: jobs finished over a period, and how they ran against the planned length",
@@ -92,7 +93,6 @@ const workRoute = createRoute({
   responses: {
     200: { description: "The technicians", ...json(WorkSchema) },
     400: errorResponse("invalid_request: from is not before to"),
-    403: errorResponse("access_required"),
   },
 });
 
@@ -166,7 +166,7 @@ const technicianPath = { params: z.object({ id: z.uuid() }) };
 
 const MANAGE_ONLY = "access_required, or not_permitted: changing a technician asks Operations MANAGE";
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/technicians",
   summary: "Add a technician. Their number signs in to the technician app at once",
@@ -183,7 +183,7 @@ const addRoute = createRoute({
   },
 });
 
-const changeRoute = createRoute({
+const changeRoute = opsRoute({
   method: "patch",
   path: "/api/technicians/{id}",
   summary: "Change a technician's name, number, zone or city",
@@ -201,7 +201,7 @@ const changeRoute = createRoute({
   },
 });
 
-const deactivateRoute = createRoute({
+const deactivateRoute = opsRoute({
   method: "post",
   path: "/api/technicians/{id}/deactivate",
   summary: "Switch a technician off: they are signed out at once, and their visits still to come are unassigned",
@@ -213,7 +213,7 @@ const deactivateRoute = createRoute({
   },
 });
 
-const reactivateRoute = createRoute({
+const reactivateRoute = opsRoute({
   method: "post",
   path: "/api/technicians/{id}/reactivate",
   summary: "Switch a technician back on, so they can sign in again",
@@ -226,7 +226,7 @@ const reactivateRoute = createRoute({
   },
 });
 
-const deleteRoute = createRoute({
+const deleteRoute = opsRoute({
   method: "post",
   path: "/api/technicians/{id}/delete",
   summary:

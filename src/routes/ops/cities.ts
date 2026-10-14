@@ -1,7 +1,8 @@
 // Admin › Cities, behind Access (docs/decisions/0198-cities-as-data.md):
 // Every change is audited under the member of staff who made it, in the same batch.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { GSTIN_FORMAT, STATE_CODE_FORMAT } from "../../config/gst.ts";
 import { addCity, changeCity, type CityFields } from "../../domain/cities/city-changes.ts";
 import { allCities, cityNamed } from "../../domain/cities/cities.ts";
@@ -76,7 +77,7 @@ const RuleValue = z
   .union([z.number(), z.record(z.string(), z.number())])
   .openapi({ description: "As the national rule takes it: one figure, or one per key." });
 
-const citiesRoute = createRoute({
+const citiesRoute = opsRoute({
   method: "get",
   path: "/api/cities",
   summary: "Every city, its state and zone, the GST registrations, and each city's own rules and prices",
@@ -98,7 +99,6 @@ const citiesRoute = createRoute({
           .openapi("Cities"),
       ),
     },
-    403: errorResponse("access_required"),
   },
 });
 
@@ -107,7 +107,7 @@ const cityAnswer = (description: string) => ({
   ...json(z.object({ city: CitySchema }).strict()),
 });
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/cities",
   summary: "A city added, last in the order",
@@ -115,14 +115,13 @@ const addRoute = createRoute({
   responses: {
     201: cityAnswer("The city added"),
     400: errorResponse("invalid_request: fields names what was refused, zone where it is none of ours"),
-    403: errorResponse("access_required"),
     409: errorResponse("taken: another city has that name"),
   },
 });
 
 const NameParam = z.object({ name: z.string().min(1).max(60) });
 
-const changeRoute = createRoute({
+const changeRoute = opsRoute({
   method: "patch",
   path: "/api/cities/{name}",
   summary: "A city changed; a new name moves every row that names it, in one batch",
@@ -130,7 +129,6 @@ const changeRoute = createRoute({
   responses: {
     200: cityAnswer("The city as it now stands"),
     400: errorResponse("invalid_request: fields names what was refused, zone where it is none of ours"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such city"),
     409: errorResponse("taken: another city has the new name"),
   },
@@ -138,7 +136,7 @@ const changeRoute = createRoute({
 
 const RuleParams = z.object({ name: z.string().min(1).max(60), rule: z.enum(CITY_SETTING_NAMES) });
 
-const setRuleRoute = createRoute({
+const setRuleRoute = opsRoute({
   method: "patch",
   path: "/api/cities/{name}/rules/{rule}",
   summary: "A rule the city sets for itself, checked as the national rule is",
@@ -152,24 +150,22 @@ const setRuleRoute = createRoute({
       ...json(z.object({ city: z.string(), rule: z.enum(CITY_SETTING_NAMES), value: RuleValue }).strict()),
     },
     400: errorResponse("invalid_request: fields names the figure refused"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such city"),
   },
 });
 
-const clearRuleRoute = createRoute({
+const clearRuleRoute = opsRoute({
   method: "delete",
   path: "/api/cities/{name}/rules/{rule}",
   summary: "The national rule back in the city",
   request: { params: RuleParams },
   responses: {
     204: { description: "The city follows the national rule" },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such city"),
   },
 });
 
-const setPriceRoute = createRoute({
+const setPriceRoute = opsRoute({
   method: "post",
   path: "/api/cities/{name}/prices",
   summary: "A price of the city's own from a day, tomorrow at the earliest, before the book's there",
@@ -194,12 +190,11 @@ const setPriceRoute = createRoute({
   responses: {
     201: { description: "The price set", ...json(z.object({ price: CityPriceSchema }).strict()) },
     400: errorResponse("invalid_request: fields names what was refused; service_retired: retired by then"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such city"),
   },
 });
 
-const withdrawPriceRoute = createRoute({
+const withdrawPriceRoute = opsRoute({
   method: "delete",
   path: "/api/cities/{name}/prices/{item}/{tier}/{valid_from}",
   summary: "A city's price still to come taken back. The one in force and the spent ones stay",
@@ -213,12 +208,11 @@ const withdrawPriceRoute = createRoute({
   },
   responses: {
     204: { description: "Taken back" },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: the city holds no such price still to come"),
   },
 });
 
-const setRegistrationRoute = createRoute({
+const setRegistrationRoute = opsRoute({
   method: "post",
   path: "/api/gst-registrations",
   summary: "A state's GST registration, or a change to it: its visits are supplied from it",
@@ -243,19 +237,17 @@ const setRegistrationRoute = createRoute({
       ...json(z.object({ registrations: z.array(RegistrationSchema) }).strict()),
     },
     400: errorResponse("invalid_request"),
-    403: errorResponse("access_required"),
     409: errorResponse("taken: another state has that GSTIN"),
   },
 });
 
-const removeRegistrationRoute = createRoute({
+const removeRegistrationRoute = opsRoute({
   method: "delete",
   path: "/api/gst-registrations/{state_code}",
   summary: "A state's registration taken off: its visits are supplied from the registration in BOOKS_GSTIN again",
   request: { params: z.object({ state_code: z.string().regex(STATE_CODE_FORMAT) }) },
   responses: {
     204: { description: "Taken off" },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no registration for that state"),
   },
 });

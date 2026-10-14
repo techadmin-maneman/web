@@ -4,7 +4,8 @@
 // way the client is told on WhatsApp, with their consent to messages about visits, never with ops' reason, which
 // stays on the dispute.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { openDisputes, ruleOnDispute } from "../../domain/no-shows/no-show-disputes.ts";
@@ -69,7 +70,7 @@ const RulingRequestSchema = z
   .strict()
   .openapi("NoShowDisputeRuling");
 
-const disputesRoute = createRoute({
+const disputesRoute = opsRoute({
   method: "get",
   path: "/api/no-shows/disputes",
   summary: "Disputed no-show charges in the caller's cities still to rule on, oldest first, each with its evidence",
@@ -78,11 +79,10 @@ const disputesRoute = createRoute({
       description: "The disputes",
       ...json(z.object({ disputes: z.array(DisputeSchema), more: More(LIMIT) }).strict()),
     },
-    403: errorResponse("access_required"),
   },
 });
 
-const rulingRoute = createRoute({
+const rulingRoute = opsRoute({
   method: "post",
   path: "/api/no-shows/disputes/{id}/ruling",
   summary: "Refund or uphold a disputed no-show charge, with a reason",

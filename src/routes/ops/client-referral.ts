@@ -8,7 +8,8 @@
 // kept with it, and its audit entry is written in the same batch. The CRM is then sent the client again, and reads
 // the invite they now carry.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -64,7 +65,7 @@ const AlreadyInvitedSchema = z
   .strict()
   .openapi("AlreadyInvited");
 
-const attachRoute = createRoute({
+const attachRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/referral",
   summary: "Attach an invite to a client who booked away from its page, with the reason",
@@ -88,7 +89,6 @@ const attachRoute = createRoute({
   responses: {
     201: { description: "Attached", ...json(ClientInviteSchema) },
     400: errorResponse("invalid_request: no reason, or a code that is not shaped like one"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     409: {
       description:

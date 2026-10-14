@@ -3,7 +3,8 @@
 // It answers the new code; the console reads GET /api/consumables again, where the code is listed with the
 // consumables, and its cost, levels and retirement change as any consumable's do.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { addHairSystem } from "../../domain/inventory/hair-systems.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
@@ -15,7 +16,7 @@ import { FitSpecSchema } from "../schemas/hair-profile.ts";
 
 const fit = FitSpecSchema.shape;
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/hair-systems",
   summary: "Add a hair system's stock code, counted in pieces, for a spec no other has",
@@ -46,7 +47,6 @@ const addRoute = createRoute({
     400: errorResponse(
       "invalid_request: fields names product for one no first fit is sold as, or hair_system for a spec, or the name it makes, another has",
     ),
-    403: errorResponse("access_required"),
   },
 });
 

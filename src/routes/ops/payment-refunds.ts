@@ -2,7 +2,8 @@
 //
 // Finance's to MANAGE. The refund shows on the client's Payments tab once Razorpay's webhook records it.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import { capturedPayment, refundPayment } from "../../domain/money/payment-refunds.ts";
 import { written } from "../../http/audit.ts";
@@ -18,7 +19,7 @@ const Note = z
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
 
-const refundRoute = createRoute({
+const refundRoute = opsRoute({
   method: "post",
   path: "/api/payments/{id}/refund",
   summary: "What is left of a captured payment refunded, with why: one the client made twice",
@@ -37,7 +38,6 @@ const refundRoute = createRoute({
       ),
     },
     400: errorResponse("invalid_request: no reason given"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no captured payment, or the client is outside the caller's cities"),
     409: errorResponse("refund_not_due: the payment is refunded already, or its refund is on its way"),
     503: errorResponse("unavailable: Razorpay did not make the refund; ops are told to make it by hand"),

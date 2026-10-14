@@ -5,7 +5,8 @@
 // payment link unpaid, unless ops say they will settle it by hand today
 // (docs/decisions/0066-erasure-all-or-nothing.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import type { AuditEntry } from "../../domain/platform/audit.ts";
@@ -115,7 +116,7 @@ const ErasedSchema = z
   .strict()
   .openapi("Erased");
 
-const erasureRoute = createRoute({
+const erasureRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/erasure",
   summary: "Erase a client now: their photographs and details. The CRM and Books follow within minutes",

@@ -5,7 +5,8 @@
 // not apply is answered as it is to the client, code_not_applicable, save one switched off, code_off, since ops
 // switch codes off themselves. The code's own row in the list says why of the rest.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { PRICE_BOUNDS } from "../../policy/ops-settings.ts";
 import { codeOnVisit } from "../../domain/money/discount-code-uses.ts";
 import { codeTotals } from "../../domain/money/discount-code-figures.ts";
@@ -152,7 +153,7 @@ const VisitCodeSchema = z
   .strict()
   .openapi("VisitDiscountCode");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/discount-codes",
   summary: "The latest discount codes made, each with its uses and what it has taken off",
@@ -169,7 +170,7 @@ const listRoute = createRoute({
   responses: { 200: { description: "The codes", ...json(CodesSchema) }, 403: errorResponse("access_required") },
 });
 
-const makeRoute = createRoute({
+const makeRoute = opsRoute({
   method: "post",
   path: "/api/discount-codes",
   summary: "Make a code, typed or generated, or a batch of single-use codes",
@@ -182,31 +183,28 @@ const makeRoute = createRoute({
         "rupees, covers named twice, expires_on before today, and " +
         "max_uses for a batch whose codes are not single-use",
     ),
-    403: errorResponse("access_required"),
     409: errorResponse("code_exists: a code with that text exists already"),
   },
 });
 
-const offRoute = createRoute({
+const offRoute = opsRoute({
   method: "post",
   path: "/api/discount-codes/{id}/off",
   summary: "Switch a code off: no booking takes it from then on, and its uses stay as they are",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     204: { description: "Off, or off already" },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found"),
   },
 });
 
-const deleteRoute = createRoute({
+const deleteRoute = opsRoute({
   method: "post",
   path: "/api/discount-codes/{id}/delete",
   summary: "Delete a code made by mistake, while no booking has ever taken it",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     204: { description: "Deleted" },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found"),
     409: errorResponse("in_use: a booking has taken it; switch it off instead"),
   },
@@ -214,7 +212,7 @@ const deleteRoute = createRoute({
 
 const visitId = z.object({ id: z.uuid().openapi({ description: "The client's visit." }) });
 
-const enterRoute = createRoute({
+const enterRoute = opsRoute({
   method: "post",
   path: "/api/visits/{id}/discount-code",
   summary: "Enter a discount code on a client's visit, before it is paid for, its link is made, or it is invoiced",
@@ -224,7 +222,6 @@ const enterRoute = createRoute({
   },
   responses: {
     200: { description: "The code on the visit", ...json(VisitCodeSchema) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such visit in the caller's cities"),
     409: errorResponse(
       "already_discounted: the visit carries a code; price_settled: it is paid for, its payment link is made, it is " +
@@ -234,14 +231,13 @@ const enterRoute = createRoute({
   },
 });
 
-const removeRoute = createRoute({
+const removeRoute = opsRoute({
   method: "post",
   path: "/api/visits/{id}/discount-code/remove",
   summary: "Take the code off a client's visit, before it is paid for, its link is made, or it is invoiced",
   request: { params: visitId },
   responses: {
     204: { description: "Taken off; its use stays on record, marked removed" },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such visit in the caller's cities, or it carries no code"),
     409: errorResponse("price_settled: it is paid for, its payment link is made, or it is invoiced"),
   },

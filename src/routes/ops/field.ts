@@ -2,13 +2,13 @@
 // technician-login.ts). The roster is here; the no-shows are ./no-shows.ts, the pieces tab
 // ./client-pieces.ts, leave ./technician-leave.ts and a technician's phones ./technician-phones.ts.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { listCities } from "../../domain/cities/cities.ts";
 import { leaveFrom } from "../../domain/dispatch/leave.ts";
 import { roster, type RosterTechnician } from "../../domain/dispatch/technician-roster.ts";
 import { devicesByTechnician } from "../../domain/dispatch/technicians.ts";
 import type { App } from "../../http/context.ts";
-import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { reachOf, routeReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -103,14 +103,13 @@ const TechniciansSchema = z
   .strict()
   .openapi("Technicians");
 
-const techniciansRoute = createRoute({
+const techniciansRoute = opsRoute({
   method: "get",
   path: "/api/technicians",
   summary:
     "Active technicians in the caller's cities, the phones they have logged in on and their leave, and those switched off",
   responses: {
     200: { description: "The technicians", ...json(TechniciansSchema) },
-    403: errorResponse("access_required"),
   },
 });
 

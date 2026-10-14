@@ -3,7 +3,8 @@
 // Both need a national grant to manage operations, and answer the whole of GET /api/stock, so the screen follows
 // without reading again. A technician's kit comes with them, under the warehouse until it is moved.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { addPlace, changePlace } from "../../domain/inventory/stock-places.ts";
 import { written } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
@@ -21,7 +22,7 @@ const Name = z
 
 const MANAGE_ONLY = "access_required, or not_permitted: changing a place asks Operations MANAGE everywhere";
 
-const addRoute = createRoute({
+const addRoute = opsRoute({
   method: "post",
   path: "/api/stock/places",
   summary: "A hub for a zone, or a stockroom in a city, under a place above it",
@@ -49,7 +50,7 @@ const addRoute = createRoute({
   },
 });
 
-const changeRoute = createRoute({
+const changeRoute = opsRoute({
   method: "post",
   path: "/api/stock/places/{id}",
   summary: "A place renamed, moved under another, or closed or opened again; a kit only moved",

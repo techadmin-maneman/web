@@ -2,7 +2,8 @@
 //
 // Read with Operations VIEW; raised and closed with MANAGE. Each write answers the recall as GET /api/recalls/{id} does.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import {
   closeRecall,
@@ -54,7 +55,7 @@ const ACCESS = errorResponse("access_required");
 const recallPath = { params: z.object({ id: z.string().min(1).max(64) }) };
 const MISSING = errorResponse("not_found: no such recall");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/recalls",
   summary: "Every recall, and the lots one may be raised on",
@@ -76,7 +77,7 @@ const listRoute = createRoute({
   },
 });
 
-const detailRoute = createRoute({
+const detailRoute = opsRoute({
   method: "get",
   path: "/api/recalls/{id}",
   summary: "One recall: where its lot's stock is, and who wears its pieces",
@@ -84,7 +85,7 @@ const detailRoute = createRoute({
   responses: { 200: DETAIL, 403: ACCESS, 404: MISSING },
 });
 
-const raiseRoute = createRoute({
+const raiseRoute = opsRoute({
   method: "post",
   path: "/api/recalls",
   summary: "A lot recalled, with why: blocked everywhere, and each piece of it a client wears made due today",
@@ -115,7 +116,7 @@ const raiseRoute = createRoute({
   },
 });
 
-const closeRoute = createRoute({
+const closeRoute = opsRoute({
   method: "post",
   path: "/api/recalls/{id}/close",
   summary: "A recall closed once its stock and pieces are dealt with; the lot stays blocked",

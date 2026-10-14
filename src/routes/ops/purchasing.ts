@@ -3,7 +3,8 @@
 // Operations' to keep: drafting and sending with ACT, approving and cancelling with MANAGE. Every write answers the
 // whole of GET's answer, so the screen follows without reading again.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { MAX_NOTE } from "../../config/consumables.ts";
 import {
@@ -130,7 +131,7 @@ const STATE = errorResponse(
   "order_state: the order is past the step asked; same_approver: the manager who gave the first approval asked for the second",
 );
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/purchase-orders",
   summary: "Open orders and the latest settled, with the suppliers to order from",
@@ -144,7 +145,7 @@ export const Note = z
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
 
-const draftRoute = createRoute({
+const draftRoute = opsRoute({
   method: "post",
   path: "/api/purchase-orders",
   summary: "A new order, drafted from a supplier's list at its prices",
@@ -186,7 +187,7 @@ const draftRoute = createRoute({
 const STEP_ANSWERS = { 200: ORDERS, 403: ACCESS, 404: MISSING, 409: STATE };
 
 const stepRoute = (step: "approve" | "send", summary: string) =>
-  createRoute({
+  opsRoute({
     method: "post",
     path: `/api/purchase-orders/{id}/${step}`,
     summary,
@@ -194,7 +195,7 @@ const stepRoute = (step: "approve" | "send", summary: string) =>
     responses: STEP_ANSWERS,
   });
 
-const cancelRoute = createRoute({
+const cancelRoute = opsRoute({
   method: "post",
   path: "/api/purchase-orders/{id}/cancel",
   summary: "An order cancelled, with why, before anything of it arrived",

@@ -3,8 +3,9 @@
 // Both keep to the caller's cities: a client elsewhere is not found, and only the technicians there are offered. The
 // booking is audited in the batch that holds its slot (ADR 0031).
 
+import { opsRoute } from "../../http/session-routes.ts";
 import { recommendedProduct } from "../../domain/clients/hair-profiles.ts";
-import { createRoute, z } from "@hono/zod-openapi";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
@@ -81,14 +82,13 @@ const AvailabilityQuerySchema = z.object({
 });
 type AvailabilityQuery = z.infer<typeof AvailabilityQuerySchema>;
 
-const availabilityRoute = createRoute({
+const availabilityRoute = opsRoute({
   method: "get",
   path: "/api/visits/availability",
   summary: "A client's windows for a kind of visit over 14 days, and who is free in each",
   request: { query: AvailabilityQuerySchema },
   responses: {
     200: { description: "Each day's windows", ...json(OpsAvailabilitySchema) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     422: errorResponse(
       "not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale",
@@ -128,7 +128,7 @@ const VisitToBookSchema = z
   .strict()
   .openapi("VisitToBook");
 
-const bookRoute = createRoute({
+const bookRoute = opsRoute({
   method: "post",
   path: "/api/visits",
   summary: "Book a visit for a client: at once when nothing is paid at booking, else by a payment link",
@@ -138,7 +138,6 @@ const bookRoute = createRoute({
     400: errorResponse(
       "invalid_request: a one visit that is not a first fit, or in the evening; covers for nothing owed of the kind, or with a one visit or a code",
     ),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     409: errorResponse(
       "taken: nobody chosen is free in that window now, or the technician chosen is not in the caller's cities; already_booked: a consultation or first fit is still to " +

@@ -1,7 +1,8 @@
 // Ops' side of grievances (docs/decisions/0049-dpdp.md), on the ops surface behind Access:
 // Each answer is audited under the member of staff who gave it. Both keep to the caller's cities.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { auditStatement } from "../../domain/platform/audit.ts";
@@ -18,7 +19,7 @@ import { dueAt } from "../../policy/tasks.ts";
 /** As many open grievances as the page can usefully hold, the oldest first. */
 const LIMIT = 200;
 
-const openRoute = createRoute({
+const openRoute = opsRoute({
   method: "get",
   path: "/api/grievances",
   summary: "Open grievances in the caller's cities, oldest first, as Tasks counts them: none of an erased client's",
@@ -52,7 +53,7 @@ const openRoute = createRoute({
   },
 });
 
-const resolveRoute = createRoute({
+const resolveRoute = opsRoute({
   method: "post",
   path: "/api/grievances/{id}/resolve",
   summary: "Record ops' answer to a grievance, and close it",

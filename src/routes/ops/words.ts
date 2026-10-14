@@ -1,6 +1,7 @@
 // The Words page, behind Access (Growth; docs/decisions/0126-the-words-page.md, 0127-publishing-the-words.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -42,7 +43,7 @@ const withSite = (word: Word, publish: SitePublish | null) => ({
   on_site: word.surface === "message" ? null : (publish?.words[word.key] ?? word.text) === word.now,
 });
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/words",
   summary: "Every line of the site and every WhatsApp message to a client, with the wording in force",
@@ -64,11 +65,10 @@ const listRoute = createRoute({
           .openapi("Words"),
       ),
     },
-    403: errorResponse("access_required"),
   },
 });
 
-const historyRoute = createRoute({
+const historyRoute = opsRoute({
   method: "get",
   path: "/api/words/history",
   summary: "Every wording one line has had, newest first",
@@ -94,12 +94,11 @@ const historyRoute = createRoute({
           .openapi("WordHistory"),
       ),
     },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found"),
   },
 });
 
-const setRoute = createRoute({
+const setRoute = opsRoute({
   method: "post",
   path: "/api/words",
   summary: "Give a line new words, or put it back to the code's with a null text",
@@ -123,12 +122,11 @@ const setRoute = createRoute({
       "invalid_request: fields names text.empty, text.holes (one the page fills taken out or added), text.price, " +
         "text.visits, text.placeholder, text.length, text.first_line or text.ends_on_detail",
     ),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found"),
   },
 });
 
-const publishRoute = createRoute({
+const publishRoute = opsRoute({
   method: "post",
   path: "/api/words/publish",
   summary: "Publish the site's changed words, which each build of this environment's site lays over its copy",
@@ -137,7 +135,6 @@ const publishRoute = createRoute({
       description: "The publish",
       ...json(z.object({ published: PublishSchema }).strict().openapi("WordsPublished")),
     },
-    403: errorResponse("access_required"),
   },
 });
 

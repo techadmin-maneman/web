@@ -1,6 +1,7 @@
 // What each hair system costs us, behind Access (Finance; docs/decisions/0152-standard-costs.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { COSTED_KINDS, productCosts, setProductCost } from "../../domain/money/standard-costs.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
@@ -30,17 +31,16 @@ const ProductCostsSchema = z
   .strict()
   .openapi("ProductCosts");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/standard-costs",
   summary: "Each first fit and replacement product still sold, with what it costs us today",
   responses: {
     200: { description: "The products", ...json(ProductCostsSchema) },
-    403: errorResponse("access_required"),
   },
 });
 
-const setRoute = createRoute({
+const setRoute = opsRoute({
   method: "post",
   path: "/api/standard-costs",
   summary: "Set what a product costs us, from today",
@@ -61,7 +61,6 @@ const setRoute = createRoute({
   },
   responses: {
     200: { description: "Set; the products as they now stand", ...json(ProductCostsSchema) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such product still sold"),
   },
 });

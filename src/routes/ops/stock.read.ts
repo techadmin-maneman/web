@@ -2,11 +2,11 @@
 //
 // It keeps to the caller's cities: a city reached, and visits of no city found only with a national grant.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { stockDemand } from "../../domain/purchasing/stock-demand.ts";
 import type { App } from "../../http/context.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
-import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { reachOf } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -42,13 +42,12 @@ const DemandSchema = z
   .strict()
   .openapi("StockDemand");
 
-const demandRoute = createRoute({
+const demandRoute = opsRoute({
   method: "get",
   path: "/api/stock/demand",
   summary: "What the next four weeks' visits will use, by city, beside what each city holds",
   responses: {
     200: { description: "The demand ahead", ...json(DemandSchema) },
-    403: errorResponse("access_required"),
   },
 });
 

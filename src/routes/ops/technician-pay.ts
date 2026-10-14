@@ -3,7 +3,8 @@
 // Grades and every city's rates are national: they need a national Finance grant. A city's own rate, and a
 // technician's grade, keep to the caller's cities.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -110,7 +111,7 @@ const StatementSchema = z
       "Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day.",
   });
 
-const statementRoute = createRoute({
+const statementRoute = opsRoute({
   method: "get",
   path: "/api/technician-pay/statement",
   summary: "What each technician earned in a month at their rates per visit",
@@ -118,18 +119,17 @@ const statementRoute = createRoute({
   responses: {
     200: { description: "The month's statement", ...json(StatementSchema) },
     400: errorResponse("invalid_request: month is YYYY-MM"),
-    403: errorResponse("access_required"),
   },
 });
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/technician-pay",
   summary: "The grades, each technician's grade, and the rates per visit",
   responses: { 200: ok, 403: errorResponse("access_required") },
 });
 
-const addGradeRoute = createRoute({
+const addGradeRoute = opsRoute({
   method: "post",
   path: "/api/technician-pay/grades",
   summary: "Add a grade",
@@ -137,12 +137,11 @@ const addGradeRoute = createRoute({
   responses: {
     200: ok,
     400: errorResponse("invalid_request: fields names name"),
-    403: errorResponse("access_required"),
     409: errorResponse("taken: a grade has that name"),
   },
 });
 
-const renameGradeRoute = createRoute({
+const renameGradeRoute = opsRoute({
   method: "patch",
   path: "/api/technician-pay/grades/{id}",
   summary: "Rename a grade",
@@ -150,26 +149,24 @@ const renameGradeRoute = createRoute({
   responses: {
     200: ok,
     400: errorResponse("invalid_request: fields names name"),
-    403: errorResponse("access_required"),
     404: errorResponse("not_found"),
     409: errorResponse("taken: another grade has that name"),
   },
 });
 
-const deleteGradeRoute = createRoute({
+const deleteGradeRoute = opsRoute({
   method: "post",
   path: "/api/technician-pay/grades/{id}/delete",
   summary: "Delete a grade no technician holds and no rate has named",
   request: { params: GradeId },
   responses: {
     200: ok,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found"),
     409: errorResponse("in_use: a technician holds it, or a rate has named it"),
   },
 });
 
-const setRateRoute = createRoute({
+const setRateRoute = opsRoute({
   method: "post",
   path: "/api/technician-pay/rates",
   summary: "Set a grade's rate for a kind of visit, for every city or one, from today or later",
@@ -200,7 +197,7 @@ const setRateRoute = createRoute({
   },
 });
 
-const gradeOfRoute = createRoute({
+const gradeOfRoute = opsRoute({
   method: "post",
   path: "/api/technician-pay/technicians/{id}",
   summary: "Give a technician a grade, or take theirs away",
@@ -218,7 +215,6 @@ const gradeOfRoute = createRoute({
   },
   responses: {
     200: ok,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such technician in the caller's cities, or no such grade"),
   },
 });

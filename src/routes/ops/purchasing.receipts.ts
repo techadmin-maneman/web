@@ -2,7 +2,8 @@
 //
 // Receiving with Operations ACT, closing with MANAGE. Each answers the whole of GET /api/purchase-orders.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { closeOrder } from "../../domain/purchasing/purchase-orders.ts";
 import { receiveOrder } from "../../domain/purchasing/receipts.ts";
 import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
@@ -43,7 +44,7 @@ const ReceiptSchema = z
   .strict()
   .openapi("PurchaseOrderReceipt");
 
-const receiptRoute = createRoute({
+const receiptRoute = opsRoute({
   method: "post",
   path: "/api/purchase-orders/{id}/receipts",
   summary: "What arrived of an order at the warehouse, with its lots and landed cost",
@@ -53,19 +54,17 @@ const receiptRoute = createRoute({
     400: errorResponse(
       `invalid_request: fields names lines.N for a line not of the order or more than ${String(MAX_LABELLED)} pieces of a hair system, lines for nothing received, rupee_rate for none on an order in another currency, or id for no such order`,
     ),
-    403: errorResponse("access_required"),
     409: errorResponse("order_state: the order is not sent or part received"),
   },
 });
 
-const closeRoute = createRoute({
+const closeRoute = opsRoute({
   method: "post",
   path: "/api/purchase-orders/{id}/close",
   summary: "An order part received closed short",
   request: orderPath,
   responses: {
     200: ORDERS,
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such order"),
     409: errorResponse("order_state: the order is not part received"),
   },

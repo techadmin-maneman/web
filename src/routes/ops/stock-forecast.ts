@@ -2,7 +2,8 @@
 //
 // Read with Operations VIEW.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { latestForecast } from "../../domain/purchasing/forecast.ts";
 import { forecastAccuracy } from "../../domain/purchasing/forecast-accuracy.ts";
 import type { App } from "../../http/context.ts";
@@ -40,7 +41,7 @@ const ForecastSchema = z
   })
   .openapi("DemandForecast");
 
-const forecastRoute = createRoute({
+const forecastRoute = opsRoute({
   method: "get",
   path: "/api/stock/forecast",
   summary: "The latest demand forecast, for one city or every city",
@@ -78,7 +79,7 @@ const AccuracySchema = z
   })
   .openapi("ForecastAccuracy");
 
-const accuracyRoute = createRoute({
+const accuracyRoute = opsRoute({
   method: "get",
   path: "/api/stock/forecast-accuracy",
   summary: "How right the forecast was in one city: its last measured periods, and each item across them",

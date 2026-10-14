@@ -2,7 +2,8 @@
 // behind Access:
 // Each decision is audited under the member of staff who made it.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { reachBinding, withinReach } from "../../domain/clients/places.ts";
@@ -19,7 +20,7 @@ import { dueAt } from "../../policy/tasks.ts";
 
 const PersonRef = z.object({ person_id: z.uuid(), name: z.string() }).strict();
 
-const heldRoute = createRoute({
+const heldRoute = opsRoute({
   method: "get",
   path: "/api/referrals/held",
   summary: "Referral grants held for review whose friend is in the caller's cities, oldest first",
@@ -51,7 +52,7 @@ const heldRoute = createRoute({
   },
 });
 
-const decisionRoute = createRoute({
+const decisionRoute = opsRoute({
   method: "post",
   path: "/api/referrals/{id}/decision",
   summary: "Approve a held grant, or reject it",

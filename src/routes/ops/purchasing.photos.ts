@@ -2,7 +2,8 @@
 //
 // Storing with Operations ACT, reading with VIEW.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import { MAX_STOCK_PHOTO_BYTES, stockPhoto, storeStockPhoto } from "../../domain/inventory/stock-photos.ts";
 import { mayUpload } from "../../domain/platform/storage-meter.ts";
 import { cappedBody } from "../../http/capped-body.ts";
@@ -10,7 +11,7 @@ import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 
-const storeRoute = createRoute({
+const storeRoute = opsRoute({
   method: "post",
   path: "/api/stock-photos",
   summary: "A photograph of stock: the body a JPEG or PNG of at most 2 MB",
@@ -19,13 +20,12 @@ const storeRoute = createRoute({
       description: "Stored",
       ...json(z.object({ photo_id: z.uuid() }).openapi("StockPhotoStored")),
     },
-    403: errorResponse("access_required"),
     422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 2 MB"),
     503: errorResponse("busy: the photographs' storage is past its runaway ceiling"),
   },
 });
 
-const readRoute = createRoute({
+const readRoute = opsRoute({
   method: "get",
   path: "/api/stock-photos/{id}",
   summary: "A photograph of stock, never cached",
@@ -35,7 +35,6 @@ const readRoute = createRoute({
       description: "The image",
       content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
     },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such photograph"),
   },
 });

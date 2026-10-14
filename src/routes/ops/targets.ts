@@ -1,6 +1,7 @@
 // A month's targets, city by city, behind Access (Admin; docs/decisions/0154-targets-and-reporting-access.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { removeTarget, setTarget, targetsFor } from "../../domain/ops/targets.ts";
 import { actorOf } from "../../http/audit.ts";
@@ -40,7 +41,7 @@ const TargetsSchema = z
   .strict()
   .openapi("Targets");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/targets",
   summary: "A month's targets, city by city; this month's where none is asked for",
@@ -48,11 +49,10 @@ const listRoute = createRoute({
   responses: {
     200: { description: "The month's targets", ...json(TargetsSchema) },
     400: errorResponse("invalid_request: a month outside the year either side of this one"),
-    403: errorResponse("access_required"),
   },
 });
 
-const setRoute = createRoute({
+const setRoute = opsRoute({
   method: "post",
   path: "/api/targets",
   summary: "Set a month's target for a city, or set it again",
@@ -69,18 +69,16 @@ const setRoute = createRoute({
   responses: {
     200: { description: "Set; the month's targets", ...json(TargetsSchema) },
     400: errorResponse("invalid_request: fields names month, city or target for one out of bounds"),
-    403: errorResponse("access_required"),
   },
 });
 
-const removeRoute = createRoute({
+const removeRoute = opsRoute({
   method: "post",
   path: "/api/targets/remove",
   summary: "Take a month's target for a city off",
   request: { body: { required: true, ...json(Which.strict().openapi("TargetRemoval")) } },
   responses: {
     200: { description: "Taken off; the month's targets", ...json(TargetsSchema) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such target set"),
   },
 });

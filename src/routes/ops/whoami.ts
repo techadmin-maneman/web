@@ -5,7 +5,8 @@
 // header's right; the way out is Access's own logout, which ends the only
 // session there is.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { callerAccess } from "../../http/staff-access.ts";
 import { routesOpenTo } from "../../policy/console-routes.ts";
@@ -14,7 +15,7 @@ import { grantJson, GrantSchema } from "./staff.ts";
 /** Access's own path on every host it guards: it ends the session and shows the team's page. */
 const ACCESS_LOGOUT_PATH = "/cdn-cgi/access/logout";
 
-const whoamiRoute = createRoute({
+const whoamiRoute = opsRoute({
   method: "get",
   path: "/api/whoami",
   summary: "Who Access let through, and where signing out goes",

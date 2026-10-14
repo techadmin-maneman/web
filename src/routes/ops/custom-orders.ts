@@ -3,7 +3,8 @@
 // Within the reader's places, as the client's page is: reading with Customer care VIEW, refunding with MANAGE, the rest
 // with ACT. Each write answers the client's whole list.
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import {
   cancelCustomOrder,
@@ -72,7 +73,7 @@ const orderPath = { params: z.object({ id: z.string().min(1).max(64) }) };
 const ACCESS = errorResponse("access_required");
 const MISSING = errorResponse("not_found: no such client, or custom order, within the reader's places");
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/clients/{id}/custom-orders",
   summary: "The client's custom orders, and the suppliers one may be raised with",
@@ -80,7 +81,7 @@ const listRoute = createRoute({
   responses: { 200: ORDERS, 403: ACCESS, 404: MISSING },
 });
 
-const raiseRoute = createRoute({
+const raiseRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/custom-orders",
   summary: "A custom order raised to the client's profile, and its payment link sent",
@@ -121,7 +122,7 @@ const raiseRoute = createRoute({
 });
 
 const stepRoute = (step: "send-link" | "cancel", summary: string) =>
-  createRoute({
+  opsRoute({
     method: "post",
     path: `/api/custom-orders/{id}/${step}`,
     summary,
@@ -183,7 +184,7 @@ async function reachedOrder(c: Context<AppEnv>, id: string): Promise<CustomOrder
   return order;
 }
 
-const refundRoute = createRoute({
+const refundRoute = opsRoute({
   method: "post",
   path: "/api/custom-orders/{id}/refund",
   summary: "A paid custom order refunded in full: not yet ordered, late past the grace, or failed its check",

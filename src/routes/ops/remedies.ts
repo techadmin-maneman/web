@@ -1,6 +1,7 @@
 // Remedies, behind Access (Customer Care; docs/decisions/0143-remedies.md).
 
-import { createRoute, z } from "@hono/zod-openapi";
+import { opsRoute } from "../../http/session-routes.ts";
+import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -25,7 +26,7 @@ const RemedySchema = z
   .strict()
   .openapi("Remedy");
 
-const giveRoute = createRoute({
+const giveRoute = opsRoute({
   method: "post",
   path: "/api/clients/{id}/remedies",
   summary: "Give a client free service visits, with why: at once within the limit ops set, else for a manager",
@@ -50,18 +51,16 @@ const giveRoute = createRoute({
       description: "Given, or awaiting a manager",
       ...json(z.object({ id: z.uuid(), state: z.enum(["given", "awaiting"]) }).strict()),
     },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such client, or their record is erased"),
   },
 });
 
-const listRoute = createRoute({
+const listRoute = opsRoute({
   method: "get",
   path: "/api/remedies",
   summary: "The remedies awaiting a manager, and those given or declined in the last 30 days",
   responses: {
     200: { description: "The remedies", ...json(z.object({ remedies: z.array(RemedySchema) }).strict()) },
-    403: errorResponse("access_required"),
   },
 });
 
@@ -69,19 +68,18 @@ const decided = {
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: { description: "Decided", ...json(z.object({ ok: z.literal(true) }).strict()) },
-    403: errorResponse("access_required"),
     404: errorResponse("not_found: no such remedy awaiting a manager"),
   },
 };
 
-const approveRoute = createRoute({
+const approveRoute = opsRoute({
   method: "post",
   path: "/api/remedies/{id}/approve",
   summary: "Approve a remedy: the visits are granted, and a note left in the client's chat",
   ...decided,
 });
 
-const declineRoute = createRoute({
+const declineRoute = opsRoute({
   method: "post",
   path: "/api/remedies/{id}/decline",
   summary: "Decline a remedy",
