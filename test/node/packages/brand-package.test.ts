@@ -139,6 +139,18 @@ describe("the Phase 2 colour layer", () => {
 
 // --fs-app-title and --fs-34 both held 34px, so a change to one would leave the other behind. A
 // value is written once in its family; a name for what it is for says which token it is.
+/** The apps' sizes the boards draw off the scale, each recorded in ADR 0025 ("Sizes off the scale"). */
+const OFF_THE_SCALE = [
+  "--app-column",
+  "--wa-bubble-width",
+  "--switch-width",
+  "--skeleton-label",
+  "--skeleton-card",
+  "--tracking-number",
+  "--tech-row",
+  "--tech-time",
+] as const;
+
 describe("the scale", () => {
   const all = new Map([
     ...customProperties("packages/brand/tokens.css"),
@@ -150,6 +162,19 @@ describe("the scale", () => {
     const raw = [...all].filter(([name, value]) => familyOf(name) === family && !value.startsWith("var("));
     const values = raw.map(([, value]) => value);
     expect(raw.filter(([, value], index) => values.indexOf(value) !== index)).toEqual([]);
+  });
+
+  // A size the scale has is the scale's token, so the apps cannot drift from it; the boards' own few off the scale
+  // are listed, each with the board that draws it, in ADR 0025 ("Sizes off the scale").
+  it("gives the apps' sizes as scale tokens, but for the few the boards draw off the scale", () => {
+    const apps = new Map([
+      ...customProperties("packages/brand/tokens-apps.css"),
+      ...customProperties("apps/tech/src/styles/tokens.css"),
+    ]);
+    const raw = [...apps].filter(([name, value]) => /^[0-9.]+(px|em|rem)$/.test(value) && familyOf(name) !== "sp");
+    expect(raw.map(([name]) => name).sort()).toEqual([...OFF_THE_SCALE].sort());
+    const register = readFileSync("docs/decisions/0025-phase-2-conflicts-register.md", "utf8");
+    expect(OFF_THE_SCALE.filter((name) => !register.includes(`\`${name}\``))).toEqual([]);
   });
 
   it("names only tokens that exist where one token is another", () => {
