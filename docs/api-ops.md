@@ -5762,6 +5762,34 @@ The grades, each technician's grade, and the rates per visit
 }
 ```
 
+### GET /api/technician-pay/statement
+
+What each technician earned in a month at their rates per visit
+
+**200**: The month's statement
+
+```json
+{
+  "$ref": "#/components/schemas/PayStatement"
+}
+```
+
+**400**: invalid_request: month is YYYY-MM
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/technician-pay/grades
 
 Add a grade
@@ -12470,6 +12498,17 @@ Request body:
     "service": {
       "$ref": "#/components/schemas/VisitService"
     },
+    "recommended": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A first fit's hair system as the client's latest profile recommends it, by tier; null for none."
+    },
     "pays": {
       "type": "string",
       "enum": [
@@ -12549,6 +12588,7 @@ Request body:
     "kind",
     "services",
     "service",
+    "recommended",
     "pays",
     "credits",
     "owed",
@@ -12638,7 +12678,7 @@ Request body:
     "minutes"
   ],
   "additionalProperties": false,
-  "description": "The service the windows are for: the one asked, else the first."
+  "description": "The service the windows are for: the one asked; for a first fit, else the client's recommended one; else the standard one."
 }
 ```
 
@@ -23201,6 +23241,98 @@ Request body:
     "rates"
   ],
   "additionalProperties": false
+}
+```
+
+### PayStatement
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "example": "2026-11"
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "technician_id": {
+            "type": "string"
+          },
+          "technician": {
+            "type": "string"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The visit's city."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "one_visit",
+              "first_fit",
+              "service",
+              "replacement",
+              "no_show"
+            ],
+            "description": "consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show."
+          },
+          "visits": {
+            "type": "integer"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paise a visit; null where none was in force."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paise in all; null where no rate was in force."
+          }
+        },
+        "required": [
+          "technician_id",
+          "technician",
+          "city",
+          "kind",
+          "visits",
+          "rate",
+          "amount"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "month",
+    "lines"
+  ],
+  "additionalProperties": false,
+  "description": "Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day."
 }
 ```
 

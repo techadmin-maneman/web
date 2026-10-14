@@ -74,6 +74,14 @@ const HEAD: readonly Measurement[] = [
 ];
 const BASE: readonly Measurement[] = ["base_width_in", "base_length_in"];
 
+/** The name of the first figure typed outside its range: the head's, then the base's, then the grey's; null if none. */
+function firstOutOfRange(form: FitForm): string | null {
+  const typed = typedFigures(form.figures);
+  const measured = [...HEAD, ...BASE].find((key) => typed[key] === "invalid");
+  if (measured !== undefined) return copy.measurements[measured];
+  return typed.grey_percent === "invalid" ? copy.sections.grey : null;
+}
+
 /** A list's choices in the order its words are written, each code with its words. */
 function optionsOf<K extends string>(labels: Readonly<Record<K, string>>): Option<K>[] {
   return (Object.keys(labels) as K[]).map((id) => ({ id, label: labels[id] }));
@@ -295,6 +303,7 @@ function ProfileForm({
 
   const spec = fitOf(fit);
   const said = historyOf(history, thisYear);
+  const outOfRange = firstOutOfRange(fit);
   const notice = refused === null ? null : stepsCopy.corrected.other;
 
   if (page === "fit") {
@@ -304,7 +313,7 @@ function ProfileForm({
         title={stepsCopy.titles.profile}
         action={stepsCopy.next}
         ready={spec !== null}
-        unfinished={copy.checkFigures}
+        unfinished={outOfRange === null ? copy.checkFigures : copy.checkFigure(outOfRange)}
         notice={notice}
         onBack={onBack}
         onAction={() => {

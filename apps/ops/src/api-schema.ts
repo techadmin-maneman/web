@@ -614,7 +614,7 @@ export interface paths {
                 query: {
                     client: string;
                     kind: "consultation" | "first_fit" | "service" | "replacement";
-                    /** @description The service; left out, the first offered. */
+                    /** @description The service; left out, the one the client's profile recommends for a first fit, else the standard one. */
                     tier?: string;
                     /** @description The first day; tomorrow if left out, or if earlier. */
                     from?: string;
@@ -8753,6 +8753,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/technician-pay/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What each technician earned in a month at their rates per visit */
+        get: {
+            parameters: {
+                query: {
+                    month: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The month's statement */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PayStatement"];
+                    };
+                };
+                /** @description invalid_request: month is YYYY-MM */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/technician-pay/grades": {
         parameters: {
             query?: never;
@@ -15355,6 +15411,8 @@ export interface components {
             /** @description The kind's services offered on the first day. */
             services: components["schemas"]["ServiceOffer"][];
             service: components["schemas"]["VisitService"];
+            /** @description A first fit's hair system as the client's latest profile recommends it, by tier; null for none. */
+            recommended: string | null;
             /**
              * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
              * @enum {string}
@@ -15391,7 +15449,7 @@ export interface components {
             amount: number;
             gst_percent: number;
         };
-        /** @description The service the windows are for: the one asked, else the first. */
+        /** @description The service the windows are for: the one asked; for a first fit, else the client's recommended one; else the standard one. */
         VisitService: {
             /** @description Its code within its kind, which never changes. */
             tier: string;
@@ -17692,6 +17750,27 @@ export interface components {
                 set_by: string;
                 /** Format: date-time */
                 set_at: string;
+            }[];
+        };
+        /** @description Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day. */
+        PayStatement: {
+            /** @example 2026-11 */
+            month: string;
+            lines: {
+                technician_id: string;
+                technician: string;
+                /** @description The visit's city. */
+                city: string | null;
+                /**
+                 * @description consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show.
+                 * @enum {string}
+                 */
+                kind: "consultation" | "one_visit" | "first_fit" | "service" | "replacement" | "no_show";
+                visits: number;
+                /** @description Paise a visit; null where none was in force. */
+                rate: number | null;
+                /** @description Paise in all; null where no rate was in force. */
+                amount: number | null;
             }[];
         };
         PayGradeAdd: {

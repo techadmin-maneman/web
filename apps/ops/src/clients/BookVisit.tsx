@@ -290,6 +290,13 @@ function Form({
           }}
         />
       )}
+      {offered.recommended !== null && offered.recommended !== offered.service.tier && (
+        <InlineMessage tone="note">
+          {copy.notRecommended(
+            offered.services.find((service) => service.tier === offered.recommended)?.name ?? offered.recommended,
+          )}
+        </InlineMessage>
+      )}
       {day === undefined ? (
         <p className={styles.note}>{copy.noDays}</p>
       ) : (

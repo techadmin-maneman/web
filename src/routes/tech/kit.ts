@@ -1,7 +1,8 @@
 // The technician's kit (docs/decisions/0164-the-kit-screen.md):
 //
 //   GET  /api/tech/kit                          what the kit holds, what is on its way to it, and the pieces to hand back
-//   POST /api/tech/kit/transfers/:id/receive    a top-up received, all of it, or of a hair system the pieces scanned
+//   POST /api/tech/kit/transfers/:id/receive    a top-up received, all of it, or of a hair system the pieces scanned,
+//                                               the rest still to come or missing
 //   POST /api/tech/kit/hand-back                returned pieces, and the kit's expired stock, back to its place
 //
 // Each is the technician's own kit alone, and no cost reaches the phone. The writes are made with signal, as a discount
@@ -98,10 +99,23 @@ const kitRoute = techRoute({
 const receiveRoute = techRoute({
   method: "post",
   path: "/api/tech/kit/transfers/{id}/receive",
-  summary: "A top-up received: all of it, or of a hair system the pieces scanned, the rest lost on the way",
+  summary: "A top-up received: all of it, or of a hair system the pieces scanned, the rest still to come or missing",
   request: {
     params: z.object({ id: z.string().min(1).max(64) }),
-    body: { required: true, ...json(z.object({ units: Labels.optional() }).strict().openapi("TechnicianKitReceipt")) },
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            units: Labels.optional(),
+            rest: z.enum(["on_its_way", "missing"]).default("on_its_way").openapi({
+              description: "Of a part received, whether the pieces not scanned are still to come or were lost on the way.",
+            }),
+          })
+          .strict()
+          .openapi("TechnicianKitReceipt"),
+      ),
+    },
   },
   responses: {
     200: KIT,
@@ -185,11 +199,11 @@ export function registerTechKit(app: App): void {
       .bind(id)
       .first<string>("to_place");
     if (transfer !== technicianId) return refuse(c, "not_found");
-    const units = c.req.valid("json").units ?? null;
+    const body = c.req.valid("json");
     const settled = await receiveTransfer(
       c.env.DB,
       id,
-      { received: null, note: null, units },
+      { received: null, note: null, units: body.units ?? null, restOnItsWay: body.rest === "on_its_way" },
       written(c, technicianId),
     );
     if (!settled.ok) {

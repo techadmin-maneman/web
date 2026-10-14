@@ -16,6 +16,7 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { GradeOfForm } from "./PayForms.tsx";
 import { PayRates } from "./PayRates.tsx";
+import { PayStatement } from "./PayStatement.tsx";
 import styles from "../components/forms.module.css";
 import own from "./technician-pay.module.css";
 
@@ -147,6 +148,7 @@ export function TechnicianPay() {
         maySet={access.mayCall("POST /api/technician-pay/technicians/{id}")}
         onChanged={setChanged}
       />
+      <PayStatement today={pay.today} />
     </>
   );
 }

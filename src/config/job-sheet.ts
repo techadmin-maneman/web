@@ -59,8 +59,8 @@ export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
 };
 
 /**
- * The four reasons the design lists behind "Partial · pick a reason". Only
- * "client stopped it" is named there, so the other three are placeholders.
+ * The reasons behind "Partial · pick a reason". Only "client stopped it" is
+ * named in the design, so the others are placeholders, the clinical two among them.
  * "Ops needs the full set — these drive the task queue", which is why a reason
  * is checked against the list in force before any write.
  */
@@ -70,6 +70,9 @@ export const PARTIAL_REASONS: readonly JobSheetItem[] = [
   { id: "piece_not_ready", label: "Hair system not ready" },
   { id: "client_unwell", label: "Client unwell" },
   { id: "more_time_needed", label: "More time needed" },
+  // The commonest clinical stops, which a technician must be able to give.
+  { id: "scalp_not_suitable", label: "Scalp not suitable today" },
+  { id: "skin_reaction", label: "Skin reaction or allergy" },
 ];
 
 /**

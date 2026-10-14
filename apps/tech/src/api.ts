@@ -194,11 +194,14 @@ export const api = {
 
   /** The kit: what it holds, what is coming to it, and its pieces to hand back (docs/decisions/0164-the-kit-screen.md). */
   kit: () => client.get("/api/tech/kit", { patience: PATIENCE_MS.read }),
-  /** A top-up received in hand: all of it, or of a hair system the pieces scanned. Asked straight, with signal. */
-  receiveTopUp: (id: string, units: readonly string[] | null) =>
+  /**
+   * A top-up received in hand: all of it, or of a hair system the pieces scanned, the rest still to come or missing.
+   * Asked straight, with signal.
+   */
+  receiveTopUp: (id: string, units: readonly string[] | null, rest: "on_its_way" | "missing" = "on_its_way") =>
     client.post("/api/tech/kit/transfers/{id}/receive", {
       path: { id },
-      body: units === null ? {} : { units: [...units] },
+      body: units === null ? {} : { units: [...units], rest },
       patience: PATIENCE_MS.write,
     }),
   /** Returned pieces, and the kit's expired stock, back to its stockroom. */

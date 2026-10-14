@@ -196,9 +196,9 @@ export async function piecesArriving(
   const [lots, units] = await Promise.all([
     db
       .prepare(
-        `SELECT lm.lot_id AS id, -lm.quantity AS quantity FROM stock_movements m
+        `SELECT lm.lot_id AS id, -SUM(lm.quantity) AS quantity FROM stock_movements m
          JOIN stock_lot_moves lm ON lm.movement_id = m.id JOIN stock_lots l ON l.id = lm.lot_id
-         WHERE m.transfer_id = ?1 AND m.quantity < 0 ${SOONEST_FIRST}`,
+         WHERE m.transfer_id = ?1 GROUP BY lm.lot_id HAVING SUM(lm.quantity) < 0 ${SOONEST_FIRST}`,
       )
       .bind(transfer.id)
       .all<{ id: string; quantity: number }>(),

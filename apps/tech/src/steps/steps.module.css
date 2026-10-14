@@ -192,6 +192,14 @@
   color: var(--error-on-ink);
 }
 
+/* A figure's range beneath it, until a figure outside it turns it into .hint. */
+.range {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-17);
+  line-height: var(--lh-145);
+  color: var(--ink-muted);
+}
+
 .paidFor {
   margin: 0;
   font-size: var(--fs-17);

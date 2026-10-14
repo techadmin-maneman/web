@@ -1763,7 +1763,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** A top-up received: all of it, or of a hair system the pieces scanned, the rest lost on the way */
+        /** A top-up received: all of it, or of a hair system the pieces scanned, the rest still to come or missing */
         post: {
             parameters: {
                 query?: never;
@@ -2535,6 +2535,12 @@ export interface components {
         };
         TechnicianKitReceipt: {
             units?: string[];
+            /**
+             * @description Of a part received, whether the pieces not scanned are still to come or were lost on the way.
+             * @default on_its_way
+             * @enum {string}
+             */
+            rest: "on_its_way" | "missing";
         };
         TechnicianKitHandBack: {
             /** @default [] */

@@ -1040,7 +1040,7 @@ What the kit holds, what is on its way to it, and the pieces to hand back
 
 ### POST /api/tech/kit/transfers/{id}/receive
 
-A top-up received: all of it, or of a hair system the pieces scanned, the rest lost on the way
+A top-up received: all of it, or of a hair system the pieces scanned, the rest still to come or missing
 
 Request body:
 
@@ -4345,6 +4345,15 @@ Request body:
       },
       "minItems": 1,
       "maxItems": 500
+    },
+    "rest": {
+      "type": "string",
+      "enum": [
+        "on_its_way",
+        "missing"
+      ],
+      "default": "on_its_way",
+      "description": "Of a part received, whether the pieces not scanned are still to come or were lost on the way."
     }
   },
   "additionalProperties": false

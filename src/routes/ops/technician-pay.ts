@@ -5,6 +5,7 @@
 //   POST  /api/technician-pay/grades/:id/delete     delete one added by mistake, while nothing uses it
 //   POST  /api/technician-pay/rates                 set a grade's rate for a kind of visit, from today or later
 //   POST  /api/technician-pay/technicians/:id       give a technician a grade, or take theirs away
+//   GET   /api/technician-pay/statement?month=      each technician's visits closed in a month, at the rates then
 //
 // Grades and every city's rates are national: they need a national Finance grant. A city's own rate, and a
 // technician's grade, keep to the caller's cities.
@@ -24,6 +25,7 @@ import {
   technicianPay,
   VISIT_PAY_KINDS,
 } from "../../domain/field/technician-pay.ts";
+import { payStatement } from "../../domain/field/pay-statement.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
@@ -87,6 +89,40 @@ const PaySchema = z
 const ok = { description: "The pay as it now stands", ...json(PaySchema) };
 const GradeName = z.object({ name: z.string().trim().regex(GRADE_NAME) }).strict();
 const GradeId = z.object({ id: z.uuid() });
+
+const StatementSchema = z
+  .object({
+    month: z.string().openapi({ example: "2026-11" }),
+    lines: z.array(
+      z
+        .object({
+          technician_id: z.string(),
+          technician: z.string(),
+          city: z.union([z.string(), z.null()]).openapi({ description: "The visit's city." }),
+          kind: KindSchema,
+          visits: z.number().int(),
+          rate: z.union([z.number().int(), z.null()]).openapi({ description: "Paise a visit; null where none was in force." }),
+          amount: z.union([z.number().int(), z.null()]).openapi({ description: "Paise in all; null where no rate was in force." }),
+        })
+        .strict(),
+    ),
+  })
+  .strict()
+  .openapi("PayStatement", {
+    description: "Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day.",
+  });
+
+const statementRoute = createRoute({
+  method: "get",
+  path: "/api/technician-pay/statement",
+  summary: "What each technician earned in a month at their rates per visit",
+  request: { query: z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }) },
+  responses: {
+    200: { description: "The month's statement", ...json(StatementSchema) },
+    400: errorResponse("invalid_request: month is YYYY-MM"),
+    403: errorResponse("access_required"),
+  },
+});
 
 const listRoute = createRoute({
   method: "get",
@@ -208,6 +244,12 @@ export function registerOpsTechnicianPay(app: App): void {
   const change = (c: Context<AppEnv>) => ({ actor: actorOf(c), requestId: c.var.requestId, now: c.var.deps.now() });
 
   app.openapi(listRoute, async (c) => c.json(await list(c), 200));
+
+  app.openapi(statementRoute, async (c) => {
+    const { month } = c.req.valid("query");
+    const [reach, lines] = await Promise.all([routeReach(c), payStatement(c.env.DB, month)]);
+    return c.json({ month, lines: lines.filter((line) => reachesCity(reach, line.city)) }, 200);
+  });
 
   app.openapi(addGradeRoute, async (c) => {
     const added = await addGrade(c.env.DB, { ...change(c), name: c.req.valid("json").name });

@@ -239,6 +239,8 @@ export const clients = {
       },
       service: "Service",
       hairSystem: "Hair system",
+      /** A first fit booked as other than the client's profile recommends. */
+      notRecommended: (name: string) => `Their hair profile recommends ${name}.`,
       day: "Day",
       window: "Window",
       technician: "Technician",

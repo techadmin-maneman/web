@@ -705,6 +705,8 @@ export const profile = {
   greyRange: (min: number, max: number) => `${String(min)}–${String(max)}.`,
   yearRange: (first: number, last: number) => `A year from ${String(first)} to ${String(last)}.`,
   checkFigures: "Check the figures to continue",
+  /** Next, held back by a figure outside its range: which one. */
+  checkFigure: (figure: string) => `${figure.split(",")[0] ?? figure} is out of range`,
   history: {
     title: "History",
     remedies: "Remedies tried",
@@ -763,6 +765,10 @@ export const kit = {
     receive: "Receive all",
     receiveScanned: (count: number) => `Receive ${String(count)} scanned`,
     scanned: (count: number, of: number) => `${String(count)} of ${String(of)} scanned`,
+    /** Asked before part of a top-up is received. */
+    rest: (count: number) => (count === 1 ? "The one not scanned is" : `The ${String(count)} not scanned are`),
+    stillToCome: "Still to come",
+    missing: "Missing",
     notOnIt: "That label isn’t on this transfer.",
     settled: "Already received or sent back.",
   },

@@ -5,6 +5,7 @@
 import { Field, TextInput } from "@maneman/ui/Field";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { IconButton } from "@maneman/ui/IconButton";
 import { QrCamera } from "@maneman/ui/ScanField";
 import { scanned } from "@maneman/ui/scanned";
@@ -93,12 +94,47 @@ function ScanLabel({ onLabel }: { onLabel: (label: string) => void }) {
 }
 
 /** One top-up on its way: received whole, or of a hair system the pieces scanned, the rest lost on the way. */
+/** Whether the pieces of a top-up not scanned are still to come, as they are unless the technician says otherwise. */
+function RestOf({
+  count,
+  rest,
+  onRest,
+}: {
+  count: number;
+  rest: "on_its_way" | "missing";
+  onRest: (rest: "on_its_way" | "missing") => void;
+}) {
+  const choices = [
+    ["on_its_way", copy.coming.stillToCome],
+    ["missing", copy.coming.missing],
+  ] as const;
+  return (
+    <div className={styles.buttons} role="group" aria-label={copy.coming.rest(count)}>
+      <p className={styles.note}>{copy.coming.rest(count)}</p>
+      {choices.map(([value, label]) => (
+        <ToggleButton
+          key={value}
+          onInk
+          pressed={rest === value}
+          onClick={() => {
+            onRest(value);
+          }}
+        >
+          {label}
+        </ToggleButton>
+      ))}
+    </div>
+  );
+}
+
 function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onKit: (kit: Kit) => void }) {
   const [scanned, setScanned] = useState<readonly string[]>([]);
+  const [rest, setRest] = useState<"on_its_way" | "missing">("on_its_way");
   const [problem, setProblem] = useState<string | null>(null);
   const pieces = topUp.units.length > 0;
+  const unscanned = topUp.quantity - scanned.length;
   const receive = async () => {
-    const answer = await api.receiveTopUp(topUp.id, pieces ? scanned : null);
+    const answer = await api.receiveTopUp(topUp.id, pieces ? scanned : null, rest);
     if (answer.ok) onKit(answer.body);
     else setProblem(answer.status === 409 ? copy.coming.settled : copy.failed);
   };
@@ -122,6 +158,7 @@ function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onK
             }}
           />
           <p className={styles.note}>{copy.coming.scanned(scanned.length, topUp.units.length)}</p>
+          {scanned.length > 0 && unscanned > 0 && <RestOf count={unscanned} rest={rest} onRest={setRest} />}
         </>
       )}
       {problem !== null && (

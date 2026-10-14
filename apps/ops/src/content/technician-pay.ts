@@ -1,6 +1,7 @@
 // The Technician pay page's words (Finance; docs/decisions/0122-technician-pay-per-visit.md). The page imports them
 // itself, so they stay out of the console's first load.
 
+import { fullMonth } from "@maneman/web-kit/dates";
 import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const technicianPay = {
@@ -75,12 +76,26 @@ export const technicianPay = {
     saving: "Saving",
     back: "Back",
   },
+  /** The month's pay at the rates per visit, with its CSV. */
+  statement: {
+    title: "Pay for the month",
+    month: "Month",
+    monthName: (month: string) => fullMonth(month),
+    none: "No visits closed that month.",
+    download: "Download CSV",
+    fileName: (month: string) => `technician-pay-${month}.csv`,
+    columns: ["Technician", "City", "Visit", "Visits", "Rate", "Amount"],
+    noCity: "No city",
+    noRate: "No rate",
+    total: (name: string) => `${name}: total`,
+    totalUnpriced: (name: string) => `${name}: total, without the visits no rate covers`,
+  },
   done: { saved: "Saved.", deleted: "Grade deleted." },
   errors: {
     name: "Up to 40 letters or digits.",
     taken: "A grade has that name.",
     in_use: "In use: a technician holds it, or a rate names it.",
-    from: "Today or later.",
+    from: "A rate starts today or later, so a month already worked keeps its own.",
     city: "Choose one of our cities.",
     amount: "A whole amount, up to the most a visit may pay.",
     not_found: "Already gone. Reload.",
