@@ -28,5 +28,7 @@ export function timeOfDay(time: string, space = " "): string {
 export function timeRange(start: string, end: string, space = " "): string {
   const [from, to] = [said(start), said(end)];
   const oneHalf = from.mark === to.mark || (from.mark === "noon" && to.mark === "pm");
-  return oneHalf ? `${from.number}–${to.number}${space}${to.mark}` : `${timeOfDay(start, space)}–${timeOfDay(end, space)}`;
+  return oneHalf
+    ? `${from.number}–${to.number}${space}${to.mark}`
+    : `${timeOfDay(start, space)}–${timeOfDay(end, space)}`;
 }

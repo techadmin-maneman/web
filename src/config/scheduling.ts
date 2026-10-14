@@ -31,7 +31,10 @@ export const WINDOW_TIMES: Readonly<Record<BookingWindow, { start: string; end: 
 };
 
 /** A window's hours on a date, as the instants it starts and ends: what a client's calendar holds. */
-export function windowSpan(date: string, hours: { readonly start: string; readonly end: string }): { start: Date; end: Date } {
+export function windowSpan(
+  date: string,
+  hours: { readonly start: string; readonly end: string },
+): { start: Date; end: Date } {
   return { start: indiaInstant(date, hours.start), end: indiaInstant(date, hours.end) };
 }
 

@@ -29,10 +29,7 @@ describe("the templates submitted to WhatsApp", () => {
     const arrived = approvedTemplate("technician_arrived_v1");
     if (arrived === null) throw new Error("technician_arrived_v1 is submitted");
     expect(arrived.body).toBe("Hi {{1}}, {{2}} is at your door for your visit.");
-    expect(approvedParams(arrived, ["Arjun", "service visit", "Thu", "12–4 pm", "Imran"])).toEqual([
-      "Arjun",
-      "Imran",
-    ]);
+    expect(approvedParams(arrived, ["Arjun", "service visit", "Thu", "12–4 pm", "Imran"])).toEqual(["Arjun", "Imran"]);
     expect(approvedParams(arrived, ["Arjun"])).toBeNull();
   });
 
