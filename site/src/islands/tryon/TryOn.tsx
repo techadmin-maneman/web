@@ -30,7 +30,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { Consent } from "./Consent.tsx";
 import { Failed } from "./Failed.tsx";
 import { Gate } from "./Gate.tsx";
-import { useReleased, useRenderWatch } from "./hooks.ts";
+import { useReleased, useRenderWatch, useScreenHistory } from "./hooks.ts";
 import { Looks } from "./Looks.tsx";
 import { backFrom, screenNamed, START, step, type Screen } from "./machine.ts";
 import { Sent } from "./Sent.tsx";
@@ -128,6 +128,7 @@ function TryOnFlow(props: Props) {
 
   // Once the look is on its way, a render that fails sends the visitor to the error screen; its message is skipped.
   useRenderWatch(!demo && screen === "sent" && !state.returning, jobId, fail);
+  const wroteHistory = useScreenHistory(screen, send, !demo);
 
   // The photograph is shown from memory; its object URL is released when replaced.
   useReleased(state.photo);
@@ -162,6 +163,7 @@ function TryOnFlow(props: Props) {
 
   function back() {
     if (backFrom(screen) === "home") location.assign("/");
+    else if (wroteHistory()) history.back();
     else send({ type: "back" });
   }
 

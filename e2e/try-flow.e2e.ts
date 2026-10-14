@@ -123,6 +123,27 @@ test.beforeEach(async ({ page }) => {
   await page.clock.install();
 });
 
+// The browser's Back, or a phone's back gesture, left /try altogether from any screen, and the photo and choices with it.
+test("the browser's Back steps back through the try-on, and leaves it only from its first screen", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/");
+  await visit(page, "/try");
+  await throughToGate(page);
+
+  await page.goBack();
+  await screenIs(page, "looks");
+  await page.goBack();
+  await screenIs(page, "stage");
+  await page.goBack();
+  await screenIs(page, "consent");
+  expect(new URL(page.url()).pathname).toBe("/try");
+  // Its own Back goes the same way.
+  await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
+  await screenIs(page, "upload");
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+});
+
 test("the whole try-on: uploaded during the choices, the number given before the look is made", async ({ page }) => {
   const seen = await mockApi(page);
   await visit(page, "/try");
