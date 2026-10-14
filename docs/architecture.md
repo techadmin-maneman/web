@@ -50,9 +50,10 @@ The rest (`analytics/`, `books/`, `care/`, `leads/`, `no-shows/`, `ops/`, `priva
 
 - A write to a core table goes through its folder's functions. `test/node/architecture/table-writers.test.ts` lists the
   writes made elsewhere today, and the list only shrinks: move one into its owner when its file is next changed.
-- A folder imports only the folders `test/node/architecture/domain-folders-baseline.ts` lists, and that list only
-  shrinks too. Two folders that import each other are a knot: untie one when you are in it, by moving what both need
-  to the folder that needs nothing back (as the audit log, alerts and Rules moved to `platform/`).
+- Every import from one folder to another is listed in `test/node/architecture/domain-folders-baseline.ts`: a new one
+  goes on the list on purpose. Two folders that import each other are a knot, and the knots listed there only fall:
+  a new one fails the test. Untie one when you are in it, by moving what both need to the folder that needs nothing
+  back, as the audit log, alerts and Rules moved to `platform/`.
 
 ## Providers
 

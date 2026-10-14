@@ -17,10 +17,16 @@ const naming = (pattern: RegExp) => sourceFiles("src").filter((file) => pattern.
 
 describe("the hair profile's table", () => {
   it("is read and written in its own domain file alone", () => {
-    // The audit log names it too, only to write a correction's entry once its row is there, and the map of personal
-    // data, to say what the export and the erasure do with it. Neither reads a column of it.
+    // The audit log names it too, only to write a correction's entry once its row is there; the map of personal data,
+    // to say what the export and the erasure do with it; and the row types written from the migrations, which name
+    // every table. None reads a column of it.
     expect(naming(/\bhair_profiles\b/).sort()).toEqual(
-      ["src/domain/platform/audit.ts", "src/domain/clients/hair-profiles.ts", "src/policy/personal-data.ts"].sort(),
+      [
+        "src/domain/platform/audit.ts",
+        "src/domain/clients/hair-profiles.ts",
+        "src/lib/rows.ts",
+        "src/policy/personal-data.ts",
+      ].sort(),
     );
   });
 

@@ -6,4 +6,4 @@ export { aHold } from "./holds.ts";
 export { aPayment } from "./payments.ts";
 export { anAddress, aPerson } from "./people.ts";
 export { aTechnician } from "./technicians.ts";
-export { aVisit } from "./visits.ts";
+export { aVisit, keepUpVisits } from "./visits.ts";

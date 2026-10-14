@@ -27,6 +27,7 @@ import { moveInPlace, replacesBegunVisit, moveRefused, retireReplaced } from "./
 import { giveBack, giveBackUnkept } from "./give-back.ts";
 import { tellOfStockGap } from "../inventory/stock-gap.ts";
 import { isAFitting } from "../../config/visit-types.ts";
+import { visitUpkeep } from "../visits/visit-upkeep.ts";
 
 type Started = { readonly kind: "free" } | { readonly kind: "pay"; readonly orderId: string };
 
@@ -329,6 +330,7 @@ async function writeNewBooking({
       )
       .bind(visit.id, at, hold.person_id, hold.type, hold.one_visit),
     ...creditRedeem(db, hold, now),
+    ...visitUpkeep(db, { visits: [visit.id] }),
   ]);
   const booked = await bookingHoldRow(db, hold.id);
   if (booked === null) return;

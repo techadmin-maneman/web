@@ -8,6 +8,7 @@ import { createLogger } from "../../../src/log.ts";
 import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import { fakeDependencies, fakeQueue, LOCAL_CONFIG, markDatabase, NOW } from "../helpers.ts";
+import { aVisit } from "../fixtures/index.ts";
 
 const LONG_AGO = "2025-08-01T06:30:00.000Z";
 const LAST_MONTH = "2026-08-21T06:30:00.000Z";
@@ -41,12 +42,15 @@ describe("a person who never became a client", () => {
   it("is never one who had a visit or a payment, or waits on a waitlist", async () => {
     await person("20001");
     await person("20002");
-    await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
-       VALUES ('ap-1', 'ap-1', '20001', 'consultation', 'completed', ?1, ?1, ?1)`,
-    )
-      .bind(LONG_AGO)
-      .run();
+    await aVisit({
+      id: "ap-1",
+      person_id: "20001",
+      type: "consultation",
+      status: "completed",
+      window_start: LONG_AGO,
+      window_end: LONG_AGO,
+      synced_at: LONG_AGO,
+    });
     await env.DB.prepare(
       `INSERT INTO waitlist_entries (id, pincode, person_id, contact_consent_at, created_at)
        VALUES ('w-1', '122018', '20002', ?1, ?1)`,

@@ -1,5 +1,5 @@
-// The imports between src/domain/'s folders today, as ./domain-folders.test.ts finds them. A line comes off when the
-// import it names is gone; none is added.
+// The imports between src/domain/'s folders, as ./domain-folders.test.ts finds them: a line comes off when the import
+// it names is gone, and goes on when a new one is made on purpose.
 
 export const FOLDER_EDGES: readonly string[] = [
   "analytics -> clients",
@@ -106,4 +106,25 @@ export const FOLDER_EDGES: readonly string[] = [
   "visits -> platform",
   "visits -> privacy",
   "words -> platform",
+];
+
+/** The pairs of folders that import each other today. One comes off when it is untied; none is added. */
+export const KNOTS: readonly string[] = [
+  "booking <-> clients",
+  "booking <-> inventory",
+  "booking <-> messages",
+  "booking <-> money",
+  "booking <-> privacy",
+  "booking <-> visits",
+  "clients <-> dispatch",
+  "clients <-> visits",
+  "field <-> inventory",
+  "field <-> visits",
+  "inventory <-> purchasing",
+  "messages <-> money",
+  "messages <-> privacy",
+  "messages <-> visits",
+  "money <-> visits",
+  "no-shows <-> visits",
+  "privacy <-> try-on",
 ];

@@ -22,6 +22,7 @@ import {
   person,
   grievance,
 } from "./ops-tasks-fixtures.ts";
+import { keepUpVisits } from "../fixtures/index.ts";
 
 let ops: App;
 
@@ -37,7 +38,10 @@ interface Body {
   }[];
 }
 
-const tasks = async (): Promise<Body> => (await request(ops, "/api/tasks")).json<Body>();
+const tasks = async (): Promise<Body> => {
+  await keepUpVisits();
+  return (await request(ops, "/api/tasks")).json<Body>();
+};
 
 const groupNames = (body: Body) => body.groups.map((each) => each.group);
 
@@ -59,12 +63,14 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
   const ME = "ops@localhost";
   const PRIYA = "priya@maneman.in";
 
-  const ownerOf = (group: string, id: string, owner: string | null) =>
-    request(ops, `/api/tasks/${group}/${id}/owner`, {
+  const ownerOf = async (group: string, id: string, owner: string | null) => {
+    await keepUpVisits();
+    return request(ops, `/api/tasks/${group}/${id}/owner`, {
       method: "PUT",
       headers: ORIGIN,
       body: JSON.stringify({ owner }),
     });
+  };
 
   /** A member of staff who has signed in to the console before, yesterday unless `at` says: the log says so. */
   async function signedIn(email: string, at = "2026-09-20T06:00:00.000Z") {
@@ -263,6 +269,7 @@ describe("PUT /api/tasks/{group}/{id}/owner", () => {
         .bind(JSON.stringify({ ...NEXT_VISIT_DAYS, first_fit_to_book: 3 }), NOW.toISOString())
         .run();
       const freshConsole = appFor("local", fakeDependencies(), {}, "ops");
+      await keepUpVisits();
       const board = await (await request(freshConsole, "/api/tasks")).json<Body>();
       expect(tasksIn(board, "first_fit_to_book")).toMatchObject([
         { id: PERSON, owner: ME, since: "2026-09-12T18:30:00.000Z" },

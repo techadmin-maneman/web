@@ -53,6 +53,7 @@ import {
   landingOf,
 } from "./dispatch-landing.ts";
 import { roomTechnicians, whyNotThem } from "./technician-fit.ts";
+import { visitUpkeep } from "../visits/visit-upkeep.ts";
 
 export interface MoveInput {
   readonly appointmentId: string;
@@ -252,6 +253,7 @@ async function writeMove(db: D1Database, deps: MoveDeps, move: PlannedMove, now:
       movedVisit(db, move, at),
       releasingClaims(db, move.id),
       ...checkInCleared(db, move, now),
+      ...visitUpkeep(db, { visits: [move.job.id] }),
     ]);
   } catch (error) {
     if (failedUniqueOn(error, "slot_claims")) return { kind: "refused", reason: "clash" };

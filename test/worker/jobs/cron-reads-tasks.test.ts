@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { TASKS_ROWS_READ_PER_LOOK } from "../../../scripts/lib/usage-budget.ts";
 import { NOW, appFor, captureLogs, fakeDependencies, markDatabase, request } from "../helpers.ts";
 import { DAY_MS, AGO, IN_TWO_MONTHS, over, rowsReadBy } from "./cron-reads-fixtures.ts";
+import { keepUpVisits } from "../fixtures/index.ts";
 
 beforeEach(async () => {
   await markDatabase();
@@ -108,6 +109,7 @@ describe("a look at the Tasks board or the Stock page", () => {
       for (const sql of VISIT_SQL) statements.push(over(sql, 1, CLIENTS, 60 + 30 * (visit - 1), visit));
     }
     await env.DB.batch(statements);
+    await keepUpVisits();
   }
 
   async function movements(from: number, to: number): Promise<void> {
@@ -176,6 +178,7 @@ describe("a look at the Tasks board or the Stock page", () => {
       ...WAITING_REQUESTS_SQL.map((sql) => over(sql, 1, 3)),
       ...ANSWERED_LEADS_SQL.map((sql) => over(sql, 1, 20)),
     ]);
+    await keepUpVisits();
     await rowsReadBy(tasks); // the console's settings, read once and kept
     const before = await rowsReadBy(tasks);
     const board = await (await tasks()).json<{ groups: { group: string; tasks: unknown[] }[] }>();
@@ -188,6 +191,7 @@ describe("a look at the Tasks board or the Stock page", () => {
     );
 
     await env.DB.batch(ANSWERED_LEADS_SQL.map((sql) => over(sql, 21, 200)));
+    await keepUpVisits();
     const after = await rowsReadBy(tasks);
 
     expect({ before, after }).toEqual({ before, after: before });

@@ -9,6 +9,7 @@ import { type AuditEntry, auditStatementIfWritten } from "../platform/audit.ts";
 import { visitBegun } from "./visit-begun.ts";
 import type { ChangeTerms } from "./visit-changes.ts";
 import { STEPS } from "./visit-status.ts";
+import { visitUpkeep } from "./visit-upkeep.ts";
 
 /** A cancel ops make in the console: who made it, their reason, the terms they chose, and its audit entry. */
 export interface OpsCancel {
@@ -176,6 +177,7 @@ async function writeCancel(db: D1Database, terms: ChangeTerms, change: CancelOf,
     message.statement,
     ...restoredCredit(db, terms, change, now),
     ...auditedCancel(db, change, now),
+    ...visitUpkeep(db, { visits: [visit.id] }),
   ]);
   return claimed?.meta.changes === 1 ? message.id : null;
 }

@@ -23,6 +23,7 @@ import {
   consultationFor,
   erasureRequest,
 } from "./ops-tasks-fixtures.ts";
+import { keepUpVisits } from "../fixtures/index.ts";
 
 let ops: App;
 
@@ -38,7 +39,10 @@ interface Body {
   }[];
 }
 
-const tasks = async (): Promise<Body> => (await request(ops, "/api/tasks")).json<Body>();
+const tasks = async (): Promise<Body> => {
+  await keepUpVisits();
+  return (await request(ops, "/api/tasks")).json<Body>();
+};
 
 // A visit these fixtures leave with no technician, or open from a day past, is on the board too; each has its own test
 // (test/worker/ops/tasks-open-visits.test.ts).

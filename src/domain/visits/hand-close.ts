@@ -14,6 +14,7 @@ import { closeOneVisit } from "./one-visit.ts";
 import type { LinkDeps } from "../money/payment-links.ts";
 import { landedOutcome } from "./visit-begun.ts";
 import { closeVisit, durationOf, moveVisit, STEPS, type AppointmentStatus, type ClosedByHand } from "./visit-status.ts";
+import { visitUpkeep } from "./visit-upkeep.ts";
 
 type HandOutcome = "done" | "partial" | "no_show";
 
@@ -98,6 +99,7 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
       byHand: close.byHand,
     }),
     auditStatementIfClosed(db, close.audit, now, close.appointmentId),
+    ...visitUpkeep(db, { visits: [close.appointmentId] }),
   ]);
   // The count takes in what the appointments' triggers write as well, so any change at all means the visit moved.
   if (moved === undefined || moved.meta.changes === 0) return { kind: "refused", code: "already_closed" };
@@ -136,6 +138,7 @@ async function closeAsNoShow(
       byHand: close.byHand,
     }),
     auditStatementIfClosed(db, close.audit, now, close.appointmentId),
+    ...visitUpkeep(db, { visits: [close.appointmentId] }),
   ]);
   if (moved === undefined || moved.meta.changes === 0) return { kind: "refused", code: "already_closed" };
   await openNoShowCase(db, {

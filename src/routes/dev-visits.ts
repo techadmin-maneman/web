@@ -9,6 +9,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { closeVisit, moveVisit } from "../domain/visits/visit-status.ts";
 import type { App } from "../http/context.ts";
 import { errorResponse, refuse } from "../http/errors.ts";
+import { visitUpkeep } from "../domain/visits/visit-upkeep.ts";
 
 const CLOSED_AS = { done: "completed", partial: "terminated" } as const;
 
@@ -56,6 +57,7 @@ export function registerDevVisits(app: App): void {
     const [moved] = await db.batch([
       moveVisit(db, id, outcome, at),
       closeVisit({ db, appointmentId: id, outcome, times, partialReason: null, at }),
+      ...visitUpkeep(db, { visits: [id] }),
     ]);
     // The board version's trigger counts among the changes, so any change at all is the move.
     if ((moved?.meta.changes ?? 0) === 0) return refuse(c, "not_changeable");

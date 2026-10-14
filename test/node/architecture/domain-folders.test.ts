@@ -1,12 +1,12 @@
 // Which folders of src/domain/ import which (docs/architecture.md): a folder is a module, and an import from one to
-// another is a dependency someone has to keep in mind when either changes. Those there are today are listed in
-// ./domain-folders-baseline.ts; a new one fails here, and one gone must come off the list, so it only shrinks. A pair
-// that import each other is a knot to untie, never one to add.
+// another is a dependency someone has to keep in mind when either changes. Every such import is listed in
+// ./domain-folders-baseline.ts, one gone must come off the list, and a new one goes on it on purpose. Two folders that
+// import each other are a knot: those there are today are listed, the list only shrinks, and a new one fails here.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, normalize } from "node:path/posix";
 import { describe, expect, it } from "vitest";
-import { FOLDER_EDGES } from "./domain-folders-baseline.ts";
+import { FOLDER_EDGES, KNOTS } from "./domain-folders-baseline.ts";
 
 function filesUnder(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -30,13 +30,27 @@ const EDGES = [
   ),
 ].sort((a, b) => a.localeCompare(b));
 
+/** Each pair of folders that import each other, as "a <-> b" with a before b. */
+const knotted = EDGES.flatMap((edge) => {
+  const [from = "", to = ""] = edge.split(" -> ");
+  return from < to && EDGES.includes(`${to} -> ${from}`) ? [`${from} <-> ${to}`] : [];
+});
+
 describe("the folders of src/domain/", () => {
   it("import only the folders the baseline lists", () => {
     expect(EDGES.filter((edge) => !FOLDER_EDGES.includes(edge))).toEqual([]);
   });
 
-  it("list no import that has since gone, so the baseline only shrinks", () => {
+  it("list no import that has since gone", () => {
     expect(FOLDER_EDGES.filter((edge) => !EDGES.includes(edge))).toEqual([]);
+  });
+
+  it("tie no new knot: two folders that import each other only where the list of knots has them", () => {
+    expect(knotted.filter((knot) => !KNOTS.includes(knot))).toEqual([]);
+  });
+
+  it("list no knot since untied, so the list of knots only shrinks", () => {
+    expect(KNOTS.filter((knot) => !knotted.includes(knot))).toEqual([]);
   });
 
   it("hold every file in a folder, none at the top", () => {
