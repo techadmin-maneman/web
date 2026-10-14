@@ -30,7 +30,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { api, type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { firstShown, noShows } from "../content.ts";
 import { useAccess, WAIVING_A_NO_SHOW } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
@@ -452,13 +452,13 @@ export function NoShowsScreen() {
     setRulings((count) => count + 1);
   }, []);
   return (
-    <Shell section="/payments" title={noShows.title}>
+    <>
       <div className={styles.column}>
         <Money key={`money-${String(rulings)}`} />
         <Disputes onRuled={ruled} />
         <NoShowQueue onDecided={ruled} />
         <DecidedToday key={`decided-${String(rulings)}`} />
       </div>
-    </Shell>
+    </>
   );
 }

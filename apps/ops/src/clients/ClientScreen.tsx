@@ -20,7 +20,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useEffect, useState } from "react";
 import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { rememberClient } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -197,14 +197,14 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
 
   if (erasedId === clientId) {
     return (
-      <Shell section="/clients" title={clients.title} flush>
+      <>
         <Erased />
-      </Shell>
+      </>
     );
   }
 
   return (
-    <Shell section="/clients" title={clients.title} flush>
+    <>
       {whenLoaded(loaded, {
         loading: (
           <div className={styles.waiting}>
@@ -264,6 +264,6 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
             </div>
           ),
       })}
-    </Shell>
+    </>
   );
 }

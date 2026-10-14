@@ -16,7 +16,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
 import { api, type Stock } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
@@ -260,7 +260,7 @@ export function StockScreen() {
   const [firstKind, ...otherKinds] = KINDS.filter((kind) => access.mayCall(RECORDING[kind]));
 
   return (
-    <Shell section="/stock" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
@@ -314,6 +314,6 @@ export function StockScreen() {
           )}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

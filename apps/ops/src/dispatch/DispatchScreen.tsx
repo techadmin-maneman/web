@@ -24,7 +24,7 @@
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { BoardQuery } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
+import { useHeaderSub } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -59,8 +59,8 @@ export function DispatchScreen() {
   const [move, setMove] = useState<Move | null>(null);
   const { loaded, last, refresh, retry } = useBoard(query, move !== null || opened !== null || changing !== null);
   const board = loaded.state === "loaded" ? loaded.value : null;
+  useHeaderSub(board === null ? undefined : weekOf(board.dates));
   const access = useAccess();
-
   /** What the drawer or the move was opened from, so the keyboard comes back to it. */
   const opener = useRef<HTMLElement | null>(null);
   const area = useRef<HTMLDivElement>(null);
@@ -126,7 +126,7 @@ export function DispatchScreen() {
   const picking = move === null || chosen === null ? null : { ...move, to: chosen };
 
   return (
-    <Shell section="/dispatch" title={dispatch.title} sub={board === null ? undefined : weekOf(board.dates)} flush>
+    <>
       <div className={styles.area} ref={area} tabIndex={-1}>
         <div className={styles.main}>
           <Toolbar board={last} query={query} onQuery={setQuery} find={find} onFind={setFind} />
@@ -145,26 +145,24 @@ export function DispatchScreen() {
           {loaded.state === "loading" && <Loading />}
           {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
           {board !== null && (
-            <>
-              <div className={styles.scroll}>
-                {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
-                {board.technicians.length > 0 && rows.length === 0 && (
-                  <EmptyState look="panel" line={dispatch.tools.nothingFound(find.trim())} />
-                )}
-                {rows.length > 0 && (
-                  <Grid
-                    board={board}
-                    rows={rows}
-                    inHand={inHand}
-                    found={found}
-                    onOpen={open}
-                    onTake={access.mayCall("POST /api/dispatch/move") ? take : null}
-                    onLand={land}
-                    onRoutes={access.mayCall("GET /api/dispatch/day") ? setRoutesOn : null}
-                  />
-                )}
-              </div>
-            </>
+            <div className={styles.scroll}>
+              {board.technicians.length === 0 && <EmptyState look="panel" line={dispatch.board.empty} />}
+              {board.technicians.length > 0 && rows.length === 0 && (
+                <EmptyState look="panel" line={dispatch.tools.nothingFound(find.trim())} />
+              )}
+              {rows.length > 0 && (
+                <Grid
+                  board={board}
+                  rows={rows}
+                  inHand={inHand}
+                  found={found}
+                  onOpen={open}
+                  onTake={access.mayCall("POST /api/dispatch/move") ? take : null}
+                  onLand={land}
+                  onRoutes={access.mayCall("GET /api/dispatch/day") ? setRoutesOn : null}
+                />
+              )}
+            </div>
           )}
         </div>
         {board !== null && (
@@ -223,6 +221,6 @@ export function DispatchScreen() {
           blackout={isBlackout(rooms, picking.to.date)}
         />
       )}
-    </Shell>
+    </>
   );
 }

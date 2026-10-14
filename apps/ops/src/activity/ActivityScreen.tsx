@@ -12,7 +12,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { api, type ActivityEntry } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { activity } from "../content/activity.ts";
 import { activityPath, clientPath, dispatchPath, technicianPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -192,12 +192,12 @@ export function ActivityScreen() {
     setFilters(next);
   };
   return (
-    <Shell section="/activity" title={copy.title}>
+    <>
       <div className={styles.column}>
         <Linked filters={filters} onApply={apply} />
         <Narrow filters={filters} onApply={apply} />
         <Log key={activityPath(filters)} filters={filters} />
       </div>
-    </Shell>
+    </>
   );
 }

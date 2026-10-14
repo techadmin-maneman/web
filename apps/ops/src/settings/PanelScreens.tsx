@@ -3,8 +3,6 @@
 // laid out as a Settings panel is. The service area is the Served tab of Areas, under Growth.
 
 import type { ReactNode } from "react";
-import { Shell } from "../components/Shell.tsx";
-import { sectionOf, SECTION_NAMES, type Page } from "../route.ts";
 import { DiscountCodes } from "./DiscountCodes.tsx";
 import { PartnerCommission } from "./PartnerCommission.tsx";
 import { Services } from "./Services.tsx";
@@ -13,17 +11,13 @@ import { Staff } from "./Staff.tsx";
 import { TechnicianPay } from "./TechnicianPay.tsx";
 import styles from "../components/forms.module.css";
 
-function PanelScreen({ page, children }: { page: Page; children: ReactNode }) {
-  return (
-    <Shell section={sectionOf(page).path} title={SECTION_NAMES[page]}>
-      <div className={styles.screen}>{children}</div>
-    </Shell>
-  );
+function PanelScreen({ children }: { children: ReactNode }) {
+  return <div className={styles.screen}>{children}</div>;
 }
 
 export function PricesScreen() {
   return (
-    <PanelScreen page="prices">
+    <PanelScreen>
       <Services />
       <StandardCosts />
     </PanelScreen>
@@ -32,7 +26,7 @@ export function PricesScreen() {
 
 export function DiscountCodesScreen() {
   return (
-    <PanelScreen page="discount-codes">
+    <PanelScreen>
       <DiscountCodes />
     </PanelScreen>
   );
@@ -40,7 +34,7 @@ export function DiscountCodesScreen() {
 
 export function TechnicianPayScreen() {
   return (
-    <PanelScreen page="technician-pay">
+    <PanelScreen>
       <TechnicianPay />
     </PanelScreen>
   );
@@ -48,7 +42,7 @@ export function TechnicianPayScreen() {
 
 export function PartnerCommissionScreen() {
   return (
-    <PanelScreen page="partner-commission">
+    <PanelScreen>
       <PartnerCommission />
     </PanelScreen>
   );
@@ -56,7 +50,7 @@ export function PartnerCommissionScreen() {
 
 export function StaffScreen() {
   return (
-    <PanelScreen page="staff">
+    <PanelScreen>
       <Staff />
     </PanelScreen>
   );

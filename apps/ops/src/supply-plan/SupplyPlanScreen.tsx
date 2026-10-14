@@ -10,7 +10,6 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { client } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
 import form from "../components/forms.module.css";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
@@ -87,7 +86,7 @@ export function SupplyPlanScreen() {
     } else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <Shell section="/supply-plan" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
@@ -123,6 +122,6 @@ export function SupplyPlanScreen() {
           <Planning />
         </div>
       )}
-    </Shell>
+    </>
   );
 }

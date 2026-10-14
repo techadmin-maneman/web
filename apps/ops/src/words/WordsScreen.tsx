@@ -12,12 +12,10 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Word } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column, type TableView } from "../components/useTableView.ts";
 import { words as copy } from "../content/words.ts";
 import { useAccess } from "../lib/access.ts";
-import { SECTION_NAMES } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeOf, WordForm, type Messages } from "./WordForm.tsx";
 import { WordHistory } from "./WordHistory.tsx";
@@ -228,10 +226,10 @@ function Words() {
 
 export function WordsScreen() {
   return (
-    <Shell section="/words" title={SECTION_NAMES.words}>
+    <>
       <div className={styles.screen}>
         <Words />
       </div>
-    </Shell>
+    </>
   );
 }

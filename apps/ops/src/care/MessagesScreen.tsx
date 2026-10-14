@@ -12,9 +12,7 @@ import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { careApi, type Conversation, type ConversationView } from "./care-api.ts";
-import { Shell } from "../components/Shell.tsx";
 import { care as copy } from "../content/care.ts";
-import { SECTION_NAMES } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CareTeam } from "./CareTeam.tsx";
 import { QuickRepliesPanel } from "./QuickReplies.tsx";
@@ -259,7 +257,7 @@ export function MessagesScreen() {
   const [view, setView] = useState<ConversationView>("open");
   const [search, setSearch] = useState("");
   return (
-    <Shell section="/messages" title={SECTION_NAMES.messages}>
+    <>
       <div className={styles.screen}>
         <Panel titleId="messages" title={copy.title} className={styles.panel}>
           <div className={own.tools}>
@@ -269,14 +267,14 @@ export function MessagesScreen() {
           <Conversations key={`${view}:${search}`} view={view} search={search} />
         </Panel>
       </div>
-    </Shell>
+    </>
   );
 }
 
 /** Care's own settings, a tab beside the inbox: the team's rota, the remedies Care may offer, and the quick replies. */
 export function CareSettingsScreen() {
   return (
-    <Shell section="/care-settings" title={SECTION_NAMES["care-settings"]}>
+    <>
       <div className={styles.screen}>
         <Panel titleId="care-team" title={copy.team.title} className={styles.panel}>
           <CareTeam />
@@ -288,6 +286,6 @@ export function CareSettingsScreen() {
           <QuickRepliesPanel />
         </Panel>
       </div>
-    </Shell>
+    </>
   );
 }

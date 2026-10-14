@@ -11,7 +11,6 @@ import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { client } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
 import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { useAccess } from "../lib/access.ts";
@@ -95,7 +94,7 @@ export function QualityScreen() {
     });
   };
   return (
-    <Shell section="/quality" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
@@ -121,6 +120,6 @@ export function QualityScreen() {
           {access.mayCall("GET /api/stock/expiry-risk") && <ExpiryRiskPanel />}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

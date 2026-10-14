@@ -29,7 +29,7 @@ import { useRef, useState } from "react";
 import { api, type DeletionRequest } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { Reach } from "../components/Reach.tsx";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { deletions } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
@@ -271,10 +271,10 @@ function DeletionQueue() {
 
 export function DeletionsScreen() {
   return (
-    <Shell section="/deletion-requests" title={deletions.title}>
+    <>
       <div className={styles.column}>
         <DeletionQueue />
       </div>
-    </Shell>
+    </>
   );
 }

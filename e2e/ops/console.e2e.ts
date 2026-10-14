@@ -232,6 +232,20 @@ test("moves between sections without a reload, and back", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
 });
 
+// Each page drew its own frame, so every move drew the navigation again and the header's search lost what was typed.
+test("keeps its frame as the page under it changes, the header's search holding what was typed", async ({ page }) => {
+  await page.goto("/");
+  const finder = page.getByLabel(opsCopy.shell.find.label);
+  await finder.fill("Rohit");
+  await navigation(page).evaluate((nav) => {
+    nav.dataset.drawn = "once";
+  });
+  await navigation(page).getByRole("link", { name: "Areas" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  await expect(navigation(page)).toHaveAttribute("data-drawn", "once");
+  await expect(finder).toHaveValue("Rohit");
+});
+
 test("meets WCAG 2.2 AA on its sections", async ({ page }) => {
   for (const path of ["/", "/referrals", "/areas"]) {
     await page.goto(path);

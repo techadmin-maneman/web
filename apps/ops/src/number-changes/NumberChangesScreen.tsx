@@ -21,7 +21,7 @@ import { useRef, useState } from "react";
 import { api, type NumberChange } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { Reach } from "../components/Reach.tsx";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { numberChanges } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
@@ -172,10 +172,10 @@ function NumberChangeQueue() {
 
 export function NumberChangesScreen() {
   return (
-    <Shell section="/number-changes" title={numberChanges.title}>
+    <>
       <div className={styles.column}>
         <NumberChangeQueue />
       </div>
-    </Shell>
+    </>
   );
 }

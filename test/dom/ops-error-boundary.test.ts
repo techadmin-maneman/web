@@ -5,6 +5,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { broken, shell } from "../../apps/ops/src/content.ts";
+import { Shell } from "../../apps/ops/src/components/Shell.tsx";
 import { AppBoundary, PageBoundary } from "../../apps/ops/src/states/ErrorBoundary.tsx";
 
 let page: HTMLDivElement;
@@ -40,10 +41,10 @@ describe("a console page that fails to draw", () => {
   it("keeps the navigation, says so, offers a reload and reports what was thrown", async () => {
     await act(async () => {
       root.render(
-        createElement(PageBoundary, {
+        createElement(Shell, {
           section: "/tasks",
           title: shell.sections.tasks,
-          children: createElement(Throws),
+          children: createElement(PageBoundary, { children: createElement(Throws) }),
         }),
       );
       await Promise.resolve();

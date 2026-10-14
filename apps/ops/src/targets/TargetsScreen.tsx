@@ -13,10 +13,8 @@ import type { Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
-import { Shell } from "../components/Shell.tsx";
 import { targets as copy } from "../content/targets.ts";
 import { useAccess } from "../lib/access.ts";
-import { SECTION_NAMES } from "../route.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "../components/forms.module.css";
@@ -192,13 +190,13 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
 export function TargetsScreen() {
   const [month, setMonth] = useState<string | null>(null);
   return (
-    <Shell section="/targets" title={SECTION_NAMES.targets}>
+    <>
       <div className={styles.screen}>
         <Panel titleId="targets" title={copy.title} className={styles.panel}>
           <p className={styles.note}>{copy.intro}</p>
           <MonthTargets key={month ?? "now"} month={month} onMonth={setMonth} />
         </Panel>
       </div>
-    </Shell>
+    </>
   );
 }

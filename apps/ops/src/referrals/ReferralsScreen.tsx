@@ -20,7 +20,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { api, type Held, type Referrer } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { referrals } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
@@ -336,7 +336,7 @@ export function ReferralsScreen() {
   // A decision can change the referrers' figures beneath, so each one reads them again.
   const [version, setVersion] = useState(0);
   return (
-    <Shell section="/referrals" title={referrals.title}>
+    <>
       <div className={styles.column}>
         <ReviewQueue
           onDecided={() => {
@@ -348,6 +348,6 @@ export function ReferralsScreen() {
           <Partners />
         </Suspense>
       </div>
-    </Shell>
+    </>
   );
 }

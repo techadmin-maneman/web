@@ -9,7 +9,7 @@ import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { api, type ReturnedVisit, type Roster, type Technician, type TechnicianSummary } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import {
   dispatchPath,
@@ -159,9 +159,5 @@ export function TechnicianScreen({ technicianId, tab }: { technicianId: string; 
     return <TechnicianPage entry={entry} cities={roster.cities} tab={tab} onChange={readAgain} />;
   };
 
-  return (
-    <Shell section="/technicians" title={technicians.title}>
-      {page()}
-    </Shell>
-  );
+  return <>{page()}</>;
 }

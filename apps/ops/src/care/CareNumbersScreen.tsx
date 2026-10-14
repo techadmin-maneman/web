@@ -9,9 +9,7 @@ import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { Shell } from "../components/Shell.tsx";
 import { care } from "../content/care.ts";
-import { SECTION_NAMES } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
 import styles from "../components/forms.module.css";
@@ -137,7 +135,7 @@ function Numbers({ period }: { period: CarePeriod }) {
 export function CareNumbersScreen() {
   const [period, setPeriod] = useState<CarePeriod>("7");
   return (
-    <Shell section="/care-numbers" title={SECTION_NAMES["care-numbers"]}>
+    <>
       <div className={styles.screen}>
         <Panel titleId="care-numbers" title={copy.title} className={styles.panel}>
           <div className={own.tools}>
@@ -163,6 +161,6 @@ export function CareNumbersScreen() {
           <Numbers key={period} period={period} />
         </Panel>
       </div>
-    </Shell>
+    </>
   );
 }

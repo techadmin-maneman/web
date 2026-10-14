@@ -9,7 +9,6 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { useState } from "react";
 import { client } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
@@ -71,7 +70,7 @@ export function CountsScreen() {
     });
   };
   return (
-    <Shell section="/counts" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
@@ -94,6 +93,6 @@ export function CountsScreen() {
           )}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

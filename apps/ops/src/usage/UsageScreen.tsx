@@ -9,7 +9,6 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
-import { Shell } from "../components/Shell.tsx";
 import form from "../components/forms.module.css";
 import { usage as copy } from "../content/usage.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -137,7 +136,7 @@ function Places({ usage }: { usage: Usage }) {
 export function UsageScreen() {
   const [loaded, retry] = useLoad(loadUsage);
   return (
-    <Shell section="/usage" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
@@ -147,6 +146,6 @@ export function UsageScreen() {
           <Places usage={loaded.value} />
         </div>
       )}
-    </Shell>
+    </>
   );
 }

@@ -12,10 +12,8 @@ import { fullMonth } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import type { Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { Shell } from "../components/Shell.tsx";
 import { spend as copy } from "../content/spend.ts";
 import { useAccess } from "../lib/access.ts";
-import { SECTION_NAMES } from "../route.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { spendApi, type SpendChannel, type SpendEntry, type SpendList } from "./spend-api.ts";
@@ -232,13 +230,13 @@ function Spend() {
 
 export function SpendScreen() {
   return (
-    <Shell section="/spend" title={SECTION_NAMES.spend}>
+    <>
       <div className={styles.screen}>
         <Panel titleId="spend" title={copy.title} className={styles.panel}>
           <p className={styles.note}>{copy.intro}</p>
           <Spend />
         </Panel>
       </div>
-    </Shell>
+    </>
   );
 }

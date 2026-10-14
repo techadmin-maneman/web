@@ -12,6 +12,7 @@ import { Fragment, Suspense, useEffect, type ComponentType } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
 import { FindClientScreen } from "./clients/FindClientScreen.tsx";
 import { ClosedScreen } from "./components/ClosedScreen.tsx";
+import { Shell } from "./components/Shell.tsx";
 import { DispatchScreen } from "./dispatch/DispatchScreen.tsx";
 import { useMayCall } from "./lib/access.ts";
 import {
@@ -29,6 +30,7 @@ import {
   type Route,
 } from "./route.ts";
 import { PageBoundary } from "./states/ErrorBoundary.tsx";
+import { Loading } from "./states/States.tsx";
 import { TasksScreen } from "./tasks/TasksScreen.tsx";
 
 const SettingsScreen = lazyScreen(() =>
@@ -127,8 +129,15 @@ const SCREENS: Readonly<Record<PlainPage, ComponentType>> = {
   activity: ActivityScreen,
 };
 
+/** The dispatch board and a client's record fill the frame to its edges, where every other page is padded. */
+const flushOf = (route: Route): boolean =>
+  route.page === "dispatch" || (route.page === "clients" && route.clientId !== null);
+
+/** Finding a client has its own search, so the header has none there. */
+const findsClients = (route: Route): boolean => route.page === "clients" && route.clientId === null;
+
 function Page({ route, mayCall }: { route: Route; mayCall: MayCall }) {
-  if (!mayOpen(mayCall, route.page)) return <ClosedScreen page={route.page} />;
+  if (!mayOpen(mayCall, route.page)) return <ClosedScreen />;
   if (route.page === "settings") return <SettingsScreen tab={route.tab} />;
   if (route.page === "areas") return <AreasScreen tab={route.tab} />;
   if (route.page === "clients") {
@@ -153,15 +162,22 @@ export function App() {
     // The hash names a row to land on, as "/no-shows#case-…" from an older task.
     if (to !== null) redirect(`${to}${window.location.hash}`);
   }, [path, mayCall]);
-  // Keyed by the page, so each section opens at its top with its own data, and a page that failed to draw is left
-  // behind with it.
+  // The frame stays as ops move between pages; the page inside it is keyed, so each opens at its top with its own
+  // data, and a page that failed to draw is left behind with it.
   return (
-    <Fragment key={keyOf(route)}>
-      <PageBoundary section={sectionOf(route.page).path} title={SECTION_NAMES[route.page]}>
-        <Suspense fallback={null}>
-          <Page route={route} mayCall={mayCall} />
-        </Suspense>
-      </PageBoundary>
-    </Fragment>
+    <Shell
+      section={sectionOf(route.page).path}
+      title={SECTION_NAMES[route.page]}
+      flush={flushOf(route)}
+      finder={!findsClients(route)}
+    >
+      <Fragment key={keyOf(route)}>
+        <PageBoundary>
+          <Suspense fallback={<Loading />}>
+            <Page route={route} mayCall={mayCall} />
+          </Suspense>
+        </PageBoundary>
+      </Fragment>
+    </Shell>
   );
 }

@@ -2,15 +2,15 @@
 // navigation column on ink down the left, a header naming the section with who
 // is signed in at its right, and the section's panels. The navigation groups
 // the sections by department, shows only those the person may open, and says
-// how many tasks wait in each.
+// how many tasks wait in each. App draws it once, round whichever page is open.
 
 import { SkipLink } from "@maneman/ui/SkipLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
-import { Link } from "@maneman/ui/router";
+import { Link, usePath } from "@maneman/ui/router";
 import { useLoad } from "@maneman/ui/useLoad";
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { shell } from "../content.ts";
 import { useMayCall, whoami } from "../lib/access.ts";
 import { useLapsed } from "../lib/session.ts";
@@ -142,29 +142,38 @@ function Navigation({ current }: { current: SectionPath }) {
   );
 }
 
-/** The path of the page last opened: the first of a load leaves the focus where the browser put it. */
-let shownPath: string | null = null;
-
 /**
- * Moves the focus to the page's heading when another page has opened in this one's place, so the keyboard starts at
- * the new page and a screen reader names it. A page that has put the focus somewhere of its own keeps it there.
+ * Moves the focus to the heading when another page opens, so the keyboard starts at the new page and a screen reader
+ * names it. The first page of a load leaves the focus where the browser put it, and a page that has put the focus
+ * somewhere of its own keeps it there.
  */
-function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>): void {
+function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: RefObject<HTMLElement | null>): void {
+  const path = usePath();
+  const shown = useRef<string | null>(null);
   useEffect(() => {
-    const path = window.location.pathname;
-    const arrived = shownPath !== null && shownPath !== path;
-    shownPath = path;
-    const lost = document.activeElement === null || document.activeElement === document.body;
-    if (arrived && lost) heading.current?.focus();
-  }, [heading]);
+    const arrived = shown.current !== null && shown.current !== path;
+    shown.current = path;
+    if (arrived && page.current?.contains(document.activeElement) !== true) heading.current?.focus();
+  }, [heading, page, path]);
+}
+
+const HeaderSub = createContext<(sub: string | undefined) => void>(() => undefined);
+
+/** A line beside the title for as long as the page is open, as the dispatch board puts its week there. */
+export function useHeaderSub(sub: string | undefined): void {
+  const setSub = useContext(HeaderSub);
+  useEffect(() => {
+    setSub(sub);
+    return () => {
+      setSub(undefined);
+    };
+  }, [setSub, sub]);
 }
 
 interface Props {
   /** The section shown, marked in the navigation. */
   readonly section: SectionPath;
   readonly title: string;
-  /** Beside the title, as the design puts the week's dates beside "Dispatch". */
-  readonly sub?: string;
   /** The dispatch board fills the frame to its edges, where every other section is padded. */
   readonly flush?: boolean;
   /** The Clients page has its own search, so its header has none. */
@@ -172,11 +181,12 @@ interface Props {
   readonly children: ReactNode;
 }
 
-export function Shell({ section, title, sub, flush, finder = true, children }: Props) {
+export function Shell({ section, title, flush, finder = true, children }: Props) {
   const lapsed = useLapsed();
   const heading = useRef<HTMLHeadingElement>(null);
   const main = useRef<HTMLElement>(null);
-  useFocusOnArrival(heading);
+  const [sub, setSub] = useState<string | undefined>();
+  useFocusOnArrival(heading, main);
   return (
     <div className={styles.console}>
       <SkipLink
@@ -203,7 +213,7 @@ export function Shell({ section, title, sub, flush, finder = true, children }: P
         <NotListed />
         <main id="content" ref={main} tabIndex={-1} className={flush === true ? styles.flushPage : styles.page}>
           <GroupTabs section={section} />
-          {children}
+          <HeaderSub value={setSub}>{children}</HeaderSub>
         </main>
       </div>
     </div>

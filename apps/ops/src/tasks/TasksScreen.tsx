@@ -40,7 +40,7 @@ import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { tasks } from "../content.ts";
 import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
@@ -340,11 +340,11 @@ function TaskQueue() {
 
 export function TasksScreen() {
   return (
-    <Shell section="/tasks" title={tasks.title}>
+    <>
       <div className={styles.board}>
         <NeedsAHand />
         <TaskQueue />
       </div>
-    </Shell>
+    </>
   );
 }

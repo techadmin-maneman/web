@@ -6,9 +6,7 @@ import { Button, ButtonLink } from "@maneman/ui/Button";
 import { ErrorBoundary } from "@maneman/ui/ErrorBoundary";
 import { reportRenderError } from "@maneman/web-kit/client-errors";
 import type { ReactNode } from "react";
-import { Shell } from "../components/Shell.tsx";
 import { broken } from "../content.ts";
-import type { SectionPath } from "../route.ts";
 import styles from "./states.module.css";
 
 const reload = () => {
@@ -33,23 +31,10 @@ function Broken({ home }: { home: boolean }) {
   );
 }
 
-/** Round one page, keyed by its path so a failure stays behind when ops move on. */
-export function PageBoundary({
-  section,
-  title,
-  children,
-}: {
-  section: SectionPath;
-  title: string;
-  children: ReactNode;
-}) {
-  const fallback = (
-    <Shell section={section} title={title}>
-      <Broken home={false} />
-    </Shell>
-  );
+/** Round one page, inside the frame and keyed by its path, so a failure stays behind when ops move on. */
+export function PageBoundary({ children }: { children: ReactNode }) {
   return (
-    <ErrorBoundary fallback={fallback} onError={reportRenderError}>
+    <ErrorBoundary fallback={<Broken home={false} />} onError={reportRenderError}>
       {children}
     </ErrorBoundary>
   );

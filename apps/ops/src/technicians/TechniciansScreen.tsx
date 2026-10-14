@@ -26,7 +26,7 @@ import {
   type TechnicianSummary,
   type TechnicianWork,
 } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { technicianPath } from "../route.ts";
@@ -237,8 +237,8 @@ function Roster() {
 
 export function TechniciansScreen() {
   return (
-    <Shell section="/technicians" title={technicians.title}>
+    <>
       <Roster />
-    </Shell>
+    </>
   );
 }

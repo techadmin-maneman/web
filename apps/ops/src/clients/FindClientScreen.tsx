@@ -17,7 +17,7 @@ import { Button } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { keepSearch, keptSearch, recentClients, type KeptSearch } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -118,7 +118,7 @@ export function FindClientScreen() {
   }, [kept, find]);
 
   return (
-    <Shell section="/clients" title={clients.title} finder={false}>
+    <>
       <form
         className={styles.find}
         onSubmit={(event) => {
@@ -157,6 +157,6 @@ export function FindClientScreen() {
       {finding.step === "found" && <Found text={finding.text} found={finding.found} />}
       {finding.step === "idle" && <Recent />}
       {finding.step !== "found" && <ClientList />}
-    </Shell>
+    </>
   );
 }

@@ -12,7 +12,6 @@ import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { client } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
@@ -75,7 +74,7 @@ export function PurchasingScreen() {
   };
   const opened = current?.orders.find((each) => each.id === open) ?? null;
   return (
-    <Shell section="/purchasing" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
@@ -104,6 +103,6 @@ export function PurchasingScreen() {
           {access.mayCall("GET /api/supplier-scorecard") && <SupplierScores />}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

@@ -4,8 +4,6 @@
 
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { client } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
-import { SECTION_NAMES } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "../components/forms.module.css";
 import { CityList } from "./CityList.tsx";
@@ -21,7 +19,7 @@ const EVERY_MS = 10 * 60_000;
 export function CitiesScreen() {
   const { loaded, refresh, retry } = useLiveLoad(loadCities, EVERY_MS);
   return (
-    <Shell section="/cities" title={SECTION_NAMES.cities}>
+    <>
       <div className={styles.screen}>
         {loaded.state === "loading" && <Loading />}
         {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
@@ -34,6 +32,6 @@ export function CitiesScreen() {
           </>
         )}
       </div>
-    </Shell>
+    </>
   );
 }

@@ -18,7 +18,7 @@ import { useState } from "react";
 import { api, type Grievance } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { Reach } from "../components/Reach.tsx";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { grievances } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Left } from "../lib/Left.tsx";
@@ -124,10 +124,10 @@ function GrievanceQueue() {
 
 export function GrievancesScreen() {
   return (
-    <Shell section="/grievances" title={grievances.title}>
+    <>
       <div className={styles.column}>
         <GrievanceQueue />
       </div>
-    </Shell>
+    </>
   );
 }
