@@ -23,6 +23,12 @@ export const photos = {
   downloaded: "Downloaded photos sit in your gallery, outside the app.",
   photoOf: (angle: string, date: string) => `${angle} · ${date}`,
   close: "Close",
+  /** A photograph whose link would not load, in its place in a row; a tap reads fresh links. */
+  reload: "Tap to reload",
+  notLoaded: (alt: string) => `${alt}, not loaded. Tap to reload.`,
+  /** The large photograph that would not load. */
+  largeFailed: "This photo didn’t load.",
+  reloadPhotos: "Reload photos",
   // No board draws the try-on the client made on the site (ADR 0025, items 63 and 65; ADR 0082 and 0084).
   tryOn: {
     title: "Your try-on",

@@ -5,12 +5,12 @@
 // as an angle not taken does. A client's kept try-on shows its photograph on
 // every visit, and its look until the first fit is photographed (ADR 0084).
 
-import { Tile } from "@maneman/ui/Tile";
 import { classes } from "@maneman/ui/classes";
 import { fullDate, indiaClock, longDate } from "@maneman/web-kit/dates";
 import type { TryOn } from "../api.ts";
 import { photos } from "../content.ts";
-import { Thumb, type OpenPhoto } from "./PhotoRow.tsx";
+import { PhotoCell, type OpenPhoto } from "./PhotoRow.tsx";
+import type { Relink } from "./relink.ts";
 import styles from "./photos.module.css";
 
 const IMAGES = ["photo", "look"] as const;
@@ -42,7 +42,8 @@ function keptLine({ photo, look }: TryOn): string {
   return lines.join(" ");
 }
 
-export function TryOnGroup({ tryOn, onOpen }: { tryOn: TryOn; onOpen: (photo: OpenPhoto) => void }) {
+export function TryOnGroup(props: { tryOn: TryOn; onOpen: (photo: OpenPhoto) => void; relink: Relink }) {
+  const { tryOn } = props;
   const date = fullDate(tryOn.made_on);
   const heading = `try-on-${tryOn.id}`;
   return (
@@ -65,18 +66,7 @@ export function TryOnGroup({ tryOn, onOpen }: { tryOn: TryOn; onOpen: (photo: Op
             // The file's own type gives the extension (src/routes/client/photos.ts).
             fileName: `mane-man-${tryOn.made_on}-try-on-${image}`,
           };
-          return (
-            <Tile
-              key={image}
-              className={styles.cell}
-              aria-label={opened.alt}
-              onClick={() => {
-                onOpen(opened);
-              }}
-            >
-              <Thumb link={link} alt="" />
-            </Tile>
-          );
+          return <PhotoCell key={image} thumbnail={link} opened={opened} onOpen={props.onOpen} relink={props.relink} />;
         })}
       </div>
       <p className={styles.kept}>{tryOn.kept ? keptLine(tryOn) : heldLine(tryOn)}</p>

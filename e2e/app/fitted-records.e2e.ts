@@ -1,3 +1,4 @@
+import type { Locator, Page } from "@playwright/test";
 import { fullDate } from "../../packages/web-kit/dates.ts";
 import { windowSpan } from "../../src/config/scheduling.ts";
 import { assertInContract } from "../contract.ts";
@@ -8,6 +9,18 @@ import { logIn } from "./signed-in.ts";
 import { tab } from "./fitted-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
+/** Taps a document and answers the type of the file the tab it opened was given. */
+async function opensTheFile(page: Page, document: Locator): Promise<string> {
+  const opened = page.waitForEvent("popup");
+  await document.click();
+  const tab = await opened;
+  await expect.poll(() => tab.url()).toMatch(/^blob:/);
+  // Read from the tab, whose app.localhost only the browser resolves.
+  const type = await tab.evaluate(async () => (await (await fetch(window.location.href)).blob()).type);
+  await tab.close();
+  return type;
+}
+
 // The invoice appears beside the visit, and a free visit says so
 // rather than promising a document that will never come (ADR 0056).
 test("a past visit carries its own invoice, or says why there is none", async ({ page }) => {
@@ -16,16 +29,11 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
 
   await page.goto(`/visits/${client.service.id}`);
-  const invoice = page.getByRole("link", { name: "Tax invoice" });
-  await expect(invoice).toHaveAttribute("href", `/api/documents/${client.service.id}`);
-  await expect(invoice).toHaveAttribute("target", "_blank");
-  // The whole accessible name, so a screen reader is told the link leaves the app.
-  await expect(invoice).toHaveAccessibleName("Tax invoice PDF, opens in a new tab");
-  const served = await page.evaluate(
-    async (url) => (await fetch(url)).headers.get("Content-Type"),
-    `/api/documents/${client.service.id}`,
-  );
-  expect(served).toBe("application/pdf");
+  // The whole accessible name, so a screen reader is told the document leaves the app.
+  const invoice = page.getByRole("button", { name: "Tax invoice PDF, opens in a new tab", exact: true });
+  await expect(invoice).toBeVisible();
+  // It opens in a tab of its own once the API has given the file (apps/app/src/lib/documents.ts).
+  expect(await opensTheFile(page, invoice)).toBe("application/pdf");
 
   // The first fit is billed, and its invoice has not been raised in the sixty days since: "within the hour" is
   // no longer true of it, so the client is told it is late and how to ask for it.
@@ -123,6 +131,32 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   await expect(page.getByAltText(`Hairline, after the visit, ${fullDate(client.firstFit.date)}`)).toHaveCount(0);
 });
 
+// A photograph's link lasts 15 minutes, and a page left open past them is read again rather than left blank.
+test("a photograph whose link has run out is shown again through a fresh one", async ({ page }) => {
+  const client = fittedClient();
+  let refused = 0;
+  // The first small copy asked for answers as a link that has run out does.
+  await page.route("**/api/photos/small/**", async (route) => {
+    if (refused > 0) return route.continue();
+    refused += 1;
+    return route.fulfill({ status: 403, body: "" });
+  });
+  let timelines = 0;
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/photos") timelines += 1;
+  });
+  await logIn(page, client.mobile);
+  await tab(page, "Photos").click();
+
+  const front = page
+    .getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` })
+    .locator("img");
+  await expect.poll(() => front.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(300);
+  await expect(page.getByText(appCopy.photos.reload)).toHaveCount(0);
+  expect(refused).toBe(1);
+  expect(timelines).toBeGreaterThanOrEqual(2);
+});
+
 test("Payments: one list of payments and refunds, an entry's documents, and a document not ready", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
@@ -148,15 +182,9 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   // No rate was recorded for this payment, so nothing is said of GST at all.
   await expect(page.getByText(/GST at/)).toHaveCount(0);
   await expect(page.getByText(client.reference)).toBeVisible();
-  const documents = {
-    "Tax invoice": `/api/documents/${client.service.id}`,
-    Receipt: `/api/payments/${client.servicePayment}/receipt`,
-  };
-  for (const [name, path] of Object.entries(documents)) {
-    await expect(page.getByRole("link", { name })).toHaveAttribute("href", path);
-    // Fetched by the page, whose app.localhost only the browser resolves.
-    const served = await page.evaluate(async (url) => (await fetch(url)).headers.get("Content-Type"), path);
-    expect(served).toBe("application/pdf");
+  for (const name of ["Tax invoice", "Receipt"]) {
+    const document = page.getByRole("button", { name: `${name} PDF, opens in a new tab`, exact: true });
+    expect(await opensTheFile(page, document)).toBe("application/pdf");
   }
 
   await page.getByRole("link", { name: appCopy.payments.back }).click();

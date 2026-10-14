@@ -6,22 +6,22 @@
 // next visit, with Reschedule and Add a note until it begins. A
 // visit that is not the client's says so, rather than offering to try again.
 
-import { DocumentLink } from "@maneman/ui/DocumentLink";
 import { DisputeSheet, ProblemLink } from "../booking/index.ts";
 import { VisitCard } from "../home/index.ts";
-import { PhotoRow, type OpenPhoto, PhotoSheet } from "../photos/index.ts";
+import { LINKS_FRESH_MS, PhotoRow, type OpenPhoto, PhotoSheet, type Relink, useRelink } from "../photos/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
-import { useLoad } from "@maneman/ui/useLoad";
+import { useLiveLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
-import { messages, ONE_VISIT, visits } from "../content.ts";
+import { messages, ONE_VISIT, payments, visits } from "../content.ts";
 import { AddToCalendar } from "../components/AddToCalendar.tsx";
+import { OpenDocument } from "../components/OpenDocument.tsx";
 import { Shell } from "../components/Shell.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
 import { duration, invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
@@ -91,11 +91,11 @@ function Invoice({ visit }: { visit: VisitDetail }) {
     }
     case "open":
       return visit.document_id === null ? null : (
-        <DocumentLink href={documentUrl(visit.document_id)}>
+        <OpenDocument url={documentUrl(visit.document_id)} notReady={payments.unavailable.invoice}>
           <span>{copy.open}</span>
           <VisuallyHidden>{copy.newTab}</VisuallyHidden>
           <Icon className={styles.invoiceIcon} d={ICONS.download} size={18} />
-        </DocumentLink>
+        </OpenDocument>
       );
   }
 }
@@ -154,7 +154,7 @@ function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNo
   );
 }
 
-function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => void }) {
+function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged: () => void; relink: Relink }) {
   const [open, setOpen] = useState<OpenPhoto | null>(null);
   const copy = visits.detail;
   const photographed = visit.photos.before.length > 0 || visit.photos.after.length > 0;
@@ -167,7 +167,7 @@ function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => 
           <h2 className={capsLook(styles.label)} id="photographs">
             {copy.photographs}
           </h2>
-          <PhotoRow set={visit.photos} date={visit.date} onOpen={setOpen} />
+          <PhotoRow set={visit.photos} date={visit.date} onOpen={setOpen} relink={relink} />
         </section>
       )}
       <dl className={styles.facts}>
@@ -190,6 +190,7 @@ function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => 
       {open !== null && (
         <PhotoSheet
           photo={open}
+          relink={relink}
           onClose={() => {
             setOpen(null);
           }}
@@ -199,8 +200,8 @@ function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => 
   );
 }
 
-function Visit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => void }) {
-  if (visit.stage === null) return <PastVisit visit={visit} onChanged={onChanged} />;
+function Visit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged: () => void; relink: Relink }) {
+  if (visit.stage === null) return <PastVisit visit={visit} onChanged={onChanged} relink={relink} />;
   return (
     <div className={styles.coming}>
       <VisitCard
@@ -228,7 +229,11 @@ function Visit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => void
 }
 
 export function VisitScreen({ id }: { id: string }) {
-  const [loaded, retry] = useLoad(useCallback(() => api.visit(id), [id]));
+  const { loaded, refresh, retry } = useLiveLoad(
+    useCallback(() => api.visit(id), [id]),
+    LINKS_FRESH_MS,
+  );
+  const relink = useRelink(refresh);
   const [changed, setChanged] = useState(false);
   // A move read again at its new time; a charged move cancels this visit for a new one, which the list shows.
   const replaced = changed && loaded.state === "loaded" && loaded.value.status === "cancelled";
@@ -246,9 +251,10 @@ export function VisitScreen({ id }: { id: string }) {
       {loaded.state === "loaded" && (
         <Visit
           visit={loaded.value}
+          relink={relink}
           onChanged={() => {
             setChanged(true);
-            retry();
+            refresh();
           }}
         />
       )}

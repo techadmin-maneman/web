@@ -11,7 +11,7 @@ import { classes } from "@maneman/ui/classes";
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { ARRIVE } from "@maneman/ui/motion";
-import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
+import { useLiveLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { fullDate } from "@maneman/web-kit/dates";
 import {
   useCallback,
@@ -28,6 +28,7 @@ import { AppLink, Shell } from "../components/Shell.tsx";
 import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { shownPhase } from "./PhotoRow.tsx";
+import { LINKS_FRESH_MS, type Relink, useRelink } from "./relink.ts";
 import styles from "./compare.module.css";
 
 type Visit = PhotoTimeline["visits"][number];
@@ -40,13 +41,14 @@ const photoOf = (visit: Visit, angle: CompareAngle): PhotoLink | undefined =>
   visit.photos[shownPhase(visit.photos)].find((link) => link.angle === angle);
 
 export function CompareScreen() {
-  const [loaded, retry] = useLoad(api.photos);
+  const { loaded, refresh, retry } = useLiveLoad(api.photos, LINKS_FRESH_MS);
+  const relink = useRelink(refresh);
   if (loaded.state === "loaded") {
     // Newest first: the latest visit, and the first with photographs.
     const { visits } = loaded.value;
     const [latest, earliest] = [visits[0], visits.at(-1)];
     if (latest !== undefined && earliest !== undefined && latest !== earliest) {
-      return <Compare visits={visits} earliest={earliest} latest={latest} />;
+      return <Compare visits={visits} earliest={earliest} latest={latest} relink={relink} />;
     }
   }
   return (
@@ -78,14 +80,19 @@ function Picker(props: { label: string; visits: readonly Visit[]; chosen: Visit;
 }
 
 /** Both sides of one angle; the earlier is cut at the divider. */
-function Sides({ from, to, angle, className }: { from: Visit; to: Visit; angle: CompareAngle; className?: string }) {
+function Sides(props: { from: Visit; to: Visit; angle: CompareAngle; className?: string; onFailed: () => void }) {
+  const { from, to, angle, className } = props;
   const side = (visit: Visit, which: string) => {
     const link = photoOf(visit, angle);
     const date = fullDate(visit.date);
     return (
       <div className={which}>
         {link !== undefined && (
-          <img src={link.url} alt={photos.alt(photos.compareAngles[angle], shownPhase(visit.photos), date)} />
+          <img
+            src={link.url}
+            alt={photos.alt(photos.compareAngles[angle], shownPhase(visit.photos), date)}
+            onError={props.onFailed}
+          />
         )}
         <span className={styles.date}>{date}</span>
       </div>
@@ -99,25 +106,61 @@ function Sides({ from, to, angle, className }: { from: Visit; to: Visit; angle: 
   );
 }
 
-function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earliest: Visit; latest: Visit }) {
+/** The divider's moves by key: two points a press, ten a page, and the ends. */
+const MOVES: Readonly<Record<string, (now: number) => number>> = {
+  ArrowLeft: (now) => now - 2,
+  ArrowDown: (now) => now - 2,
+  ArrowRight: (now) => now + 2,
+  ArrowUp: (now) => now + 2,
+  PageDown: (now) => now - 10,
+  PageUp: (now) => now + 10,
+  Home: () => 0,
+  End: () => 100,
+};
+
+/** The angles beside the one shown load now, so a change of angle fades between two photographs. */
+function useBesideLoaded(from: Visit, to: Visit, angle: CompareAngle): void {
+  useEffect(() => {
+    const at = COMPARE_ANGLES.indexOf(angle);
+    const beside = [COMPARE_ANGLES[at - 1], COMPARE_ANGLES[at + 1]].filter((each) => each !== undefined);
+    for (const visit of [from, to]) {
+      for (const each of beside) {
+        const link = photoOf(visit, each);
+        if (link !== undefined) new Image().src = link.url;
+      }
+    }
+  }, [from, to, angle]);
+}
+
+/** The two visits compared, picked by ID, so the visits read again with fresh links stand in for the ones first shown. */
+function usePicked(visits: readonly Visit[], earliest: Visit, latest: Visit) {
+  const [fromId, setFromId] = useState(earliest.visit_id);
+  const [toId, setToId] = useState(latest.visit_id);
+  const from = visits.find((visit) => visit.visit_id === fromId) ?? earliest;
+  const to = visits.find((visit) => visit.visit_id === toId) ?? latest;
+  return {
+    from,
+    to,
+    pickFrom: (visit: Visit) => {
+      setFromId(visit.visit_id);
+    },
+    pickTo: (visit: Visit) => {
+      setToId(visit.visit_id);
+    },
+  };
+}
+
+function Compare(props: { visits: readonly Visit[]; earliest: Visit; latest: Visit; relink: Relink }) {
+  const { relink } = props;
   // The pickers list the visits in time order.
-  const inOrder = [...visits].reverse();
-  const [from, setFrom] = useState(earliest);
-  const [to, setTo] = useState(latest);
+  const inOrder = [...props.visits].reverse();
+  const { from, to, pickFrom, pickTo } = usePicked(props.visits, props.earliest, props.latest);
   const [angle, setAngle] = useState<CompareAngle>("front");
   const [leaving, setLeaving] = useState<CompareAngle | null>(null);
   const [at, setAt] = useState(50);
   const stage = useRef<HTMLDivElement>(null);
 
-  // The other angles of both visits load now, so a change of angle fades between two photographs.
-  useEffect(() => {
-    for (const visit of [from, to]) {
-      for (const each of COMPARE_ANGLES) {
-        const link = photoOf(visit, each);
-        if (link !== undefined) new Image().src = link.url;
-      }
-    }
-  }, [from, to]);
+  useBesideLoaded(from, to, angle);
 
   useEffect(() => {
     if (leaving === null) return;
@@ -142,17 +185,7 @@ function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earli
   }, []);
 
   const step = (event: KeyboardEvent<HTMLDivElement>) => {
-    const moves: Readonly<Record<string, (now: number) => number>> = {
-      ArrowLeft: (now) => now - 2,
-      ArrowDown: (now) => now - 2,
-      ArrowRight: (now) => now + 2,
-      ArrowUp: (now) => now + 2,
-      PageDown: (now) => now - 10,
-      PageUp: (now) => now + 10,
-      Home: () => 0,
-      End: () => 100,
-    };
-    const move = moves[event.key];
+    const move = MOVES[event.key];
     if (move === undefined) return;
     event.preventDefault();
     setAt((now) => Math.min(100, Math.max(0, move(now))));
@@ -168,8 +201,8 @@ function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earli
       </header>
       <main className={styles.main}>
         <div className={styles.pickers}>
-          <Picker label={photos.from} visits={inOrder} chosen={from} onChoose={setFrom} />
-          <Picker label={photos.to} visits={inOrder} chosen={to} onChoose={setTo} />
+          <Picker label={photos.from} visits={inOrder} chosen={from} onChoose={pickFrom} />
+          <Picker label={photos.to} visits={inOrder} chosen={to} onChoose={pickTo} />
         </div>
         <div
           ref={stage}
@@ -182,8 +215,8 @@ function Compare({ visits, earliest, latest }: { visits: readonly Visit[]; earli
             if (event.currentTarget.hasPointerCapture(event.pointerId)) follow(event);
           }}
         >
-          {leaving !== null && <Sides from={from} to={to} angle={leaving} />}
-          <Sides key={angle} from={from} to={to} angle={angle} className={ARRIVE} />
+          {leaving !== null && <Sides from={from} to={to} angle={leaving} onFailed={relink.failed} />}
+          <Sides key={angle} from={from} to={to} angle={angle} className={ARRIVE} onFailed={relink.failed} />
           <div className={styles.divider} />
           <div
             className={styles.handle}

@@ -143,3 +143,14 @@ div.cell {
   align-self: flex-start;
   margin-top: var(--sp-8);
 }
+
+/* A photograph whose link would not load, in its place in a row: a tap reads fresh links. */
+.reload {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: var(--sp-8);
+  font-size: var(--fs-13);
+  text-align: center;
+  color: var(--text-muted);
+}

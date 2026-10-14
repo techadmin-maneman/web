@@ -7,10 +7,12 @@
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Sheet, SheetPanel } from "@maneman/ui/Sheet";
 import { useEffect, useRef, useState } from "react";
 import { photos } from "../content.ts";
 import { Thumb, type OpenPhoto } from "./PhotoRow.tsx";
+import type { Relink } from "./relink.ts";
 import styles from "./photos.module.css";
 
 const onIphone = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -60,18 +62,46 @@ function Download({ url, name }: { url: string; name: string }) {
   );
 }
 
-export function PhotoSheet({ photo, onClose }: { photo: OpenPhoto; onClose: () => void }) {
+export function PhotoSheet({ photo, onClose, relink }: { photo: OpenPhoto; onClose: () => void; relink: Relink }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const [failed, setFailed] = useState(false);
   // A tap on the ground around the sheet closes it, as Close does.
   return (
     <Sheet ref={dialog} labelledBy="photo-title" onClose={onClose}>
       <SheetPanel>
-        <Thumb link={photo.link} alt={photo.alt} className={styles.large} eager />
+        {failed ? (
+          <InlineMessage tone="error">{photos.largeFailed}</InlineMessage>
+        ) : (
+          <Thumb
+            link={photo.link}
+            alt={photo.alt}
+            className={styles.large}
+            eager
+            onFailed={() => {
+              setFailed(true);
+            }}
+          />
+        )}
         <div className={styles.save}>
           <p className={styles.photoOf} id="photo-title">
             {photo.title}
           </p>
-          <Download url={photo.link.url} name={photo.fileName} />
+          {failed ? (
+            // The row reads fresh links, and the photograph opens again from it.
+            <Button
+              variant="outline"
+              size="small"
+              className={styles.download}
+              onClick={() => {
+                relink.reload();
+                dialog.current?.close();
+              }}
+            >
+              {photos.reloadPhotos}
+            </Button>
+          ) : (
+            <Download url={photo.link.url} name={photo.fileName} />
+          )}
         </div>
         <p className={styles.gallery}>{photos.downloaded}</p>
         <Button variant="outline" size="control" className={styles.close} onClick={() => dialog.current?.close()}>

@@ -14,6 +14,7 @@ import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { Angle, PhotoSet } from "../api.ts";
 import { photos } from "../content.ts";
+import type { Relink } from "./relink.ts";
 import styles from "./photos.module.css";
 
 export const ANGLES: readonly Angle[] = ["front", "top", "left", "right", "hair"];
@@ -40,7 +41,13 @@ export interface OpenPhoto {
 export const shownPhase = (set: PhotoSet) => (set.after.length > 0 ? "after" : "before");
 
 /** `eager` for the one photograph opened large, which is wanted now; a row's wait until they near the screen. */
-export function Thumb(props: { link: ImageLink; alt: string; className?: string; eager?: boolean }) {
+export function Thumb(props: {
+  link: ImageLink;
+  alt: string;
+  className?: string;
+  eager?: boolean;
+  onFailed?: () => void;
+}) {
   const { link, alt, className } = props;
   const [arrived, setArrived] = useState(false);
   return (
@@ -55,11 +62,49 @@ export function Thumb(props: { link: ImageLink; alt: string; className?: string;
       onLoad={() => {
         setArrived(true);
       }}
+      onError={props.onFailed}
     />
   );
 }
 
-export function PhotoRow({ set, date, onOpen }: { set: PhotoSet; date: string; onOpen: (photo: OpenPhoto) => void }) {
+/** One photograph in a row: opened large on a tap, or, once its link will not load, a tap that reads fresh links. */
+export function PhotoCell(props: {
+  thumbnail: ImageLink;
+  opened: OpenPhoto;
+  onOpen: (photo: OpenPhoto) => void;
+  relink: Relink;
+}) {
+  const { thumbnail, opened, relink } = props;
+  // The link that would not load, as the page read it: links read again are new, and are tried as they come.
+  const [lost, setLost] = useState<ImageLink | null>(null);
+  const failed = lost === opened.link;
+  return (
+    <Tile
+      className={styles.cell}
+      aria-label={failed ? photos.notLoaded(opened.alt) : opened.alt}
+      onClick={() => {
+        if (failed) relink.reload();
+        else props.onOpen(opened);
+      }}
+    >
+      {failed ? (
+        <span className={styles.reload}>{photos.reload}</span>
+      ) : (
+        <Thumb
+          link={thumbnail}
+          alt=""
+          onFailed={() => {
+            setLost(opened.link);
+            relink.failed();
+          }}
+        />
+      )}
+    </Tile>
+  );
+}
+
+export function PhotoRow(props: { set: PhotoSet; date: string; onOpen: (photo: OpenPhoto) => void; relink: Relink }) {
+  const { set, date } = props;
   const phase = shownPhase(set);
   return (
     <div className={styles.row}>
@@ -75,16 +120,7 @@ export function PhotoRow({ set, date, onOpen }: { set: PhotoSet; date: string; o
           fileName: `mane-man-${date}-${phase}-${angle}.jpg`,
         };
         return (
-          <Tile
-            key={angle}
-            className={styles.cell}
-            aria-label={alt}
-            onClick={() => {
-              onOpen(opened);
-            }}
-          >
-            <Thumb link={thumbnail} alt="" />
-          </Tile>
+          <PhotoCell key={angle} thumbnail={thumbnail} opened={opened} onOpen={props.onOpen} relink={props.relink} />
         );
       })}
     </div>
