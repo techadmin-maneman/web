@@ -125,7 +125,7 @@ export function Booked(props: { booking: Booking; reward: ReferralReward | null;
     <section class={styles.done}>
       <div class={`${styles.doneBlock} on-ink`}>
         <div class={capsLook(styles.doneBlockLabel)}>{copy.label}</div>
-        <Icon d={ICONS.tick} size={26} stroke={1.7} />
+        <Icon d={ICONS.tick} size="xl" />
         <h1 ref={props.heading} tabIndex={-1} class={styles.doneBlockTitle}>
           {copy.title}
         </h1>

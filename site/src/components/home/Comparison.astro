@@ -40,7 +40,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
             <div class="cell" role="cell">
               {isMark(cell) ? (
                 <>
-                  <Icon name={cell ? "tick" : "cross"} size={19} stroke={1.65} class={cell ? "yes" : "no"} />
+                  <Icon name={cell ? "tick" : "cross"} size="sm" class={cell ? "yes" : "no"} />
                   <span class={hiddenLook}>{cell ? comparison.yes : comparison.no}</span>
                 </>
               ) : (

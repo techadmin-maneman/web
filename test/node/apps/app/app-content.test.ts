@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { BOOKING_URL, tabs, whatsapp } from "../../../../apps/app/src/content.ts";
-import { BUBBLE, TAB_ICONS } from "../../../../apps/app/src/icons.ts";
+import { GLYPHS, TAB_ICONS } from "../../../../packages/brand/icons.ts";
 import { whatsapp as siteWhatsapp } from "../../../../site/src/content/site.ts";
 import { HOSTNAME } from "../../../../src/config/environments.ts";
 
@@ -20,7 +20,7 @@ describe("the client app’s content", () => {
     const design = readFileSync("design/phase2/Client App.dc.html", "utf8");
     const line = design.indexOf("Read automatically where your phone allows");
     const drawn = /<path d="([^"]+)"><\/path><\/svg>\s*$/.exec(design.slice(line - 400, line));
-    expect(drawn?.[1]).toBe(BUBBLE);
+    expect(drawn?.[1]).toBe(GLYPHS.bubble);
   });
 
   it("messages the public site’s business WhatsApp number", () => {

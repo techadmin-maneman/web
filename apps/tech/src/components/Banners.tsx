@@ -9,7 +9,6 @@ import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
 import { useEffect, useState } from "react";
 import { changed as copy, storage, today as todayCopy, whatStopped } from "../content.ts";
-import { STROKE } from "../icons.ts";
 import { jobLabel } from "../lib/kind.ts";
 import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
@@ -37,7 +36,7 @@ export function Offline() {
   return (
     <div className={styles.offline} role="status">
       <p className={styles.offlineTitle}>
-        <Icon d={APP_ICONS.offline} size={20} stroke={STROKE} />
+        <Icon d={APP_ICONS.offline} size="md" weight="heavy" />
         {todayCopy.offline.title}
       </p>
       <p className={styles.offlineBody}>{todayCopy.offline.body}</p>

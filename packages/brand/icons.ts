@@ -1,9 +1,17 @@
-// The design's line icons, as path data in a 24 × 24 box, drawn with a 1.6
-// stroke and round caps. They are drawn in currentColor, so a component sets
-// their colour through CSS.
+// The design's line icons, as path data in a 24 × 24 box, drawn with round caps at one of two strokes and one of
+// five sizes. They are drawn in currentColor, so a component sets their colour through CSS. Every glyph a surface
+// draws is here.
+
+/** The sizes an icon is drawn at, in pixels: a surface names one, and never a number of its own. */
+export const ICON_SIZES = { xs: 14, sm: 18, md: 21, lg: 24, xl: 28 } as const;
+export type IconSize = keyof typeof ICON_SIZES;
+
+/** The set's stroke, and the heavier one the technician app draws for reading in the sun. */
+export const ICON_STROKES = { regular: 1.6, heavy: 2 } as const;
+export type IconWeight = keyof typeof ICON_STROKES;
 
 /** The stroke the icon set is drawn at. */
-export const ICON_STROKE = 1.6;
+export const ICON_STROKE = ICON_STROKES.regular;
 
 /** The site's first icons. Frozen: the site's island bundles carry exactly these. */
 export const ICONS = {
@@ -45,8 +53,28 @@ export const APP_ICONS = {
 export const GLYPHS = {
   /** A row that opens its detail: a past visit in the client app, a job in the technician app. */
   chevron: "M9 5 L16 12 L9 19",
-  /** A chosen way to pay and a chosen card in the client app; inside a ticked checklist box in the technician app. */
-  check: "M5 13 L10 18 L19 6",
+  /** Beside the client app's "Read automatically": the WhatsApp glyph's bubble without its handset. */
+  bubble:
+    "M20 11.5 C20 16.2 16.2 20 11.5 20 C9.9 20 8.4 19.6 7.2 18.8 L3.5 19.5 L4.3 15.9 C3.5 14.6 3 13.1 3 11.5 C3 6.8 6.8 3 11.5 3 C16.2 3 20 6.8 20 11.5 Z",
+  /** Beside the pay step's "Slot held": a clock face. */
+  clock: "M12 3.5 A8.5 8.5 0 0 1 12 20.5 A8.5 8.5 0 0 1 12 3.5 M12 7.5 V12 L15 14.5",
+  /** A referral card's two other ways to share: to another app, and by copying the link. */
+  otherApps:
+    "M8 7 H6 A2 2 0 0 0 4 9 V18 A2 2 0 0 0 6 20 H18 A2 2 0 0 0 20 18 V9 A2 2 0 0 0 18 7 H16 M12 3 V13 M8.5 6.5 L12 3 L15.5 6.5",
+  copyLink: "M9.5 13.5 L14.5 8.5 M8 11 L6 13 A3.5 3.5 0 0 0 11 18 L13 16 M11 8 L13 6 A3.5 3.5 0 0 1 18 11 L16 13",
+  /** A label tied to a piece, beside the field it is typed in: typed, never scanned, so no barcode. */
+  tag: "M3.5 3.5 H12 L20.5 12 L12 20.5 L3.5 12 Z M8 6.8 A1.2 1.2 0 0 1 8 9.2 A1.2 1.2 0 0 1 8 6.8",
+  /** Navigate, on the address. */
+  pin: "M12 21 C7 16 4.5 12.6 4.5 9.5 A7.5 7.5 0 0 1 19.5 9.5 C19.5 12.6 17 16 12 21 Z M12 7 A2.6 2.6 0 0 1 12 12.2 A2.6 2.6 0 0 1 12 7",
+} as const;
+
+/** The client app's tab bar (design/phase2/Client App, the tabs() data). */
+export const TAB_ICONS = {
+  home: "M3 11 L12 4 L21 11 M5.5 10 V20 H18.5 V10 M10 20 V14.5 H14 V20",
+  visits: "M3.5 5.5 H20.5 V20.5 H3.5 Z M3.5 10 H20.5 M8 3.5 V7 M16 3.5 V7",
+  photos: "M3.5 8 H7 L8.5 5.5 H15.5 L17 8 H20.5 V19 H3.5 Z M12 9.7 A3.8 3.8 0 0 1 12 17.3 A3.8 3.8 0 0 1 12 9.7",
+  payments: "M7 4 H16 M7 8.5 H16 M7 13 C12 13 14.5 11.5 14.5 8.5 C14.5 6 12.8 4 9.5 4 M7 13 H10.5 L17 20.5",
+  refer: APP_ICONS.share,
 } as const;
 
 /** The head outline behind the stage drawings, in a 64 × 74 box. */

@@ -86,7 +86,7 @@ function LineBoxes(props: {
           />
         )}
       </Field>
-      <IconButton d={ICONS.cross} size={16} label={copy.draft.removeLine(named(line.code))} onClick={props.onRemove} />
+      <IconButton d={ICONS.cross} size="sm" label={copy.draft.removeLine(named(line.code))} onClick={props.onRemove} />
       {questioned && (
         <Refusal
           className={form.error}

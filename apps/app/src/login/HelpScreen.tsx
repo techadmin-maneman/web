@@ -15,7 +15,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
   return (
     <main className={styles.screen}>
       <div className={styles.top}>
-        <IconButton className={styles.back} d={ICONS.back} size={22} label={copy.back} onClick={onBack} />
+        <IconButton className={styles.back} d={ICONS.back} size="md" label={copy.back} onClick={onBack} />
       </div>
       <div className={styles.body}>
         <h1 className={styles.helpTitle}>{copy.title}</h1>
@@ -37,7 +37,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
             href={whatsappChat(whatsapp.number)}
             rel="noopener"
           >
-            <Icon d={ICONS.whatsapp} size={19} />
+            <Icon d={ICONS.whatsapp} size="sm" />
             {copy.message}
           </ButtonLink>
         </div>

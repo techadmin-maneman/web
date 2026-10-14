@@ -29,7 +29,7 @@ export function SupportCard({
         href={whatsappChat(whatsapp.number)}
         rel="noopener"
       >
-        <Icon d={ICONS.whatsapp} size={21} />
+        <Icon d={ICONS.whatsapp} size="md" />
         <span>{copy.message}</span>
       </ButtonLink>
       {carePerson !== null && <p className={styles.cardHint}>{copy.carePerson(carePerson)}</p>}

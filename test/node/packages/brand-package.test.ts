@@ -43,11 +43,18 @@ describe("icons", () => {
     expect(Object.values(GLYPHS).filter((path) => sets.has(path))).toEqual([]);
   });
 
-  // The technician app re-declared five of the set's glyphs, and both apps the chevron and the tick.
-  it.each(["apps/app/src/icons.ts", "apps/tech/src/icons.ts"])("%s declares no glyph the brand holds", (file) => {
-    const held = new Set<string>([...Object.values(ICONS), ...Object.values(APP_ICONS), ...Object.values(GLYPHS)]);
-    const declared = [...readFileSync(file, "utf8").matchAll(/"(M[^"]+)"/g)].map((match) => match[1] ?? "");
-    expect(declared.filter((path) => held.has(path))).toEqual([]);
+  // The technician app re-declared five of the set's glyphs, both apps the chevron and the tick, and each kept a
+  // file of its own glyphs beside the brand's.
+  it("is the one set: no app or island keeps a glyph of its own", () => {
+    const sources = ["apps/app/src", "apps/ops/src", "apps/tech/src", "site/src"].flatMap(filesUnder);
+    const glyphs = sources.filter(
+      (path) =>
+        /\.(tsx?|astro)$/.test(path) &&
+        /"M(?:1?\d|2[0-4])(?:\.\d+)? (?:1?\d|2[0-4])(?:\.\d+)? [LHVCA]/.test(readFileSync(path, "utf8")),
+    );
+    expect(glyphs.filter((path) => !/site\/src\/content\/site\/(home|tryon)\.ts$|Drawings\.tsx$/.test(path))).toEqual(
+      [],
+    );
   });
 
   it("ICONS is frozen as the Phase 1 site draws it", () => {
@@ -184,3 +191,12 @@ describe("the scale", () => {
     expect(missing).toEqual([]);
   });
 });
+
+/** Every file under a directory, past the built and installed ones. */
+function filesUnder(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = `${directory}/${entry.name}`;
+    if (["node_modules", "dist", ".astro"].includes(entry.name)) return [];
+    return entry.isDirectory() ? filesUnder(path) : [path];
+  });
+}

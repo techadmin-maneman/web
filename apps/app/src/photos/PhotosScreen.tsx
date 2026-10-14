@@ -3,6 +3,7 @@
 // state. Above them, a try-on the client made on the site, while it is kept
 // (ADR 0082). A photograph opens in a sheet, to download.
 
+import { TAB_ICONS } from "@maneman/brand/icons";
 import { ButtonLink } from "@maneman/ui/Button";
 import { useLiveLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -12,7 +13,6 @@ import { api, type PhotoTimeline } from "../api.ts";
 import { empty, photos, states, TRY_ON_URL } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { TAB_ICONS } from "../icons.ts";
 import { visitName } from "../lib/visit.ts";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ANGLES, PhotoRow, type OpenPhoto } from "./PhotoRow.tsx";

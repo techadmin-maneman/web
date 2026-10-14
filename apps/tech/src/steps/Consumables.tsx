@@ -17,7 +17,6 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useId, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
 import { job as jobCopy, steps as copy } from "../content.ts";
-import { STEPPER_STROKE } from "../icons.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import { StepFrame } from "./StepFrame.tsx";
@@ -66,8 +65,8 @@ function Stepper({
           edged
           className={styles.step}
           d={ICONS.minus}
-          size={20}
-          stroke={STEPPER_STROKE}
+          size="md"
+          weight="heavy"
           label={copy.consumables.less(name)}
           aria-describedby={said}
           onClick={() => {
@@ -81,8 +80,8 @@ function Stepper({
           edged
           className={styles.step}
           d={ICONS.plus}
-          size={20}
-          stroke={STEPPER_STROKE}
+          size="md"
+          weight="heavy"
           label={copy.consumables.more(name)}
           aria-describedby={said}
           onClick={() => {

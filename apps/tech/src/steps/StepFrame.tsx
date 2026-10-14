@@ -12,7 +12,6 @@ import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { useEffect, useState, type ReactNode } from "react";
 import { steps as copy } from "../content.ts";
-import { STROKE } from "../icons.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import frame from "../components/frame.module.css";
 import { classes } from "@maneman/ui/classes";
@@ -81,8 +80,7 @@ export function StepFrame({
         <IconButton
           className={styles.back}
           d={ICONS.back}
-          size={24}
-          stroke={STROKE}
+          size="lg" weight="heavy"
           label={copy.back}
           onClick={onBack}
         />

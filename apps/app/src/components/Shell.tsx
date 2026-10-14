@@ -4,7 +4,7 @@
 // with the page's title. Each page pads itself, as its board does.
 
 import { iconButtonLook } from "@maneman/ui/IconButton";
-import { ICONS, APP_ICONS } from "@maneman/brand/icons";
+import { APP_ICONS, ICONS, TAB_ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { classes } from "@maneman/ui/classes";
 import { Mark } from "@maneman/ui/Mark";
@@ -13,7 +13,6 @@ import { Link } from "@maneman/ui/router";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { useEffect, type ReactNode } from "react";
 import { home, states, tabs, tabsLabel } from "../content.ts";
-import { TAB_ICONS } from "../icons.ts";
 import type { Tab } from "../route.ts";
 import { useSession } from "../session.ts";
 import styles from "./shell.module.css";
@@ -60,7 +59,7 @@ function PageHeader({ header }: { header: Header }) {
       return (
         <header className={classes(styles.header, styles.titled)}>
           <Link className={iconButtonLook(styles.back)} to={header.to} label={header.label}>
-            <Icon d={ICONS.back} size={22} />
+            <Icon d={ICONS.back} size="md" />
           </Link>
           <h1 className={styles.name}>{header.title}</h1>
         </header>
@@ -81,7 +80,7 @@ export function Shell({ header, tab, footer, kept = false, children }: Props) {
       <div role="status">
         {offline && (
           <p className={styles.offline}>
-            <Icon className={styles.offlineIcon} d={APP_ICONS.offline} size={18} />
+            <Icon className={styles.offlineIcon} d={APP_ICONS.offline} size="sm" />
             <span>{kept ? states.offline : states.offlineOnly}</span>
           </p>
         )}
@@ -91,7 +90,7 @@ export function Shell({ header, tab, footer, kept = false, children }: Props) {
       <nav className={styles.tabs} aria-label={tabsLabel}>
         {tabs.map((each) => (
           <Link key={each.page} className={styles.tab} to={each.page} current={each.page === tab}>
-            <Icon d={TAB_ICONS[each.icon]} size={21} />
+            <Icon d={TAB_ICONS[each.icon]} size="md" />
             <span>{each.label}</span>
           </Link>
         ))}

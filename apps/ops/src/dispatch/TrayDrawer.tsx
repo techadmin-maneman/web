@@ -76,7 +76,7 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
+              <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
               {copy.whatsapp(firstNameOf(person.name))}
             </ButtonLink>
             <OpsLink className={buttonLook({ variant: "outline", size: "small" })} to={clientPath(person.id, "visits")}>

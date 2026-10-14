@@ -4,7 +4,7 @@
 // and the screen draws a `TickBox` in it; `picture` stands a drawing or a photograph over its words and edges it in
 // the ink. On the ink, a chosen card is edged in the paper.
 
-import { GLYPHS } from "@maneman/brand/icons";
+import { ICONS } from "@maneman/brand/icons";
 import type { ChangeEvent, ReactNode } from "react";
 import { Icon } from "./Icon.tsx";
 import { classes } from "./classes.ts";
@@ -48,7 +48,7 @@ export function ChoiceCard({
 export function TickBox({ checked }: { readonly checked: boolean }) {
   return (
     <span className={classes(styles.box, checked && styles.boxOn)} aria-hidden="true">
-      {checked && <Icon d={GLYPHS.check} size={13} />}
+      {checked && <Icon d={ICONS.tick} size="xs" />}
     </span>
   );
 }

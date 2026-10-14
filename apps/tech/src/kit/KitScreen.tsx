@@ -14,7 +14,6 @@ import { useState } from "react";
 import { api, type Kit } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
 import { kit as copy, reference, steps } from "../content.ts";
-import { STROKE } from "../icons.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
 import { dayMonth } from "../lib/when.ts";
@@ -241,8 +240,8 @@ export function KitScreen() {
         <IconButton
           className={styles.back}
           d={ICONS.back}
-          size={24}
-          stroke={STROKE}
+          size="lg"
+          weight="heavy"
           label={copy.back}
           onClick={() => {
             go("/");

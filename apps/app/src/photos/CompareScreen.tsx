@@ -195,7 +195,7 @@ function Compare(props: { visits: readonly Visit[]; earliest: Visit; latest: Vis
     <div className={styles.compare}>
       <header className={styles.header}>
         <AppLink className={iconButtonLook(styles.back)} to="/photos" label={photos.back}>
-          <Icon d={ICONS.back} size={22} />
+          <Icon d={ICONS.back} size="md" />
         </AppLink>
         <h1 className={styles.title}>{photos.compare}</h1>
       </header>
@@ -230,8 +230,8 @@ function Compare(props: { visits: readonly Visit[]; earliest: Visit; latest: Vis
             aria-valuetext={photos.dividerAt(Math.round(at), fullDate(from.date), fullDate(to.date))}
             onKeyDown={step}
           >
-            <Icon d={ICONS.handleLeft} size={14} />
-            <Icon d={ICONS.handleRight} size={14} />
+            <Icon d={ICONS.handleLeft} size="xs" />
+            <Icon d={ICONS.handleRight} size="xs" />
           </div>
         </div>
         <div className={styles.angles}>

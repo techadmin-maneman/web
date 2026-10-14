@@ -9,7 +9,6 @@ import { shortDate } from "@maneman/web-kit/dates";
 import type { ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { badges, job as copy } from "../content.ts";
-import { STROKE } from "../icons.ts";
 import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia } from "../lib/when.ts";
@@ -47,8 +46,8 @@ export function CardFrame({ job, foot, children }: { job: Job; foot: ReactNode; 
         <IconButton
           className={styles.back}
           d={ICONS.back}
-          size={24}
-          stroke={STROKE}
+          size="lg"
+          weight="heavy"
           label={copy.back}
           onClick={() => {
             go("/");

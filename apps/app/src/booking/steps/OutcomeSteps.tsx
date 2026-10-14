@@ -92,7 +92,7 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
       <h2 className={capsLook(styles.confirmedLabel)} id={TITLE_ID}>
         {moved ? change.moved : copy.label}
       </h2>
-      <Icon className={styles.confirmedTick} d={ICONS.tick} size={26} />
+      <Icon className={styles.confirmedTick} d={ICONS.tick} size="xl" />
       <p className={styles.confirmedTitle}>{when}</p>
       {reminded && <p className={styles.confirmedLine}>{copy.tellsYou}</p>}
       <Settled hold={hold} />

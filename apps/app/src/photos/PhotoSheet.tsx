@@ -37,7 +37,7 @@ function Download({ url, name }: { url: string; name: string }) {
 
   const content = (
     <>
-      <Icon d={ICONS.download} size={17} />
+      <Icon d={ICONS.download} size="sm" />
       {photos.download}
     </>
   );

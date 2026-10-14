@@ -12,6 +12,7 @@
 // The last visit's photograph is fetched each time the card is open and never
 // kept: the API answers it `no-store`, and the service worker leaves it alone.
 
+import { GLYPHS } from "@maneman/brand/icons";
 import { ButtonLink } from "@maneman/ui/Button";
 import { capsLook } from "@maneman/ui/Caps";
 import { Icon } from "@maneman/ui/Icon";
@@ -20,7 +21,6 @@ import { TellClient } from "./TellClient.tsx";
 import { addressLine } from "@maneman/web-kit/address";
 import type { HairProfile, Job } from "../api.ts";
 import { job as copy, profile as profileCopy } from "../content.ts";
-import { PIN, STROKE } from "../icons.ts";
 import { callLink, wayTo } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
@@ -181,7 +181,7 @@ export function JobCard({ job }: { job: Job }) {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Icon d={PIN} size={21} stroke={STROKE} />
+          <Icon d={GLYPHS.pin} size="md" weight="heavy" />
           <span>{copy.navigate}</span>
         </ButtonLink>
         {client !== null && (

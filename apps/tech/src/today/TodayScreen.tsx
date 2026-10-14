@@ -8,7 +8,7 @@
 
 import { Tile } from "@maneman/ui/Tile";
 import { capsLook } from "@maneman/ui/Caps";
-import { ICONS, APP_ICONS } from "@maneman/brand/icons";
+import { APP_ICONS, GLYPHS, ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { Mark } from "@maneman/ui/Mark";
@@ -26,7 +26,6 @@ import {
   titles,
   today as copy,
 } from "../content.ts";
-import { STROKE, TAG } from "../icons.ts";
 import { rowState, type RowState } from "../lib/progress.ts";
 import { keepCards, useDay, useNames } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
@@ -203,7 +202,7 @@ function Tomorrow(props: Omit<Parameters<typeof Jobs>[0], "jobs"> & { readonly j
         }}
       >
         <span>{copy.tomorrow(props.jobs.length)}</span>
-        <Icon className={styles.tomorrowIcon} d={ICONS.selectArrow} size={19} stroke={STROKE} />
+        <Icon className={styles.tomorrowIcon} d={ICONS.selectArrow} size="sm" weight="heavy" />
       </Tile>
       {open && <Jobs {...props} />}
     </>
@@ -235,7 +234,7 @@ function OnThePhone(props: { readonly sending: number; readonly unsentSets: numb
     <>
       {(sending > 0 || unsentSets > 0) && (
         <Link className={styles.waiting} to="/waiting">
-          <Icon d={APP_ICONS.uploadQueue} size={20} className={styles.waitingIcon} stroke={STROKE} />
+          <Icon d={APP_ICONS.uploadQueue} size="md" className={styles.waitingIcon} weight="heavy" />
           <span className={styles.waitingLine}>
             {unsentSets > 0 ? queueCopy.waiting(unsentSets) : queueCopy.events(sending)}
           </span>
@@ -326,7 +325,7 @@ export function TodayScreen() {
       {tomorrowJobs.length > 0 && <Tomorrow jobs={tomorrowJobs} names={names} queued={waiting.events} heard={heard} />}
 
       <Link className={styles.waiting} to="/kit">
-        <Icon d={TAG} size={20} className={styles.waitingIcon} stroke={STROKE} />
+        <Icon d={GLYPHS.tag} size="md" className={styles.waitingIcon} weight="heavy" />
         <span className={styles.waitingLine}>{kitCopy.link}</span>
       </Link>
     </main>

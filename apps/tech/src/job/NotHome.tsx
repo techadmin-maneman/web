@@ -11,7 +11,6 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { Job } from "../api.ts";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { notHome as copy, job as jobCopy } from "../content.ts";
-import { STROKE } from "../icons.ts";
 import { checkedIn, theWait } from "../lib/progress.ts";
 import { clock, countdown, metres } from "../lib/when.ts";
 import { go, stepPath } from "../route.ts";
@@ -261,7 +260,7 @@ function Waiting(props: {
         {props.line}
       </p>
       <p className={styles.evidence}>
-        <Icon className={styles.evidenceIcon} d={props.receipt.icon} size={20} stroke={STROKE} />
+        <Icon className={styles.evidenceIcon} d={props.receipt.icon} size="md" weight="heavy" />
         <span>{props.receipt.text}</span>
       </p>
       {props.early && (
