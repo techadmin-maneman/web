@@ -151,15 +151,20 @@ const errorShape: Check = async ({ api }) => {
 /** A pincode the booking form checks, and one of the public site's routes. */
 const PINCODE_PATH = "/api/pincodes/122018";
 
-/** The booking form's pincode check answers from the database, whether or not we come there yet. */
-const pincodeCheck: Check = async ({ api }) => {
-  const response = await api(PINCODE_PATH);
-  assert(response.status === 200, `status ${String(response.status)}`);
+/**
+ * The booking form's pincode check answers from the database, whether or not we come there yet. It waits for the
+ * deploy to reach every edge, as health does: an edge the new version has not reached yet answers with the old one,
+ * override or not, and a release whose old version had no such route then reads a 404.
+ */
+const pincodeCheck: Check = ({ options, api }) =>
+  retried(options, async () => {
+    const response = await api(PINCODE_PATH);
+    assert(response.status === 200, `status ${String(response.status)}`);
 
-  const body = await readJsonObject(response);
-  assert(typeof body.served === "boolean", "the answer does not say whether we come");
-  return `122018 is ${body.served ? "served" : "not served yet"}`;
-};
+    const body = await readJsonObject(response);
+    assert(typeof body.served === "boolean", "the answer does not say whether we come");
+    return `122018 is ${body.served ? "served" : "not served yet"}`;
+  });
 
 /** Everything outside /api/* reaches mm-site, and it is this environment's site. */
 const siteRouting: Check = async ({ options, site }) => {

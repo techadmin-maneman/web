@@ -202,7 +202,7 @@ describe("smoke suite", () => {
 
   it("fails when the pincode check does not say whether we come", async () => {
     expect(await failures(smokeOptions("staging", { pincode: { pincode: "122018" } }))).toEqual([
-      "mm-api pincode check: the answer does not say whether we come",
+      "mm-api pincode check: after 2 attempt(s): the answer does not say whether we come",
     ]);
   });
 
