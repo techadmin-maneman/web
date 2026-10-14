@@ -157,7 +157,6 @@
     height: var(--sp-20);
     border: var(--hairline) solid var(--paper-control);
     background: var(--white);
-    color: var(--paper);
   }
 
   .tickInput {
@@ -178,6 +177,7 @@
   .tick:has(.tickInput:checked) {
     border-color: var(--ink);
     background: var(--ink);
+    color: var(--paper);
   }
 
   .tick:has(.tickInput:checked) .tickMark {

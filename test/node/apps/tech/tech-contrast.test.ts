@@ -149,8 +149,8 @@ describe("the technician app’s control edges", () => {
   );
 
   // A piece to pick, and every other outlined button and toggle on the ink, takes the app's own edge.
-  it("edges the shared outlines on the ink in --ink-line-strong", () => {
-    expect(readFileSync("apps/tech/src/styles/global.css", "utf8")).toMatch(/--edge-on-ink: var\(--ink-line-strong\);/);
+  it("edges the shared outlines on the ink in --ink-line-strong, as every app does", () => {
+    expect(readFileSync("packages/ui/base.css", "utf8")).toMatch(/--edge-on-ink: var\(--ink-line-strong\);/);
   });
 
   it("does not use the boards' --ink-line, which falls short of 3:1 on the ink", () => {

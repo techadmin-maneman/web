@@ -15,8 +15,8 @@
 :root {
   /* ---- Colour: the brand ------------------------------------------------ */
   --ink: #16233a; /* ink navy */
-  --gilt: #c9a363; /* on ink only: the mark, one rule */
-  --brass: #b98b45; /* on paper only */
+  --gilt: #c9a363; /* on ink only: the mark, one rule; never text on paper (1.86:1) */
+  --brass: #b98b45; /* on paper only, for rules and marks: never text (2.42:1); --brass-text is its text */
   --paper: #e9e4d8;
   --text: #1a1714;
 
