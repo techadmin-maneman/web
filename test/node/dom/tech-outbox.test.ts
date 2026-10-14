@@ -22,11 +22,16 @@ const event = (seq: number, job: string, over: Partial<Queued> = {}): Queued => 
   job_id: job,
   kind: "checklist",
   path: `/tech/jobs/${job}/checklist`,
-  body: {},
+  body: { done: [] },
   queued_at: seq,
   state: "waiting",
   note: null,
   fields: [],
+  starts_at: null,
+  moved: null,
+  request_id: null,
+  attempts: 0,
+  next_at: null,
   ...over,
 });
 

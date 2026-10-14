@@ -84,10 +84,17 @@ describe("the phone's store", () => {
     expect([...(await open()).objectStoreNames]).not.toContain("jobs");
   });
 
-  it("finds an event the first release queued by its job, kind and state", async () => {
+  it("finds an event the first release queued by its job, kind and state, with what it lacked filled in as none", async () => {
     const event = { seq: 1, id: "e", job_id: "a", kind: "start", state: "waiting", body: null };
     await firstRelease([event], "outbox");
-    expect(await firstIn("outbox", STEP_INDEX, ["a", "start", "waiting"])).toEqual(event);
+    expect(await firstIn("outbox", STEP_INDEX, ["a", "start", "waiting"])).toEqual({
+      ...event,
+      starts_at: null,
+      moved: null,
+      request_id: null,
+      attempts: 0,
+      next_at: null,
+    });
   });
 
   it("marks every record with the version of its shape, so a later build can tell old from new", async () => {

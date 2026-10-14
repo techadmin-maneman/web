@@ -5,6 +5,7 @@
 
 import type { Job, JobState, JobSummary } from "../api.ts";
 import type { KeptArrival, KeptClosure, KeptDay, KeptStart } from "./records.ts";
+import type { Queued } from "./replay.ts";
 
 /** The outbox's index by job, kind and state. */
 export const STEP_INDEX = "step";
@@ -163,6 +164,26 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       // What an earlier build wrote, which may lack the field this step adds.
       const card = at.value as Partial<Pick<Job, "kit_hair_systems">>;
       if (card.kit_hair_systems === undefined) at.update({ ...card, kit_hair_systems: [] });
+      at.continue();
+    };
+  },
+  // Version 6: every write in the outbox carries its job's start, whom a job went to, the API's ID for a refusal and
+  // its tries, each none where an earlier build kept none, so what reads the outbox need not ask whether they are there.
+  (_db, upgrade) => {
+    const cursor = upgrade.objectStore("outbox").openCursor();
+    cursor.onsuccess = () => {
+      const at = cursor.result;
+      if (at === null) return;
+      // What an earlier build wrote, which may lack the fields this step adds.
+      const kept = at.value as Partial<Pick<Queued, "starts_at" | "moved" | "request_id" | "attempts" | "next_at">>;
+      at.update({
+        ...kept,
+        starts_at: kept.starts_at ?? null,
+        moved: kept.moved ?? null,
+        request_id: kept.request_id ?? null,
+        attempts: kept.attempts ?? 0,
+        next_at: kept.next_at ?? null,
+      });
       at.continue();
     };
   },

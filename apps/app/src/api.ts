@@ -6,13 +6,15 @@
 // Every call is same-origin, so the session cookie goes with it and the Origin matches.
 
 import { signInAgain } from "@maneman/web-kit/access";
-import { createClient, type Answer as Answered, type OperationAt, type Success } from "@maneman/web-kit/api";
+import { createClient, type Answer as Answered } from "@maneman/web-kit/api";
 import type { components, paths } from "./api-schema.ts";
 import { heardFromApi } from "./lib/clock.ts";
 
 type Schemas = components["schemas"];
 export type LoginChallenge = Schemas["LoginChallenge"];
 export type Me = Schemas["Me"];
+/** A hair system made to the client's profile, as Home shows it on its way. */
+export type CustomOrder = Schemas["MyCustomOrders"]["orders"][number];
 export type Profile = Schemas["Profile"];
 export type Address = Schemas["Address"];
 type AddressSave = Schemas["AddressSave"];
@@ -202,10 +204,7 @@ export const documentUrl = (id: string) => `/api/documents/${id}`;
 export const receiptUrl = (paymentId: string) => `/api/payments/${paymentId}/receipt`;
 
 /** Asks the API to make the client's own referral card from their first fit's photographs, which takes a moment. */
-export const makeCard = () =>
-  client.request<Success<OperationAt<paths, "/api/refer/card", "post">>>("POST", "/api/refer/card", {
-    patience: CARD_PATIENCE_MS,
-  });
+export const makeCard = () => client.post("/api/refer/card", { patience: CARD_PATIENCE_MS });
 
 /** The client's card as stored, which the phone keeps a day: each version has a link of its own. */
 export const cardUrl = (version: number) => `/api/refer/card?v=${String(version)}`;

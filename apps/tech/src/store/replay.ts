@@ -18,7 +18,7 @@
 //     day on the phone, it stops as stuck for the technician to send again.
 
 import type { Moved } from "@maneman/web-kit/api";
-import type { EventKind } from "../routes.ts";
+import type { EventBody, EventKind } from "../routes.ts";
 
 export type EventState = "waiting" | "superseded" | "refused" | "early";
 
@@ -28,31 +28,32 @@ type Stopping = "superseded" | "refused";
 const stops = (event: Queued): event is Queued & { readonly state: Stopping } =>
   event.state === "superseded" || event.state === "refused";
 
-export interface Queued {
+/** One write the phone queued, of its kind: `body` is that kind's (../routes.ts). */
+export interface Queued<K extends EventKind = EventKind> {
   /** The outbox's own key, counting up: the order the phone queued them in. */
   readonly seq: number;
   /** The UUIDv7 sent as `X-Client-Event-Id`, which makes the write idempotent. */
   readonly id: string;
   readonly job_id: string;
-  readonly kind: EventKind;
+  readonly kind: K;
   /** The route this event is sent to, from the API client's list. */
   readonly path: string;
-  readonly body: unknown;
+  readonly body: EventBody<K>;
   readonly queued_at: number;
-  /** The job's start as the phone held it, sent as `X-Job-Starts-At`. Absent on what an older build queued. */
-  readonly starts_at?: string | null;
+  /** The job's start as the phone held it, sent as `X-Job-Starts-At`. */
+  readonly starts_at: string | null;
   readonly state: EventState;
   /** The API's code for what stopped this job: `superseded`, `out_of_order`, or why it was refused. */
   readonly note: string | null;
   /** On a supersede, the fields that changed under the phone; on a refusal, the fields it refused. */
   readonly fields: readonly string[];
-  /** On a job given to another technician, whom and when, as the API said. Absent on what an older build kept. */
-  readonly moved?: Moved | null;
-  /** On a refusal, the API's ID for it, for the technician to quote. Absent on what an older build kept. */
-  readonly request_id?: string | null;
-  /** How often the API failed it at its end, and the earliest it goes again. Absent on what an older build kept. */
-  readonly attempts?: number;
-  readonly next_at?: number | null;
+  /** On a job given to another technician, whom and when, as the API said. */
+  readonly moved: Moved | null;
+  /** On a refusal, the API's ID for it, for the technician to quote. */
+  readonly request_id: string | null;
+  /** How often the API failed it at its end, and the earliest it goes again. */
+  readonly attempts: number;
+  readonly next_at: number | null;
 }
 
 /** The tries a write the API keeps failing gets before it stops as stuck, and the longest it waits between them. */

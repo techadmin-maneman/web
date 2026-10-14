@@ -41,6 +41,11 @@ const setWrite = (job: string, kind: "before_photos" | "after_photos"): Queued =
   state: "waiting",
   note: null,
   fields: [],
+  starts_at: null,
+  moved: null,
+  request_id: null,
+  attempts: 0,
+  next_at: null,
 });
 
 describe("a photograph set on its way", () => {

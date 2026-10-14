@@ -84,6 +84,11 @@ const queued = (kind: Queued["kind"], over: Partial<Queued> = {}): Queued => {
     state: "waiting",
     note: null,
     fields: [],
+    starts_at: null,
+    moved: null,
+    request_id: null,
+    attempts: 0,
+    next_at: null,
     ...over,
   };
 };

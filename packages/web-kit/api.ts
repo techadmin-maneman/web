@@ -235,7 +235,12 @@ async function reach(
   }, patience);
   try {
     const response = await fetch(url, { ...init, credentials: "same-origin", signal: giveUp.signal });
-    return { response, finished: () => clearTimeout(timer) };
+    return {
+      response,
+      finished: () => {
+        clearTimeout(timer);
+      },
+    };
   } catch {
     clearTimeout(timer);
     return null;
@@ -351,17 +356,13 @@ export function createClient<Paths, Code extends string = string>(options: Clien
       options.onUnreached?.();
       return sent === null ? OFFLINE : UNCONFIRMED;
     }
-    const { response, finished } = reached;
-    try {
-      if (response.type === "opaqueredirect" && options.onAccessLapsed !== undefined) {
-        options.onAccessLapsed();
-        options.onUnreached?.();
-        return OFFLINE;
-      }
-      return await read<T>(response, init.file === true);
-    } finally {
-      finished();
+    if (reached.response.type === "opaqueredirect" && options.onAccessLapsed !== undefined) {
+      reached.finished();
+      options.onAccessLapsed();
+      options.onUnreached?.();
+      return OFFLINE;
     }
+    return read<T>(reached.response, init.file === true).finally(reached.finished);
   }
 
   /** A typed call: the document's path filled in, its query added and its body sent as JSON. */

@@ -115,6 +115,10 @@ export async function queue<K extends EventKind>(
     state: "waiting" as const,
     note: null,
     fields: [],
+    moved: null,
+    request_id: null,
+    attempts: 0,
+    next_at: null,
   };
   const kept = await addUnless("outbox", STEP_INDEX, waiting, event);
   if (kept.added) {
@@ -285,7 +289,7 @@ async function keepEarly(event: Queued, code: string): Promise<void> {
  * MOST_TRIES, or a day on the phone, it stops as stuck, reported once, for the technician to send again.
  */
 async function waitOrStick(event: Queued, answer: Refusal["answer"]): Promise<void> {
-  const attempts = (event.attempts ?? 0) + 1;
+  const attempts = event.attempts + 1;
   const now = Date.now();
   if (attempts >= MOST_TRIES || now - event.queued_at >= STUCK_AFTER_MS) {
     await giveUp(event, { kind: "refused", note: STUCK, fields: [], answer });

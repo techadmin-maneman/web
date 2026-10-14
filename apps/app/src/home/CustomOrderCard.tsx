@@ -6,36 +6,38 @@ import { TextLink } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { api } from "../api.ts";
+import { api, type CustomOrder } from "../api.ts";
 import { home } from "../content.ts";
 import styles from "./home.module.css";
 
 const copy = home.customOrder;
 
-type Order = { status: string; promised_on: string | null; amount: number; pay_url: string | null; number: number };
+type Order = CustomOrder;
 
 function Line({ order }: { order: Order }) {
-  if (order.status === "awaiting_payment") {
-    return (
-      <>
-        <p className={styles.promptLine}>{copy.awaitingPayment}</p>
-        {order.pay_url !== null && (
-          <TextLink tone="brass" className={styles.promptLink} href={order.pay_url} newTab>
-            <span>{copy.pay(rupees(order.amount))}</span>
-          </TextLink>
-        )}
-      </>
-    );
+  switch (order.status) {
+    case "awaiting_payment":
+      return (
+        <>
+          <p className={styles.promptLine}>{copy.awaitingPayment}</p>
+          {order.pay_url !== null && (
+            <TextLink tone="brass" className={styles.promptLink} href={order.pay_url} newTab>
+              <span>{copy.pay(rupees(order.amount))}</span>
+            </TextLink>
+          )}
+        </>
+      );
+    case "paid":
+      return <p className={styles.promptLine}>{copy.paid}</p>;
+    case "ordered":
+      return (
+        <p className={styles.promptLine}>
+          {copy.ordered(order.promised_on === null ? null : shortDate(order.promised_on))}
+        </p>
+      );
+    case "arrived":
+      return <p className={styles.promptLine}>{copy.arrived}</p>;
   }
-  if (order.status === "paid") return <p className={styles.promptLine}>{copy.paid}</p>;
-  if (order.status === "ordered") {
-    return (
-      <p className={styles.promptLine}>
-        {copy.ordered(order.promised_on === null ? null : shortDate(order.promised_on))}
-      </p>
-    );
-  }
-  return <p className={styles.promptLine}>{copy.arrived}</p>;
 }
 
 export function CustomOrderCard() {
