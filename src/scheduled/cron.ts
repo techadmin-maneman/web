@@ -58,6 +58,7 @@ import {
   expireTryOns,
   deleteExpiredRecords,
   letKeptLooksGo,
+  requeueContactUpdates,
   requeueCrmErasures,
   requeueLeads,
   requeueMessages,
@@ -375,6 +376,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "books_sync", needs: "books", every: 15, at: 8, run: booksJob },
   { name: "delete_photos", needs: "nothing", every: 15, at: 11, run: deletePhotos },
   { name: "requeue_leads", needs: "nothing", every: 15, at: 12, run: requeueLeads },
+  // A contact change its CRM lead does not have yet, once the change, or its last try, is a quarter hour old.
+  { name: "requeue_contact_updates", needs: "nothing", every: 15, at: 12, run: requeueContactUpdates },
   // A cancel, the client's or ops', whose refund its request could not settle, asked for again under its receipt.
   { name: "cancel_refunds", needs: "nothing", every: 15, at: 13, run: cancelRefundsJob },
 

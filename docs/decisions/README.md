@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0203.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0204.
 
 ## By topic
 
@@ -186,6 +186,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0144](0144-care-numbers.md) The Care numbers
 - [0145](0145-technician-presets.md) A technician's word from the job card
 - [0197](0197-one-inbound-port.md) One inbound port
+- [0203](0203-a-vendor-down-is-held-off.md) A vendor that is down is held off, and a contact change waits in D1
 
 ### Referrals
 
@@ -251,7 +252,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0009](0009-stay-inside-cloudflare-free-tier.md) | Stay inside Cloudflare's free tier | 2026-09-21 | accepted | [0112](0112-workers-paid.md), [0194](0194-the-build-on-workers-paid.md) |
 | [0010](0010-applying-triggers.md) | Applying triggers | 2026-09-21 | accepted |  |
 | [0011](0011-lead-api.md) | The lead API | 2026-09-21 | accepted | [0067](0067-alerts-and-silent-failures.md) |
-| [0012](0012-zoho-sync.md) | The Zoho sync | 2026-09-21 | accepted | [0070](0070-vendor-correctness.md) |
+| [0012](0012-zoho-sync.md) | The Zoho sync | 2026-09-21 | accepted | [0070](0070-vendor-correctness.md), [0203](0203-a-vendor-down-is-held-off.md) |
 | [0013](0013-departures-from-the-ailabtools-harness.md) | Departures from the AILabTools harness | 2026-09-21 | accepted |  |
 | [0014](0014-try-on-api.md) | The try-on API | 2026-09-21 | accepted | [0018](0018-one-look-pro-only-lead-notices.md), [0039](0039-phase-2-budget.md), [0084](0084-a-clients-try-on-is-kept.md), [0104](0104-the-try-ons-look-on-whatsapp-only.md), [0201](0201-the-try-on-on-youcam.md) |
 | [0015](0015-render-pipeline.md) | The render pipeline and its budget | 2026-09-21 | accepted | [0070](0070-vendor-correctness.md), [0201](0201-the-try-on-on-youcam.md) |
@@ -440,3 +441,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0200](0200-staging-tenants-of-its-own.md) | Staging's tenants of its own | 2026-10-14 | accepted |  |
 | [0201](0201-the-try-on-on-youcam.md) | The try-on on YouCam | 2026-10-14 | accepted |  |
 | [0202](0202-razorpay-events-queued.md) | Razorpay's events are queued, and every queue has its dead letters | 2026-10-14 | accepted |  |
+| [0203](0203-a-vendor-down-is-held-off.md) | A vendor that is down is held off, and a contact change waits in D1 | 2026-10-14 | accepted |  |

@@ -12,6 +12,7 @@ import {
   stubCrmThatFails,
 } from "../helpers.ts";
 import { fakeBatch } from "../batches.ts";
+import { ProviderError } from "../../../src/providers/provider-error.ts";
 import { MAX_SYNC_ATTEMPTS, QUICK_RETRY_DELAY_SECONDS } from "../../../src/config/pipeline.ts";
 import { log, recordingCrm, leadRow, openAlertKeys } from "./crm-sync-fixtures.ts";
 
@@ -235,6 +236,40 @@ describe("crm-sync: erasing a person", () => {
 
 // A confirmed change of number stayed in D1, and the CRM lead kept the old one. An invite ops attach is
 // sent the same way (docs/decisions/0089-an-invite-is-not-lost.md).
+describe("crm-sync: the CRM down", () => {
+  const breaker = () => env.DB.prepare("SELECT failures, open_until FROM vendor_breakers WHERE vendor = 'crm'").first();
+
+  it("is held off after five failures of its own: leads wait uncounted, ops hear once, and an answer closes it", async () => {
+    const leads = await Promise.all([1, 2, 3, 4, 5, 6].map((n) => phaseOneLead(`+91981000010${String(n)}`, "Gurgaon")));
+    const deps = fakeDependencies({ crm: stubCrmThatFails("Zoho 503 unavailable") });
+    for (const leadId of leads) await syncLead(env.DB, deps, log, leadId);
+
+    // The fifth failure held it, and counted against the CRM; the sixth lead was not tried.
+    expect(await breaker()).toMatchObject({ failures: 5, open_until: expect.any(String) as string });
+    expect((await Promise.all(leads.map(leadRow))).map((row) => row?.sync_attempts)).toEqual([1, 1, 1, 1, 0, 0]);
+    expect(deps.alerts).toEqual([expect.stringContaining("Check Zoho CRM's status: it has failed 5 times in a row")]);
+    expect(await openAlertKeys()).toEqual(["vendor_down:crm"]);
+
+    // Past the hold, the first answer closes it, and its alert.
+    const later = new Date(Date.now() + 16 * 60_000);
+    const answered = fakeDependencies({ crm: recordingCrm(), now: () => later });
+    await syncLead(env.DB, answered, log, leads[5] ?? "");
+    expect(await breaker()).toMatchObject({ failures: 0, open_until: null });
+    expect(await openAlertKeys()).toEqual([]);
+  });
+
+  it("is not held off by the CRM refusing records", async () => {
+    const leads = await Promise.all([1, 2, 3, 4, 5].map((n) => phaseOneLead(`+91981000020${String(n)}`, "Delhi")));
+    const refusing = {
+      ...stubCrmThatFails("unused"),
+      syncLead: () => Promise.reject(new ProviderError(400, "INVALID_DATA", "a field is not one")),
+    };
+    const deps = fakeDependencies({ crm: refusing });
+    for (const leadId of leads) await syncLead(env.DB, deps, log, leadId);
+    expect(await breaker()).toBeNull();
+  });
+});
+
 describe("crm-sync: a changed number, address or invite", () => {
   const PERSON = "44444444-4444-4444-8444-444444444444";
 
@@ -322,15 +357,26 @@ describe("crm-sync: a changed number, address or invite", () => {
     expect(crm.updates).toEqual([]);
   });
 
-  it("tries again, and tells ops once the fifth try fails", async () => {
+  it("tries again on the queue, then leaves what is owed to the sweeper, and tells ops nothing", async () => {
     const failing = update(stubCrmThatFails("Zoho 500 down"));
     await failing.done;
     expect(failing.message.retry).toHaveBeenCalled();
 
-    const last = update(stubCrmThatFails("Zoho 500 down"), 5);
+    const last = update(stubCrmThatFails("Zoho 500 down"), 3);
     await last.done;
     expect(last.message.ack).toHaveBeenCalled();
-    expect(last.deps.alerts).toEqual([
+    expect(last.deps.alerts).toEqual([]);
+  });
+
+  it("tells ops to write it by hand when the CRM refuses the record", async () => {
+    const refusing = {
+      ...stubCrmThatFails("unused"),
+      updateContact: () => Promise.reject(new ProviderError(400, "INVALID_DATA", "the mobile is not one")),
+    };
+    const refused = update(refusing);
+    await refused.done;
+    expect(refused.message.ack).toHaveBeenCalled();
+    expect(refused.deps.alerts).toEqual([
       expect.stringContaining(`Update client ${PERSON}'s CRM lead by hand: their new number, city or invite`) as string,
     ]);
   });

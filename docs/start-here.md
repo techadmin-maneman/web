@@ -163,7 +163,7 @@ this map, or when the map names something that no longer exists.
 
 ### Clients
 
-- **Database work** (`src/domain/clients/`): `people`, `client-list`, `profile`, `fitted`, `hair-profiles`, `client-notes`,
+- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `profile`, `fitted`, `hair-profiles`, `client-notes`,
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`
 - **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `home-prompt`
 - **Vendor** (`src/providers/`): `geocode/`
@@ -291,7 +291,7 @@ this map, or when the map names something that no longer exists.
 
 ### The platform
 
-- **Database work** (`src/domain/platform/`): `audit` (the audit log every write adds to), `alerts`, `ops-settings`
+- **Database work** (`src/domain/platform/`): `audit` (the audit log every write adds to), `alerts`, `vendor-breakers` (a vendor held off while it keeps failing), `ops-settings`
   (the Rules every module reads), `cron-runs`, `backups`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
   `enqueue`
 - **Rules** (`src/policy/`): `database-size`, `storage-share`, `launch`, `staging-test-records`

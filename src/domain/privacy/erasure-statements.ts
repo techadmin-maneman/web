@@ -121,6 +121,8 @@ function careRecords(db: D1Database, personId: string): D1PreparedStatement[] {
     db.prepare("UPDATE conversations SET mobile_e164 = 'erased:' || id WHERE person_id = ?1").bind(personId),
     // Nobody looks after an erased record, so it counts towards no one's clients (docs/decisions/0131-care-people.md).
     db.prepare("DELETE FROM care_owners WHERE person_id = ?1").bind(personId),
+    // Nothing goes to an erased record's CRM lead but its erasure (docs/decisions/0203-a-vendor-down-is-held-off.md).
+    db.prepare("DELETE FROM crm_contact_updates WHERE person_id = ?1").bind(personId),
     // Care's words to the city team about them (docs/decisions/0135-city-matters.md).
     db.prepare("UPDATE city_matters SET note = NULL WHERE person_id = ?1").bind(personId),
     db.prepare("UPDATE remedies SET note = NULL WHERE person_id = ?1").bind(personId),

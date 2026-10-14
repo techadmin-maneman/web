@@ -93,7 +93,7 @@ function queuesConsumedBy(script: string, queues: readonly string[]): Answer {
   );
 }
 
-function liveQueue(queue: string, settings: Record<string, number>) {
+function liveQueue(queue: string, settings: Record<string, number | undefined>) {
   return { queue_name: queue, consumers: [{ type: "worker", script: "mm-api-staging", settings }] };
 }
 

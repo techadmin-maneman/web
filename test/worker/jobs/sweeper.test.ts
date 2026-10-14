@@ -253,4 +253,29 @@ describe("sweeper: erasures", () => {
     expect(summary.erasuresRequeued).toBe(1);
     expect(queues.crm.sent).toEqual([{ erase_person_id: "pending", request_id: "sweeper" }]);
   });
+
+  it("sends again a contact update owed a quarter hour, with its invite, and leaves one tried or changed since", async () => {
+    for (const [id, mobile] of [
+      ["due", "+919810000011"],
+      ["tried", "+919810000012"],
+      ["changed", "+919810000013"],
+    ]) {
+      await insertPerson(id ?? "", mobile ?? "");
+    }
+    for (const [person, changedAt, triedAt, invite] of [
+      ["due", minutesAgo(20), null, 1],
+      ["tried", minutesAgo(40), minutesAgo(5), 0],
+      ["changed", minutesAgo(2), null, 0],
+    ] as const) {
+      await env.DB.prepare(
+        `INSERT INTO crm_contact_updates (person_id, owed_since, changed_at, tried_at, invite_attached)
+         VALUES (?1, ?2, ?2, ?3, ?4)`,
+      )
+        .bind(person, changedAt, triedAt, invite)
+        .run();
+    }
+    const { bindings, queues } = sweepEnv();
+    await sweep(bindings, fakeDependencies(), createLogger(), OPTIONS);
+    expect(queues.crm.sent).toEqual([{ update_person_id: "due", request_id: "sweeper", invite_attached: true }]);
+  });
 });

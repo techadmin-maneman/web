@@ -208,13 +208,9 @@ export const ALERT_WORDS = {
     `Sign off ${a.place}'s count on Counts: it still differs on ${String(a.lines)} after a recount.`,
 
   // Clients' records elsewhere.
-  contact_sync: (a: { readonly client: string }) =>
-    `Update client ${a.client}'s CRM lead by hand: their new number, address or last chat did not reach it.`,
   crm_contact_update: (a: { readonly client: string; readonly attempts: number; readonly reason: string }) =>
     `Update client ${a.client}'s CRM lead by hand: their new number, city or invite did not reach it after ` +
     `${String(a.attempts)} attempts (${a.reason}).`,
-  crm_invite: (a: { readonly client: string; readonly byHand: string }) =>
-    `By hand, ${a.byHand}: client ${a.client}'s invite did not reach the CRM.`,
   crm_lead: (a: { readonly lead: string; readonly attempts: number; readonly reason: string }) =>
     `Send lead ${a.lead} again from Tasks once Zoho is back: it did not reach the CRM after ` +
     `${String(a.attempts)} attempts (${a.reason}).`,
@@ -241,6 +237,9 @@ export const ALERT_WORDS = {
     `Technician ${a.technician} was refused a login code: ${a.reason}`,
 
   // The system.
+  vendor_down: (a: { readonly vendor: string; readonly since: string; readonly failures: number }) =>
+    `Check ${a.vendor}'s status: it has failed ${String(a.failures)} times in a row since ${a.since}. Its work waits, ` +
+    "and goes on by itself once it answers.",
   dead_letter: (a: { readonly what: string; readonly todo: string }) =>
     `${a.todo} (runbook, "A queue gave up"): ${a.what} was given up on after every try.`,
   login_codes_failing: (a: { readonly failed: number; readonly detail: string }) =>

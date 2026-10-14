@@ -33,14 +33,14 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Staff and access | `staff`, `staff_grants`, `staff_service_tokens`, `staff_access_mode` | Someone taken off the Staff list since, or a grant taken back, is let in again | Setting it again on the Staff page, before anything else |
 | Tasks | `task_owners`, `task_closures`, `task_spans`, `stock_risks` | A task closed since opens again, one given to someone since is nobody's, a task's span closed since closes again the next night, dated then, and a fit's stock risk is found or cleared again within the hour | Closing or giving it again on the Tasks board |
 | The audit log | `audit_log` | Who did what since `<T>` | Adding the rows since `<T>`: they are only ever added |
-| New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
+| New people, leads, addresses and try-ons | `people`, `leads`, `addresses`, `tryon_jobs`, `crm_contact_updates` | Bookings and leads made since are lost here; the CRM has the leads | The rows since `<T>` |
 | Technicians, and FSM's catalogue | `technicians`, `fsm_items` | A technician added or changed since goes back | Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>` |
 | Recalls | `recalls`, `recall_pieces` | A recall raised since is gone though its lot stays blocked and its pieces stay due; one closed since is open again | Raising the recall again on the Quality page names the same lot, already blocked, so it is refused: ask the engineer |
 | Cycle counts | `count_tasks`, `count_lines` | A count since is open again, though the ledger keeps what it took; a task raised since is raised again the next morning | Counting the task again on the Counts page: the ledger takes a count that agrees with it as nought |
 | The demand forecast | `forecast_runs`, `forecast_lines`, `demand_events`, `plan_lines`, `forecast_accuracy` | A forecast run since is gone and the last before stands until the next is due, an event ops added or took off since is gone or back, a plan line decided since is proposed again, though its transfer or order stands, and a period measured since is measured again from the movements | Adding the events again on the Supply plan page; the next run is due within the planning period |
 | Worked out from other tables | `last_visits`, `ops_settings_snapshot`, `stock_balances`, `stock_lot_balances` | Nothing of their own: triggers keep each from the table it is worked out from | Putting back that table |
 | The storage meter | `stored_objects`, `storage_meter` | Objects stored or deleted since are counted wrongly, as R2 is not restored | The rows since `<T>` |
-| Housekeeping | `alerts`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
+| Housekeeping | `alerts`, `vendor_breakers`, `board_version`, `cron_jobs`, `cron_runs`, `credit_expiry_cursor`, `counters`, `idempotency`, `number_codes`, `otp_challenges`, `tryon_sessions`, `events`, `sync_cursors`, `webhook_inbox`, `zoho_access_tokens`, `zoho_token`, `zoho_tokens` | Nothing that lasts | Nothing |
 | The database's identity, and the restore's own switch | `deployment_identity`, `maintenance` | The identity is the same at every minute. Going back undoes the switch, so the steps turn it on again | Nothing |
 
 ## Tables
@@ -74,6 +74,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [counters](#counters): Fixed-window counters for the rate limits and the daily ceilings (ADR 0011).
 - [credit_expiry_cursor](#credit_expiry_cursor): One row: how far the pass that closes expired credits has got, so it reads only the grants that expired since.
 - [credit_ledger](#credit_ledger): Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).
+- [crm_contact_updates](#crm_contact_updates): A client's contact change still owed to their CRM lead, which the sweeper sends again until the lead has it (ADR 0203).
 - [cron_jobs](#cron_jobs): Each job of the cron, and how many runs in a row it has failed (ADR 0067).
 - [cron_runs](#cron_runs): One row: when the cron's latest run started and its last finished run ended, so a run cut short is told by the next.
 - [custom_orders](#custom_orders): Each hair system made for one client to their exact spec: the spec, supplier and price, its payment link and payment, and the order it was bought on (ADR 0174).
@@ -173,6 +174,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
+- [vendor_breakers](#vendor_breakers): Each vendor's failures in a row, and until when its work waits while it is held off (ADR 0203).
 - [visit_blackouts](#visit_blackouts): Days on which no visit is offered.
 - [visit_changes](#visit_changes): Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).
 - [visit_outcomes](#visit_outcomes): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
@@ -843,6 +845,25 @@ Indexes:
 - `credit_ledger_one_use`: unique on (`source_id`, `kind`), where `kind IN ('redeem', 'restore')`
 
 Triggers: `credit_ledger_no_delete`, `credit_ledger_no_update`.
+
+## crm_contact_updates
+
+A client's contact change still owed to their CRM lead, which the sweeper sends again until the lead has it (ADR 0203).
+
+Made by `0174_crm_held_off_and_owed_updates.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `person_id` | TEXT | no |  | primary key; → `people.id` |
+| `owed_since` | TEXT | no |  |  |
+| `changed_at` | TEXT | no |  |  |
+| `invite_attached` | INTEGER | no | `0` |  |
+| `attempts` | INTEGER | no | `0` |  |
+| `tried_at` | TEXT | yes |  |  |
+
+Indexes:
+
+- `crm_contact_updates_due`: on (`null`)
 
 ## cron_jobs
 
@@ -3236,6 +3257,19 @@ Indexes:
 
 - `tryon_sessions_by_expiry`: on (`expires_at`)
 - `tryon_sessions_by_person`: on (`person_id`)
+
+## vendor_breakers
+
+Each vendor's failures in a row, and until when its work waits while it is held off (ADR 0203).
+
+Made by `0174_crm_held_off_and_owed_updates.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `vendor` | TEXT | no |  | primary key |
+| `failures` | INTEGER | no | `0` |  |
+| `open_until` | TEXT | yes |  |  |
+| `opened_at` | TEXT | yes |  |  |
 
 ## visit_blackouts
 

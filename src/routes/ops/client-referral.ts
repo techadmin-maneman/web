@@ -10,9 +10,8 @@
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
-import type { Context } from "hono";
 import { actorOf } from "../../http/audit.ts";
-import type { App, AppEnv } from "../../http/context.ts";
+import type { App } from "../../http/context.ts";
 import { CODE_PATTERN } from "../../config/invite-codes.ts";
 import {
   attribute,
@@ -24,11 +23,8 @@ import {
 import { errorBody, errorResponse, ErrorResponseSchema, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { clientInReach } from "../../http/staff-access.ts";
-import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../../config/crm.ts";
+import { queueCrmContact } from "../../http/contact-sync.ts";
 import { REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
-import { enqueue } from "../../domain/platform/enqueue.ts";
-import { type CrmSyncMessage } from "../../config/pipeline.ts";
-import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** The invite a client came with, as their page shows it. */
 export const ClientInviteSchema = z
@@ -101,28 +97,6 @@ const attachRoute = opsRoute({
   },
 });
 
-/**
- * What ops write on the client's CRM lead by hand when the queue would not take the update: what the sync writes, the
- * note, and the code's field only once the org has it (src/config/crm.ts).
- */
-function writtenByHand(): string {
-  const note = "add a note to their CRM lead that ops attached a friend's invite";
-  if (!CRM_ORG_HAS_REFERRAL_FIELDS) return note;
-  return `${note}, and write the invite's code, shown on their page, in Referral_Code`;
-}
-
-/** Sends the client to the CRM again, which then reads the invite they now carry and notes it (src/queues/crm-sync.ts). */
-async function queueCrmUpdate(c: Context<AppEnv>, personId: string): Promise<void> {
-  const { requestId, log, deps } = c.var;
-  const alert = {
-    key: `crm_contact_update:${personId}`,
-    message: ALERT_WORDS.crm_invite({ client: personId, byHand: writtenByHand() }),
-    link: `/clients/${personId}/referrals`,
-  };
-  const body = { update_person_id: personId, request_id: requestId, invite_attached: true } satisfies CrmSyncMessage;
-  await enqueue(c.env.CRM_QUEUE, body, { log, ifLost: { alertOnce: deps.alertOnce, alert } });
-}
-
 export function registerOpsClientReferral(app: App): void {
   app.openapi(attachRoute, async (c) => {
     const personId = c.req.valid("param").id;
@@ -160,7 +134,8 @@ export function registerOpsClientReferral(app: App): void {
       return c.json({ ...errorBody("already_invited", requestId), invite: { code: outcome.code } }, 409);
     }
 
-    await queueCrmUpdate(c, personId);
+    // The lead reads the invite the client now carries, and notes it (src/queues/crm-sync.ts).
+    await queueCrmContact(c, personId, true);
     c.var.log.info("invite_attached", { person_id: personId });
     const attached = await clientInviteOf(db, personId);
     if (attached === null) throw new Error("the invite just attached is not there");

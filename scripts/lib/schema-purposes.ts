@@ -80,6 +80,9 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "A matter Customer Care sent from a chat to the client's city, on that city's Tasks until it is closed (ADR 0135).",
   care_owners:
     "Each client's named Care person, given at their first chat and moved by a Customer Care manager (ADR 0131).",
+  crm_contact_updates:
+    "A client's contact change still owed to their CRM lead, which the sweeper sends again until the lead has it (ADR 0203).",
+  vendor_breakers: "Each vendor's failures in a row, and until when its work waits while it is held off (ADR 0203).",
   credit_ledger:
     "Service-visit credits, entry by entry, each drawing on the grant it spends; a balance is summed, never kept (ADR 0033).",
   credit_expiry_cursor:

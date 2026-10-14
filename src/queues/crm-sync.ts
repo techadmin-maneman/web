@@ -7,19 +7,25 @@
 // costs seconds, not minutes. After that the sweeper re-enqueues failed leads
 // every fifteen minutes until MAX_SYNC_ATTEMPTS, then this consumer alerts once,
 // and ops may send it again from Tasks. See docs/decisions/0012-zoho-sync.md.
+//
+// The CRM failing on its own, not refusing a record, is counted as the CRM's: after a few in a row it is held off,
+// its work waits without counting against any record, and ops hear once that it is down
+// (docs/decisions/0203-a-vendor-down-is-held-off.md).
 
 import type { LossExtent, VisitWindow } from "../config/booking.ts";
 import type { BookingWindow } from "../config/scheduling.ts";
 import type { Dependencies } from "../dependencies.ts";
-import { scrubString, type Logger } from "../log.ts";
+import type { Logger } from "../log.ts";
 import type { Plan } from "../policy/one-visit.ts";
 import type { CrmLead, LeadSource } from "../providers/crm/index.ts";
-import { CRM_ORG_HAS_CARE_FIELDS, LAST_CONTACT_REASONS } from "../config/crm.ts";
-import { indiaDate } from "../lib/india-time.ts";
+import { CRM_ORG_HAS_CARE_FIELDS } from "../config/crm.ts";
 import { resolveAlertStatement } from "../domain/platform/alerts.ts";
 import { leadNotice } from "../domain/leads/lead-notice.ts";
 import { crmErasureKey, crmLeadKey } from "../policy/alerts.ts";
-import { backoffSeconds, DONE, runConsumer, type Settle } from "./consumer.ts";
+import { noteAnswered } from "../domain/platform/vendor-breakers.ts";
+import { crmHeld, describe, heldBy } from "./crm-held.ts";
+import { updateContact } from "./crm-contact-update.ts";
+import { DONE, runConsumer } from "./consumer.ts";
 import { CrmSyncMessageSchema, MAX_SYNC_ATTEMPTS, QUICK_RETRY_DELAY_SECONDS } from "../config/pipeline.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 
@@ -47,83 +53,6 @@ export function handleCrmSyncBatch(
       return retrySoon ? { retryAfterSeconds: QUICK_RETRY_DELAY_SECONDS } : DONE;
     },
   });
-}
-
-/** Tries of a contact update before ops are told to make it by hand. */
-export const MAX_CONTACT_UPDATE_ATTEMPTS = 5;
-
-interface PersonRow {
-  readonly mobile_e164: string;
-  readonly zoho_lead_id: string | null;
-  readonly city: string | null;
-  readonly invite_code: string | null;
-  /** "<closed_at> <close_reason>" of their last closed chat. */
-  readonly last_contact: string | null;
-}
-
-/** Their last closed chat, as the CRM records it: India's date, and what it was about. */
-function lastContactOf(row: string | null): { date: string; reason: string | null } | null {
-  if (row === null) return null;
-  const [closedAt = "", reason = ""] = row.split(" ");
-  return { date: indiaDate(new Date(closedAt)), reason: LAST_CONTACT_REASONS[reason] ?? null };
-}
-
-/**
- * Writes a person's number, the city of their address, the invite they came
- * through and their last closed chat onto their CRM record, read afresh from D1,
- * with a note when ops have just attached the invite. Nothing is written for an erased person or one the
- * CRM never had. A failure is tried again on the queue, and the fifth tells ops.
- */
-async function updateContact(
-  db: D1Database,
-  deps: Dependencies,
-  log: Logger,
-  { personId, inviteAttached, attempts }: { personId: string; inviteAttached: boolean; attempts: number },
-): Promise<Settle> {
-  const person = await db
-    .prepare(
-      `SELECT p.mobile_e164, p.zoho_lead_id,
-         (SELECT city FROM addresses a WHERE a.person_id = p.id AND a.replaced_at IS NULL
-          ORDER BY a.created_at DESC LIMIT 1) AS city,
-         (SELECT r.code FROM referral_attributions r WHERE r.referred_person_id = p.id) AS invite_code,
-         (SELECT c.closed_at || ' ' || COALESCE(c.close_reason, '') FROM conversations c
-          WHERE c.person_id = p.id AND c.closed_at IS NOT NULL ORDER BY c.closed_at DESC LIMIT 1) AS last_contact
-       FROM people p WHERE p.id = ?1 AND p.erased_at IS NULL`,
-    )
-    .bind(personId)
-    .first<PersonRow>();
-  if (person === null) return DONE;
-  try {
-    const { crmLeadId } = await deps.crm.updateContact(
-      {
-        personId,
-        mobileE164: person.mobile_e164,
-        city: person.city,
-        inviteCode: person.invite_code,
-        inviteAttached,
-        lastContact: lastContactOf(person.last_contact),
-      },
-      person.zoho_lead_id,
-    );
-    if (crmLeadId !== null && crmLeadId !== person.zoho_lead_id) {
-      await db.prepare("UPDATE people SET zoho_lead_id = ?2 WHERE id = ?1").bind(personId, crmLeadId).run();
-    }
-    await deps.resolveAlert(`crm_contact_update:${personId}`);
-    log.info("crm_contact_updated", { person_id: personId, found: crmLeadId !== null });
-    return DONE;
-  } catch (error) {
-    const reason = describe(error);
-    log.warn("crm_contact_update_failed", { person_id: personId, attempt: attempts, reason });
-    if (attempts < MAX_CONTACT_UPDATE_ATTEMPTS) {
-      return { retryAfterSeconds: backoffSeconds(attempts, QUICK_RETRY_DELAY_SECONDS) };
-    }
-    await deps.alertOnce({
-      key: `crm_contact_update:${personId}`,
-      message: ALERT_WORDS.crm_contact_update({ client: personId, attempts, reason }),
-      link: `/clients/${personId}`,
-    });
-    return DONE;
-  }
 }
 
 interface LeadRow {
@@ -210,6 +139,11 @@ export async function syncLead(
     await keepOutOfCrm(db, deps, log, row);
     return { retrySoon: false };
   }
+  // Left as it is, pending or failed, for the sweeper's pass once the CRM is tried again.
+  if (await crmHeld(db, deps)) {
+    log.info("crm_held", { lead_id: leadId });
+    return { retrySoon: false };
+  }
 
   const attempt = await db
     .prepare("UPDATE leads SET sync_attempts = sync_attempts + 1 WHERE id = ?1 RETURNING sync_attempts")
@@ -236,6 +170,7 @@ export async function syncLead(
         .bind(crypto.randomUUID(), at, leadId, JSON.stringify({ attempts, created: result.created })),
       resolveAlertStatement(db, crmLeadKey(leadId), now),
     ]);
+    await noteAnswered(db, "crm", deps.resolveAlert);
     log.info("crm_synced", {
       lead_id: leadId,
       attempts,
@@ -251,15 +186,34 @@ export async function syncLead(
     await deps.notifyLead(leadNotice(row));
     return { retrySoon: false };
   } catch (error) {
-    const description = describe(error);
-    await db
-      .prepare("UPDATE leads SET sync_state = 'failed', last_sync_error = ?1 WHERE id = ?2")
-      .bind(description, leadId)
-      .run();
-    log.error("crm_sync_failed", { lead_id: leadId, attempts, error, duration_ms: Date.now() - started, ...timings });
-    if (attempts >= MAX_SYNC_ATTEMPTS) await alertLeadGivenUp(deps, row, attempts, description);
-    return { retrySoon: attempts === 1 };
+    const timed = { duration_ms: Date.now() - started, ...timings };
+    return leadFailed({ db, deps, log }, { row, attempts, error, timed });
   }
+}
+
+/** A lead's try that failed: marked so, and, unless it held the CRM off, counted, and ops told on the last. */
+async function leadFailed(
+  { db, deps, log }: { db: D1Database; deps: Dependencies; log: Logger },
+  failure: { row: LeadRow; attempts: number; error: unknown; timed: Record<string, number> },
+): Promise<{ retrySoon: boolean }> {
+  const { row, attempts, error } = failure;
+  const description = describe(error);
+  const held = await heldBy(db, deps, error);
+  // A try that held the CRM off counts against the CRM, not the lead.
+  await db
+    .prepare(
+      "UPDATE leads SET sync_state = 'failed', last_sync_error = ?1, sync_attempts = sync_attempts - ?3 WHERE id = ?2",
+    )
+    .bind(description, row.lead_id, held ? 1 : 0)
+    .run();
+  const failed = { lead_id: row.lead_id, attempts, error, ...failure.timed };
+  if (held) {
+    log.warn("crm_sync_held", failed);
+    return { retrySoon: false };
+  }
+  log.error("crm_sync_failed", failed);
+  if (attempts >= MAX_SYNC_ATTEMPTS) await alertLeadGivenUp(deps, row, attempts, description);
+  return { retrySoon: attempts === 1 };
 }
 
 /**
@@ -363,6 +317,10 @@ export async function eraseInCrm(
     return { retrySoon: false };
   }
   if (person.crm_erased_at !== null) return { retrySoon: false }; // a duplicate message
+  if (await crmHeld(db, deps)) {
+    log.info("crm_held", { person_id: personId });
+    return { retrySoon: false };
+  }
 
   const attempt = await db
     .prepare(
@@ -381,11 +339,22 @@ export async function eraseInCrm(
         .bind(personId, now.toISOString()),
       resolveAlertStatement(db, crmErasureKey(personId), now),
     ]);
+    await noteAnswered(db, "crm", deps.resolveAlert);
     log.info("crm_erased", { person_id: personId, found, attempts });
     return { retrySoon: false };
   } catch (error) {
     const description = describe(error);
-    await db.prepare("UPDATE people SET crm_erasure_error = ?2 WHERE id = ?1").bind(personId, description).run();
+    const held = await heldBy(db, deps, error);
+    await db
+      .prepare(
+        "UPDATE people SET crm_erasure_error = ?2, crm_erasure_attempts = crm_erasure_attempts - ?3 WHERE id = ?1",
+      )
+      .bind(personId, description, held ? 1 : 0)
+      .run();
+    if (held) {
+      log.warn("crm_erasure_held", { person_id: personId, attempts, error });
+      return { retrySoon: false };
+    }
     log.error("crm_erasure_failed", { person_id: personId, attempts, error });
     if (attempts >= MAX_SYNC_ATTEMPTS) {
       await deps.alertOnce({
@@ -428,7 +397,3 @@ async function eraseAgain({
 }
 
 /** A short error for last_sync_error: no personal data, no stack. */
-function describe(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  return scrubString(message).slice(0, 300);
-}

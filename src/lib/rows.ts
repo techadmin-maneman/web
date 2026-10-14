@@ -336,6 +336,14 @@ export interface Rows {
     readonly expires_at: string | null;
     readonly created_at: string;
   };
+  readonly crm_contact_updates: {
+    readonly person_id: string;
+    readonly owed_since: string;
+    readonly changed_at: string;
+    readonly invite_attached: number;
+    readonly attempts: number;
+    readonly tried_at: string | null;
+  };
   readonly cron_jobs: {
     readonly job: string;
     readonly failed_runs: number;
@@ -1565,6 +1573,12 @@ export interface Rows {
     readonly person_id: string;
     readonly created_at: string;
     readonly expires_at: string;
+  };
+  readonly vendor_breakers: {
+    readonly vendor: string;
+    readonly failures: number;
+    readonly open_until: string | null;
+    readonly opened_at: string | null;
   };
   readonly visit_blackouts: {
     readonly date: string;

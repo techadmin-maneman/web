@@ -11,7 +11,7 @@ import type { Logger } from "../../log.ts";
 export const SEND_BATCH_LIMIT = 100;
 
 /** What brings back a message the queue would not take. */
-export type IfLost =
+type IfLost =
   /** A sweeper pass finds what the message names still waiting in D1, and queues it again (src/scheduled/). */
   | "sweeper"
   /** Nothing would: ops are told, once, what to do by hand. */

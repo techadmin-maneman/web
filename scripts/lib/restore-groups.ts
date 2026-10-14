@@ -221,7 +221,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
   },
   {
     what: "New people, leads, addresses and try-ons",
-    tables: ["people", "leads", "addresses", "tryon_jobs"],
+    tables: ["people", "leads", "addresses", "tryon_jobs", "crm_contact_updates"],
     leftAtT: "Bookings and leads made since are lost here; the CRM has the leads",
     putBackBy: "The rows since `<T>`",
   },
@@ -269,6 +269,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     what: "Housekeeping",
     tables: [
       "alerts",
+      "vendor_breakers",
       "board_version",
       "cron_jobs",
       "cron_runs",
