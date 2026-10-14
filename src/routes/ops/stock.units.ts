@@ -22,6 +22,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { routeReach } from "../../http/staff-access.ts";
 import { PlaceId } from "./stock.schemas.ts";
+import { refusal, type Refusal } from "../../lib/refusal.ts";
 
 const Code = z.string().min(1).max(64);
 
@@ -50,15 +51,17 @@ const UnitsSchema = z
 const UNITS = { description: "The units a place holds of a hair system", ...json(UnitsSchema) };
 
 const REFUSED = errorResponse(
-  "invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities",
+  "invalid_request: fields names consumable_code for a stock code that is not a hair system",
 );
+/** A place outside the caller's cities, as anything elsewhere is. */
+const ELSEWHERE = errorResponse("not_found: a place outside the caller's cities");
 
 const unitsRoute = opsRoute({
   method: "get",
   path: "/api/stock/units",
   summary: "The units a place holds of a hair system, and how many pieces it holds unlabelled",
   request: { query: z.object({ consumable_code: Code, place_id: PlaceId }) },
-  responses: { 200: UNITS, 400: REFUSED },
+  responses: { 200: UNITS, 400: REFUSED, 404: ELSEWHERE },
 });
 
 const labelRoute = opsRoute({
@@ -80,7 +83,7 @@ const labelRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: UNITS, 400: REFUSED },
+  responses: { 200: UNITS, 400: REFUSED, 404: ELSEWHERE },
 });
 
 const lotLabelRoute = opsRoute({
@@ -146,10 +149,10 @@ async function hairSystemAt(
   c: Context<AppEnv>,
   code: string,
   place: string,
-): Promise<{ readonly product: string } | { readonly fields: string[] }> {
-  if (!isPlaceWithin(await placesWithin(c.env.DB, await routeReach(c)), place)) return { fields: ["place_id"] };
+): Promise<{ readonly ok: true; readonly product: string } | Refusal<"not_found" | "invalid_request">> {
+  if (!isPlaceWithin(await placesWithin(c.env.DB, await routeReach(c)), place)) return refusal("not_found");
   const product = await hairSystemProduct(c.env.DB, code);
-  return product === null ? { fields: ["consumable_code"] } : { product };
+  return product === null ? refusal("invalid_request", ["consumable_code"]) : { ok: true, product };
 }
 
 async function unitsAnswer(c: Context<AppEnv>, code: string, place: string) {
@@ -172,14 +175,14 @@ export function registerOpsStockUnits(app: App): void {
   app.openapi(unitsRoute, async (c) => {
     const query = c.req.valid("query");
     const found = await hairSystemAt(c, query.consumable_code, query.place_id);
-    if ("fields" in found) return refuse(c, "invalid_request", found.fields);
+    if (!found.ok) return refuse(c, found.code, found.fields);
     return c.json(await unitsAnswer(c, query.consumable_code, query.place_id), 200);
   });
 
   app.openapi(labelRoute, async (c) => {
     const body = c.req.valid("json");
     const found = await hairSystemAt(c, body.consumable_code, body.place_id);
-    if ("fields" in found) return refuse(c, "invalid_request", found.fields);
+    if (!found.ok) return refuse(c, found.code, found.fields);
     const now = c.var.deps.now();
     const audit = auditStatement(
       c.env.DB,

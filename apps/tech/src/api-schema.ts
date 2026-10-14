@@ -2018,7 +2018,10 @@ export interface components {
             service: components["schemas"]["TechnicianService"] | null;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
-            /** @enum {string} */
+            /**
+             * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
+             * @enum {string}
+             */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /**
              * @description Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount.
@@ -2066,7 +2069,10 @@ export interface components {
             service: components["schemas"]["TechnicianService"] | null;
             /** @description The area, never the street: the one the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
-            /** @enum {string} */
+            /**
+             * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
+             * @enum {string}
+             */
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /**
              * @description Free for a visit the price book charges nothing for; at_visit for a one visit, paid for once the client is fitted. No response to a technician carries an amount.

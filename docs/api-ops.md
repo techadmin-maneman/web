@@ -414,6 +414,14 @@ A client's windows for a kind of visit over 14 days, and who is free in each
 }
 ```
 
+**400**: invalid_request: no client or kind named, or a field that is not one
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 **403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
@@ -8349,7 +8357,7 @@ The units a place holds of a hair system, and how many pieces it holds unlabelle
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities
+**400**: invalid_request: fields names consumable_code for a stock code that is not a hair system
 
 ```json
 {
@@ -8358,6 +8366,14 @@ The units a place holds of a hair system, and how many pieces it holds unlabelle
 ```
 
 **403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: a place outside the caller's cities
 
 ```json
 {
@@ -8385,7 +8401,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for a stock code that is not a hair system, or place_id for a place not in the caller's cities
+**400**: invalid_request: fields names consumable_code for a stock code that is not a hair system
 
 ```json
 {
@@ -8394,6 +8410,14 @@ Request body:
 ```
 
 **403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: a place outside the caller's cities
 
 ```json
 {
@@ -10719,7 +10743,8 @@ Request body:
         "completed",
         "cancelled",
         "terminated"
-      ]
+      ],
+      "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
     },
     "not_home": {
       "type": "boolean",
@@ -11141,7 +11166,8 @@ Request body:
         "completed",
         "cancelled",
         "terminated"
-      ]
+      ],
+      "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
     },
     "not_home": {
       "type": "boolean",
@@ -19843,7 +19869,8 @@ Request body:
         "completed",
         "cancelled",
         "terminated"
-      ]
+      ],
+      "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
     },
     "notice_hours": {
       "type": "integer",
