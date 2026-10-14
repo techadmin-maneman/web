@@ -72,8 +72,14 @@ test("C7: a visit more than 24 hours out moves for free, its payment carried ove
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.change.moved)).toBeVisible();
 });
 
-test("C8: cancelling more than 24 hours out gives the payment back in full", async ({ page }) => {
-  const sheet = await reschedule(page, changingClients().free.mobile);
+test("C8: cancelling more than 24 hours out, from the visit's own page, gives the payment back in full", async ({
+  page,
+}) => {
+  await logIn(page, changingClients().free.mobile);
+  await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
+  await page.getByRole("main").getByRole("link").first().click();
+  await page.getByRole("button", { name: appCopy.home.reschedule }).click();
+  const sheet = page.getByRole("dialog", { name: /^Move \w+day’s visit$/ });
   await sheet.getByRole("button", { name: appCopy.change.move.cancelInstead }).click();
   const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
   await expect(cancel.getByText("Rs. 2,000 back to your UPI in 5 to 7 working days.")).toBeVisible();
@@ -89,6 +95,8 @@ test("C8: cancelling more than 24 hours out gives the payment back in full", asy
   expect(held.asked()).toBe(1);
   await done.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+  // Nothing is left to change on the visit's own page, which goes back to the list.
+  await expect(page).toHaveURL(/\/visits$/);
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeHidden();
 });
 

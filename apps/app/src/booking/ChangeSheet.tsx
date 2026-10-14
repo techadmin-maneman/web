@@ -85,10 +85,26 @@ function cancelledLine(terms: CancelTerms, credits: Me["credits"]): string {
   return cancelLine(terms, credits);
 }
 
+/** What a change sheet did to the visit, once it closes; null when nothing changed. */
+export type VisitChange = "moved" | "cancelled" | null;
+
+/** Picking the new time is the booking sheet's, in its own dialog. */
+function PickAnother(props: { type: ChangingVisit["type"]; terms: MoveTerms; onClose: (change: VisitChange) => void }) {
+  return (
+    <BookingSheet
+      type={props.type}
+      moving={props.terms}
+      onClose={(moved) => {
+        props.onClose(moved ? "moved" : null);
+      }}
+    />
+  );
+}
+
 export function ChangeSheet(props: {
   visit: ChangingVisit;
   start: "move" | "cancel";
-  onClose: (changed: boolean) => void;
+  onClose: (change: VisitChange) => void;
 }) {
   const { visit, onClose } = props;
   const { me } = useSession();
@@ -96,7 +112,7 @@ export function ChangeSheet(props: {
   const [step, setStep] = useState<Step>({ kind: "loading" });
   const [busy, once] = useOneAtATime();
   const [problem, setProblem] = useState<string | null>(null);
-  const changed = useRef(false);
+  const changed = useRef<VisitChange>(null);
   const name = change.visit(weekdayDate(visit.date).split(" ")[0] ?? "");
 
   const show = useCallback(
@@ -131,7 +147,7 @@ export function ChangeSheet(props: {
       setProblem(null);
       const answer = await api.cancel(visit.id, terms.notice);
       if (answer.ok) {
-        changed.current = true;
+        changed.current = "cancelled";
         setStep({ kind: "cancelled", terms: answer.body });
       } else if (answer.code === "terms_changed") {
         const fresh = await api.cancelTerms(visit.id);
@@ -141,10 +157,7 @@ export function ChangeSheet(props: {
       else setProblem(change.failed);
     });
 
-  // Picking the new time is the booking sheet's, in its own dialog.
-  if (step.kind === "picking") {
-    return <BookingSheet type={visit.type} moving={step.terms} onClose={onClose} />;
-  }
+  if (step.kind === "picking") return <PickAnother type={visit.type} terms={step.terms} onClose={onClose} />;
 
   return (
     <Sheet

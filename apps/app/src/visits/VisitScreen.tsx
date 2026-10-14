@@ -18,7 +18,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
 import { messages, ONE_VISIT, visits } from "../content.ts";
 import { AddToCalendar } from "../components/AddToCalendar.tsx";
@@ -29,6 +29,7 @@ import { whatsappWith } from "../lib/whatsapp.ts";
 import { firstNameOf } from "@rules/lib/names.ts";
 import { Loading } from "../states/Loading.tsx";
 import { NotFound } from "../states/NotFound.tsx";
+import { go } from "../route.ts";
 import { PageFailed } from "../states/PageFailed.tsx";
 import styles from "./visits.module.css";
 
@@ -202,7 +203,13 @@ function Visit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => void
   if (visit.stage === null) return <PastVisit visit={visit} onChanged={onChanged} />;
   return (
     <div className={styles.coming}>
-      <VisitCard visit={visit} />
+      <VisitCard
+        visit={visit}
+        onChanged={(change) => {
+          if (change === "cancelled") go("/visits");
+          else onChanged();
+        }}
+      />
       {visit.stage === "booked" && (
         <div className={styles.calendar}>
           <AddToCalendar
@@ -222,6 +229,12 @@ function Visit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => void
 
 export function VisitScreen({ id }: { id: string }) {
   const [loaded, retry] = useLoad(useCallback(() => api.visit(id), [id]));
+  const [changed, setChanged] = useState(false);
+  // A move read again at its new time; a charged move cancels this visit for a new one, which the list shows.
+  const replaced = changed && loaded.state === "loaded" && loaded.value.status === "cancelled";
+  useEffect(() => {
+    if (replaced) go("/visits");
+  }, [replaced]);
   const title = loaded.state === "loaded" ? fullDate(loaded.value.date) : visits.title;
   return (
     <Shell header={{ kind: "back", title, to: "/visits", label: visits.detail.back }} tab="/visits">
@@ -230,7 +243,15 @@ export function VisitScreen({ id }: { id: string }) {
         <NotFound message={visits.notFound} back={visits.detail.back} to="/visits" />
       )}
       {loaded.state === "failed" && !loaded.notFound && <PageFailed onRetry={retry} />}
-      {loaded.state === "loaded" && <Visit visit={loaded.value} onChanged={retry} />}
+      {loaded.state === "loaded" && (
+        <Visit
+          visit={loaded.value}
+          onChanged={() => {
+            setChanged(true);
+            retry();
+          }}
+        />
+      )}
     </Shell>
   );
 }

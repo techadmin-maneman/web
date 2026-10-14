@@ -163,6 +163,8 @@ export function Actions(props: {
   onNoted?: (note: string) => void;
   /** A move to another day is proposed, so Reschedule offers another time instead. */
   proposed?: boolean;
+  /** The visit was moved or cancelled, for a page that shows it to read it again. */
+  onChanged?: (change: "moved" | "cancelled") => void;
 }) {
   const { what, date, changing } = props;
   const { refresh } = useSession();
@@ -183,9 +185,11 @@ export function Actions(props: {
         <ChangeSheet
           visit={changing}
           start="move"
-          onClose={(changed) => {
+          onClose={(change) => {
             setOpen(false);
-            if (changed) refresh();
+            if (change === null) return;
+            refresh();
+            props.onChanged?.(change);
           }}
         />
       )}
@@ -209,7 +213,13 @@ export function OneVisitTerms({ price }: { price: OneVisitPrice }) {
 }
 
 /** Home's card: the visit, its technician, and what can still be done about it. */
-export function VisitCard({ visit }: { visit: VisitSummary }) {
+export function VisitCard({
+  visit,
+  onChanged,
+}: {
+  visit: VisitSummary;
+  onChanged?: (change: "moved" | "cancelled") => void;
+}) {
   const date = shortDate(visit.date);
   const what = summaryName(visit);
   const oneVisit = oneVisitOf(visit);
@@ -247,6 +257,7 @@ export function VisitCard({ visit }: { visit: VisitSummary }) {
           noting={{ ...notingOf(visit), note: clientNote }}
           onNoted={setNoted}
           proposed={visit.proposed_move !== null}
+          onChanged={onChanged}
         />
       )}
     </div>
