@@ -109,7 +109,8 @@ const receiveRoute = techRoute({
           .object({
             units: Labels.optional(),
             rest: z.enum(["on_its_way", "missing"]).default("on_its_way").openapi({
-              description: "Of a part received, whether the pieces not scanned are still to come or were lost on the way.",
+              description:
+                "Of a part received, whether the pieces not scanned are still to come or were lost on the way.",
             }),
           })
           .strict()

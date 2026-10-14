@@ -97,7 +97,10 @@ describe("the supply plan", () => {
     const ordered = await (
       await job.opsPost(`/api/supply-plan/lines/${order?.id ?? ""}/approve`, { quantity: 24 })
     ).json<Plan>();
-    expect(ordered.lines.find((line) => line.id === order?.id)).toMatchObject({ state: "approved", po_number: A_NUMBER });
+    expect(ordered.lines.find((line) => line.id === order?.id)).toMatchObject({
+      state: "approved",
+      po_number: A_NUMBER,
+    });
     await job.opsPost(`/api/supply-plan/lines/${send?.id ?? ""}/reject`, {
       reason: "The warehouse keeps it for Noida.",
     });

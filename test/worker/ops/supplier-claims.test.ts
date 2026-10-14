@@ -165,7 +165,13 @@ describe("a claim on a supplier", () => {
   it("is drafted with its receipt for what arrived damaged and what failed its check, at the order's price", async () => {
     expect((await claims()).claims).toEqual([
       expect.objectContaining({ number: A_NUMBER, reason: "qc_failed", quantity: 1, unit_price: 250, currency: "USD" }),
-      expect.objectContaining({ number: A_NUMBER, reason: "damaged", quantity: 1, order_number: A_NUMBER, state: "drafted" }),
+      expect.objectContaining({
+        number: A_NUMBER,
+        reason: "damaged",
+        quantity: 1,
+        order_number: A_NUMBER,
+        state: "drafted",
+      }),
     ]);
   });
 

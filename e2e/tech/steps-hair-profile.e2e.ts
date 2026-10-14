@@ -130,7 +130,8 @@ test.describe("the client's hair profile", () => {
     const circumference = page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm });
     await circumference.fill("90");
     await expect(circumference).toHaveAccessibleDescription("40–70, to one decimal.");
-    await expect(page.getByRole("button", { name: techCopy.profile.checkFigures })).toBeDisabled();
+    const named = techCopy.profile.checkFigure(techCopy.profile.measurements.head_circumference_cm);
+    await expect(page.getByRole("button", { name: named })).toBeDisabled();
     await circumference.fill("57.5");
     await expect(next(page)).toBeEnabled();
   });

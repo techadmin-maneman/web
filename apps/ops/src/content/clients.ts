@@ -21,6 +21,7 @@ export const clients = {
     more: "Too many matches. Narrow the search.",
     /** Beside each match, so two of one name can be told apart. */
     nextVisit: (when: string) => `Next visit ${when}`,
+    underWay: "Visit under way",
     noVisit: "No visit booked",
     /** The clients opened this session, offered before anything is searched for. */
     recent: "Recent",
@@ -43,6 +44,7 @@ export const clients = {
     anyCity: "Any city",
     noCity: "Not known",
     nextVisit: "Next visit",
+    underWay: "Under way",
     noVisit: "None booked",
     none: "No clients match.",
     previous: "Previous",

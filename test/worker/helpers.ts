@@ -484,7 +484,7 @@ export async function fittedAndPhotographed(personId: string): Promise<string> {
 }
 
 /** A payment's reference as we make it: random, "MM-7KQ3-9F2D". */
-export const A_REFERENCE = expect.stringMatching(/^MM-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/);
+export const A_REFERENCE = expect.stringMatching(/^MM-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/) as string;
 
 /** An order's or a claim's number as we draw it, at random. */
 export const A_NUMBER = expect.any(Number) as number;

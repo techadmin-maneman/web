@@ -10,7 +10,8 @@ import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
-import { api, type PayStatement as Statement } from "../api.ts";
+import { api } from "../api.ts";
+import type { components } from "../api-schema.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { csvText } from "../lib/csv.ts";
 import { saveFile } from "../lib/save-file.ts";
@@ -20,7 +21,7 @@ import own from "./technician-pay.module.css";
 
 const copy = technicianPay.statement;
 
-type Line = Statement["lines"][number];
+type Line = components["schemas"]["PayStatement"]["lines"][number];
 
 /** The twelve months to today's, newest first, as YYYY-MM. */
 export function monthsTo(today: string): string[] {

@@ -131,6 +131,10 @@ describe("stock at risk", () => {
     await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 1, from: "central", to: IMRAN });
     await refreshStockRisks(env.DB, "2026-09-21", NOW, STOCK_WATCH.demand_days);
     expect((await tasks()).map((task) => task.id)).toEqual(["fit-2"]);
+
+    // Fitted after all, before the hour's refresh comes round.
+    await env.DB.prepare("UPDATE appointments SET status = 'completed' WHERE id = 'fit-2'").run();
+    expect(await tasks()).toEqual([]);
   });
 });
 

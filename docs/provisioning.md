@@ -498,6 +498,8 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    - Payment links on: the one visit's link is made through the API (`POST /v1/payment_links`), which the account must allow (open point 166).
    - On staging, the hooks path already has its Access bypass (step 12, point 3).
 
+4. **The logo on a link's page,** in Razorpay's dashboard, in each mode: Account & Settings → Branding → upload the site's `icon-512.png` (`https://maneman.in/icon-512.png`). The API cannot set it, and without it a link's page shows a blank square. Every link already carries the client's name and number.
+
 ## 12. WhatsApp delivery receipts and STOP replies (Evolution)
 
 Evolution reports each message as delivered and read to `POST /api/hooks/evolution/<token>` (docs/decisions/0041-outbound-messages-for-phase-2.md), and passes on the messages people send us, where a STOP reply withdraws the sender's WhatsApp consents and is answered once. The no-show evidence depends on the receipts. Until this is set up, the route answers 404: no receipts are recorded and a STOP reply stops nothing (the link at the foot of a reminder still works).

@@ -14,15 +14,15 @@ import {
 } from "./technicians-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
-test("lists every active technician with the zone the board draws", async ({ page }) => {
+test("lists every active technician with the city they take visits in", async ({ page }) => {
   await open(page);
-  await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText("Sec 40–65");
-  await expect(page.getByRole("row").filter({ hasText: "Sandeep Yadav" })).toContainText("Sec 1–39");
-  // A technician the mirror has no zone for reads as a gap, as the design's tables write one.
-  await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText("—");
+  await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText("Gurgaon");
+  await expect(page.getByRole("row").filter({ hasText: "Sandeep Yadav" })).toContainText("Gurgaon");
+  // One with no city takes no bookings, and the roster says so.
+  await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText(opsCopy.technicians.noCity);
 });
 
-test("sorts the roster by a column, and narrows it by zone or a search", async ({ page }) => {
+test("sorts the roster by a column, and narrows it by city or a search", async ({ page }) => {
   await open(page);
   const rows = page.getByRole("table").getByRole("row");
   const byName = page.getByRole("button", { name: opsCopy.clients.visits.book.technician, exact: true });
@@ -35,9 +35,9 @@ test("sorts the roster by a column, and narrows it by zone or a search", async (
   await byName.click();
   await expect(rows.nth(1)).toContainText("Sandeep Yadav");
 
-  await page.getByLabel(opsCopy.technicians.details.zone).selectOption("Sec 40–65");
-  await expect(rows).toHaveCount(2);
-  await expect(rows.nth(1)).toContainText("Imran Qureshi");
+  await page.getByLabel(opsCopy.technicians.details.city).selectOption("Gurgaon");
+  await expect(rows).toHaveCount(3);
+  await expect(page.getByRole("table")).not.toContainText("Faizan Ali");
   await page.getByRole("button", { name: opsCopy.tables.clear, exact: true }).click();
   await page.getByLabel(opsCopy.tables.search).fill("sandeep");
   await expect(rows).toHaveCount(2);

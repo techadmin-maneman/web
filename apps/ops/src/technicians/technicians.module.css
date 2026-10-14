@@ -8,7 +8,7 @@
 
 /* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
-  --local-zone: 96px; /* and the zone beside it */
+  --local-city: 96px; /* and the city beside it */
   --local-jobs: 64px; /* the jobs he has finished, right aligned as every column of figures is */
   --local-service: 88px; /* and how they ran against the length they were planned for */
 }
@@ -41,15 +41,15 @@
 }
 
 .name,
-.zone {
+.city {
   padding: 0 var(--sp-8) 0 0;
   font-weight: var(--weight-regular);
   text-align: left;
 }
 
 /* The board's columns, at the widths it draws them; the name takes the slack, as its 1fr does. */
-.zone {
-  width: var(--local-zone);
+.city {
+  width: var(--local-city);
   color: var(--text-muted);
 }
 
@@ -61,9 +61,8 @@
   min-height: var(--tap);
 }
 
-/* A technician with no city takes no bookings until ops set one: said in words, in oxblood, beside the name. */
-.noCity {
-  margin-left: var(--sp-8);
+/* A technician with no city takes no bookings until ops set one: said in words, in oxblood, in its column. */
+.city.noCity {
   color: var(--error-on-paper);
   white-space: nowrap;
 }

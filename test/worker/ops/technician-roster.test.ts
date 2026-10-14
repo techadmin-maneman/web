@@ -156,6 +156,16 @@ describe("adding a technician", () => {
     expect(await one("SELECT COUNT(*) AS technicians FROM technicians")).toEqual({ technicians: 2 });
   });
 
+  it("refuses the name another active technician goes by, however it is cased, added or renamed to", async () => {
+    const added = await send(ops, "POST", "/api/technicians", { name: "imran qureshi", mobile: "+91 98100 00007" });
+    expect(added.status).toBe(409);
+    expect(await added.json()).toMatchObject({ error: { code: "name_taken" } });
+
+    const renamed = await send(ops, "PATCH", `/api/technicians/${SAMEER}`, { name: "Imran Qureshi" });
+    expect(renamed.status).toBe(409);
+    expect(await one("SELECT name FROM technicians WHERE id = ?1", SAMEER)).toEqual({ name: "Sameer Bhatt" });
+  });
+
   it("gives the number of a technician who was switched off to the one added", async () => {
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SAMEER).run();
 

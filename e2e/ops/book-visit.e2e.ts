@@ -33,6 +33,7 @@ const WINDOWS = {
   kind: "service",
   services: [{ tier: "standard", name: "Service visit", minutes: 90, price: SERVICE_PRICE }],
   service: { tier: "standard", name: "Service visit", minutes: 90 },
+  recommended: null,
   pays: "link",
   credits: 0,
   owed: [],

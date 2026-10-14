@@ -77,7 +77,8 @@ export async function reportProblem(db: D1Database, report: ProblemReport): Prom
   const about = report.visitId === null ? null : await visitLine(db, report.personId, report.visitId);
   if (report.visitId !== null && about === null) return false;
   const piece = await db.prepare(PIECE_SQL).bind(report.personId).first<PieceRow>();
-  const heading = report.about === "hair_system" ? "Something's wrong with my hair system" : "Something's wrong with a visit";
+  const heading =
+    report.about === "hair_system" ? "Something's wrong with my hair system" : "Something's wrong with a visit";
   await fileInbound(db, {
     mobileE164: report.mobileE164,
     text: `${heading}:\n${report.text}`,

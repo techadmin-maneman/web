@@ -55,11 +55,11 @@ const row = (page: Page, place: string) =>
 
 test("lists every line with the wording in force, who changed it, and whether the site has it", async ({ page }) => {
   await open(page);
-  await expect(row(page, "hero.title").getByRole("cell").nth(1)).toHaveText(
+  await expect(row(page, "Top of the page · Title").getByRole("cell").nth(1)).toHaveText(
     `Hair, fitted at home.Changed by growth@maneman.test, Mon 5 Oct${copy.notOnSite}`,
   );
   await expect(page.getByText(copy.publish.never)).toBeVisible();
-  await expect(row(page, "visit_reminder_v1")).toBeVisible();
+  await expect(row(page, "Visit reminder")).toBeVisible();
 });
 
 test("changes a message once the change is reviewed, keeping its details", async ({ page }) => {
@@ -73,8 +73,8 @@ test("changes a message once the change is reviewed, keeping its details", async
       })(route);
     },
   });
-  await row(page, "visit_reminder_v1")
-    .getByRole("button", { name: copy.editLabel("visit_reminder_v1") })
+  await row(page, "Visit reminder")
+    .getByRole("button", { name: copy.editLabel("Visit reminder") })
     .click();
   await expect(page.getByText(copy.form.keep("{{1}}, {{2}}, {{3}}, {{4}}, {{5}}"), { exact: false })).toBeVisible();
   const reworded = "Hi {{1}}, see you tomorrow.\n{{2}}: {{3}}, {{4}}, with {{5}}.";
@@ -94,8 +94,8 @@ test("says why words are refused", async ({ page }) => {
       400,
     ),
   });
-  await row(page, "visit_reminder_v1")
-    .getByRole("button", { name: copy.editLabel("visit_reminder_v1") })
+  await row(page, "Visit reminder")
+    .getByRole("button", { name: copy.editLabel("Visit reminder") })
     .click();
   await page
     .getByLabel(copy.form.wording)
@@ -123,8 +123,8 @@ test("puts a line back to the code's wording from its history", async ({ page })
       return json({ word: { ...HERO, now: HERO.text, changed: null } })(route);
     },
   });
-  await row(page, "hero.title")
-    .getByRole("button", { name: copy.historyLabel("hero.title") })
+  await row(page, "Top of the page · Title")
+    .getByRole("button", { name: copy.historyLabel("Top of the page · Title") })
     .click();
   await page.getByRole("button", { name: copy.form.toCode }).click();
   await expect(page.getByLabel(copy.form.wording)).toHaveValue(HERO.text);

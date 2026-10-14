@@ -110,7 +110,6 @@ type PriceWithdrawal = Sent<paths["/api/prices/withdraw"]["post"]>;
 /** What technicians are paid for each visit (docs/decisions/0122-technician-pay-per-visit.md). */
 export type TechnicianPay = Body<paths["/api/technician-pay"]["get"]>;
 export type PayRate = TechnicianPay["rates"][number];
-export type PayStatement = Body<paths["/api/technician-pay/statement"]["get"]>;
 export type PayKind = PayRate["kind"];
 type PayRateSet = Sent<paths["/api/technician-pay/rates"]["post"]>;
 type PriceCorrection = Sent<paths["/api/prices/correct"]["post"]>;
@@ -509,7 +508,6 @@ export const api = {
   setWord: (key: string, text: string | null) => client.post("/api/words", { body: { key, text } }),
   publishWords: () => client.post("/api/words/publish"),
   technicianPay: () => client.get("/api/technician-pay"),
-  /** Each technician's visits closed in the month, YYYY-MM, at the rates then. */
   payStatement: (month: string) => client.get("/api/technician-pay/statement", { query: { month } }),
   addPayGrade: (name: string) => client.post("/api/technician-pay/grades", { body: { name } }),
   renamePayGrade: (id: string, name: string) =>

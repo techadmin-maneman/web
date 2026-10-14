@@ -71,6 +71,24 @@ describe("booking with a credit", () => {
     );
   });
 
+  it("pays with a free visit given after the visit was held, before the client paid", async () => {
+    const hold = await (
+      await post("/api/holds", { type: "service", date: "2026-09-24", window: "afternoon" })
+    ).json<{
+      id: string;
+      credit: unknown;
+    }>();
+    expect(hold.credit).toBeNull();
+    await credits(1);
+
+    const started = await (await post("/api/bookings", { hold_id: hold.id })).json();
+    expect(started).toEqual({ hold_id: hold.id, checkout: null });
+    expect(
+      await env.DB.prepare("SELECT state, use_credit FROM slot_holds WHERE id = ?1").bind(hold.id).first(),
+    ).toEqual({ state: "booked", use_credit: 1 });
+    expect(await creditBalance(env.DB, PERSON, NOW)).toMatchObject({ visits: 0 });
+  });
+
   it("asks for payment as ever without a credit", async () => {
     const hold = await (await post("/api/holds", { type: "service", date: "2026-09-24", window: "afternoon" })).json();
     expect(hold).toMatchObject({ credit: null });

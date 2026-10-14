@@ -60,7 +60,14 @@ describe("POST /api/clients/find", () => {
     expect(await found("ROH")).toEqual(["Rohini Sethi", "Rohit Malhotra"]);
     expect(await (await find("vikram")).json()).toEqual({
       clients: [
-        { id: OTHER, name: "Vikram Sethi", mobile: "+919810000002", state: "nothing_booked", next_visit: null },
+        {
+          id: OTHER,
+          name: "Vikram Sethi",
+          mobile: "+919810000002",
+          state: "nothing_booked",
+          next_visit: null,
+          under_way: false,
+        },
       ],
       more: false,
     });
@@ -72,6 +79,13 @@ describe("POST /api/clients/find", () => {
     await upcomingVisit();
     const [rohit] = (await (await find("rohit")).json<{ clients: unknown[] }>()).clients;
     expect(rohit).toMatchObject({ id: PERSON, state: "fitted", next_visit: "2026-09-25T04:30:00.000Z" });
+    expect(rohit).toMatchObject({ under_way: false });
+
+    await env.DB.prepare("UPDATE appointments SET status = 'in_progress' WHERE person_id = ?1 AND status = 'scheduled'")
+      .bind(PERSON)
+      .run();
+    const [begun] = (await (await find("rohit")).json<{ clients: unknown[] }>()).clients;
+    expect(begun).toMatchObject({ under_way: true });
   });
 
   it("finds clients by any four or more digits of their number, typed any of the usual ways", async () => {

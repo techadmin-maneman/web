@@ -48,7 +48,7 @@ interface Visit {
   readonly service: string | null;
   /** "Rohit M.", as the board writes a client on a block. */
   readonly client: string | null;
-  /** The area the visit's pincode is in, where the service area names it; else the address's locality or the city. */
+  /** The client's own locality, from the address; else the area the service area gives its pincode, or the city. */
   readonly sector: string | null;
   readonly pincode: string | null;
   readonly person: BoardClient | null;
@@ -149,7 +149,7 @@ const ON_THE_BOARD = "('scheduled', 'dispatched', 'in_progress', 'completed')";
 const landed = (kind: string): string =>
   `EXISTS (SELECT 1 FROM job_events e WHERE e.appointment_id = a.id AND e.kind = '${kind}' AND e.superseded = 0)`;
 /**
- * Each job on the board, with its client, the area its pincode is in, its
+ * Each job on the board, with its client, its locality, its
  * length, and its badge: Credit where a service-visit credit paid for it, Free
  * where the price book charges nothing for its own service on its day, as the
  * technician's card reads them (src/domain/field/tech-jobs.ts). No amount leaves the
@@ -334,7 +334,7 @@ function visitOf(job: BoardJobRow): Visit {
     type: job.type,
     service: namesMoreThanItsKind(job.tier, job.one_visit) ? job.service_name : null,
     client: shortName(job.client_name),
-    sector: job.area ?? job.locality ?? job.service_city,
+    sector: job.locality ?? job.area ?? job.service_city,
     pincode: job.service_pincode,
     person: clientOf(job),
     badge: paymentBadge({

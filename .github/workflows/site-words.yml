@@ -1,6 +1,7 @@
 # Rebuilds staging's site once the Words page publishes new words (docs/decisions/0127-publishing-the-words.md):
-# every ten minutes it asks staging for its latest publish, and builds and deploys mm-site only for one no run here
-# has built yet. A staging deploy builds with the published words too; production takes them with a release.
+# on a ten-minute schedule, which GitHub runs about every half hour, it asks staging for its latest publish, and builds
+# and deploys mm-site only for one no run here has built yet. A staging deploy builds with the published words too;
+# production takes them with a release.
 #
 # Secrets, on the GitHub Environment "staging":
 #   CLOUDFLARE_API_TOKEN                            staging's deploy token (docs/runbook.md)

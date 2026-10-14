@@ -287,7 +287,7 @@ async function receivePart(
     .prepare(`SELECT ${TRANSFER_COLUMNS} FROM stock_transfers WHERE id = ?1`)
     .bind(id)
     .first<TransferRow>();
-  if (transfer === null || transfer.state !== "in_transit" || units.length >= transfer.quantity) return null;
+  if (transfer?.state !== "in_transit" || units.length >= transfer.quantity) return null;
   const place = transfer.to_place;
   const kind = await kindOf(db, place);
   if (kind === null) return { ok: false, fields: ["id"] };
@@ -295,7 +295,15 @@ async function receivePart(
   if (arriving === null) return { ok: false, fields: ["units"] };
   const into = crypto.randomUUID();
   const code = transfer.consumable_code;
-  const movement = { code, place, kind, quantity: units.length, reason: "transferred", transferId: id, note: null } as const;
+  const movement = {
+    code,
+    place,
+    kind,
+    quantity: units.length,
+    reason: "transferred",
+    transferId: id,
+    note: null,
+  } as const;
   const stillCarries = {
     sql: "EXISTS (SELECT 1 FROM stock_transfers WHERE id = ?13 AND state = 'in_transit' AND quantity = ?14)",
     binds: [id, transfer.quantity],
@@ -305,7 +313,9 @@ async function receivePart(
   const [, carried] = await db.batch([
     movementStatementWhen(db, { id: into, movement }, written, stillCarries),
     db
-      .prepare("UPDATE stock_transfers SET quantity = ?2 WHERE id = ?1 AND EXISTS (SELECT 1 FROM stock_movements WHERE id = ?3)")
+      .prepare(
+        "UPDATE stock_transfers SET quantity = ?2 WHERE id = ?1 AND EXISTS (SELECT 1 FROM stock_movements WHERE id = ?3)",
+      )
       .bind(id, rest, into),
     auditStatementWhen(db, entry("stock.receive_transfer", code, written, detail), written.now, {
       sql: "EXISTS (SELECT 1 FROM stock_movements WHERE id = ?10)",

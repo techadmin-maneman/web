@@ -121,6 +121,15 @@ export async function addTechnician(
   return added === null ? "number_in_use" : "added";
 }
 
+/** Whether another active technician goes by `name`, however it is cased: two of one name can't be told apart. */
+export async function nameTaken(db: D1Database, name: string, except: string | null = null): Promise<boolean> {
+  const found = await db
+    .prepare("SELECT 1 FROM technicians WHERE active = 1 AND lower(name) = lower(?1) AND id IS NOT ?2")
+    .bind(name.trim(), except)
+    .first();
+  return found !== null;
+}
+
 /** What ops change of a technician; a field left out is kept. */
 interface TechnicianChange {
   readonly name?: string;

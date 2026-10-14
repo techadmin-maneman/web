@@ -58,7 +58,9 @@ describe("something wrong, told from the app", () => {
     await fittedInAugust(ROHIT);
     expect((await report(cookie, { about: "visit", visit_id: crypto.randomUUID(), text: "Late." })).status).toBe(404);
 
-    await env.DB.prepare("UPDATE appointments SET id = '7f1d5a3e-2c4b-4d6e-8f90-a1b2c3d4e5f6' WHERE id = 'fit-1'").run();
+    await env.DB.prepare(
+      "UPDATE appointments SET id = '7f1d5a3e-2c4b-4d6e-8f90-a1b2c3d4e5f6' WHERE id = 'fit-1'",
+    ).run();
     const sent = await report(cookie, {
       about: "visit",
       visit_id: "7f1d5a3e-2c4b-4d6e-8f90-a1b2c3d4e5f6",
@@ -67,7 +69,10 @@ describe("something wrong, told from the app", () => {
     expect(sent.status).toBe(201);
     expect((await thread()).results).toMatchObject([
       { direction: "in", text: "Something's wrong with a visit:\nThe adhesive itched." },
-      { direction: "note", text: "From the app. About the first fit of Sat 1 Aug with Sana Mirza. No piece on record." },
+      {
+        direction: "note",
+        text: "From the app. About the first fit of Sat 1 Aug with Sana Mirza. No piece on record.",
+      },
     ]);
   });
 

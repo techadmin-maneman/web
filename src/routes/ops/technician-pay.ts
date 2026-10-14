@@ -101,15 +101,20 @@ const StatementSchema = z
           city: z.union([z.string(), z.null()]).openapi({ description: "The visit's city." }),
           kind: KindSchema,
           visits: z.number().int(),
-          rate: z.union([z.number().int(), z.null()]).openapi({ description: "Paise a visit; null where none was in force." }),
-          amount: z.union([z.number().int(), z.null()]).openapi({ description: "Paise in all; null where no rate was in force." }),
+          rate: z
+            .union([z.number().int(), z.null()])
+            .openapi({ description: "Paise a visit; null where none was in force." }),
+          amount: z
+            .union([z.number().int(), z.null()])
+            .openapi({ description: "Paise in all; null where no rate was in force." }),
         })
         .strict(),
     ),
   })
   .strict()
   .openapi("PayStatement", {
-    description: "Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day.",
+    description:
+      "Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day.",
   });
 
 const statementRoute = createRoute({

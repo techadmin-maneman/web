@@ -32,7 +32,8 @@ describe("the hair profile's table", () => {
 
   it("is reached through it by the routes, the card, the erasure, the export and Home, and by no queue or provider", () => {
     // Imported from beside it or from any folder: "./hair-profiles.ts", "../clients/hair-profiles.ts". Home's first
-    // fit offer and its recap of the consultation read the hair system recommended alone (recommendedProduct), and
+    // fit offer, its recap of the consultation and the console's booking of a first fit read the hair system
+    // recommended alone (recommendedProduct), and
     // the stock demand, a client's match to stock, a custom order raised to it, the forecast and the evening's kit check
     // each client's latest fit spec (latestFits).
     const users = naming(/from "(?:\.\.?\/)+(?:domain\/)?(?:[a-z-]+\/)?hair-profiles\.ts"/).sort();
@@ -50,6 +51,7 @@ describe("the hair profile's table", () => {
         "src/domain/visits/consultation-recap.ts",
         "src/domain/visits/next-visit.ts",
         "src/routes/ops/hair-profile.ts",
+        "src/routes/ops/visits.ts",
         "src/routes/tech/jobs.steps.ts",
       ].sort(),
     );

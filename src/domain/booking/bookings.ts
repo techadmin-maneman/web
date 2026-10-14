@@ -6,6 +6,7 @@ import { carePersonStatement } from "../care/care-people.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { paymentsTab } from "../platform/alerts.ts";
 import { creditRedeemedFor, redeemCreditForBooking, SPENDABLE_CREDITS } from "../money/credits.ts";
+import { takesCredit } from "../../policy/referral-reward.ts";
 import { graceEndOf } from "./hold-stages.ts";
 import { retakeSlot } from "./hold-slot.ts";
 import { heldVisitTimes } from "../visits/visit-times.ts";
@@ -55,7 +56,8 @@ export async function startBooking(basis: BookingBasis, holdId: string, personId
  * One try. The hold's price is read, and the order made for it, or the hold confirmed free; each is written only while
  * the hold still costs what was read, so an order is never kept for a price a discount code changed meanwhile
  * (docs/decisions/0108-discount-codes.md), and the try answers "price_changed" for the next. A credit hold whose
- * credit another booking has taken is paid for in money from then on, so the next try makes its order.
+ * credit another booking has taken is paid for in money from then on, so the next try makes its order; a money hold a
+ * free visit given since can pay for is paid by it, so the next try confirms it.
  */
 async function tryStartBooking({
   db,
@@ -81,6 +83,7 @@ async function tryStartBooking({
     return "price_changed";
   }
   if (hold.razorpay_order_id !== null) return { kind: "pay", orderId: hold.razorpay_order_id };
+  if (await useCreditGivenSince(db, hold, now)) return "price_changed";
   const order = await payments.createOrder({
     amount: hold.amount,
     receipt: hold.id,
@@ -128,6 +131,25 @@ export async function confirmUnpaid(db: D1Database, holdId: string, now: Date): 
   const hold = await bookingHoldRow(db, holdId);
   if (hold?.state !== "held") return false;
   return confirmFree(db, hold, now);
+}
+
+/**
+ * A free visit given since the hold was made pays for it, as one would have then: the hold takes it while it has no
+ * order and no discount code, and the client still has one to spend apart from their other holds. True when it did.
+ */
+async function useCreditGivenSince(db: D1Database, hold: HoldRow, now: Date): Promise<boolean> {
+  if (!takesCredit(hold.type, hold.move_kind)) return false;
+  const taken = await db
+    .prepare(
+      `UPDATE slot_holds SET use_credit = 1, updated_at = ?2
+       WHERE id = ?3 AND use_credit = 0 AND razorpay_order_id IS NULL AND confirmed_at IS NULL
+         AND NOT EXISTS (SELECT 1 FROM discount_code_uses WHERE hold_id = ?3 AND removed_at IS NULL)
+         AND ${SPENDABLE_CREDITS} > 0
+       RETURNING id`,
+    )
+    .bind(hold.person_id, now.toISOString(), hold.id)
+    .first();
+  return taken !== null;
 }
 
 /** The client's credit went on another booking, so this hold is paid for in money instead. */

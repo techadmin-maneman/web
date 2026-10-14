@@ -71,5 +71,5 @@
 .total > th,
 .total > td {
   font-weight: var(--weight-medium);
-  border-top: var(--hairline) solid var(--rule);
+  border-top: var(--hairline) solid var(--paper-line);
 }

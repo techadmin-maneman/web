@@ -90,7 +90,9 @@ describe("a top-up that waits for the technician's scan", () => {
     expect(after.held.find((item) => item.code === code)).toMatchObject({ quantity: 2, lots: [{ lot_code: "HS-1" }] });
     expect(after.coming).toEqual([]);
     expect(
-      await env.DB.prepare("SELECT state FROM stock_transfers WHERE id = ?1").bind(coming?.id ?? "").first<string>("state"),
+      await env.DB.prepare("SELECT state FROM stock_transfers WHERE id = ?1")
+        .bind(coming?.id ?? "")
+        .first<string>("state"),
     ).toBe("received");
   });
 

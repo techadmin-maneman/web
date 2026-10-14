@@ -34,7 +34,9 @@ const LookupSchema = z
     belongs_to_this_job: z.boolean().openapi({
       description: "The label is one of the job's client's pieces, or a unit in the technician's kit, about to be one.",
     }),
-    in_kit: z.boolean().openapi({ description: "A unit in the technician's own kit, not yet fitted: base is its name." }),
+    in_kit: z
+      .boolean()
+      .openapi({ description: "A unit in the technician's own kit, not yet fitted: base is its name." }),
   })
   .strict()
   .openapi("PieceLookup", { description: "What the label names, and whether it is this job's." });
@@ -58,7 +60,9 @@ export function registerTechPieces(app: App): void {
     const found = await pieceWithOwner(c.env.DB, label);
     if (found === null) {
       const unit = await unitInKit(c.env.DB, technicianOf(c).technicianId, label);
-      return unit === null ? refuse(c, "not_found") : c.json({ piece: unit, belongs_to_this_job: true, in_kit: true }, 200);
+      return unit === null
+        ? refuse(c, "not_found")
+        : c.json({ piece: unit, belongs_to_this_job: true, in_kit: true }, 200);
     }
 
     // Only a job of their own says whose the piece is: any other reads as none.
@@ -83,7 +87,10 @@ export function registerTechPieces(app: App): void {
 async function unitInKit(db: D1Database, technicianId: string, label: string) {
   const unit = await kitUnit(db, technicianId, label);
   if (unit === null) return null;
-  const name = await db.prepare("SELECT name FROM consumables WHERE code = ?1").bind(unit.consumableCode).first<string>("name");
+  const name = await db
+    .prepare("SELECT name FROM consumables WHERE code = ?1")
+    .bind(unit.consumableCode)
+    .first<string>("name");
   return {
     piece_code: unit.code,
     base: name,

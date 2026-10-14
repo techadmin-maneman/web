@@ -505,7 +505,8 @@ export const steps = {
     checkFirst: "Check the label to continue",
     look: "Check the label",
     unknown: "Unknown label. It’s saved as you typed it.",
-    inKit: (name: string, lot: string | null) => (lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`),
+    inKit: (name: string, lot: string | null) =>
+      lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`,
     // The board draws no lookup with no signal.
     offline: "No signal, so it isn’t checked. It’s saved as you typed it.",
     notThisClient: "That piece isn’t this client’s.",

@@ -201,7 +201,7 @@ export const api = {
   receiveTopUp: (id: string, units: readonly string[] | null, rest: "on_its_way" | "missing" = "on_its_way") =>
     client.post("/api/tech/kit/transfers/{id}/receive", {
       path: { id },
-      body: units === null ? {} : { units: [...units], rest },
+      body: units === null ? { rest } : { units: [...units], rest },
       patience: PATIENCE_MS.write,
     }),
   /** Returned pieces, and the kit's expired stock, back to its stockroom. */

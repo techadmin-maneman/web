@@ -4882,7 +4882,7 @@ Request body:
 }
 ```
 
-**409**: number_in_use: another active technician signs in with that number
+**409**: number_in_use: another active technician signs in with that number; name_taken: another goes by that name
 
 ```json
 {
@@ -5630,7 +5630,7 @@ Request body:
 }
 ```
 
-**409**: number_in_use: another active technician signs in with that number
+**409**: number_in_use: another active technician signs in with that number; name_taken: another goes by that name
 
 ```json
 {
@@ -9663,6 +9663,7 @@ Request body:
             "code_expired",
             "too_early",
             "number_in_use",
+            "name_taken",
             "not_ready",
             "ops_assisted",
             "taken",
@@ -9986,6 +9987,10 @@ Request body:
                 "type": "null"
               }
             ]
+          },
+          "under_way": {
+            "type": "boolean",
+            "description": "Whether a visit of theirs has begun and is not yet closed."
           }
         },
         "required": [
@@ -9994,7 +9999,8 @@ Request body:
           "mobile",
           "state",
           "city",
-          "next_visit"
+          "next_visit",
+          "under_way"
         ],
         "additionalProperties": false
       }
@@ -10085,6 +10091,10 @@ Request body:
               }
             ],
             "description": "When the client's next visit not yet closed starts; null for none."
+          },
+          "under_way": {
+            "type": "boolean",
+            "description": "Whether a visit of theirs has begun and is not yet closed."
           }
         },
         "required": [
@@ -10092,7 +10102,8 @@ Request body:
           "name",
           "mobile",
           "state",
-          "next_visit"
+          "next_visit",
+          "under_way"
         ],
         "additionalProperties": false
       }
@@ -13213,6 +13224,7 @@ Request body:
             "code_expired",
             "too_early",
             "number_in_use",
+            "name_taken",
             "not_ready",
             "ops_assisted",
             "taken",

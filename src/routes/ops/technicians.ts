@@ -30,6 +30,7 @@ import {
   changeTechnician,
   deactivateTechnician,
   deleteTechnician,
+  nameTaken,
   reactivateTechnician,
   rosterTechnician,
   type RosterTechnician,
@@ -191,7 +192,9 @@ const addRoute = createRoute({
       "invalid_request: no name, not an Indian mobile, or not one of our cities, or one the caller's grants do not reach",
     ),
     403: errorResponse(MANAGE_ONLY),
-    409: errorResponse("number_in_use: another active technician signs in with that number"),
+    409: errorResponse(
+      "number_in_use: another active technician signs in with that number; name_taken: another goes by that name",
+    ),
   },
 });
 
@@ -207,7 +210,9 @@ const changeRoute = createRoute({
     ),
     403: errorResponse(MANAGE_ONLY),
     404: errorResponse("not_found: no such technician in the caller's cities"),
-    409: errorResponse("number_in_use: another active technician signs in with that number"),
+    409: errorResponse(
+      "number_in_use: another active technician signs in with that number; name_taken: another goes by that name",
+    ),
   },
 });
 
@@ -294,25 +299,7 @@ async function workInReach(c: Context<AppEnv>, period: { from: string; to: strin
 
 export function registerOpsTechnicians(app: App): void {
   registerTechnicianDelete(app);
-  app.openapi(addRoute, async (c) => {
-    const { name, mobile, zone, city, fits_trained: fitsTrained } = c.req.valid("json");
-    const mobileE164 = toE164(mobile);
-    if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
-    if (!(await mayGiveCity(c, city ?? null))) {
-      return refuse(c, "invalid_request", ["city"]);
-    }
-
-    const id = crypto.randomUUID();
-    const marks = {
-      fitsTrained: fitsTrained ?? false,
-      testRecord: testRecordAtCreation(c.var.config.environment, name),
-    };
-    const technician = { id, name, mobileE164, zone: zone ?? null, city: city ?? null, ...marks };
-    const added = await addTechnician(c.env.DB, technician, auditOf(c, "technician.add", id), c.var.deps.now());
-    if (added === "number_in_use") return refuse(c, "number_in_use");
-    return c.json({ id }, 201);
-  });
-
+  registerTechnicianAdd(app);
   app.openapi(changeRoute, async (c) => {
     const { id } = c.req.valid("param");
     const change = c.req.valid("json");
@@ -324,6 +311,7 @@ export function registerOpsTechnicians(app: App): void {
 
     const technician = await technicianToChange(c, id);
     if (technician === null) return refuse(c, "not_found");
+    if (change.name !== undefined && (await nameTaken(c.env.DB, change.name, id))) return refuse(c, "name_taken");
     const fields = CHANGEABLE.filter((field) => change[field] !== undefined).join(",");
     const changed = await changeTechnician({
       db: c.env.DB,
@@ -379,6 +367,30 @@ export function registerOpsTechnicians(app: App): void {
       runsOver({ average: each.average_minutes, planned: each.average_planned_minutes }, figures.over_by);
     const technicians = work.map((each) => ({ ...each, runs_over: runningOver(each), skill: null }));
     return c.json({ from, to, technicians }, 200);
+  });
+}
+
+/** Adding a technician, apart from the changes above. */
+function registerTechnicianAdd(app: App): void {
+  app.openapi(addRoute, async (c) => {
+    const { name, mobile, zone, city, fits_trained: fitsTrained } = c.req.valid("json");
+    const mobileE164 = toE164(mobile);
+    if (mobileE164 === null) return refuse(c, "invalid_request", ["mobile"]);
+    if (!(await mayGiveCity(c, city ?? null))) {
+      return refuse(c, "invalid_request", ["city"]);
+    }
+
+    if (await nameTaken(c.env.DB, name)) return refuse(c, "name_taken");
+
+    const id = crypto.randomUUID();
+    const marks = {
+      fitsTrained: fitsTrained ?? false,
+      testRecord: testRecordAtCreation(c.var.config.environment, name),
+    };
+    const technician = { id, name, mobileE164, zone: zone ?? null, city: city ?? null, ...marks };
+    const added = await addTechnician(c.env.DB, technician, auditOf(c, "technician.add", id), c.var.deps.now());
+    if (added === "number_in_use") return refuse(c, "number_in_use");
+    return c.json({ id }, 201);
   });
 }
 

@@ -58,7 +58,7 @@ export const FIND = "POST /api/clients/find" as const satisfies Call;
 export const NAME = { name: CLIENT.name, exact: true };
 
 /** The client as a search lists them, with where they stand and their next visit. */
-export const FOUND = { ...CLIENT, state: "fitted" as const, next_visit: "2027-09-25T05:00:00.000Z" };
+export const FOUND = { ...CLIENT, state: "fitted" as const, next_visit: "2027-09-25T05:00:00.000Z", under_way: false };
 
 /** The opening the API logs, at India's 10:42 by its own clock, and one before it. */
 export const VIEW = {

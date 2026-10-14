@@ -1168,6 +1168,7 @@ Request body:
             "code_expired",
             "too_early",
             "number_in_use",
+            "name_taken",
             "not_ready",
             "ops_assisted",
             "taken",

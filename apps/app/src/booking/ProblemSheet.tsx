@@ -17,6 +17,32 @@ type Step = "writing" | "sent" | "limited" | "failed";
 
 type About = { readonly about: "hair_system" } | { readonly about: "visit"; readonly visitId: string };
 
+/** Sent, with the way to Care's WhatsApp for the photographs; or not, with the way back to the words. */
+function Outcome({ step, onAgain }: { step: Exclude<Step, "writing">; onAgain: () => void }) {
+  if (step === "sent") {
+    return (
+      <div role="status">
+        <h2 className={styles.outcome} id="problem-title">
+          {copy.sent}
+        </h2>
+        <ButtonLink variant="outline" size="control" className={styles.secondary} href={whatsappWith(copy.photos)}>
+          {copy.addPhotos}
+        </ButtonLink>
+      </div>
+    );
+  }
+  return (
+    <div role="alert">
+      <h2 className={styles.outcome} id="problem-title">
+        {copy[step]}
+      </h2>
+      <Button variant="outline" size="control" className={styles.secondary} onClick={onAgain}>
+        {copy.tryAgain}
+      </Button>
+    </div>
+  );
+}
+
 function ProblemSheet({ about, onClose }: { about: About; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [text, setText] = useState("");
@@ -79,32 +105,13 @@ function ProblemSheet({ about, onClose }: { about: About; onClose: () => void })
             </Button>
           </form>
         )}
-        {step === "sent" && (
-          <div role="status">
-            <h2 className={styles.outcome} id="problem-title">
-              {copy.sent}
-            </h2>
-            <ButtonLink variant="outline" size="control" className={styles.secondary} href={whatsappWith(copy.photos)}>
-              {copy.addPhotos}
-            </ButtonLink>
-          </div>
-        )}
-        {(step === "limited" || step === "failed") && (
-          <div role="alert">
-            <h2 className={styles.outcome} id="problem-title">
-              {copy[step]}
-            </h2>
-            <Button
-              variant="outline"
-              size="control"
-              className={styles.secondary}
-              onClick={() => {
-                setStep("writing");
-              }}
-            >
-              {copy.tryAgain}
-            </Button>
-          </div>
+        {step !== "writing" && (
+          <Outcome
+            step={step}
+            onAgain={() => {
+              setStep("writing");
+            }}
+          />
         )}
       </SheetPanel>
     </Sheet>

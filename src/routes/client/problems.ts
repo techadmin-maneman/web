@@ -32,7 +32,12 @@ const problemRoute = clientRoute({
   responses: {
     201: {
       description: "Filed for Care, who answer on WhatsApp",
-      ...json(z.object({ state: z.literal("sent") }).strict().openapi("ProblemReported")),
+      ...json(
+        z
+          .object({ state: z.literal("sent") })
+          .strict()
+          .openapi("ProblemReported"),
+      ),
     },
     400: errorResponse(`invalid_request: empty, or over ${String(PROBLEM_MAX_CHARS)} characters`),
     401: errorResponse("session_required"),
