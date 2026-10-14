@@ -20,9 +20,7 @@ const loadRisk = () => client.get("/api/stock/expiry-risk");
 const quantity = (value: number) => value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
 
 const todo = (lot: Lot) =>
-  lot.suggestion === "move" && lot.move_to !== null
-    ? copy.moveTo(lot.move_to)
-    : (copy.suggestions[lot.suggestion] ?? lot.suggestion);
+  lot.suggestion === "move" && lot.move_to !== null ? copy.moveTo(lot.move_to) : copy.suggestions[lot.suggestion];
 
 function Lots({ risk }: { risk: Risk }) {
   if (risk.lots.length === 0) return <p className={form.note}>{copy.noRisk}</p>;

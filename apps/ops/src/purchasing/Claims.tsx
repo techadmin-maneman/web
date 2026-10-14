@@ -60,12 +60,8 @@ function ClaimsTable({
             </th>
             <td>{supplierOf(claim.supplier_id)}</td>
             <td>{copy.claims.item(claim.name, claim.quantity, claim.piece_code)}</td>
-            <td>{copy.claims.reasons[claim.reason] ?? claim.reason}</td>
-            <td>
-              {claim.outcome === null
-                ? (copy.claims.states[claim.state] ?? claim.state)
-                : (copy.claims.outcomes[claim.outcome] ?? claim.outcome)}
-            </td>
+            <td>{copy.claims.reasons[claim.reason]}</td>
+            <td>{claim.outcome === null ? copy.claims.states[claim.state] : copy.claims.outcomes[claim.outcome]}</td>
             <td className={form.figure}>{valueOf(claim)}</td>
           </tr>
         ))}

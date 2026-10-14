@@ -41,7 +41,7 @@ function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpen
             </th>
             <td>{whatOf(task)}</td>
             <td>{fullDate(task.due_on)}</td>
-            <td>{copy.states[task.state] ?? task.state}</td>
+            <td>{copy.states[task.state]}</td>
             <td>
               <Button
                 variant="outline"

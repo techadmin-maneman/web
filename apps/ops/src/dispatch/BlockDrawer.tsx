@@ -48,8 +48,8 @@ interface Props {
 /** The State row: how far the technician has got, from their phone, until the visit is done. */
 function stateOf(block: BlockJob["block"]): string {
   const copy = dispatch.drawer;
-  if (block.begun !== null && block.status !== "completed") return copy.begun[block.begun] ?? block.begun;
-  return copy.states[block.status] ?? block.status;
+  if (block.begun !== null && block.status !== "completed") return copy.begun[block.begun];
+  return copy.states[block.status];
 }
 
 /** Why a visit under way has no ordinary move: it stays where it is, or moves only once the check-in is cleared. */
@@ -69,7 +69,7 @@ export function BlockDrawer(props: Props) {
   // A move the client has not heard of still stands, so the block is where it put the visit.
   const movedTo = `${shortDate(job.date)}, ${windowWord(block.window)}`;
   const referredBy = person === null ? null : person.referred_by;
-  const typeName = block.type === null ? dispatch.unknown : (dispatch.typeNames[block.type] ?? dispatch.unknown);
+  const typeName = block.type === null ? dispatch.unknown : dispatch.typeNames[block.type];
   const rows = [
     { key: copy.rows.type, value: copy.type(typeName, block.slots) },
     ...(block.service === null ? [] : [{ key: copy.rows.service, value: block.service }]),
@@ -84,8 +84,8 @@ export function BlockDrawer(props: Props) {
     <Drawer
       titleId="drawer-title"
       title={person?.name ?? nameOf(job)}
-      sub={copy.when(shortDate(job.date), dispatch.windowHours[block.window] ?? dispatch.unknown, job.technician.name)}
-      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge] ?? block.badge}</span>}
+      sub={copy.when(shortDate(job.date), dispatch.windowHours[block.window], job.technician.name)}
+      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge]}</span>}
       canClose
       onDismiss={onClose}
     >

@@ -52,7 +52,7 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
               </RowButton>
             </th>
             <td>{supplierOf(order.supplier_id)}</td>
-            <td>{copy.states[order.state] ?? order.state}</td>
+            <td>{copy.states[order.state]}</td>
             <td className={form.figure}>{inCurrency(order.total, order.currency)}</td>
             <td>{order.expected_on === null ? "" : fullDate(order.expected_on)}</td>
           </tr>

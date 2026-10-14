@@ -43,7 +43,7 @@ export const settings = {
       first_fit: "First fits, and consultation-and-fit visits",
       service: "Service visits",
       replacement: "Replacements",
-    } as Readonly<Record<string, string>>,
+    },
     expires: "Last valid day (optional)",
     maxUses: "Total uses (optional)",
     oncePerClient: "Once per client",
@@ -90,7 +90,7 @@ export const settings = {
       first_fit: "First fit",
       service: "Service",
       replacement: "Replacement",
-    } as Readonly<Record<string, string>>,
+    },
     noEnd: "No end",
     ends: (day: string) => day,
     ended: (day: string) => `Ended ${day}`,
@@ -130,7 +130,7 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   rules: {
     title: "Policies",
@@ -298,7 +298,7 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** No board draws the days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). */
   blackouts: {
@@ -345,7 +345,7 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md). */
   standardCosts: {
@@ -394,7 +394,7 @@ export const settings = {
     lateFees: {
       late_fee_first_fit: "Late fee on a first fit",
       late_fee_replacement: "Late fee on a replacement",
-    } as Readonly<Record<string, string>>,
+    },
     /** The link to the rule that says when a late fee is charged. */
     lateFeeRule: "When it's charged",
     actions: {
@@ -513,12 +513,12 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
     /** Taking back a price that applies already, or has applied: it may stand on an invoice. */
     takeBackErrors: {
       not_permitted: NOT_PERMITTED,
       valid_from: "That price is already in effect, so it stays.",
-    } as Readonly<Record<string, string>>,
+    },
   },
   // No design draws them (docs/decisions/0165-suppliers.md).
   /** The consumables and each service's expected use (docs/decisions/0087-consumables-and-stock.md). */
@@ -606,7 +606,7 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   consumables: {
     title: "Consumables",
@@ -666,7 +666,7 @@ export const settings = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
     form: {
       addTitle: "Add a consumable",
@@ -746,7 +746,7 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** The job sheet the technician app reads: each kind of visit's checklist and the partial reasons. */
   jobSheet: {
@@ -795,7 +795,7 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** No board draws the Staff page. A change is shown before it is saved. */
   staff: {
@@ -858,7 +858,7 @@ export const settings = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
     enforcement: {
       title: "Access control",
       off: "Off. Everyone signed in sees every section.",
@@ -878,7 +878,7 @@ export const settings = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
     tokens: {
       title: "Service tokens",
@@ -902,7 +902,7 @@ export const settings = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
   },
 } as const;

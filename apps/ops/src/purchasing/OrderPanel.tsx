@@ -165,7 +165,7 @@ export function OrderPanel({
   return (
     <Panel id={id} opened titleId="order-panel" title={`${copy.number(order.number)} · ${supplier}`}>
       <p className={form.note}>
-        {copy.states[order.state] ?? order.state}
+        {copy.states[order.state]}
         {order.state === "drafted" && order.approved_by !== null && ` · ${copy.awaitingSecond}`}
         {order.expected_on !== null && ` · ${copy.order.expected(fullDate(order.expected_on))}`}
         {order.cancel_reason !== null && ` · ${copy.order.cancelledWhy(order.cancel_reason)}`}

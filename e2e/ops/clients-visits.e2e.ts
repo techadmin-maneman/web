@@ -327,7 +327,7 @@ test.describe("the client's custom orders", () => {
     });
     const row = section.getByRole("row").filter({ hasText: "CU-0001" });
     await expect(row).toContainText("7.5x9 1B, 30% grey, 120%, slight wave");
-    await expect(row).toContainText(customCopy.statuses.awaiting_payment ?? "");
+    await expect(row).toContainText(customCopy.statuses.awaiting_payment);
     await expect(row.getByRole("link", { name: customCopy.link })).toHaveAttribute("href", "https://rzp.io/i/abc");
     expect(await axeViolations(page)).toEqual([]);
   });

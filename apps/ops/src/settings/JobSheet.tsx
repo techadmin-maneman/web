@@ -22,7 +22,7 @@ import styles from "../components/forms.module.css";
 
 const copy = settings.jobSheet;
 
-const typeName = (type: string) => dispatch.typeNames[type] ?? type;
+const typeName = (type: keyof typeof dispatch.typeNames) => dispatch.typeNames[type];
 
 type EditorProps = Parameters<typeof ListEditor>[0];
 

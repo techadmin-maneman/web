@@ -187,7 +187,7 @@ export const noShows = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** The board draws no list of the day's rulings. Each case ruled on today, the latest first. */
   decided: {
@@ -242,6 +242,6 @@ export const noShows = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
 } as const;

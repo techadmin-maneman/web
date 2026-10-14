@@ -24,7 +24,7 @@ const groupsOf = (rates: Rates, way: Way) =>
 function Groups({ rates }: { rates: Rates }) {
   const [way, setWay] = useState<Way>("code");
   if (rates.by_code.length === 0) return <p className={form.note}>{copy.noFailures}</p>;
-  const columns = [copy.ways[way] ?? way, ...copy.failureColumns.slice(1)];
+  const columns = [copy.ways[way], ...copy.failureColumns.slice(1)];
   return (
     <>
       <Field label={copy.failuresBy} className={form.field}>
@@ -39,7 +39,7 @@ function Groups({ rates }: { rates: Rates }) {
           >
             {WAYS.map((each) => (
               <option key={each} value={each}>
-                {copy.ways[each] ?? each}
+                {copy.ways[each]}
               </option>
             ))}
           </Select>

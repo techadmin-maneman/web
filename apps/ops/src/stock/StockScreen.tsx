@@ -197,7 +197,7 @@ function Movements({ stock }: { stock: Stock }) {
   const consumable = (row: Movement) =>
     stock.consumables.find((each) => each.code === row.consumable_code)?.name ?? row.consumable_code;
   const place = (row: Movement) => placeName(stock, row.place_id);
-  const why = (row: Movement) => words.reasons[row.reason] ?? row.reason;
+  const why = (row: Movement) => words.reasons[row.reason];
   const who = (row: Movement) => (row.reason === "used" ? placeName(stock, row.by) : recordedBy(row.by));
   const [when, what, where, change, reason, by] = words.columns;
   const columns: readonly Column<Movement>[] = [

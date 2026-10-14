@@ -68,10 +68,10 @@ export function CountClasses({
                         value={item.set ? item.count_class : OWN}
                         onChange={(event) => void change(item.consumable_code, event.target.value)}
                       >
-                        <option value={OWN}>{copy.ownClass(copy.classes[own] ?? own)}</option>
+                        <option value={OWN}>{copy.ownClass(copy.classes[own])}</option>
                         {CLASSES.map((each) => (
                           <option key={each} value={each}>
-                            {copy.classes[each] ?? each}
+                            {copy.classes[each]}
                           </option>
                         ))}
                       </Select>

@@ -131,9 +131,9 @@ function CancelForm({
 /** Why the terms could not be read, and whether reading them again could help. */
 function unreadableOf(code: string): { readonly said: string; readonly final: boolean } {
   if (code === "not_changeable" || code === "not_permitted") {
-    return { said: copy.errors[code] ?? copy.unreadable, final: true };
+    return { said: copy.errors[code], final: true };
   }
-  if (code === "offline") return { said: copy.errors.offline ?? copy.unreadable, final: false };
+  if (code === "offline") return { said: copy.errors.offline, final: false };
   return { said: copy.unreadable, final: false };
 }
 

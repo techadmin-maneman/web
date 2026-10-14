@@ -19,7 +19,7 @@ function sizeOf(inHand: InHand): string {
   const { job } = inHand;
   const type = job.kind === "block" ? job.block.type : job.job.type;
   const slots = job.kind === "block" ? job.block.slots : job.job.slots;
-  const name = type === null ? dispatch.unnamed : (dispatch.typeNames[type] ?? type).toLowerCase();
+  const name = type === null ? dispatch.unnamed : dispatch.typeNames[type].toLowerCase();
   return dispatch.landing.size(name, slots);
 }
 

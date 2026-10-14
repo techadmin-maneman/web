@@ -22,8 +22,8 @@ const NO_PIECE = "no_piece";
 const SIGNALS: Readonly<Record<string, string>> = referrals.queue.signals;
 
 /** A window's name, as the dispatch board writes it, for the window a first fit is wanted in; null for either. */
-const fitWindow = (window: string | null): string | null =>
-  window === null ? null : (dispatch.windows[window] ?? window);
+const fitWindow = (window: keyof typeof dispatch.windows | null): string | null =>
+  window === null ? null : dispatch.windows[window];
 
 /** Whole weeks from one instant to another. */
 const weeksBetween = (from: string, to: Date): number => Math.floor((to.getTime() - Date.parse(from)) / WEEK_MS);
@@ -33,7 +33,7 @@ const dayAndTime = (instant: string) => `${shortDate(indiaDate(instant))}, ${ind
 
 /** A consultation asked for: its day and window, then the one visit and its code, or the first fit asked with it. */
 const consultationAsked: Sub<"consultation_request"> = (facts) => {
-  const asked = copy.consultation_request(fullDate(facts.date), dispatch.windows[facts.window] ?? facts.window);
+  const asked = copy.consultation_request(fullDate(facts.date), dispatch.windows[facts.window]);
   if (facts.one_visit) {
     return `${asked} ${copy.withOneVisit}${facts.discount_code === null ? "" : copy.withCode(facts.discount_code)}`;
   }
@@ -46,7 +46,7 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   remedy_approval: (facts) => copy.remedy_approval(facts.visits),
   untold_move: (facts) => untoldMoveOf(facts),
   move_unanswered: (facts) => {
-    const when = `${shortDate(facts.date)}, ${(dispatch.windows[facts.window] ?? facts.window).toLowerCase()}`;
+    const when = `${shortDate(facts.date)}, ${dispatch.windows[facts.window].toLowerCase()}`;
     return facts.ran_out ? copy.move_unanswered.ranOut(when) : copy.move_unanswered.open(when);
   },
   consultation_request: consultationAsked,
@@ -61,8 +61,7 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   erasure_request: () => copy.erasure_request,
   no_show_decision: (facts) => (facts.technician === null ? copy.unknown : copy.no_show_decision(facts.technician)),
   draft_invoice: (_, task) => copy.draft_invoice(shortDate(indiaDate(task.since))),
-  unassigned_visit: (facts) =>
-    copy.unassigned_visit(dispatch.typeNames[facts.kind] ?? facts.kind, dayAndTime(facts.starts_at)),
+  unassigned_visit: (facts) => copy.unassigned_visit(dispatch.typeNames[facts.kind], dayAndTime(facts.starts_at)),
   visit_left_open: (facts) =>
     copy.visit_left_open(shortDate(indiaDate(facts.starts_at)), facts.status === "in_progress"),
   leave_conflict: (facts) => copy.leave_conflict(dayAndTime(facts.starts_at), facts.technician),

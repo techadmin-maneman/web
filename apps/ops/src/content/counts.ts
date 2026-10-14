@@ -8,13 +8,13 @@ export const counts = {
   tasks: "Count tasks",
   none: "Nothing to count today.",
   columns: ["Place", "Class", "Due", "Stands", ""],
-  classes: { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" } as Readonly<Record<string, string>>,
+  classes: { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" },
   states: {
     open: "To count",
     recount: "To count again",
     sign_off: "Waiting for sign-off",
     done: "Done",
-  } as Readonly<Record<string, string>>,
+  },
   open: "Open",
   /** "Imran Qureshi · Weekly" */
   heading: (place: string, countClass: string) => `${place} · ${countClass}`,
@@ -62,5 +62,5 @@ export const counts = {
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 };

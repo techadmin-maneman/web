@@ -140,7 +140,7 @@ function Tile({ shown, visit }: { shown: Shown; visit: PhotoVisit }) {
   if (shown.url === null) {
     return (
       <p className={styles.tileFailed} role="alert">
-        {copy.errors[shown.code ?? "unknown"] ?? copy.errors.unknown}
+        {errorText(copy.errors, { code: shown.code ?? "unknown" })}
       </p>
     );
   }

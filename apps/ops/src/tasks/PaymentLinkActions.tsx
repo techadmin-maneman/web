@@ -42,7 +42,7 @@ export function PaymentLinkActions({ task, subject }: { task: Task; subject: str
       setDone("");
       setFailed(null);
       const answer = await api.resendPaymentLink(task.id);
-      if (answer.ok) setDone(copy.outcomes[answer.body.outcome] ?? "");
+      if (answer.ok) setDone(copy.outcomes[answer.body.outcome]);
       else setFailed(errorLine(answer.code));
     });
 

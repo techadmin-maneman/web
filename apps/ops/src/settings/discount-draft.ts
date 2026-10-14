@@ -74,7 +74,7 @@ export function requestOf(draft: Draft): DiscountCodesNew {
 
 /** A typed code that cannot be one, said beside its box before anything is checked; null while it can. */
 export const codeError = (draft: Draft): string | null =>
-  draft.how === "typed" && draft.code.trim() !== "" && !isCodeText(draft.code) ? (copy.errors.code ?? null) : null;
+  draft.how === "typed" && draft.code.trim() !== "" && !isCodeText(draft.code) ? copy.errors.code : null;
 
 /** Whether every box the code needs is filled in: the rest the API checks, and names the box it refuses. */
 export function isReady(draft: Draft): boolean {
@@ -97,7 +97,7 @@ function offWords(sent: DiscountCodesNew): string {
 
 /** The check's lines: what is made, what each takes off, on what, until when, and how often. */
 export function checkLines(draft: Draft, sent: DiscountCodesNew): string[] {
-  const covered = sent.covers.map((kind) => copy.coverNames[kind] ?? kind).join("; ");
+  const covered = sent.covers.map((kind) => copy.coverNames[kind]).join("; ");
   const lastDay = sent.expires_on ?? null;
   return [
     madeLine(draft),

@@ -124,7 +124,7 @@ function byWhom(version: HairProfileVersion): string {
   if (version.recorded_by.kind === "ops") return copy.byOps(version.recorded_by.staff);
   const name = version.recorded_by.name ?? copy.unnamed;
   const type = version.visit?.type ?? null;
-  return copy.atVisit(name, type === null ? copy.aVisit : (dispatch.typeNames[type] ?? copy.aVisit));
+  return copy.atVisit(name, type === null ? copy.aVisit : dispatch.typeNames[type]);
 }
 
 function Versions({ versions }: { versions: readonly HairProfileVersion[] }) {

@@ -25,15 +25,15 @@ export const dispatch = {
     first_fit: "first fit",
     service: "service",
     replacement: "replace",
-  } as Readonly<Record<string, string>>,
+  },
   /** The same four, named in full, as the drawer and the tray head a job. */
   typeNames: {
     consultation: "Consultation",
     first_fit: "First fit",
     service: "Service visit",
     replacement: "Replacement",
-  } as Readonly<Record<string, string>>,
-  windows: { morning: "morning", afternoon: "afternoon", evening: "evening" } as Readonly<Record<string, string>>,
+  },
+  windows: { morning: "morning", afternoon: "afternoon", evening: "evening" },
   /**
    * Each window's hours, which the drawer writes as the board does
    * ("12 to 4 pm"). They are src/config/scheduling.ts's WINDOW_TIMES, still the
@@ -44,7 +44,7 @@ export const dispatch = {
     morning: "9 am to 12 pm",
     afternoon: "12 to 4 pm",
     evening: "4 to 8 pm",
-  } as Readonly<Record<string, string>>,
+  },
   /**
    * The week and the city the board shows, and a way to find a row among many.
    * The board letters the city in the header ("Gurgaon") and draws no control;
@@ -71,7 +71,7 @@ export const dispatch = {
     /** A block for a visit already done, which stays where it was worked and cannot be moved. */
     doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
     /** How far the technician has got, from their phone. A visit they have begun stays where it is. */
-    begun: { arrived: "Arrived", started: "Started", closed: "Closed" } as Readonly<Record<string, string>>,
+    begun: { arrived: "Arrived", started: "Started", closed: "Closed" },
     begunBlock: (job: string, date: string, window: string, begun: string) =>
       `${job}, ${date}, ${window}, ${begun.toLowerCase()}`,
     /** The board draws no board without technicians. */
@@ -118,7 +118,7 @@ export const dispatch = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** The drawer a block opens. */
   drawer: {
@@ -131,9 +131,7 @@ export const dispatch = {
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
     // at_visit: a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
-    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
-      Record<string, string>
-    >,
+    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" },
     // The board draws no Service row; it names a first fit's hair system, say.
     rows: {
       type: "Type",
@@ -157,13 +155,13 @@ export const dispatch = {
       cancelled: "Cancelled",
       terminated: "Not done",
       other: "Other",
-    } as Readonly<Record<string, string>>,
+    },
     /** The State row once the technician's phone says they have begun. */
     begun: {
       arrived: "Technician arrived",
       started: "Technician started",
       closed: "Closed by technician",
-    } as Readonly<Record<string, string>>,
+    },
     /** A visit the technician has started or closed has no move. */
     stays: "In progress. Can't be moved.",
     /** The warning before ops move a visit the technician has checked in at. */

@@ -18,10 +18,10 @@ export type Answer =
   | { readonly ok: true; readonly body: Plan }
   | { readonly ok: false; readonly code: string; readonly fields: readonly string[] };
 
-function Decided({ line }: { line: Line }) {
-  const state = copy.states[line.state] ?? line.state;
-  if (line.state === "approved" && line.po_number !== null) return <>{`${state} · ${copy.order(line.po_number)}`}</>;
-  if (line.state === "rejected" && line.reject_reason !== null) return <>{`${state} · ${line.reject_reason}`}</>;
+function Decided({ line, decided }: { line: Line; decided: Exclude<Line["state"], "proposed"> }) {
+  const state = copy.states[decided];
+  if (decided === "approved" && line.po_number !== null) return <>{`${state} · ${copy.order(line.po_number)}`}</>;
+  if (decided === "rejected" && line.reject_reason !== null) return <>{`${state} · ${line.reject_reason}`}</>;
   return <>{state}</>;
 }
 
@@ -78,7 +78,7 @@ export function PlanLineSteps({ line, onAnswer }: { line: Line; onAnswer: (answe
   const access = useAccess();
   const [quantity, setQuantity] = useState(String(line.proposed));
   const [rejecting, setRejecting] = useState(false);
-  if (line.state !== "proposed") return <Decided line={line} />;
+  if (line.state !== "proposed") return <Decided line={line} decided={line.state} />;
   if (!access.mayCall("POST /api/supply-plan/lines/{id}/approve")) return null;
   const path = { path: { id: line.id } };
   const count = Number(quantity);

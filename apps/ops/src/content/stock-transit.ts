@@ -24,5 +24,5 @@ export const stockTransit = {
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 };

@@ -430,7 +430,7 @@ export function OrderCheck(props: {
   return (
     <>
       <CheckPanel
-        lines={[check.order(copy.kinds[props.kind] ?? props.kind, names(props.was), names(props.now))]}
+        lines={[check.order(copy.kinds[props.kind], names(props.was), names(props.now))]}
         busy={steps.step === "saving"}
         onSend={steps.go}
         onBack={props.onKeep}
@@ -449,7 +449,7 @@ export function AddForm(props: {
   readonly onCancel: () => void;
 }) {
   const { kind, bounds } = props;
-  const kindName = copy.kinds[kind] ?? kind;
+  const kindName = copy.kinds[kind];
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [codeTyped, setCodeTyped] = useState(false);

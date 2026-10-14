@@ -26,7 +26,7 @@ export const words = {
     numberCode: "Number check",
     consentBar: "Cookie bar",
     islandFailed: "When a part fails to load",
-  } as Readonly<Record<string, string>>,
+  } as Readonly<Record<string, string | undefined>>,
   changed: (by: string, day: string) => `Changed by ${by}, ${day}`,
   edit: "Edit",
   editLabel: (where: string) => `Edit ${where}`,

@@ -190,8 +190,7 @@ function Step({
 }
 
 /** What a task counts: its one item, or its class. */
-export const whatOf = (task: Task["task"]): string =>
-  task.item?.name ?? copy.classes[task.count_class] ?? task.count_class;
+export const whatOf = (task: Task["task"]): string => task.item?.name ?? copy.classes[task.count_class];
 
 export function CountTaskPanel({ id, panelId, onChanged }: { id: string; panelId: string; onChanged: () => void }) {
   const load = useCallback(() => client.get("/api/count-tasks/{id}", { path: { id } }), [id]);

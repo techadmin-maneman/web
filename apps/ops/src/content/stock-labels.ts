@@ -43,7 +43,7 @@ export const stockLabels = {
     returned: "Returned",
     written_off: "Write-off",
     missing: "Missing",
-  } as Readonly<Record<string, string>>,
+  },
   /** "Held · Imran Qureshi" */
   where: (state: string, place: string | null) => (place === null ? state : `${state} · ${place}`),
   history: "History",

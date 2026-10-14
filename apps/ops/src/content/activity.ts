@@ -212,7 +212,7 @@ export const activity = {
   /** A client the log names only by ID: erased, or never named. */
   unnamedClient: "Client",
   /** The kind of record an entry names, where the console has a page for it. */
-  records: { person: "Client", appointment: "Visit" } as Readonly<Record<string, string>>,
+  records: { person: "Client", appointment: "Visit" },
   empty: "Nothing in the log matches.",
   older: "Show older",
   loadingOlder: "Loading older…",

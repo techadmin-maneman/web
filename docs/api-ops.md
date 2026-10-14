@@ -22078,7 +22078,12 @@ Request body:
           "format": "date"
         },
         "window": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "morning",
+            "afternoon",
+            "evening"
+          ]
         },
         "ran_out": {
           "type": "boolean"
@@ -22106,7 +22111,12 @@ Request body:
           "format": "date"
         },
         "window": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "morning",
+            "afternoon",
+            "evening"
+          ]
         },
         "one_visit": {
           "type": "boolean"
@@ -22127,6 +22137,12 @@ Request body:
               "type": [
                 "string",
                 "null"
+              ],
+              "enum": [
+                "morning",
+                "afternoon",
+                "evening",
+                null
               ]
             }
           },
@@ -22334,7 +22350,13 @@ Request body:
           ]
         },
         "kind": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
         },
         "starts_at": {
           "type": "string",
@@ -22426,7 +22448,13 @@ Request body:
           ]
         },
         "kind": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
         },
         "reason_code": {
           "type": [
@@ -22492,6 +22520,12 @@ Request body:
           "type": [
             "string",
             "null"
+          ],
+          "enum": [
+            "morning",
+            "afternoon",
+            "evening",
+            null
           ],
           "description": "The consultation's; null where a fit cannot start in it."
         }

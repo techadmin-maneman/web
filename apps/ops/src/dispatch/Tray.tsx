@@ -38,7 +38,7 @@ function TrayLines({ each }: { each: Unassigned }) {
       <span className={styles.trayTop}>
         <span>{each.person?.name ?? nameOf({ kind: "unassigned", job: each })}</span>
         <span className={capsLook(styles.trayType)}>
-          {each.type === null ? dispatch.unknown : (dispatch.typeNames[each.type] ?? each.type)}
+          {each.type === null ? dispatch.unknown : dispatch.typeNames[each.type]}
         </span>
       </span>
       <span className={styles.trayLine}>{askedWord(each)}</span>

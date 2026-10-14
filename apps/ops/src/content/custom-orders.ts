@@ -27,7 +27,7 @@ export const customOrders = {
     arrived: "Arrived",
     refunded: "Refunded in full",
     cancelled: "Cancelled",
-  } as Readonly<Record<string, string>>,
+  },
   link: "Payment link",
   sendAgain: "Send link again",
   cancel: "Cancel",
@@ -39,7 +39,7 @@ export const customOrders = {
     not_ordered: "Not yet ordered",
     late: "Supplier late past the grace",
     failed_check: "Failed its check",
-  } as Readonly<Record<string, string>>,
+  },
   sent: "Link sent.",
   raise: {
     open: "Raise a custom order",
@@ -68,5 +68,5 @@ export const customOrders = {
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 };

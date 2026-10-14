@@ -18,7 +18,7 @@ export const purchasing = {
     received: "Received",
     closed: "Closed",
     cancelled: "Cancelled",
-  } as Readonly<Record<string, string>>,
+  },
   awaitingSecond: "Awaiting a second approver",
   open: (number: string) => `Open ${number}`,
   order: {
@@ -99,17 +99,15 @@ export const purchasing = {
     /** "CL-0007" */
     number: (number: number) => `CL-${String(number).padStart(4, "0")}`,
     open: (number: string) => `Open ${number}`,
-    reasons: { damaged: "Damaged", qc_failed: "Failed check", warranty: "Under warranty" } as Readonly<
-      Record<string, string>
-    >,
+    reasons: { damaged: "Damaged", qc_failed: "Failed check", warranty: "Under warranty" },
     states: {
       drafted: "Drafted",
       sent: "Sent",
       accepted: "Accepted",
       rejected: "Rejected",
       withdrawn: "Withdrawn",
-    } as Readonly<Record<string, string>>,
-    outcomes: { credit: "Credited", replacement: "Replaced" } as Readonly<Record<string, string>>,
+    },
+    outcomes: { credit: "Credited", replacement: "Replaced" },
     /** "Solvent × 2", or "Mane Man Essential 8x10 · MM-ESS-0000001-B" */
     item: (name: string, quantity: number, piece: string | null) =>
       piece === null ? `${name} × ${String(quantity)}` : `${name} · ${piece}`,
@@ -193,5 +191,5 @@ export const purchasing = {
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 };

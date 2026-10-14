@@ -48,7 +48,7 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
           >
             {REFUND_REASONS.map((each) => (
               <option key={each} value={each}>
-                {copy.reasons[each] ?? each}
+                {copy.reasons[each]}
               </option>
             ))}
           </Select>
@@ -135,7 +135,7 @@ function OrdersTable({
             <td>{copy.spec(order)}</td>
             <td className={form.figure}>{rupees(order.amount)}</td>
             <td>
-              {copy.statuses[order.status] ?? order.status}
+              {copy.statuses[order.status]}
               {order.status === "awaiting_payment" && order.short_url !== null && (
                 <>
                   {" · "}

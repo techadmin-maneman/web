@@ -72,7 +72,7 @@ function keptOf(entry: ClientPayment): string | null {
 function stateOf(entry: ClientPayment): string {
   const state = entry.kind === "refund" ? copy.refundStates[entry.status] : copy.paymentStates[entry.status];
   const reference = entry.kind === "payment" && entry.reference !== null ? copy.reference(entry.reference) : null;
-  return [state ?? clients.unknown, keptOf(entry), reference].filter((part) => part !== null).join(" · ");
+  return [state, keptOf(entry), reference].filter((part) => part !== null).join(" · ");
 }
 
 function CodeLine({ entry }: { entry: ClientPayment }) {

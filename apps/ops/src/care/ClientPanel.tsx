@@ -17,7 +17,7 @@ const copy = care.panel;
 
 /** "Thu 24 Sep, 12 pm · Service visit" */
 function visitLine(visit: ClientVisit): string {
-  const kind = visit.service ?? (visit.type === null ? "" : (dispatch.typeNames[visit.type] ?? visit.type));
+  const kind = visit.service ?? (visit.type === null ? "" : dispatch.typeNames[visit.type]);
   return copy.visit(`${shortDate(visit.date)}, ${indiaClock(visit.starts_at)}`, kind);
 }
 

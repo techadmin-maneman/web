@@ -61,7 +61,7 @@ export function moveRefusal(job: Job, to: Target, code: string): string {
   if (code === "not_trained") return copy.notTrained(to.technician.name);
   if (code === "does_not_fit") {
     const type = typeOf(job);
-    const typeName = type === null ? nameOf(job) : (dispatch.typeNames[type] ?? type);
+    const typeName = type === null ? nameOf(job) : dispatch.typeNames[type];
     return copy.doesNotFit(typeName, to.technician.name, shortDate(to.date), windowWord(to.window));
   }
   const errors: Readonly<Record<string, string | undefined>> = copy.errors;

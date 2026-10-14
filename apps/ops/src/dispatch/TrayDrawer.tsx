@@ -29,7 +29,7 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
   const copy = dispatch.drawer;
   const person = each.person;
   const referredBy = person === null ? null : person.referred_by;
-  const typeName = each.type === null ? dispatch.unknown : (dispatch.typeNames[each.type] ?? dispatch.unknown);
+  const typeName = each.type === null ? dispatch.unknown : dispatch.typeNames[each.type];
   const rows = [
     { key: copy.rows.type, value: copy.type(typeName, each.slots) },
     ...(each.service === null ? [] : [{ key: copy.rows.service, value: each.service }]),
@@ -46,7 +46,7 @@ export function TrayDrawer({ each, onAssign, onClose }: Props) {
           {askedWord(each)} · {dispatch.tray.offered(offeredWord(each.date, each.offered_window))}
         </>
       }
-      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[each.badge] ?? each.badge}</span>}
+      aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[each.badge]}</span>}
       canClose
       onDismiss={onClose}
     >

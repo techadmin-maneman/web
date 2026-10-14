@@ -18,7 +18,8 @@ import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Consumable, type Consumables as ConsumableList } from "../api.ts";
-import { deleting, FAILED } from "../content.ts";
+import { errorText } from "@maneman/web-kit/refusal";
+import { deleting } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { useAccess } from "../lib/access.ts";
@@ -177,7 +178,7 @@ function ConsumableEditor({
           key={`delete-${named.code}`}
           name={named.name}
           send={() => api.deleteConsumable(named.code)}
-          refusal={(code) => (code === "in_use" ? copy.inUse : (copy.errors[code] ?? FAILED))}
+          refusal={(code) => (code === "in_use" ? copy.inUse : errorText(copy.errors, { code }))}
           onDeleted={(body) => {
             onSaved(body, copy.deleted);
           }}

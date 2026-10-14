@@ -63,7 +63,7 @@ function UsageFields(props: {
           }}
         >
           {[...new Set(consumables.services.map((each) => each.visit_type))].map((kind) => (
-            <optgroup key={kind} label={dispatch.typeNames[kind] ?? kind}>
+            <optgroup key={kind} label={dispatch.typeNames[kind]}>
               {consumables.services
                 .filter((each) => each.visit_type === kind)
                 .map((each) => (

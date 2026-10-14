@@ -66,7 +66,7 @@ const TO_SALIM: Target = { technician: SALIM, date: "2025-09-20", window: "eveni
 describe("what a move says once it is sent", () => {
   it("names the technician and the window a refused move asked for", () => {
     expect(moveRefusal(JOB, TO_SALIM, "clash")).toBe(dispatch.landing.clash("Salim Khan", "Sat 20 Sep", "evening"));
-    expect(moveRefusal(JOB, TO_SALIM, "does_not_fit")).toContain(dispatch.typeNames.service ?? "service");
+    expect(moveRefusal(JOB, TO_SALIM, "does_not_fit")).toContain(dispatch.typeNames.service);
     expect(moveRefusal(JOB, TO_SALIM, "no_such_code")).toBe(dispatch.landing.errors.unknown);
   });
 

@@ -24,7 +24,7 @@ export const supplyPlan = {
   drafted: "Drafted again from the latest forecast.",
   approvedSaid: "Approved.",
   rejectedSaid: "Rejected.",
-  states: { approved: "Approved", rejected: "Rejected" } as Readonly<Record<string, string>>,
+  states: { approved: "Approved", rejected: "Rejected" },
   /** "PO-0007" */
   order: (number: number) => `PO-${String(number).padStart(4, "0")}`,
   forecast: {
@@ -81,7 +81,7 @@ export const supplyPlan = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   errors: {
     order_state: "That line is decided already, or no forecast has run. Reload.",
@@ -92,5 +92,5 @@ export const supplyPlan = {
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 };

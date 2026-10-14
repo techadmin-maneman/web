@@ -84,7 +84,7 @@ export const technicians = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /**
    * The design draws no leave anywhere. Leave is recorded here

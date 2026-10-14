@@ -96,7 +96,7 @@ const asPriced = (service: OpsService): Priced => ({
 const lateFeePriced = (fee: LateFee): Priced => ({
   item: fee.item,
   tier: "standard",
-  name: copy.lateFees[fee.item] ?? fee.item,
+  name: copy.lateFees[fee.item],
   prices: fee.prices,
 });
 /** When a service stops, or stopped, being offered; nothing while it is offered. */
@@ -437,7 +437,7 @@ function LateFeeRow({ fee, opened }: { fee: LateFee; opened: Opened }) {
 function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
   const services = opened.services.services.filter((service) => service.kind === kind);
   const fee = opened.services.late_fees.find((each) => each.kind === kind);
-  const name = copy.kinds[kind] ?? kind;
+  const name = copy.kinds[kind];
   const titleId = `kind-${kind}`;
   return (
     <section className={classes(styles.kind, prices.kind)} aria-labelledby={titleId}>

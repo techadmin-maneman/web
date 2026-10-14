@@ -25,8 +25,8 @@ const instantOf = (date: string, time: string): string => new Date(`${date}T${ti
 
 /** A refusal in the console's words: a field the API named, else its code. */
 function closeRefusal(code: string, fields: readonly string[]): string {
-  if (code === "invalid_request" && fields.includes("reason")) return copy.errors.reason ?? "";
-  if (code === "invalid_request") return copy.errors.times ?? "";
+  if (code === "invalid_request" && fields.includes("reason")) return copy.errors.reason;
+  if (code === "invalid_request") return copy.errors.times;
   return errorText(copy.errors, { code });
 }
 

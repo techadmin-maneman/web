@@ -38,7 +38,7 @@ export const stock = {
       transfer: "Transfer",
       count: "Count",
       write_off: "Write-off",
-    } as Readonly<Record<string, string>>,
+    },
     consumable: "Item",
     quantity: "How many",
     /** "How many (ml)": the unit beside the label, where the field takes a figure in it. */
@@ -76,7 +76,7 @@ export const stock = {
       used: "Used on a visit",
       counted: "Count",
       written_off: "Write-off",
-    } as Readonly<Record<string, string>>,
+    },
     none: "No movements yet.",
     change: (quantity: number) => (quantity > 0 ? `+${String(quantity)}` : String(quantity)),
   },
@@ -94,5 +94,5 @@ export const stock = {
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 } as const;

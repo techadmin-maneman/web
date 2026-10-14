@@ -26,7 +26,7 @@ function Found(props: {
   unit: StockUnitFound;
   named: (code: string) => string;
   place: (id: string | null) => string | null;
-  state: (key: string) => string;
+  state: (key: keyof typeof copy.states) => string;
   by: (actor: string) => string;
 }) {
   const { unit, named, place, state, by } = props;
@@ -53,7 +53,7 @@ export function LabelFound({ stock }: { stock: Stock }) {
   const [looked, setLooked] = useState<Looked>({ state: "none" });
   const named = (code: string) => stock.consumables.find((each) => each.code === code)?.name ?? code;
   const place = (id: string | null) => (id === null ? null : placeName(stock, id));
-  const state = (key: string) => copy.states[key] ?? key;
+  const state = (key: keyof typeof copy.states) => copy.states[key];
   /** A technician by their kit's name; anyone else as the Activity page names them. */
   const by = (actor: string) =>
     stock.places.some((each) => each.id === actor) ? placeName(stock, actor) : recordedBy(actor);

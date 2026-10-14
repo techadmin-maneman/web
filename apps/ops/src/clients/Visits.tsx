@@ -39,7 +39,8 @@ function stateOf(visit: ClientVisit): string {
   const paid = visit.prepaid ? ` · ${copy.prepaid}` : "";
   if (visit.stage !== null) return `${copy.stages[visit.stage]}${paid}`;
   if (visit.outcome !== null) return copy.outcomes[visit.outcome];
-  return copy.statuses[visit.status] ?? clients.unknown;
+  if (visit.status === "cancelled" || visit.status === "terminated") return copy.statuses[visit.status];
+  return clients.unknown;
 }
 
 function whatOf(visit: ClientVisit): string {

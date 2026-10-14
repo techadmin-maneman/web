@@ -61,7 +61,7 @@ test("lists each order, opens one, and approves it, awaiting a second approver",
   await open(page, { "POST /api/purchase-orders/{id}/approve": json(FIRST_APPROVED) });
   const row = page.getByRole("row").filter({ hasText: "PO-0007" });
   await expect(row).toContainText("Kesh Supplies");
-  await expect(row).toContainText(copy.states.drafted ?? "");
+  await expect(row).toContainText(copy.states.drafted);
   await expect(row).toContainText("Rs. 2,160");
   const opener = page.getByRole("button", { name: copy.open("PO-0007") });
   await expect(opener).toHaveAttribute("aria-expanded", "false");

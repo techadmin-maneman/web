@@ -315,7 +315,7 @@ function BookingForm({
             value={window?.window ?? ""}
             options={windows.map((each) => ({
               value: each.window,
-              label: `${dispatch.windows[each.window] ?? each.window}, ${each.start} to ${each.end}`,
+              label: `${dispatch.windows[each.window]}, ${each.start} to ${each.end}`,
             }))}
             busy={busy}
             onChoose={(next) => {

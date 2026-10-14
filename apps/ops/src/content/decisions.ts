@@ -25,7 +25,7 @@ export const grievances = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
 } as const;
 
@@ -94,7 +94,7 @@ export const deletions = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
     /** Beneath a refusal, the client's tab that settles it. */
     settleOn: { visits: "Open Visits", payments: "Open Payments" },
   },
@@ -133,6 +133,6 @@ export const numberChanges = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
 } as const;

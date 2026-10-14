@@ -252,7 +252,7 @@ export const tasks = {
       not_found: "Already handled. Reload.",
       invalid_request: "That person hasn't used the console recently.",
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /**
    * A visit left partly done closed without a follow-up, with why
@@ -271,7 +271,7 @@ export const tasks = {
       not_found: "Already booked or closed. Reload.",
       invalid_request: "Give a reason.",
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /**
    * A one visit's payment link, copied to send by hand, or texted to the client again by Razorpay. No
@@ -288,13 +288,13 @@ export const tasks = {
       not_texted: "Not sent: this is a test number.",
       paid: "Already paid.",
       refused: "Razorpay refused this link. Send one from the Razorpay dashboard.",
-    } as Readonly<Record<string, string>>,
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: "That link no longer exists. Reload.",
       unavailable: "Razorpay isn't responding. Try again in a minute.",
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** The board draws twelve tasks and no empty list. */
   empty: "All clear.",
@@ -332,7 +332,7 @@ export const needsAHand = {
     whatsapp_bridge: "WhatsApp disconnected",
     login_codes_failing: "Login codes failing",
     cron_job: "Scheduled job failing",
-  } as Readonly<Record<string, string>>,
+  } as Readonly<Record<string, string | undefined>>,
   /** Books refusing or failing on a customer, a payment, its application or a refund. */
   books: "Books needs attention",
   /** Any other kind. */
@@ -349,5 +349,5 @@ export const needsAHand = {
     not_permitted: NOT_PERMITTED,
     not_found: "Already closed. Reload.",
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 } as const;

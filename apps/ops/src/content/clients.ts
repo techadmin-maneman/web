@@ -31,7 +31,7 @@ export const clients = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /** Not drawn: every client, beneath the search, narrowed by where they stand and city. */
   list: {
@@ -181,9 +181,7 @@ export const clients = {
       none: "None",
       /** "TENOFF, Rs. 1,234 off": what it takes off before GST, once the visit's price is known. */
       applied: (code: string, off: string | null) => (off === null ? code : `${code}, ${off} off`),
-      givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" } as Readonly<
-        Record<string, string>
-      >,
+      givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" },
       /** A one visit's code the client typed when booking on the site, which "Enter a code" starts from. */
       requested: (code: string) => `Client entered ${code} when booking`,
       enter: "Enter a code",
@@ -206,7 +204,7 @@ export const clients = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
     noUpcoming: "Nothing booked.",
     noPast: "No past visits.",
@@ -294,7 +292,7 @@ export const clients = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
     /**
      * Our words, all of them: ops cancelling a client's visit, which no board draws. Free to the client unless ops
@@ -316,7 +314,10 @@ export const clients = {
         nothing: "Nothing paid.",
       },
       /** Where a refund goes, by the payment's method. */
-      destinations: { upi: "UPI", card: "card", netbanking: "bank account" } as Readonly<Record<string, string>>,
+      /** Razorpay's methods, which Razorpay adds to: one not named here is otherDestination. */
+      destinations: { upi: "UPI", card: "card", netbanking: "bank account" } as Readonly<
+        Record<string, string | undefined>
+      >,
       otherDestination: "payment method",
       free: "Free cancellation",
       clientTerms: "Late terms",
@@ -344,7 +345,7 @@ export const clients = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
     /**
      * Our words, all of them: ops closing a visit by hand, for work whose technician's phone was lost before it sent
@@ -379,7 +380,7 @@ export const clients = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
     /** "9 am to 12 pm", as the dispatch drawer writes a window. */
     time: (from: string, to: string) => `${from} to ${to}`,
@@ -399,7 +400,7 @@ export const clients = {
       closing: "Closing",
     },
     outcomes: { done: "Done", partial: "Partly done", no_show: "No-show" },
-    statuses: { cancelled: "Cancelled", terminated: "Not done", other: "—" } as Readonly<Record<string, string>>,
+    statuses: { cancelled: "Cancelled", terminated: "Not done" },
     /** Paid ahead, or covered by a credit: the client app's own badge. */
     prepaid: "Prepaid",
   },
@@ -422,10 +423,8 @@ export const clients = {
       captured: "Paid",
       refunded: "Refunded",
       partially_refunded: "Partly refunded",
-    } as Readonly<Record<string, string>>,
-    refundStates: { created: "Processing", processed: "Refunded", failed: "Failed" } as Readonly<
-      Record<string, string>
-    >,
+    },
+    refundStates: { created: "Processing", processed: "Refunded", failed: "Failed" },
     reference: (reference: string) => `Ref ${reference}`,
     /** What a late change or a no-show's charge kept of the payment: "Rs. 1,234 kept, cancelled late". */
     kept: (amount: string, why: string) => `${amount} kept, ${why}`,
@@ -448,7 +447,7 @@ export const clients = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /* Our words, all of them: the payment links Razorpay texted the client, and an open one's address to send again. */
   links: {
@@ -502,7 +501,7 @@ export const clients = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /*
    * Our words, all of them: the design draws a Referrals tab and nothing in it. Who sent the invite heads the page; the
@@ -541,7 +540,7 @@ export const clients = {
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
-      } as Readonly<Record<string, string>>,
+      },
     },
     news: {
       attached: "Invite attached.",
@@ -668,7 +667,7 @@ export const clients = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: "Photo didn't load.",
-    } as Readonly<Record<string, string>>,
+    },
   },
   consents: {
     title: "Consents",
@@ -759,7 +758,7 @@ export const clients = {
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
   /*
    * The client's record in figures (src/domain/visits/client-history.ts). The design

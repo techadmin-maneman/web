@@ -38,7 +38,7 @@ const discountOf = (code: DiscountCode): string =>
   code.kind === "amount"
     ? rupees(code.value)
     : copy.percentOff(code.value, code.cap === null ? null : rupees(code.cap));
-const coversOf = (code: DiscountCode): string => code.covers.map((kind) => copy.coverShort[kind] ?? kind).join(", ");
+const coversOf = (code: DiscountCode): string => code.covers.map((kind) => copy.coverShort[kind]).join(", ");
 const dayOf = (instant: string | null): string => (instant === null ? copy.never : shortDate(indiaDate(instant)));
 const usesOf = (code: DiscountCode): string =>
   code.max_uses === null ? String(code.uses) : copy.usesOf(code.uses, code.max_uses);
