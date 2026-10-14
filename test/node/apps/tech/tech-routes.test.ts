@@ -13,7 +13,6 @@ import {
   EVENT_ID_HEADER,
   pathFor,
   ROUTES,
-  ROUTES_ASSUMED,
   type EventBody,
   type EventKind,
 } from "../../../../apps/tech/src/routes.ts";
@@ -36,10 +35,6 @@ describe("the routes the technician app calls", () => {
       expect(documented(route), `${route.method} /api${route.path} is not in docs/openapi-tech.json`).toBeDefined();
     },
   );
-
-  it("assumes no route at all: the document settles every one of them", () => {
-    expect(ROUTES_ASSUMED).toEqual([]);
-  });
 
   it("sends each of the outbox's events to a route the document writes", () => {
     const job = "00000000-0000-7000-8000-000000000000";

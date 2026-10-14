@@ -12,7 +12,7 @@ import {
   waitBeforeTry,
   type Queued,
 } from "../../../apps/tech/src/store/replay.ts";
-import { queuedAt, uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
+import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
 
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -35,9 +35,8 @@ describe("the event ID a write carries", () => {
     for (let n = 0; n < 50; n += 1) expect(uuidv7()).toMatch(UUID_V7);
   });
 
-  it("carries the millisecond it was made, so two events sort in the order they happened", () => {
+  it("sorts two events in the order they happened", () => {
     const at = Date.UTC(2027, 0, 14, 9, 41, 0);
-    expect(queuedAt(uuidv7(at))).toBe(at);
     expect(uuidv7(at) < uuidv7(at + 1)).toBe(true);
   });
 

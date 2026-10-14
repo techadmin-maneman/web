@@ -220,18 +220,25 @@ export function urlOf(template: string, path: object | undefined, query: object 
   return text === "" ? filled : `${filled}?${text}`;
 }
 
-/** One request, or null when nothing answered in time. */
-async function reach(url: string, init: RequestInit, patience: number): Promise<Response | null> {
+/**
+ * One request, or null when nothing answered in time. Its patience runs on until `finished`, once the body is read, so
+ * a body that stalls is given up on too.
+ */
+async function reach(
+  url: string,
+  init: RequestInit,
+  patience: number,
+): Promise<{ readonly response: Response; readonly finished: () => void } | null> {
   const giveUp = new AbortController();
   const timer = setTimeout(() => {
     giveUp.abort();
   }, patience);
   try {
-    return await fetch(url, { ...init, credentials: "same-origin", signal: giveUp.signal });
+    const response = await fetch(url, { ...init, credentials: "same-origin", signal: giveUp.signal });
+    return { response, finished: () => clearTimeout(timer) };
   } catch {
-    return null;
-  } finally {
     clearTimeout(timer);
+    return null;
   }
 }
 
@@ -296,7 +303,7 @@ export function createClient<Paths, Code extends string = string>(options: Clien
 
   async function read<T>(response: Response, file: boolean): Promise<Answer<T, Code>> {
     if (response.ok) {
-      const body = file ? await response.blob() : await bodyOf(response);
+      const body = file ? await response.blob().catch(() => undefined) : await bodyOf(response);
       if (body === undefined) {
         options.onUnreached?.();
         return OFFLINE;
@@ -329,7 +336,7 @@ export function createClient<Paths, Code extends string = string>(options: Clien
     const body = init.json === undefined ? init.body : JSON.stringify(init.json);
     const sent = options.keyWrites === true && method !== "GET" ? `${method} ${url} ${textOf(body)}` : null;
     const key = keyFor(unanswered, sent, headers);
-    const response = await reach(
+    const reached = await reach(
       url,
       {
         method,
@@ -339,17 +346,22 @@ export function createClient<Paths, Code extends string = string>(options: Clien
       },
       init.patience ?? patienceFor(patience, method),
     );
-    if (sent !== null && key !== null) heardOf(unanswered, { sent, key, answered: response !== null });
-    if (response === null) {
+    if (sent !== null && key !== null) heardOf(unanswered, { sent, key, answered: reached !== null });
+    if (reached === null) {
       options.onUnreached?.();
       return sent === null ? OFFLINE : UNCONFIRMED;
     }
-    if (response.type === "opaqueredirect" && options.onAccessLapsed !== undefined) {
-      options.onAccessLapsed();
-      options.onUnreached?.();
-      return OFFLINE;
+    const { response, finished } = reached;
+    try {
+      if (response.type === "opaqueredirect" && options.onAccessLapsed !== undefined) {
+        options.onAccessLapsed();
+        options.onUnreached?.();
+        return OFFLINE;
+      }
+      return await read<T>(response, init.file === true);
+    } finally {
+      finished();
     }
-    return read<T>(response, init.file === true);
   }
 
   /** A typed call: the document's path filled in, its query added and its body sent as JSON. */

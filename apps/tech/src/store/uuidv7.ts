@@ -29,8 +29,3 @@ export function uuidv7(now: number = Date.now()): string {
     "-",
   );
 }
-
-/** The millisecond a UUIDv7 carries, for "queued at 9:41" without a second field. */
-export function queuedAt(id: string): number {
-  return Number.parseInt(id.slice(0, 8) + id.slice(9, 13), 16);
-}

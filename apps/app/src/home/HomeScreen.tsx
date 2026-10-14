@@ -46,9 +46,8 @@ import { firstNameOf } from "@rules/lib/names.ts";
 
 export function HomeScreen() {
   const { me, offline } = useSession();
-  // A Home the phone kept from an earlier release has no invoice line, nor any payment owed.
-  const invoice = me.invoice ?? null;
-  const owed = me.payment_owed ?? null;
+  const invoice = me.invoice;
+  const owed = me.payment_owed;
   // A recall leads Home above whatever else is booked, until its replacement is; with nothing booked it is Home.
   const booked = me.next_visit !== null || me.consultation !== null || me.being_booked !== null;
   const recallFirst = me.remake?.why === "recall" && booked ? me.remake : null;
