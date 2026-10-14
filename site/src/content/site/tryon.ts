@@ -175,7 +175,7 @@ export const tryOn = {
     /** A visitor who has had their look, back again, whose number the page does not know. */
     returning: {
       title: "Your look has already been sent.",
-      body: "We sent it to the WhatsApp number you gave. It’s one look per person, every 30 days.",
+      body: "We sent it to the WhatsApp number you gave. One look every 30 days.",
     },
   },
   error: {

@@ -226,13 +226,13 @@ test.describe("home sections", () => {
     await page.goto("/");
     const table = page.getByRole("table", { name: siteCopy.comparison.title });
     await expect(table.getByRole("row")).toHaveCount(8);
-    await expect(table.getByRole("rowheader", { name: "Surgery" })).toHaveCount(1);
-    const surgery = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Surgery" }) });
-    await expect(surgery.getByRole("cell")).toHaveText(["Yes", "No", "No"]);
+    // "Surgery" ticked the transplant, so at a glance surgery read as the plus.
+    const surgery = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "No surgery" }) });
+    await expect(surgery.getByRole("cell")).toHaveText(["No", "Yes", "Yes"]);
     const effects = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Side effects" }) });
     await expect(effects.getByRole("cell")).toHaveText([
-      "Infection, scarring, shock loss",
-      "Lower libido, scalp irritation",
+      "Surgical risks",
+      "Possible side effects",
       "Nothing implanted or swallowed",
     ]);
   });

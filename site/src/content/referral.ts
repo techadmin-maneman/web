@@ -209,7 +209,7 @@ export const referral = {
     check: "Check",
     checking: "Checking…",
     empty: "Enter your pincode.",
-    invalid: "That isn’t a six-digit Indian pincode.",
+    invalid: "That isn’t a 6-digit Indian pincode.",
     failed: "We couldn’t check that right now. Try again.",
     // Not drawn: a pincode typed wrong could only be put right by reloading the page.
     change: "Change",

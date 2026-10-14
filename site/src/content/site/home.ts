@@ -174,25 +174,22 @@ export type ComparisonCell = string | boolean;
 
 export const comparison = {
   title: "Why choose a hair system",
-  intro: "Two of these are not ours.",
+  intro: "How a hair system compares.",
   columns: ["Transplant", "Medication", "Hair system"],
   yes: "Yes",
   no: "No",
   rows: [
     {
       label: "Cost",
-      cells: [
-        "Rs. 1.2–3 lakh for 4,000–5,000 hairs",
-        "Rs. 800–2,000 a month, for life",
-        "Quoted at your free consultation",
-      ],
+      // No figure of anyone else's: the site gives no price, ours or theirs.
+      cells: ["A large one-off cost, often repeated", "Every month, for life", "Quoted free, before anything is fitted"],
     },
     { label: "Visible result", cells: ["9–12 months", "4–6 months", "The same day"] },
     { label: "Covers advanced loss", cells: [false, false, true] },
-    { label: "Surgery", cells: [true, false, false] },
+    { label: "No surgery", cells: [false, true, true] },
     {
       label: "Side effects",
-      cells: ["Infection, scarring, shock loss", "Lower libido, scalp irritation", "Nothing implanted or swallowed"],
+      cells: ["Surgical risks", "Possible side effects", "Nothing implanted or swallowed"],
     },
     { label: "Reversible", cells: [false, true, true] },
     {

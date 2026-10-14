@@ -522,7 +522,7 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Two of these are not ours."
+    "text": "How a hair system compares."
   },
   {
     "key": "site:home/comparison.columns.0",
@@ -571,21 +571,21 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Rs. 1.2–3 lakh for 4,000–5,000 hairs"
+    "text": "A large one-off cost, often repeated"
   },
   {
     "key": "site:home/comparison.rows.0.cells.1",
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Rs. 800–2,000 a month, for life"
+    "text": "Every month, for life"
   },
   {
     "key": "site:home/comparison.rows.0.cells.2",
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Quoted at your free consultation"
+    "text": "Quoted free, before anything is fitted"
   },
   {
     "key": "site:home/comparison.rows.1.label",
@@ -627,7 +627,7 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Surgery"
+    "text": "No surgery"
   },
   {
     "key": "site:home/comparison.rows.4.label",
@@ -641,14 +641,14 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Infection, scarring, shock loss"
+    "text": "Surgical risks"
   },
   {
     "key": "site:home/comparison.rows.4.cells.1",
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Lower libido, scalp irritation"
+    "text": "Possible side effects"
   },
   {
     "key": "site:home/comparison.rows.4.cells.2",
@@ -2692,7 +2692,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "We sent it to the WhatsApp number you gave. It’s one look per person, every 30 days."
+    "text": "We sent it to the WhatsApp number you gave. One look every 30 days."
   },
   {
     "key": "site:tryon/tryOn.error.another",
@@ -4036,7 +4036,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "That isn’t a six-digit Indian pincode."
+    "text": "That isn’t a 6-digit Indian pincode."
   },
   {
     "key": "site:referral/referral.pincode.failed",

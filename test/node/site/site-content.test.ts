@@ -202,7 +202,7 @@ describe("content", () => {
 
   // Production keeps a result fourteen days (ADR 0039), as the privacy notice says.
   it("keeps the try-on’s result for as long as the privacy notice says", () => {
-    expect(textOf(site.legalPages.privacy)).toContain("the simulation itself is kept for fourteen days");
+    expect(textOf(site.legalPages.privacy)).toContain("the simulation itself is kept for 14 days");
     expect(site.tryOn.sent.privacy).toBe("We delete it after 14 days.");
   });
 
@@ -275,10 +275,10 @@ describe("the second copy round", () => {
     expect(site.stepPhotos.images).toHaveLength(site.howItWorks.steps.length);
   });
 
-  // "for just" sneered. "Two of these are not ours." stays.
-  it("keeps the comparison line and gives a transplant’s cost without a sneer", () => {
-    expect(site.comparison.intro).toBe("Two of these are not ours.");
-    expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
+  // "for just" sneered; then the table gave others' rupee figures, unsourced, on a site that gives none of its own.
+  it("compares without a sneer, and without anyone's price", () => {
+    expect(site.comparison.intro).toBe("How a hair system compares.");
+    expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b|Rs\.|₹/);
   });
 });
 
@@ -311,7 +311,7 @@ describe("the legal pages", () => {
     expect(privacy).not.toContain("the same day");
     expect(DELETION_DECIDED_WITHIN_DAYS).toBe(30);
     expect(privacy).toContain("We decide a request to erase within 30 days.");
-    expect(privacy).toContain("Invoices are kept for eight years, as the law requires.");
+    expect(privacy).toContain("Invoices are kept for 8 years, as the law requires.");
     expect(terms).not.toMatch(/on the day of the fit|by messaging us, at no charge|\bcall\b|\bwith him\b|\bpiece\b/);
     expect(terms).toContain("A visit you book in the app is paid when you book it");
     expect(terms).toContain("You can move or cancel a visit in the app.");

@@ -6,7 +6,7 @@
  * (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md, 0084-a-clients-try-on-is-kept.md).
  */
 const TRY_ON_PRIVACY =
-  "If you use the try-on, your photograph is used to make your simulation. It is sent to YouCam (Perfect Corp), the service that generates it, which keeps its copy for thirty days; we never use it to train any model, and ours is deleted within the hour; a small copy stays with your simulation for fourteen days at most. Before the simulation is made, you give us your name and mobile number: we send the simulation to that number on WhatsApp, and it is never shown on this site; the simulation itself is kept for fourteen days. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.";
+  "If you use the try-on, your photograph is used to make your simulation. It is sent to YouCam (Perfect Corp), the service that generates it, which keeps its copy for 30 days; we never use it to train any model, and ours is deleted within the hour; a small copy stays with your simulation for 14 days at most. Before the simulation is made, you give us your name and mobile number: we send the simulation to that number on WhatsApp, and it is never shown on this site; the simulation itself is kept for 14 days. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.";
 
 interface LegalSection {
   readonly heading: string;
@@ -49,14 +49,14 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         paragraphs: [
           TRY_ON_PRIVACY,
           // PLACEHOLDER: the try-on's cookie sentence awaits counsel with its notices.
-          "The site sets one cookie of its own, for the try-on: it remembers for thirty days that this browser has had its one look.",
+          "The site sets one cookie of its own, for the try-on: it remembers for 30 days that this browser has had its one look.",
         ],
       },
       {
         heading: "Invites and analytics",
         paragraphs: [
           // PLACEHOLDER: the invite's sentence awaits counsel.
-          "When you open a friend’s invite, this browser keeps the invite’s code for thirty days, so that a consultation you book here later still comes with it; it is removed once a booking has used it, or on your first visit after the thirty days.",
+          "When you open a friend’s invite, this browser keeps the invite’s code for 30 days, so that a consultation you book here later still comes with it; it is removed once a booking has used it, or on your first visit after the 30 days.",
           "We measure our visits and advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse.",
         ],
       },
@@ -64,7 +64,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         heading: "How long we keep it",
         paragraphs: [
           // PLACEHOLDER: the periods, for counsel to confirm.
-          "Once you are a client, we keep your details, your address and your visit photographs until you ask us to erase them. If you never book a visit or pay us, we erase your details a year after you last used the site or the app. A waitlist place goes a year after we launch in your area. Where a technician checked in at your door is kept only until a no-show charge can no longer be disputed. Invoices are kept for eight years, as the law requires.",
+          "Once you are a client, we keep your details, your address and your visit photographs until you ask us to erase them. If you never book a visit or pay us, we erase your details a year after you last used the site or the app. A waitlist place goes a year after we launch in your area. Where a technician checked in at your door is kept only until a no-show charge can no longer be disputed. Invoices are kept for 8 years, as the law requires.",
         ],
       },
       {
@@ -109,14 +109,14 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "The guarantee",
         paragraphs: [
-          "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within fourteen days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we give are typical, not promised.",
+          "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within 14 days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we give are typical, not promised.",
         ],
       },
       {
         heading: "The try-on",
         paragraphs: [
           // The try-on's sentence on WhatsApp is ADR 0104's.
-          "The try-on is an illustrative simulation made by software from one photograph, and sent to the WhatsApp number you give, never shown on this site. It is not a photograph of a result, and not a promise of how your hair system will look: a hair system is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are eighteen or over. Each visitor gets one simulation.",
+          "The try-on is an illustrative simulation made by software from one photograph, and sent to the WhatsApp number you give, never shown on this site. It is not a photograph of a result, and not a promise of how your hair system will look: a hair system is matched to your own hair colour, density and growth pattern. Upload only a photograph of yourself, and only if you are 18 or over. Each person gets one look every 30 days.",
         ],
       },
       {

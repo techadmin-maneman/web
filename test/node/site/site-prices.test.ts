@@ -47,7 +47,7 @@ describe("the publish gate, on prices", () => {
     }
   });
 
-  it("lets through what a transplant and medication cost, which are not our prices", () => {
+  it("lets the site through as it stands, which gives no price, ours or anyone else's", () => {
     expect(publishProblems(undefined, approved, [site, referral], legalApproved)).toEqual([]);
   });
 });

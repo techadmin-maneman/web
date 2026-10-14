@@ -8,12 +8,12 @@ export const login = {
     prefix: "+91",
     label: "Mobile number",
     send: "Send code on WhatsApp",
-    hint: "A six-digit code, no password.",
+    hint: "A 6-digit code, no password.",
     // The design draws no session that ended while the app was open.
     ended: "You’ve been signed out. Sign in to continue.",
     // The design draws no error on the sign-in.
     errors: {
-      invalid: "Enter the ten-digit mobile number you booked with.",
+      invalid: "Enter the 10-digit mobile number you booked with.",
       rate_limited: "Too many codes for this number today. Try again tomorrow, or message us.",
       busy: "We can’t send codes right now. Try again in a few minutes.",
       turnstile_failed: "We couldn’t confirm you’re a person. Try again.",
@@ -31,7 +31,7 @@ export const login = {
      */
     sentWhatsapp: (number: string) => `If ${number} has a booking with us, a code is on its way on WhatsApp.`,
     sentSms: (number: string) => `If ${number} has a booking with us, a code is on its way by SMS.`,
-    label: "The six-digit code",
+    label: "The 6-digit code",
     /** Shown only for a code sent by SMS: WebOTP reads an SMS, and never a WhatsApp message. */
     automatic: "Read automatically where your phone allows",
     sms: "Send by SMS instead",

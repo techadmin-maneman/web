@@ -90,7 +90,7 @@ export const profile = {
     newNumber: "New mobile number",
     start: "Start the change",
     // Our words from here: the design draws the start only.
-    invalid: "Enter a ten-digit mobile number, not the one you use now.",
+    invalid: "Enter a 10-digit mobile number, not the one you use now.",
     codes: "Enter the code sent to each number.",
     oldCode: "Code sent to your current number",
     newCode: (number: string) => `Code sent to ${number}`,
@@ -166,7 +166,7 @@ export const profile = {
   },
   deletion: {
     label: "Delete your account",
-    body: "We act on your request within 30 days. Bookings and payments are settled first, and invoices are kept for eight years, as the law requires.",
+    body: "We act on your request within 30 days. Bookings and payments are settled first, and invoices are kept for 8 years, as the law requires.",
     request: "Request deletion",
     // The design draws the button only.
     confirm: "Ask us to delete your account? We’ll confirm on WhatsApp before anything is deleted.",
