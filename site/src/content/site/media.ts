@@ -109,21 +109,21 @@ export const testimonials = {
     {
       photo: { file: "client-1.jpg", alt: "Portrait of a Mane Man client" },
       quote:
-        "He came on a Sunday morning and was finished by eleven. I had a wedding that week and nobody said a word about my hair.",
+        "The technician came on a Sunday morning and was finished by eleven. I had a wedding that week and nobody said a word about my hair.",
       name: "Client name",
       meta: "Age · Norwood IV · Gurgaon",
     },
     {
       photo: { file: "client-2.jpg", alt: "Portrait of a Mane Man client" },
       quote:
-        "The first fit took about ninety minutes. What I did not expect was the monthly visit — he lifts it, cleans the base, re-cuts it, and is gone inside an hour.",
+        "The first fit took about ninety minutes. What I did not expect was the monthly visit — they lift it, clean the base, re-cut it, and are gone inside an hour.",
       name: "Client name",
       meta: "Age · Norwood V · Noida",
     },
     {
       photo: { file: "client-3.jpg", alt: "Portrait of a Mane Man client" },
       quote:
-        "I asked what happens if I hate it. He gave me the fourteen-day terms before taking any money, which is why I went ahead.",
+        "I asked what happens if I hate it. They gave me the fourteen-day terms before taking any money, which is why I went ahead.",
       name: "Client name",
       meta: "Age · Norwood III · Delhi",
     },

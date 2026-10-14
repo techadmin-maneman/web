@@ -190,7 +190,7 @@ describe("smoke suite", () => {
     );
     expect(results.filter((result) => !result.ok)).toEqual([]);
     expect(results.find((result) => result.name === "site security headers")?.detail).toBe(
-      "production still serves its placeholder (docs/frontend.md, Going live in production)",
+      "production still serves its placeholder (docs/site.md, Going live in production)",
     );
     // Once the site is live there, production is held to them as staging is.
     expect(

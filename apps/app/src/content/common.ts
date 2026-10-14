@@ -93,7 +93,7 @@ export function visitLength(minutes: number): string {
   return parts.filter((part) => part !== "").join(" ");
 }
 
-/** A price's GST, beneath the amount charged once GST applies: "Rs. 30,000 + Rs. 5,400 GST". */
+/** A price's GST, beneath the amount charged once GST applies: "Rs. 1,000 + Rs. 180 GST". */
 export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
 
 /**

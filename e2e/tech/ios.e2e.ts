@@ -64,7 +64,7 @@ test("opens the route from Navigate, which the geo: link it replaced never did",
   await expect(page.getByRole("link", { name: techCopy.job.navigate })).toBeVisible();
 });
 
-test("tells a technician why the app on his home screen is signed out", async ({ page }) => {
+test("tells a technician why the app on their home screen is signed out", async ({ page }) => {
   await fromTheHomeScreen(page);
   await page.route("**/api/tech/me", (route) => route.fulfill(noSession));
   await page.goto("/");

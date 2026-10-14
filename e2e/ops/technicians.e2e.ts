@@ -124,7 +124,7 @@ test("puts Leave where the board draws Skill, with no design note beneath the ta
 });
 
 // "AWAY" never said until when.
-test("says in the roster when a technician's next leave begins, or until when he is away", async ({ page }) => {
+test("says in the roster when a technician's next leave begins, or until when they are away", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("row").filter({ hasText: "Sandeep Yadav" })).toContainText("From 2 Oct");
 
@@ -137,7 +137,7 @@ test("says in the roster when a technician's next leave begins, or until when he
 });
 
 // A technician off sick or a lost phone meant finding them in three sections, and the panel had no address.
-test("opens a technician's own page from his name, a tab at a time, each at an address of its own", async ({
+test("opens a technician's own page from their name, a tab at a time, each at an address of its own", async ({
   page,
 }) => {
   await open(page);
@@ -198,7 +198,7 @@ test("names each phone, says when it was last used, and whether it is signed in,
 });
 
 // A revoke stops them signing in on any phone, since their code reaches the lost phone too; ops let them back.
-test("says when a revoke stopped him signing in, and lets him in again", async ({ page }) => {
+test("says when a revoke stopped them signing in, and lets them in again", async ({ page }) => {
   const [imran, ...others] = TECHNICIANS.technicians;
   const stopped = {
     ...TECHNICIANS,

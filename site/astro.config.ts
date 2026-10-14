@@ -5,7 +5,7 @@
 //
 // A production build first runs the publish gate: it stops the build while any
 // published block still holds the design's placeholder material, or while any
-// consent notice is unapproved (docs/frontend.md). Afterwards it removes every
+// consent notice is unapproved (docs/site.md). Afterwards it removes every
 // built asset no page names, so the placeholders staging shows never ship.
 
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";

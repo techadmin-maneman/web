@@ -11,7 +11,7 @@ interface Amount {
 }
 
 /**
- * An amount's two figures: what is charged, and how that splits once GST applies ("Rs. 30,000 + Rs. 5,400 GST").
+ * An amount's two figures: what is charged, and how that splits once GST applies ("Rs. 1,000 + Rs. 180 GST").
  * The split is null while GST is nothing, and where no rate was recorded.
  */
 export function priceFigures(price: Amount): { amount: string; split: string | null } {

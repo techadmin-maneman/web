@@ -51,7 +51,7 @@ export type DeviceRecord =
   | { readonly key: "me"; readonly me: Me }
   /** Only ever "granted": a refusal is asked again on the next start (./persist.ts). */
   | { readonly key: "keeping"; readonly keeping: "granted" }
-  /** A switched-off technician's unsent work, kept for him; the seven days run from `at` (./set-aside.ts). */
+  /** A switched-off technician's unsent work, kept for them; the seven days run from `at` (./set-aside.ts). */
   | { readonly key: "set_aside"; readonly technician_id: string; readonly at: number }
   /** A hair profile half filled in, as typed, so closing the app loses none of it; gone once sent (../steps/Profile.tsx). */
   | {

@@ -1,4 +1,4 @@
-// The analytics tags, per environment (docs/frontend.md, "Adding the analytics
+// The analytics tags, per environment (docs/site.md, "Adding the analytics
 // IDs"). A tag with no ID is not loaded, and the content security policy
 // allows only the hosts of the tags that are. The IDs are public: they appear
 // in every page. Staging's must be debug or test streams, never production's.

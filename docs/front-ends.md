@@ -1,6 +1,6 @@
 # The front ends
 
-Four front ends, each served by a Worker of its own, each calling mm-api on its own host. This is the guide to all four and to what they share. The public site has a guide of its own, `docs/frontend.md`, for its content, prices, notices and going live.
+Four front ends, each served by a Worker of its own, each calling mm-api on its own host. This is the guide to all four and to what they share. The public site has a guide of its own, `docs/site.md`, for its content, prices, notices and going live.
 
 |                     | Public site                       | Client app                             | Ops console                         | Technician app                                           |
 | ------------------- | --------------------------------- | -------------------------------------- | ----------------------------------- | -------------------------------------------------------- |
@@ -74,7 +74,7 @@ What a technician needs at a client's door, in a basement, with gloves on (ADR 0
 
 - **Today's and tomorrow's jobs**, one job's card, and its steps: before photographs, checklist, consumables, the piece (a first fit's and a replacement's), after photographs and the outcome, with the client's hair profile on a consultation and a one visit (`apps/tech/src/route.ts`).
 - **An outbox.** Every step goes into IndexedDB (`mm-tech`, `apps/tech/src/store/`) and is sent one at a time, oldest first, whenever the phone has signal. "Waiting to reach us" (`/waiting`) shows what is still on the phone. Signing out, or ops revoking the phone, wipes the database whole.
-- **One phone per session.** The phone enrols itself when he signs in, and ops can revoke it from the console (ADR 0052).
+- **One phone per session.** The phone enrols itself when they sign in, and ops can revoke it from the console (ADR 0052).
 - **Photographs that never touch the gallery,** taken through `getUserMedia` into a canvas and re-encoded to 250 KB or less (`apps/tech/src/camera/`).
 - **Any phone, iPhones included.** On an iPhone the store is kept only when the app is on the home screen, so the app is installable (`apps/tech/pwa.ts`), and says so when the phone has not promised to keep its store.
 
@@ -82,7 +82,7 @@ What a technician needs at a client's door, in a basement, with gloves on (ADR 0
 
 ## The public site
 
-The site is an Astro build of `design/Mane Man Site v2.dc.html`, served as static assets by mm-site. Its Worker answers first only on `/`, `/book` and `/r/*`: it writes the price book's figures into the pages and answers an invite's landing (ADRs 0027 and 0073). The try-on and the booking form are Preact islands in `site/src/islands/`. It uses the brand's tokens and `packages/web-kit`'s dates, rupees and links, but not `packages/ui`. Everything else about it is in `docs/frontend.md`.
+The site is an Astro build of `design/Mane Man Site v2.dc.html`, served as static assets by mm-site. Its Worker answers first only on `/`, `/book` and `/r/*`: it writes the price book's figures into the pages and answers an invite's landing (ADRs 0027 and 0073). The try-on and the booking form are Preact islands in `site/src/islands/`. It uses the brand's tokens and `packages/web-kit`'s dates, rupees and links, but not `packages/ui`. Everything else about it is in `docs/site.md`.
 
 ## Running them
 

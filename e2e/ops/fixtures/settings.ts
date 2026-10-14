@@ -30,7 +30,7 @@ export const SETTINGS = {
       name: "no_show_wait_min",
       kind: "number",
       title: "No-show wait",
-      note: "How long a technician waits, from check-in, before he may close a job as a no-show.",
+      note: "How long a technician waits, from check-in, before they may close a job as a no-show.",
       unit: "minutes",
       min: 5,
       max: 120,

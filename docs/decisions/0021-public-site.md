@@ -24,7 +24,7 @@ The front-end prompt (rev 2) asks for the final design, v2, rebuilt as an Astro 
 - the design's "Placeholder" tags, shown everywhere but production;
 - `noindex` headers and a disallow-all `robots.txt`, everywhere but production.
 
-`site/wrangler.jsonc` serves `dist/local` and `dist/staging`. **Production still serves its placeholder page.** `deploy-staging` builds the staging site before uploading `mm-site`, while `deploy-production` is unchanged. Going live is a short list in `docs/frontend.md`.
+`site/wrangler.jsonc` serves `dist/local` and `dist/staging`. **Production still serves its placeholder page.** `deploy-staging` builds the staging site before uploading `mm-site`, while `deploy-production` is unchanged. Going live is a short list in `docs/site.md`.
 
 ### The production build is gated
 

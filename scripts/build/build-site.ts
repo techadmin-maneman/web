@@ -5,7 +5,7 @@
 //   npm run check:site            (astro check: the templates' types)
 //
 // Production is refused by the publish gate until the content is ready
-// (docs/frontend.md); production keeps serving its placeholder until then. The
+// (docs/site.md); production keeps serving its placeholder until then. The
 // gate runs in site/astro.config.ts, so it holds however the site is built, and
 // refuses copy still marked PLACEHOLDER too (scripts/lib/content-gate.ts).
 

@@ -56,7 +56,7 @@ test("a double tap on Next finishes one step, and never the step it opens", asyn
   expect(writesTo(fake, "consumables")).toHaveLength(0);
 });
 
-test("the outcome has nothing chosen for the technician, and Next waits for his choice", async ({ page }) => {
+test("the outcome has nothing chosen for the technician, and Next waits for their choice", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
   await page.goto(`/jobs/${JOB_ID}/outcome`);

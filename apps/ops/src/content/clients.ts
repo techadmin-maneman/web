@@ -179,7 +179,7 @@ export const clients = {
      */
     code: {
       none: "None",
-      /** "TENOFF, Rs. 200 off": what it takes off before GST, once the visit's price is known. */
+      /** "TENOFF, Rs. 1,234 off": what it takes off before GST, once the visit's price is known. */
       applied: (code: string, off: string | null) => (off === null ? code : `${code}, ${off} off`),
       givenBy: { client: "by the client", technician: "by the technician", ops: "by ops" } as Readonly<
         Record<string, string>
@@ -213,7 +213,7 @@ export const clients = {
     /** A booking that refunded its payment by itself, which no board draws. The client is told. */
     autoRefunds: {
       title: "Refunded bookings",
-      /** "Service visit, 24 Sep 2027 · Rs. 2,000". */
+      /** "Service visit, 24 Sep 2027 · Rs. 1,234". */
       what: (visit: string, date: string, amount: string | null) =>
         amount === null ? `${visit}, ${date}` : `${visit}, ${date} · ${amount}`,
       /** "Refunded automatically on 22 Sep 2027: paid after the hold lapsed." */
@@ -320,7 +320,7 @@ export const clients = {
       otherDestination: "payment method",
       free: "Free cancellation",
       clientTerms: "Late terms",
-      /** "Free to the client: Rs. 2,000 goes back to their UPI." */
+      /** "Free to the client: Rs. 1,234 goes back to their UPI." */
       terms: (which: string, gives: string) => `${which}: ${gives}`,
       gives: {
         refund: (amount: string, to: string) => `${amount} refunded to their ${to}.`,
@@ -333,7 +333,7 @@ export const clients = {
       reason: "Reason",
       confirm: "Confirm cancellation",
       cancelling: "Cancelling…",
-      /** "Cancelled. Rs. 2,000 goes back to their UPI." */
+      /** "Cancelled. Rs. 1,234 goes back to their UPI." */
       done: (gives: string) => `Cancelled. ${gives.charAt(0).toUpperCase()}${gives.slice(1)}`,
       termsChanged: "The free-change period has ended. Check the refund and try again.",
       errors: {
@@ -427,11 +427,11 @@ export const clients = {
       Record<string, string>
     >,
     reference: (reference: string) => `Ref ${reference}`,
-    /** What a late change or a no-show's charge kept of the payment: "Rs. 2,000 kept, cancelled late". */
+    /** What a late change or a no-show's charge kept of the payment: "Rs. 1,234 kept, cancelled late". */
     kept: (amount: string, why: string) => `${amount} kept, ${why}`,
     keptFor: { cancelled: "cancelled late", moved: "moved late", no_show: "not home" },
     // A discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
-    /** "Code AUDTEST, Rs. 1,000 off", beneath what the payment was for. */
+    /** "Code AUDTEST, Rs. 100 off", beneath what the payment was for. */
     code: (applied: string) => `Code ${applied}`,
     /** A payment refunded by ops, with why: one made twice (docs/decisions/0192-free-remakes.md). */
     refundOpen: "Refund",

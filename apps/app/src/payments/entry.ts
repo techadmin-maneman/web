@@ -52,7 +52,7 @@ export function entryMeta(entry: Entry, thisYear: number): string {
   return method === null ? date : `${date} · ${method}`;
 }
 
-/** The main figure: what was paid, GST included, or for a refund the money coming back, "+ Rs. 30,000". */
+/** The main figure: what was paid, GST included, or for a refund the money coming back, "+ Rs. 1,000". */
 export const entryAmount = (entry: Entry) =>
   entry.kind === "refund" ? payments.moneyBack(rupees(entry.amount)) : rupees(entry.amount);
 

@@ -36,7 +36,7 @@ export interface Priced {
   readonly prices: readonly Price[];
 }
 
-/** "Rs. 2,000 + 18% GST". */
+/** "Rs. 1,234 + 18% GST". */
 export const priceWords = (price: { amount_ex_gst: number; gst_percent: number }) =>
   copy.price(rupees(price.amount_ex_gst), price.gst_percent);
 

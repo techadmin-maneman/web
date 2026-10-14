@@ -92,7 +92,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 
 **Before it:**
 
-- [ ] The home page's material in `site/src/assets`, each block `publish: true` (items 73 to 81), and the production build looked at (`docs/frontend.md`, "Going live in production").
+- [ ] The home page's material in `site/src/assets`, each block `publish: true` (items 73 to 81), and the production build looked at (`docs/site.md`, "Going live in production").
 - [ ] Counsel's wording of the privacy page and the terms (items 44 and 149), and the try-on's notices approved (item 146): production's site build refuses `photo-v4` and `gate-v4` until they are (ADR 0104).
 - [ ] The Grievance Officer on the privacy page (item 51).
 - [ ] The analytics IDs, and the consent banner they need (item 84).
@@ -105,7 +105,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
   2. **Rules → Redirect Rules → Create rule,** named "www to maneman.in": when the request URL matches the wildcard pattern `https://www.maneman.in/*`, redirect to `https://maneman.in/${1}` with status **301** and **Preserve query string** on.
   3. **Check:** `curl -sI "https://www.maneman.in/book?from=www"` answers `301` with `location: https://maneman.in/book?from=www`, and `curl -sL -o /dev/null -w "%{url_effective}\n" http://www.maneman.in/` prints `https://maneman.in/` once Always Use HTTPS is on.
 
-**The code**, in one pull request through CI and staging: production's `assets.directory` in `site/wrangler.jsonc` pointed at `./dist/production`, a production site build before "Deploy mm-site" in `deploy-production.yml` (`docs/frontend.md`, steps 4 and 5), and the analytics IDs.
+**The code**, in one pull request through CI and staging: production's `assets.directory` in `site/wrangler.jsonc` pointed at `./dist/production`, a production site build before "Deploy mm-site" in `deploy-production.yml` (`docs/site.md`, steps 4 and 5), and the analytics IDs.
 
 **The release:**
 

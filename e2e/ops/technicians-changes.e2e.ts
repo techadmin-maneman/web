@@ -140,7 +140,7 @@ test("moves a technician to another city, or to none", async ({ page }) => {
   expect((await sent).postDataJSON()).toEqual({ city: null });
 });
 
-test("switches a technician off only once asked, and lists the visits he no longer holds", async ({ page }) => {
+test("switches a technician off only once asked, and lists the visits they no longer hold", async ({ page }) => {
   const { roster, reply } = rosterOf(TECHNICIANS);
   await openWith(page, { [SWITCH_OFF]: json(SWITCHED_OFF) }, reply);
   const main = await pageOf(page, "Imran Qureshi");
@@ -213,7 +213,7 @@ test("lists the technicians switched off apart, and switches one back on", async
   await expect(page.getByRole("row").filter({ hasText: "Ravi Kumar" })).toBeVisible();
 });
 
-test("says so when the number he signs in with is another's now", async ({ page }) => {
+test("says so when the number they sign in with is another's now", async ({ page }) => {
   await openWith(page, { [SWITCH_ON]: fails(409, "number_in_use") }, json({ ...TECHNICIANS, switched_off: [RAVI] }));
   const main = await pageOf(page, "Ravi Kumar");
   await main.getByRole("button", { name: "Switch Ravi Kumar back on" }).click();

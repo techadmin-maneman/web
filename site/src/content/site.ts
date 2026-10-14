@@ -3,7 +3,7 @@
 // (docs/decisions/0103-the-home-pages-first-copy-round.md).
 // Components hold no copy of their own.
 //
-// Some entries need care before production (docs/frontend.md):
+// Some entries need care before production (docs/site.md):
 //
 // - Placeholder blocks carry `publish`. They hold the design's placeholder
 //   material and render in staging with the design's "Placeholder" tag. In

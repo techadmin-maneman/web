@@ -118,7 +118,7 @@ export const booking = {
       label: "Discount code",
       apply: "Apply",
       applying: "Applying",
-      /** "Code TENOFF: Rs. 236 off", beneath the price: what it takes off the price shown, GST included. */
+      /** "Code TENOFF: Rs. 1,234 off", beneath the price: what it takes off the price shown, GST included. */
       applied: (code: string, off: string) => `Code ${code}: ${off} off`,
       remove: "Remove code",
       removing: "Removing",

@@ -27,7 +27,7 @@ export const payments = {
   // The design draws no discount code on a payment (docs/decisions/0108-discount-codes.md).
   discount: {
     label: "Discount code",
-    /** "AUDTEST: Rs. 1,000 off", before GST; the code alone where what it took off is not known. */
+    /** "AUDTEST: Rs. 100 off", before GST; the code alone where what it took off is not known. */
     fact: (code: string, off: string | null) => (off === null ? code : `${code}: ${off} off`),
   },
   /** No board draws it. A one visit's payment still owed, above the payments made. */

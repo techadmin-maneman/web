@@ -6,7 +6,7 @@
 // Nothing is chosen for the technician. The board draws Done already chosen,
 // in gold beside a gold Next, which let a gloved tap close a job they had not
 // finished; here both are outlined until they pick, and Next stays dim until they
-// has (ADR 0025, "The technician boards").
+// have (ADR 0025, "The technician boards").
 //
 // The duration runs from Start job to here, and the technician never types a
 // time: the phone records the instant this screen's action was taken

@@ -43,7 +43,7 @@ function Title({ person }: { person: NoShowDispute["person"] }) {
   );
 }
 
-/** "The charge kept Rs. 4,000, for the visit of Sat 19 Sep", or the credit it spent. */
+/** "The charge kept Rs. 1,000, for the visit of Sat 19 Sep", or the credit it spent. */
 function tookOf(each: NoShowDispute): string {
   const what = each.kept > 0 ? rupees(each.kept) : copy.credit;
   const day = each.window_start === null ? noShows.queue.noDay : shortDate(indiaDate(each.window_start));

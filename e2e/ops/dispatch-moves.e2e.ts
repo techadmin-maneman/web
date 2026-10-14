@@ -278,11 +278,11 @@ test("asks why before a move onto a blacked-out day, and sends the reason with i
   await expect(picker).toContainText("Sat 20 Sep is a closed day.");
   await reason(page, "Client asked");
   await expect(picker.getByRole("button", { name: opsCopy.dispatch.move.send })).toBeDisabled();
-  await picker.getByLabel("Reason").fill("His only free day before he travels");
+  await picker.getByLabel("Reason").fill("Their only free day before they travel");
   await press(page, "Move and notify");
 
   await expect(page.getByRole("status")).toContainText("Moved. Rohit M. is told on WhatsApp.");
-  expect(sent).toEqual([expect.objectContaining({ blackout_reason: "His only free day before he travels" })]);
+  expect(sent).toEqual([expect.objectContaining({ blackout_reason: "Their only free day before they travel" })]);
 });
 
 test("assigns a tray job through the assign route, with no technician expected", async ({ page }) => {

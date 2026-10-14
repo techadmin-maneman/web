@@ -399,7 +399,7 @@ export const notHome = {
     no: "Not yet",
   },
   appears: {
-    // The board writes "He appears".
+    // The board's "appears" screen, which names the client, not a pronoun.
     title: "Client’s here",
     atTheDoor: (who: string) => `${who} is at the door`,
     body: "The timer stops. Nothing is charged.",

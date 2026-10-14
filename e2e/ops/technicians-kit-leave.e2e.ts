@@ -23,7 +23,7 @@ const INK = "rgb(22, 35, 58)";
 
 // ---- Their kit -------------------------------------------------------------------------------------------------
 
-test("lists what his kit holds, marking what is low, with the way to Stock", async ({ page }) => {
+test("lists what their kit holds, marking what is low, with the way to Stock", async ({ page }) => {
   const kit = {
     ...STOCK,
     holdings: [
@@ -51,7 +51,7 @@ test("lists what his kit holds, marking what is low, with the way to Stock", asy
   await expect(main.getByRole("link", { name: opsCopy.technicians.kit.stock })).toHaveAttribute("href", "/stock");
 });
 
-test("says so when his kit holds nothing on record", async ({ page }) => {
+test("says so when their kit holds nothing on record", async ({ page }) => {
   await open(page, { [READ_STOCK]: json({ ...STOCK, holdings: [] }) });
   const main = await pageOf(page, "Faizan Ali", "Kit");
   await expect(main.getByText(opsCopy.technicians.kit.none)).toBeVisible();
@@ -144,7 +144,7 @@ test("says so when the dates do not make a period, and records nothing", async (
 });
 
 // Taking leave back put a technician into the booking pool at once, with no check, unlike every other change.
-test("takes leave back only once asked, saying he can be booked on those days again", async ({ page }) => {
+test("takes leave back only once asked, saying they can be booked on those days again", async ({ page }) => {
   await open(page);
   const main = await pageOf(page, "Sandeep Yadav", "Leave");
   const posted: string[] = [];

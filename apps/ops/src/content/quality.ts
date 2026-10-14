@@ -43,7 +43,7 @@ export const quality = {
   /** "12.5%", or a dash */
   rate: (percent: number | null) => (percent === null ? "—" : `${String(percent)}%`),
   risk: "Value at risk",
-  /** "Rs. 3,350 will expire before it is used." */
+  /** "Rs. 1,234 will expire before it is used." */
   riskTotal: (value: string) => `${value} will expire before it is used.`,
   noRisk: "Everything held will be used before it expires.",
   riskColumns: ["Place", "Item", "Lot", "Expires", "Left over", "Value", "Do"],

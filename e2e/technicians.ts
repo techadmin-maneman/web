@@ -23,7 +23,7 @@ const everyId = Object.values(E2E_TECHNICIANS)
  * have seeded it before. It also retires what earlier runs left: every other
  * technician an e2e seed ever added, and the seeded visits still ahead with
  * this one or with those, whose tests are long over and which would otherwise
- * fill his days and every local list of what is coming.
+ * fill their days and every local list of what is coming.
  */
 export function technicianFor(seed: Seed, now: string): string[] {
   const { id, fsmId } = E2E_TECHNICIANS[seed];

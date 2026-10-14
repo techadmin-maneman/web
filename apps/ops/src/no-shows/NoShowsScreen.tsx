@@ -206,7 +206,7 @@ type Ruling =
   | { readonly step: "sending" }
   | { readonly step: "failed"; readonly code: string };
 
-/** What charging keeps of what was paid and what it refunds, as one question: "Keep Rs. 2,000 of the Rs. 2,000 paid?" */
+/** What charging keeps of what was paid and what it refunds, as one question: "Keep Rs. 1,234 of the Rs. 1,234 paid?" */
 function chargeQuestion(preview: ChargePreview): string {
   const confirm = copy.confirm;
   const { paid, kept } = preview;

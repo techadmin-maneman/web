@@ -315,7 +315,7 @@ All calls are same-origin to `/api/*`. The contract is `docs/api.md` and the Ope
 - Playwright and Lighthouse CI configuration.
 - ADRs.
 - `docs/feature-inventory.md`, every item ticked with its evidence.
-- `docs/frontend.md`, covering how to edit content, how to publish a placeholder block once real material exists, and how to change a preset label.
+- `docs/site.md`, covering how to edit content, how to publish a placeholder block once real material exists, and how to change a preset label.
 
 ## Out of scope
 

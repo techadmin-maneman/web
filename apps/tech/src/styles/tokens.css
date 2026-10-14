@@ -7,6 +7,7 @@
   --tech-row: 88px; /* a job row, a checklist line */
   --tech-stepper: var(--btn-lg); /* a stepper's square, and the buttons that are not the primary one */
   --tech-min: var(--sp-48); /* nothing under this: the initials chip, Retry */
+  --copy-target: var(--tech-min); /* an error's reference, copied (packages/ui/error-ref.module.css) */
   --tech-time: 76px; /* the time column down the left of a job row, "12:30 pm" on one line */
   --tech-mark: var(--sp-28); /* the mark at the head of Today */
   --tech-box: var(--sp-36); /* a checklist item's box */

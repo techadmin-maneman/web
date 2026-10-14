@@ -201,7 +201,7 @@ export const tasks = {
     // "Can't fit today" in the technician app: no piece of the client's spec to fit.
     noPiece: "No piece to fit",
     no_show_decision: (technician: string) => `${technician} attended`,
-    /** "Disputes the charge that kept Rs. 2,000", or the free service visit it spent. */
+    /** "Disputes the charge that kept Rs. 1,234", or the free service visit it spent. */
     no_show_dispute: (took: string) => `Disputes a charge: ${took}`,
     disputedCredit: "a free service visit",
     /** "Waiting since 21 Sep, 9:12 pm": the client's last message, unanswered past its reply-by time. */
@@ -217,13 +217,13 @@ export const tasks = {
     // The client cannot open the invoice until somebody sends it in Books.
     draft_invoice: (visit: string) => `Visit of ${visit} · draft in Books`,
     /**
-     * "Mane Man Natural, Rs. 45,000; link sent": a one visit's client was fitted and has not paid. A
+     * "Mane Man Natural, Rs. 12,345; link sent": a one visit's client was fitted and has not paid. A
      * link not sent yet is asked of Razorpay again by the cron; one Razorpay refused, or closed unpaid, is sent again
      * from the row or from Razorpay's dashboard (ADR 0105).
      */
     payment_owed: (product: string, amount: string, link: LinkState) =>
       `${product}, ${amount} · ${PAYMENT_LINK_STATES[link]}`,
-    /** "Rs. 2,000 owed back on pay_Q1x; Razorpay refused the refund": refunded from Razorpay's dashboard. */
+    /** "Rs. 1,234 owed back on pay_Q1x; Razorpay refused the refund": refunded from Razorpay's dashboard. */
     payment_to_refund: (amount: string, payment: string, why: string) =>
       `${amount} to refund on ${payment} · ${why === "refund_failed" ? "refund failed" : "refund refused"}`,
     // A held grant whose fraud signals were not recorded.

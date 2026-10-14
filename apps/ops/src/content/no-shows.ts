@@ -210,7 +210,7 @@ export const noShows = {
     /** The board's own label. */
     label: "Disputed charge",
     /**
-     * The board heads the card "Vikram Sethi says he was home", its
+     * The board heads the card "Vikram Sethi says they were home", its
      * summary of the client's words. Their words stand beneath, as they wrote them.
      */
     title: "disputes the charge",

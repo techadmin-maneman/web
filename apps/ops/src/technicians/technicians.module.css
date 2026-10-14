@@ -1,7 +1,7 @@
 /*
  * The roster, across the page's width: one 34 px row a technician, in
  * the board's own columns, with Leave where it draws Skill. A technician's own
- * page puts his details over his tabs, as a client's page does. A revoke stays
+ * page puts their details over their tabs, as a client's page does. A revoke stays
  * quiet until it is asked for, since it ends a session and makes the phone drop
  * its cached jobs.
  */
@@ -9,7 +9,7 @@
 /* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
 :root {
   --local-city: 96px; /* and the city beside it */
-  --local-jobs: 64px; /* the jobs he has finished, right aligned as every column of figures is */
+  --local-jobs: 64px; /* the jobs they have finished, right aligned as every column of figures is */
   --local-service: 88px; /* and how they ran against the length they were planned for */
 }
 
@@ -142,7 +142,7 @@
   color: var(--text-muted);
 }
 
-/* ---- A technician's page: his details, then a tab at a time -------------- */
+/* ---- A technician's page: their details, then a tab at a time ------------ */
 
 .page {
   display: flex;
@@ -205,7 +205,7 @@
   color: var(--text-muted);
 }
 
-/* ---- His details, in the panel ------------------------------------------- */
+/* ---- Their details, in the panel ----------------------------------------- */
 
 .offNote {
   margin: 0 0 var(--sp-8);
@@ -418,7 +418,7 @@
   color: var(--text-muted);
 }
 
-/* ---- His kit, as the stock ledger counts it ------------------------------ */
+/* ---- Their kit, as the stock ledger counts it ---------------------------- */
 
 .kit {
   margin-top: var(--sp-12);

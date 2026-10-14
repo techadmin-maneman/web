@@ -1,4 +1,4 @@
-// The production build's gate (docs/frontend.md). A production build stops if
+// The production build's gate (docs/site.md). A production build stops if
 // a published block still holds the design's placeholder material, if a
 // consent notice or a legal page's wording has not been approved, if a price
 // on the site or the landing is typed into its sentence rather than filled
@@ -120,7 +120,7 @@ export function assertPublishable(more: readonly string[] = []): void {
   const problems = [...publishProblems(), ...more];
   if (problems.length > 0) {
     throw new Error(
-      `The production build is blocked (docs/frontend.md):\n${problems.map((problem) => `  - ${problem}`).join("\n")}`,
+      `The production build is blocked (docs/site.md):\n${problems.map((problem) => `  - ${problem}`).join("\n")}`,
     );
   }
 }

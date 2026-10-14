@@ -149,7 +149,7 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
 });
 
 // A technician ops switch off keeps the work their phone has not sent, for them alone, and the clients' cards go.
-test("keeps a switched-off technician's unsent step, and sends it once he is back on and signs in", async ({
+test("keeps a switched-off technician's unsent step, and sends it once they are back on and sign in", async ({
   page,
   context,
 }) => {

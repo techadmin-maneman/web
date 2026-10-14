@@ -1,4 +1,4 @@
-// Amounts as the apps' designs write them, "Rs. 2,000", with India's grouping
+// Amounts as the apps' designs write them, "Rs. 1,234", with India's grouping
 // ("1,00,000"). The API gives paise; whole rupees drop the paise. The public
 // site's own design wrote "₹2,000", but every surface writes "Rs." (ADR 0025,
 // item 51). This is the one place any
@@ -13,7 +13,7 @@ export function rupeeFigure(paise: number): string {
   return format.format(paise / 100);
 }
 
-/** 200000 → "Rs. 2,000", as every surface writes an amount. */
+/** 200000 → "Rs. 1,234", as every surface writes an amount. */
 export function rupees(paise: number): string {
   return `Rs. ${rupeeFigure(paise)}`;
 }
@@ -23,7 +23,7 @@ export const paiseFromRupees = (typed: string): number => Math.round(Number(type
 
 /**
  * An amount in a supplier's currency, from its smallest unit (docs/decisions/0165-suppliers.md): rupees as every
- * surface writes them, any other currency by its code. 1250 USD → "USD 12.50"; 125000 INR → "Rs. 1,250".
+ * surface writes them, any other currency by its code. 1250 USD → "USD 12.50"; 125000 INR → "Rs. 1,234".
  */
 export function inCurrency(minor: number, currency: string): string {
   return currency === "INR" ? rupees(minor) : `${currency} ${withPaise.format(minor / 100)}`;
