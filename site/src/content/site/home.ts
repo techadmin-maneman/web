@@ -182,7 +182,11 @@ export const comparison = {
     {
       label: "Cost",
       // No figure of anyone else's: the site gives no price, ours or theirs.
-      cells: ["A large one-off cost, often repeated", "Every month, for life", "Quoted free, before anything is fitted"],
+      cells: [
+        "A large one-off cost, often repeated",
+        "Every month, for life",
+        "Quoted free, before anything is fitted",
+      ],
     },
     { label: "Visible result", cells: ["9–12 months", "4–6 months", "The same day"] },
     { label: "Covers advanced loss", cells: [false, false, true] },
