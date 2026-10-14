@@ -25,12 +25,23 @@ The console has two doors, and both run the same erasure, written to `audit_log`
 
    If `crm_erased_at` stays empty, `crm_erasure_error` says why. The sweeper tries 10 times, then alerts, and the alert waits under Tasks' Needs a hand. Once Zoho is back, **Send again** there. To finish it by hand instead, find the record in Zoho by `D1_Person_ID`, blank those fields, then **Mark done** (Customer Care Manage): that records the person as erased in the CRM. If Books will not erase the customer, or the CRM the Contact, after 10 tries, ops are alerted once with what to do by hand.
 
-4. **Delete the chat** with the number in the Mane Man WhatsApp account, if there is one.
+4. **Delete the chat** with the number in the Mane Man WhatsApp account, if there is one, and from the bridge's own store, which keeps every message it carried. In Supabase's SQL editor, with the number's digits and country code and no `+` (`919810000001`):
+
+   ```sql
+   DELETE FROM evolution."MessageUpdate" WHERE "remoteJid" = '<digits>@s.whatsapp.net';
+   DELETE FROM evolution."Message" WHERE "key"->>'remoteJid' = '<digits>@s.whatsapp.net';
+   DELETE FROM evolution."Chat" WHERE "remoteJid" = '<digits>@s.whatsapp.net';
+   DELETE FROM evolution."Contact" WHERE "remoteJid" = '<digits>@s.whatsapp.net';
+   DELETE FROM evolution."IsOnWhatsapp" WHERE "remoteJid" = '<digits>@s.whatsapp.net';
+   ```
+
 5. **Tell the person** it is done, in the chat they asked in.
 
 Someone who used the try-on but never passed the gate never gave a number, and their photo is deleted within the hour anyway.
 
-**Zoho's history.** Blanking the fields may leave the old values in the record's timeline. If the person or legal asks for full removal, delete the record in Zoho, then delete it from the recycle bin as well. D1's lead history is unaffected.
+**Zoho's history.** Blanking the fields leaves the old values in the record's timeline, so every erasure ends in Zoho too: find the record by `D1_Person_ID`, delete it, then delete it from the recycle bin as well. D1's lead history is unaffected.
+
+**What stays a while.** D1's Time Travel keeps the erased rows for 30 days, and the weekly backups, encrypted, for 13 weeks (src/domain/platform/backups.ts). Both lapse by themselves; neither is read but to restore.
 
 **A client's account (Phase 2).** A request from the app waits in the ops console's **Deletion requests**. Check it with the client on their own number first, as in step 1 above: the console asks you to confirm you have, and says what the deletion destroys and what it keeps before it will take it. Processing it runs the same erasure, and also tells the client on WhatsApp that it is done (`deletion_done_v1`), so step 5 is not needed. It is sent once, straight after the erasure; the log's `deletion_done_failed` means it did not arrive, and with the number gone it cannot be sent again. Delete the chat (step 4) after it.
 

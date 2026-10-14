@@ -26,6 +26,7 @@ From the owner's handoff (`Side projects\AILabTool\docs\prompts\youcam-handoff\s
 
 - 2 units a render, for every look; a refused call costs nothing. About $0.055 a unit pay-as-you-go (unconfirmed), so about $0.11 a render.
 - About 15 s a render end to end with 10 s polling: a mean of 14.8 s over 12 renders with the supplied references. Every task had finished by the first 10 s poll.
+- With our own adapter, polling every 2 s and the references served from maneman.in: 8 to 9 s a render end to end, 2 units each, six of six OK for one test photograph (14 October 2026).
 - With the six references, 18 of 18 renders were OK across three test photographs, and the face below the hairline was left essentially untouched. `error_hair_too_short` and `error_bald_image` never came, even for a shaved head.
 
 ## 4. Errors
