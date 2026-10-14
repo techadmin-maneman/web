@@ -348,7 +348,7 @@ export const referral = {
   },
   /**
    * C4's "Code expired" frame. The invite has lapsed for this friend only, which the API can tell once they have
-   * given their number, so the frame shows with the booking's answer rather than before it (ADR 0025, item 40).
+   * given their number, so the frame shows with the booking's answer rather than before it (ADR 0025).
    */
   expired: {
     label: "Code expired",

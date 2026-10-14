@@ -1,6 +1,6 @@
 ---
 // Every page's frame: the head, the fixed header and, on the home page only,
-// the footer and the sticky bottom bar (as v2 shows them). The head carries
+// the footer and the sticky bottom bar. The head carries
 // what search engines and shared links read: the canonical address on
 // production's host, Open Graph and X cards, and any structured data.
 import "../styles/global.css";
@@ -16,6 +16,7 @@ import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
 import { FAVICON_SIZES, OG_IMAGE, token } from "../lib/brand-images.ts";
 import { SITE_ORIGIN } from "../lib/site-origin.ts";
 import { jsonLd } from "../lib/structured-data.ts";
+import { pagePath } from "../lib/page-path.ts";
 import serif400 from "../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2?url";
 import sans400 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-400-normal.woff2?url";
 import sans500 from "../../../node_modules/@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff2?url";
@@ -44,8 +45,7 @@ const {
   structuredData = [],
   image = { path: "/og.png", type: "image/png" },
 } = Astro.props;
-// /try is built as try.html; its address has no extension.
-const path = Astro.url.pathname.replace(/(index)?\.html$/, "").replace(/(.)\/$/, "$1");
+const path = pagePath(Astro.url.pathname);
 const canonical = new URL(path, SITE_ORIGIN).href;
 const ogImage = new URL(image.path, SITE_ORIGIN).href;
 ---

@@ -1,6 +1,6 @@
 ---
 // The Norwood scale: stages I–II (nothing to fit) and III–VII (we fit). The
-// photographs are placeholders; content can switch to v2's line drawings.
+// photographs are placeholders; content can switch to the design's line drawings.
 import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
 import { norwood, norwoodPhotos, placeholderTag, type NorwoodStage } from "../../content/site.ts";
@@ -110,7 +110,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
   }
   /*
    * Both groups on one grid of equal columns, so the two stages we do not fit are drawn no larger than the five we
-   * do. v2 centres the late row; here both start at the left edge, by request.
+   * do. Both rows start at the left edge.
    */
   .early,
   .flow {

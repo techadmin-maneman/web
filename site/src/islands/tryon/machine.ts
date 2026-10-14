@@ -67,7 +67,7 @@ export function screenNamed(name: string | null): Screen | undefined {
   return SCREENS.find((screen) => screen === name);
 }
 
-/** v2's back control: upload → home, error → upload, gate → looks, else the previous screen; once sent, home. */
+/** The back control: upload → home, error → upload, gate → looks, else the previous screen; once sent, home. */
 export function backFrom(screen: Screen): Screen | "home" {
   switch (screen) {
     case "upload":

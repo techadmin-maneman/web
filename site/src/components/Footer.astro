@@ -1,6 +1,7 @@
 ---
-// The footer, on the home page only (as v2). The wordmark here is 132 px wide,
-// so it is the display cut (design/brand/README.md); v2 drew the small cut.
+// The footer, on the home page only. The wordmark here is 132 px wide, so it is the display cut
+// (design/brand/README.md).
+import { WORDMARK } from "@maneman/brand/marks";
 import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { areasPage, guides, guidesPage } from "../content/guides.ts";
@@ -26,7 +27,7 @@ const more = [
           <use href="#mm"></use>
         </svg>
         <svg class="word" viewBox="-4 -4 741 108" width="132" height="19" role="img" aria-label={business.name}>
-          <use href="#wm"></use>
+          <path d={WORDMARK.d}></path>
         </svg>
       </div>
       <div class="columns">

@@ -1,5 +1,5 @@
 // The design's placeholder material, frozen: the names, quotes, numbers and
-// photographs in v2 that stand in for real ones. Never edit this list to let
+// photographs in the design that stand in for real ones. Never edit this list to let
 // a build through. Replace the material in site.ts instead.
 //
 // The publish gate (src/lib/publish-gate.ts) stops a production build when a

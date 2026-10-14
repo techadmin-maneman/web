@@ -179,6 +179,19 @@
   max-width: var(--oval-max);
   margin: auto 0;
 }
+
+/* The guide the photo is framed to: a dashed oval, the corners in gilt, and its line beneath. */
+.ovalGuide {
+  stroke: var(--ink-line);
+}
+
+.ovalCorners {
+  stroke: var(--gilt);
+}
+
+.ovalLabel {
+  fill: var(--ink-muted);
+}
 /* Below the oval's corner brackets, never across them. */
 .previewCaption {
   align-self: stretch;
@@ -416,7 +429,7 @@
   max-width: var(--measure-error);
   text-wrap: pretty;
 }
-/* The sent screen's words on what the look is, as v2's result screen boxed its disclaimer. */
+/* The sent screen's words on what the look is, boxed as a disclaimer. */
 .disclaimer {
   margin-top: var(--sp-24);
   border: var(--hairline) solid var(--ink-line);

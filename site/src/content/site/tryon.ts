@@ -89,9 +89,8 @@ export function gateCopy(gate: Notice) {
 
 /**
  * The try-on's screens. The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so
- * v2's processing and result screens are gone, the gate asks for the number before the look is made, and the sent
- * and unavailable screens, which v2 does not draw, are ADR 0104's words
- * (docs/open-points.md, item 163).
+ * the gate asks for the number before the look is made, and the sent and unavailable screens, which the design does
+ * not draw, are ADR 0104's words.
  */
 export const tryOn = {
   back: "Back",
@@ -183,7 +182,7 @@ export const tryOn = {
   error: {
     another: "Choose another",
     book: "Book a consultation instead",
-    /** By ErrorKind (lib/tryon-errors.ts). v2's labels, heading and body are the photograph's. */
+    /** By ErrorKind (lib/tryon-errors.ts). The design's labels, heading and body are the photograph's. */
     kinds: {
       photo: {
         step: "Cannot use this photograph",

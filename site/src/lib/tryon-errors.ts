@@ -1,5 +1,5 @@
 // What the try-on's error screen says for each way the API can refuse or a
-// render can fail. v2's heading and body are for a photograph that cannot be
+// render can fail. The design's heading and body are for a photograph that cannot be
 // read; the others replace only those two (ADR 0022). Where YouCam names what
 // is wrong with the photograph, the screen says that instead (failure_reason,
 // docs/reference/youcam-api-notes.md). A browser that has had its look is not

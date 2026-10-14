@@ -42,7 +42,7 @@ function stringsIn(value: unknown): string[] {
 
 /**
  * "Rs." or a rupee sign before a digit: a price written into a sentence, where the price book should fill a hole.
- * The site writes "Rs." (ADR 0025, item 51); the sign is what it wrote before.
+ * The site writes "Rs." (ADR 0025); the rupee sign, which it wrote before, is caught too.
  */
 const TYPED_PRICE = /(?:Rs\.|₹)\s?\d/;
 

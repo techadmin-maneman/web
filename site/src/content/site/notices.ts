@@ -12,7 +12,7 @@ export interface Notice {
 
 /**
  * The versions approved word for word: the try-on's three, and the consents, the landing's among them, by counsel
- * (ADR 0025, item 25).
+ * (ADR 0025).
  */
 const APPROVED_NOTICES: readonly string[] = [
   "photo-v1",
@@ -35,7 +35,7 @@ function notice(version: string): Notice {
 /**
  * Every notice the site shows, which the production build refuses unless each is approved. The try-on's two say its
  * look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), and every build shows them,
- * so production's build waits for counsel to approve them (docs/open-points.md, item 146).
+ * so production's build waits for counsel to approve them.
  */
 export const notices = {
   /** The try-on consent screen. */

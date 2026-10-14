@@ -32,7 +32,7 @@ const structuredData = [
 <Site title={pageTitles.home} description={pageDescriptions.home} structuredData={structuredData} home>
   <Fragment slot="head">
     <script is:inline>
-      // v2 routed with #tryon and #book, and ads already link to them.
+      // Ads link to #tryon and #book, so both still lead where they did.
       if (location.hash === "#tryon") location.replace("/try");
       else if (location.hash === "#book") location.replace("/book");
     </script>

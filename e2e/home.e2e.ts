@@ -23,6 +23,15 @@ test.describe("header", () => {
     await expect(header.getByRole("link", { name: "Book a consultation" })).toHaveAttribute("href", "/book");
   });
 
+  // The built pages are book.html and r.html, whose addresses the rule never matched, so both offered themselves.
+  test("offers no Book a consultation on the booking pages themselves", async ({ page }) => {
+    for (const path of ["/book", "/r/RM4K7P"]) {
+      await page.goto(path);
+      await expect(page.locator("header").getByRole("link", { name: siteCopy.header.homeLabel })).toBeVisible();
+      await expect(page.locator("header").getByRole("link", { name: siteCopy.header.book }), path).toHaveCount(0);
+    }
+  });
+
   test("hides the section links and the area tag below 760 px, with no menu button", async ({ page }) => {
     await page.goto("/");
     const links = page.locator("header").getByRole("link", { name: siteCopy.range.title });

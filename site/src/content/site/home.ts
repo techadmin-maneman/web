@@ -62,7 +62,7 @@ export const hero = {
   body: "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",
   tryOn: "Try a new look",
   book: "Book a free consultation",
-  // Not in v2: the footage loops, so it can be stopped (WCAG 2.2.2).
+  // The footage loops, so it can be stopped (WCAG 2.2.2).
   pause: "Pause the film",
   play: "Play the film",
 };
@@ -78,7 +78,7 @@ export interface NorwoodStage {
   readonly name: string;
   readonly tag: string;
   readonly description: string;
-  /** The line drawing's bald region (v2's _nwOld), used when norwoodPhotos.use is "drawings". */
+  /** The line drawing's bald region (the design's _nwOld), used when norwoodPhotos.use is "drawings". */
   readonly bald: string;
 }
 

@@ -64,7 +64,31 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
         {props.photo === null ? (
           <>
             <svg viewBox="0 0 320 400" class={styles.oval} aria-hidden="true">
-              <use href="#oval" />
+              <path
+                d="M160 92 C196 92 218 126 218 178 C218 232 194 268 160 274 C126 268 102 232 102 178 C102 126 124 92 160 92 Z"
+                class={styles.ovalGuide}
+                fill="none"
+                stroke-width="1.6"
+                stroke-dasharray="6 6"
+              />
+              <path
+                d="M30 30 H66 M30 30 V66 M290 30 H254 M290 30 V66 M30 370 H66 M30 370 V334 M290 370 H254 M290 370 V334"
+                class={styles.ovalCorners}
+                fill="none"
+                stroke-width="2"
+              />
+              <text
+                x="160"
+                y="332"
+                class={styles.ovalLabel}
+                font-family="EB Garamond, serif"
+                font-size="15"
+                letter-spacing="1.8"
+                text-anchor="middle"
+                font-variant="small-caps"
+              >
+                {tryOn.upload.oval}
+              </text>
             </svg>
             <div class={styles.previewCaption}>{tryOn.upload.previewCaption}</div>
           </>

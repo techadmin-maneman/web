@@ -49,7 +49,7 @@ export function ForPincode(props: { text: string; onChange: () => void }) {
 }
 
 /**
- * Where the hair loss is, as the site's own form has always asked (v2's booking board). Nothing is chosen until the
+ * Where the hair loss is, as the design's booking board asks. Nothing is chosen until the
  * visitor chooses, and a visitor who skips it is recorded as not saying. An invited friend is never asked: their
  * invite carries no such question.
  */

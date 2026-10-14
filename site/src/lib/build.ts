@@ -8,7 +8,7 @@ declare const __MM_ENV__: SiteEnvironment;
 export const ENVIRONMENT: SiteEnvironment = __MM_ENV__;
 export const IS_PRODUCTION = ENVIRONMENT === "production";
 
-/** The design's "Placeholder" tags (v2's showPlaceholderTags): on everywhere but production. */
+/** The design's "Placeholder" tags (its showPlaceholderTags): on everywhere but production. */
 export const SHOW_PLACEHOLDER_TAGS = !IS_PRODUCTION;
 
 /** Placeholder material shows everywhere but production, where only published blocks do. */

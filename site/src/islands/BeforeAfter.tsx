@@ -17,7 +17,7 @@ interface Props {
   /** The two images, named slots from the Astro page. */
   before?: ComponentChildren;
   after?: ComponentChildren;
-  /** Where the handle starts, as v2's teaser draws it. */
+  /** Where the handle starts, as the design's teaser draws it. */
   start: number;
   beforeLabel: string;
   afterLabel: string;

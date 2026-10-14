@@ -1,14 +1,12 @@
 ---
-// The fixed header. Below 760 px the section links and the area tag hide; v2
-// has no menu button there, so there is none.
+// The fixed header. Below 760 px the section links and the area tag hide, and the design draws no menu button.
 import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { buttonLook } from "@maneman/ui/Button";
 import { header } from "../content/site.ts";
+import { isBookingPage, pagePath } from "../lib/page-path.ts";
 
-// A page that is itself the booking form offers no button to it.
-const path = Astro.url.pathname.replace(/\/+$/, "");
-const booking = path === "/book" || path.startsWith("/r/") || path === "/r";
+const booking = isBookingPage(pagePath(Astro.url.pathname));
 ---
 
 <div class="space" aria-hidden="true"></div>

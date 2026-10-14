@@ -22,7 +22,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  /* The teaser's pair fills its band, as v2 draws it. */
+  /* The teaser's pair fills its band. */
   object-fit: cover;
 }
 .before {
