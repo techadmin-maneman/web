@@ -201,8 +201,6 @@ test("says what ops set each side gets, and promises the friend nothing ops do n
   reward.friend_visits = 0;
   await page.reload();
   await expect(page.getByText("Get fitted and your friend gets 3 service visits free.")).toBeVisible();
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
-  await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText("Rohit is told when you are fitted.", { exact: true })).toBeVisible();
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
@@ -416,13 +414,14 @@ test("a window found full says so, and the form stays", async ({ page }) => {
 // positioned, and without a positioned parent it is placed against the document and widens it.
 test("the page does not scroll sideways, whatever the pincode says", async ({ page }) => {
   await mockApi(page);
+  await visit(page, `/r/${CODE}`);
   for (const pincode of [SERVED.pincode, UNSERVED.pincode]) {
-    await visit(page, `/r/${CODE}`);
     await page.getByLabel("Pincode").fill(pincode);
     await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
     await expect(page.getByRole("button", { name: /Book the consultation|Add me to the list/ })).toBeVisible();
     const width = page.viewportSize()?.width ?? 0;
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await page.getByRole("button", { name: referralCopy.referral.pincode.changeLabel }).click();
   }
 });
 

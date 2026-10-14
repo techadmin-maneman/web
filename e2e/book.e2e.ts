@@ -267,6 +267,36 @@ test("Change returns to the name and number as typed, and the same again is not 
   expect(leads).toHaveLength(2);
 });
 
+// A reload on any step after the first opened the name and number again, empty, with the history still past them.
+test("a reload resumes the step it was on, the name and number kept, and Back still steps back", async ({ page }) => {
+  await mockApi(page);
+  const leads = await leadCalls(page);
+  await openAtPincode(page);
+
+  await page.reload();
+  await expect(page.getByText("For Test Visitor, +91 98100 00000")).toBeVisible();
+  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await checkPincode(page, SERVED.pincode);
+  await expect(page.getByText("Step 3 of 4 · Your visit")).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText("Step 3 of 4 · Your visit")).toBeVisible();
+  await expect(page.getByText("For Test Visitor, +91 98100 00000")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await page.goBack();
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
+  expect(leads).toHaveLength(1);
+
+  await page.goForward();
+  await page.goForward();
+  await continueAndBook(page);
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Step 1 of 4 · You")).toBeVisible();
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("");
+});
+
 // The field kept the first ten digits, so "+91 98765 43210" was booked as 91987 65432, someone else's number.
 test("a number with +91, 91, 0 or 0091 in front books its own ten digits, pasted or typed", async ({ page }) => {
   const requests = await mockApi(page);
@@ -584,7 +614,8 @@ test("says nothing about an invite to someone who came here directly", async ({ 
   await expect(page.getByText(referralCopy.referral.consultation.body)).toHaveCount(0);
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 
-  await openWaitlist(page);
+  await page.getByRole("button", { name: referralCopy.referral.pincode.changeLabel }).click();
+  await checkPincode(page, UNSERVED.pincode);
   await expect(page.getByRole("button", { name: referralCopy.referral.waitlist.submit })).toBeVisible();
   // Where we do not come yet, the page no longer offers to book.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.booking.titleWaitlist);

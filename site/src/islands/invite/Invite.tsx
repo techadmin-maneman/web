@@ -38,7 +38,7 @@ import { AboutYou, BOOK_STEPS } from "./AboutYou.tsx";
 import { Consultation, type Plan } from "./Consultation.tsx";
 import { Booked, Listed, type Booking, type Listing } from "./Done.tsx";
 import { BookingFor, StepLine } from "./fields.tsx";
-import { currentStep, onStepChange, pushStep, startAtTheStart } from "./history.ts";
+import { currentStep, keepForReload, pushStep } from "./history.ts";
 import { HowItWorks } from "./HowItWorks.tsx";
 import styles from "./Invite.module.css";
 import { codeInPath } from "./page.ts";
@@ -49,7 +49,7 @@ import type { Step } from "./step.ts";
 import { usePincode } from "./usePincode.ts";
 import type { PersonFields } from "./useTurnstileForm.ts";
 import { useLandingData } from "./useLandingData.ts";
-import { useLatest } from "../useLatest.ts";
+import { useStepHistory } from "./useStepHistory.ts";
 import { Waitlist } from "./Waitlist.tsx";
 import { CARD_HEIGHT, CARD_WIDTH } from "@rules/config/referral-cards.ts";
 import { IslandBoundary } from "../IslandBoundary.tsx";
@@ -109,7 +109,6 @@ function InviteForm(props: Props) {
   const [booked, setBooked] = useState<Booking | null>(null);
   const [listed, setListed] = useState<Listing | null>(null);
   const pincode = usePincode();
-  const showAnswer = useLatest(pincode.show);
   const heading = useRef<HTMLHeadingElement>(null);
   const [step, setStep] = useState<Step>("start");
   // On /book, the name and number its first step kept.
@@ -136,28 +135,19 @@ function InviteForm(props: Props) {
     }
   });
 
-  useEffect(() => {
-    startAtTheStart();
-  }, []);
-
-  // Back and Forward move between the page's steps; a confirmation shows again only while this page holds it.
-  useEffect(
-    () =>
-      onStepChange((entry) => {
-        if (entry.step === "done" && booked !== null) {
-          setState("booked");
-          return;
-        }
-        if (entry.step === "done" && listed !== null) {
-          setState("listed");
-          return;
-        }
-        setState("arrival");
-        setStep(entry.step === "done" ? "form" : entry.step);
-        showAnswer.current(entry.answer);
-      }),
-    [booked, listed, showAnswer],
-  );
+  useStepHistory(invited, {
+    step: (to, answer) => {
+      setState("arrival");
+      setStep(to);
+      pincode.show(answer);
+    },
+    confirmation: () => {
+      if (booked !== null) setState("booked");
+      else if (listed !== null) setState("listed");
+      return booked !== null || listed !== null;
+    },
+    person: setKept,
+  });
 
   // /book's pincode field takes focus as its step opens, from the name and number or back from the form.
   useEffect(() => {
@@ -184,6 +174,7 @@ function InviteForm(props: Props) {
 
   function keepPerson(fields: PersonFields) {
     setKept(fields);
+    keepForReload(fields);
     pushStep("pincode", null);
     setStep("pincode");
   }
@@ -250,6 +241,7 @@ function InviteForm(props: Props) {
                   onBooked={(result) => {
                     setBooked(result);
                     setListed(null);
+                    keepForReload(null);
                     setState("booked");
                     pushStep("done", answer);
                   }}
@@ -263,6 +255,7 @@ function InviteForm(props: Props) {
                   onListed={(result) => {
                     setListed(result);
                     setBooked(null);
+                    keepForReload(null);
                     setState("listed");
                     pushStep("done", answer);
                   }}
