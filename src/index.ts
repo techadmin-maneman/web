@@ -13,6 +13,8 @@ import { pingHeartbeat } from "./providers/heartbeat.ts";
 import { handleCrmSyncBatch } from "./queues/crm-sync.ts";
 import { handleMessagingBatch } from "./queues/messaging.ts";
 import { handleRenderBatch } from "./queues/render.ts";
+import { handleRazorpayBatch } from "./queues/razorpay.ts";
+import { handleDeadLetters } from "./queues/dead-letters.ts";
 import { CRON_JOBS } from "./scheduled/cron.ts";
 import { runCron } from "./scheduled/cron-runner.ts";
 import { jobsDue, pingsWhenWell } from "./scheduled/schedule.ts";
@@ -115,6 +117,14 @@ const QUEUE_CONSUMERS: readonly {
   {
     prefix: "mm-messaging-",
     consume: (batch, workerEnv, deps, log) => handleMessagingBatch({ batch, db: workerEnv.DB, config, deps, log }),
+  },
+  {
+    prefix: "mm-razorpay-",
+    consume: (batch, workerEnv, deps, log) => handleRazorpayBatch({ batch, env: workerEnv, config, deps, log }),
+  },
+  {
+    prefix: "mm-dead-letters-",
+    consume: (batch, _workerEnv, deps, log) => handleDeadLetters(batch, deps, log),
   },
 ];
 

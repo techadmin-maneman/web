@@ -50,6 +50,17 @@ Every staging deploy also reports mm-api's CPU over the last day in its last ste
 
 **After a deploy that changes the trigger.** Cloudflare attaches the trigger apart from the code (ADR 0010). Until an operator runs `npm run apply-triggers -- --env <env>`, the five-minute trigger fires, and each of its runs runs every job at once, as before, too heavy for the free plan. The deploy's trigger check names the difference.
 
+## A queue gave up
+
+Each queue's consumer tries a message again, later each time, up to the queue's `max_retries` (wrangler.jsonc). One it is still failing then goes to the dead letters (`mm-dead-letters-<env>`), whose consumer tells ops once, as `dead_letter:<what>`, and lets it go (src/queues/dead-letters.ts). The alert says what the message was and what settles it by hand:
+
+- **A Razorpay event** (`dead_letter:razorpay:<event>`): find its payment or refund in Razorpay's dashboard, and settle it from the client's Payments, or book the visit it paid for. The half-hourly catch-up asks Razorpay of every hold still waiting on a payment, so a payment for a hold is usually booked by then.
+- **A WhatsApp message** (`dead_letter:message:<id>`): send it again from Tasks.
+- **A CRM write** (`dead_letter:crm:…`): write the lead, the change or the erasure in the CRM by hand.
+- **A try-on** (`dead_letter:render:<job>`): nothing to settle; the visitor can try again.
+
+Many at once mean the consumer cannot reach D1 or the provider it calls: read `queue_gave_up` and the consumer's `_step_error` lines in the logs.
+
 ## The urgent space
 
 A few alerts need someone within the hour: money taken that nothing booked or gave back (`razorpay_payment_unheard`, `razorpay_refund_unheard`, `razorpay_catch_up_not_booked`, `unbooked_hold`, `second_capture`, `paid_off_its_order`, and the refunds that failed), and a stop to every sign-in or every job (`login_codes_failing`, `whatsapp_bridge`, `cron_run_cut_short`). Each goes to the alert space as usual and, where `URGENT_WEBHOOK_URL` is set (`W secret put URGENT_WEBHOOK_URL --env <env>`), to a phone push as well: an ntfy.sh topic, posted at urgent priority, which sounds through Do Not Disturb. Install the ntfy app and subscribe to the topic named in `URGENT_WEBHOOK_URL` (staging and production hold the same one). A failed staging deploy, a failed production release and a failed hourly watch push to the same topic from GitHub, through the repository secret `URGENT_PUSH_URL`. A Google Chat, Slack or Discord webhook still works in its place. The list is `src/policy/alerts.ts`.
@@ -134,5 +145,6 @@ The chat shows the message; the `alerts` table keeps it under its key. Most aler
 | A technician's phone, or the stock photographs, reached the day's limit of uploads                                                                                   | `photo_uploads:<technician or stock>`                                                                                                          | by hand                                 | [R2 storage growing](cloudflare-plan.md#r2-storage-growing): find what is sending them                                                                                |
 | Photos and referral cards grew by _n_ GB since _day_, more than a day's work makes                                                                                   | `r2_growth:<day>`                                                                                                                              | told once a day                         | [R2 storage growing](cloudflare-plan.md#r2-storage-growing): find what is writing them                                                                                |
 | The cron and the queue consumers have stood still since _time_ for maintenance                                                                                       | `maintenance:<started>`                                                                                                                        | by hand                                 | [Restoring D1](restoring-d1.md): switch maintenance off once the restore is done                                                                                      |
+| A queue gave up on a message after every try                                                                                                                         | `dead_letter:<what>`                                                                                                                           | by hand                                 | [A queue gave up](#a-queue-gave-up): settle what it was by hand                                                                                                       |
 
 ---

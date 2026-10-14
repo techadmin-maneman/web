@@ -241,6 +241,8 @@ export const ALERT_WORDS = {
     `Technician ${a.technician} was refused a login code: ${a.reason}`,
 
   // The system.
+  dead_letter: (a: { readonly what: string; readonly todo: string }) =>
+    `${a.todo} (runbook, "A queue gave up"): ${a.what} was given up on after every try.`,
   login_codes_failing: (a: { readonly failed: number; readonly detail: string }) =>
     `Check the WhatsApp bridge now (runbook, "WhatsApp (Evolution) is down"): ${String(a.failed)} login codes ` +
     `failed to send in the last hour (the latest: ${a.detail}), so nobody can sign in.`,

@@ -25,6 +25,9 @@ const LAST_DELIVERY: Readonly<Record<string, number>> = {
   "crm-sync": MAX_CONTACT_UPDATE_ATTEMPTS,
   render: RENDER_DELIVERIES,
   messaging: MAX_SEND_ATTEMPTS,
+  // Never given up on here: the queue hands the event to the dead letters, which tell ops on their first delivery.
+  razorpay: 1,
+  "dead-letters": 1,
 };
 
 const REDELIVERY_DELAY_SECONDS = 30;

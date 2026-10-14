@@ -46,7 +46,8 @@
     "producers": [
       { "binding": "RENDER_QUEUE", "queue": "mm-render-local" },
       { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-local" },
-      { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" }
+      { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-local" },
+      { "binding": "RAZORPAY_QUEUE", "queue": "mm-razorpay-local" }
     ],
     // crm-sync asks for one batch at a time; Queues does not guarantee it (docs/decisions/0012-zoho-sync.md).
     // Each max_retries leaves room for its consumer's last try (test/node/api/queue-ceilings.test.ts); retry_delay
@@ -58,7 +59,8 @@
         "max_batch_timeout": 5,
         "max_retries": 5,
         "retry_delay": 30,
-        "max_concurrency": 1
+        "max_concurrency": 1,
+        "dead_letter_queue": "mm-dead-letters-local"
       },
       {
         "queue": "mm-render-local",
@@ -67,7 +69,8 @@
         // Polling a render is a delayed retry: the 15 minutes it is followed for (RENDER_GIVE_UP_MS,
         // src/config/pipeline.ts) take about 33 polls, so 100 leaves room to spare.
         "max_retries": 100,
-        "retry_delay": 30
+        "retry_delay": 30,
+        "dead_letter_queue": "mm-dead-letters-local"
       },
       {
         "queue": "mm-messaging-local",
@@ -75,7 +78,25 @@
         "max_batch_timeout": 5,
         "max_retries": 5,
         "retry_delay": 30,
-        "max_concurrency": 1
+        "max_concurrency": 1,
+        "dead_letter_queue": "mm-dead-letters-local"
+      },
+      {
+        // Razorpay's events, applied as the webhook queued them (src/queues/razorpay.ts).
+        "queue": "mm-razorpay-local",
+        "max_batch_size": 5,
+        "max_batch_timeout": 1,
+        "max_retries": 10,
+        "retry_delay": 30,
+        "dead_letter_queue": "mm-dead-letters-local"
+      },
+      {
+        // What every other queue gave up on, each told to ops (src/queues/dead-letters.ts).
+        "queue": "mm-dead-letters-local",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "retry_delay": 30
       }
     ]
   },
@@ -171,7 +192,8 @@
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-staging" },
           { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-staging" },
-          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-staging" }
+          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-staging" },
+          { "binding": "RAZORPAY_QUEUE", "queue": "mm-razorpay-staging" }
         ],
         "consumers": [
           {
@@ -180,7 +202,8 @@
             "max_batch_timeout": 5,
             "max_retries": 5,
             "retry_delay": 30,
-            "max_concurrency": 1
+            "max_concurrency": 1,
+            "dead_letter_queue": "mm-dead-letters-staging"
           },
           {
             "queue": "mm-render-staging",
@@ -189,7 +212,8 @@
             // Polling a render is a delayed retry: the 15 minutes it is followed for (RENDER_GIVE_UP_MS,
             // src/config/pipeline.ts) take about 33 polls, so 100 leaves room to spare.
             "max_retries": 100,
-            "retry_delay": 30
+            "retry_delay": 30,
+            "dead_letter_queue": "mm-dead-letters-staging"
           },
           {
             "queue": "mm-messaging-staging",
@@ -197,7 +221,25 @@
             "max_batch_timeout": 5,
             "max_retries": 5,
             "retry_delay": 30,
-            "max_concurrency": 1
+            "max_concurrency": 1,
+            "dead_letter_queue": "mm-dead-letters-staging"
+          },
+          {
+            // Razorpay's events, applied as the webhook queued them (src/queues/razorpay.ts).
+            "queue": "mm-razorpay-staging",
+            "max_batch_size": 5,
+            "max_batch_timeout": 1,
+            "max_retries": 10,
+            "retry_delay": 30,
+            "dead_letter_queue": "mm-dead-letters-staging"
+          },
+          {
+            // What every other queue gave up on, each told to ops (src/queues/dead-letters.ts).
+            "queue": "mm-dead-letters-staging",
+            "max_batch_size": 10,
+            "max_batch_timeout": 5,
+            "max_retries": 5,
+            "retry_delay": 30
           }
         ]
       },
@@ -293,7 +335,8 @@
         "producers": [
           { "binding": "RENDER_QUEUE", "queue": "mm-render-prod" },
           { "binding": "CRM_QUEUE", "queue": "mm-crm-sync-prod" },
-          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-prod" }
+          { "binding": "MESSAGE_QUEUE", "queue": "mm-messaging-prod" },
+          { "binding": "RAZORPAY_QUEUE", "queue": "mm-razorpay-prod" }
         ],
         "consumers": [
           {
@@ -302,7 +345,8 @@
             "max_batch_timeout": 5,
             "max_retries": 5,
             "retry_delay": 30,
-            "max_concurrency": 1
+            "max_concurrency": 1,
+            "dead_letter_queue": "mm-dead-letters-prod"
           },
           {
             "queue": "mm-render-prod",
@@ -311,7 +355,8 @@
             // Polling a render is a delayed retry: the 15 minutes it is followed for (RENDER_GIVE_UP_MS,
             // src/config/pipeline.ts) take about 33 polls, so 100 leaves room to spare.
             "max_retries": 100,
-            "retry_delay": 30
+            "retry_delay": 30,
+            "dead_letter_queue": "mm-dead-letters-prod"
           },
           {
             "queue": "mm-messaging-prod",
@@ -319,7 +364,25 @@
             "max_batch_timeout": 5,
             "max_retries": 5,
             "retry_delay": 30,
-            "max_concurrency": 1
+            "max_concurrency": 1,
+            "dead_letter_queue": "mm-dead-letters-prod"
+          },
+          {
+            // Razorpay's events, applied as the webhook queued them (src/queues/razorpay.ts).
+            "queue": "mm-razorpay-prod",
+            "max_batch_size": 5,
+            "max_batch_timeout": 1,
+            "max_retries": 10,
+            "retry_delay": 30,
+            "dead_letter_queue": "mm-dead-letters-prod"
+          },
+          {
+            // What every other queue gave up on, each told to ops (src/queues/dead-letters.ts).
+            "queue": "mm-dead-letters-prod",
+            "max_batch_size": 10,
+            "max_batch_timeout": 5,
+            "max_retries": 5,
+            "retry_delay": 30
           }
         ]
       },

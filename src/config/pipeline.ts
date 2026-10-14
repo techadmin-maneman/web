@@ -30,6 +30,10 @@ export const MAX_SEND_ATTEMPTS = 4;
 export const MessagingMessageSchema = z.object({ message_id: z.uuid(), request_id: z.string() });
 export type MessagingMessage = z.infer<typeof MessagingMessageSchema>;
 
+/** A Razorpay event the webhook took, as Razorpay signed it, for its consumer to apply (src/queues/razorpay.ts). */
+export const RazorpayEventMessageSchema = z.object({ event_id: z.string(), request_id: z.string(), body: z.string() });
+export type RazorpayEventMessage = z.infer<typeof RazorpayEventMessageSchema>;
+
 /** After this many failed tries a CRM write stops being retried, and ops are told (docs/decisions/0012-zoho-sync.md). */
 export const MAX_SYNC_ATTEMPTS = 10;
 export const QUICK_RETRY_DELAY_SECONDS = 30;
