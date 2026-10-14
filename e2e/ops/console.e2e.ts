@@ -246,10 +246,26 @@ test("keeps its frame as the page under it changes, the header's search holding 
   await expect(finder).toHaveValue("Rohit");
 });
 
+// Eight sections had never met axe: Technician pay, Partner commission, Spend, Targets, Words, Messages, Care numbers
+// and Activity.
 test("meets WCAG 2.2 AA on its sections", async ({ page }) => {
-  for (const path of ["/", "/referrals", "/areas"]) {
+  for (const path of [
+    "/",
+    "/referrals",
+    "/areas",
+    "/technician-pay",
+    "/partner-commission",
+    "/spend",
+    "/targets",
+    "/words",
+    "/messages",
+    "/care-numbers",
+    "/activity",
+  ]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // The frame's heading stands from the first paint: axe reads the page once its calls have answered.
+    await page.waitForLoadState("networkidle");
     expect(await axeViolations(page), path).toEqual([]);
   }
 });

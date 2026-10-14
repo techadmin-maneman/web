@@ -18,6 +18,7 @@ import {
 } from "./technicians-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { review } from "../../apps/ops/src/content/common.ts";
+import { pressTwice } from "./twice.ts";
 
 const INK = "rgb(22, 35, 58)";
 
@@ -123,10 +124,16 @@ test("records leave, saying first that nobody can be booked on those days, and s
   } satisfies OpsReply<"/api/technicians/{id}/leave">;
   await answer(page, answersWith({ [IMRANS_LEAVE]: json(recorded) }));
   const sent = page.waitForRequest((request) => request.url().endsWith(LEAVE) && request.method() === "POST");
-  await main.getByRole("button", { name: "Record" }).click();
+  let records = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith(LEAVE)) records += 1;
+  });
+  // However fast Record is pressed twice, the leave is sent once.
+  await pressTwice(main.getByRole("button", { name: "Record" }));
   expect((await sent).postDataJSON()).toEqual({ from: "2027-10-12", to: "2027-10-14", note: "Away" });
 
   await expect(main.getByRole("status")).toHaveText(opsCopy.technicians.leave.recorded);
+  expect(records).toBe(1);
   const period = main.getByRole("listitem").filter({ hasText: "12 Oct 2027 to 14 Oct 2027" });
   await expect(period).toContainText("1 visit is still booked on these days. Move it on the dispatch board.");
   await expect(period).toContainText("Wed 13 Oct, 10:30 am · Rohit Malhotra");
