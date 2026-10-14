@@ -16,8 +16,8 @@ import { technicianPay } from "../content/technician-pay.ts";
 import { csvText } from "../lib/csv.ts";
 import { saveFile } from "../lib/save-file.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "../components/forms.module.css";
-import own from "./technician-pay.module.css";
+import form from "../components/forms.module.css";
+import styles from "./technician-pay.module.css";
 
 const copy = technicianPay.statement;
 
@@ -68,8 +68,8 @@ function byTechnician(lines: readonly Line[]) {
 
 function StatementTable({ lines }: { lines: readonly Line[] }) {
   return (
-    <div className={own.scroll}>
-      <Table className={classes(styles.table, own.table, own.people)}>
+    <div className={styles.scroll}>
+      <Table className={classes(form.table, styles.table, styles.people)}>
         <thead>
           <tr>
             {copy.columns.map((column) => (
@@ -86,16 +86,16 @@ function StatementTable({ lines }: { lines: readonly Line[] }) {
                 <th scope="row">{technician.name}</th>
                 <td>{line.city ?? copy.noCity}</td>
                 <td>{technicianPay.kinds[line.kind]}</td>
-                <td className={own.figure}>{line.visits}</td>
-                <td className={own.figure}>{amountOf(line.rate)}</td>
-                <td className={own.figure}>{amountOf(line.amount)}</td>
+                <td className={styles.figure}>{line.visits}</td>
+                <td className={styles.figure}>{amountOf(line.rate)}</td>
+                <td className={styles.figure}>{amountOf(line.amount)}</td>
               </tr>
             )),
-            <tr key={`${technician.id}-total`} className={own.total}>
+            <tr key={`${technician.id}-total`} className={styles.total}>
               <th scope="row" colSpan={copy.columns.length - 1}>
                 {technician.unpriced ? copy.totalUnpriced(technician.name) : copy.total(technician.name)}
               </th>
-              <td className={own.figure}>{rupees(technician.total)}</td>
+              <td className={styles.figure}>{rupees(technician.total)}</td>
             </tr>,
           ])}
         </tbody>
@@ -111,9 +111,9 @@ export function PayStatement({ today }: { today: string }) {
   const load = useCallback(() => api.payStatement(month), [month]);
   const [loaded, retry] = useLoad(load);
   return (
-    <Panel titleId="pay-statement" title={copy.title} className={styles.panel}>
-      <div className={own.tools}>
-        <Field label={copy.month} className={styles.field}>
+    <Panel titleId="pay-statement" title={copy.title} className={form.panel}>
+      <div className={styles.tools}>
+        <Field label={copy.month} className={form.field}>
           {(control) => (
             <Select
               {...control}
@@ -146,7 +146,7 @@ export function PayStatement({ today }: { today: string }) {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" &&
         (loaded.value.lines.length === 0 ? (
-          <p className={styles.note}>{copy.none}</p>
+          <p className={form.note}>{copy.none}</p>
         ) : (
           <StatementTable lines={loaded.value.lines} />
         ))}

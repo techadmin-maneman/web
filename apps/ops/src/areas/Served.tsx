@@ -15,12 +15,12 @@ import { api, type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { saveFile } from "../lib/save-file.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
-import areaStyles from "./areas.module.css";
+import styles from "./areas.module.css";
 import { readServiceAreaCsv, serviceAreaCsv } from "./csv.ts";
 import { AREA_NAME } from "./rules.ts";
 import {
@@ -122,9 +122,9 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     <Panel
       titleId="area"
       title={copy.title}
-      className={styles.panel}
+      className={form.panel}
       actions={
-        <Button variant="outline" size="small" className={styles.quiet} onClick={download}>
+        <Button variant="outline" size="small" className={form.quiet} onClick={download}>
           {copy.download}
         </Button>
       }
@@ -141,7 +141,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
       />
 
       <Narrowing view={view} label={copy.narrow} />
-      <Table className={styles.table}>
+      <Table className={form.table}>
         <thead>
           <tr>
             <SortHeads view={view} />
@@ -164,7 +164,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
       <TableEnd view={view} />
 
       {checking && (
-        <div className={areaStyles.inPanel}>
+        <div className={styles.inPanel}>
           <LaunchCheck
             launching={launching}
             busy={busy}
@@ -176,7 +176,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         </div>
       )}
       {!checking && mayChange && (
-        <div className={styles.actions}>
+        <div className={form.actions}>
           <Button
             variant="primary"
             size="small"
@@ -201,10 +201,10 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
       )}
 
       {mayAdd && (
-        <Fieldset className={styles.group} legend={areas.add.title} legendLook="title">
+        <Fieldset className={form.group} legend={areas.add.title} legendLook="title">
           <AddPincode pincode={null} cities={cities} onAdded={addedHere} />
           {added !== null && (
-            <InlineMessage tone="saved" className={styles.saved}>
+            <InlineMessage tone="saved" className={form.saved}>
               {areas.add.added(added.pincode, added.city)}
             </InlineMessage>
           )}

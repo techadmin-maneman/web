@@ -12,12 +12,12 @@ import { useState } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceCatalogue } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { PRICE_TIER, tierCodeOf } from "@rules/policy/services.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { Refused, SettingForm, sentOf, useSteps, type Sent } from "./SettingForm.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 
 const copy = settings.services;
-const form = copy.form;
+const formWords = copy.form;
 const check = copy.check;
 
 /** What a write answered: the book as it now stands, or the refusal, with the boxes it names. */
@@ -90,8 +90,8 @@ export function PriceForm(props: {
     <SettingForm
       title={
         correcting === undefined
-          ? form.priceTitle(target.name)
-          : form.correctTitle(target.name, longDate(correcting.valid_from))
+          ? formWords.priceTitle(target.name)
+          : formWords.correctTitle(target.name, longDate(correcting.valid_from))
       }
       steps={steps}
       ready={ready}
@@ -99,7 +99,7 @@ export function PriceForm(props: {
       onCancel={props.onCancel}
       checking={
         <>
-          <p className={styles.checkLine}>
+          <p className={form.checkLine}>
             {correcting === undefined
               ? check.price(
                   target.name,
@@ -116,21 +116,21 @@ export function PriceForm(props: {
                 })}
           </p>
           {was !== undefined && was.gst_percent !== change.gst_percent && (
-            <p className={styles.checkWarning}>{check.gstChanges(was.gst_percent, change.gst_percent)}</p>
+            <p className={form.checkWarning}>{check.gstChanges(was.gst_percent, change.gst_percent)}</p>
           )}
-          {sameDay && <p className={styles.checkLine}>{check.sameDay}</p>}
+          {sameDay && <p className={form.checkLine}>{check.sameDay}</p>}
         </>
       }
     >
       {inForce !== undefined && correcting === undefined && (
-        <p className={styles.formNow}>{copy.now(priceWords(inForce), longDate(inForce.valid_from))}</p>
+        <p className={form.formNow}>{copy.now(priceWords(inForce), longDate(inForce.valid_from))}</p>
       )}
-      <div className={styles.fields}>
-        <Field label={form.amount} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={formWords.amount} className={form.field}>
           {(control) => (
             <NumberInput
               {...control}
-              className={styles.amountBox}
+              className={form.amountBox}
               inputMode="numeric"
               step={1}
               min={0}
@@ -143,12 +143,12 @@ export function PriceForm(props: {
             />
           )}
         </Field>
-        <Field label={form.gst} className={styles.field}>
+        <Field label={formWords.gst} className={form.field}>
           {(control) => (
-            <div className={styles.fieldRow}>
+            <div className={form.fieldRow}>
               <NumberInput
                 {...control}
-                className={styles.figureBox}
+                className={form.figureBox}
                 inputMode="numeric"
                 step={1}
                 min={0}
@@ -159,20 +159,20 @@ export function PriceForm(props: {
                   steps.edit();
                 }}
               />
-              <span className={styles.unit}>%</span>
+              <span className={form.unit}>%</span>
             </div>
           )}
         </Field>
         <Field
-          label={form.from}
+          label={formWords.from}
 
-          error={tooSoon ? form.fromTooSoon : null}
-          className={styles.field}
+          error={tooSoon ? formWords.fromTooSoon : null}
+          className={form.field}
         >
           {(control) => (
             <DateInput
               {...control}
-              className={styles.dateBox}
+              className={form.dateBox}
               min={firstDay}
               value={from}
               onChange={(event) => {
@@ -208,7 +208,7 @@ export function TakeBack(props: {
         onBack={props.onKeep}
       />
       {steps.failed !== null && (
-        <Refusal className={styles.error} said={errorText({ ...copy.errors, ...copy.takeBackErrors }, steps.failed)} />
+        <Refusal className={form.error} said={errorText({ ...copy.errors, ...copy.takeBackErrors }, steps.failed)} />
       )}
     </>
   );
@@ -228,19 +228,19 @@ export function RenameForm(props: {
   }, props.onDone);
   return (
     <SettingForm
-      title={form.renameTitle(service.name)}
+      title={formWords.renameTitle(service.name)}
       steps={steps}
       ready={name.trim() !== "" && name.trim() !== service.name}
       errors={copy.errors}
       onCancel={props.onCancel}
-      checking={<p className={styles.checkLine}>{check.rename(service.name, name.trim(), service.tier)}</p>}
+      checking={<p className={form.checkLine}>{check.rename(service.name, name.trim(), service.tier)}</p>}
     >
-      <div className={styles.fields}>
-        <Field label={form.name} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={formWords.name} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.areaBox}
+              className={form.areaBox}
               maxLength={60}
               value={name}
               onChange={(event) => {
@@ -271,19 +271,19 @@ export function DescribeForm(props: {
   }, props.onDone);
   return (
     <SettingForm
-      title={form.describeTitle(service.name)}
+      title={formWords.describeTitle(service.name)}
       steps={steps}
       ready={line.trim() !== was}
       errors={copy.errors}
       onCancel={props.onCancel}
-      checking={<p className={styles.checkLine}>{check.describe(service.name, was, line.trim())}</p>}
+      checking={<p className={form.checkLine}>{check.describe(service.name, was, line.trim())}</p>}
     >
-      <div className={styles.fields}>
-        <Field label={form.description} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={formWords.description} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.areaBox}
+              className={form.areaBox}
               maxLength={props.maxLength}
               value={line}
               onChange={(event) => {
@@ -313,19 +313,19 @@ export function LengthForm(props: {
   }, props.onDone);
   return (
     <SettingForm
-      title={form.lengthTitle(service.name)}
+      title={formWords.lengthTitle(service.name)}
       steps={steps}
       ready={minutes.trim() !== "" && Number(minutes) !== service.minutes}
       errors={copy.errors}
       onCancel={props.onCancel}
-      checking={<p className={styles.checkLine}>{check.length(service.name, service.minutes, Number(minutes))}</p>}
+      checking={<p className={form.checkLine}>{check.length(service.name, service.minutes, Number(minutes))}</p>}
     >
-      <div className={styles.fields}>
-        <Field label={form.minutes} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={formWords.minutes} className={form.field}>
           {(control) => (
             <NumberInput
               {...control}
-              className={styles.figureBox}
+              className={form.figureBox}
               inputMode="numeric"
               step={1}
               min={bounds.min}
@@ -358,19 +358,19 @@ export function RetireForm(props: {
   }, props.onDone);
   return (
     <SettingForm
-      title={form.retireTitle(service.name)}
+      title={formWords.retireTitle(service.name)}
       steps={steps}
       ready={from !== ""}
       errors={copy.errors}
       onCancel={props.onCancel}
-      checking={<p className={styles.checkLine}>{check.retire(service.name, longDate(from))}</p>}
+      checking={<p className={form.checkLine}>{check.retire(service.name, longDate(from))}</p>}
     >
-      <div className={styles.fields}>
-        <Field label={form.retireFrom} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={formWords.retireFrom} className={form.field}>
           {(control) => (
             <DateInput
               {...control}
-              className={styles.dateBox}
+              className={form.dateBox}
               min={today}
               value={from}
               onChange={(event) => {
@@ -460,19 +460,19 @@ export function AddForm(props: {
   const ready = name.trim() !== "" && PRICE_TIER.test(codeSent) && minutes.trim() !== "";
   return (
     <SettingForm
-      title={form.addTitle(kindName)}
+      title={formWords.addTitle(kindName)}
       steps={steps}
       ready={ready}
       errors={copy.errors}
       onCancel={props.onCancel}
-      checking={<p className={styles.checkLine}>{check.add(kindName, name.trim(), Number(minutes), codeSent)}</p>}
+      checking={<p className={form.checkLine}>{check.add(kindName, name.trim(), Number(minutes), codeSent)}</p>}
     >
-      <div className={styles.fields}>
-        <Field label={form.name} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={formWords.name} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.areaBox}
+              className={form.areaBox}
               maxLength={60}
               value={name}
               onChange={(event) => {
@@ -482,11 +482,11 @@ export function AddForm(props: {
             />
           )}
         </Field>
-        <Field label={form.code} hint={form.codeHints[kind]} className={styles.field}>
+        <Field label={formWords.code} hint={formWords.codeHints[kind]} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.areaBox}
+              className={form.areaBox}
               maxLength={32}
               value={codeTyped ? code : (tierCodeOf(name) ?? "")}
               onChange={(event) => {
@@ -497,11 +497,11 @@ export function AddForm(props: {
             />
           )}
         </Field>
-        <Field label={form.minutes} className={styles.field}>
+        <Field label={formWords.minutes} className={form.field}>
           {(control) => (
             <NumberInput
               {...control}
-              className={styles.figureBox}
+              className={form.figureBox}
               inputMode="numeric"
               step={1}
               min={bounds.min}

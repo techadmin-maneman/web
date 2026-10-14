@@ -6,10 +6,10 @@ import { useState } from "react";
 import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import type { City } from "./types.ts";
 
-const form = cities.form;
+const formWords = cities.form;
 
 interface Draft {
   readonly name: string;
@@ -39,34 +39,34 @@ const bodyOf = (draft: Draft) => ({
 });
 
 const said = (value: string | boolean | null): string => {
-  if (typeof value === "boolean") return value ? form.yes : form.no;
-  return value ?? form.noZone;
+  if (typeof value === "boolean") return value ? formWords.yes : formWords.no;
+  return value ?? formWords.noZone;
 };
 
 /** Each field that changes, old beside new, and what a new name moves; empty where nothing changes. */
 function changes(was: City, draft: Draft): string[] {
   const now = bodyOf(draft);
   const fields = [
-    ["name", form.name],
-    ["state_code", form.stateCode],
-    ["state", form.state],
-    ["zone", form.zone],
-    ["served", form.served],
-    ["active", form.active],
+    ["name", formWords.name],
+    ["state_code", formWords.stateCode],
+    ["state", formWords.state],
+    ["zone", formWords.zone],
+    ["served", formWords.served],
+    ["active", formWords.active],
   ] as const;
   const lines = fields
     .filter(([field]) => was[field] !== now[field])
-    .map(([field, label]) => form.line(label, said(was[field]), said(now[field])));
-  return now.name === was.name ? lines : [...lines, form.renames(was.name, now.name)];
+    .map(([field, label]) => formWords.line(label, said(was[field]), said(now[field])));
+  return now.name === was.name ? lines : [...lines, formWords.renames(was.name, now.name)];
 }
 
 function Text(props: { label: string; value: string; max: number; hint?: string; onChange: (text: string) => void }) {
   return (
-    <Field label={props.label} hint={props.hint} className={styles.field}>
+    <Field label={props.label} hint={props.hint} className={form.field}>
       {(control) => (
         <TextInput
           {...control}
-          className={styles.areaBox}
+          className={form.areaBox}
           maxLength={props.max}
           value={props.value}
           onChange={(event) => {
@@ -82,9 +82,9 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
   const { draft, edit } = props;
   return (
     <>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <Text
-          label={form.name}
+          label={formWords.name}
           value={draft.name}
           max={60}
           onChange={(name) => {
@@ -92,8 +92,8 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
           }}
         />
         <Text
-          label={form.stateCode}
-          hint={form.stateCodeHint}
+          label={formWords.stateCode}
+          hint={formWords.stateCodeHint}
           value={draft.stateCode}
           max={2}
           onChange={(stateCode) => {
@@ -101,14 +101,14 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
           }}
         />
         <Text
-          label={form.state}
+          label={formWords.state}
           value={draft.state}
           max={60}
           onChange={(state) => {
             edit({ state });
           }}
         />
-        <Field label={form.zone} className={styles.field}>
+        <Field label={formWords.zone} className={form.field}>
           {(control) => (
             <Select
               {...control}
@@ -117,7 +117,7 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
                 edit({ zone: event.target.value });
               }}
             >
-              <option value="">{form.noZone}</option>
+              <option value="">{formWords.noZone}</option>
               {props.zones.map((zone) => (
                 <option key={zone} value={zone}>
                   {zone}
@@ -127,16 +127,16 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
           )}
         </Field>
       </div>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <Checkbox
-          label={form.served}
+          label={formWords.served}
           checked={draft.served}
           onChange={(event) => {
             edit({ served: event.target.checked });
           }}
         />
         <Checkbox
-          label={form.active}
+          label={formWords.active}
           checked={draft.active}
           onChange={(event) => {
             edit({ active: event.target.checked });
@@ -167,7 +167,7 @@ export function CityForm(props: {
       return sentOf(answer, () => ({}));
     },
     () => {
-      props.onSaved(city === null ? form.added : form.saved);
+      props.onSaved(city === null ? formWords.added : formWords.saved);
     },
   );
   const edit = (change: Partial<Draft>) => {
@@ -175,17 +175,17 @@ export function CityForm(props: {
     steps.edit();
   };
   const body = bodyOf(draft);
-  const lines = city === null ? [form.adding(body.name, body.state)] : changes(city, draft);
+  const lines = city === null ? [formWords.adding(body.name, body.state)] : changes(city, draft);
   return (
     <SettingForm
-      title={city === null ? form.addTitle : form.changeTitle(city.name)}
+      title={city === null ? formWords.addTitle : formWords.changeTitle(city.name)}
       steps={steps}
       ready={ready}
-      errors={form.errors}
+      errors={formWords.errors}
       onCancel={props.onCancel}
       sendable={lines.length > 0}
-      checking={(lines.length === 0 ? [form.nothing] : lines).map((line) => (
-        <p className={styles.checkLine} key={line}>
+      checking={(lines.length === 0 ? [formWords.nothing] : lines).map((line) => (
+        <p className={form.checkLine} key={line}>
           {line}
         </p>
       ))}

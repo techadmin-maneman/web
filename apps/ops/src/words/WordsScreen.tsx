@@ -20,8 +20,8 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeOf, WordForm, type Messages } from "./WordForm.tsx";
 import { WordHistory } from "./WordHistory.tsx";
 import { LastPublished, PublishCheck } from "./WordsPublish.tsx";
-import styles from "../components/forms.module.css";
-import own from "./words.module.css";
+import form from "../components/forms.module.css";
+import styles from "./words.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
 
 /** What is open beneath a line's row: its form, opened with a wording, or its history. */
@@ -42,10 +42,10 @@ interface RowProps {
 function WordActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<RowProps, "onDone">) {
   const place = placeOf(word);
   return (
-    <td className={own.actions}>
+    <td className={styles.actions}>
       {mayChange && (
         <RowButton
-          className={styles.inline}
+          className={form.inline}
           aria-label={copy.editLabel(place)}
           disabled={acting !== null}
           onClick={() => {
@@ -56,7 +56,7 @@ function WordActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<R
         </RowButton>
       )}
       <RowButton
-        className={styles.inline}
+        className={form.inline}
         aria-label={copy.historyLabel(place)}
         disabled={acting !== null}
         onClick={() => {
@@ -76,7 +76,7 @@ function WordActingRow({ word, ...row }: { word: Word } & RowProps) {
     onAct(null);
   };
   return (
-    <ActionRow className={own.acting}>
+    <ActionRow className={styles.acting}>
       {acting.kind === "edit" ? (
         <WordForm word={word} start={acting.start} messages={row.messages} onDone={row.onDone} onCancel={close} />
       ) : (
@@ -97,18 +97,18 @@ function WordRows({ word, ...row }: { word: Word } & RowProps) {
   return (
     <>
       <tr>
-        <td className={own.page}>{word.group}</td>
-        <th scope="row" className={own.where}>
+        <td className={styles.page}>{word.group}</td>
+        <th scope="row" className={styles.where}>
           {placeOf(word)}
         </th>
-        <td className={own.text}>
+        <td className={styles.text}>
           {word.now}
           {word.changed !== null && (
-            <span className={own.changed}>
+            <span className={styles.changed}>
               {copy.changed(whoWords(word.changed.by), shortDate(indiaDate(word.changed.at)))}
             </span>
           )}
-          {word.on_site === false && <span className={own.changed}>{copy.notOnSite}</span>}
+          {word.on_site === false && <span className={styles.changed}>{copy.notOnSite}</span>}
         </td>
         <WordActions word={word} {...row} />
       </tr>
@@ -127,9 +127,9 @@ const TABLE_COLUMNS: readonly Column<Word>[] = [
 function WordsTable({ view, row }: { view: TableView<Word>; row: RowProps }) {
   return (
     <>
-      <Narrowing view={view} label={copy.narrow} className={own.narrow} />
-      <div className={own.scroll}>
-        <Table className={classes(styles.table, own.table)}>
+      <Narrowing view={view} label={copy.narrow} className={styles.narrow} />
+      <div className={styles.scroll}>
+        <Table className={classes(form.table, styles.table)}>
           <thead>
             <tr>
               <SortHeads view={view} />
@@ -181,14 +181,14 @@ function Words() {
     <Panel
       titleId="words"
       title={copy.title}
-      className={styles.panel}
+      className={form.panel}
       actions={
         mayPublish &&
         !publishing && (
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={form.quiet}
             onClick={() => {
               setSaid(null);
               setPublishing(true);
@@ -215,7 +215,7 @@ function Words() {
         />
       )}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
@@ -226,7 +226,7 @@ function Words() {
 
 export function WordsScreen() {
   return (
-    <div className={styles.screen}>
+    <div className={form.screen}>
       <Words />
     </div>
   );

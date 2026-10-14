@@ -16,8 +16,8 @@ import { DeleteAction } from "../components/DeleteAction.tsx";
 import { technicianPay } from "../content/technician-pay.ts";
 import { AddGradeForm, RenameGradeForm, SetRateForm } from "./PayForms.tsx";
 import { rateNow, ratesLater } from "./pay-rates.ts";
-import styles from "../components/forms.module.css";
-import own from "./technician-pay.module.css";
+import form from "../components/forms.module.css";
+import styles from "./technician-pay.module.css";
 
 const copy = technicianPay.rates;
 
@@ -50,13 +50,13 @@ function RateActions({ grade, acting, may, onAct }: { grade: Grade } & Pick<RowP
     [may.grades && grade.technicians === 0, "delete", copy.delete, copy.deleteLabel(grade.name)],
   ];
   return (
-    <td className={own.actions}>
+    <td className={styles.actions}>
       {actions
         .filter(([shown]) => shown)
         .map(([, kind, words, label]) => (
           <RowButton
             key={kind}
-            className={styles.inline}
+            className={form.inline}
             aria-label={label}
             disabled={acting !== null}
             onClick={() => {
@@ -81,14 +81,14 @@ function RateActingRow({ grade, span, ...row }: { grade: Grade; span: number } &
     onDone(pay, technicianPay.done.saved);
   };
   return (
-    <tr className={own.acting}>
+    <tr className={styles.acting}>
       <td colSpan={span}>
         {acting.kind === "rate" && (
           <SetRateForm grade={grade} pay={row.pay} city={row.city} onDone={saved} onCancel={cancel} />
         )}
         {acting.kind === "rename" && <RenameGradeForm grade={grade} onDone={saved} onCancel={cancel} />}
         {acting.kind === "delete" && (
-          <div className={own.ask}>
+          <div className={styles.ask}>
             <DeleteAction
               name={grade.name}
               send={() => api.deletePayGrade(grade.id)}
@@ -113,15 +113,15 @@ function GradeRows({ grade, ...row }: { grade: Grade } & RowProps) {
   return (
     <>
       <tr>
-        <th scope="row" className={own.grade}>
+        <th scope="row" className={styles.grade}>
           {grade.name}
         </th>
-        <td className={own.figure}>{grade.technicians}</td>
+        <td className={styles.figure}>{grade.technicians}</td>
         {pay.kinds.map((kind) => (
-          <td key={kind} className={own.figure}>
+          <td key={kind} className={styles.figure}>
             {rateNow(pay, { grade: grade.id, kind, city })}
             {ratesLater(pay, { grade: grade.id, kind, city }).map((line) => (
-              <span key={line} className={own.later}>
+              <span key={line} className={styles.later}>
                 {line}
               </span>
             ))}
@@ -136,16 +136,16 @@ function GradeRows({ grade, ...row }: { grade: Grade } & RowProps) {
 
 function RatesTable(row: RowProps) {
   return (
-    <div className={own.scroll}>
-      <Table className={classes(styles.table, own.table, own.rates)}>
+    <div className={styles.scroll}>
+      <Table className={classes(form.table, styles.table, styles.rates)}>
         <thead>
           <tr>
             <th scope="col">{copy.grade}</th>
-            <th scope="col" className={own.figure}>
+            <th scope="col" className={styles.figure}>
               {copy.technicians}
             </th>
             {row.pay.kinds.map((kind) => (
-              <th key={kind} scope="col" className={own.figure}>
+              <th key={kind} scope="col" className={styles.figure}>
                 {technicianPay.kinds[kind]}
               </th>
             ))}
@@ -167,12 +167,12 @@ function RatesTable(row: RowProps) {
 /** The city the rates are shown for: every city's, or one city's with every city's standing in. */
 function CityChoice({ pay, city, onCity }: { pay: TechnicianPay; city: string; onCity: (city: string) => void }) {
   return (
-    <div className={own.tools}>
+    <div className={styles.tools}>
       <Field label={copy.city}>
         {(control) => (
           <Select
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             value={city}
             onChange={(event) => {
               onCity(event.target.value);
@@ -212,14 +212,14 @@ export function PayRates(props: { pay: TechnicianPay; may: May; onChanged: (pay:
     <Panel
       titleId="pay-rates"
       title={copy.title}
-      className={styles.panel}
+      className={form.panel}
       actions={
         may.grades &&
         !adding && (
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={form.quiet}
             onClick={() => {
               setSaid(null);
               setAdding(true);
@@ -241,12 +241,12 @@ export function PayRates(props: { pay: TechnicianPay; may: May; onChanged: (pay:
         />
       )}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
       {pay.grades.length === 0 ? (
-        <p className={styles.note}>{copy.none}</p>
+        <p className={form.note}>{copy.none}</p>
       ) : (
         <>
           <CityChoice pay={pay} city={city} onCity={setCity} />

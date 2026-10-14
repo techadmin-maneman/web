@@ -11,8 +11,8 @@ import { useState } from "react";
 import { care } from "../content/care.ts";
 import { Refused } from "../settings/index.ts";
 import { careApi } from "./care-api.ts";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
 
 const copy = care.cityMatter;
 
@@ -35,19 +35,19 @@ export function CityMatter({ conversationId }: { readonly conversationId: string
       setNote("");
     });
   return (
-    <div className={own.closing}>
+    <div className={styles.closing}>
       {sentTo !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {copy.sent(sentTo)}
         </InlineMessage>
       )}
       {open ? (
         <>
-          <Field label={copy.label} className={own.reply}>
+          <Field label={copy.label} className={styles.reply}>
             {(control) => (
               <TextArea
                 {...control}
-                className={own.box}
+                className={styles.box}
                 rows={2}
                 maxLength={REASON_MAX_CHARS}
                 value={note}
@@ -65,7 +65,7 @@ export function CityMatter({ conversationId }: { readonly conversationId: string
         <Button
           variant="outline"
           size="small"
-          className={styles.quiet}
+          className={form.quiet}
           onClick={() => {
             setOpen(true);
           }}

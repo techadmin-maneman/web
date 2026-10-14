@@ -19,8 +19,8 @@ import {
   whereOf,
   whereValue,
 } from "../lib/grants.ts";
-import styles from "../components/forms.module.css";
-import staffStyles from "./staff.module.css";
+import form from "../components/forms.module.css";
+import styles from "./staff.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 
@@ -64,12 +64,12 @@ function GrantRow(props: {
 }) {
   const { grant, staff, onChange, onRemove } = props;
   return (
-    <li className={staffStyles.grantRow}>
-      <Field label={copy.form.department} className={styles.field}>
+    <li className={styles.grantRow}>
+      <Field label={copy.form.department} className={form.field}>
         {(control) => (
           <Select
             {...control}
-            className={styles.select}
+            className={form.select}
             value={grant.department}
             onChange={(event) => {
               onChange({ ...grant, department: departmentOf(event.target.value, grant.department) });
@@ -83,11 +83,11 @@ function GrantRow(props: {
           </Select>
         )}
       </Field>
-      <Field label={copy.form.level} className={styles.field}>
+      <Field label={copy.form.level} className={form.field}>
         {(control) => (
           <Select
             {...control}
-            className={styles.select}
+            className={form.select}
             value={grant.level}
             onChange={(event) => {
               onChange({ ...grant, level: levelOf(event.target.value, grant.level) });
@@ -101,11 +101,11 @@ function GrantRow(props: {
           </Select>
         )}
       </Field>
-      <Field label={copy.form.place} className={styles.field}>
+      <Field label={copy.form.place} className={form.field}>
         {(control) => (
           <Select
             {...control}
-            className={styles.select}
+            className={form.select}
             value={whereValue(grant)}
             onChange={(event) => {
               onChange({ ...grant, ...whereOf(event.target.value) });
@@ -132,7 +132,7 @@ function GrantRow(props: {
       <Button
         variant="outline"
         size="small"
-        className={styles.quiet}
+        className={form.quiet}
         aria-label={copy.form.removeGrantLabel(grantWords(grant))}
         onClick={onRemove}
       >
@@ -178,17 +178,17 @@ export function StaffForm(props: {
       onCancel={onCancel}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [review.nothing] : lines).map((line) => (
-        <p className={styles.checkLine} key={line}>
+        <p className={form.checkLine} key={line}>
           {line}
         </p>
       ))}
     >
-      <div className={styles.fields}>
-        <Field label={copy.form.email} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={copy.form.email} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.text}
+              className={form.text}
               type="email"
               autoComplete="off"
               maxLength={254}
@@ -202,15 +202,15 @@ export function StaffForm(props: {
         </Field>
       </div>
       <Checkbox
-        className={styles.once}
+        className={form.once}
         label={copy.form.letIn}
         checked={draft.active}
         onChange={(event) => {
           edit({ active: event.target.checked });
         }}
       />
-      <Fieldset className={styles.choices} legend={copy.form.access}>
-        <ul className={staffStyles.grants}>
+      <Fieldset className={form.choices} legend={copy.form.access}>
+        <ul className={styles.grants}>
           {draft.grants.map((grant, index) => (
             <GrantRow
               key={index}
@@ -226,11 +226,11 @@ export function StaffForm(props: {
           ))}
         </ul>
       </Fieldset>
-      <div className={styles.actions}>
+      <div className={form.actions}>
         <Button
           variant="outline"
           size="small"
-          className={styles.quiet}
+          className={form.quiet}
           onClick={() => {
             edit({ grants: [...draft.grants, NEW_GRANT] });
           }}
@@ -238,7 +238,7 @@ export function StaffForm(props: {
           {copy.form.addGrant}
         </Button>
       </div>
-      {listed && <Refusal className={styles.error} said={errorText(copy.errors, { code: "already_listed" })} />}
+      {listed && <Refusal className={form.error} said={errorText(copy.errors, { code: "already_listed" })} />}
     </SettingForm>
   );
 }

@@ -9,9 +9,9 @@ import { useState } from "react";
 import { api, type PartnerStatement, type PartnerStatements } from "../api.ts";
 import { partnerCommission } from "../content/partner-commission.ts";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
-const { form, check, errors } = partnerCommission;
+const { form: formWords, check, errors } = partnerCommission;
 
 interface Draft {
   readonly amount: string;
@@ -22,12 +22,12 @@ interface Draft {
 function PayoutFields(props: { draft: Draft; month: string; today: string; edit: (change: Partial<Draft>) => void }) {
   const { draft, edit } = props;
   return (
-    <div className={styles.fields}>
-      <Field label={form.amount} className={styles.field}>
+    <div className={form.fields}>
+      <Field label={formWords.amount} className={form.field}>
         {(control) => (
           <NumberInput
             {...control}
-            className={styles.amountBox}
+            className={form.amountBox}
             inputMode="decimal"
             min={0}
             value={draft.amount}
@@ -37,11 +37,11 @@ function PayoutFields(props: { draft: Draft; month: string; today: string; edit:
           />
         )}
       </Field>
-      <Field label={form.paidOn} className={styles.field}>
+      <Field label={formWords.paidOn} className={form.field}>
         {(control) => (
           <DateInput
             {...control}
-            className={styles.dateBox}
+            className={form.dateBox}
             min={`${props.month}-01`}
             max={props.today}
             value={draft.paidOn}
@@ -51,11 +51,11 @@ function PayoutFields(props: { draft: Draft; month: string; today: string; edit:
           />
         )}
       </Field>
-      <Field label={form.reference} className={styles.field}>
+      <Field label={formWords.reference} className={form.field}>
         {(control) => (
           <TextInput
             {...control}
-            className={styles.areaBox}
+            className={form.areaBox}
             maxLength={60}
             value={draft.reference}
             onChange={(event) => {
@@ -104,15 +104,15 @@ export function PayoutForm(props: {
     reference !== "";
   return (
     <SettingForm
-      title={form.title(statement.name, props.monthName)}
+      title={formWords.title(statement.name, props.monthName)}
       steps={steps}
       ready={ready}
       errors={errors}
       onCancel={props.onCancel}
       checking={
         <>
-          <p className={styles.checkLine}>{check.line(rupees(amount), shortDate(draft.paidOn), reference)}</p>
-          {amount < statement.due && <p className={styles.checkWarning}>{check.short(rupees(statement.due))}</p>}
+          <p className={form.checkLine}>{check.line(rupees(amount), shortDate(draft.paidOn), reference)}</p>
+          {amount < statement.due && <p className={form.checkWarning}>{check.short(rupees(statement.due))}</p>}
         </>
       }
     >

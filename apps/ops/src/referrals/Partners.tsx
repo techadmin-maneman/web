@@ -22,8 +22,8 @@ import { saveFile } from "../lib/save-file.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PartnerForm } from "./PartnerForm.tsx";
 import { partnerQr } from "./partner-qr.ts";
-import styles from "../components/forms.module.css";
-import own from "./partners.module.css";
+import form from "../components/forms.module.css";
+import styles from "./partners.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 
@@ -63,7 +63,7 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
         onSend={() => void send()}
         onBack={onBack}
       />
-      {typeof step === "object" && <Refusal className={styles.error} said={errorText(copy.errors, step)} />}
+      {typeof step === "object" && <Refusal className={form.error} said={errorText(copy.errors, step)} />}
     </>
   );
 }
@@ -72,7 +72,7 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
 function QrButton({ partner }: { partner: Partner }) {
   return (
     <RowButton
-      className={styles.inline}
+      className={form.inline}
       aria-label={copy.qrLabel(partner.name)}
       onClick={() => {
         saveFile(copy.qrName(partner.code), partnerQr(`${SITE.origin}/r/${partner.code}`), "image/svg+xml");
@@ -94,7 +94,7 @@ function PartnerActions({ partner, acting, onAct }: { partner: Partner } & Pick<
   return actions.map(([kind, words, label]) => (
     <RowButton
       key={kind}
-      className={styles.inline}
+      className={form.inline}
       aria-label={label}
       disabled={acting !== null}
       onClick={() => {
@@ -113,7 +113,7 @@ function PartnerActingRow({ partner, list, acting, onAct, onDone }: { partner: P
     onAct(null);
   };
   return (
-    <ActionRow className={own.acting}>
+    <ActionRow className={styles.acting}>
       {acting.kind === "edit" ? (
         <PartnerForm
           partner={partner}
@@ -134,9 +134,9 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
   return (
     <>
       <tr>
-        <th scope="row" className={own.name}>
+        <th scope="row" className={styles.name}>
           {partner.name}
-          {partner.paused_at !== null && <span className={own.paused}> · {copy.paused}</span>}
+          {partner.paused_at !== null && <span className={styles.paused}> · {copy.paused}</span>}
         </th>
         <td>
           <TextLink href={`${SITE.origin}/r/${partner.code}`} newTab>
@@ -145,15 +145,15 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
         </td>
         <td>
           {copy.friendGets(partner.friend_visits, partner.valid_days)}
-          {partner.discount_code !== null && <span className={own.code}>{partner.discount_code}</span>}
+          {partner.discount_code !== null && <span className={styles.code}>{partner.discount_code}</span>}
         </td>
-        <td className={own.figure}>{rupees(partner.commission)}</td>
-        <td className={own.figure}>{partner.opens}</td>
-        <td className={own.figure}>{partner.referred}</td>
-        <td className={own.figure}>{partner.fitted}</td>
-        <td className={own.figure}>{rupees(partner.earned)}</td>
-        <td className={own.figure}>{rupees(partner.owed)}</td>
-        <td className={own.actions}>
+        <td className={styles.figure}>{rupees(partner.commission)}</td>
+        <td className={styles.figure}>{partner.opens}</td>
+        <td className={styles.figure}>{partner.referred}</td>
+        <td className={styles.figure}>{partner.fitted}</td>
+        <td className={styles.figure}>{rupees(partner.earned)}</td>
+        <td className={styles.figure}>{rupees(partner.owed)}</td>
+        <td className={styles.actions}>
           <QrButton partner={partner} />
           {row.mayChange && <PartnerActions partner={partner} {...row} />}
         </td>
@@ -167,15 +167,15 @@ function PartnerTable(row: RowProps) {
   const heads = copy.columns;
   const figures = [heads.commission, heads.opens, heads.referred, heads.fitted, heads.earned, heads.owed];
   return (
-    <div className={own.scroll}>
-      <Table className={classes(styles.table, own.table)}>
+    <div className={styles.scroll}>
+      <Table className={classes(form.table, styles.table)}>
         <thead>
           <tr>
             <th scope="col">{heads.name}</th>
             <th scope="col">{heads.link}</th>
             <th scope="col">{heads.friend}</th>
             {figures.map((label) => (
-              <th key={label} scope="col" className={own.figure}>
+              <th key={label} scope="col" className={styles.figure}>
                 {label}
               </th>
             ))}
@@ -219,14 +219,14 @@ export function Partners() {
     <Panel
       titleId="partners"
       title={copy.title}
-      className={styles.panel}
+      className={form.panel}
       actions={
         mayChange &&
         !adding && (
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={form.quiet}
             onClick={() => {
               act(null);
               setAdding(true);
@@ -250,12 +250,12 @@ export function Partners() {
         />
       )}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
       {list.channels.length === 0 ? (
-        <p className={styles.note}>{copy.none}</p>
+        <p className={form.note}>{copy.none}</p>
       ) : (
         <PartnerTable list={list} mayChange={mayChange} acting={acting} onAct={act} onDone={done} />
       )}

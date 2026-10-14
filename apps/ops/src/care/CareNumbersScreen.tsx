@@ -12,8 +12,8 @@ import { useCallback, useState } from "react";
 import { care } from "../content/care.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
 
 const copy = care.numbers;
 const PERIODS: readonly CarePeriod[] = ["7", "30", "90"];
@@ -36,9 +36,9 @@ function Figures({ numbers }: { numbers: CareNumbers }) {
     [copy.waitingOnClient, String(numbers.backlog.waiting_on_client)],
   ];
   return (
-    <dl className={own.facts}>
+    <dl className={styles.facts}>
       {figures.map(([label, value]) => (
-        <div key={label} className={own.figureRow}>
+        <div key={label} className={styles.figureRow}>
           <dt>{label}</dt>
           <dd>{value}</dd>
         </div>
@@ -48,20 +48,20 @@ function Figures({ numbers }: { numbers: CareNumbers }) {
 }
 
 function ByPerson({ numbers }: { numbers: CareNumbers }) {
-  if (numbers.by_person.length === 0) return <p className={styles.note}>{copy.noPeople}</p>;
+  if (numbers.by_person.length === 0) return <p className={form.note}>{copy.noPeople}</p>;
   return (
-    <div className={own.scroll}>
-      <Table className={classes(styles.table, own.table)}>
+    <div className={styles.scroll}>
+      <Table className={classes(form.table, styles.table)}>
         <thead>
           <tr>
             <th scope="col">{copy.columns.person}</th>
-            <th scope="col" className={own.figure}>
+            <th scope="col" className={styles.figure}>
               {copy.chats}
             </th>
-            <th scope="col" className={own.figure}>
+            <th scope="col" className={styles.figure}>
               {copy.firstReply}
             </th>
-            <th scope="col" className={own.figure}>
+            <th scope="col" className={styles.figure}>
               {copy.withinTarget}
             </th>
           </tr>
@@ -69,12 +69,12 @@ function ByPerson({ numbers }: { numbers: CareNumbers }) {
         <tbody>
           {numbers.by_person.map((row) => (
             <tr key={row.email}>
-              <th scope="row" className={own.who}>
+              <th scope="row" className={styles.who}>
                 {row.email}
               </th>
-              <td className={own.figure}>{row.chats}</td>
-              <td className={own.figure}>{minutes(row.median_minutes)}</td>
-              <td className={own.figure}>{percent(row.within_target)}</td>
+              <td className={styles.figure}>{row.chats}</td>
+              <td className={styles.figure}>{minutes(row.median_minutes)}</td>
+              <td className={styles.figure}>{percent(row.within_target)}</td>
             </tr>
           ))}
         </tbody>
@@ -85,22 +85,22 @@ function ByPerson({ numbers }: { numbers: CareNumbers }) {
 
 function Lists({ numbers }: { numbers: CareNumbers }) {
   return (
-    <div className={own.quick}>
-      <h3 className={styles.ruleTitle}>{copy.reasons}</h3>
+    <div className={styles.quick}>
+      <h3 className={form.ruleTitle}>{copy.reasons}</h3>
       {numbers.reasons.length === 0 ? (
-        <p className={styles.note}>{copy.nothing}</p>
+        <p className={form.note}>{copy.nothing}</p>
       ) : (
-        <ul className={own.leave}>
+        <ul className={styles.leave}>
           {numbers.reasons.map((row) => (
             <li key={row.reason}>{copy.counted(care.reasons[row.reason as keyof typeof care.reasons], row.chats)}</li>
           ))}
         </ul>
       )}
-      <h3 className={styles.ruleTitle}>{copy.remedies}</h3>
+      <h3 className={form.ruleTitle}>{copy.remedies}</h3>
       {numbers.remedies.length === 0 ? (
-        <p className={styles.note}>{copy.nothing}</p>
+        <p className={form.note}>{copy.nothing}</p>
       ) : (
-        <ul className={own.leave}>
+        <ul className={styles.leave}>
           {numbers.remedies.map((row) => (
             <li key={row.reason}>
               {copy.remedied(
@@ -124,7 +124,7 @@ function Numbers({ period }: { period: CarePeriod }) {
   const numbers = loaded.value;
   return (
     <>
-      <p className={own.quick}>{copy.span(shortDate(numbers.from), shortDate(numbers.to))}</p>
+      <p className={styles.quick}>{copy.span(shortDate(numbers.from), shortDate(numbers.to))}</p>
       <Figures numbers={numbers} />
       <Lists numbers={numbers} />
       <ByPerson numbers={numbers} />
@@ -135,14 +135,14 @@ function Numbers({ period }: { period: CarePeriod }) {
 export function CareNumbersScreen() {
   const [period, setPeriod] = useState<CarePeriod>("7");
   return (
-    <div className={styles.screen}>
-      <Panel titleId="care-numbers" title={copy.title} className={styles.panel}>
-        <div className={own.tools}>
+    <div className={form.screen}>
+      <Panel titleId="care-numbers" title={copy.title} className={form.panel}>
+        <div className={styles.tools}>
           <Field label={copy.period}>
             {(control) => (
               <Select
                 {...control}
-                className={styles.choiceBox}
+                className={form.choiceBox}
                 value={period}
                 onChange={(event) => {
                   if (isPeriod(event.target.value)) setPeriod(event.target.value);

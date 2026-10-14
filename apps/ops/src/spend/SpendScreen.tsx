@@ -18,7 +18,7 @@ import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { spendApi, type SpendChannel, type SpendEntry, type SpendList } from "./spend-api.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
 /** Each month from the first the page takes to this one, the latest first. */
 function monthsOf(list: SpendList): string[] {
@@ -45,7 +45,7 @@ function SpendChoice(props: {
       {(control) => (
         <Select
           {...control}
-          className={styles.choiceBox}
+          className={form.choiceBox}
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -110,7 +110,7 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
     });
   const channelOf = (value: string) => list.channels.find((each) => each === value);
   return (
-    <div className={styles.group}>
+    <div className={form.group}>
       <SpendChoice
         label={copy.month}
         value={month}
@@ -132,7 +132,7 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
         }}
       />
       <Typed label={copy.campaign} value={campaign} maxLength={120} onChange={setCampaign} />
-      <p className={styles.note}>{copy.campaignNote}</p>
+      <p className={form.note}>{copy.campaignNote}</p>
       <Typed label={copy.amount} value={amount} maxLength={12} onChange={setAmount} />
       <Typed label={copy.note} value={note} maxLength={200} onChange={setNote} />
       <Button variant="outline" size="small" disabled={busy || !isRupees(amount)} onClick={() => void add()}>
@@ -144,9 +144,9 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
 }
 
 function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean; onRemove: (id: string) => void }) {
-  if (props.entries.length === 0) return <p className={styles.note}>{copy.none}</p>;
+  if (props.entries.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
-    <Table className={classes(styles.table)}>
+    <Table className={classes(form.table)}>
       <thead>
         <tr>
           {Object.values(copy.columns).map((column) => (
@@ -173,7 +173,7 @@ function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean;
             {props.mayRemove && (
               <td>
                 <RowButton
-                  className={styles.inline}
+                  className={form.inline}
                   aria-label={copy.removeLabel(
                     fullMonth(entry.month),
                     entry.city ?? copy.national,
@@ -230,9 +230,9 @@ function Spend() {
 
 export function SpendScreen() {
   return (
-    <div className={styles.screen}>
-      <Panel titleId="spend" title={copy.title} className={styles.panel}>
-        <p className={styles.note}>{copy.intro}</p>
+    <div className={form.screen}>
+      <Panel titleId="spend" title={copy.title} className={form.panel}>
+        <p className={form.note}>{copy.intro}</p>
         <Spend />
       </Panel>
     </div>

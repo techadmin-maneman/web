@@ -7,11 +7,11 @@ import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content/settings.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.consumables;
-const form = copy.form;
+const formWords = copy.form;
 
 /** Rupees to the paisa, as typed: "12", "12.5", "12.50". */
 const RUPEES = /^\d{1,7}(?:\.\d{1,2})?$/;
@@ -41,11 +41,11 @@ const draftOf = (consumable: Consumable | null): Draft =>
       };
 
 const levelOf = (text: string) => (text.trim() === "" ? null : Number(text));
-const levelWords = (level: number | null) => (level === null ? form.confirm.noLevel : String(level));
+const levelWords = (level: number | null) => (level === null ? formWords.confirm.noLevel : String(level));
 
 /** What the change is, field by field, each old beside new; empty when nothing changes. */
 function changes(was: Consumable, draft: Draft): string[] {
-  const { fields, line } = form.confirm;
+  const { fields, line } = formWords.confirm;
   const lines: string[] = [];
   if (draft.name.trim() !== was.name) lines.push(line(fields.name, was.name, draft.name.trim()));
   if (draft.unit.trim() !== was.unit) lines.push(line(fields.unit, was.unit, draft.unit.trim()));
@@ -70,11 +70,11 @@ function changes(was: Consumable, draft: Draft): string[] {
 /** A whole figure, as typed; empty for none. */
 function Figure(props: { label: string; value: string; onChange: (text: string) => void }) {
   return (
-    <Field label={props.label} className={styles.field}>
+    <Field label={props.label} className={form.field}>
       {(control) => (
         <TextInput
           {...control}
-          className={styles.figureBox}
+          className={form.figureBox}
           inputMode="numeric"
           maxLength={6}
           value={props.value}
@@ -124,7 +124,7 @@ export function ConsumableForm({
       return sentOf(answer, (consumables) => ({ consumables }));
     },
     (sent) => {
-      onSaved(sent.consumables, consumable === null ? form.added : form.saved);
+      onSaved(sent.consumables, consumable === null ? formWords.added : formWords.saved);
     },
   );
   const edit = (field: keyof Draft) => (text: string) => {
@@ -135,7 +135,7 @@ export function ConsumableForm({
   const lines =
     consumable === null
       ? [
-          form.confirm.adding(draft.name.trim(), draft.unit.trim(), rupees(paiseFromRupees(draft.cost))),
+          formWords.confirm.adding(draft.name.trim(), draft.unit.trim(), rupees(paiseFromRupees(draft.cost))),
           copy.levels({ kit: levelOf(draft.kit), store: levelOf(draft.store), central: levelOf(draft.central) }),
           copy.shelfLife(levelOf(draft.shelf)),
         ]
@@ -143,24 +143,24 @@ export function ConsumableForm({
 
   return (
     <SettingForm
-      title={consumable === null ? form.addTitle : form.changeTitle(consumable.name)}
+      title={consumable === null ? formWords.addTitle : formWords.changeTitle(consumable.name)}
       steps={steps}
       ready={ready}
       errors={copy.errors}
       onCancel={onCancel}
       sendable={lines.length > 0}
-      checking={(lines.length === 0 ? [form.confirm.nothing] : lines).map((line) => (
-        <p className={styles.checkLine} key={line}>
+      checking={(lines.length === 0 ? [formWords.confirm.nothing] : lines).map((line) => (
+        <p className={form.checkLine} key={line}>
           {line}
         </p>
       ))}
     >
-      <div className={styles.fields}>
-        <Field label={form.name} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={formWords.name} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.areaBox}
+              className={form.areaBox}
               maxLength={60}
               value={draft.name}
               onChange={(event) => {
@@ -169,11 +169,11 @@ export function ConsumableForm({
             />
           )}
         </Field>
-        <Field label={form.unit} className={styles.field}>
+        <Field label={formWords.unit} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.figureBox}
+              className={form.figureBox}
               maxLength={20}
               value={draft.unit}
               onChange={(event) => {
@@ -182,11 +182,11 @@ export function ConsumableForm({
             />
           )}
         </Field>
-        <Field label={form.cost} className={styles.field}>
+        <Field label={formWords.cost} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.amountBox}
+              className={form.amountBox}
               inputMode="decimal"
               maxLength={10}
               value={draft.cost}
@@ -197,11 +197,11 @@ export function ConsumableForm({
           )}
         </Field>
       </div>
-      <div className={styles.fields}>
-        <Figure label={form.kit} value={draft.kit} onChange={edit("kit")} />
-        <Figure label={form.store} value={draft.store} onChange={edit("store")} />
-        <Figure label={form.central} value={draft.central} onChange={edit("central")} />
-        <Figure label={form.shelf} value={draft.shelf} onChange={edit("shelf")} />
+      <div className={form.fields}>
+        <Figure label={formWords.kit} value={draft.kit} onChange={edit("kit")} />
+        <Figure label={formWords.store} value={draft.store} onChange={edit("store")} />
+        <Figure label={formWords.central} value={draft.central} onChange={edit("central")} />
+        <Figure label={formWords.shelf} value={draft.shelf} onChange={edit("shelf")} />
       </div>
     </SettingForm>
   );

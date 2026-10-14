@@ -22,8 +22,8 @@ import { ConsumableForm } from "./ConsumableForm.tsx";
 import { HairSystemForm } from "./HairSystemForm.tsx";
 import { Restoring, Retiring } from "./Retirement.tsx";
 import { ServiceUsage } from "./ServiceUsage.tsx";
-import own from "./consumables.module.css";
-import styles from "../components/forms.module.css";
+import styles from "./consumables.module.css";
+import form from "../components/forms.module.css";
 
 const copy = settings.consumables;
 
@@ -65,10 +65,10 @@ function ConsumableRow({
   const notRetired = consumable.retired_from === null;
   return (
     <tr>
-      <th scope="row" className={styles.rowHead}>
-        {name} <span className={own.unit}>{consumable.unit}</span>
+      <th scope="row" className={form.rowHead}>
+        {name} <span className={styles.unit}>{consumable.unit}</span>
       </th>
-      <td className={styles.figure}>{rupees(consumable.unit_cost)}</td>
+      <td className={form.figure}>{rupees(consumable.unit_cost)}</td>
       <td>
         {copy.levels({
           kit: consumable.reorder_kit,
@@ -76,11 +76,11 @@ function ConsumableRow({
           central: consumable.reorder_central,
         })}
       </td>
-      <td className={own.actions}>
-        <span className={consumable.offered ? undefined : own.quiet}>{stateWords(consumable)}</span>
+      <td className={styles.actions}>
+        <span className={consumable.offered ? undefined : styles.quiet}>{stateWords(consumable)}</span>
         {may.change && (
           <RowButton
-            className={styles.inline}
+            className={form.inline}
             aria-label={copy.changeLabel(name)}
             onClick={() => {
               onDo({ kind: "change", code });
@@ -91,7 +91,7 @@ function ConsumableRow({
         )}
         {notRetired && may.retire && (
           <RowButton
-            className={styles.inline}
+            className={form.inline}
             aria-label={copy.retireLabel(name)}
             onClick={() => {
               onDo({ kind: "retire", code });
@@ -102,7 +102,7 @@ function ConsumableRow({
         )}
         {!notRetired && may.restore && (
           <RowButton
-            className={styles.inline}
+            className={form.inline}
             aria-label={copy.restoreLabel(name)}
             onClick={() => {
               onDo({ kind: "restore", code });
@@ -113,7 +113,7 @@ function ConsumableRow({
         )}
         {may.delete && (
           <RowButton
-            className={styles.inline}
+            className={form.inline}
             aria-label={deleting.label(name)}
             onClick={() => {
               onDo({ kind: "delete", code });
@@ -167,7 +167,7 @@ function ConsumableEditor({
   }
   if (doing.kind === "delete") {
     return (
-      <div className={styles.group}>
+      <div className={form.group}>
         <DeleteAction
           key={`delete-${named.code}`}
           name={named.name}
@@ -215,11 +215,11 @@ export function Consumables() {
 
   return (
     <>
-      <Panel titleId="consumables" title={copy.title} className={styles.panel}>
+      <Panel titleId="consumables" title={copy.title} className={form.panel}>
         {current.consumables.length === 0 ? (
-          <p className={styles.note}>{copy.none}</p>
+          <p className={form.note}>{copy.none}</p>
         ) : (
-          <Table className={styles.table}>
+          <Table className={form.table}>
             <thead>
               <tr>
                 {copy.columns.map((column) => (
@@ -245,7 +245,7 @@ export function Consumables() {
           </Table>
         )}
         {said !== null && (
-          <InlineMessage tone="saved" className={styles.saved}>
+          <InlineMessage tone="saved" className={form.saved}>
             {said}
           </InlineMessage>
         )}

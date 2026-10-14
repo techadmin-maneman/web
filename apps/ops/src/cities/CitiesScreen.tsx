@@ -5,7 +5,7 @@
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { client } from "../api.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { CityList } from "./CityList.tsx";
 import { CityPrices } from "./CityPrices.tsx";
 import { CityRules } from "./CityRules.tsx";
@@ -19,7 +19,7 @@ const EVERY_MS = 10 * 60_000;
 export function CitiesScreen() {
   const { loaded, refresh, retry } = useLiveLoad(loadCities, EVERY_MS);
   return (
-    <div className={styles.screen}>
+    <div className={form.screen}>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (

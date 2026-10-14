@@ -11,7 +11,7 @@ import { Consumables } from "./Consumables.tsx";
 import { JobSheet } from "./JobSheet.tsx";
 import { Rules } from "./Rules.tsx";
 import { Suppliers } from "./Suppliers.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
 function Panel({ tab }: { tab: SettingsTab }) {
   if (tab === "blackouts") return <Blackouts />;
@@ -22,7 +22,7 @@ function Panel({ tab }: { tab: SettingsTab }) {
 /** The items we stock, each service's expected use, and the hair systems: a tab of Inventory. */
 export function ItemsScreen() {
   return (
-    <div className={styles.screen}>
+    <div className={form.screen}>
       <Consumables />
     </div>
   );
@@ -31,7 +31,7 @@ export function ItemsScreen() {
 /** The suppliers we buy from, and what each supplies: a tab of Inventory. */
 export function SuppliersScreen() {
   return (
-    <div className={styles.screen}>
+    <div className={form.screen}>
       <Suppliers />
     </div>
   );
@@ -39,7 +39,7 @@ export function SuppliersScreen() {
 
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {
   return (
-    <div className={styles.screen}>
+    <div className={form.screen}>
       <Tabs label={settings.title}>
         {SETTINGS_TABS.map((each) => (
           <OpsLink key={each} className={TAB} to={settingsPath(each)} current={each === tab}>

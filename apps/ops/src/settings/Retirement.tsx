@@ -8,7 +8,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content/settings.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.consumables;
@@ -23,7 +23,7 @@ interface Props {
 /** A retired consumable offered again: nothing to fill in, so the question is all there is. */
 export function Restoring({ consumable, onSaved, onCancel }: Props) {
   return (
-    <Fieldset className={styles.group} legend={copy.restoreLabel(consumable.name)} legendLook="title">
+    <Fieldset className={form.group} legend={copy.restoreLabel(consumable.name)} legendLook="title">
       <ActionCheck
         label={copy.restore}
         question={words.restore(consumable.name)}
@@ -54,16 +54,14 @@ export function Retiring({ consumable, today, onSaved, onCancel }: Props & { rea
       ready={from !== ""}
       errors={copy.errors}
       onCancel={onCancel}
-      checking={
-        <p className={styles.checkLine}>{words.question(consumable.name, from === "" ? "" : longDate(from))}</p>
-      }
+      checking={<p className={form.checkLine}>{words.question(consumable.name, from === "" ? "" : longDate(from))}</p>}
     >
-      <div className={styles.fields}>
-        <Field label={words.from} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={words.from} className={form.field}>
           {(control) => (
             <DateInput
               {...control}
-              className={styles.date}
+              className={form.date}
               min={today}
               value={from}
               onChange={(event) => {

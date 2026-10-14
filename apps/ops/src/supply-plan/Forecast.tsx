@@ -12,7 +12,7 @@ import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { AccuracyPart } from "./Accuracy.tsx";
-import own from "./supply-plan.module.css";
+import styles from "./supply-plan.module.css";
 
 type Forecast = paths["/api/stock/forecast"]["get"]["responses"][200]["content"]["application/json"];
 
@@ -45,8 +45,8 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
   return (
     <>
       <p className={form.note}>{copy.note(run.period_days, dayAfter(run.run_on, 0, true))}</p>
-      <div className={own.scroll}>
-        <Table className={`${form.table} ${own.forecast}`}>
+      <div className={styles.scroll}>
+        <Table className={`${form.table} ${styles.forecast}`}>
           <thead>
             <tr>
               <th scope="col">{copy.item}</th>
@@ -69,7 +69,7 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
                     <td key={period} className={form.figure}>
                       {figure(line?.expected ?? 0)}
                       {line !== undefined && line.high > line.expected && (
-                        <span className={own.high}>{copy.high(figure(line.high))}</span>
+                        <span className={styles.high}>{copy.high(figure(line.high))}</span>
                       )}
                     </td>
                   );

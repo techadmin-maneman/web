@@ -17,8 +17,8 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { GradeOfForm } from "./PayForms.tsx";
 import { PayRates } from "./PayRates.tsx";
 import { PayStatement } from "./PayStatement.tsx";
-import styles from "../components/forms.module.css";
-import own from "./technician-pay.module.css";
+import form from "../components/forms.module.css";
+import styles from "./technician-pay.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
 
 const copy = technicianPay.technicians;
@@ -42,10 +42,10 @@ function TechnicianRows({ technician, pay, maySet, acting, onAct, onDone }: { te
         <th scope="row">{technician.name}</th>
         <td>{technician.city ?? copy.noCity}</td>
         <td>{grade}</td>
-        <td className={own.actions}>
+        <td className={styles.actions}>
           {maySet && pay.grades.length > 0 && (
             <RowButton
-              className={styles.inline}
+              className={form.inline}
               aria-label={copy.changeLabel(technician.name)}
               disabled={acting !== null}
               onClick={() => {
@@ -58,7 +58,7 @@ function TechnicianRows({ technician, pay, maySet, acting, onAct, onDone }: { te
         </td>
       </tr>
       {acting === technician.id && (
-        <ActionRow className={own.acting}>
+        <ActionRow className={styles.acting}>
           <GradeOfForm
             technician={technician}
             pay={pay}
@@ -91,17 +91,17 @@ function PayTechnicians({ pay, maySet, onChanged }: { pay: Pay; maySet: boolean;
     },
   };
   return (
-    <Panel titleId="pay-technicians" title={copy.title} className={styles.panel}>
+    <Panel titleId="pay-technicians" title={copy.title} className={form.panel}>
       {saved && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {technicianPay.done.saved}
         </InlineMessage>
       )}
       {pay.technicians.length === 0 ? (
-        <p className={styles.note}>{copy.none}</p>
+        <p className={form.note}>{copy.none}</p>
       ) : (
-        <div className={own.scroll}>
-          <Table className={classes(styles.table, own.table, own.people)}>
+        <div className={styles.scroll}>
+          <Table className={classes(form.table, styles.table, styles.people)}>
             <thead>
               <tr>
                 <th scope="col">{copy.name}</th>

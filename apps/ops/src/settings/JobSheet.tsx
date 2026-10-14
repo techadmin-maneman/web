@@ -13,7 +13,7 @@ import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ListEditor, ListRead } from "./ListEditor.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
 const copy = settings.jobSheet;
 
@@ -48,13 +48,13 @@ export function JobSheet() {
   const checklist = current.checklists.find((each) => each.visit_type === kind);
 
   return (
-    <Panel titleId="job-sheet" title={copy.title} className={styles.panel}>
-      <div className={styles.group}>
-        <Field label={copy.kind} className={styles.field}>
+    <Panel titleId="job-sheet" title={copy.title} className={form.panel}>
+      <div className={form.group}>
+        <Field label={copy.kind} className={form.field}>
           {(control) => (
             <Select
               {...control}
-              className={styles.select}
+              className={form.select}
               value={kind}
               onChange={(event) => {
                 const chosen = current.checklists.find((each) => each.visit_type === event.target.value);

@@ -7,14 +7,14 @@ import { useState } from "react";
 import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import { settings } from "../content/settings.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 
 export type Suppliers = paths["/api/suppliers"]["get"]["responses"][200]["content"]["application/json"];
 export type Supplier = Suppliers["suppliers"][number];
 
 const copy = settings.suppliers;
-const form = copy.form;
+const formWords = copy.form;
 const WHOLE = /^\d{1,4}$/;
 
 interface Draft {
@@ -60,21 +60,21 @@ function bodyOf(draft: Draft) {
 /** What the change is, field by field, each old beside new; empty when nothing changes. */
 function changes(was: Supplier, draft: Draft): string[] {
   const now = bodyOf(draft);
-  const said = (value: string | number | null) => (value === null ? form.confirm.none : String(value));
+  const said = (value: string | number | null) => (value === null ? formWords.confirm.none : String(value));
   const fields: readonly (readonly [keyof typeof now, string])[] = [
-    ["name", form.name],
-    ["gstin", form.gstin],
-    ["country", form.country],
-    ["currency", form.currency],
-    ["contact_name", form.contactName],
-    ["contact_phone", form.contactPhone],
-    ["contact_email", form.contactEmail],
-    ["payment_terms_days", form.terms],
-    ["warranty_days", form.warranty],
+    ["name", formWords.name],
+    ["gstin", formWords.gstin],
+    ["country", formWords.country],
+    ["currency", formWords.currency],
+    ["contact_name", formWords.contactName],
+    ["contact_phone", formWords.contactPhone],
+    ["contact_email", formWords.contactEmail],
+    ["payment_terms_days", formWords.terms],
+    ["warranty_days", formWords.warranty],
   ];
   return fields
     .filter(([field]) => was[field] !== now[field])
-    .map(([field, label]) => form.confirm.line(label, said(was[field]), said(now[field])));
+    .map(([field, label]) => formWords.confirm.line(label, said(was[field]), said(now[field])));
 }
 
 function SupplierEntry(props: {
@@ -85,7 +85,7 @@ function SupplierEntry(props: {
   onChange: (text: string) => void;
 }) {
   return (
-    <Field label={props.label} className={styles.field}>
+    <Field label={props.label} className={form.field}>
       {(control) => (
         <TextInput
           {...control}
@@ -105,59 +105,65 @@ function SupplierEntry(props: {
 function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draft) => (text: string) => void }) {
   return (
     <>
-      <div className={styles.fields}>
-        <SupplierEntry label={form.name} value={draft.name} size={styles.areaBox} max={80} onChange={edit("name")} />
-        <SupplierEntry label={form.gstin} value={draft.gstin} size={styles.areaBox} max={15} onChange={edit("gstin")} />
+      <div className={form.fields}>
+        <SupplierEntry label={formWords.name} value={draft.name} size={form.areaBox} max={80} onChange={edit("name")} />
         <SupplierEntry
-          label={form.country}
+          label={formWords.gstin}
+          value={draft.gstin}
+          size={form.areaBox}
+          max={15}
+          onChange={edit("gstin")}
+        />
+        <SupplierEntry
+          label={formWords.country}
           value={draft.country}
-          size={styles.figureBox}
+          size={form.figureBox}
           max={2}
           onChange={edit("country")}
         />
         <SupplierEntry
-          label={form.currency}
+          label={formWords.currency}
           value={draft.currency}
-          size={styles.figureBox}
+          size={form.figureBox}
           max={3}
           onChange={edit("currency")}
         />
       </div>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <SupplierEntry
-          label={form.contactName}
+          label={formWords.contactName}
           value={draft.contactName}
-          size={styles.areaBox}
+          size={form.areaBox}
           max={80}
           onChange={edit("contactName")}
         />
         <SupplierEntry
-          label={form.contactPhone}
+          label={formWords.contactPhone}
           value={draft.contactPhone}
-          size={styles.areaBox}
+          size={form.areaBox}
           max={16}
           onChange={edit("contactPhone")}
         />
         <SupplierEntry
-          label={form.contactEmail}
+          label={formWords.contactEmail}
           value={draft.contactEmail}
-          size={styles.areaBox}
+          size={form.areaBox}
           max={120}
           onChange={edit("contactEmail")}
         />
       </div>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <SupplierEntry
-          label={form.terms}
+          label={formWords.terms}
           value={draft.terms}
-          size={styles.figureBox}
+          size={form.figureBox}
           max={3}
           onChange={edit("terms")}
         />
         <SupplierEntry
-          label={form.warranty}
+          label={formWords.warranty}
           value={draft.warranty}
-          size={styles.figureBox}
+          size={form.figureBox}
           max={4}
           onChange={edit("warranty")}
         />
@@ -193,7 +199,7 @@ export function SupplierForm({
       return sentOf(answer, (suppliers) => ({ suppliers }));
     },
     (sent) => {
-      onSaved(sent.suppliers, supplier === null ? form.added : form.saved);
+      onSaved(sent.suppliers, supplier === null ? formWords.added : formWords.saved);
     },
   );
   const edit = (field: keyof Draft) => (text: string) => {
@@ -202,18 +208,18 @@ export function SupplierForm({
   };
   const body = bodyOf(draft);
   const lines =
-    supplier === null ? [form.confirm.adding(body.name, body.country, body.currency)] : changes(supplier, draft);
+    supplier === null ? [formWords.confirm.adding(body.name, body.country, body.currency)] : changes(supplier, draft);
 
   return (
     <SettingForm
-      title={supplier === null ? form.addTitle : form.changeTitle(supplier.name)}
+      title={supplier === null ? formWords.addTitle : formWords.changeTitle(supplier.name)}
       steps={steps}
       ready={ready}
       errors={copy.errors}
       onCancel={onCancel}
       sendable={lines.length > 0}
-      checking={(lines.length === 0 ? [form.confirm.nothing] : lines).map((line) => (
-        <p className={styles.checkLine} key={line}>
+      checking={(lines.length === 0 ? [formWords.confirm.nothing] : lines).map((line) => (
+        <p className={form.checkLine} key={line}>
           {line}
         </p>
       ))}

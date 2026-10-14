@@ -10,7 +10,7 @@ import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import type { Cities } from "./types.ts";
 
 const copy = cities.registrations;
@@ -25,11 +25,11 @@ const EMPTY: Draft = { stateCode: "", gstin: "", branch: "" };
 
 function RegistrationEntry(props: { label: string; value: string; max: number; onChange: (text: string) => void }) {
   return (
-    <Field label={props.label} className={styles.field}>
+    <Field label={props.label} className={form.field}>
       {(control) => (
         <TextInput
           {...control}
-          className={styles.areaBox}
+          className={form.areaBox}
           maxLength={props.max}
           value={props.value}
           onChange={(event) => {
@@ -66,9 +66,9 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
       ready={/^[A-Za-z]{2}$/.test(body.state_code) && body.gstin.length === 15}
       errors={copy.errors}
       onCancel={null}
-      checking={<p className={styles.checkLine}>{copy.adding(body.state_code, body.gstin)}</p>}
+      checking={<p className={form.checkLine}>{copy.adding(body.state_code, body.gstin)}</p>}
     >
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <RegistrationEntry
           label={copy.stateCode}
           value={draft.stateCode}
@@ -107,11 +107,11 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
   };
   return (
     <Panel titleId="gst-registrations" title={copy.panel} count={cities.registrations.length}>
-      <p className={styles.note}>{copy.note}</p>
+      <p className={form.note}>{copy.note}</p>
       {cities.registrations.length === 0 ? (
-        <p className={styles.note}>{copy.none}</p>
+        <p className={form.note}>{copy.none}</p>
       ) : (
-        <Table className={styles.table}>
+        <Table className={form.table}>
           <thead>
             <tr>
               {copy.columns.map((column) => (
@@ -124,7 +124,7 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
           <tbody>
             {cities.registrations.map((registration) => (
               <tr key={registration.state_code}>
-                <th scope="row" className={styles.rowHead}>
+                <th scope="row" className={form.rowHead}>
                   {registration.state_code}
                 </th>
                 <td>{registration.gstin}</td>
@@ -154,7 +154,7 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
         </Table>
       )}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}

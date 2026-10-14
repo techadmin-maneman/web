@@ -7,7 +7,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useState } from "react";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import type { Cities, City } from "./types.ts";
 import { CityForm } from "./CityForm.tsx";
 
@@ -29,7 +29,7 @@ export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => v
   const changing = doing.kind === "change" ? cities.cities.find((city) => city.name === doing.name) : undefined;
   return (
     <Panel titleId="cities" title={copy.panel} count={cities.cities.length}>
-      <Table className={styles.table}>
+      <Table className={form.table}>
         <thead>
           <tr>
             {copy.columns.map((column) => (
@@ -42,7 +42,7 @@ export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => v
         <tbody>
           {cities.cities.map((city) => (
             <tr key={city.name}>
-              <th scope="row" className={styles.rowHead}>
+              <th scope="row" className={form.rowHead}>
                 {city.name}
               </th>
               <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
@@ -51,7 +51,7 @@ export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => v
               <td>
                 {mayChange && (
                   <RowButton
-                    className={styles.inline}
+                    className={form.inline}
                     aria-label={copy.changeLabel(city.name)}
                     onClick={() => {
                       setSaid(null);
@@ -67,7 +67,7 @@ export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => v
         </tbody>
       </Table>
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}

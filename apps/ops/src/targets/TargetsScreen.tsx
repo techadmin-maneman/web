@@ -17,7 +17,7 @@ import { targets as copy } from "../content/targets.ts";
 import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
 type Targets = Success<paths["/api/targets"]["get"]>;
 type Measure = Targets["measures"][number];
@@ -45,7 +45,7 @@ function TargetChoice(props: {
       {(control) => (
         <Select
           {...control}
-          className={styles.choiceBox}
+          className={form.choiceBox}
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -79,7 +79,7 @@ function TargetForm({ list, onSaved }: { list: Targets; onSaved: (list: Targets)
     onSaved(answer.body);
   };
   return (
-    <div className={styles.group}>
+    <div className={form.group}>
       <TargetChoice
         label={copy.city}
         value={city}
@@ -118,7 +118,7 @@ function TargetForm({ list, onSaved }: { list: Targets; onSaved: (list: Targets)
 function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets) => void }) {
   const mayRemove = useAccess().mayCall("POST /api/targets/remove");
   const [failure, setFailure] = useState<Failure | null>(null);
-  if (list.targets.length === 0) return <p className={styles.note}>{copy.none}</p>;
+  if (list.targets.length === 0) return <p className={form.note}>{copy.none}</p>;
   const remove = async (city: string, measure: Measure) => {
     setFailure(null);
     const answer = await client.post("/api/targets/remove", { body: { month: list.month, city, measure } });
@@ -128,7 +128,7 @@ function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets
   return (
     <>
       <Refused failed={failure} errors={copy.errors} />
-      <Table className={styles.table}>
+      <Table className={form.table}>
         <thead>
           <tr>
             {Object.values(copy.columns).map((column) => (
@@ -149,7 +149,7 @@ function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets
               {mayRemove && (
                 <td>
                   <RowButton
-                    className={styles.inline}
+                    className={form.inline}
                     aria-label={copy.removeLabel(target.city, copy.measures[target.measure])}
                     onClick={() => void remove(target.city, target.measure)}
                   >
@@ -190,9 +190,9 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
 export function TargetsScreen() {
   const [month, setMonth] = useState<string | null>(null);
   return (
-    <div className={styles.screen}>
-      <Panel titleId="targets" title={copy.title} className={styles.panel}>
-        <p className={styles.note}>{copy.intro}</p>
+    <div className={form.screen}>
+      <Panel titleId="targets" title={copy.title} className={form.panel}>
+        <p className={form.note}>{copy.intro}</p>
         <MonthTargets key={month ?? "now"} month={month} onMonth={setMonth} />
       </Panel>
     </div>

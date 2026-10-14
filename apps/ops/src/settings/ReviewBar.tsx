@@ -5,18 +5,18 @@ import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { review } from "../content/common.ts";
 import { settings } from "../content/settings.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
 export function ReviewBar(props: { ready: boolean; saved: boolean; onReview: () => void }) {
   return (
     <>
-      <div className={styles.actions}>
+      <div className={form.actions}>
         <Button variant="primary" size="small" disabled={!props.ready} onClick={props.onReview}>
           {review.next}
         </Button>
       </div>
       {props.saved && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {settings.rules.saved}
         </InlineMessage>
       )}

@@ -11,7 +11,7 @@ import { client } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { SupplierForm, type Supplier, type Suppliers as SupplierList } from "./SupplierForm.tsx";
 import { SupplierItems } from "./SupplierItems.tsx";
 import { ActionCheck, sentOf } from "./SettingForm.tsx";
@@ -36,17 +36,17 @@ function Actions(props: {
   return (
     <td>
       <span>{retired ? copy.retired : copy.active}</span>{" "}
-      <RowButton className={styles.inline} aria-label={copy.itemsLabel(supplier.name)} onClick={props.onItems}>
+      <RowButton className={form.inline} aria-label={copy.itemsLabel(supplier.name)} onClick={props.onItems}>
         {copy.items}
       </RowButton>
       {access.mayCall("POST /api/suppliers/{id}") && (
-        <RowButton className={styles.inline} aria-label={copy.changeLabel(supplier.name)} onClick={props.onChange}>
+        <RowButton className={form.inline} aria-label={copy.changeLabel(supplier.name)} onClick={props.onChange}>
           {copy.change}
         </RowButton>
       )}
       {access.mayCall("POST /api/suppliers/{id}/retire") && !asking && (
         <RowButton
-          className={styles.inline}
+          className={form.inline}
           aria-label={retired ? copy.restoreLabel(supplier.name) : copy.retireLabel(supplier.name)}
           onClick={() => {
             setAsking(true);
@@ -89,9 +89,9 @@ function SupplierTable(props: {
 }) {
   const { suppliers, onChange, onItems, onRetired } = props;
   return suppliers.suppliers.length === 0 ? (
-    <p className={styles.note}>{copy.none}</p>
+    <p className={form.note}>{copy.none}</p>
   ) : (
-    <Table className={styles.table}>
+    <Table className={form.table}>
       <thead>
         <tr>
           {copy.columns.map((column) => (
@@ -104,7 +104,7 @@ function SupplierTable(props: {
       <tbody>
         {suppliers.suppliers.map((supplier) => (
           <tr key={supplier.id}>
-            <th scope="row" className={styles.rowHead}>
+            <th scope="row" className={form.rowHead}>
               {supplier.name}
             </th>
             <td>
@@ -150,7 +150,7 @@ export function Suppliers() {
 
   return (
     <>
-      <Panel titleId="suppliers" title={copy.title} className={styles.panel}>
+      <Panel titleId="suppliers" title={copy.title} className={form.panel}>
         <SupplierTable
           suppliers={current}
           onChange={(id) => {
@@ -161,7 +161,7 @@ export function Suppliers() {
           onRetired={saved}
         />
         {said !== null && (
-          <InlineMessage tone="saved" className={styles.saved}>
+          <InlineMessage tone="saved" className={form.saved}>
             {said}
           </InlineMessage>
         )}

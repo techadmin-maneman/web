@@ -11,7 +11,7 @@ import { useState } from "react";
 import { client } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import type { Supplier, Suppliers } from "./SupplierForm.tsx";
 
@@ -42,11 +42,11 @@ const draftOf = (suppliers: Suppliers, item: Item | null): Draft => ({
 
 function ItemEntry(props: { label: string; value: string; onChange: (text: string) => void }) {
   return (
-    <Field label={props.label} className={styles.field}>
+    <Field label={props.label} className={form.field}>
       {(control) => (
         <TextInput
           {...control}
-          className={styles.figureBox}
+          className={form.figureBox}
           maxLength={12}
           value={props.value}
           onChange={(event) => {
@@ -71,12 +71,12 @@ function ItemBoxes(props: {
   const unit = suppliers.consumables.find((each) => each.code === draft.code)?.unit ?? "";
   return (
     <>
-      <div className={styles.fields}>
-        <Field label={words.consumable} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={words.consumable} className={form.field}>
           {(control) => (
             <Select
               {...control}
-              className={styles.choiceBox}
+              className={form.choiceBox}
               value={draft.code}
               onChange={(event) => {
                 // A stock code already listed starts from what it holds; a new one from nothing.
@@ -97,7 +97,7 @@ function ItemBoxes(props: {
         <ItemEntry label={words.theirCode} value={draft.theirCode} onChange={edit("theirCode")} />
         <ItemEntry label={words.price(supplier.currency, unit)} value={draft.price} onChange={edit("price")} />
       </div>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <ItemEntry label={words.pack(unit)} value={draft.pack} onChange={edit("pack")} />
         <ItemEntry label={words.minimum} value={draft.minimum} onChange={edit("minimum")} />
         <ItemEntry label={words.lead} value={draft.lead} onChange={edit("lead")} />
@@ -161,7 +161,7 @@ function ItemForm({
       errors={copy.errors}
       onCancel={null}
       checking={[before === null ? line : copy.form.confirm.line(name, before, line)].map((each) => (
-        <p className={styles.checkLine} key={each}>
+        <p className={form.checkLine} key={each}>
           {each}
         </p>
       ))}
@@ -191,7 +191,7 @@ function RemoveItem(props: {
   if (!asking) {
     return (
       <RowButton
-        className={styles.inline}
+        className={form.inline}
         aria-label={words.removeLabel(props.name)}
         onClick={() => {
           setAsking(true);
@@ -240,9 +240,9 @@ export function SupplierItems({
   return (
     <Panel titleId="supplier-items" title={words.title(supplier.name)}>
       {supplier.items.length === 0 ? (
-        <p className={styles.note}>{words.none}</p>
+        <p className={form.note}>{words.none}</p>
       ) : (
-        <Table className={styles.table}>
+        <Table className={form.table}>
           <thead>
             <tr>
               {words.columns.map((column) => (
@@ -256,16 +256,16 @@ export function SupplierItems({
           <tbody>
             {supplier.items.map((item) => (
               <tr key={item.consumable_code}>
-                <th scope="row" className={styles.rowHead}>
+                <th scope="row" className={form.rowHead}>
                   {named(item.consumable_code)}
                 </th>
                 <td>{item.their_code ?? ""}</td>
-                <td className={styles.figure}>
+                <td className={form.figure}>
                   {words.perUnit(inCurrency(item.unit_price, supplier.currency), unitOf(item.consumable_code))}
                 </td>
-                <td className={styles.figure}>{words.amount(item.pack_size, unitOf(item.consumable_code))}</td>
-                <td className={styles.figure}>{words.amount(item.minimum_order, unitOf(item.consumable_code))}</td>
-                <td className={styles.figure}>{words.days(item.lead_time_days)}</td>
+                <td className={form.figure}>{words.amount(item.pack_size, unitOf(item.consumable_code))}</td>
+                <td className={form.figure}>{words.amount(item.minimum_order, unitOf(item.consumable_code))}</td>
+                <td className={form.figure}>{words.days(item.lead_time_days)}</td>
                 <td>
                   <RemoveItem
                     supplier={supplier}

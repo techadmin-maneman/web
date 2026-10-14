@@ -11,9 +11,9 @@ import { api, type PayKind, type TechnicianPay } from "../api.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { rateNow } from "./pay-rates.ts";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
-const { form, check, errors } = technicianPay;
+const { form: formWords, check, errors } = technicianPay;
 
 type Grade = TechnicianPay["grades"][number];
 type PayTechnician = TechnicianPay["technicians"][number];
@@ -26,12 +26,12 @@ interface FormProps {
 /** A grade's name, typed. */
 function NameField({ name, onName }: { name: string; onName: (name: string) => void }) {
   return (
-    <div className={styles.fields}>
-      <Field label={form.name} className={styles.field}>
+    <div className={form.fields}>
+      <Field label={formWords.name} className={form.field}>
         {(control) => (
           <TextInput
             {...control}
-            className={styles.areaBox}
+            className={form.areaBox}
             maxLength={40}
             value={name}
             onChange={(event) => {
@@ -54,12 +54,12 @@ export function AddGradeForm({ onDone, onCancel }: FormProps) {
   );
   return (
     <SettingForm
-      title={form.addTitle}
+      title={formWords.addTitle}
       steps={steps}
       ready={name.trim() !== ""}
       errors={errors}
       onCancel={onCancel}
-      checking={<p className={styles.checkLine}>{check.add(name.trim())}</p>}
+      checking={<p className={form.checkLine}>{check.add(name.trim())}</p>}
     >
       <NameField
         name={name}
@@ -82,12 +82,12 @@ export function RenameGradeForm({ grade, onDone, onCancel }: FormProps & { reado
   );
   return (
     <SettingForm
-      title={form.renameTitle(grade.name)}
+      title={formWords.renameTitle(grade.name)}
       steps={steps}
       ready={name.trim() !== "" && name.trim() !== grade.name}
       errors={errors}
       onCancel={onCancel}
-      checking={<p className={styles.checkLine}>{check.rename(grade.name, name.trim())}</p>}
+      checking={<p className={form.checkLine}>{check.rename(grade.name, name.trim())}</p>}
     >
       <NameField
         name={name}
@@ -119,11 +119,11 @@ interface DraftProps {
 function RateWhere({ pay, draft, edit }: DraftProps) {
   return (
     <>
-      <Field label={form.kind} className={styles.field}>
+      <Field label={formWords.kind} className={form.field}>
         {(control) => (
           <Select
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             value={draft.kind}
             onChange={(event) => {
               edit({ kind: pay.kinds.find((kind) => kind === event.target.value) ?? draft.kind });
@@ -137,11 +137,11 @@ function RateWhere({ pay, draft, edit }: DraftProps) {
           </Select>
         )}
       </Field>
-      <Field label={form.city} className={styles.field}>
+      <Field label={formWords.city} className={form.field}>
         {(control) => (
           <Select
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             value={draft.city}
             onChange={(event) => {
               edit({ city: event.target.value });
@@ -164,13 +164,13 @@ function RateWhere({ pay, draft, edit }: DraftProps) {
 function RateFields({ pay, draft, edit }: DraftProps) {
   return (
     <>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <RateWhere pay={pay} draft={draft} edit={edit} />
-        <Field label={form.amount} className={styles.field}>
+        <Field label={formWords.amount} className={form.field}>
           {(control) => (
             <NumberInput
               {...control}
-              className={styles.amountBox}
+              className={form.amountBox}
               inputMode="numeric"
               step={1}
               min={0}
@@ -184,14 +184,14 @@ function RateFields({ pay, draft, edit }: DraftProps) {
           )}
         </Field>
         <Field
-          label={form.from}
-          className={styles.field}
+          label={formWords.from}
+          className={form.field}
           error={draft.from !== "" && draft.from < pay.today ? technicianPay.errors.from : undefined}
         >
           {(control) => (
             <DateInput
               {...control}
-              className={styles.dateBox}
+              className={form.dateBox}
               min={pay.today}
               value={draft.from}
               onChange={(event) => {
@@ -201,9 +201,9 @@ function RateFields({ pay, draft, edit }: DraftProps) {
           )}
         </Field>
       </div>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <Checkbox
-          label={form.none}
+          label={formWords.none}
           checked={draft.none}
           onChange={(event) => {
             edit({ none: event.currentTarget.checked });
@@ -250,12 +250,12 @@ export function SetRateForm(props: FormProps & { readonly grade: Grade; readonly
   const now = amount === null ? noneFor(city) : rupees(amount);
   return (
     <SettingForm
-      title={form.rateTitle(grade.name)}
+      title={formWords.rateTitle(grade.name)}
       steps={steps}
       ready={amountOk && draft.from >= pay.today}
       errors={errors}
       onCancel={props.onCancel}
-      checking={<p className={styles.checkLine}>{check.rate(where, was, now, shortDate(draft.from))}</p>}
+      checking={<p className={form.checkLine}>{check.rate(where, was, now, shortDate(draft.from))}</p>}
     >
       <RateFields pay={pay} draft={draft} edit={edit} />
     </SettingForm>
@@ -275,21 +275,21 @@ export function GradeOfForm(props: FormProps & { readonly technician: PayTechnic
   );
   return (
     <SettingForm
-      title={form.gradeTitle(technician.name)}
+      title={formWords.gradeTitle(technician.name)}
       steps={steps}
       ready={grade !== (technician.grade_id ?? "")}
       errors={errors}
       onCancel={props.onCancel}
       checking={
-        <p className={styles.checkLine}>{check.grade(technician.name, nameOf(technician.grade_id), nameOf(grade))}</p>
+        <p className={form.checkLine}>{check.grade(technician.name, nameOf(technician.grade_id), nameOf(grade))}</p>
       }
     >
-      <div className={styles.fields}>
-        <Field label={form.grade} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={formWords.grade} className={form.field}>
           {(control) => (
             <Select
               {...control}
-              className={styles.choiceBox}
+              className={form.choiceBox}
               value={grade}
               onChange={(event) => {
                 setGrade(event.target.value);

@@ -13,8 +13,8 @@ import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi } from "./care-api.ts";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
 
 const copy = care.quick;
 
@@ -51,7 +51,7 @@ export function QuickReplyPick(props: {
       {(control) => (
         <Select
           {...control}
-          className={styles.choiceBox}
+          className={form.choiceBox}
           value=""
           onChange={(event) => {
             const reply = replies.find((each) => each.id === event.target.value);
@@ -86,8 +86,8 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
     onAdded();
   };
   return (
-    <div className={own.teamForm}>
-      <div className={styles.fields}>
+    <div className={styles.teamForm}>
+      <div className={form.fields}>
         <Field label={copy.title}>
           {(control) => (
             <TextInput
@@ -100,11 +100,11 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
             />
           )}
         </Field>
-        <Field label={copy.text} className={own.reply}>
+        <Field label={copy.text} className={styles.reply}>
           {(control) => (
             <TextArea
               {...control}
-              className={own.box}
+              className={styles.box}
               rows={3}
               maxLength={1000}
               value={text}
@@ -115,8 +115,8 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
           )}
         </Field>
       </div>
-      <p className={styles.note}>{copy.holes}</p>
-      <div className={styles.actions}>
+      <p className={form.note}>{copy.holes}</p>
+      <div className={form.actions}>
         <Button
           variant="primary"
           size="small"
@@ -140,17 +140,17 @@ export function QuickRepliesPanel() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { replies } = loaded.value;
   return (
-    <div className={own.quick}>
+    <div className={styles.quick}>
       {replies.length === 0 ? (
-        <p className={styles.note}>{copy.none}</p>
+        <p className={form.note}>{copy.none}</p>
       ) : (
-        <ul className={own.leave}>
+        <ul className={styles.leave}>
           {replies.map((reply) => (
             <li key={reply.id}>
-              <span className={own.who}>{reply.title}</span> · {reply.text}{" "}
+              <span className={styles.who}>{reply.title}</span> · {reply.text}{" "}
               {mayKeep && (
                 <RowButton
-                  className={styles.inline}
+                  className={form.inline}
                   aria-label={copy.retireLabel(reply.title)}
                   onClick={() => void careApi.retireQuickReply(reply.id).then(retry)}
                 >

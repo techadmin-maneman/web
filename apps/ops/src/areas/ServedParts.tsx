@@ -9,7 +9,7 @@ import { Table } from "@maneman/ui/Table";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import type { AreaChange, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import type { Draft, FileChange, Row } from "./served-draft.ts";
 import { Refusal } from "../components/Refusal.tsx";
@@ -40,13 +40,13 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
   const id = pincode.pincode;
   return (
     <tr>
-      <th scope="row" className={styles.rowHead}>
+      <th scope="row" className={form.rowHead}>
         {id}
       </th>
       <td>
         <TextInput
           compact
-          className={styles.cellText}
+          className={form.cellText}
           id={`area-${id}`}
           maxLength={40}
           aria-label={copy.areaLabel(id)}
@@ -70,7 +70,7 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
       <td>
         <DateInput
           compact
-          className={styles.cellDate}
+          className={form.cellDate}
           aria-label={copy.launchOn(id)}
           disabled={!mayChange}
           value={row.launch_on ?? ""}
@@ -79,7 +79,7 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
           }}
         />
       </td>
-      <td className={styles.figure}>{pincode.waiting}</td>
+      <td className={form.figure}>{pincode.waiting}</td>
     </tr>
   );
 }
@@ -132,17 +132,17 @@ function FilePreview({
   const describe = (row: Row) => copy.upload.state(row.served, row.launch_on);
   if (rows.length === 0) {
     return (
-      <InlineMessage tone="saved" className={styles.saved}>
+      <InlineMessage tone="saved" className={form.saved}>
         {copy.upload.none}
       </InlineMessage>
     );
   }
   return (
-    <div className={styles.uploaded}>
-      <InlineMessage tone="saved" className={styles.saved}>
+    <div className={form.uploaded}>
+      <InlineMessage tone="saved" className={form.saved}>
         {copy.upload.read(rows.length)}
       </InlineMessage>
-      <Table className={styles.table}>
+      <Table className={form.table}>
         <thead>
           <tr>
             {copy.upload.columns.map((column) => (
@@ -155,7 +155,7 @@ function FilePreview({
         <tbody>
           {rows.map((row) => (
             <tr key={row.pincode.pincode}>
-              <th scope="row" className={styles.rowHead}>
+              <th scope="row" className={form.rowHead}>
                 {row.pincode.pincode}
               </th>
               <td>{row.pincode.area}</td>
@@ -165,11 +165,11 @@ function FilePreview({
           ))}
         </tbody>
       </Table>
-      <div className={styles.actions}>
+      <div className={form.actions}>
         <Button variant="primary" size="small" onClick={onApply}>
           {copy.upload.apply}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={onCancel}>
+        <Button variant="outline" size="small" className={form.quiet} onClick={onCancel}>
           {copy.upload.cancel}
         </Button>
       </div>
@@ -190,12 +190,12 @@ export function UploadFile({
   onCancel: () => void;
 }) {
   return (
-    <Fieldset className={styles.group} legend={copy.upload.title} legendLook="title">
-      <Field label={copy.upload.label} hint={copy.upload.hint} className={styles.field} look={{ hint: styles.hint }}>
+    <Fieldset className={form.group} legend={copy.upload.title} legendLook="title">
+      <Field label={copy.upload.label} hint={copy.upload.hint} className={form.field} look={{ hint: form.hint }}>
         {(control) => (
           <FileInput
             {...control}
-            className={styles.file}
+            className={form.file}
             accept=".csv,text/csv"
             onChange={(event) => {
               const file = event.target.files?.[0];
@@ -214,11 +214,11 @@ export function UploadFile({
         />
       )}
       {upload?.step === "applied" && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {copy.upload.applied}
         </InlineMessage>
       )}
-      {upload?.step === "failed" && <Refusal className={styles.error} said={upload.says} />}
+      {upload?.step === "failed" && <Refusal className={form.error} said={upload.says} />}
     </Fieldset>
   );
 }
@@ -242,7 +242,7 @@ export function CityTabs({
   const cityTabs = [...new Set(pincodes.map((each) => each.city))];
   return (
     <>
-      <Tabs className={styles.cities} label={copy.title}>
+      <Tabs className={form.cities} label={copy.title}>
         {cityTabs.map((each) => {
           const all = pincodes.filter((one) => one.city === each);
           const served = all.filter((one) => draft[one.pincode]?.served === true).length;
@@ -261,13 +261,13 @@ export function CityTabs({
       </Tabs>
 
       {mayChange && (
-        <div className={styles.actions}>
+        <div className={form.actions}>
           {[true, false].map((served) => (
             <Button
               variant="outline"
               size="small"
               key={String(served)}
-              className={styles.quiet}
+              className={form.quiet}
               onClick={() => {
                 onBulk(served);
               }}
@@ -297,16 +297,16 @@ export function SaveNotes({
 }) {
   return (
     <>
-      {badName !== undefined && <Refusal className={styles.error} said={copy.badName(badName.pincode)} />}
-      {later !== undefined && <Refusal className={styles.error} said={copy.later(later.pincode)} />}
-      {mayChange && changes.length === 0 && saving.step === "editing" && <p className={styles.hint}>{copy.nothing}</p>}
+      {badName !== undefined && <Refusal className={form.error} said={copy.badName(badName.pincode)} />}
+      {later !== undefined && <Refusal className={form.error} said={copy.later(later.pincode)} />}
+      {mayChange && changes.length === 0 && saving.step === "editing" && <p className={form.hint}>{copy.nothing}</p>}
       {saving.step === "saved" && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {copy.saved(saving.changed, saving.alerted)}
         </InlineMessage>
       )}
       {saving.step === "failed" && (
-        <Refusal className={styles.error} said={errorText(copy.errors, { code: saving.code })} />
+        <Refusal className={form.error} said={errorText(copy.errors, { code: saving.code })} />
       )}
     </>
   );

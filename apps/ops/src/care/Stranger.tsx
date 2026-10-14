@@ -9,8 +9,8 @@ import { api, type ClientsFound } from "../api.ts";
 import { care } from "../content/care.ts";
 import { Refused } from "../settings/index.ts";
 import { careApi, type FoundUs } from "./care-api.ts";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
 
 const copy = care.stranger;
 
@@ -37,8 +37,8 @@ function FindAndLink(props: { conversationId: string; onDone: () => void }) {
     else failed(answer);
   };
   return (
-    <div className={own.stranger}>
-      <div className={own.closing}>
+    <div className={styles.stranger}>
+      <div className={styles.closing}>
         <Field label={copy.find}>
           {(control) => (
             <TextInput
@@ -55,14 +55,14 @@ function FindAndLink(props: { conversationId: string; onDone: () => void }) {
           {copy.search}
         </Button>
       </div>
-      {found !== null && found.length === 0 && <p className={styles.note}>{copy.noneFound}</p>}
+      {found !== null && found.length === 0 && <p className={form.note}>{copy.noneFound}</p>}
       {found !== null && found.length > 0 && (
-        <ul className={own.leave}>
+        <ul className={styles.leave}>
           {found.map((client) => (
             <li key={client.id}>
               {copy.client(client.name, client.mobile)}{" "}
               <RowButton
-                className={styles.inline}
+                className={form.inline}
                 aria-label={copy.linkLabel(client.name)}
                 onClick={() => void link(client.id)}
               >
@@ -88,8 +88,8 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
     else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <div className={own.stranger}>
-      <div className={own.closing}>
+    <div className={styles.stranger}>
+      <div className={styles.closing}>
         <Field label={copy.name}>
           {(control) => (
             <TextInput
@@ -106,7 +106,7 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
           {(control) => (
             <Select
               {...control}
-              className={styles.choiceBox}
+              className={form.choiceBox}
               value={foundUs}
               onChange={(event) => {
                 setFoundUs(event.target.value as FoundUs | "");
@@ -131,8 +131,8 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
 
 export function Stranger(props: { readonly conversationId: string; readonly onDone: () => void }) {
   return (
-    <section className={styles.group} aria-label={copy.title}>
-      <p className={styles.note}>{copy.title}</p>
+    <section className={form.group} aria-label={copy.title}>
+      <p className={form.note}>{copy.title}</p>
       <FindAndLink conversationId={props.conversationId} onDone={props.onDone} />
       <SaveAsNew conversationId={props.conversationId} onDone={props.onDone} />
     </section>

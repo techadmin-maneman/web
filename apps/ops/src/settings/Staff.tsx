@@ -21,8 +21,8 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { grantWords } from "../lib/grants.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { StaffForm } from "./StaffForm.tsx";
-import styles from "../components/forms.module.css";
-import staffStyles from "./staff.module.css";
+import form from "../components/forms.module.css";
+import styles from "./staff.module.css";
 
 const copy = settings.staff;
 
@@ -36,12 +36,10 @@ function Enforcement({ staff, onChanged }: PanelProps) {
   const on = staff.enforced.on;
   const { set_by: setBy, set_at: setAt } = staff.enforced;
   return (
-    <Panel titleId="staff-enforcement" title={words.title} className={styles.panel}>
-      <p className={styles.note}>{on ? words.on : words.off}</p>
-      {setBy !== null && setAt !== null && (
-        <p className={styles.note}>{words.setBy(whoWords(setBy), longDate(setAt))}</p>
-      )}
-      {!staff.may_run_access && <p className={styles.note}>{words.onlyNational}</p>}
+    <Panel titleId="staff-enforcement" title={words.title} className={form.panel}>
+      <p className={form.note}>{on ? words.on : words.off}</p>
+      {setBy !== null && setAt !== null && <p className={form.note}>{words.setBy(whoWords(setBy), longDate(setAt))}</p>}
+      {!staff.may_run_access && <p className={form.note}>{words.onlyNational}</p>}
       {staff.may_run_access && (
         <ActionCheck
           key={String(on)}
@@ -81,8 +79,8 @@ function People({ staff, onChanged }: PanelProps) {
   };
 
   return (
-    <Panel titleId="staff-people" title={copy.title} className={styles.panel}>
-      <Table className={styles.table}>
+    <Panel titleId="staff-people" title={copy.title} className={form.panel}>
+      <Table className={form.table}>
         <thead>
           <tr>
             <th scope="col">{copy.columns.person}</th>
@@ -101,7 +99,7 @@ function People({ staff, onChanged }: PanelProps) {
                 {each.grants.length === 0
                   ? copy.noAccess
                   : each.grants.map((grant) => (
-                      <span className={staffStyles.grantLine} key={grantWords(grant)}>
+                      <span className={styles.grantLine} key={grantWords(grant)}>
                         {grantWords(grant)}
                       </span>
                     ))}
@@ -112,7 +110,7 @@ function People({ staff, onChanged }: PanelProps) {
                   <Button
                     variant="outline"
                     size="small"
-                    className={styles.quiet}
+                    className={form.quiet}
                     aria-label={copy.changeLabel(each.email)}
                     onClick={() => {
                       open(each.email);
@@ -127,11 +125,11 @@ function People({ staff, onChanged }: PanelProps) {
         </tbody>
       </Table>
       {editing === null && mayGrant && (
-        <div className={styles.actions}>
+        <div className={form.actions}>
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={form.quiet}
             onClick={() => {
               open("new");
             }}
@@ -156,7 +154,7 @@ function People({ staff, onChanged }: PanelProps) {
         />
       )}
       {mayRemove && (
-        <div className={styles.group}>
+        <div className={form.group}>
           <DeleteAction
             key={person.email}
             name={person.email}
@@ -172,7 +170,7 @@ function People({ staff, onChanged }: PanelProps) {
         </div>
       )}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
@@ -190,10 +188,10 @@ interface TokenRowProps {
 function TokenRow({ token, removable, onChanged }: TokenRowProps) {
   const words = copy.tokens;
   return (
-    <li className={styles.rule}>
-      <p className={styles.period}>{token.label}</p>
-      <p className={styles.set}>{token.client_id}</p>
-      <p className={styles.set}>{words.addedBy(whoWords(token.added_by), longDate(token.added_at))}</p>
+    <li className={form.rule}>
+      <p className={form.period}>{token.label}</p>
+      <p className={form.set}>{token.client_id}</p>
+      <p className={form.set}>{words.addedBy(whoWords(token.added_by), longDate(token.added_at))}</p>
       {removable && (
         <ActionCheck
           label={words.remove}
@@ -233,14 +231,14 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
       ready={ready}
       errors={words.errors}
       onCancel={null}
-      checking={<p className={styles.checkLine}>{words.adding(label.trim(), clientId.trim())}</p>}
+      checking={<p className={form.checkLine}>{words.adding(label.trim(), clientId.trim())}</p>}
     >
-      <div className={styles.fields}>
-        <Field label={words.clientId} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={words.clientId} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.text}
+              className={form.text}
               autoComplete="off"
               maxLength={100}
               value={clientId}
@@ -251,11 +249,11 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
             />
           )}
         </Field>
-        <Field label={words.label} className={styles.field}>
+        <Field label={words.label} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
-              className={styles.text}
+              className={form.text}
               maxLength={60}
               value={label}
               onChange={(event) => {
@@ -273,17 +271,17 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
 function ServiceTokens({ staff, onChanged }: PanelProps) {
   const words = copy.tokens;
   return (
-    <Panel titleId="staff-tokens" title={words.title} className={styles.panel}>
+    <Panel titleId="staff-tokens" title={words.title} className={form.panel}>
       {staff.service_tokens.length === 0 ? (
-        <p className={styles.note}>{words.none}</p>
+        <p className={form.note}>{words.none}</p>
       ) : (
-        <ul className={styles.rules}>
+        <ul className={form.rules}>
           {staff.service_tokens.map((token) => (
             <TokenRow key={token.client_id} token={token} removable={staff.may_run_access} onChanged={onChanged} />
           ))}
         </ul>
       )}
-      {staff.may_run_access ? <TokenForm onChanged={onChanged} /> : <p className={styles.note}>{words.onlyNational}</p>}
+      {staff.may_run_access ? <TokenForm onChanged={onChanged} /> : <p className={form.note}>{words.onlyNational}</p>}
     </Panel>
   );
 }

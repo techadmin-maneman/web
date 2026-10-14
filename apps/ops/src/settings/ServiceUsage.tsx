@@ -12,8 +12,8 @@ import { dispatch } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { review } from "../content/common.ts";
-import styles from "../components/forms.module.css";
-import own from "./consumables.module.css";
+import form from "../components/forms.module.css";
+import styles from "./consumables.module.css";
 import { SettingForm, sentOf, useSteps, type Sent } from "./SettingForm.tsx";
 
 const copy = settings.consumables;
@@ -49,11 +49,11 @@ function UsageFields(props: {
   const { consumables, listed, draft } = props;
   return (
     <>
-      <Field label={words.service} className={styles.field}>
+      <Field label={words.service} className={form.field}>
         {(control) => (
           <Select
             {...control}
-            className={styles.select}
+            className={form.select}
             value={props.chosen}
             onChange={(event) => {
               props.onChoose(event.target.value);
@@ -74,16 +74,16 @@ function UsageFields(props: {
         )}
       </Field>
       {listed.length === 0 ? (
-        <p className={styles.note}>{words.noneOffered}</p>
+        <p className={form.note}>{words.noneOffered}</p>
       ) : (
-        <ul className={own.uses}>
+        <ul className={styles.uses}>
           {listed.map((each) => (
-            <li className={own.use} key={each.code}>
+            <li className={styles.use} key={each.code}>
               <Field label={words.quantity(each.name, each.unit)}>
                 {(control) => (
                   <TextInput
                     {...control}
-                    className={styles.number}
+                    className={form.number}
                     inputMode="numeric"
                     maxLength={3}
                     readOnly={!props.mayChange}
@@ -169,7 +169,7 @@ export function ServiceUsage({ consumables, onSaved }: ServiceUsageProps) {
   );
 
   return (
-    <Panel titleId="service-usage" title={words.title} className={styles.panel}>
+    <Panel titleId="service-usage" title={words.title} className={form.panel}>
       {mayChange ? (
         <SettingForm
           said={saved ? words.saved : null}
@@ -180,7 +180,7 @@ export function ServiceUsage({ consumables, onSaved }: ServiceUsageProps) {
           onCancel={null}
           sendable={lines.length > 0}
           checking={(lines.length === 0 ? [review.nothing] : lines).map((line) => (
-            <p className={styles.checkLine} key={line}>
+            <p className={form.checkLine} key={line}>
               {line}
             </p>
           ))}
@@ -188,7 +188,7 @@ export function ServiceUsage({ consumables, onSaved }: ServiceUsageProps) {
           {fields}
         </SettingForm>
       ) : (
-        <Fieldset className={styles.group} legend={title} legendLook="title">
+        <Fieldset className={form.group} legend={title} legendLook="title">
           {fields}
         </Fieldset>
       )}

@@ -33,8 +33,8 @@ import {
   type Priced,
   type Written,
 } from "./ServiceForms.tsx";
-import styles from "../components/forms.module.css";
-import prices from "./prices.module.css";
+import form from "../components/forms.module.css";
+import styles from "./prices.module.css";
 
 const copy = settings.services;
 
@@ -73,8 +73,8 @@ const actionWhere = (action: Action): string => {
 };
 
 /** The services after a price is set or taken back: each service's and late fee's rows, from the book's answer. */
-function withPrices(services: ServiceCatalogue, prices: readonly Price[]): ServiceCatalogue {
-  const rowsOf = (item: string, tier: string) => prices.filter((row) => row.item === item && row.tier === tier);
+function withPrices(services: ServiceCatalogue, styles: readonly Price[]): ServiceCatalogue {
+  const rowsOf = (item: string, tier: string) => styles.filter((row) => row.item === item && row.tier === tier);
   return {
     ...services,
     services: services.services.map((service) => ({ ...service, prices: rowsOf(service.kind, service.tier) })),
@@ -175,7 +175,7 @@ function OpenAction({ opened, where }: { opened: Opened; where: string }) {
 function Outcome({ opened, where }: { opened: Opened; where: string }) {
   if (opened.outcome?.where !== where) return null;
   return (
-    <InlineMessage tone="saved" className={styles.saved}>
+    <InlineMessage tone="saved" className={form.saved}>
       {opened.outcome.said}
     </InlineMessage>
   );
@@ -193,7 +193,7 @@ function ActionButton(props: {
   if (!props.opened.may(props.kind)) return null;
   return (
     <RowButton
-      className={classes(styles.inline, prices.action)}
+      className={classes(form.inline, styles.action)}
       aria-label={props.label}
       disabled={props.opened.action !== null}
       onClick={props.onClick}
@@ -223,9 +223,9 @@ function Strip(props: {
   const { toCome, spent } = pricesOf(target, opened.services.today);
   const busy = opened.action !== null;
   return (
-    <tr className={prices.strip} id={props.id}>
+    <tr className={styles.strip} id={props.id}>
       <td colSpan={copy.columns.length + 1}>
-        <div className={styles.actions}>
+        <div className={form.actions}>
           {props.actions.map((action) => (
             <ActionButton
               key={action.word}
@@ -240,11 +240,11 @@ function Strip(props: {
           {props.link}
         </div>
         {toCome.map((row) => (
-          <p key={row.valid_from} className={prices.line}>
+          <p key={row.valid_from} className={styles.line}>
             {copy.toCome(priceWords(row), longDate(row.valid_from))}
             {opened.may("correct") && (
               <RowButton
-                className={styles.inline}
+                className={form.inline}
                 aria-label={copy.labels.correct(target.name, longDate(row.valid_from))}
                 disabled={busy}
                 onClick={() => {
@@ -256,7 +256,7 @@ function Strip(props: {
             )}
             {opened.may("takeBack") && (
               <RowButton
-                className={styles.inline}
+                className={form.inline}
                 aria-label={copy.labels.takeBack(target.name, longDate(row.valid_from))}
                 disabled={busy}
                 onClick={() => {
@@ -269,7 +269,7 @@ function Strip(props: {
           </p>
         ))}
         {spent.length > 0 && (
-          <p className={classes(prices.line, prices.muted)}>
+          <p className={classes(styles.line, styles.muted)}>
             {copy.earlier(spent.map((row) => copy.toCome(priceWords(row), longDate(row.valid_from))))}
           </p>
         )}
@@ -300,18 +300,18 @@ function PriceRow(props: {
   const stripId = `prices-${where.replace("/", "-")}`;
   return (
     <>
-      <tr className={props.retired ? prices.retired : undefined}>
-        <th scope="row" className={prices.name}>
+      <tr className={props.retired ? styles.retired : undefined}>
+        <th scope="row" className={styles.name}>
           <span>{props.name}</span>
           {props.lines.map((line) => (
-            <span key={line} className={prices.sub}>
+            <span key={line} className={styles.sub}>
               {line}
             </span>
           ))}
         </th>
-        <td className={prices.figure}>{props.minutes === null ? "" : copy.minutes(props.minutes)}</td>
-        <td className={prices.figure}>{inForce === undefined ? copy.unpriced : rupees(inForce.amount_ex_gst)}</td>
-        <td className={prices.figure}>{inForce === undefined ? "" : copy.percent(inForce.gst_percent)}</td>
+        <td className={styles.figure}>{props.minutes === null ? "" : copy.minutes(props.minutes)}</td>
+        <td className={styles.figure}>{inForce === undefined ? copy.unpriced : rupees(inForce.amount_ex_gst)}</td>
+        <td className={styles.figure}>{inForce === undefined ? "" : copy.percent(inForce.gst_percent)}</td>
         <td>
           {next === undefined
             ? ""
@@ -320,9 +320,9 @@ function PriceRow(props: {
                 longDate(next.valid_from),
               )}
         </td>
-        <td className={prices.edit}>
+        <td className={styles.edit}>
           <RowButton
-            className={styles.inline}
+            className={form.inline}
             aria-label={copy.labels.edit(target.name)}
             aria-expanded={open}
             aria-controls={open ? stripId : undefined}
@@ -419,7 +419,7 @@ function LateFeeRow({ fee, opened }: { fee: LateFee; opened: Opened }) {
       actions={[price]}
       link={
         mayOpenRules && (
-          <OpsLink className={classes(styles.link, prices.ruleLink)} to={rulePath("late_change_charge")}>
+          <OpsLink className={classes(form.link, styles.ruleLink)} to={rulePath("late_change_charge")}>
             {copy.lateFeeRule}
           </OpsLink>
         )
@@ -436,19 +436,19 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
   const name = copy.kinds[kind];
   const titleId = `kind-${kind}`;
   return (
-    <section className={classes(styles.kind, prices.kind)} aria-labelledby={titleId}>
-      <h3 className={styles.kindTitle} id={titleId}>
+    <section className={classes(form.kind, styles.kind)} aria-labelledby={titleId}>
+      <h3 className={form.kindTitle} id={titleId}>
         {name}
       </h3>
-      <div className={prices.scroll}>
-        <Table className={classes(styles.table, prices.table)}>
+      <div className={styles.scroll}>
+        <Table className={classes(form.table, styles.table)}>
           <caption>
             <VisuallyHidden>{name}</VisuallyHidden>
           </caption>
           <thead>
             <tr>
               {copy.columns.map((column, at) => (
-                <th key={column} scope="col" className={at > 0 && at < 4 ? prices.figure : undefined}>
+                <th key={column} scope="col" className={at > 0 && at < 4 ? styles.figure : undefined}>
                   {column}
                 </th>
               ))}
@@ -468,7 +468,7 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
       <OpenAction opened={opened} where={kind} />
       <Outcome opened={opened} where={kind} />
       {opened.may("add") && (opened.action === null || actionWhere(opened.action) !== kind) && (
-        <div className={classes(styles.actions, prices.add)}>
+        <div className={classes(form.actions, styles.add)}>
           <ActionButton
             opened={opened}
             kind="add"
@@ -524,7 +524,7 @@ export function Services() {
   };
 
   return (
-    <Panel titleId="services" title={copy.title} className={styles.panel}>
+    <Panel titleId="services" title={copy.title} className={form.panel}>
       {current.kinds.map(({ kind }) => (
         <KindSection key={kind} kind={kind} opened={opened} />
       ))}

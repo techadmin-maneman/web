@@ -19,7 +19,7 @@ import {
   type Draft,
 } from "./discount-draft.ts";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
 const copy = settings.discountCodes;
 
@@ -29,12 +29,12 @@ type Edit = (change: Partial<Draft>) => void;
 /** One code ops type, or how many are generated. */
 function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: Edit }) {
   return (
-    <div className={styles.fields}>
-      <Field label={copy.how} className={styles.field}>
+    <div className={form.fields}>
+      <Field label={copy.how} className={form.field}>
         {(control) => (
           <Select
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             value={draft.how}
             onChange={(event) => {
               edit({ how: event.target.value === "generated" ? "generated" : "typed" });
@@ -50,12 +50,12 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
           label={copy.code}
 
           error={codeError(draft)}
-          className={styles.field}
+          className={form.field}
         >
           {(control) => (
             <TextInput
               {...control}
-              className={styles.areaBox}
+              className={form.areaBox}
               autoCapitalize="characters"
               maxLength={CODE_LENGTH.max}
               value={draft.code}
@@ -66,11 +66,11 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
           )}
         </Field>
       ) : (
-        <Field label={copy.count} className={styles.field}>
+        <Field label={copy.count} className={form.field}>
           {(control) => (
             <NumberInput
               {...control}
-              className={styles.figureBox}
+              className={form.figureBox}
               min={1}
               max={most}
               value={draft.count}
@@ -88,12 +88,12 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
 /** What each code takes off: a percentage with an optional cap, or an amount. */
 function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
   return (
-    <div className={styles.fields}>
-      <Field label={copy.takesOff} className={styles.field}>
+    <div className={form.fields}>
+      <Field label={copy.takesOff} className={form.field}>
         {(control) => (
           <Select
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             value={draft.kind}
             onChange={(event) => {
               edit({ kind: event.target.value === "amount" ? "amount" : "percent", cap: "" });
@@ -104,11 +104,11 @@ function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
           </Select>
         )}
       </Field>
-      <Field label={draft.kind === "percent" ? copy.value : copy.rupeesOff} className={styles.field}>
+      <Field label={draft.kind === "percent" ? copy.value : copy.rupeesOff} className={form.field}>
         {(control) => (
           <NumberInput
             {...control}
-            className={draft.kind === "amount" ? styles.amountBox : styles.figureBox}
+            className={draft.kind === "amount" ? form.amountBox : form.figureBox}
             min={1}
             max={draft.kind === "percent" ? 100 : undefined}
             value={draft.value}
@@ -119,11 +119,11 @@ function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
         )}
       </Field>
       {draft.kind === "percent" && (
-        <Field label={copy.cap} className={styles.field}>
+        <Field label={copy.cap} className={form.field}>
           {(control) => (
             <NumberInput
               {...control}
-              className={styles.amountBox}
+              className={form.amountBox}
               min={1}
               value={draft.cap}
               onChange={(event) => {
@@ -144,7 +144,7 @@ function Covers({ draft, edit }: { draft: Draft; edit: Edit }) {
     edit({ covers: covered ? draft.covers.filter((each) => each !== kind) : [...draft.covers, kind] });
   };
   return (
-    <ChoiceGroup className={styles.choices} legend={copy.covers}>
+    <ChoiceGroup className={form.choices} legend={copy.covers}>
       {COVERS.map((kind) => (
         <Checkbox
           key={kind}
@@ -163,12 +163,12 @@ function Covers({ draft, edit }: { draft: Draft; edit: Edit }) {
 function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edit }) {
   return (
     <>
-      <div className={styles.fields}>
-        <Field label={copy.expires} className={styles.field}>
+      <div className={form.fields}>
+        <Field label={copy.expires} className={form.field}>
           {(control) => (
             <DateInput
               {...control}
-              className={styles.dateBox}
+              className={form.dateBox}
               min={today}
               value={draft.expiresOn}
               onChange={(event) => {
@@ -178,11 +178,11 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
           )}
         </Field>
         {!isBatch(draft) && (
-          <Field label={copy.maxUses} className={styles.field}>
+          <Field label={copy.maxUses} className={form.field}>
             {(control) => (
               <NumberInput
                 {...control}
-                className={styles.figureBox}
+                className={form.figureBox}
                 min={1}
                 value={draft.maxUses}
                 onChange={(event) => {
@@ -195,7 +195,7 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
       </div>
 
       <Checkbox
-        className={styles.once}
+        className={form.once}
         label={copy.oncePerClient}
         checked={draft.oncePerClient}
         onChange={(event) => {
@@ -246,7 +246,7 @@ export function DiscountCodeForm({
         steps.step === "editing"
           ? null
           : checkLines(draft, requestOf(draft)).map((line) => (
-              <p className={styles.checkLine} key={line}>
+              <p className={form.checkLine} key={line}>
                 {line}
               </p>
             ))

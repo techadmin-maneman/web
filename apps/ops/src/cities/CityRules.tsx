@@ -9,7 +9,7 @@ import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import type { Cities, CityRuleName } from "./types.ts";
 
 const copy = cities.rules;
@@ -36,13 +36,13 @@ function RuleForm(props: { city: string; rule: CityRuleName; now: number | null;
       ready={/^\d{1,4}$/.test(figure.trim())}
       errors={copy.errors}
       onCancel={null}
-      checking={<p className={styles.checkLine}>{copy.line(name, was, figure.trim())}</p>}
+      checking={<p className={form.checkLine}>{copy.line(name, was, figure.trim())}</p>}
     >
-      <Field label={`${copy.figure} (${copy.units[props.rule]})`} className={styles.field}>
+      <Field label={`${copy.figure} (${copy.units[props.rule]})`} className={form.field}>
         {(control) => (
           <NumberInput
             {...control}
-            className={styles.figureBox}
+            className={form.figureBox}
             value={figure}
             onChange={(event) => {
               setFigure(event.target.value);
@@ -59,8 +59,8 @@ function RuleRow(props: { city: string; rule: CityRuleName; own: number | null; 
   const access = useAccess();
   const name = copy.names[props.rule];
   return (
-    <div className={styles.rule}>
-      <p className={styles.ruleTitle}>
+    <div className={form.rule}>
+      <p className={form.ruleTitle}>
         {name}: {props.own === null ? copy.national : copy.own(`${String(props.own)} ${copy.units[props.rule]}`)}
       </p>
       {access.mayCall("PATCH /api/cities/{name}/rules/{rule}") && (
@@ -103,8 +103,8 @@ export function CityRules({ cities, onSaved }: { cities: Cities; onSaved: () => 
   };
   return (
     <Panel titleId="city-rules" title={copy.panel}>
-      <p className={styles.note}>{copy.note}</p>
-      <Field label={copy.city} className={styles.field}>
+      <p className={form.note}>{copy.note}</p>
+      <Field label={copy.city} className={form.field}>
         {(control) => (
           <Select
             {...control}
@@ -126,7 +126,7 @@ export function CityRules({ cities, onSaved }: { cities: Cities; onSaved: () => 
         <RuleRow key={`${city}:${rule}`} city={city} rule={rule} own={ownOf(rule)} onSaved={saved} />
       ))}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}

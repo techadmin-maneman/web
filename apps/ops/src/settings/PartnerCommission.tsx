@@ -23,8 +23,8 @@ import { saveFile } from "../lib/save-file.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { monthCsv, statementCsv } from "./partner-commission-csv.ts";
 import { PayoutForm } from "./PayoutForm.tsx";
-import styles from "../components/forms.module.css";
-import own from "./partner-commission.module.css";
+import form from "../components/forms.module.css";
+import styles from "./partner-commission.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
 
 const copy = partnerCommission;
@@ -73,7 +73,7 @@ function StatementActions({
   };
   const offer = (kind: NonNullable<Acting>["kind"], words: string, label: string) => (
     <RowButton
-      className={styles.inline}
+      className={form.inline}
       aria-label={label}
       disabled={acting !== null}
       onClick={() => {
@@ -84,9 +84,9 @@ function StatementActions({
     </RowButton>
   );
   return (
-    <td className={own.actions}>
+    <td className={styles.actions}>
       <RowButton
-        className={styles.inline}
+        className={form.inline}
         aria-label={copy.statementLabel(statement.name)}
         onClick={() => {
           saveFile(
@@ -122,7 +122,7 @@ function StatementActingRow({
     onAct(null);
   };
   return (
-    <ActionRow className={own.acting}>
+    <ActionRow className={styles.acting}>
       {acting.kind === "pay" ? (
         <PayoutForm
           statement={statement}
@@ -136,7 +136,7 @@ function StatementActingRow({
           onCancel={cancel}
         />
       ) : (
-        <div className={own.ask}>
+        <div className={styles.ask}>
           <DeleteAction
             name={copy.paymentTo(statement.name, fullMonth(statements.month))}
             send={() => api.deletePartnerPayout(statement.channel_id, statements.month)}
@@ -157,18 +157,18 @@ function StatementRows({ statement, ...row }: { statement: PartnerStatement } & 
   return (
     <>
       <tr>
-        <th scope="row" className={own.name}>
+        <th scope="row" className={styles.name}>
           {statement.name}
         </th>
-        <td className={own.figure}>{statement.fitted}</td>
-        <td className={own.figure}>{amountOf(statement.earned)}</td>
-        <td className={own.figure}>{amountOf(statement.taken_back_amount)}</td>
-        <td className={own.figure}>{amountOf(statement.due)}</td>
-        <td className={own.figure}>
+        <td className={styles.figure}>{statement.fitted}</td>
+        <td className={styles.figure}>{amountOf(statement.earned)}</td>
+        <td className={styles.figure}>{amountOf(statement.taken_back_amount)}</td>
+        <td className={styles.figure}>{amountOf(statement.due)}</td>
+        <td className={styles.figure}>
           {payout === null ? copy.empty : copy.paid(rupees(payout.amount), shortDate(payout.paid_on))}
-          {payout !== null && <span className={own.reference}>{payout.reference}</span>}
+          {payout !== null && <span className={styles.reference}>{payout.reference}</span>}
         </td>
-        <td className={own.figure}>{amountOf(statement.owed)}</td>
+        <td className={styles.figure}>{amountOf(statement.owed)}</td>
         <StatementActions statement={statement} {...row} />
       </tr>
       <StatementActingRow statement={statement} {...row} />
@@ -179,13 +179,13 @@ function StatementRows({ statement, ...row }: { statement: PartnerStatement } & 
 function StatementsTable(row: RowProps) {
   const figures = [columns.fitted, columns.earned, columns.takenBack, columns.due, columns.paid, columns.owed];
   return (
-    <div className={own.scroll}>
-      <Table className={classes(styles.table, own.table)}>
+    <div className={styles.scroll}>
+      <Table className={classes(form.table, styles.table)}>
         <thead>
           <tr>
             <th scope="col">{columns.partner}</th>
             {figures.map((label) => (
-              <th key={label} scope="col" className={own.figure}>
+              <th key={label} scope="col" className={styles.figure}>
                 {label}
               </th>
             ))}
@@ -206,12 +206,12 @@ function StatementsTable(row: RowProps) {
 
 function MonthChoice({ statements, onMonth }: { statements: PartnerStatements; onMonth: (month: string) => void }) {
   return (
-    <div className={own.tools}>
+    <div className={styles.tools}>
       <Field label={copy.month}>
         {(control) => (
           <Select
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             value={statements.month}
             onChange={(event) => {
               onMonth(event.target.value);
@@ -265,13 +265,13 @@ export function PartnerCommission() {
     <Panel
       titleId="partner-commission"
       title={copy.title}
-      className={styles.panel}
+      className={form.panel}
       actions={
         statements.statements.length > 0 && (
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={form.quiet}
             onClick={() => {
               saveFile(copy.downloadName(statements.month), monthCsv(statements.statements), "text/csv");
             }}
@@ -283,11 +283,11 @@ export function PartnerCommission() {
     >
       <MonthChoice statements={statements} onMonth={choose} />
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
-      {statements.statements.length === 0 ? <p className={styles.note}>{copy.none}</p> : <StatementsTable {...row} />}
+      {statements.statements.length === 0 ? <p className={form.note}>{copy.none}</p> : <StatementsTable {...row} />}
     </Panel>
   );
 }

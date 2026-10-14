@@ -8,7 +8,7 @@ import { client, type ClientRecord } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
-import forms from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import styles from "./clients.module.css";
 
 type ClientVisit = ClientRecord["visits"]["past"][number];
@@ -55,7 +55,7 @@ export function LostReason({
         {(control) => (
           <Select
             {...control}
-            className={forms.choiceBox}
+            className={form.choiceBox}
             value={kept?.code ?? ""}
             onChange={(event) => void set(event.target.value)}
           >

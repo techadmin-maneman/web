@@ -10,7 +10,7 @@ import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { dayAfter } from "./Forecast.tsx";
-import own from "./supply-plan.module.css";
+import styles from "./supply-plan.module.css";
 
 type Accuracy = paths["/api/stock/forecast-accuracy"]["get"]["responses"][200]["content"]["application/json"];
 
@@ -37,7 +37,7 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
   return (
     <>
       <p className={form.note}>{copy.note}</p>
-      <div className={own.scroll}>
+      <div className={styles.scroll}>
         <Table className={form.table}>
           <Head columns={copy.periodColumns} />
           <tbody>

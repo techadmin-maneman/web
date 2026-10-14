@@ -10,14 +10,14 @@ import { api, type Word } from "../api.ts";
 import { words as copy } from "../content/words.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeOf } from "./WordForm.tsx";
-import styles from "../components/forms.module.css";
-import own from "./words.module.css";
+import form from "../components/forms.module.css";
+import styles from "./words.module.css";
 
 const versions = copy.versions;
 
 function UseButton({ label, onUse }: { label: string; onUse: () => void }) {
   return (
-    <RowButton className={styles.inline} aria-label={label} onClick={onUse}>
+    <RowButton className={form.inline} aria-label={label} onClick={onUse}>
       {versions.use}
     </RowButton>
   );
@@ -36,17 +36,17 @@ export function WordHistory(props: {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const kept = loaded.value.versions;
   return (
-    <section className={styles.group} aria-label={versions.title(placeOf(word))}>
-      <h3 className={styles.ruleTitle}>{versions.title(placeOf(word))}</h3>
-      {kept.length === 0 && <p className={styles.note}>{versions.none}</p>}
-      <ol className={own.versions}>
+    <section className={form.group} aria-label={versions.title(placeOf(word))}>
+      <h3 className={form.ruleTitle}>{versions.title(placeOf(word))}</h3>
+      {kept.length === 0 && <p className={form.note}>{versions.none}</p>}
+      <ol className={styles.versions}>
         {kept.map((version) => {
           const day = shortDate(indiaDate(version.set_at));
           const text = version.text ?? word.text;
           return (
-            <li key={version.id} className={own.version}>
-              <span className={own.when}>{versions.by(whoWords(version.set_by), day)}</span>
-              <span className={own.said}>{version.text ?? versions.inCode}</span>
+            <li key={version.id} className={styles.version}>
+              <span className={styles.when}>{versions.by(whoWords(version.set_by), day)}</span>
+              <span className={styles.said}>{version.text ?? versions.inCode}</span>
               {props.mayChange && text !== word.now && (
                 <UseButton
                   label={versions.useLabel(day)}
@@ -59,9 +59,9 @@ export function WordHistory(props: {
           );
         })}
         {word.changed !== null && kept.every((version) => version.text !== null) && (
-          <li className={own.version}>
-            <span className={own.when}>{versions.inCode}</span>
-            <span className={own.said}>{word.text}</span>
+          <li className={styles.version}>
+            <span className={styles.when}>{versions.inCode}</span>
+            <span className={styles.said}>{word.text}</span>
             {props.mayChange && (
               <UseButton
                 label={copy.form.toCode}
@@ -73,8 +73,8 @@ export function WordHistory(props: {
           </li>
         )}
       </ol>
-      <div className={styles.actions}>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={props.onClose}>
+      <div className={form.actions}>
+        <Button variant="outline" size="small" className={form.quiet} onClick={props.onClose}>
           {versions.close}
         </Button>
       </div>

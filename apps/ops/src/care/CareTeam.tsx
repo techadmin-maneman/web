@@ -16,8 +16,8 @@ import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type CareMember } from "./care-api.ts";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
 
 const copy = care.team;
@@ -36,8 +36,8 @@ function DaysOffForm(props: { member: CareMember; onDone: () => void; onCancel: 
     setPicked((was) => (was.includes(day) ? was.filter((each) => each !== day) : [...was, day].sort()));
   };
   return (
-    <div className={own.teamForm}>
-      <div className={own.days}>
+    <div className={styles.teamForm}>
+      <div className={styles.days}>
         {copy.weekdays.map((name, day) => (
           <Checkbox
             key={name}
@@ -49,7 +49,7 @@ function DaysOffForm(props: { member: CareMember; onDone: () => void; onCancel: 
           />
         ))}
       </div>
-      <div className={styles.actions}>
+      <div className={form.actions}>
         <Button
           variant="primary"
           size="small"
@@ -58,7 +58,7 @@ function DaysOffForm(props: { member: CareMember; onDone: () => void; onCancel: 
         >
           {copy.save}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={props.onCancel}>
+        <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
           {copy.cancel}
         </Button>
       </div>
@@ -72,8 +72,8 @@ function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: ()
   const [to, setTo] = useState("");
   const { busy, failure, send } = useSend(props.onDone);
   return (
-    <div className={own.teamForm}>
-      <div className={styles.fields}>
+    <div className={styles.teamForm}>
+      <div className={form.fields}>
         <Field label={copy.from}>
           {(control) => (
             <DateInput
@@ -98,7 +98,7 @@ function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: ()
           )}
         </Field>
       </div>
-      <div className={styles.actions}>
+      <div className={form.actions}>
         <Button
           variant="primary"
           size="small"
@@ -107,7 +107,7 @@ function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: ()
         >
           {copy.add}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={props.onCancel}>
+        <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
           {copy.cancel}
         </Button>
       </div>
@@ -120,8 +120,8 @@ function NameForm(props: { member: CareMember; onDone: () => void; onCancel: () 
   const [name, setName] = useState(props.member.name ?? "");
   const { busy, failure, send } = useSend(props.onDone);
   return (
-    <div className={own.teamForm}>
-      <div className={styles.fields}>
+    <div className={styles.teamForm}>
+      <div className={form.fields}>
         <Field label={copy.nameLabel}>
           {(control) => (
             <TextInput
@@ -135,7 +135,7 @@ function NameForm(props: { member: CareMember; onDone: () => void; onCancel: () 
           )}
         </Field>
       </div>
-      <div className={styles.actions}>
+      <div className={form.actions}>
         <Button
           variant="primary"
           size="small"
@@ -144,7 +144,7 @@ function NameForm(props: { member: CareMember; onDone: () => void; onCancel: () 
         >
           {copy.save}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={props.onCancel}>
+        <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
           {copy.cancel}
         </Button>
       </div>
@@ -158,13 +158,13 @@ function LeaveList(props: { leave: readonly Leave[]; mayManage: boolean; onChang
   if (props.leave.length === 0) return <>{copy.noLeave}</>;
   return (
     <>
-      <ul className={own.leave}>
+      <ul className={styles.leave}>
         {props.leave.map((leave) => (
           <li key={leave.id}>
             {periodOf(leave)}
             {props.mayManage && (
               <RowButton
-                className={styles.inline}
+                className={form.inline}
                 disabled={busy}
                 aria-label={copy.takeBackLabel(periodOf(leave))}
                 onClick={() => void send(() => careApi.deleteLeave(leave.id))}
@@ -196,8 +196,8 @@ function ShiftSwitch(props: { me: CareMember; onDone: () => void }) {
   const { busy, failure, send } = useSend(props.onDone);
   const since = props.me.on_shift_since;
   return (
-    <div className={own.tools}>
-      <p className={styles.note}>{since === null ? copy.you.off : copy.you.on(indiaClock(since))}</p>
+    <div className={styles.tools}>
+      <p className={form.note}>{since === null ? copy.you.off : copy.you.on(indiaClock(since))}</p>
       <Button
         variant={since === null ? "primary" : "outline"}
         size="small"
@@ -222,13 +222,13 @@ function MoveAllForm(props: {
   const [to, setTo] = useState(others[0]?.email ?? "");
   const { busy, failure, send } = useSend(props.onDone);
   return (
-    <div className={own.teamForm}>
-      <div className={own.closing}>
+    <div className={styles.teamForm}>
+      <div className={styles.closing}>
         <Field label={copy.moveAllTo}>
           {(control) => (
             <Select
               {...control}
-              className={styles.choiceBox}
+              className={form.choiceBox}
               value={to}
               onChange={(event) => {
                 setTo(event.target.value);
@@ -250,7 +250,7 @@ function MoveAllForm(props: {
         >
           {copy.move}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} onClick={props.onCancel}>
+        <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
           {copy.cancel}
         </Button>
       </div>
@@ -277,7 +277,7 @@ function MemberActions(props: { member: CareMember; acting: Acting; onActing: (a
   return actions.map(([acting, label, aria]) => (
     <RowButton
       key={acting}
-      className={styles.inline}
+      className={form.inline}
       aria-label={aria}
       onClick={() => {
         props.onActing(props.acting === acting ? null : acting);
@@ -307,22 +307,22 @@ function MemberRows(props: {
   return (
     <>
       <tr>
-        <th scope="row" className={own.who}>
+        <th scope="row" className={styles.who}>
           {member.email}
         </th>
         <td>{member.name ?? copy.noName}</td>
-        <td className={own.figure}>{member.clients}</td>
+        <td className={styles.figure}>{member.clients}</td>
         <td>{days === "" ? copy.noDaysOff : days}</td>
         <td>
           <LeaveList leave={member.leave} mayManage={mayManage} onChanged={props.onChanged} />
         </td>
         <td>{todayOf(member)}</td>
-        <td className={own.actions}>
+        <td className={styles.actions}>
           {mayManage && <MemberActions member={member} acting={acting} onActing={setActing} />}
         </td>
       </tr>
       {acting !== null && (
-        <ActionRow className={own.acting}>
+        <ActionRow className={styles.acting}>
           {acting === "name" && <NameForm member={member} onDone={done} onCancel={cancel} />}
           {acting === "days" && <DaysOffForm member={member} onDone={done} onCancel={cancel} />}
           {acting === "leave" && <LeaveForm member={member} onDone={done} onCancel={cancel} />}
@@ -340,18 +340,18 @@ export function CareTeam() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { team } = loaded.value;
-  if (team.length === 0) return <p className={styles.note}>{care.carePerson.noTeam}</p>;
+  if (team.length === 0) return <p className={form.note}>{care.carePerson.noTeam}</p>;
   const columns = copy.columns;
   const me = team.find((member) => member.email === loaded.value.me);
   return (
-    <div className={own.scroll}>
+    <div className={styles.scroll}>
       {me !== undefined && <ShiftSwitch me={me} onDone={retry} />}
-      <Table className={classes(styles.table, own.table)}>
+      <Table className={classes(form.table, styles.table)}>
         <thead>
           <tr>
             <th scope="col">{columns.member}</th>
             <th scope="col">{columns.name}</th>
-            <th scope="col" className={own.figure}>
+            <th scope="col" className={styles.figure}>
               {columns.clients}
             </th>
             <th scope="col">{columns.daysOff}</th>

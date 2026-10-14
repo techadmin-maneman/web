@@ -11,8 +11,8 @@ import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts
 import { settings } from "../content/settings.ts";
 import { whoWords } from "../lib/who.ts";
 import { review } from "../content/common.ts";
-import own from "./consumables.module.css";
-import styles from "../components/forms.module.css";
+import styles from "./consumables.module.css";
+import form from "../components/forms.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.jobSheet;
@@ -82,9 +82,9 @@ function Item({
 }) {
   const name = line.label.trim() === "" ? copy.unnamed : line.label.trim();
   return (
-    <li className={own.item}>
+    <li className={styles.item}>
       <TextInput
-        className={own.label}
+        className={styles.label}
         id={`${id}-${line.key}`}
         maxLength={props.longest}
         aria-label={props.itemLabel(index + 1)}
@@ -130,12 +130,12 @@ const setLineOf = (list: JobSheetList): string =>
 /** The list as a person whose access does not let them change it reads it: its items, in their order. */
 export function ListRead({ title, list }: { title: string; list: JobSheetList }) {
   return (
-    <div className={styles.group}>
-      <h3 className={styles.ruleTitle}>{title}</h3>
-      <p className={styles.set}>{setLineOf(list)}</p>
-      <ol className={own.items}>
+    <div className={form.group}>
+      <h3 className={form.ruleTitle}>{title}</h3>
+      <p className={form.set}>{setLineOf(list)}</p>
+      <ol className={styles.items}>
         {list.items.map((item) => (
-          <li className={own.item} key={item.code}>
+          <li className={styles.item} key={item.code}>
             {item.label}
           </li>
         ))}
@@ -190,14 +190,14 @@ export function ListEditor(props: Props) {
       errors={copy.errors}
       onCancel={null}
       sendable={changes.length > 0}
-      above={<p className={styles.set}>{setLineOf(list)}</p>}
+      above={<p className={form.set}>{setLineOf(list)}</p>}
       checking={(changes.length === 0 ? [review.nothing] : changes).map((line) => (
-        <p className={styles.checkLine} key={line}>
+        <p className={form.checkLine} key={line}>
           {line}
         </p>
       ))}
     >
-      <ol className={own.items}>
+      <ol className={styles.items}>
         {lines.map((line, index) => (
           <Item
             key={line.key}
@@ -220,11 +220,11 @@ export function ListEditor(props: Props) {
           />
         ))}
       </ol>
-      <div className={styles.actions}>
+      <div className={form.actions}>
         <Button
           variant="outline"
           size="small"
-          className={styles.quiet}
+          className={form.quiet}
           disabled={lines.length >= most}
           onClick={() => {
             added.current += 1;
@@ -235,11 +235,11 @@ export function ListEditor(props: Props) {
         </Button>
       </div>
       {off.length > 0 && (
-        <div className={own.retired}>
-          <p className={own.retiredTitle}>{copy.retired}</p>
-          <ul className={own.retiredList}>
+        <div className={styles.retired}>
+          <p className={styles.retiredTitle}>{copy.retired}</p>
+          <ul className={styles.retiredList}>
             {off.map((item) => (
-              <li className={own.retiredItem} key={item.code}>
+              <li className={styles.retiredItem} key={item.code}>
                 <span>{item.label}</span>
                 <Button
                   variant="outline"

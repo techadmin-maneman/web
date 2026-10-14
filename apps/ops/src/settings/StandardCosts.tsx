@@ -18,7 +18,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { review } from "../content/common.ts";
 import { Refused, sentOf, useSteps } from "./SettingForm.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
 type Product = Success<paths["/api/standard-costs"]["get"]>["products"][number];
 type CostChange = Body<paths["/api/standard-costs"]["post"]>;
@@ -99,9 +99,9 @@ export function StandardCosts() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const shown = products ?? loaded.value.products;
   return (
-    <Panel titleId="standard-costs" title={copy.title} className={styles.panel}>
-      <p className={styles.note}>{copy.note}</p>
-      <Table className={styles.table}>
+    <Panel titleId="standard-costs" title={copy.title} className={form.panel}>
+      <p className={form.note}>{copy.note}</p>
+      <Table className={form.table}>
         <thead>
           <tr>
             <th scope="col">{copy.columns.product}</th>

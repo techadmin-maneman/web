@@ -9,7 +9,7 @@ import type { Answer } from "@maneman/web-kit/api";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState, type ReactNode } from "react";
 import { CheckPanel } from "../components/CheckPanel.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { review } from "../content/common.ts";
 import { Refusal } from "../components/Refusal.tsx";
 
@@ -66,7 +66,7 @@ export function useSteps<T>(
 /** The line a refused send leaves beneath its form. */
 export function Refused(props: { readonly failed: Failure | null; readonly errors: Readonly<Record<string, string>> }) {
   if (props.failed === null) return null;
-  return <Refusal className={styles.error} said={errorText(props.errors, props.failed)} />;
+  return <Refusal className={form.error} said={errorText(props.errors, props.failed)} />;
 }
 
 /**
@@ -91,11 +91,11 @@ export function ActionCheck<T>(props: {
   return (
     <>
       {steps.step === "editing" ? (
-        <div className={styles.actions}>
+        <div className={form.actions}>
           <Button
             variant={props.primary === true ? "primary" : "outline"}
             size="small"
-            className={props.primary === true ? undefined : styles.quiet}
+            className={props.primary === true ? undefined : form.quiet}
             aria-label={props.ariaLabel}
             onClick={steps.check}
           >
@@ -138,16 +138,16 @@ export function SettingForm(props: {
 }) {
   const { steps } = props;
   return (
-    <Fieldset className={styles.group} legend={props.title} legendLook="title">
+    <Fieldset className={form.group} legend={props.title} legendLook="title">
       {props.above}
       {props.children}
       {steps.step === "editing" ? (
-        <div className={styles.actions}>
+        <div className={form.actions}>
           <Button variant="primary" size="small" disabled={!props.ready} onClick={steps.check}>
             {review.next}
           </Button>
           {props.onCancel !== null && (
-            <Button variant="outline" size="small" className={styles.quiet} onClick={props.onCancel}>
+            <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
               {review.cancel}
             </Button>
           )}
@@ -159,7 +159,7 @@ export function SettingForm(props: {
       )}
       <Refused failed={steps.failed} errors={props.errors} />
       {props.said !== undefined && props.said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {props.said}
         </InlineMessage>
       )}

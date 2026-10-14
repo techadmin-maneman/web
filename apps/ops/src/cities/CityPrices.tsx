@@ -11,7 +11,7 @@ import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import type { Cities, CityPrice } from "./types.ts";
 
 const copy = cities.prices;
@@ -41,9 +41,9 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => void }) {
 
 function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => void }) {
   const mayWithdraw = useAccess().mayCall("DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}");
-  if (cities.prices.length === 0) return <p className={styles.note}>{copy.none}</p>;
+  if (cities.prices.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
-    <Table className={styles.table}>
+    <Table className={form.table}>
       <thead>
         <tr>
           {copy.columns.map((column) => (
@@ -56,7 +56,7 @@ function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => void }) 
       <tbody>
         {cities.prices.map((price) => (
           <tr key={`${price.city}/${price.item}/${price.tier}/${price.valid_from}`}>
-            <th scope="row" className={styles.rowHead}>
+            <th scope="row" className={form.rowHead}>
               {price.city}
             </th>
             <td>
@@ -84,8 +84,8 @@ interface Draft {
 
 function PriceBoxes({ cities, draft, edit }: { cities: Cities; draft: Draft; edit: (change: Partial<Draft>) => void }) {
   return (
-    <div className={styles.fields}>
-      <Field label={copy.city} className={styles.field}>
+    <div className={form.fields}>
+      <Field label={copy.city} className={form.field}>
         {(control) => (
           <Select
             {...control}
@@ -102,7 +102,7 @@ function PriceBoxes({ cities, draft, edit }: { cities: Cities; draft: Draft; edi
           </Select>
         )}
       </Field>
-      <Field label={copy.item} className={styles.field}>
+      <Field label={copy.item} className={form.field}>
         {(control) => (
           <Select
             {...control}
@@ -128,11 +128,11 @@ function PriceBoxes({ cities, draft, edit }: { cities: Cities; draft: Draft; edi
 function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Draft>) => void }) {
   return (
     <>
-      <Field label={copy.tier} className={styles.field}>
+      <Field label={copy.tier} className={form.field}>
         {(control) => (
           <TextInput
             {...control}
-            className={styles.figureBox}
+            className={form.figureBox}
             value={draft.tier}
             onChange={(event) => {
               edit({ tier: event.target.value });
@@ -140,11 +140,11 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.amount} className={styles.field}>
+      <Field label={copy.amount} className={form.field}>
         {(control) => (
           <NumberInput
             {...control}
-            className={styles.amountBox}
+            className={form.amountBox}
             value={draft.amount}
             onChange={(event) => {
               edit({ amount: event.target.value });
@@ -152,11 +152,11 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.gst} className={styles.field}>
+      <Field label={copy.gst} className={form.field}>
         {(control) => (
           <NumberInput
             {...control}
-            className={styles.figureBox}
+            className={form.figureBox}
             value={draft.gst}
             onChange={(event) => {
               edit({ gst: event.target.value });
@@ -164,7 +164,7 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.from} className={styles.field}>
+      <Field label={copy.from} className={form.field}>
         {(control) => (
           <DateInput
             {...control}
@@ -222,7 +222,7 @@ function PriceForm({ cities, onSaved }: { cities: Cities; onSaved: () => void })
       ready={ready}
       errors={copy.errors}
       onCancel={null}
-      checking={<p className={styles.checkLine}>{line}</p>}
+      checking={<p className={form.checkLine}>{line}</p>}
     >
       <PriceBoxes cities={cities} draft={draft} edit={edit} />
     </SettingForm>
@@ -238,10 +238,10 @@ export function CityPrices({ cities, onSaved }: { cities: Cities; onSaved: () =>
   };
   return (
     <Panel titleId="city-prices" title={copy.panel} count={cities.prices.length}>
-      <p className={styles.note}>{copy.note}</p>
+      <p className={form.note}>{copy.note}</p>
       <PriceTable cities={cities} onDone={saved(copy.withdrawn)} />
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}

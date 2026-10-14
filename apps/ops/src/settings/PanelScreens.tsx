@@ -9,10 +9,10 @@ import { Services } from "./Services.tsx";
 import { StandardCosts } from "./StandardCosts.tsx";
 import { Staff } from "./Staff.tsx";
 import { TechnicianPay } from "./TechnicianPay.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
 function PanelScreen({ children }: { children: ReactNode }) {
-  return <div className={styles.screen}>{children}</div>;
+  return <div className={form.screen}>{children}</div>;
 }
 
 export function PricesScreen() {

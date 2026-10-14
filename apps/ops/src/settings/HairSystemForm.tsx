@@ -8,7 +8,7 @@ import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, client, type Consumables as ConsumableList } from "../api.ts";
 import { settings } from "../content/settings.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { SettingForm, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.consumables.hairSystems;
@@ -41,11 +41,11 @@ function HairSystemChoice(props: {
   onChange: (value: string) => void;
 }) {
   return (
-    <Field label={props.label} className={styles.field}>
+    <Field label={props.label} className={form.field}>
       {(control) => (
         <Select
           {...control}
-          className={styles.choiceBox}
+          className={form.choiceBox}
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -64,11 +64,11 @@ function HairSystemChoice(props: {
 
 function Figure(props: { label: string; value: string; onChange: (value: string) => void }) {
   return (
-    <Field label={props.label} className={styles.field}>
+    <Field label={props.label} className={form.field}>
       {(control) => (
         <NumberInput
           {...control}
-          className={styles.figureBox}
+          className={form.figureBox}
           type="text"
           inputMode="decimal"
           maxLength={10}
@@ -111,7 +111,7 @@ function SpecFields({
 }) {
   return (
     <>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <HairSystemChoice label={copy.product} value={draft.product} options={products} onChange={edit("product")} />
         <Figure label={copy.width} value={draft.width} onChange={edit("width")} />
         <Figure label={copy.length} value={draft.length} onChange={edit("length")} />
@@ -129,7 +129,7 @@ function SpecFields({
           onChange={edit("density")}
         />
       </div>
-      <div className={styles.fields}>
+      <div className={form.fields}>
         <Figure label={copy.cost} value={draft.cost} onChange={edit("cost")} />
         <Figure label={copy.kit} value={draft.kit} onChange={edit("kit")} />
         <Figure label={copy.store} value={draft.store} onChange={edit("store")} />
@@ -207,10 +207,10 @@ export function HairSystemForm({
   };
   const productName = products.find((each) => each.tier === draft.product)?.name ?? draft.product;
   return (
-    <Panel titleId="hair-systems" title={copy.title} className={styles.panel}>
-      <p className={styles.note}>{copy.intro}</p>
+    <Panel titleId="hair-systems" title={copy.title} className={form.panel}>
+      <p className={form.note}>{copy.intro}</p>
       {products.length === 0 ? (
-        <p className={styles.note}>{copy.noProducts}</p>
+        <p className={form.note}>{copy.noProducts}</p>
       ) : (
         <SettingForm
           title={copy.formTitle}
@@ -219,7 +219,7 @@ export function HairSystemForm({
           errors={copy.errors}
           onCancel={null}
           checking={checkLines(draft, productName).map((line) => (
-            <p className={styles.checkLine} key={line}>
+            <p className={form.checkLine} key={line}>
               {line}
             </p>
           ))}

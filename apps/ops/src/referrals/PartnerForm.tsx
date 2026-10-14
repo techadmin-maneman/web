@@ -8,9 +8,9 @@ import { useState } from "react";
 import { api, type Partner, type Partners, type PartnerTerms } from "../api.ts";
 import { partners as copy } from "../content/partners.ts";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
-const { form, check } = copy;
+const { form: formWords, check } = copy;
 
 interface Draft {
   readonly name: string;
@@ -79,7 +79,7 @@ interface Box {
 
 function NumberBox({ label, value, onValue, className }: Box & { readonly className: string | undefined }) {
   return (
-    <Field label={label} className={styles.field}>
+    <Field label={label} className={form.field}>
       {(control) => (
         <NumberInput
           {...control}
@@ -99,12 +99,12 @@ function NumberBox({ label, value, onValue, className }: Box & { readonly classN
 
 function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<Draft>) => void }) {
   return (
-    <div className={styles.fields}>
-      <Field label={form.name} className={styles.field}>
+    <div className={form.fields}>
+      <Field label={formWords.name} className={form.field}>
         {(control) => (
           <TextInput
             {...control}
-            className={styles.areaBox}
+            className={form.areaBox}
             maxLength={60}
             value={draft.name}
             onChange={(event) => {
@@ -114,34 +114,34 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
         )}
       </Field>
       <NumberBox
-        label={form.friendVisits}
+        label={formWords.friendVisits}
         value={draft.friendVisits}
-        className={styles.figureBox}
+        className={form.figureBox}
         onValue={(friendVisits) => {
           edit({ friendVisits });
         }}
       />
       <NumberBox
-        label={form.validDays}
+        label={formWords.validDays}
         value={draft.validDays}
-        className={styles.figureBox}
+        className={form.figureBox}
         onValue={(validDays) => {
           edit({ validDays });
         }}
       />
       <NumberBox
-        label={form.commission}
+        label={formWords.commission}
         value={draft.commission}
-        className={styles.amountBox}
+        className={form.amountBox}
         onValue={(commission) => {
           edit({ commission });
         }}
       />
-      <Field label={form.discountCode} className={styles.field}>
+      <Field label={formWords.discountCode} className={form.field}>
         {(control) => (
           <TextInput
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             maxLength={40}
             value={draft.discountCode}
             onChange={(event) => {
@@ -176,14 +176,14 @@ export function PartnerForm(props: {
   const lines = checkLines(partner, terms);
   return (
     <SettingForm
-      title={partner === null ? form.addTitle : form.editTitle(partner.name)}
+      title={partner === null ? formWords.addTitle : formWords.editTitle(partner.name)}
       steps={steps}
       ready={withinLimits(terms, props.limits)}
       errors={copy.errors}
       onCancel={props.onCancel}
       sendable={lines.length > 0}
       checking={(lines.length > 0 ? lines : [check.nothing]).map((line) => (
-        <p key={line} className={styles.checkLine}>
+        <p key={line} className={form.checkLine}>
           {line}
         </p>
       ))}

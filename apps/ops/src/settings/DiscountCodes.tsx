@@ -7,7 +7,6 @@ import { Disclosure } from "@maneman/ui/Disclosure";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
-import { Field, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
@@ -24,8 +23,9 @@ import { DeleteAction } from "../components/DeleteAction.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { DiscountCodeForm } from "./DiscountCodeForm.tsx";
-import styles from "../components/forms.module.css";
-import own from "./discount-codes.module.css";
+import { FindForm } from "./FindCode.tsx";
+import form from "../components/forms.module.css";
+import styles from "./discount-codes.module.css";
 
 const copy = settings.discountCodes;
 const columns = copy.columns;
@@ -49,9 +49,9 @@ function Figures({ totals }: { totals: DiscountCodeList["totals"] }) {
     [copy.figures.paid, rupees(totals.paid)],
   ];
   return (
-    <dl className={own.figures}>
+    <dl className={styles.figures}>
       {figures.map(([label, value]) => (
-        <div key={label} className={own.total}>
+        <div key={label} className={styles.total}>
           <dt>{label}</dt>
           <dd>{value}</dd>
         </div>
@@ -95,10 +95,10 @@ function SwitchOffCheck({ code, onDone, onBack }: { code: DiscountCode; onDone: 
 /** A code's row actions: switched off while it is on, and deleted while no booking has taken it. */
 function CodeActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit<RowProps, "onDone">) {
   return (
-    <td className={own.actions}>
+    <td className={styles.actions}>
       {may.off && code.switched_off === null && (
         <RowButton
-          className={styles.inline}
+          className={form.inline}
           aria-label={copy.switchOffLabel(code.code)}
           disabled={acting !== null}
           onClick={() => {
@@ -110,7 +110,7 @@ function CodeActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit
       )}
       {may.delete && code.deletable && (
         <RowButton
-          className={styles.inline}
+          className={form.inline}
           aria-label={copy.deleteLabel(code.code)}
           disabled={acting !== null}
           onClick={() => {
@@ -131,7 +131,7 @@ function CodeActingRow({ code, span, acting, onAct, onDone }: { code: DiscountCo
     onAct(null);
   };
   return (
-    <tr className={own.acting}>
+    <tr className={styles.acting}>
       <td colSpan={span}>
         {acting.kind === "off" ? (
           <SwitchOffCheck
@@ -142,7 +142,7 @@ function CodeActingRow({ code, span, acting, onAct, onDone }: { code: DiscountCo
             onBack={cancel}
           />
         ) : (
-          <div className={own.ask}>
+          <div className={styles.ask}>
             <DeleteAction
               name={code.code}
               send={() => api.deleteDiscountCode(code.id)}
@@ -172,16 +172,16 @@ function CodeRows({ code, today, ...row }: { code: DiscountCode; today: string }
   return (
     <>
       <tr>
-        <th scope="row" className={own.code}>
+        <th scope="row" className={styles.code}>
           {code.code}
         </th>
         <td>{discountOf(code)}</td>
         <td>{coversOf(code)}</td>
         <td>{ends}</td>
-        <td className={own.figure}>{usesOf(code)}</td>
-        <td className={own.figure}>{code.clients}</td>
-        <td className={own.figure}>{rupees(code.given)}</td>
-        <td className={own.figure}>{rupees(code.paid)}</td>
+        <td className={styles.figure}>{usesOf(code)}</td>
+        <td className={styles.figure}>{code.clients}</td>
+        <td className={styles.figure}>{rupees(code.given)}</td>
+        <td className={styles.figure}>{rupees(code.paid)}</td>
         <td>{dayOf(code.last_used)}</td>
         <CodeActions code={code} {...row} />
       </tr>
@@ -211,12 +211,12 @@ function CodesTable({
   const view = useTableView(codes, tableColumns);
   return (
     <>
-      <div className={own.tools}>
+      <div className={styles.tools}>
         {find}
-        <Narrowing view={view} label={copy.narrow} className={own.narrow} />
+        <Narrowing view={view} label={copy.narrow} className={styles.narrow} />
       </div>
-      <div className={own.scroll}>
-        <Table className={classes(styles.table, own.table)}>
+      <div className={styles.scroll}>
+        <Table className={classes(form.table, styles.table)}>
           <thead>
             <tr>
               <SortHeads view={view} />
@@ -244,13 +244,13 @@ function OffRows({ code, ...row }: { code: DiscountCode } & RowProps) {
   return (
     <>
       <tr>
-        <th scope="row" className={own.code}>
+        <th scope="row" className={styles.code}>
           {code.code}
         </th>
         <td>{discountOf(code)}</td>
-        <td className={own.figure}>{usesOf(code)}</td>
-        <td className={own.figure}>{rupees(code.given)}</td>
-        <td className={own.figure}>{rupees(code.paid)}</td>
+        <td className={styles.figure}>{usesOf(code)}</td>
+        <td className={styles.figure}>{rupees(code.given)}</td>
+        <td className={styles.figure}>{rupees(code.paid)}</td>
         <td>{dayOf(code.switched_off?.at ?? null)}</td>
         <CodeActions code={code} {...row} />
       </tr>
@@ -271,13 +271,17 @@ function SwitchedOff({ codes, ...row }: { codes: readonly DiscountCode[] } & Row
     [columns.offOn, false],
   ];
   return (
-    <Disclosure className={own.off} summaryClassName={own.offSummary} summary={copy.switchedOffTitle(codes.length)}>
-      <div className={own.scroll}>
-        <Table className={classes(styles.table, own.table)}>
+    <Disclosure
+      className={styles.off}
+      summaryClassName={styles.offSummary}
+      summary={copy.switchedOffTitle(codes.length)}
+    >
+      <div className={styles.scroll}>
+        <Table className={classes(form.table, styles.table)}>
           <thead>
             <tr>
               {heads.map(([label, figure]) => (
-                <th key={label} scope="col" className={figure ? own.figure : undefined}>
+                <th key={label} scope="col" className={figure ? styles.figure : undefined}>
                   {label}
                 </th>
               ))}
@@ -294,51 +298,6 @@ function SwitchedOff({ codes, ...row }: { codes: readonly DiscountCode[] } & Row
         </Table>
       </div>
     </Disclosure>
-  );
-}
-
-/** Codes found by how they begin, however old: the list holds the latest made. */
-function FindForm({ finding, onFind }: { finding: string | null; onFind: (code: string | null) => void }) {
-  const [text, setText] = useState(finding ?? "");
-  return (
-    <form
-      className={own.find}
-      role="search"
-      aria-label={copy.find}
-      onSubmit={(event) => {
-        event.preventDefault();
-        onFind(text.trim() === "" ? null : text.trim());
-      }}
-    >
-      <Field label={copy.find}>
-        {(control) => (
-          <TextInput
-            {...control}
-            type="search"
-            value={text}
-            onChange={(event) => {
-              setText(event.currentTarget.value);
-            }}
-          />
-        )}
-      </Field>
-      <Button type="submit" variant="outline" size="small" className={styles.quiet}>
-        {copy.findButton}
-      </Button>
-      {finding !== null && (
-        <Button
-          variant="outline"
-          size="small"
-          className={styles.quiet}
-          onClick={() => {
-            setText("");
-            onFind(null);
-          }}
-        >
-          {copy.showAll}
-        </Button>
-      )}
-    </form>
   );
 }
 
@@ -391,14 +350,14 @@ export function DiscountCodes() {
     <Panel
       titleId="discount-codes"
       title={copy.title}
-      className={styles.panel}
+      className={form.panel}
       actions={
         mayMake &&
         !making && (
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={form.quiet}
             onClick={() => {
               setMaking(true);
             }}
@@ -420,14 +379,14 @@ export function DiscountCodes() {
         />
       )}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
       {codes.codes.length === 0 ? (
         <>
-          <div className={own.tools}>{findForm}</div>
-          <p className={styles.note}>{finding === null ? copy.none : copy.noneFound}</p>
+          <div className={styles.tools}>{findForm}</div>
+          <p className={form.note}>{finding === null ? copy.none : copy.noneFound}</p>
         </>
       ) : (
         <>

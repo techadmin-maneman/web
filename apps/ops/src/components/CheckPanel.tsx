@@ -6,7 +6,7 @@ import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { Button } from "@maneman/ui/Button";
 import { useId, type ReactNode } from "react";
 import { review } from "../content/common.ts";
-import styles from "./forms.module.css";
+import form from "./forms.module.css";
 
 interface Props {
   /** A one-press action's question, "Pause Acme?"; a change made in boxes is "Review the change". */
@@ -37,26 +37,26 @@ export function CheckPanel({
   const panel = useFocusOnMount<HTMLDivElement>();
   const nameId = useId();
   return (
-    <div className={styles.check} ref={panel} tabIndex={-1} role="group" aria-labelledby={nameId}>
-      <p className={styles.checkTitle} id={nameId}>
+    <div className={form.check} ref={panel} tabIndex={-1} role="group" aria-labelledby={nameId}>
+      <p className={form.checkTitle} id={nameId}>
         {question ?? review.title}
       </p>
       {lines.map((line) => (
-        <p className={styles.checkLine} key={line}>
+        <p className={form.checkLine} key={line}>
           {line}
         </p>
       ))}
       {children}
       {warnings.map((line) => (
-        <p className={styles.checkWarning} key={line}>
+        <p className={form.checkWarning} key={line}>
           {line}
         </p>
       ))}
-      <div className={styles.actions}>
+      <div className={form.actions}>
         <Button variant="primary" size="small" disabled={busy || !ready} onClick={onSend}>
           {busy ? review.sending : review.send}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} disabled={busy} onClick={onBack}>
+        <Button variant="outline" size="small" className={form.quiet} disabled={busy} onClick={onBack}>
           {question === undefined ? review.edit : review.cancel}
         </Button>
       </div>

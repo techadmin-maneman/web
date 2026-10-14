@@ -18,8 +18,8 @@ import { CareTeam } from "./CareTeam.tsx";
 import { QuickRepliesPanel } from "./QuickReplies.tsx";
 import { RemediesPanel } from "./Remedies.tsx";
 import { Thread, whenOf, whoOf } from "./Thread.tsx";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { ActionRow } from "../components/ActionRow.tsx";
 
@@ -36,7 +36,7 @@ function ViewChoice({ view, onView }: { view: ConversationView; onView: (view: C
       {(control) => (
         <Select
           {...control}
-          className={styles.choiceBox}
+          className={form.choiceBox}
           value={view}
           onChange={(event) => {
             if (isView(event.target.value)) onView(event.target.value);
@@ -58,7 +58,7 @@ function Search({ search, onSearch }: { search: string; onSearch: (search: strin
   const [typed, setTyped] = useState(search);
   return (
     <form
-      className={own.search}
+      className={styles.search}
       role="search"
       onSubmit={(event) => {
         event.preventDefault();
@@ -85,7 +85,7 @@ function Search({ search, onSearch }: { search: string; onSearch: (search: strin
         <Button
           variant="outline"
           size="small"
-          className={styles.quiet}
+          className={form.quiet}
           onClick={() => {
             setTyped("");
             onSearch("");
@@ -108,7 +108,11 @@ const carePersonOf = ({ care_person: person, covered_by: cover }: Conversation):
 function ReplyBy({ at }: { at: string | null }) {
   if (at === null) return null;
   const when = whenOf(at);
-  return Date.parse(at) < Date.now() ? <span className={own.overdue}>{copy.overdue(when)}</span> : copy.replyBy(when);
+  return Date.parse(at) < Date.now() ? (
+    <span className={styles.overdue}>{copy.overdue(when)}</span>
+  ) : (
+    copy.replyBy(when)
+  );
 }
 
 function ConversationRows(props: {
@@ -122,21 +126,21 @@ function ConversationRows(props: {
   return (
     <>
       <tr>
-        <th scope="row" className={own.who}>
+        <th scope="row" className={styles.who}>
           {conversation.technician === null
             ? (conversation.person?.name ?? copy.unknown)
             : copy.technicianName(conversation.technician.name)}
         </th>
-        <td className={own.number}>{phoneWords(conversation.mobile)}</td>
+        <td className={styles.number}>{phoneWords(conversation.mobile)}</td>
         <td>{carePersonOf(conversation)}</td>
-        <td className={own.line}>{conversation.last_line ?? copy.noLine}</td>
-        <td className={own.figure}>
+        <td className={styles.line}>{conversation.last_line ?? copy.noLine}</td>
+        <td className={styles.figure}>
           <ReplyBy at={conversation.reply_by} />
         </td>
-        <td className={own.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
-        <td className={own.actions}>
+        <td className={styles.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
+        <td className={styles.actions}>
           <RowButton
-            className={styles.inline}
+            className={form.inline}
             aria-label={copy.openLabel(who)}
             aria-expanded={props.open}
             onClick={() => {
@@ -148,7 +152,7 @@ function ConversationRows(props: {
         </td>
       </tr>
       {props.open && (
-        <ActionRow className={own.acting}>
+        <ActionRow className={styles.acting}>
           <Thread
             conversation={conversation}
             onClose={() => {
@@ -183,7 +187,7 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const conversations = shownOf(loaded.value.conversations, older);
-  if (conversations.length === 0) return <p className={styles.note}>{copy.none}</p>;
+  if (conversations.length === 0) return <p className={form.note}>{copy.none}</p>;
   const next = older === null ? loaded.value.next_cursor : older.next;
   const showOlder = async (cursor: string) => {
     setLoadingOlder(true);
@@ -199,8 +203,8 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
     <>
       <ConversationTable conversations={conversations} opened={opened} onOpen={setOpened} onChanged={refresh} />
       {next !== null && (
-        <div className={own.more}>
-          <p className={styles.note}>{copy.latest(conversations.length)}</p>
+        <div className={styles.more}>
+          <p className={form.note}>{copy.latest(conversations.length)}</p>
           <Button variant="outline" size="small" busy={loadingOlder} onClick={() => void showOlder(next)}>
             {loadingOlder ? copy.loadingMore : copy.more}
           </Button>
@@ -218,18 +222,18 @@ function ConversationTable(props: {
 }) {
   const columns = copy.columns;
   return (
-    <div className={own.scroll}>
-      <Table className={classes(styles.table, own.table)}>
+    <div className={styles.scroll}>
+      <Table className={classes(form.table, styles.table)}>
         <thead>
           <tr>
             <th scope="col">{columns.client}</th>
             <th scope="col">{columns.number}</th>
             <th scope="col">{columns.carePerson}</th>
             <th scope="col">{columns.said}</th>
-            <th scope="col" className={own.figure}>
+            <th scope="col" className={styles.figure}>
               {columns.replyBy}
             </th>
-            <th scope="col" className={own.figure}>
+            <th scope="col" className={styles.figure}>
               {columns.at}
             </th>
             <th scope="col">
@@ -257,9 +261,9 @@ export function MessagesScreen() {
   const [view, setView] = useState<ConversationView>("open");
   const [search, setSearch] = useState("");
   return (
-    <div className={styles.screen}>
-      <Panel titleId="messages" title={copy.title} className={styles.panel}>
-        <div className={own.tools}>
+    <div className={form.screen}>
+      <Panel titleId="messages" title={copy.title} className={form.panel}>
+        <div className={styles.tools}>
           <ViewChoice view={view} onView={setView} />
           <Search search={search} onSearch={setSearch} />
         </div>
@@ -272,14 +276,14 @@ export function MessagesScreen() {
 /** Care's own settings, a tab beside the inbox: the team's rota, the remedies Care may offer, and the quick replies. */
 export function CareSettingsScreen() {
   return (
-    <div className={styles.screen}>
-      <Panel titleId="care-team" title={copy.team.title} className={styles.panel}>
+    <div className={form.screen}>
+      <Panel titleId="care-team" title={copy.team.title} className={form.panel}>
         <CareTeam />
       </Panel>
-      <Panel titleId="remedies" title={copy.remedy.panel} className={styles.panel}>
+      <Panel titleId="remedies" title={copy.remedy.panel} className={form.panel}>
         <RemediesPanel />
       </Panel>
-      <Panel titleId="quick-replies" title={copy.quick.panel} className={styles.panel}>
+      <Panel titleId="quick-replies" title={copy.quick.panel} className={form.panel}>
         <QuickRepliesPanel />
       </Panel>
     </div>

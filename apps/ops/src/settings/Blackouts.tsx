@@ -15,7 +15,7 @@ import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 
 const copy = settings.blackouts;
@@ -91,12 +91,12 @@ function DraftBoxes(props: {
 }) {
   const { draft, today, cities, onEdit } = props;
   return (
-    <div className={styles.fields}>
-      <Field label={copy.from} className={styles.field}>
+    <div className={form.fields}>
+      <Field label={copy.from} className={form.field}>
         {(control) => (
           <DateInput
             {...control}
-            className={styles.date}
+            className={form.date}
             min={today}
             value={draft.from}
             onChange={(event) => {
@@ -105,11 +105,11 @@ function DraftBoxes(props: {
           />
         )}
       </Field>
-      <Field label={copy.to} className={styles.field}>
+      <Field label={copy.to} className={form.field}>
         {(control) => (
           <DateInput
             {...control}
-            className={styles.date}
+            className={form.date}
             min={draft.from === "" ? today : draft.from}
             value={draft.to}
             onChange={(event) => {
@@ -118,11 +118,11 @@ function DraftBoxes(props: {
           />
         )}
       </Field>
-      <Field label={copy.city} className={styles.field}>
+      <Field label={copy.city} className={form.field}>
         {(control) => (
           <Select
             {...control}
-            className={styles.date}
+            className={form.date}
             value={draft.city}
             onChange={(event) => {
               onEdit("city", event.target.value);
@@ -137,11 +137,11 @@ function DraftBoxes(props: {
           </Select>
         )}
       </Field>
-      <Field label={copy.reason} className={styles.field}>
+      <Field label={copy.reason} className={form.field}>
         {(control) => (
           <TextInput
             {...control}
-            className={styles.text}
+            className={form.text}
             maxLength={60}
             value={draft.reason}
             onChange={(event) => {
@@ -198,7 +198,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
       onCancel={null}
       checking={
         <>
-          <p className={styles.checkLine}>
+          <p className={form.checkLine}>
             {copy.closing(
               ready ? periodWords(draft) : "",
               draft.city === "" ? copy.everyCity : draft.city,
@@ -206,7 +206,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
             )}
           </p>
           {booked !== 0 && (
-            <p className={styles.checkWarning}>{booked === null ? copy.uncounted : copy.stranded(booked)}</p>
+            <p className={form.checkWarning}>{booked === null ? copy.uncounted : copy.stranded(booked)}</p>
           )}
         </>
       }
@@ -228,16 +228,16 @@ interface PeriodRowProps {
 function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
   const words = periodWords(period);
   return (
-    <li className={styles.rule}>
-      <p className={styles.period}>
+    <li className={form.rule}>
+      <p className={form.period}>
         {words} · {period.city ?? copy.everyCity} · {period.reason}
       </p>
-      <p className={styles.set}>{setLine(period)}</p>
-      {period.booked > 0 && <p className={styles.checkWarning}>{copy.booked(period.booked)}</p>}
+      <p className={form.set}>{setLine(period)}</p>
+      {period.booked > 0 && <p className={form.checkWarning}>{copy.booked(period.booked)}</p>}
       {period.booked > 0 && mayShow && (
-        <div className={styles.actions}>
+        <div className={form.actions}>
           <OpsLink
-            className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })}
+            className={buttonLook({ variant: "outline", size: "small", className: form.quiet })}
             to={dispatchPath({ from: period.from })}
             label={copy.showLabel(words)}
           >
@@ -275,12 +275,12 @@ export function Blackouts() {
   const periods = periodsOf(changed ?? loaded.value.blackouts);
 
   return (
-    <Panel titleId="blackouts" title={copy.title} className={styles.panel}>
+    <Panel titleId="blackouts" title={copy.title} className={form.panel}>
       {mayAdd && <AddForm today={loaded.value.today} cities={loaded.value.cities} onAdded={setChanged} />}
       {periods.length === 0 ? (
-        <p className={styles.note}>{copy.none}</p>
+        <p className={form.note}>{copy.none}</p>
       ) : (
-        <ul className={styles.rules}>
+        <ul className={form.rules}>
           {periods.map((period) => (
             <PeriodRow
               key={`${period.city ?? ""}/${period.from}`}

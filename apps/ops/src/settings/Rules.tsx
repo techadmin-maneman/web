@@ -22,8 +22,8 @@ import { useTargetRow } from "../lib/target.ts";
 import type { SectionPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { CHARGES_A_LATE_FEE, CONSOLE_GROUP, sectionsOf, type RuleGroupId, type RuleSection } from "./rule-groups.ts";
-import styles from "../components/forms.module.css";
-import rules from "./rules.module.css";
+import form from "../components/forms.module.css";
+import styles from "./rules.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 
 const copy = settings.rules;
@@ -166,9 +166,9 @@ function movedBy(rule: OpsSetting, next: SettingValue): Moved[] {
 }
 
 /** The rules whose boxes hold a figure that moves; none while any box holds what its rule cannot take. */
-function changesIn(rules: readonly OpsSetting[], drafts: Drafts): Change[] {
-  if (rules.some((rule) => !isComplete(rule, draftIn(drafts, rule)))) return [];
-  return rules
+function changesIn(styles: readonly OpsSetting[], drafts: Drafts): Change[] {
+  if (styles.some((rule) => !isComplete(rule, draftIn(drafts, rule)))) return [];
+  return styles
     .map((rule) => ({ rule, value: valueOf(rule, draftIn(drafts, rule)) }))
     .filter((change) => movedBy(change.rule, change.value).length > 0);
 }
@@ -197,12 +197,12 @@ function FigureField({
       ? copy.outOfBounds(String(bounds.min), `${String(bounds.max)} ${bounds.unit}`)
       : copy.allowedWords(reading.say(bounds.min), reading.say(bounds.max), reading.range);
   return (
-    <Field label={label} error={outside ? why : null} className={styles.field}>
+    <Field label={label} error={outside ? why : null} className={form.field}>
       {(control) => (
-        <div className={styles.fieldRow}>
+        <div className={form.fieldRow}>
           <NumberInput
             {...control}
-            className={styles.figureBox}
+            className={form.figureBox}
             inputMode="numeric"
             step={1}
             min={bounds.min}
@@ -212,7 +212,7 @@ function FigureField({
               onChange(event.target.value);
             }}
           />
-          <span className={styles.unit}>{unit}</span>
+          <span className={form.unit}>{unit}</span>
         </div>
       )}
     </Field>
@@ -233,11 +233,11 @@ function ChoiceField({
   onChange: (choice: string) => void;
 }) {
   return (
-    <Field label={label} className={styles.field}>
+    <Field label={label} className={form.field}>
       {(control) => (
         <Select
           {...control}
-          className={styles.choiceBox}
+          className={form.choiceBox}
           value={choice}
           onChange={(event) => {
             onChange(event.target.value);
@@ -260,12 +260,12 @@ function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: 
   const [text, setText] = useState("");
   const ready = key.trim() !== "" && whole(text, rule.min, rule.max);
   return (
-    <div className={styles.addKey}>
-      <Field label={copy.keyName} className={styles.field}>
+    <div className={form.addKey}>
+      <Field label={copy.keyName} className={form.field}>
         {(control) => (
           <TextInput
             {...control}
-            className={styles.text}
+            className={form.text}
             maxLength={64}
             value={key}
             onChange={(event) => {
@@ -274,11 +274,11 @@ function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: 
           />
         )}
       </Field>
-      <Field label={copy.keyValue} className={styles.field}>
+      <Field label={copy.keyValue} className={form.field}>
         {(control) => (
           <NumberInput
             {...control}
-            className={styles.number}
+            className={form.number}
             inputMode="numeric"
             step={1}
             min={rule.min}
@@ -293,7 +293,7 @@ function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: 
       <Button
         variant="outline"
         size="small"
-        className={styles.quiet}
+        className={form.quiet}
         disabled={!ready}
         onClick={() => {
           onAdd(key.trim(), text);
@@ -328,7 +328,7 @@ function Check({
       onSend={onSend}
       onBack={onBack}
     >
-      <ul className={styles.checkList}>
+      <ul className={form.checkList}>
         {moved.map((each) => (
           <li key={each.key}>{copy.confirm.change(each.label, each.was, each.now)}</li>
         ))}
@@ -349,7 +349,7 @@ function Fields({
 }) {
   if (rule.kind === "choice") {
     return (
-      <div className={styles.fields}>
+      <div className={form.fields}>
         {rule.keys.map((key) => (
           <ChoiceField
             key={key}
@@ -366,7 +366,7 @@ function Fields({
     );
   }
   return (
-    <div className={styles.fields}>
+    <div className={form.fields}>
       {Object.entries(draft).map(([key, text]) => (
         <FigureField
           key={key}
@@ -390,8 +390,8 @@ function Boxes({ rule, draft, children }: { rule: OpsSetting; draft: Draft; chil
   const open = rule.kind === "number" && rule.keys === "open";
   if (count <= MANY && !open) return <>{children}</>;
   return (
-    <Disclosure className={rules.many} summaryClassName={rules.summary} summary={copy.showAll(count)}>
-      <div className={rules.manyBody}>{children}</div>
+    <Disclosure className={styles.many} summaryClassName={styles.summary} summary={copy.showAll(count)}>
+      <div className={styles.manyBody}>{children}</div>
     </Disclosure>
   );
 }
@@ -417,17 +417,17 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
   const pricedInPrices = allowed.mayOpenPrices && CHARGES_A_LATE_FEE.includes(rule.name);
   const mayGoBack = allowed.mayChange && !held && rule.set_by !== null;
   return (
-    <li className={styles.rule} id={rule.name} tabIndex={-1}>
+    <li className={form.rule} id={rule.name} tabIndex={-1}>
       {/* A rule of one figure has its name on its box, so the legend is said, not shown twice. */}
       <Fieldset
-        className={styles.group}
+        className={form.group}
         legend={rule.title}
         legendLook={rule.kind === "number" && typeof rule.value === "number" ? "hidden" : "title"}
         disabled={held || !allowed.mayChange}
       >
         {pricedInPrices && (
-          <p className={styles.note}>
-            <OpsLink className={styles.link} to={PRICES_PATH}>
+          <p className={form.note}>
+            <OpsLink className={form.link} to={PRICES_PATH}>
               {copy.lateFees}
             </OpsLink>
           </p>
@@ -439,13 +439,13 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
       </Fieldset>
 
       {mayGoBack && (
-        <div className={styles.actions}>
-          <Button variant="outline" size="small" className={styles.quiet} onClick={onStandard}>
+        <div className={form.actions}>
+          <Button variant="outline" size="small" className={form.quiet} onClick={onStandard}>
             {copy.reset}
           </Button>
         </div>
       )}
-      {refusal !== undefined && <Refusal className={styles.error} said={refusal} />}
+      {refusal !== undefined && <Refusal className={form.error} said={refusal} />}
     </li>
   );
 }
@@ -460,9 +460,9 @@ interface GroupSectionProps {
 
 /** One subject's rules, under its own heading and anchor, reviewed and sent together. */
 function GroupSection({ section, allowed, onSaved, children }: GroupSectionProps) {
-  const { id, rules } = section;
+  const { id, rules: styles } = section;
   const [drafts, setDrafts] = useState<Drafts>(() =>
-    Object.fromEntries(rules.map((rule) => [rule.name, draftOf(rule)])),
+    Object.fromEntries(styles.map((rule) => [rule.name, draftOf(rule)])),
   );
   /** What the check shows and Confirm sends: the section's changes, or one rule put back to its standard. */
   const [sending, setSending] = useState<readonly Change[]>([]);
@@ -490,7 +490,7 @@ function GroupSection({ section, allowed, onSaved, children }: GroupSectionProps
   );
 
   // A figure that would not move is not a change: the log never records one that was not.
-  const changes = changesIn(rules, drafts);
+  const changes = changesIn(styles, drafts);
   const review = (these: readonly Change[]) => {
     setSending(these);
     setRefusedRule(null);
@@ -511,13 +511,13 @@ function GroupSection({ section, allowed, onSaved, children }: GroupSectionProps
 
   const titleId = `${id}-title`;
   return (
-    <section className={styles.ruleGroup} id={id} tabIndex={-1} aria-labelledby={titleId}>
-      <h3 className={styles.ruleGroupTitle} id={titleId}>
+    <section className={form.ruleGroup} id={id} tabIndex={-1} aria-labelledby={titleId}>
+      <h3 className={form.ruleGroupTitle} id={titleId}>
         {GROUP_NAMES[id]}
       </h3>
       {children}
-      <ul className={styles.rules}>
-        {rules.map((rule) => (
+      <ul className={form.rules}>
+        {styles.map((rule) => (
           <Rule
             key={rule.name}
             rule={rule}
@@ -555,7 +555,7 @@ function Storage() {
   if (loaded.state !== "loaded") return null;
   const storage = loaded.value;
   return (
-    <div className={styles.storage}>
+    <div className={form.storage}>
       <p>{settings.storage(storage.held_bytes, storage.share_bytes)}</p>
       <p>{settings.database(storage.database_bytes, storage.database_limit_bytes)}</p>
     </div>
@@ -565,8 +565,8 @@ function Storage() {
 /** A link to each section, so a rule is one press away rather than a long scroll. */
 function JumpList({ sections }: { sections: readonly RuleSection<OpsSetting>[] }) {
   return (
-    <nav className={styles.jump} aria-label={copy.jump}>
-      <ul className={styles.jumpList}>
+    <nav className={form.jump} aria-label={copy.jump}>
+      <ul className={form.jumpList}>
         {sections.map((section) => (
           <li key={section.id}>
             <TextLink href={`#${section.id}`}>{GROUP_NAMES[section.id]}</TextLink>
@@ -599,7 +599,7 @@ export function Rules() {
   };
 
   return (
-    <Panel titleId="rules" title={copy.title} className={styles.panel}>
+    <Panel titleId="rules" title={copy.title} className={form.panel}>
       <JumpList sections={sections} />
       {sections.map((section) => (
         <GroupSection key={section.id} section={section} allowed={allowed} onSaved={keep}>
