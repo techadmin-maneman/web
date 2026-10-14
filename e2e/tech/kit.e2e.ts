@@ -87,6 +87,32 @@ test("hands back the pieces that came off, and the expired stock", async ({ page
   ]);
 });
 
+test("hands back once for two taps, and says it did not go through with the reference to quote", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  let asked = 0;
+  // Registered after the fake, so it answers first: slow enough for the second tap to land inside the first.
+  await page.route("**/api/tech/kit/hand-back", async (route) => {
+    asked += 1;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "internal", request_id: "kit-ref-1", fields: [] } }),
+    });
+  });
+  await page.goto("/kit");
+  const back = page.getByRole("region", { name: copy.returned.title });
+  const hand = back.getByRole("button", { name: copy.returned.handBack(1) });
+  await hand.click();
+  // Forced, because the tap this guards against is one the technician makes whether the button takes it or not.
+  await hand.click({ force: true });
+  await expect(back.getByRole("alert")).toContainText(copy.notDone);
+  await expect(back.getByRole("alert")).toContainText("kit-ref-");
+  expect(asked).toBe(1);
+  await expect(hand).toBeVisible();
+});
+
 test("says its writes need signal, with none", async ({ page, context }) => {
   const fake = await fakeTech(page);
   withAKit(fake);

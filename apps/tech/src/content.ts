@@ -759,6 +759,7 @@ export const kit = {
   failed: "Your kit didn’t load.",
   retry: "Try again",
   needsSignal: "Needs signal",
+  notDone: "That didn’t go through. Try again.",
   coming: {
     title: "On its way",
     /** "From Gurgaon stockroom · sent Mon 21 Sep" */

@@ -1,6 +1,7 @@
 // Something wrong with the hair system, or with a visit, told to Care in the client's words; Care answer on
 // WhatsApp, where the client's photographs go too. No board draws it, so the sheet is ours, in the note sheet's frame.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { PROBLEM_MAX_CHARS } from "@rules/policy/problems.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
@@ -47,7 +48,7 @@ function ProblemSheet({ about, onClose }: { about: About; onClose: () => void })
   const dialog = useRef<HTMLDialogElement>(null);
   const [text, setText] = useState("");
   const [step, setStep] = useState<Step>("writing");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
 
   useEffect(() => {
     focusIfLost(dialog.current?.querySelector<HTMLElement>("#problem-title") ?? null);
@@ -55,14 +56,13 @@ function ProblemSheet({ about, onClose }: { about: About; onClose: () => void })
 
   const close = () => dialog.current?.close();
 
-  const send = async () => {
-    setBusy(true);
-    const visitId = about.about === "visit" ? about.visitId : null;
-    const answer = await api.reportProblem({ about: about.about, visit_id: visitId, text: text.trim() });
-    setBusy(false);
-    if (answer.ok) setStep("sent");
-    else setStep(answer.code === "rate_limited" ? "limited" : "failed");
-  };
+  const send = () =>
+    once(async () => {
+      const visitId = about.about === "visit" ? about.visitId : null;
+      const answer = await api.reportProblem({ about: about.about, visit_id: visitId, text: text.trim() });
+      if (answer.ok) setStep("sent");
+      else setStep(answer.code === "rate_limited" ? "limited" : "failed");
+    });
 
   return (
     <Sheet ref={dialog} className={styles.dialog} labelledBy="problem-title" onClose={onClose}>

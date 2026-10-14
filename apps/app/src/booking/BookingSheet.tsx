@@ -26,6 +26,7 @@
 // When the phone sees the countdown end it lets the hold go too, but not while
 // Checkout is open: it waits for Checkout's answer.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { addDays } from "@maneman/web-kit/dates";
 import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
@@ -108,7 +109,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
   const [picked, setPicked] = useState<OfferedService | null>(
     () => services.find((service) => service.tier === tier) ?? null,
   );
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [problem, setProblem] = useState<string | null>(null);
   /** Whether reminders are on: null when the profile could not say, and the sheet asks. */
   const [reminders, setReminders] = useState<boolean | null>(null);
@@ -185,20 +186,19 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
 
   const close = () => dialog.current?.close();
 
-  const holdWindow = async () => {
-    if (wanted === null || date === null || chosenWindow === null) return;
-    setBusy(true);
-    setProblem(null);
-    const answer = await api.hold(wanted, date, chosenWindow, movingId);
-    setBusy(false);
-    if (answer.ok) dispatch({ kind: "held", hold: answer.body });
-    else if (answer.code === "taken") {
-      setProblem(booking.window.taken);
-      await days.askAgainFrom(wanted, date);
-    } else if (answer.code === "address_required") askForAddress(true);
-    else if (answer.code === "not_served") showNotServed();
-    else setProblem(booking.failedToStart);
-  };
+  const holdWindow = () =>
+    once(async () => {
+      if (wanted === null || date === null || chosenWindow === null) return;
+      setProblem(null);
+      const answer = await api.hold(wanted, date, chosenWindow, movingId);
+      if (answer.ok) dispatch({ kind: "held", hold: answer.body });
+      else if (answer.code === "taken") {
+        setProblem(booking.window.taken);
+        await days.askAgainFrom(wanted, date);
+      } else if (answer.code === "address_required") askForAddress(true);
+      else if (answer.code === "not_served") showNotServed();
+      else setProblem(booking.failedToStart);
+    });
 
   /** The client ticked "Remind me": their yes to WhatsApp about their visits, recorded under the box's own line. */
   const switchOnReminders = async () => {
@@ -213,7 +213,7 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
     beforeStarting: async () => {
       if (remind && reminders !== true) await switchOnReminders();
     },
-    setBusy,
+    once,
     setProblem,
   });
 

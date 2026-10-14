@@ -26,6 +26,13 @@ const BARE_LAZY = {
   message: "Load a part of a screen with lazyScreen (@maneman/ui/lazyScreen).",
 };
 
+/** A write runs through useOneAtATime, whose ref holds between a tap and the next render (ADR 0058). */
+const HAND_BUSY = {
+  selector: "CallExpression[callee.name=/^set(Busy|Working|Sending|Saving)$/][arguments.0.value=true]",
+  message:
+    "Run a write through useOneAtATime (@maneman/ui/useOneAtATime): a busy flag alone lets a second tap through.",
+};
+
 /** A size rule at a level, counting code lines alone. */
 const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
   level,
@@ -276,6 +283,10 @@ export default defineConfig(
     // A screen that picks between three things says so in a function that returns early.
     files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
     rules: { "no-nested-ternary": "error", "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY] },
+  },
+  {
+    files: ["apps/app/src/**/*.{ts,tsx}", "apps/tech/src/**/*.{ts,tsx}"],
+    rules: { "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY, HAND_BUSY] },
   },
   {
     files: ["packages/ui/lazyScreen.ts"],

@@ -5,15 +5,17 @@
 import { Field, TextInput } from "@maneman/ui/Field";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
+import { ErrorRef } from "@maneman/ui/ErrorRef";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { IconButton } from "@maneman/ui/IconButton";
 import { QrCamera } from "@maneman/ui/ScanField";
 import { scanned } from "@maneman/ui/scanned";
 import { useLoad } from "@maneman/ui/useLoad";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
 import { api, type Kit } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
-import { kit as copy, steps } from "../content.ts";
+import { kit as copy, reference, steps } from "../content.ts";
 import { STROKE } from "../icons.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
@@ -25,6 +27,22 @@ import frame from "../components/frame.module.css";
 import styles from "./kit.module.css";
 
 type Coming = Kit["coming"][number];
+
+/** Why a write did not go through; `requestId` is the API's, to quote to ops, and null when the phone said it. */
+interface Problem {
+  readonly words: string;
+  readonly requestId: string | null;
+}
+
+function NotDone({ problem }: { problem: Problem | null }) {
+  if (problem === null) return null;
+  return (
+    <div role="alert">
+      <p className={styles.expired}>{problem.words}</p>
+      {problem.requestId !== null && <ErrorRef requestId={problem.requestId} words={reference} />}
+    </div>
+  );
+}
 
 /** A label read in: typed and added, or read by the camera. */
 function ScanLabel({ onLabel }: { onLabel: (label: string) => void }) {
@@ -130,14 +148,17 @@ function RestOf({
 function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onKit: (kit: Kit) => void }) {
   const [scanned, setScanned] = useState<readonly string[]>([]);
   const [rest, setRest] = useState<"on_its_way" | "missing">("on_its_way");
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [busy, once] = useOneAtATime();
   const pieces = topUp.units.length > 0;
   const unscanned = topUp.quantity - scanned.length;
-  const receive = async () => {
-    const answer = await api.receiveTopUp(topUp.id, pieces ? scanned : null, rest);
-    if (answer.ok) onKit(answer.body);
-    else setProblem(answer.status === 409 ? copy.coming.settled : copy.failed);
-  };
+  const receive = () =>
+    once(async () => {
+      const answer = await api.receiveTopUp(topUp.id, pieces ? scanned : null, rest);
+      if (answer.ok) onKit(answer.body);
+      else
+        setProblem({ words: answer.status === 409 ? copy.coming.settled : copy.notDone, requestId: answer.requestId });
+    });
   const label = pieces ? copy.coming.receiveScanned(scanned.length) : copy.coming.receive;
   return (
     <li>
@@ -150,7 +171,7 @@ function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onK
           <ScanLabel
             onLabel={(scan) => {
               if (!topUp.units.includes(scan)) {
-                setProblem(copy.coming.notOnIt);
+                setProblem({ words: copy.coming.notOnIt, requestId: null });
                 return;
               }
               setProblem(null);
@@ -161,15 +182,12 @@ function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onK
           {scanned.length > 0 && unscanned > 0 && <RestOf count={unscanned} rest={rest} onRest={setRest} />}
         </>
       )}
-      {problem !== null && (
-        <p className={styles.expired} role="alert">
-          {problem}
-        </p>
-      )}
+      <NotDone problem={problem} />
       <div className={styles.buttons}>
         <Button
           variant="outlineOnInk"
           size="small"
+          busy={busy}
           disabled={offline || (pieces && scanned.length === 0)}
           onClick={() => void receive()}
         >
@@ -219,16 +237,23 @@ function Held({ kit }: { kit: Kit }) {
 /** The pieces that came off clients, and the kit's expired stock, handed back together or apart. */
 function HandBack({ kit, offline, onKit }: { kit: Kit; offline: boolean; onKit: (kit: Kit) => void }) {
   const [done, setDone] = useState(false);
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [busy, once] = useOneAtATime();
   const expired = kit.held.some((item) =>
     item.lots.some((lot) => lot.expires_on !== null && lot.expires_on < kit.today),
   );
   if (kit.returned.length === 0 && !expired) return done ? <p className={styles.status}>{copy.handedBack}</p> : null;
-  const hand = async (body: { pieces: string[]; expired: boolean }) => {
-    const answer = await api.handBack(body);
-    if (!answer.ok) return;
-    setDone(true);
-    onKit(answer.body);
-  };
+  const hand = (body: { pieces: string[]; expired: boolean }) =>
+    once(async () => {
+      const answer = await api.handBack(body);
+      if (!answer.ok) {
+        setProblem({ words: copy.notDone, requestId: answer.requestId });
+        return;
+      }
+      setProblem(null);
+      setDone(true);
+      onKit(answer.body);
+    });
   return (
     <section className={styles.section} aria-labelledby="kit-returned">
       <h2 className={styles.sectionTitle} id="kit-returned">
@@ -241,11 +266,13 @@ function HandBack({ kit, offline, onKit }: { kit: Kit; offline: boolean; onKit: 
           </li>
         ))}
       </ul>
+      <NotDone problem={problem} />
       <div className={styles.buttons}>
         {kit.returned.length > 0 && (
           <Button
             variant="outlineOnInk"
             size="small"
+            busy={busy}
             disabled={offline}
             onClick={() => void hand({ pieces: kit.returned.map((piece) => piece.piece_code), expired: false })}
           >
@@ -256,6 +283,7 @@ function HandBack({ kit, offline, onKit }: { kit: Kit; offline: boolean; onKit: 
           <Button
             variant="outlineOnInk"
             size="small"
+            busy={busy}
             disabled={offline}
             onClick={() => void hand({ pieces: [], expired: true })}
           >

@@ -23,6 +23,7 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
@@ -61,7 +62,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   const [code, setCode] = useState("");
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [working, setWorking] = useState(false);
+  const [working, once] = useOneAtATime();
   // Left with digits that are not a mobile number: the hint says why Send stays off.
   const [left, setLeft] = useState(false);
   // Counted afresh from each code sent, since each one is a new challenge.
@@ -72,12 +73,11 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
   const digits = mobileDigits(mobile);
 
-  async function send(): Promise<void> {
+  async function sendOnce(): Promise<void> {
     if (digits === null) {
       setError(copy.mobileError);
       return;
     }
-    setWorking(true);
     try {
       const answer = await api.sendCode(digits, await deviceId());
       if (answer.ok) {
@@ -89,10 +89,9 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
     } catch {
       // The phone's store would not give the device ID; the next tap asks it again.
       setError(copy.errors.unknown);
-    } finally {
-      setWorking(false);
     }
   }
+  const send = () => once(sendOnce);
 
   /** Back to the number, as it was before any code was asked for. */
   function startAgain(): void {
@@ -100,14 +99,12 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
     setCode("");
   }
 
-  async function verify(): Promise<void> {
+  async function verifyOnce(): Promise<void> {
     if (challenge === null) return;
-    setWorking(true);
     // A phone store that will not give the device ID is a failure to try again, never a button left busy.
     const answer = await deviceId()
       .then((device) => api.verify(challenge.challenge_id, code, device))
       .catch(() => null);
-    setWorking(false);
     if (answer === null) {
       setError(copy.errors.unknown);
       return;
@@ -133,6 +130,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
     await enrolled().catch(() => undefined);
     onSignedIn();
   }
+  const verify = () => once(verifyOnce);
 
   const ready = challenge === null ? digits !== null : code.length === ONE_TIME_CODE.digits;
   // Only worth saying before the code has been asked for, and only in the app

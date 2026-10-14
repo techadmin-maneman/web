@@ -3,6 +3,7 @@
 // sheet's date and window, then pays whatever the move costs. Cancelling is confirmed on the terms shown; if the
 // 24 hours ran out meanwhile, the new terms are shown instead.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { TextButton } from "@maneman/ui/TextLink";
 import { refundDestination } from "../payments/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
@@ -93,7 +94,7 @@ export function ChangeSheet(props: {
   const { me } = useSession();
   const dialog = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState<Step>({ kind: "loading" });
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [problem, setProblem] = useState<string | null>(null);
   const changed = useRef(false);
   const name = change.visit(weekdayDate(visit.date).split(" ")[0] ?? "");
@@ -125,21 +126,20 @@ export function ChangeSheet(props: {
 
   const close = () => dialog.current?.close();
 
-  const cancel = async (terms: CancelTerms) => {
-    setBusy(true);
-    setProblem(null);
-    const answer = await api.cancel(visit.id, terms.notice);
-    setBusy(false);
-    if (answer.ok) {
-      changed.current = true;
-      setStep({ kind: "cancelled", terms: answer.body });
-    } else if (answer.code === "terms_changed") {
-      const fresh = await api.cancelTerms(visit.id);
-      if (fresh.ok) setStep({ kind: "cancel", terms: fresh.body, changed: true });
-      else setStep({ kind: "broken" });
-    } else if (answer.code === "not_changeable") setStep({ kind: "unchangeable" });
-    else setProblem(change.failed);
-  };
+  const cancel = (terms: CancelTerms) =>
+    once(async () => {
+      setProblem(null);
+      const answer = await api.cancel(visit.id, terms.notice);
+      if (answer.ok) {
+        changed.current = true;
+        setStep({ kind: "cancelled", terms: answer.body });
+      } else if (answer.code === "terms_changed") {
+        const fresh = await api.cancelTerms(visit.id);
+        if (fresh.ok) setStep({ kind: "cancel", terms: fresh.body, changed: true });
+        else setStep({ kind: "broken" });
+      } else if (answer.code === "not_changeable") setStep({ kind: "unchangeable" });
+      else setProblem(change.failed);
+    });
 
   // Picking the new time is the booking sheet's, in its own dialog.
   if (step.kind === "picking") {

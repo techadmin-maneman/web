@@ -6,6 +6,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { changingClients } from "./changing.ts";
+import { holdOpen } from "./one-tap.ts";
 import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { continueToPayment } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
@@ -77,10 +78,15 @@ test("C8: cancelling more than 24 hours out gives the payment back in full", asy
   const cancel = page.getByRole("dialog", { name: /^Cancel \w+day’s visit$/ });
   await expect(cancel.getByText("Rs. 2,000 back to your UPI in 5 to 7 working days.")).toBeVisible();
   await scan(page);
-  await cancel.getByRole("button", { name: appCopy.change.cancel.confirm }).click();
+  // Two taps, the second inside the first's round trip, cancel once (e2e/app/one-tap.ts).
+  const held = await holdOpen(page, "**/api/appointments/*/cancel");
+  const confirm = cancel.getByRole("button", { name: appCopy.change.cancel.confirm });
+  await confirm.click();
+  await confirm.click({ force: true });
   const done = page.getByRole("dialog").getByRole("status");
   await expect(done.getByText("Cancelled", { exact: true })).toBeVisible();
   await expect(done.getByText(/^\w+day’s visit is cancelled\.$/)).toBeVisible();
+  expect(held.asked()).toBe(1);
   await done.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeHidden();
