@@ -9,7 +9,6 @@ import { paymentLinkClosesAt } from "../../policy/one-visit.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../../providers/payments/razorpay.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
-import { serviceOf } from "../booking/services.ts";
 import { draftCustomOrderPo } from "../purchasing/custom-order-po.ts";
 import { paymentsTab } from "../platform/alerts.ts";
 import type { LinkDeps } from "./payment-links.ts";
@@ -23,7 +22,6 @@ type LinkRow = {
   id: string;
   number: number;
   person_id: string;
-  product: string;
   amount: number;
   state: string;
   link_sent_at: string | null;
@@ -56,20 +54,19 @@ export async function sendCustomOrderLink(
 ): Promise<CustomLinkSent> {
   const order = await db
     .prepare(
-      `SELECT k.id, k.number, k.person_id, k.product, k.amount, k.state, k.link_sent_at, p.name, p.mobile_e164
+      `SELECT k.id, k.number, k.person_id, k.amount, k.state, k.link_sent_at, p.name, p.mobile_e164
        FROM custom_orders k JOIN people p ON p.id = k.person_id WHERE k.id = ?1`,
     )
     .bind(orderId)
     .first<LinkRow>();
   if (order?.state !== "awaiting_payment") return "unavailable";
   if (order.link_sent_at !== null) return "already_sent";
-  const product = (await serviceOf(db, "first_fit", order.product))?.name ?? order.product;
   const notify = onAllowlist(deps.messagingSettings, order.mobile_e164);
   try {
     const made = await deps.payments.createPaymentLink({
       amount: order.amount,
       reference: order.id,
-      description: `${product}, made for you · ${numberOf(order.number)}`,
+      description: `Mane Man · order ${numberOf(order.number)}`,
       customer: { name: order.name, contact: order.mobile_e164 },
       notes: { custom_order_id: order.id, person_id: order.person_id },
       closesAt: paymentLinkClosesAt(now, (await readOpsInputs(db, now)).paymentLinks.pay_within_days),

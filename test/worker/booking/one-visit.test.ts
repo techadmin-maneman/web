@@ -157,7 +157,7 @@ describe("closing a one visit the client was fitted at", () => {
       {
         amount: NATURAL.amount,
         reference: A_REFERENCE,
-        description: "Mane Man Natural hair system · fitted Mon 21 Sep",
+        description: "Mane Man · visit of Mon 21 Sep",
         customer: { name: "Rohit Malhotra", contact: "+919810000001" },
         notes: { appointment_id: JOB, person_id: PERSON },
         closesAt: TWO_WEEKS_ON,

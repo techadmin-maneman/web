@@ -149,7 +149,7 @@ describe("Razorpay: payment links", () => {
   const LINK = {
     amount: 4500000,
     reference: "MM-2026-0841",
-    description: "Mane Man Natural hair system · fitted Mon 21 Sep",
+    description: "Mane Man · visit of Mon 21 Sep",
     customer: { name: "Rohit Malhotra", contact: "+919810000001" },
     notes: { appointment_id: "visit-1", person_id: "person-1" },
     closesAt: new Date("2026-10-06T08:00:00.000Z"),
@@ -174,7 +174,7 @@ describe("Razorpay: payment links", () => {
       currency: "INR",
       accept_partial: false,
       reference_id: "MM-2026-0841",
-      description: "Mane Man Natural hair system · fitted Mon 21 Sep",
+      description: "Mane Man · visit of Mon 21 Sep",
       customer: { name: "Rohit Malhotra", contact: "+919810000001" },
       notify: { sms: true, email: false },
       reminder_enable: true,

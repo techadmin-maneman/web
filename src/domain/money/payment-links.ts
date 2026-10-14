@@ -309,7 +309,6 @@ async function askRazorpay({
     .prepare("SELECT name, mobile_e164 FROM people WHERE id = ?1")
     .bind(visit.personId)
     .first<{ name: string; mobile_e164: string }>();
-  const product = await serviceOf(db, "first_fit", visit.tier);
   const contact = client?.mobile_e164 ?? "";
   const notify = onAllowlist(deps.messagingSettings, contact);
   const closesAt = paymentLinkClosesAt(now, (await readOpsInputs(db, now)).paymentLinks.pay_within_days);
@@ -317,7 +316,8 @@ async function askRazorpay({
     const made = await deps.payments.createPaymentLink({
       amount: link.amount,
       reference: referenceOf(link, visit),
-      description: `${hairSystemName(product?.name)} · fitted ${shortDate(visit.day)}`,
+      // Razorpay shows it on the page its text opens, so it names no hair system: that is the receipt's and invoice's.
+      description: `Mane Man · visit of ${shortDate(visit.day)}`,
       customer: { name: client?.name ?? "", contact },
       notes: { appointment_id: visit.appointmentId, person_id: visit.personId },
       closesAt,
