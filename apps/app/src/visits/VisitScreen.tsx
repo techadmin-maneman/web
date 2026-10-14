@@ -42,6 +42,19 @@ function Fact({ name, value, numeric = false }: { name: string; value: string; n
   );
 }
 
+/** An invoice not here when it should be, with a way to ask us for it on WhatsApp. */
+function AskForInvoice({ visit, line }: { visit: VisitDetail; line: string }) {
+  const message = messages.lateInvoice(visitName(visit.type), shortDate(visit.date));
+  return (
+    <div className={styles.late}>
+      <p className={styles.invoiceLine}>{line}</p>
+      <ButtonLink variant="outline" size="small" className={styles.message} href={whatsappWith(message)} rel="noopener">
+        {visits.detail.invoice.message}
+      </ButtonLink>
+    </div>
+  );
+}
+
 /** The visit's invoice: here to open, still to come, late, or never coming because the visit was free. */
 function Invoice({ visit }: { visit: VisitDetail }) {
   const copy = visits.detail.invoice;
@@ -55,40 +68,10 @@ function Invoice({ visit }: { visit: VisitDetail }) {
       return <p className={styles.invoiceLine}>{copy.generating}</p>;
     case "credit":
       return <p className={styles.invoiceLine}>{copy.credit}</p>;
-    case "checking": {
-      const message = messages.lateInvoice(visitName(visit.type), shortDate(visit.date));
-      return (
-        <div className={styles.late}>
-          <p className={styles.invoiceLine}>{copy.checking}</p>
-          <ButtonLink
-            variant="outline"
-            size="small"
-            className={styles.message}
-            href={whatsappWith(message)}
-            rel="noopener"
-          >
-            {copy.message}
-          </ButtonLink>
-        </div>
-      );
-    }
-    case "late": {
-      const message = messages.lateInvoice(visitName(visit.type), shortDate(visit.date));
-      return (
-        <div className={styles.late}>
-          <p className={styles.invoiceLine}>{copy.late}</p>
-          <ButtonLink
-            variant="outline"
-            size="small"
-            className={styles.message}
-            href={whatsappWith(message)}
-            rel="noopener"
-          >
-            {copy.message}
-          </ButtonLink>
-        </div>
-      );
-    }
+    case "checking":
+    case "delayed":
+    case "late":
+      return <AskForInvoice visit={visit} line={copy[state]} />;
     case "open":
       return visit.document_id === null ? null : (
         <OpenDocument url={documentUrl(visit.document_id)} notReady={payments.unavailable.invoice}>

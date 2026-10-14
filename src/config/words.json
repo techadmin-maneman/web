@@ -4974,7 +4974,7 @@
     "surface": "message",
     "group": "Messages",
     "where": "visit_booked_v1",
-    "text": "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. We've received {{6}} (ref {{7}}). Your receipt is in the app."
+    "text": "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. We've received {{6}} (ref {{7}}). Your receipt will be in the app shortly."
   },
   {
     "key": "message:visit_booked_credit_v1",
@@ -4988,7 +4988,7 @@
     "surface": "message",
     "group": "Messages",
     "where": "link_paid_v1",
-    "text": "Hi {{1}}, thank you: payment received.\n{{6}} for your {{2}} (ref {{7}}). Welcome to Mane Man. Your receipt is in the app."
+    "text": "Hi {{1}}, thank you: payment received.\n{{6}} for your {{2}} (ref {{7}}). Welcome to Mane Man. Your receipt will be in the app shortly."
   },
   {
     "key": "message:visit_booked_code_v1",

@@ -19,12 +19,12 @@ export const TEMPLATES = {
   one_visit_booked_v1:
     "Hi {{1}}, you're booked.\nYour consultation and fit is {{3}}, {{4}}, at home. Choose your hair system with your technician, and pay only once you're fitted.",
   visit_booked_v1:
-    "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. We've received {{6}} (ref {{7}}). Your receipt is in the app.",
+    "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. We've received {{6}} (ref {{7}}). Your receipt will be in the app shortly.",
   visit_booked_credit_v1:
     "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}, covered by one of your free service visits.",
   // The receipt for a one visit paid by its link once the client is fitted: {{2}} the hair system.
   link_paid_v1:
-    "Hi {{1}}, thank you: payment received.\n{{6}} for your {{2}} (ref {{7}}). Welcome to Mane Man. Your receipt is in the app.",
+    "Hi {{1}}, thank you: payment received.\n{{6}} for your {{2}} (ref {{7}}). Welcome to Mane Man. Your receipt will be in the app shortly.",
   // A visit a discount code made free: booked with nothing to pay.
   visit_booked_code_v1:
     "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. Your discount code covers it: nothing to pay.",

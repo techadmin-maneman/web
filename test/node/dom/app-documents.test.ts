@@ -27,9 +27,11 @@ describe("a visit’s invoice", () => {
     expect(invoiceState(visit({ invoice_expected: false }), ended)).toBe("free");
   });
 
-  it("is still generating for a day after the visit, and late after that", () => {
-    expect(invoiceState(visit({}), ended + 2 * HOUR)).toBe("generating");
-    expect(invoiceState(visit({}), ended + 23 * HOUR)).toBe("generating");
+  // "Usually ready within the hour" was said for a whole day after the visit.
+  it("is coming within the hour, then on its way with a way to ask for it, and late after a day", () => {
+    expect(invoiceState(visit({}), ended + HOUR / 2)).toBe("generating");
+    expect(invoiceState(visit({}), ended + 2 * HOUR)).toBe("delayed");
+    expect(invoiceState(visit({}), ended + 23 * HOUR)).toBe("delayed");
     expect(invoiceState(visit({}), ended + 25 * HOUR)).toBe("late");
   });
 

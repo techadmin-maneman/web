@@ -139,10 +139,10 @@ export const payments = {
    * depends on when that was (ADR 0056). Our words: every line but the invoice's first.
    */
   unavailable: {
-    invoice: "The invoice is still generating. Usually ready within the hour.",
-    invoiceAfterVisit: "The tax invoice is raised once the visit is done.",
-    invoiceLate: "The invoice is taking longer than it should.",
-    receipt: "The receipt isn’t ready yet.",
+    invoice: "Your invoice will be ready within the hour.",
+    invoiceAfterVisit: "Your invoice comes after the visit.",
+    invoiceLate: "Your invoice is taking longer than it should.",
+    receipt: "Your receipt will be here shortly.",
     notify: "Ask us for it",
   },
 } as const;
