@@ -11,7 +11,7 @@
 import { sha256Hex } from "../../lib/hash.ts";
 import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { checkLoginCode } from "../sign-in/one-time-codes.ts";
-import { newSessionToken, SESSION_TTL_MS } from "../sign-in/sessions.ts";
+import { newSessionToken, sessionExpiry } from "../sign-in/sessions.ts";
 
 interface FieldTechnician {
   readonly id: string;
@@ -75,7 +75,7 @@ export async function openTechnicianSession(
   const token = newSessionToken();
   const sessionId = await sha256Hex(token);
   const at = options.now.toISOString();
-  const expiresAt = new Date(options.now.getTime() + SESSION_TTL_MS).toISOString();
+  const expiresAt = sessionExpiry("technician", options.now, options.now).toISOString();
   await db.batch([
     db
       .prepare(

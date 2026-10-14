@@ -3,7 +3,12 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { blankOldCoordinates, dormantPeople, dropLaunchedWaitlist } from "../../../src/domain/privacy/retention.ts";
+import {
+  blankOldCoordinates,
+  dormantPeople,
+  dropExpired,
+  dropLaunchedWaitlist,
+} from "../../../src/domain/privacy/retention.ts";
 import { createLogger } from "../../../src/log.ts";
 import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
@@ -151,5 +156,61 @@ describe("a check-in's coordinates", () => {
       .run();
 
     expect(await blankOldCoordinates(env.DB, NOW, 30)).toBe(0);
+  });
+});
+
+// Resolved alerts, Razorpay's event IDs, strangers' chats, sent messages and the audit log grew for ever.
+describe("the tables that only grew", () => {
+  const OLD = "2024-06-01T06:30:00.000Z";
+  const ids = async (sql: string) =>
+    (await env.DB.prepare(sql).all<{ id: string | number }>()).results.map((row) => row.id);
+
+  it("lose their rows past their periods, and keep the rest", async () => {
+    await person("1");
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO alerts (id, key, message, count, first_seen_at, last_seen_at, resolved_at) VALUES
+           ('gone', 'k1', 'm', 1, ?1, ?1, ?1), ('kept', 'k2', 'm', 1, ?2, ?2, ?2), ('open', 'k3', 'm', 1, ?1, ?1, NULL)`,
+      ).bind(OLD, LAST_MONTH),
+      env.DB.prepare(
+        "INSERT INTO razorpay_events (event_id, event, received_at) VALUES ('gone', 'payment.captured', ?1), ('kept', 'payment.captured', ?2)",
+      ).bind(OLD, LAST_MONTH),
+      env.DB.prepare(
+        `INSERT INTO conversations (id, person_id, mobile_e164, state, opened_at, last_message_at, created_at, updated_at)
+         VALUES ('gone', NULL, '+919811100001', 'closed', ?1, ?1, ?1, ?1),
+                ('open', NULL, '+919811100002', 'open', ?1, ?1, ?1, ?1),
+                ('client', '1', '+919811100003', 'closed', ?1, ?1, ?1, ?1)`,
+      ).bind(OLD),
+      env.DB.prepare(
+        `INSERT INTO chat_messages (id, conversation_id, direction, author, text, sent_at, created_at)
+         VALUES ('m1', 'gone', 'in', 'client', 'Hello', ?1, ?1), ('m2', 'client', 'in', 'client', 'Hello', ?1, ?1)`,
+      ).bind(OLD),
+      env.DB.prepare(
+        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state)
+         VALUES ('gone', ?1, '1', 'visit_reminder', 'appointment', 'a1', 'sent'),
+                ('kept', ?2, '1', 'visit_reminder', 'appointment', 'a2', 'sent')`,
+      ).bind(OLD, LAST_MONTH),
+      env.DB.prepare(
+        `INSERT INTO audit_log (id, at, surface, actor_kind, actor, action) VALUES
+           (900001, ?1, 'ops', 'system', 'test', 'test.old'), (900002, ?2, 'ops', 'system', 'test', 'test.new')`,
+      ).bind(OLD, LAST_MONTH),
+    ]);
+
+    expect(await dropExpired(env.DB, NOW)).toBe(6);
+    expect(await ids("SELECT id FROM alerts ORDER BY id")).toEqual(["kept", "open"]);
+    expect(await ids("SELECT event_id AS id FROM razorpay_events")).toEqual(["kept"]);
+    expect(await ids("SELECT id FROM conversations ORDER BY id")).toEqual(["client", "open"]);
+    expect(await ids("SELECT id FROM chat_messages")).toEqual(["m2"]);
+    expect(await ids("SELECT id FROM outbound_messages")).toEqual(["kept"]);
+    expect(await ids("SELECT id FROM audit_log WHERE id >= 900001")).toEqual([900002]);
+  });
+
+  it("keeps the audit log append-only for its two years", async () => {
+    await env.DB.prepare(
+      "INSERT INTO audit_log (id, at, surface, actor_kind, actor, action) VALUES (900003, ?1, 'ops', 'system', 'test', 'test.new')",
+    )
+      .bind(LAST_MONTH)
+      .run();
+    await expect(env.DB.prepare("DELETE FROM audit_log WHERE id = 900003").run()).rejects.toThrow(/append-only/);
   });
 });

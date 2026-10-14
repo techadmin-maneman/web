@@ -28,8 +28,9 @@ export interface Grant {
 export type ZoneOfCity = ReadonlyMap<string, string>;
 
 /**
- * Who is calling. A person not on the Staff list is an inactive person with no grants. A service token is let in
- * as every caller was before the list, or not at all.
+ * Who is calling. A person not on the Staff list is an inactive person with no grants. A service token on the list
+ * reads what anyone may read, nationally, and changes nothing: a leaked CI secret then refunds, waives, erases and
+ * prices nothing.
  */
 export type Caller =
   | { readonly kind: "person"; readonly active: boolean; readonly grants: readonly Grant[] }
@@ -78,7 +79,7 @@ export function can({
   where: Place | "anywhere";
   zoneOf: ZoneOfCity;
 }): boolean {
-  if (caller.kind === "service") return caller.allowed;
+  if (caller.kind === "service") return caller.allowed && level === "view";
   if (!caller.active) return false;
   return caller.grants.some(
     (grant) =>

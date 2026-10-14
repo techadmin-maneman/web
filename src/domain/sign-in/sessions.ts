@@ -1,6 +1,6 @@
 // Sessions (docs/decisions/0029-sessions.md): a 32-byte random token in a
 // cookie, stored only as its SHA-256. A session lasts 90 days from its last
-// use, and can be revoked.
+// use, never past its lifetime from the sign-in, and can be revoked.
 
 import { toBase64Url } from "../../lib/base64url.ts";
 import { sha256Hex } from "../../lib/hash.ts";
@@ -12,9 +12,24 @@ export const SESSION_TOUCH_MS = HOUR_MS;
 
 type SessionKind = "client" | "technician";
 
+/**
+ * The longest a session lasts from its sign-in, however often it is used: a technician signs in again each month, so a
+ * copied cookie, or a phone kept after leaving, works no longer than that; a client, each half year.
+ */
+const SESSION_LIFETIME_MS: Readonly<Record<SessionKind, number>> = {
+  client: 180 * DAY_MS,
+  technician: 30 * DAY_MS,
+};
+
+/** When a session opened at `openedAt`, and used at `now`, lapses: 90 days on, or at its lifetime's end if sooner. */
+export const sessionExpiry = (kind: SessionKind, openedAt: Date, now: Date): Date =>
+  new Date(Math.min(now.getTime() + SESSION_TTL_MS, openedAt.getTime() + SESSION_LIFETIME_MS[kind]));
+
 export interface Session {
   readonly id: string;
+  readonly kind: SessionKind;
   readonly subjectId: string;
+  readonly createdAt: Date;
   readonly lastSeenAt: Date;
   readonly expiresAt: Date;
 }
@@ -39,7 +54,7 @@ export async function openSession(
       options.kind,
       options.subjectId,
       at,
-      new Date(options.now.getTime() + SESSION_TTL_MS).toISOString(),
+      sessionExpiry(options.kind, options.now, options.now).toISOString(),
       options.deviceLabel,
     )
     .run();
@@ -55,26 +70,28 @@ export async function findSession(
 ): Promise<Session | null> {
   const row = await db
     .prepare(
-      `SELECT id, subject_id, last_seen_at, expires_at FROM sessions
+      `SELECT id, subject_id, created_at, last_seen_at, expires_at FROM sessions
        WHERE id = ?1 AND subject_kind = ?2 AND revoked_at IS NULL AND expires_at > ?3`,
     )
     .bind(await sha256Hex(token), kind, now.toISOString())
-    .first<{ id: string; subject_id: string; last_seen_at: string; expires_at: string }>();
+    .first<{ id: string; subject_id: string; created_at: string; last_seen_at: string; expires_at: string }>();
   return row === null
     ? null
     : {
         id: row.id,
+        kind,
         subjectId: row.subject_id,
+        createdAt: new Date(row.created_at),
         lastSeenAt: new Date(row.last_seen_at),
         expiresAt: new Date(row.expires_at),
       };
 }
 
-/** Moves the session's expiry to 90 days from now. */
+/** Moves the session's expiry to 90 days from now, or to its lifetime's end if that comes first. */
 export async function touchSession(db: D1Database, session: Session, now: Date): Promise<void> {
   await db
     .prepare("UPDATE sessions SET last_seen_at = ?2, expires_at = ?3 WHERE id = ?1 AND revoked_at IS NULL")
-    .bind(session.id, now.toISOString(), new Date(now.getTime() + SESSION_TTL_MS).toISOString())
+    .bind(session.id, now.toISOString(), sessionExpiry(session.kind, session.createdAt, now).toISOString())
     .run();
 }
 

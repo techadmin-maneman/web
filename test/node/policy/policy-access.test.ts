@@ -114,16 +114,14 @@ describe("can", () => {
     );
   });
 
-  it("lets a listed service token in as every caller was before the list, and an unlisted one nowhere", () => {
-    expect(
-      can({
-        caller: { kind: "service", allowed: true },
-        department: "finance",
-        level: "manage",
-        where: NATIONAL,
-        zoneOf: ZONES,
-      }),
-    ).toBe(true);
+  // A listed token could refund, waive, erase and set prices: one leaked CI secret did all of it.
+  it("lets a listed service token read everywhere and change nothing, and an unlisted one nowhere", () => {
+    const listed = { kind: "service", allowed: true } as const;
+    expect(can({ caller: listed, department: "finance", level: "view", where: NATIONAL, zoneOf: ZONES })).toBe(true);
+    expect(can({ caller: listed, department: "operations", level: "act", where: "anywhere", zoneOf: ZONES })).toBe(
+      false,
+    );
+    expect(can({ caller: listed, department: "finance", level: "manage", where: NATIONAL, zoneOf: ZONES })).toBe(false);
     expect(
       can({
         caller: { kind: "service", allowed: false },

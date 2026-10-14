@@ -206,8 +206,12 @@ describe("the routes a caller's calls go ahead on", () => {
     expect(managing).not.toContain("POST /api/service-area");
   });
 
-  it("are every route for a service token on the list, and none but the signed-in ones for one not on it", () => {
-    expect(routesOpenTo({ kind: "service", allowed: true }, true, NO_ZONES)).toEqual(Object.keys(ROUTE_NEEDS));
+  it("are the reading routes for a service token on the list, and none but the signed-in ones for one not on it", () => {
+    const listed = routesOpenTo({ kind: "service", allowed: true }, true, NO_ZONES);
+    expect(listed).toEqual(expect.arrayContaining(["GET /api/prices", "GET /api/staff", ...SIGNED_IN_ROUTES]));
+    expect(listed).not.toContain("POST /api/payments/{id}/refund");
+    expect(listed).not.toContain("POST /api/prices");
+    expect(listed).not.toContain("POST /api/staff");
     expect(routesOpenTo({ kind: "service", allowed: false }, true, NO_ZONES)).toEqual(SIGNED_IN_ROUTES);
   });
 });

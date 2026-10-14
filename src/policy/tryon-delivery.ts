@@ -12,10 +12,10 @@ export const LOOK_PER_NUMBER_DAYS = 30;
 
 /**
  * Whether the try-on runs at all: its look can be sent only while WhatsApp is on (MESSAGING_ENABLED), which
- * production keeps off until its WhatsApp number goes live (docs/go-live.md).
+ * production keeps off until its WhatsApp number goes live (docs/go-live.md), and while the bridge is not down.
  */
-export function tryOnRuns(messaging: { readonly enabled: boolean }): boolean {
-  return messaging.enabled;
+export function tryOnRuns(messaging: { readonly enabled: boolean }, bridgeDown: boolean): boolean {
+  return messaging.enabled && !bridgeDown;
 }
 
 /** Why a look made now would not reach the visitor's WhatsApp. */
@@ -23,6 +23,8 @@ type Undelivered = "whatsapp_off" | "held_back" | "number_capped";
 
 interface DeliveryCheck {
   readonly messaging: { readonly enabled: boolean };
+  /** The WhatsApp bridge reads closed (src/domain/platform/alerts.ts, whatsAppBridgeDown). */
+  readonly bridgeDown: boolean;
   /** Staging's allowlist holds back a message about one of our own scripts' test records (ADR 0097). */
   readonly heldBack: boolean;
   /** The number has had its result messages for the day (RESULT_MESSAGE_MOBILE_DAILY_LIMIT). */
@@ -31,7 +33,7 @@ interface DeliveryCheck {
 
 /** Why the look for this number would not be sent, or null when it would be. */
 export function undelivered(check: DeliveryCheck): Undelivered | null {
-  if (!tryOnRuns(check.messaging)) return "whatsapp_off";
+  if (!tryOnRuns(check.messaging, check.bridgeDown)) return "whatsapp_off";
   if (check.heldBack) return "held_back";
   if (check.capSpent) return "number_capped";
   return null;

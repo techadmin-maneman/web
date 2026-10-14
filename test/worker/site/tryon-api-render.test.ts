@@ -143,6 +143,21 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
     expect(await off.json()).toEqual({ available: false });
   });
 
+  // During the bridge's 32-hour outage the try-on took photos and ran renders it could never send.
+  it("says it does not run while the WhatsApp bridge reads closed, and takes no photograph", async () => {
+    await env.DB.prepare(
+      `INSERT INTO alerts (id, key, message, count, first_seen_at, last_seen_at)
+       VALUES ('a1', 'whatsapp_bridge', 'The WhatsApp bridge is not connected', 2, ?1, ?1)`,
+    )
+      .bind(new Date().toISOString())
+      .run();
+    expect(await (await visitor().call("/api/tryon/availability")).json()).toEqual({ available: false });
+    expect((await visitor().uploadLink()).status).toBe(503);
+
+    await env.DB.prepare("UPDATE alerts SET resolved_at = ?1 WHERE id = 'a1'").bind(new Date().toISOString()).run();
+    expect(await (await visitor().call("/api/tryon/availability")).json()).toEqual({ available: true });
+  });
+
   it("hands a browser no look and no link to one, whoever it is", async () => {
     const browser = visitor();
     const jobId = await browser.claimed();

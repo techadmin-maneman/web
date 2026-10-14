@@ -1442,9 +1442,31 @@ Request body:
 }
 ```
 
+### POST /api/hooks/evolution
+
+Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages; the token as "Authorization: Bearer <token>"
+
+**204**: Taken, or ignored. Either way Evolution need not send it again
+
+**401**: unauthorized: the token is wrong
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: receipts are not switched on (no EVOLUTION_WEBHOOK_TOKEN)
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/hooks/evolution/{token}
 
-Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages
+Evolution's delivery receipts (messages.update) for the WhatsApp messages we sent, and the messages on our number (messages.upsert), where a STOP reply stops our messages; the token in the path, until the bridge sends it as a header
 
 **204**: Taken, or ignored. Either way Evolution need not send it again
 

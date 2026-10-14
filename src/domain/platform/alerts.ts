@@ -22,7 +22,7 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { OPS_ORIGIN, type EnvironmentName } from "../../config/environments.ts";
 import { HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";
-import { alertKind, isUrgent, retellAfterHours } from "../../policy/alerts.ts";
+import { alertKind, BRIDGE_CLOSED_READINGS, isUrgent, retellAfterHours } from "../../policy/alerts.ts";
 import type { Alert } from "../../providers/alerts.ts";
 
 export interface RaisedAlert {
@@ -66,6 +66,18 @@ interface Sighting {
   readonly firstSeenAt: string;
   /** Null until the chat is first told of it. */
   readonly lastToldAt: string | null;
+}
+
+/**
+ * Whether the WhatsApp bridge stands closed: the five-minute check (src/scheduled/whatsapp-bridge.ts) read it so in a
+ * row and has not read it open since. Nothing sent on WhatsApp now would arrive.
+ */
+export async function whatsAppBridgeDown(db: D1Database): Promise<boolean> {
+  const open = await db
+    .prepare("SELECT 1 FROM alerts WHERE key = 'whatsapp_bridge' AND resolved_at IS NULL AND count >= ?1")
+    .bind(BRIDGE_CLOSED_READINGS)
+    .first();
+  return open !== null;
 }
 
 export function createAlertOnce(deps: {
@@ -186,10 +198,6 @@ function isTellingDue(sighting: Sighting, after: number, retellAfter: number, no
 }
 
 /**
- * Marks the alert told now: from its first telling it waits on the Tasks board's "Needs a hand". False where another
- * sighting told it first, so the chat hears of it once.
- */
-/**
  * Takes back a telling the chat did not take, so the next sighting, or for a first telling the next retell pass, tells
  * it again. The alert stays on the Tasks board's "Needs a hand" meanwhile. Only the telling this one marked is taken.
  */
@@ -204,6 +212,10 @@ async function unmarkTold(db: D1Database, sighting: Sighting, toldAt: Date, log:
   }
 }
 
+/**
+ * Marks the alert told now: from its first telling it waits on the Tasks board's "Needs a hand". False where another
+ * sighting told it first, so the chat hears of it once.
+ */
 async function markTold(db: D1Database, sighting: Sighting, now: Date): Promise<boolean> {
   const result = await db
     .prepare(

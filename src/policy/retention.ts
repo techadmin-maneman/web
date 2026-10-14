@@ -15,8 +15,21 @@ export const WAITLIST_AFTER_LAUNCH_MONTHS = 12;
  */
 export const CHECKIN_COORDINATES_GRACE_DAYS = 7;
 
-// The audit log is kept two years. Nothing in it is that old yet: its triggers keep every row, and the job that
-// deletes the oldest is owed before the first rows reach two years, in September 2028.
+/** The audit log, kept two years; its trigger refuses to let a younger row go (migration 0172). */
+export const AUDIT_LOG_MONTHS = 24;
+
+/** A resolved alert, and Razorpay's ID of an event applied, long past any repeat of it. */
+export const RESOLVED_ALERT_MONTHS = 12;
+export const RAZORPAY_EVENT_MONTHS = 12;
+
+/** The closed chat of a number we never knew, nor any technician's. */
+export const STRANGER_CHAT_MONTHS = 12;
+
+/** A message we sent, unless a no-show or a move holds it as its evidence. */
+export const SENT_MESSAGE_MONTHS = 24;
+
+/** How many rows of each one run deletes at most. */
+export const PURGED_PER_RUN = 500;
 
 /** How many dormant people one run erases at most: each is a batch and a CRM message. */
 export const ERASED_PER_RUN = 5;

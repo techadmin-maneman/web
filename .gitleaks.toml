@@ -1,0 +1,14 @@
+# The secret scan's rules (ci.yml, "No secrets in the code"): gitleaks' own, less two kinds of text it takes for
+# secrets that are not: an Access application's audience tag, which Cloudflare puts in every token it signs, and the
+# frame of a PEM key made at run time.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Not secrets"
+regexTarget = "match"
+regexes = [
+  '''^ACCESS_OPS_AUD"?: "[0-9a-f]{64}"''',
+  '''^-----BEGIN PRIVATE KEY-----\\n\$\{''',
+]

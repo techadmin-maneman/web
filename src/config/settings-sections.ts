@@ -262,7 +262,10 @@ export function readTryon(read: Reader, providers: ProvidersRead, isLocal: boole
     resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
     resultRetentionDays: read.count("RESULT_RETENTION_DAYS"),
     unitFloor: read.count("YOUCAM_UNIT_FLOOR"),
-    linkSigningKey: read.key("RESULT_SIGNING_KEY"),
+    linkSigningKey: {
+      current: read.key("RESULT_SIGNING_KEY"),
+      previous: read.optionalText("RESULT_SIGNING_KEY_PREVIOUS"),
+    },
     youcamApiKey: providers.IMAGE_PROVIDER === "youcam" ? read.text("YOUCAM_API_KEY") : null,
     refsUrl: read.text("TRYON_REFS_URL"),
   };

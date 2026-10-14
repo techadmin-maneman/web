@@ -223,7 +223,7 @@ Indexes:
 
 One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 
-Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`, `0088_alerts_retold.sql`.
+Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`, `0088_alerts_retold.sql`, `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -242,6 +242,7 @@ Indexes:
 
 - `alerts_open_by_key`: unique on (`key`), where `resolved_at IS NULL`
 - `alerts_open_told`: on (`told_at`), where `resolved_at IS NULL AND told_at IS NOT NULL`
+- `alerts_resolved`: on (`resolved_at`), where `resolved_at IS NOT NULL`
 
 ## appointments
 
@@ -307,7 +308,7 @@ Triggers: `appointments_kept_whole`, `appointments_whole`.
 
 Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 
-Made by `0005_audit.sql`.
+Made by `0005_audit.sql`; changed by `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -325,6 +326,7 @@ Made by `0005_audit.sql`.
 Indexes:
 
 - `audit_log_actor`: on (`actor_kind`, `actor`, `at`)
+- `audit_log_by_at`: on (`at`)
 - `audit_log_subject`: on (`subject_kind`, `subject_id`, `at`)
 
 Triggers: `audit_log_append_only_delete`, `audit_log_append_only_update`.
@@ -540,7 +542,7 @@ Made by `0107_city_blackouts_and_fitters.sql`.
 
 A matter Customer Care sent from a chat to the client's city, on that city's Tasks until it is closed (ADR 0135).
 
-Made by `0118_city_matters.sql`.
+Made by `0118_city_matters.sql`; changed by `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -554,6 +556,7 @@ Made by `0118_city_matters.sql`.
 
 Indexes:
 
+- `city_matters_by_conversation`: on (`conversation_id`), where `conversation_id IS NOT NULL`
 - `city_matters_by_person`: on (`person_id`)
 
 ## city_prices
@@ -1045,7 +1048,7 @@ Indexes:
 
 Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 
-Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`, `0094_dispatch_move_blackout_reason.sql`, `0104_fsm_columns_expand.sql`.
+Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`, `0094_dispatch_move_blackout_reason.sql`, `0104_fsm_columns_expand.sql`, `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1070,6 +1073,7 @@ Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `006
 Indexes:
 
 - `dispatch_moves_by_appointment`: on (`appointment_id`, `created_at`)
+- `dispatch_moves_by_message`: on (`message_id`), where `message_id IS NOT NULL`
 - `dispatch_moves_one_at_a_time`: unique on (`appointment_id`), where `fsm_write_state = 'pending'`
 - `dispatch_moves_untold`: on (`now_start`), where `fsm_write_state = 'written' AND told_at IS NULL`
 
@@ -1459,7 +1463,7 @@ Indexes:
 
 The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0065_dispute_window.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0065_dispute_window.sql`, `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1488,6 +1492,7 @@ Indexes:
 
 - `no_show_cases_by_appointment`: on (`appointment_id`, `created_at`)
 - `no_show_cases_by_decision`: on (`decision`, `created_at`)
+- `no_show_cases_by_message`: on (`message_id`), where `message_id IS NOT NULL`
 - A `UNIQUE` constraint: unique on (`checkin_id`)
 
 ## no_show_disputes
@@ -1645,7 +1650,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1668,6 +1673,7 @@ Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand
 
 Indexes:
 
+- `outbound_messages_by_created`: on (`created_at`)
 - `outbound_messages_by_provider_id`: on (`provider_message_id`)
 - `outbound_messages_by_state`: on (`state`, `queued_at`)
 - `outbound_messages_by_subject`: on (`subject_id`)
@@ -2090,13 +2096,17 @@ Made by `0122_quick_replies.sql`.
 
 Each Razorpay webhook event, once, by its event ID (ADR 0044).
 
-Made by `0014_payments.sql`.
+Made by `0014_payments.sql`; changed by `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
 | `event_id` | TEXT | no |  | primary key |
 | `event` | TEXT | no |  |  |
 | `received_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `razorpay_events_by_received`: on (`received_at`)
 
 ## recall_pieces
 

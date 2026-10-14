@@ -10,7 +10,7 @@
 
 import { PHOTO_RETENTION_MS, type JobState } from "../../config/tryon.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-import { signToken, type TokenPurpose } from "../../lib/signed-token.ts";
+import { signToken, type TokenPurpose, type SigningSecret } from "../../lib/signed-token.ts";
 import { keptTryOn } from "../../policy/kept-try-ons.ts";
 import { PHOTO_LINK_MS } from "../visits/client-visits.ts";
 import { firstFitPhotographed, hasBooked, heldTryOn } from "./kept-try-ons.ts";
@@ -126,7 +126,7 @@ async function linkTo({
   image: TryOnImage;
   jobId: string;
   held: Held | null;
-  signingKey: string;
+  signingKey: SigningSecret;
   now: Date;
 }): Promise<TryOnLink | null> {
   if (held === null) return null;
@@ -156,7 +156,7 @@ async function keptOne(
 export async function clientTryOns(
   db: D1Database,
   personId: string,
-  signingKey: string,
+  signingKey: SigningSecret,
   now: Date,
 ): Promise<ClientTryOn[]> {
   const { results } = await db

@@ -77,7 +77,7 @@ export const LOCAL_SETTINGS: Settings = {
     resultReadDailyCeiling: 400,
     resultRetentionDays: 30,
     unitFloor: 500,
-    linkSigningKey: "test-link-signing-key-that-is-long-enough",
+    linkSigningKey: { current: "test-link-signing-key-that-is-long-enough", previous: null },
     youcamApiKey: null,
     refsUrl: "https://maneman.in/refs/v1",
   },

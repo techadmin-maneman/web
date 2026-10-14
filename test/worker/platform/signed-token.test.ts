@@ -2,7 +2,7 @@
 // token signed with the secret itself, before purposes had keys, is taken only until the day its last one lapses.
 
 import { describe, expect, it } from "vitest";
-import { signToken, verifyToken } from "../../../src/lib/signed-token.ts";
+import { LEGACY_KEY_UNTIL, signToken, verifyToken } from "../../../src/lib/signed-token.ts";
 import { toBase64Url } from "../../../src/lib/base64url.ts";
 
 const SECRET = "a-signing-secret-for-the-tests-that-is-long-enough";
@@ -38,5 +38,22 @@ describe("a signed token", () => {
     const old = await signedTheOldWay("stop_messages", "whatsapp_visits p1", lateLink);
     expect(await verifyToken(SECRET, "stop_messages", old, NOW)).toBe("whatsapp_visits p1");
     expect(await verifyToken(SECRET, "stop_messages", old, new Date("2026-11-04T00:00:00Z"))).toBeNull();
+  });
+
+  // Changing the secret broke every link clients held, a year's stop links among them.
+  it("is read with the secret before the current one, so the secret can change without breaking a link", async () => {
+    const NEXT = `${SECRET}-next`;
+    const before = await signToken(SECRET, "stop_messages", "whatsapp_visits p1", IN_A_DAY);
+    expect(await verifyToken({ current: NEXT, previous: SECRET }, "stop_messages", before, NOW)).toBe(
+      "whatsapp_visits p1",
+    );
+    expect(await verifyToken({ current: NEXT, previous: null }, "stop_messages", before, NOW)).toBeNull();
+    const after = await signToken({ current: NEXT, previous: SECRET }, "stop_messages", "whatsapp_visits p1", IN_A_DAY);
+    expect(await verifyToken(NEXT, "stop_messages", after, NOW)).toBe("whatsapp_visits p1");
+  });
+
+  // A dated branch is easy to forget: this fails once it is dead, so it is deleted rather than left.
+  it("takes the old way of signing only while its day is still to come", () => {
+    expect(Date.now()).toBeLessThan(LEGACY_KEY_UNTIL + 7 * 24 * 60 * 60 * 1000);
   });
 });

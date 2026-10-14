@@ -143,6 +143,9 @@ describe("POST /api/tech/auth/verify", () => {
     ).first<{ technician_id: string; device_id: string; label: string; session_id: string }>();
     expect(device).toMatchObject({ technician_id: IMRAN, device_id: DEVICE });
     expect(device?.session_id).not.toBeNull();
+    // A month from the sign-in at most, however often the phone is used: then a code again.
+    const expires = await env.DB.prepare("SELECT expires_at FROM sessions WHERE subject_kind = 'technician'").first();
+    expect(expires).toEqual({ expires_at: new Date(NOW.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString() });
   });
 
   it("counts a wrong code, and the fifth voids the challenge", async () => {
