@@ -1,13 +1,13 @@
 // The technician's day (src/policy/job-visibility.ts). The day's jobs are here; one job's card is ./job-card.ts,
 // and the job a step is written to, with what has been sent for it, ./workable-job.ts.
 //
-// "Today's jobs in order; tomorrow collapsed. Jobs further out show only time,
-// type and sector. The address, access notes and client card unlock the day
-// before, and the API enforces this, not just the screen." The enforcement is
+// Today's jobs in order and tomorrow's collapsed; a job further out shows only its time, type and sector. The address,
+// access notes and client card unlock the day before, and the API holds to that, not only the screen, so a
+// technician's phone never carries a client's address sooner than it needs to. The enforcement is
 // here: a locked job is built without the fields, not merely without them
 // rendered, so no response carries an address the technician may not have yet.
 //
-// "No money anywhere in the technician app": a job carries a Prepaid, Credit or
+// No money reaches the technician app: a job carries a Prepaid, Credit or
 // Free badge, and no amount leaves the database. Whether the price book charges
 // nothing for the visit's own service on its day is asked in SQL, as a yes or a
 // no (docs/decisions/0085-services-ops-can-edit.md).
