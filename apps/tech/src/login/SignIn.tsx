@@ -54,6 +54,25 @@ function noteFor(why: Out): string | null {
 const MESSAGES: Readonly<Record<string, string>> = copy.errors;
 const messageFor = (code: string, fallback: string) => MESSAGES[code] ?? fallback;
 
+/** What a check of the code came to: signed in, or the line to show, whether a new code is needed, or the code was wrong. */
+type Verdict =
+  | { readonly signedIn: true }
+  | { readonly signedIn: false; readonly error: string; readonly again: boolean; readonly wrong: boolean };
+
+function verdictOf(answer: Awaited<ReturnType<typeof api.verify>> | null): Verdict {
+  if (answer === null) return { signedIn: false, error: copy.errors.unknown, again: false, wrong: false };
+  if (!answer.ok) {
+    // A closed code cannot be tried again: only a new one can, and none signs in a technician ops stopped.
+    const closed = answer.status === 410 || answer.code === "sign_in_stopped";
+    return { signedIn: false, error: messageFor(answer.code, copy.errors.unknown), again: closed, wrong: false };
+  }
+  if (answer.body.verified) return { signedIn: true };
+  if (answer.body.attempts_left === 0) {
+    return { signedIn: false, error: copy.errors.code_expired, again: true, wrong: false };
+  }
+  return { signedIn: false, error: copy.attemptsLeft(answer.body.attempts_left), again: false, wrong: true };
+}
+
 /** Once a code is out, the ways on: a number typed wrong, or a code that never came, once WhatsApp has had time. */
 function Again(props: { resendIn: number; busy: boolean; onChangeNumber: () => void; onResend: () => void }) {
   return (
@@ -118,36 +137,23 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
     setCode("");
   }
 
-  async function verifyOnce(code: string): Promise<void> {
+  async function verifyOnce(typed: string): Promise<void> {
     if (challenge === null) return;
     // A phone store that will not give the device ID is a failure to try again, never a button left busy.
     const answer = await deviceId()
-      .then((device) => api.verify(challenge.challenge_id, code, device))
+      .then((device) => api.verify(challenge.challenge_id, typed, device))
       .catch(() => null);
-    if (answer === null) {
-      setError(copy.errors.unknown);
+    const verdict = verdictOf(answer);
+    if (verdict.signedIn) {
+      // The session cookie is set; who is signed in comes from GET /tech/me, which App asks next
+      // and records the enrolment again, so a phone too full to record it here still signs in.
+      await enrolled().catch(() => undefined);
+      onSignedIn();
       return;
     }
-    if (!answer.ok) {
-      // A closed code cannot be tried again: only a new one can, and none signs in a technician ops stopped.
-      if (answer.status === 410 || answer.code === "sign_in_stopped") startAgain();
-      setError(messageFor(answer.code, copy.errors.unknown));
-      return;
-    }
-    if (!answer.body.verified && answer.body.attempts_left === 0) {
-      startAgain();
-      setError(copy.errors.code_expired);
-      return;
-    }
-    if (!answer.body.verified) {
-      setCode("");
-      setError(copy.attemptsLeft(answer.body.attempts_left));
-      return;
-    }
-    // The session cookie is set; who is signed in comes from GET /tech/me, which App asks next
-    // and records the enrolment again, so a phone too full to record it here still signs in.
-    await enrolled().catch(() => undefined);
-    onSignedIn();
+    if (verdict.again) startAgain();
+    else if (verdict.wrong) setCode("");
+    setError(verdict.error);
   }
   const verify = (typed: string = code) => once(() => verifyOnce(typed));
 

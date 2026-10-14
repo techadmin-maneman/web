@@ -147,118 +147,42 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       go(`/jobs/${job.id}/done`);
     });
 
-  /** The stage's one action: Start job once they are at the door, I have arrived before, none while a check-in has failed. */
-  function doorAction(): ReactNode {
-    if (here) {
-      return (
-        <Button
-          variant="gold"
-          size="action"
-          className={frame.action}
-          disabled={asking}
-          busy={asking}
-          onClick={() => void start()}
-        >
-          {jobCopy.start}
-        </Button>
-      );
-    }
-    if (failed) return null;
-    return (
-      <Button
-        variant="gold"
-        size="action"
-        className={frame.action}
-        disabled={asking || notYet}
-        busy={asking}
-        onClick={() => void arrive()}
-      >
-        {copy.arrived.action}
-      </Button>
-    );
-  }
+  // The stage's one action: Start job once they are at the door, I have arrived before, none while a check-in has failed.
+  const door = here ? (
+    <DoorButton busy={asking} onTap={() => void start()}>
+      {jobCopy.start}
+    </DoorButton>
+  ) : (
+    <DoorButton busy={asking} disabled={notYet} onTap={() => void arrive()}>
+      {copy.arrived.action}
+    </DoorButton>
+  );
 
   return (
-    <CardFrame job={job} foot={doorAction()}>
+    <CardFrame job={job} foot={failed ? null : door}>
       {card}
-
-      {!here && !failed && (
-        <section className={styles.stage}>
-          <p className={capsLook(styles.stageLabel)}>{copy.arrived.step}</p>
-          <p className={styles.stageBody}>{copy.arrived.body(job.checkin_radius_m)}</p>
-          {saysWhenItOpens && (
-            <p className={styles.stageOpens} role="status">
-              {copy.arrived.opensAt(clock(job.checkin_from))}
-            </p>
-          )}
-          {noPosition && (
-            <p className={styles.stageWarn} role="alert">
-              {copy.arrived.noPosition}
-            </p>
-          )}
-        </section>
-      )}
-
+      {!here && !failed && <Arriving job={job} opensAt={saysWhenItOpens} noPosition={noPosition} />}
       {failed && (
-        <section className={styles.failed} role="alert">
-          <p className={capsLook(styles.failedLabel)}>{copy.failed.title}</p>
-          <p className={styles.failedLine}>
-            {arrival.distance_m === null ? copy.failed.unmeasured : copy.failed.away(metres(arrival.distance_m))}
-          </p>
-          <p className={styles.stageNote}>{copy.failed.body}</p>
-          {noPosition && <p className={styles.stageWarn}>{copy.arrived.noPosition}</p>}
-          <Button
-            variant="outlineOnInk"
-            size="control"
-            className={styles.second}
-            disabled={asking}
-            busy={asking}
-            onClick={() => void arrive()}
-          >
-            {copy.failed.action}
-          </Button>
-        </section>
+        <CheckInFailed
+          distance={arrival.distance_m}
+          noPosition={noPosition}
+          busy={asking}
+          onAgain={() => void arrive()}
+        />
       )}
-
       {here && (
-        <section className={styles.stage}>
-          <p className={capsLook(styles.stageLabel)}>{copy.waiting.step}</p>
-          {wait.endsAt !== null && <p className={styles.timer}>{countdown(left)}</p>}
-          <p className={styles.stageNote} role="status">
-            {waitLine(job, { begun: waitBegun, confirmed: wait.confirmed, over: mayClose })}
-          </p>
-          <p className={styles.evidence}>
-            <Icon className={styles.evidenceIcon} d={receipt.icon} size={20} stroke={STROKE} />
-            <span>{receipt.text}</span>
-          </p>
-          {refusedAsEarly(queued, job.id) && (
-            <p className={styles.stageWarn} role="alert">
-              {copy.waiting.early}
-            </p>
-          )}
-          <Button
-            variant="outlineOnInk"
-            size="action"
-            className={styles.outline}
-            disabled={!mayClose || asking}
-            onClick={() => {
-              setConfirming(true);
-            }}
-          >
-            {copy.waiting.close}
-          </Button>
-        </section>
+        <Waiting
+          left={wait.endsAt === null ? null : left}
+          line={waitLine(job, { begun: waitBegun, confirmed: wait.confirmed, over: mayClose })}
+          receipt={receipt}
+          early={refusedAsEarly(queued, job.id)}
+          mayClose={mayClose && !asking}
+          onClose={() => {
+            setConfirming(true);
+          }}
+        />
       )}
-
-      {here && (
-        <section className={styles.stage}>
-          <p className={capsLook(styles.stageLabel)}>{copy.appears.title}</p>
-          {job.client !== null && (
-            <p className={styles.failedLine}>{copy.appears.atTheDoor(firstNameOf(job.client.name))}</p>
-          )}
-          <p className={styles.stageNote}>{copy.appears.body}</p>
-        </section>
-      )}
+      {here && <Appears job={job} />}
 
       {confirming && (
         <ConfirmSheet
@@ -273,6 +197,117 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
         />
       )}
     </CardFrame>
+  );
+}
+
+/** The door's one action, gold at the foot of the card. */
+function DoorButton(props: { busy: boolean; disabled?: boolean; onTap: () => void; children: ReactNode }) {
+  return (
+    <Button
+      variant="gold"
+      size="action"
+      className={frame.action}
+      disabled={props.busy || props.disabled === true}
+      busy={props.busy}
+      onClick={props.onTap}
+    >
+      {props.children}
+    </Button>
+  );
+}
+
+/** Before the check-in: how close it must be made, when it opens if not yet, and a position the phone would not give. */
+function Arriving({ job, opensAt, noPosition }: { job: Job; opensAt: boolean; noPosition: boolean }) {
+  return (
+    <section className={styles.stage}>
+      <p className={capsLook(styles.stageLabel)}>{copy.arrived.step}</p>
+      <p className={styles.stageBody}>{copy.arrived.body(job.checkin_radius_m)}</p>
+      {opensAt && (
+        <p className={styles.stageOpens} role="status">
+          {copy.arrived.opensAt(clock(job.checkin_from))}
+        </p>
+      )}
+      {noPosition && (
+        <p className={styles.stageWarn} role="alert">
+          {copy.arrived.noPosition}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** A check-in the API measured too far from the door, and the way to try again. */
+function CheckInFailed(props: { distance: number | null; noPosition: boolean; busy: boolean; onAgain: () => void }) {
+  return (
+    <section className={styles.failed} role="alert">
+      <p className={capsLook(styles.failedLabel)}>{copy.failed.title}</p>
+      <p className={styles.failedLine}>
+        {props.distance === null ? copy.failed.unmeasured : copy.failed.away(metres(props.distance))}
+      </p>
+      <p className={styles.stageNote}>{copy.failed.body}</p>
+      {props.noPosition && <p className={styles.stageWarn}>{copy.arrived.noPosition}</p>}
+      <Button
+        variant="outlineOnInk"
+        size="control"
+        className={styles.second}
+        disabled={props.busy}
+        busy={props.busy}
+        onClick={props.onAgain}
+      >
+        {copy.failed.action}
+      </Button>
+    </section>
+  );
+}
+
+/** The no-show wait: what is left of it, the reminder's receipt as evidence, and the close once it has run. */
+function Waiting(props: {
+  left: number | null;
+  line: string;
+  receipt: ReceiptLine;
+  early: boolean;
+  mayClose: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <section className={styles.stage}>
+      <p className={capsLook(styles.stageLabel)}>{copy.waiting.step}</p>
+      {props.left !== null && <p className={styles.timer}>{countdown(props.left)}</p>}
+      <p className={styles.stageNote} role="status">
+        {props.line}
+      </p>
+      <p className={styles.evidence}>
+        <Icon className={styles.evidenceIcon} d={props.receipt.icon} size={20} stroke={STROKE} />
+        <span>{props.receipt.text}</span>
+      </p>
+      {props.early && (
+        <p className={styles.stageWarn} role="alert">
+          {copy.waiting.early}
+        </p>
+      )}
+      <Button
+        variant="outlineOnInk"
+        size="action"
+        className={styles.outline}
+        disabled={!props.mayClose}
+        onClick={props.onClose}
+      >
+        {copy.waiting.close}
+      </Button>
+    </section>
+  );
+}
+
+/** The client came to the door after all: the job starts as any other. */
+function Appears({ job }: { job: Job }) {
+  return (
+    <section className={styles.stage}>
+      <p className={capsLook(styles.stageLabel)}>{copy.appears.title}</p>
+      {job.client !== null && (
+        <p className={styles.failedLine}>{copy.appears.atTheDoor(firstNameOf(job.client.name))}</p>
+      )}
+      <p className={styles.stageNote}>{copy.appears.body}</p>
+    </section>
   );
 }
 

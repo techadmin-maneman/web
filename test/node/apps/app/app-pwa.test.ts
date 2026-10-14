@@ -83,9 +83,9 @@ describe("the service worker's files", () => {
   });
 
   it("names the kept Home and its offline mark as the app does", () => {
-    // The offline mark is set by the shell both workers share.
+    // The offline mark is set by the shell both workers share, and read by the client both apps share.
     const worker = readFileSync("apps/app/sw/sw.ts", "utf8") + readFileSync("packages/web-kit/sw-shell.ts", "utf8");
-    const app = readFileSync("apps/app/src/api.ts", "utf8");
+    const app = readFileSync("apps/app/src/api.ts", "utf8") + readFileSync("packages/web-kit/api.ts", "utf8");
     for (const name of ['"mm-app-home"', '"Mm-Served-From"']) {
       expect(worker).toContain(name);
       expect(app).toContain(name);

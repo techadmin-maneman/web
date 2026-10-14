@@ -24,9 +24,6 @@ export const minutesAndSeconds = (seconds: number) =>
 /** The seconds a hold has left, counted on the API's clock, which set its expiry. */
 export const useHoldLeft = (hold: Hold): number => useSecondsLeft(Date.parse(hold.expires_at), apiNow);
 
-/** A hold that costs the client nothing now: a free visit, or one a credit covers. Checkout never opens for it. */
-export const paysNothing = (hold: Hold): boolean => hold.price.amount === 0 || hold.credit !== null;
-
 /**
  * "Step 1 of 3" and "Step 2 of 3", as the boards number the date and the window, with the pay step the third; one
  * step later, and one step longer, for each the sheet takes before the date: the visit chosen (ADR 0085) and the

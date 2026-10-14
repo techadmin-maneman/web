@@ -5,7 +5,7 @@ import { useEffect, useEffectEvent } from "react";
 import { api, type Hold } from "../api.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import type { BookingEvent } from "./flow.ts";
-import { paysNothing } from "./steps/shared.tsx";
+import { paysNothing } from "./pay.ts";
 
 /** How often, and for how long, the sheet asks whether a paid hold is booked. */
 const POLL_MS = 2_000;

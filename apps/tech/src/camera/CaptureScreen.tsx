@@ -68,6 +68,78 @@ function FramingGuide() {
   );
 }
 
+/** Retake the last on the phone, and the shutter, which finishes the set once every angle is taken. */
+function Shutter(props: {
+  all: boolean;
+  canRetake: boolean;
+  canCapture: boolean;
+  settled: boolean;
+  onRetake: () => void;
+  onTake: () => void;
+}) {
+  return (
+    <div className={styles.shutter}>
+      <Button
+        variant="outlineOnInk"
+        size="action"
+        className={styles.retake}
+        disabled={!props.canRetake}
+        onClick={props.onRetake}
+      >
+        {copy.retake}
+      </Button>
+      <Button
+        variant="gold"
+        size="action"
+        className={styles.take}
+        disabled={!props.all && !props.canCapture}
+        settling={!props.settled}
+        onClick={props.onTake}
+      >
+        {props.all ? copy.finish : copy.take}
+      </Button>
+    </div>
+  );
+}
+
+/** The five angles beneath the camera: each taken one's picture, a tap on it to take it again while that can be. */
+function Tiles(props: {
+  taken: readonly TakenAngle[];
+  now: Angle | undefined;
+  pictures: ReadonlyMap<string, string>;
+  onRetake: (frameId: string) => void;
+}) {
+  const { taken } = props;
+  return (
+    <ul className={styles.tiles}>
+      {ANGLES.map((name) => {
+        const one = taken.find((each) => each.angle === name);
+        const frameId = one?.frameId ?? null;
+        const picture = frameId === null ? undefined : props.pictures.get(frameId);
+        const label = <span className={styles.tileLabel}>{copy.angles[name]}</span>;
+        return (
+          <li className={styles.tile} key={name} data-state={tileState(name, taken, props.now)}>
+            {picture !== undefined && <img className={styles.tilePicture} src={picture} alt="" />}
+            {frameId === null || one?.sending === true ? (
+              label
+            ) : (
+              <Tile
+                className={styles.tileRetake}
+                aria-label={copy.retakeAngle(copy.angles[name])}
+                onClick={() => {
+                  props.onRetake(frameId);
+                }}
+              >
+                {label}
+              </Tile>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const step = phase === "before" ? "before_photos" : "after_photos";
   const { loaded, retry, refused, finish, back } = useStep(id, step);
@@ -152,30 +224,17 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const canCapture = stream !== null && ready;
 
   const shutter = (
-    <div className={styles.shutter}>
-      <Button
-        variant="outlineOnInk"
-        size="action"
-        className={styles.retake}
-        disabled={lastOnPhone === null}
-        onClick={() => void retake(lastOnPhone)}
-      >
-        {copy.retake}
-      </Button>
-      <Button
-        variant="gold"
-        size="action"
-        className={styles.take}
-        disabled={!all && !canCapture}
-        settling={!settled}
-        onClick={() => {
-          if (all) void finish({ phase });
-          else void take();
-        }}
-      >
-        {all ? copy.finish : copy.take}
-      </Button>
-    </div>
+    <Shutter
+      all={all}
+      canRetake={lastOnPhone !== null}
+      canCapture={canCapture}
+      settled={settled}
+      onRetake={() => void retake(lastOnPhone)}
+      onTake={() => {
+        if (all) void finish({ phase });
+        else void take();
+      }}
+    />
   );
 
   return (
@@ -225,30 +284,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
         )}
       </div>
 
-      <ul className={styles.tiles}>
-        {ANGLES.map((name) => {
-          const one = taken.find((each) => each.angle === name);
-          const frameId = one?.frameId ?? null;
-          const picture = frameId === null ? undefined : pictures.get(frameId);
-          const label = <span className={styles.tileLabel}>{copy.angles[name]}</span>;
-          return (
-            <li className={styles.tile} key={name} data-state={tileState(name, taken, angle)}>
-              {picture !== undefined && <img className={styles.tilePicture} src={picture} alt="" />}
-              {frameId === null || one?.sending === true ? (
-                label
-              ) : (
-                <Tile
-                  className={styles.tileRetake}
-                  aria-label={copy.retakeAngle(copy.angles[name])}
-                  onClick={() => void retake(frameId)}
-                >
-                  {label}
-                </Tile>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <Tiles taken={taken} now={angle} pictures={pictures} onRetake={(frameId) => void retake(frameId)} />
     </StepFrame>
   );
 }

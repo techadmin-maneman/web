@@ -15,7 +15,8 @@ import { photoLines } from "../consents.ts";
 import { atStake, insideNotice, type AtStake } from "../late-change.ts";
 import styles from "../booking.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
-import { minutesAndSeconds, useHoldLeft, paysNothing, Heading, LastMinute, LateFee } from "./shared.tsx";
+import { paysNothing } from "../pay.ts";
+import { minutesAndSeconds, useHoldLeft, Heading, LastMinute, LateFee } from "./shared.tsx";
 
 /** What the pay step names: the service booked, or, for a move, the visit moved or its late fee. */
 function itemName(hold: Hold, moving: MoveTerms | undefined): string {

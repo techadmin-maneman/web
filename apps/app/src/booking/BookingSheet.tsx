@@ -29,22 +29,22 @@
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { addDays } from "@maneman/web-kit/dates";
-import { useEffect, useEffectEvent, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import {
   api,
-  type Address,
   type BookableType,
   type BookingWindow,
+  type Hold,
   type MoveTerms,
   type OfferedService,
-  type Profile,
   type Wanted,
 } from "../api.ts";
 import { booking } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
-import { drawsItsOwnClose, nextStep } from "./flow.ts";
+import { drawsItsOwnClose, nextStep, type Step } from "./flow.ts";
 import { hasLaterDays } from "./days.ts";
-import { useDays } from "./use-days.ts";
+import type { Days } from "./use-days.ts";
+import { useSheetData } from "./use-sheet-data.ts";
 import { usePay } from "./use-pay.ts";
 import { AddressStep, NotServedStep } from "./steps/AddressStep.tsx";
 import { ConfirmedStep, ExpiredStep, FailedStep, WaitStep } from "./steps/OutcomeSteps.tsx";
@@ -54,10 +54,6 @@ import { PayStep } from "./steps/PayStep.tsx";
 import { ServiceStep, type Recommended } from "./steps/ServiceStep.tsx";
 import { WindowStep } from "./steps/WindowStep.tsx";
 import styles from "./booking.module.css";
-
-/** Whether the client has switched on WhatsApp about their visits, the purpose the day-before reminder is sent under. */
-const remindersOn = (profile: Profile) =>
-  profile.consents.some((consent) => consent.purpose === "whatsapp_visits" && consent.granted);
 
 /**
  * What a sheet with nothing to pick books: the one service open to the client, or else the kind's standard one;
@@ -96,6 +92,131 @@ interface Props {
   onClose: (changed: boolean) => void;
 }
 
+/** The day, then the window on it, which is held as the client goes on. */
+function DayAndWindow(props: {
+  step: Step;
+  before: number;
+  days: Days;
+  wanted: Wanted | null;
+  offered: string | null;
+  busy: boolean;
+  problem: string | null;
+  onDayTaken: () => void;
+  onHold: () => void;
+}) {
+  const { step, before, days } = props;
+  const { availability } = days;
+  if (availability === null) return null;
+  if (step.kind === "date") {
+    const later = hasLaterDays(availability)
+      ? {
+          busy: days.laterAsk === "busy",
+          failed: days.laterAsk === "failed",
+          onShow: () => void days.showLater(props.wanted),
+        }
+      : null;
+    return (
+      <DateStep
+        before={before}
+        days={availability.days}
+        noticeHours={availability.change_notice_hours}
+        offered={props.offered}
+        chosen={days.date}
+        later={later}
+        onChoose={days.chooseDate}
+        onNext={props.onDayTaken}
+      />
+    );
+  }
+  const day = availability.days.find((each) => each.date === days.date);
+  if (step.kind !== "window" || day === undefined) return null;
+  return (
+    <WindowStep
+      before={before}
+      day={day}
+      noticeHours={availability.change_notice_hours}
+      chosen={days.chosenWindow}
+      busy={props.busy}
+      problem={props.problem}
+      onChoose={days.setChosenWindow}
+      onNext={props.onHold}
+    />
+  );
+}
+
+/** The steps once a window is held: paying for it, and what came of that. */
+function HeldSteps(props: {
+  step: Step;
+  moving: MoveTerms | undefined;
+  busy: boolean;
+  problem: string | null;
+  reminders: boolean | null;
+  remind: boolean;
+  onRemind: (remind: boolean) => void;
+  onPay: (hold: Hold) => void;
+  onHeld: (hold: Hold) => void;
+  onPickAgain: () => void;
+  onClose: () => void;
+}) {
+  const { step, reminders } = props;
+  switch (step.kind) {
+    case "pay":
+      return (
+        <PayStep
+          hold={step.hold}
+          moving={props.moving}
+          busy={props.busy}
+          problem={props.problem}
+          askToRemind={reminders !== true}
+          remind={props.remind}
+          onRemind={props.onRemind}
+          onPay={() => {
+            props.onPay(step.hold);
+          }}
+          onHold={props.onHeld}
+        />
+      );
+    case "failed":
+      return (
+        <FailedStep
+          hold={step.hold}
+          busy={props.busy}
+          onRetry={() => {
+            props.onPay(step.hold);
+          }}
+        />
+      );
+    case "expired":
+      return <ExpiredStep onPickAgain={props.onPickAgain} />;
+    case "confirming":
+      return <WaitStep text={step.paidIn === true ? booking.paidIn : booking.confirming} />;
+    case "confirmed":
+      return (
+        <ConfirmedStep
+          hold={step.hold}
+          moved={props.moving !== undefined}
+          reminded={reminders === true}
+          onDone={props.onClose}
+        />
+      );
+    case "slow":
+      return (
+        <WaitStep text={step.paid || reminders === true ? booking.slow : booking.slowQuiet} onClose={props.onClose} />
+      );
+    case "refunded":
+      return <WaitStep text={booking.refunded} onClose={props.onClose} />;
+    // The steps before a window is held, which the sheet draws itself.
+    case "loading":
+    case "broken":
+    case "service":
+    case "address":
+    case "notServed":
+    case "date":
+    case "window":
+      return null;
+  }
+}
+
 export function BookingSheet({ type, services = [], tier, recommended, moving, from, offer, onClose }: Props) {
   const movingId = moving?.visit_id;
   const offeredDate = offer?.date;
@@ -111,71 +232,10 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
   );
   const [busy, once] = useOneAtATime();
   const [problem, setProblem] = useState<string | null>(null);
-  /** Whether reminders are on: null when the profile could not say, and the sheet asks. */
-  const [reminders, setReminders] = useState<boolean | null>(null);
   const [remind, setRemind] = useState(false);
-  // True once the sheet knows it asks for the address before the date, which adds a step to the boards' three.
-  const [addressFirst, setAddressFirst] = useState(false);
-  // The profile had no address when it was last read, so the address comes before the date.
-  const addressMissing = useRef(false);
-  // The address the profile had when it was last read.
-  const savedAddress = useRef<Address | null>(null);
-  /** The photograph purposes the client has never decided on, which booking a new visit also agrees to. */
-  const days = useDays({ dispatch, movingId, offeredDate, offeredWindow, addressMissing });
-  const { availability, date, chosenWindow, showDays } = days;
-
-  const askForAddress = (refused: boolean) => {
-    setAddressFirst(true);
-    dispatch({ kind: "addressNeeded", refused });
-  };
-
-  /** The API offers nothing at the address saved, which the client changes, or they join the waitlist. */
-  const showNotServed = () => {
-    dispatch({ kind: "notServed", address: savedAddress.current });
-  };
-
-  /**
-   * Reads the profile, and the days of the visit wanted once there is one, and goes to the first step still to take:
-   * picking the visit, the address, or the date.
-   */
-  const load = async (visit: Wanted | null) => {
-    dispatch({ kind: "asking" });
-    const [answer, profile] = await Promise.all([
-      visit === null ? null : api.availability(visit, movingId, firstDay),
-      api.profile(),
-    ]);
-    setReminders(profile.ok ? remindersOn(profile.body) : null);
-    savedAddress.current = profile.ok ? profile.body.address : null;
-    if (answer !== null && !answer.ok) {
-      if (answer.code === "not_served") showNotServed();
-      else dispatch({ kind: "failed" });
-      return;
-    }
-    addressMissing.current = profile.ok && profile.body.address === null;
-    // Known now, so the step that picks the visit counts the address among the steps to come.
-    if (addressMissing.current) setAddressFirst(true);
-    if (answer === null) dispatch({ kind: "answered", picking: true, addressMissing: addressMissing.current });
-    else showDays(answer.body);
-  };
-
-  // Read as the sheet opens, and again should what it opened on change; the step's own buttons read it again too.
-  const loadNow = useEffectEvent(() => {
-    void load(wanted);
-  });
-  useEffect(() => {
-    loadNow();
-  }, [movingId, firstDay, offeredDate, offeredWindow]);
-
-  /** The client has picked their visit: its days, the profile already read. */
-  const pick = async (service: OfferedService) => {
-    const visit = { type: service.type, tier: service.tier };
-    setWanted(visit);
-    dispatch({ kind: "asking" });
-    const answer = await api.availability(visit, movingId, firstDay);
-    if (answer.ok) showDays(answer.body);
-    else if (answer.code === "not_served") showNotServed();
-    else dispatch({ kind: "failed" });
-  };
+  const sheet = useSheetData({ dispatch, movingId, firstDay, offeredDate, offeredWindow, wanted, setWanted });
+  const { days, reminders, setReminders, addressFirst, askForAddress, showNotServed, load, pick } = sheet;
+  const { availability, date, chosenWindow } = days;
 
   // Each step's heading takes the focus the last step's button took with it, as it does when "Later dates" goes with
   // the last of them.
@@ -217,7 +277,6 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
     setProblem,
   });
 
-  const day = availability?.days.find((each) => each.date === date);
   // The steps before the date, each of which puts the date and the window one step later.
   const before = (picking ? 1 : 0) + (addressFirst ? 1 : 0);
   return (
@@ -254,65 +313,34 @@ export function BookingSheet({ type, services = [], tier, recommended, moving, f
           <AddressStep refused={step.refused} before={before} onSaved={() => void load(wanted)} />
         )}
         {step.kind === "notServed" && <NotServedStep address={step.address} onSaved={() => void load(wanted)} />}
-        {step.kind === "date" && availability !== null && (
-          <DateStep
-            before={before}
-            days={availability.days}
-            noticeHours={availability.change_notice_hours}
-            offered={offeredDate ?? null}
-            chosen={date}
-            later={
-              hasLaterDays(availability)
-                ? {
-                    busy: days.laterAsk === "busy",
-                    failed: days.laterAsk === "failed",
-                    onShow: () => void days.showLater(wanted),
-                  }
-                : null
-            }
-            onChoose={days.chooseDate}
-            onNext={() => {
-              dispatch({ kind: "dayTaken" });
-            }}
-          />
-        )}
-        {step.kind === "window" && day !== undefined && availability !== null && (
-          <WindowStep
-            before={before}
-            day={day}
-            noticeHours={availability.change_notice_hours}
-            chosen={chosenWindow}
-            busy={busy}
-            problem={problem}
-            onChoose={days.setChosenWindow}
-            onNext={() => void holdWindow()}
-          />
-        )}
-        {step.kind === "pay" && (
-          <PayStep
-            hold={step.hold}
-            moving={moving}
-            busy={busy}
-            problem={problem}
-            askToRemind={reminders !== true}
-            remind={remind}
-            onRemind={setRemind}
-            onPay={() => void payFor(step.hold)}
-            onHold={(hold) => {
-              dispatch({ kind: "held", hold });
-            }}
-          />
-        )}
-        {step.kind === "failed" && <FailedStep hold={step.hold} busy={busy} onRetry={() => void payFor(step.hold)} />}
-        {step.kind === "expired" && <ExpiredStep onPickAgain={() => void load(wanted)} />}
-        {step.kind === "confirming" && <WaitStep text={step.paidIn === true ? booking.paidIn : booking.confirming} />}
-        {step.kind === "confirmed" && (
-          <ConfirmedStep hold={step.hold} moved={moving !== undefined} reminded={reminders === true} onDone={close} />
-        )}
-        {step.kind === "slow" && (
-          <WaitStep text={step.paid || reminders === true ? booking.slow : booking.slowQuiet} onClose={close} />
-        )}
-        {step.kind === "refunded" && <WaitStep text={booking.refunded} onClose={close} />}
+        <DayAndWindow
+          step={step}
+          before={before}
+          days={days}
+          wanted={wanted}
+          offered={offeredDate ?? null}
+          busy={busy}
+          problem={problem}
+          onDayTaken={() => {
+            dispatch({ kind: "dayTaken" });
+          }}
+          onHold={() => void holdWindow()}
+        />
+        <HeldSteps
+          step={step}
+          moving={moving}
+          busy={busy}
+          problem={problem}
+          reminders={reminders}
+          remind={remind}
+          onRemind={setRemind}
+          onPay={(hold) => void payFor(hold)}
+          onHeld={(hold) => {
+            dispatch({ kind: "held", hold });
+          }}
+          onPickAgain={() => void load(wanted)}
+          onClose={close}
+        />
       </SheetPanel>
     </Sheet>
   );

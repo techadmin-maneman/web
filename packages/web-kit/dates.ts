@@ -78,7 +78,12 @@ export function shortDate(isoDate: string): string {
 
 /** "2026-09-24" → "Thursday 24 Sep", as a day's heading reads. */
 export function weekdayDate(isoDate: string): string {
-  return `${WEEKDAYS[weekdayOf(isoDate)] ?? ""} ${dayMonth(isoDate)}`;
+  return `${weekdayName(isoDate)} ${dayMonth(isoDate)}`;
+}
+
+/** "2027-08-22" → "Sunday"'s short name, "Sun". */
+export function weekdayName(isoDate: string): string {
+  return WEEKDAYS[weekdayOf(isoDate)] ?? "";
 }
 
 /** "2027-08-22" → "22 Aug 2027". */

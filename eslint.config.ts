@@ -41,7 +41,7 @@ const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
 
 /**
  * The files of src/ past SIZE today, each at the size it has: its code lines, and its longest function's. Lower a
- * figure when a file is split, and delete its line once it is within SIZE (the 2 Oct audit, CQ-10).
+ * figure when a file is split, and delete its line once it is within SIZE.
  */
 const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
   // A table read top to bottom, every table holding a client's rows in turn: kept whole on purpose.

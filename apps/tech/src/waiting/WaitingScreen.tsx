@@ -99,6 +99,52 @@ function SetLine({ set }: { set: PhotoSet }) {
   );
 }
 
+/** One job's row: whom it is for, what it holds, since when, and what stopped it, or the way to send it now. */
+function WaitingJob(props: {
+  id: string;
+  name: string;
+  line: JobAccount | undefined;
+  sets: readonly PhotoSet[];
+  since: number | null;
+  startsAt: string | null;
+  offline: boolean;
+  onForget: () => void;
+}) {
+  const { line, offline } = props;
+  const stopped = line?.stopped ?? null;
+  return (
+    <li className={styles.job}>
+      <div className={styles.jobTop}>
+        <span className={styles.who}>{props.name}</span>
+        <span className={stopped === null ? styles.state : styles.stateStopped}>
+          {stateOf(stopped !== null, offline)}
+        </span>
+      </div>
+      {props.sets.map((set) => (
+        <SetLine set={set} key={set.phase} />
+      ))}
+      {line !== undefined && line.waiting > 0 && <p className={styles.count}>{copy.events(line.waiting)}</p>}
+      {/* How long it has been on the phone, which is how much an eviction would take. */}
+      {props.since !== null && <p className={styles.count}>{copy.since(clock(new Date(props.since).toISOString()))}</p>}
+      {stopped !== null && (
+        <Stopped jobId={props.id} stopped={stopped} startsAt={props.startsAt} onForget={props.onForget} />
+      )}
+      {stopped === null && !offline && (
+        <Button
+          variant="outlineOnInk"
+          size="small"
+          className={styles.button}
+          onClick={() => {
+            void replay();
+          }}
+        >
+          {copy.retry}
+        </Button>
+      )}
+    </li>
+  );
+}
+
 export function WaitingScreen() {
   const { offline, atRisk } = useSession();
   const waiting = useOutbox();
@@ -164,53 +210,21 @@ export function WaitingScreen() {
             <span className={styles.setsLine}>{copy.waiting(sets.length)}</span>
           </div>
           <ul className={styles.list}>
-            {jobs.map((id) => {
-              const line = held.find((entry) => entry.job_id === id);
-              const stopped = line?.stopped ?? null;
-              const taken = since(id);
-              return (
-                <li className={styles.job} key={id}>
-                  <div className={styles.jobTop}>
-                    <span className={styles.who}>{name(id)}</span>
-                    <span className={stopped === null ? styles.state : styles.stateStopped}>
-                      {stateOf(stopped !== null, offline)}
-                    </span>
-                  </div>
-                  {sets
-                    .filter((set) => set.job === id)
-                    .map((set) => (
-                      <SetLine set={set} key={set.phase} />
-                    ))}
-                  {line !== undefined && line.waiting > 0 && (
-                    <p className={styles.count}>{copy.events(line.waiting)}</p>
-                  )}
-                  {/* How long it has been on the phone, which is how much an eviction would take. */}
-                  {taken !== null && <p className={styles.count}>{copy.since(clock(new Date(taken).toISOString()))}</p>}
-                  {stopped !== null && (
-                    <Stopped
-                      jobId={id}
-                      stopped={stopped}
-                      startsAt={kept.get(id)?.starts_at ?? null}
-                      onForget={() => {
-                        setForgetting(id);
-                      }}
-                    />
-                  )}
-                  {stopped === null && !offline && (
-                    <Button
-                      variant="outlineOnInk"
-                      size="small"
-                      className={styles.button}
-                      onClick={() => {
-                        void replay();
-                      }}
-                    >
-                      {copy.retry}
-                    </Button>
-                  )}
-                </li>
-              );
-            })}
+            {jobs.map((id) => (
+              <WaitingJob
+                key={id}
+                id={id}
+                name={name(id)}
+                line={held.find((entry) => entry.job_id === id)}
+                sets={sets.filter((set) => set.job === id)}
+                since={since(id)}
+                startsAt={kept.get(id)?.starts_at ?? null}
+                offline={offline}
+                onForget={() => {
+                  setForgetting(id);
+                }}
+              />
+            ))}
           </ul>
         </>
       )}

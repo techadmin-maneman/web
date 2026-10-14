@@ -9,8 +9,7 @@ import { apiNow } from "@maneman/web-kit/clock";
 import { loadCheckout, type Paid } from "./checkout.ts";
 import { holdOf, type BookingEvent, type Step } from "./flow.ts";
 import { useHoldLapse, usePollHold } from "./hold-clocks.ts";
-import { throughCheckout } from "./pay.ts";
-import { paysNothing } from "./steps/shared.tsx";
+import { paysNothing, throughCheckout } from "./pay.ts";
 
 /** Whether the hold's countdown has run out, by the API's clock. */
 const hasRunOut = (hold: Hold) => apiNow() >= Date.parse(hold.expires_at);

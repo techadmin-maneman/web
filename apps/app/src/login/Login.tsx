@@ -57,25 +57,13 @@ function rewind(): void {
 }
 
 /**
- * `ended`: the session ended while the app was open, and the first screen says so. `linkedMobile`: the number the
- * site's booking confirmation opened the app with, or "".
+ * The login's steps, each with its own entry in the history, so Back and Forward move between them; and the last code
+ * sent, which a step back and then forward again returns to. A reload loses the code, so the login starts again at
+ * the number. Each screen is named, and its heading takes focus unless the screen put it in a field (the code's).
  */
-export function Login({
-  ended,
-  linkedMobile,
-  onSignedIn,
-}: {
-  ended: boolean;
-  linkedMobile: string;
-  onSignedIn: () => void;
-}) {
+function useSteps() {
   const [step, setStep] = useState<Step>({ kind: "mobile" });
-  // The last code sent, which a step back and then forward again returns to.
   const lastChallenge = useRef<LoginChallenge | null>(null);
-  // The code sent, when, by the API's clock, and one request at a time: a second send bills a second code, voids the
-  // first, and takes another from this number's daily ceiling, which can leave a client unable to log in at all.
-  const otp = useOtpChallenge<LoginChallenge>(apiNow);
-  const { busy, once } = otp;
 
   /** A step forward, with its own entry in the history. */
   const forward = (next: Step) => {
@@ -83,7 +71,6 @@ export function Login({
     setStep(next);
   };
 
-  // Back and Forward move between the steps. A reload loses the code, so the login starts again at the number.
   useEffect(() => {
     if (stepInHistory() !== "mobile") window.history.replaceState(null, "");
     const moved = () => {
@@ -97,11 +84,33 @@ export function Login({
     };
   }, []);
 
-  // Each screen is named, and its heading takes focus unless the screen put it in a field (the code's).
   useScreenTitle(titled(TITLES[step.kind]));
   useEffect(() => {
     focusIfLost(document.querySelector("h1"));
   }, [step.kind]);
+
+  return { step, setStep, forward, lastChallenge };
+}
+
+/**
+ * `ended`: the session ended while the app was open, and the first screen says so. `linkedMobile`: the number the
+ * site's booking confirmation opened the app with, or "".
+ */
+export function Login({
+  ended,
+  linkedMobile,
+  onSignedIn,
+}: {
+  ended: boolean;
+  linkedMobile: string;
+  onSignedIn: () => void;
+}) {
+  const { step, setStep, forward, lastChallenge } = useSteps();
+  // The code sent, when, by the API's clock, and one request at a time: a second send bills a second code, voids the
+  // first, and takes another from this number's daily ceiling, which can leave a client unable to log in at all.
+  const otp = useOtpChallenge<LoginChallenge>(apiNow);
+  const { busy, once } = otp;
+
   const [mobile, setMobile] = useState(linkedMobile);
   // The API's reason no code was sent.
   const [mobileError, setMobileError] = useState<string | null>(null);
