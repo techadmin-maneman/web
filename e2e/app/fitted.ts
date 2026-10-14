@@ -119,7 +119,7 @@ export async function seedFitted(): Promise<void> {
     `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ${sqlRow(person, now, `+91${mobile}`, "Rohit Malhotra")};`,
     ...technicianFor("fitted", now),
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
-       fsm_status, service_city, service_pincode, fsm_invoice_id, invoice_issued_at, fsm_modified_at,
+       fsm_status, service_city, service_pincode, books_invoice_id, invoice_issued_at, fsm_modified_at,
        synced_at) VALUES
        ${appointment(visits.next, "service", next, "scheduled", null)},
        ${appointment(visits.service, "service", service, "completed", `stub-e2e-${visits.service}`)},

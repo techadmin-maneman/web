@@ -274,11 +274,11 @@ const QUEUES: readonly Queue[] = [
   },
   {
     sql: `SELECT 'draft_invoice' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
-         a.fsm_invoice_id AS detail, json_object('invoice_id', a.fsm_invoice_id) AS facts,
+         a.books_invoice_id AS detail, json_object('invoice_id', a.books_invoice_id) AS facts,
          COALESCE(a.window_end, a.synced_at) AS since, NULL AS due_by, '' AS episode
     FROM appointments a JOIN people pe ON pe.id = a.person_id
    WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL
-     AND a.deleted_at IS NULL AND a.fsm_invoice_id IS NOT NULL AND pe.erased_at IS NULL`,
+     AND a.deleted_at IS NULL AND a.books_invoice_id IS NOT NULL AND pe.erased_at IS NULL`,
   },
   // A visit with no technician, due the day before it (src/domain/dispatch/unassigned.ts).
   { sql: UNASSIGNED_VISITS, binds: (at) => [at.now] },

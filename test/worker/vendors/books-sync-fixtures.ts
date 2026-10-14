@@ -71,7 +71,7 @@ export const SECOND = "66666666-6666-4666-8666-666666666666";
 export const secondPayment = (kind = "visit") => payment("captured", SECOND, "2026-09-20T21:00:00.000Z", kind);
 
 export async function invoiced(invoiceId: string | null) {
-  await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = ?1 WHERE id = ?2").bind(invoiceId, VISIT).run();
+  await env.DB.prepare("UPDATE appointments SET books_invoice_id = ?1 WHERE id = ?2").bind(invoiceId, VISIT).run();
 }
 
 export const paymentRow = (id = PAYMENT) =>

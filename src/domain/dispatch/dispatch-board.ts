@@ -128,12 +128,12 @@ export const LATEST_VISITS_CONSENT = latestConsentSql("a.person_id", "whatsapp_v
  * move changed the time and the visit is still at the time it moved to. The Tasks board reads the same
  * (src/domain/ops/tasks.ts).
  */
-export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.now_start AND m.told_at IS NULL
+export const UNTOLD_MOVE = `m.write_state = 'written' AND m.was_start <> m.now_start AND m.told_at IS NULL
   AND m.now_start = a.window_start AND (m.message_id IS NULL OR EXISTS (
     SELECT 1 FROM outbound_messages o WHERE o.id = m.message_id AND o.state IN ('skipped', 'failed')))
   AND NOT EXISTS (
     SELECT 1 FROM dispatch_moves later
-    WHERE later.appointment_id = m.appointment_id AND later.fsm_write_state = 'written'
+    WHERE later.appointment_id = m.appointment_id AND later.write_state = 'written'
       AND later.was_start <> later.now_start AND later.created_at > m.created_at)`;
 /**
  * Why the client of an untold move `m` has not heard of it, as UNTOLD_REASONS names it: no message was queued, since

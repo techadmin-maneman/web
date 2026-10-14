@@ -74,7 +74,7 @@ async function visit(shape: VisitShape = {}) {
   const day = shape.day ?? "2026-09-23";
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, synced_at,
-       service_city, one_visit, fsm_invoice_id)
+       service_city, one_visit, books_invoice_id)
      VALUES (?1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`,
   )
     .bind(
@@ -118,7 +118,7 @@ async function itemKept(kind: string, tier: string, itemId: string) {
 
 const row = (id = VISIT) =>
   env.DB.prepare(
-    "SELECT fsm_invoice_id, books_invoice_id, invoice_checked_at, invoice_issued_at FROM appointments WHERE id = ?1",
+    "SELECT books_invoice_id, fsm_invoice_id, invoice_checked_at, invoice_issued_at FROM appointments WHERE id = ?1",
   )
     .bind(id)
     .first<{
@@ -192,10 +192,10 @@ describe("the invoice a finished visit gets", () => {
       },
     ]);
     const billed = await row();
-    expect(billed?.fsm_invoice_id).toMatch(/^stub-invoice-/);
+    expect(billed?.books_invoice_id).toMatch(/^stub-invoice-/);
     // Kept under its new name too, until the release that reads it (docs/decisions/0113-fsms-columns-go.md).
-    expect(billed?.books_invoice_id).toBe(billed?.fsm_invoice_id);
-    expect(books.made.issued).toEqual([billed?.fsm_invoice_id]);
+    expect(billed?.fsm_invoice_id).toBe(billed?.books_invoice_id);
+    expect(books.made.issued).toEqual([billed?.books_invoice_id]);
     expect(billed?.invoice_issued_at).toBe(AFTER.toISOString());
 
     const options = { refundAccountId: null, billAccounts: null, labelAsTest: true, gst: NO_GST } as const;
@@ -205,7 +205,7 @@ describe("the invoice a finished visit gets", () => {
     expect(books.made.applied).toEqual([
       {
         paymentId: expect.stringMatching(/^stub-payment-/) as string,
-        invoiceId: billed?.fsm_invoice_id,
+        invoiceId: billed?.books_invoice_id,
         amount: 3_000_000,
       },
     ]);
@@ -243,8 +243,8 @@ describe("the invoice a finished visit gets", () => {
     expect(await invoicePass(books)).toEqual({ raised: 0, issued: 0 });
     expect(logs.lines()).toContainEqual(expect.objectContaining({ event: "invoice_failed", appointment_id: VISIT }));
     expect(await row()).toEqual({
-      fsm_invoice_id: null,
       books_invoice_id: null,
+      fsm_invoice_id: null,
       invoice_checked_at: AFTER.toISOString(),
       invoice_issued_at: null,
     });
@@ -252,7 +252,7 @@ describe("the invoice a finished visit gets", () => {
     expect(await invoicePass(books, later(RECHECK_AFTER_MS / 2))).toEqual({ raised: 0, issued: 0 });
     expect(await invoicePass(books, later(RECHECK_AFTER_MS + 1000))).toEqual({ raised: 0, issued: 1 });
     expect(books.made.invoices).toHaveLength(1);
-    expect((await row())?.fsm_invoice_id).toBe((await books.findInvoice(VISIT))?.id);
+    expect((await row())?.books_invoice_id).toBe((await books.findInvoice(VISIT))?.id);
   });
 
   it("raises one invoice when two passes run at the same time", async () => {
@@ -362,7 +362,7 @@ describe("the invoice a finished visit gets", () => {
     await visit({ id: NEXT, day: "2026-09-22" });
     const books = createStubBooks();
     expect(await invoicePass(books, AFTER, {}, createCallBudget(CALLS_PER_VISIT))).toEqual({ raised: 1, issued: 1 });
-    expect(await row(VISIT)).toMatchObject({ invoice_checked_at: null, fsm_invoice_id: null });
+    expect(await row(VISIT)).toMatchObject({ invoice_checked_at: null, books_invoice_id: null });
   });
 });
 
@@ -374,7 +374,7 @@ describe("sending it", () => {
     books.extra = 75_000;
 
     expect(await invoicePass(books.provider)).toEqual({ raised: 1, issued: 0 });
-    const invoice = (await row())?.fsm_invoice_id ?? "";
+    const invoice = (await row())?.books_invoice_id ?? "";
     expect(alerted).toEqual([
       `Invoice INV-000001 (${invoice}) of visit ${VISIT} is held as a draft in Books: it totals Rs. 15,750, and the ` +
         "visit was sold for Rs. 15,000. Correct the draft in Books: once it totals what was sold, it is sent within " +

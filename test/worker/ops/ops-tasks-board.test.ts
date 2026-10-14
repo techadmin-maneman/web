@@ -54,7 +54,7 @@ const tasksIn = (body: Body, group: string) => body.groups.find((each) => each.g
 /** A finished visit whose invoice Books holds as a draft, which the client cannot open. */
 async function draftInvoice() {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, fsm_invoice_id, person_id, type, window_start,
+    `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, books_invoice_id, person_id, type, window_start,
        window_end, status, fsm_status, fsm_modified_at, synced_at)
      VALUES (?1, 'fsm-appt-9', 'fsm-wo-9', 'books-inv-7', ?2, 'service', '2026-09-20T04:30:00.000Z',
        '2026-09-20T06:00:00.000Z', 'completed', 'Completed', ?3, ?3)`,

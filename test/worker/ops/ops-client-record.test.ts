@@ -364,11 +364,11 @@ describe("GET /api/clients/{id}, its payment links and invoices", () => {
   });
 
   it("gives each finished visit sold for a price its invoice's state, and leaves out a free consultation", async () => {
-    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'books-1', invoice_issued_at = ?2 WHERE id = ?1")
+    await env.DB.prepare("UPDATE appointments SET books_invoice_id = 'books-1', invoice_issued_at = ?2 WHERE id = ?1")
       .bind(VISIT, "2026-09-10T09:00:00.000Z")
       .run();
     await finishedVisit(FIT, "first_fit", "2026-09-18T04:30:00.000Z");
-    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'books-2' WHERE id = ?1").bind(FIT).run();
+    await env.DB.prepare("UPDATE appointments SET books_invoice_id = 'books-2' WHERE id = ?1").bind(FIT).run();
     await finishedVisit(CONSULTATION, "consultation", "2026-09-05T04:30:00.000Z");
     const declined = "22222222-2222-4222-8222-222222222225";
     await finishedVisit(declined, "first_fit", "2026-09-19T04:30:00.000Z", "declined");

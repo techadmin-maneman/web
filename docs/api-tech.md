@@ -3476,6 +3476,15 @@ Request body:
       "type": "boolean",
       "description": "True when this write had already landed."
     },
+    "write_state": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "written",
+        "rejected"
+      ],
+      "description": "\"written\" once the step has landed, which it has."
+    },
     "fsm_write_state": {
       "type": "string",
       "enum": [
@@ -3483,7 +3492,8 @@ Request body:
         "written",
         "rejected"
       ],
-      "description": "Kept for phones that read it: \"written\" once the step has landed, which it has."
+      "description": "write_state, under its old name, for phones that read it.",
+      "deprecated": true
     },
     "progress": {
       "$ref": "#/components/schemas/TechnicianJobProgress"
@@ -3492,6 +3502,7 @@ Request body:
   "required": [
     "event_id",
     "replayed",
+    "write_state",
     "fsm_write_state",
     "progress"
   ],

@@ -102,7 +102,7 @@ function stagingDatabase(): DatabaseSync {
         '2026-10-02T00:00:00Z'),
       ('here', '2026-10-01T00:00:00Z', '+919800000001', 'Staging test Asha', 'customer-here', 'lead-here', NULL),
       ('new', '2026-10-01T00:00:00Z', '+919800000002', 'Staging test Ravi', NULL, NULL, NULL);
-    INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, synced_at, fsm_invoice_id,
+    INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, synced_at, books_invoice_id,
         invoice_issued_at) VALUES
       ('visit-issued', 'ours:visit-issued', 'here', 'service', '2026-10-02T03:30:00Z', '2026-10-02T05:00:00Z',
         'completed', '2026-10-02T00:00:00Z', 'invoice-1', '2026-10-02T00:00:00Z'),
@@ -182,7 +182,7 @@ describe("the IDs staging's database keeps", () => {
 describe("clearing the links to records now gone", () => {
   const links = (db: DatabaseSync) => ({
     people: db.prepare("SELECT id, books_customer_id, zoho_lead_id FROM people ORDER BY id").all(),
-    visits: db.prepare("SELECT id, fsm_invoice_id FROM appointments ORDER BY id").all(),
+    visits: db.prepare("SELECT id, books_invoice_id FROM appointments ORDER BY id").all(),
     payments: db.prepare("SELECT id, books_payment_id FROM payments ORDER BY id").all(),
   });
 
@@ -205,9 +205,9 @@ describe("clearing the links to records now gone", () => {
         { id: "new", books_customer_id: null, zoho_lead_id: null },
       ],
       visits: [
-        { id: "visit-draft", fsm_invoice_id: null },
-        { id: "visit-issued", fsm_invoice_id: "invoice-1" },
-        { id: "visit-new", fsm_invoice_id: null },
+        { id: "visit-draft", books_invoice_id: null },
+        { id: "visit-issued", books_invoice_id: "invoice-1" },
+        { id: "visit-new", books_invoice_id: null },
       ],
       payments: [
         { id: "applied", books_payment_id: "payment-1" },

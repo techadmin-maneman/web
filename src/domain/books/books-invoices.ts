@@ -68,7 +68,7 @@ interface Visit extends PricedVisit {
   readonly window_start: string;
   readonly window_end: string | null;
   /** Books' ID of the invoice kept on it, once one was raised or found. */
-  readonly fsm_invoice_id: string | null;
+  readonly books_invoice_id: string | null;
 }
 
 interface Pass {
@@ -122,7 +122,7 @@ export async function raiseBooksInvoices({
 async function visitsToInvoice(pass: Pass): Promise<Visit[]> {
   const { results } = await pass.db
     .prepare(
-      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.window_end, a.service_city, a.fsm_invoice_id
+      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.window_end, a.service_city, a.books_invoice_id
        FROM appointments a
        WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.deleted_at IS NULL
          AND a.type IN ('first_fit', 'service', 'replacement') AND a.one_visit IS NOT 'declined'
@@ -163,8 +163,8 @@ async function invoiceVisit(pass: Pass, visit: Visit): Promise<Done> {
  * pass raised and lost the answer to, kept now. Null where Books holds neither.
  */
 async function invoiceHeld(pass: Pass, visit: Visit): Promise<BooksInvoice | null> {
-  if (visit.fsm_invoice_id !== null) {
-    const kept = await pass.deps.books.invoice(visit.fsm_invoice_id);
+  if (visit.books_invoice_id !== null) {
+    const kept = await pass.deps.books.invoice(visit.books_invoice_id);
     if (kept !== null) return kept;
   }
   const ours = await pass.deps.books.findInvoice(visit.id);

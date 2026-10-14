@@ -123,7 +123,7 @@ describe("GET /api/me's prompt and invoice line", () => {
       .bind(crypto.randomUUID(), await personId(), due, NOW.toISOString())
       .run();
   const issueInvoice = async (appointmentId: string, daysAgo: number) =>
-    env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-1', invoice_issued_at = ?1 WHERE id = ?2")
+    env.DB.prepare("UPDATE appointments SET books_invoice_id = 'stub-1', invoice_issued_at = ?1 WHERE id = ?2")
       .bind(new Date(NOW.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString(), appointmentId)
       .run();
   const home = async () => (await get("/api/me")).json<{ prompt: unknown; invoice: unknown }>();

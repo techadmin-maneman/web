@@ -56,7 +56,7 @@ export const unpaidHold = (hold: string): string =>
  */
 export const openVisit = (visit: string): string =>
   `EXISTS (SELECT 1 FROM appointments open_visit WHERE open_visit.id = ${visit} AND open_visit.deleted_at IS NULL
-     AND open_visit.fsm_invoice_id IS NULL AND open_visit.invoice_issued_at IS NULL
+     AND open_visit.books_invoice_id IS NULL AND open_visit.invoice_issued_at IS NULL
      AND open_visit.one_visit IS NOT 'fitted')
    AND NOT EXISTS (SELECT 1 FROM payments paid WHERE paid.appointment_id = ${visit} AND paid.kind = 'visit'
      AND ${statusIn("paid.status", PAYMENT_TAKEN)})

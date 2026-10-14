@@ -2346,7 +2346,13 @@ export interface components {
             /** @description True when this write had already landed. */
             replayed: boolean;
             /**
-             * @description Kept for phones that read it: "written" once the step has landed, which it has.
+             * @description "written" once the step has landed, which it has.
+             * @enum {string}
+             */
+            write_state: "pending" | "written" | "rejected";
+            /**
+             * @deprecated
+             * @description write_state, under its old name, for phones that read it.
              * @enum {string}
              */
             fsm_write_state: "pending" | "written" | "rejected";

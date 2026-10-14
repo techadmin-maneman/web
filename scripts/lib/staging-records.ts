@@ -97,7 +97,7 @@ export function unlisted(known: readonly KnownId[], found: readonly StagingRecor
 export const KNOWN_IDS_SQL = [
   "SELECT 'books/contacts' AS kind, books_customer_id AS id FROM people WHERE books_customer_id IS NOT NULL",
   "UNION SELECT 'books/customerpayments', books_payment_id FROM payments WHERE books_payment_id IS NOT NULL",
-  "UNION SELECT 'books/invoices', fsm_invoice_id FROM appointments WHERE fsm_invoice_id IS NOT NULL",
+  "UNION SELECT 'books/invoices', books_invoice_id FROM appointments WHERE books_invoice_id IS NOT NULL",
   "UNION SELECT 'books/contacts', books_vendor_id FROM suppliers WHERE books_vendor_id IS NOT NULL",
   "UNION SELECT 'books/bills', books_bill_id FROM receipts WHERE books_bill_id IS NOT NULL",
   "UNION SELECT 'books/vendorcredits', books_credit_id FROM supplier_claims WHERE books_credit_id IS NOT NULL",
@@ -111,6 +111,8 @@ export const KNOWN_IDS_SQL = [
 const LINKS: readonly { readonly kind: RecordKind; readonly table: string; readonly column: string }[] = [
   { kind: "books/contacts", table: "people", column: "books_customer_id" },
   { kind: "books/contacts", table: "suppliers", column: "books_vendor_id" },
+  { kind: "books/invoices", table: "appointments", column: "books_invoice_id" },
+  // Written beside it until the old column goes (docs/decisions/0113-fsms-columns-go.md).
   { kind: "books/invoices", table: "appointments", column: "fsm_invoice_id" },
   { kind: "crm/Leads", table: "people", column: "zoho_lead_id" },
 ];

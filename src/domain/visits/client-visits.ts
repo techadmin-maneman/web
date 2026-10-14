@@ -320,7 +320,7 @@ async function invoiceExpected(db: D1Database, row: AppointmentRow): Promise<boo
  */
 async function invoiceHeld(
   db: D1Database,
-  row: AppointmentRow & { invoice_issued_at: string | null; fsm_invoice_id: string | null },
+  row: AppointmentRow & { invoice_issued_at: string | null; books_invoice_id: string | null },
 ): Promise<InvoiceHeld | null> {
   if (row.status !== "completed" || row.invoice_issued_at !== null) return null;
   const credit = await db
@@ -328,7 +328,7 @@ async function invoiceHeld(
     .bind(row.id)
     .first<{ paid_with_credit: number }>();
   if (credit?.paid_with_credit === 1) return "credit";
-  return row.fsm_invoice_id === null ? null : "checking";
+  return row.books_invoice_id === null ? null : "checking";
 }
 
 /**
@@ -369,7 +369,7 @@ export async function visitDetail({
 }): Promise<VisitDetail | null> {
   const row = await db
     .prepare(
-      `SELECT ${APPOINTMENT_COLUMNS}, a.invoice_issued_at, a.fsm_invoice_id, v.duration_minutes, v.outcome
+      `SELECT ${APPOINTMENT_COLUMNS}, a.invoice_issued_at, a.books_invoice_id, v.duration_minutes, v.outcome
        FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id LEFT JOIN visit_outcomes v ON v.appointment_id = a.id
        WHERE ${LIVE} AND a.id = ?2`,
     )
@@ -377,7 +377,7 @@ export async function visitDetail({
     .first<
       AppointmentRow & {
         invoice_issued_at: string | null;
-        fsm_invoice_id: string | null;
+        books_invoice_id: string | null;
         duration_minutes: number | null;
         outcome: VisitOutcome | null;
       }
