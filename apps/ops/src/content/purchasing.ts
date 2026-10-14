@@ -58,7 +58,43 @@ export const purchasing = {
     drafted: "Drafted.",
     noItems: "This supplier lists nothing yet. Add its items in Settings, Suppliers.",
   },
-  sheet: { title: "Purchase order", date: "Date", supplier: "To" },
+  /** The printed order (./OrderSheet.tsx): from us, to the supplier, and what to deliver where. */
+  sheet: {
+    title: "Purchase order",
+    date: "Date",
+    from: "From",
+    supplier: "To",
+    gstin: (gstin: string) => `GSTIN ${gstin}`,
+    deliverTo: "Deliver to",
+    /** "24 strip (2 packs of 12)" */
+    quantity: (quantity: number, unit: string, pack: number | null) =>
+      pack === null || pack <= 1 || quantity % pack !== 0
+        ? `${String(quantity)} ${unit}`
+        : `${String(quantity)} ${unit} (${String(quantity / pack)} ${quantity / pack === 1 ? "pack" : "packs"} of ${String(pack)})`,
+    columns: ["Their code", "Item", "Quantity", "Price each", "Line total"],
+    payment: (days: number) => (days === 0 ? "Payment: on delivery" : `Payment: ${String(days)} days`),
+    approvedBy: (who: string) => `Approved by ${who}`,
+  },
+  /** What a printed order says of us, which a manager sets once. */
+  letterhead: {
+    title: "Letterhead",
+    intro: "What a printed order says of us.",
+    missing: "Set the letterhead to print it on orders.",
+    legalName: "Legal name",
+    gstin: "GSTIN (optional)",
+    deliverTo: "Deliver to",
+    deliverHint: "The address, as it prints, a line at a time.",
+    save: "Save letterhead",
+    saved: "Letterhead saved.",
+    errors: {
+      legal_name: "Give the legal name, 2 to 120 characters.",
+      gstin: "A GSTIN is 15 characters, like 06AABCM1234A1Z5.",
+      deliver_to: "Give the address, 5 to 400 characters.",
+      not_permitted: NOT_PERMITTED,
+      offline: OFFLINE,
+      unknown: FAILED,
+    },
+  },
   receive: {
     open: "Receive",
     title: "What arrived",

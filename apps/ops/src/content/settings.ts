@@ -741,9 +741,9 @@ export const settings = {
       },
       saved: "Saved.",
     },
-    /** A refusal, said of the box it names (src/routes/ops/consumables.ts). */
     /** The cost refused, with the most the API takes. */
     unitCostUpTo: (most: string) => `Enter whole rupees, up to ${most}.`,
+    /** A refusal, said of the box it names (src/routes/ops/consumables.ts). */
     errors: {
       not_permitted: NOT_PERMITTED,
       name: "That name is taken, or doesn't start with a letter or digit.",

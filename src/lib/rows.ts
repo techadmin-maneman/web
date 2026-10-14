@@ -948,6 +948,14 @@ export interface Rows {
     readonly po_id: string | null;
     readonly drafted_at: string;
   };
+  readonly po_letterhead: {
+    readonly id: number;
+    readonly legal_name: string;
+    readonly gstin: string | null;
+    readonly deliver_to: string;
+    readonly set_by: string;
+    readonly set_at: string;
+  };
   readonly po_lines: {
     readonly id: string;
     readonly po_id: string;

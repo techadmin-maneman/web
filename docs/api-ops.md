@@ -8822,6 +8822,42 @@ Request body:
 }
 ```
 
+### POST /api/purchase-orders/letterhead
+
+What a printed order says of us: the legal name, the GSTIN and where the supplier delivers
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrderLetterhead"
+}
+```
+
+**200**: The purchase orders
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrders"
+}
+```
+
+**400**: invalid_request
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/purchase-orders/{id}/approve
 
 An approval: the first, or a second by another manager
@@ -19278,6 +19314,7 @@ Request body:
         "supplier.restore",
         "supplier.item_set",
         "supplier.item_remove",
+        "purchase_order.letterhead_set",
         "purchase_order.draft",
         "purchase_order.approve",
         "purchase_order.send",
@@ -28268,6 +28305,9 @@ Request body:
           "currency": {
             "type": "string"
           },
+          "payment_terms_days": {
+            "type": "integer"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -28275,6 +28315,17 @@ Request body:
               "properties": {
                 "consumable_code": {
                   "type": "string"
+                },
+                "their_code": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The supplier's own code for it, which the order prints."
                 },
                 "unit_price": {
                   "type": "integer"
@@ -28291,6 +28342,7 @@ Request body:
               },
               "required": [
                 "consumable_code",
+                "their_code",
                 "unit_price",
                 "pack_size",
                 "minimum_order",
@@ -28304,6 +28356,7 @@ Request body:
           "id",
           "name",
           "currency",
+          "payment_terms_days",
           "items"
         ],
         "additionalProperties": false
@@ -28340,13 +28393,78 @@ Request body:
     },
     "second_approval_above_rupees": {
       "type": "integer"
+    },
+    "letterhead": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "legal_name": {
+          "type": "string"
+        },
+        "gstin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deliver_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "legal_name",
+        "gstin",
+        "deliver_to"
+      ],
+      "additionalProperties": false,
+      "description": "What a printed order says of us; null until ops set it."
     }
   },
   "required": [
     "orders",
     "suppliers",
     "consumables",
-    "second_approval_above_rupees"
+    "second_approval_above_rupees",
+    "letterhead"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PurchaseOrderLetterhead
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "legal_name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 120
+    },
+    "gstin": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{2}[A-Z]{5}\\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$"
+    },
+    "deliver_to": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 400
+    }
+  },
+  "required": [
+    "legal_name",
+    "gstin",
+    "deliver_to"
   ],
   "additionalProperties": false
 }

@@ -10,9 +10,10 @@ import { purchasing as copy } from "../../apps/ops/src/content/purchasing.ts";
 
 const ORDERS = {
   orders: [],
-  suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD", items: [] }],
+  suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD", payment_terms_days: 0, items: [] }],
   consumables: [],
   second_approval_above_rupees: 0,
+  letterhead: null,
 } satisfies OpsReply<"/api/purchase-orders">;
 
 const CLAIM = {

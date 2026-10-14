@@ -8791,6 +8791,7 @@
               "supplier.restore",
               "supplier.item_set",
               "supplier.item_remove",
+              "purchase_order.letterhead_set",
               "purchase_order.draft",
               "purchase_order.approve",
               "purchase_order.send",
@@ -17196,6 +17197,9 @@
                 "currency": {
                   "type": "string"
                 },
+                "payment_terms_days": {
+                  "type": "integer"
+                },
                 "items": {
                   "type": "array",
                   "items": {
@@ -17203,6 +17207,17 @@
                     "properties": {
                       "consumable_code": {
                         "type": "string"
+                      },
+                      "their_code": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "The supplier's own code for it, which the order prints."
                       },
                       "unit_price": {
                         "type": "integer"
@@ -17219,6 +17234,7 @@
                     },
                     "required": [
                       "consumable_code",
+                      "their_code",
                       "unit_price",
                       "pack_size",
                       "minimum_order",
@@ -17232,6 +17248,7 @@
                 "id",
                 "name",
                 "currency",
+                "payment_terms_days",
                 "items"
               ],
               "additionalProperties": false
@@ -17268,13 +17285,73 @@
           },
           "second_approval_above_rupees": {
             "type": "integer"
+          },
+          "letterhead": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "legal_name": {
+                "type": "string"
+              },
+              "gstin": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "deliver_to": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "legal_name",
+              "gstin",
+              "deliver_to"
+            ],
+            "additionalProperties": false,
+            "description": "What a printed order says of us; null until ops set it."
           }
         },
         "required": [
           "orders",
           "suppliers",
           "consumables",
-          "second_approval_above_rupees"
+          "second_approval_above_rupees",
+          "letterhead"
+        ],
+        "additionalProperties": false
+      },
+      "PurchaseOrderLetterhead": {
+        "type": "object",
+        "properties": {
+          "legal_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "gstin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{2}[A-Z]{5}\\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$"
+          },
+          "deliver_to": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 400
+          }
+        },
+        "required": [
+          "legal_name",
+          "gstin",
+          "deliver_to"
         ],
         "additionalProperties": false
       },
@@ -24912,6 +24989,7 @@
                 "supplier.restore",
                 "supplier.item_set",
                 "supplier.item_remove",
+                "purchase_order.letterhead_set",
                 "purchase_order.draft",
                 "purchase_order.approve",
                 "purchase_order.send",
@@ -31949,6 +32027,53 @@
           },
           "400": {
             "description": "invalid_request: fields names supplier_id for no active supplier, lines.N for a stock code it does not list or fewer than its minimum, or lines for one named twice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-orders/letterhead": {
+      "post": {
+        "summary": "What a printed order says of us: the legal name, the GSTIN and where the supplier delivers",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseOrderLetterhead"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The purchase orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrders"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
             "content": {
               "application/json": {
                 "schema": {

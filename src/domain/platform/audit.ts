@@ -172,7 +172,8 @@ export const AUDIT_ACTIONS = [
   "supplier.restore",
   "supplier.item_set",
   "supplier.item_remove",
-  // Purchase orders (docs/decisions/0166-purchase-orders.md).
+  // Purchase orders (docs/decisions/0166-purchase-orders.md), and what each says of us.
+  "purchase_order.letterhead_set",
   "purchase_order.draft",
   "purchase_order.approve",
   "purchase_order.send",

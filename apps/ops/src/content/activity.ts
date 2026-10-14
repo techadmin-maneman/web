@@ -122,6 +122,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "stock.label": "Pieces labelled",
   "stock.hand_back": "Pieces handed back",
   "supplier.add": "Supplier added",
+  "purchase_order.letterhead_set": "Purchase order letterhead set",
   "supplier.change": "Supplier changed",
   "supplier.retire": "Supplier retired",
   "supplier.restore": "Supplier restored",

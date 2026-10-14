@@ -34,12 +34,29 @@ const BOOK = {
       id: "sup-1",
       name: "Kesh Supplies",
       currency: "INR",
-      items: [{ consumable_code: "solvent", unit_price: 4500, pack_size: 12, minimum_order: 24, lead_time_days: 7 }],
+      payment_terms_days: 30,
+      items: [
+        {
+          consumable_code: "solvent",
+          their_code: "KS-SOL-500",
+          unit_price: 4500,
+          pack_size: 12,
+          minimum_order: 24,
+          lead_time_days: 7,
+        },
+      ],
     },
   ],
   consumables: [{ code: "solvent", name: "Solvent", unit: "ml", unit_cost: 4000 }],
   second_approval_above_rupees: 0,
+  letterhead: null,
 } satisfies OpsReply<"/api/purchase-orders">;
+
+const LETTERHEAD = {
+  legal_name: "Mane Man Grooming Services Private Limited",
+  gstin: "06AABCM1234A1Z5",
+  deliver_to: "Warehouse 4, Sector 37\nGurgaon 122001",
+};
 
 const FIRST_APPROVED = { ...BOOK, orders: [{ ...ORDER, approved_by: "ops@maneman.in" }] };
 
@@ -209,4 +226,35 @@ test("receives what arrived of a sent order, and lists the receipt with its land
     copy.receipts.item({ name: "Solvent", received: 24, damaged: 2, failed: 0, landed: "Rs. 55" }),
   );
   expect(await axeViolations(page)).toEqual([]);
+});
+
+// The printed order gave no company, no GSTIN, no delivery address, none of the supplier's own codes, and no unit.
+test("a manager sets the letterhead, and a printed order carries it with what the supplier needs", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.print = () => undefined;
+  });
+  const set = { ...BOOK, letterhead: LETTERHEAD, orders: [{ ...ORDER, approved_by: "ops@maneman.in" }] };
+  await open(page, { "POST /api/purchase-orders/letterhead": json(set) });
+  const letterhead = page.getByRole("region", { name: copy.letterhead.title });
+  await expect(letterhead).toContainText(copy.letterhead.missing);
+  await letterhead.getByLabel(copy.letterhead.legalName).fill(LETTERHEAD.legal_name);
+  await letterhead.getByLabel(copy.letterhead.gstin).fill("06aabcm1234a1z5");
+  await letterhead.getByLabel(copy.letterhead.deliverTo).fill(LETTERHEAD.deliver_to);
+  const sent = posted(page, "/api/purchase-orders/letterhead");
+  await letterhead.getByRole("button", { name: copy.letterhead.save }).click();
+  expect((await sent).postDataJSON()).toEqual(LETTERHEAD);
+
+  await page.getByRole("button", { name: copy.open("PO-0007") }).click();
+  await page
+    .getByRole("region", { name: "PO-0007 · Kesh Supplies" })
+    .getByRole("button", { name: copy.order.print })
+    .click();
+  const sheet = page.locator("#order-sheet");
+  await expect(sheet).toContainText(`${copy.sheet.from}: ${LETTERHEAD.legal_name} · GSTIN 06AABCM1234A1Z5`);
+  await expect(sheet).toContainText("Warehouse 4, Sector 37");
+  await expect(sheet).toContainText("KS-SOL-500");
+  await expect(sheet).toContainText("48 ml (4 packs of 12)");
+  await expect(sheet).toContainText("Payment: 30 days");
+  await expect(sheet).toContainText("Approved by ops@maneman.in");
+  await expect(sheet).toContainText("Date: 21 Sep 2026");
 });

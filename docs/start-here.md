@@ -109,7 +109,7 @@ this map, or when the map names something that no longer exists.
 
 ### Purchasing: suppliers, orders and the supply plan
 
-- **Database work** (`src/domain/purchasing/`): `suppliers`, `purchase-orders`, `receipts`, `supplier-claims`,
+- **Database work** (`src/domain/purchasing/`): `suppliers`, `purchase-orders`, `letterhead`, `receipts`, `supplier-claims`,
   `supplier-scorecard`, `custom-orders`, `custom-order-po`, `forecast`, `forecast-layers`, `forecast-accuracy`,
   `supply-plan`, `supply-plan-lines`, `demand-events`, `stock-demand`
 - **Routes** (`src/routes/`): `ops/suppliers`, `ops/purchasing`, `ops/purchasing.receipts`, `ops/purchasing.claims`,
