@@ -2,6 +2,7 @@
 // clients know it, clients, weekly days off and leave, and who covers them today. A Customer Care manager sets the
 // name, the days off and the leave from the member's row.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Checkbox, DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -29,16 +30,15 @@ const periodOf = (leave: Leave): string => copy.period(shortDate(leave.from), sh
 
 /** Sends a change, saying why it was refused; `onDone` once it went. */
 function useSend(onDone: () => void) {
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
-  const send = async (call: () => Promise<Answer<unknown>>) => {
-    setBusy(true);
-    setFailure(null);
-    const answer = await call();
-    setBusy(false);
-    if (answer.ok) onDone();
-    else setFailure({ code: answer.code, fields: answer.fields });
-  };
+  const send = (call: () => Promise<Answer<unknown>>) =>
+    once(async () => {
+      setFailure(null);
+      const answer = await call();
+      if (answer.ok) onDone();
+      else setFailure({ code: answer.code, fields: answer.fields });
+    });
   return { busy, failure, send };
 }
 

@@ -4,6 +4,7 @@
 // moved.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -102,18 +103,21 @@ type Answer = Awaited<ReturnType<typeof api.addStockPlace>>;
 /** Sends a change, then hands the stock it answers on, or keeps the refusal to show. */
 function useSending(onChanged: (stock: Stock) => void) {
   const [failure, setFailure] = useState<Failure | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
+  /** Whether the change went through; a second press while one is sending sends nothing, and says it did not. */
   const send = async (call: () => Promise<Answer>): Promise<boolean> => {
-    setBusy(true);
-    setFailure(null);
-    const answer = await call();
-    setBusy(false);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return false;
-    }
-    onChanged(answer.body);
-    return true;
+    let sent = false;
+    await once(async () => {
+      setFailure(null);
+      const answer = await call();
+      if (!answer.ok) {
+        setFailure({ code: answer.code, fields: answer.fields });
+        return;
+      }
+      onChanged(answer.body);
+      sent = true;
+    });
+    return sent;
   };
   return { failure, busy, send };
 }

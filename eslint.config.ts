@@ -285,7 +285,7 @@ export default defineConfig(
     rules: { "no-nested-ternary": "error", "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY] },
   },
   {
-    files: ["apps/app/src/**/*.{ts,tsx}", "apps/tech/src/**/*.{ts,tsx}"],
+    files: ["apps/app/src/**/*.{ts,tsx}", "apps/tech/src/**/*.{ts,tsx}", "apps/ops/src/**/*.{ts,tsx}"],
     rules: { "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY, HAND_BUSY] },
   },
   {

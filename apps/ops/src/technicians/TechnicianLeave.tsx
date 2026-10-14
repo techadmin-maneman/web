@@ -3,6 +3,7 @@
 // form says so before it is sent. Leave moves none of the jobs already booked: each waits on the Tasks board until
 // ops move it, and "Show on board" opens the board on that job's week, with their row in view and the job's drawer open.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
@@ -144,25 +145,24 @@ function LeaveForm({
   onCancel: () => void;
 }) {
   const [entry, setEntry] = useState<Entry>({ from: "", to: "", note: "" });
-  const [sending, setSending] = useState(false);
+  const [sending, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
 
-  const send = async () => {
-    setSending(true);
-    setFailed(null);
-    const note = entry.note.trim();
-    const answer = await api.recordLeave(technician.id, {
-      from: entry.from,
-      to: entry.to,
-      note: note === "" ? null : note,
+  const send = () =>
+    once(async () => {
+      setFailed(null);
+      const note = entry.note.trim();
+      const answer = await api.recordLeave(technician.id, {
+        from: entry.from,
+        to: entry.to,
+        note: note === "" ? null : note,
+      });
+      if (!answer.ok) {
+        setFailed(refusal(answer.code));
+        return;
+      }
+      await onRecorded();
     });
-    if (!answer.ok) {
-      setSending(false);
-      setFailed(refusal(answer.code));
-      return;
-    }
-    await onRecorded();
-  };
 
   return (
     <form

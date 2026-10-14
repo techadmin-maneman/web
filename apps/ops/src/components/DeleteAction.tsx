@@ -1,6 +1,7 @@
 // A Delete button for something added by mistake: pressed, it asks once, and only the second press deletes. A refusal
 // is said in the caller's words, as why it stays and what to do instead (an in_use is the usual one).
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
@@ -39,22 +40,21 @@ export function DeleteAction<Body>({
   readonly onCancel?: () => void;
 }) {
   const [asking, setAsking] = useState(onCancel !== undefined);
-  const [sending, setSending] = useState(false);
+  const [sending, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
 
-  const remove = async () => {
-    setSending(true);
-    setFailed(null);
-    const answer = await send();
-    setSending(false);
-    if (!answer.ok) {
-      // A row's own Delete keeps its panel, with the reason and its Cancel; the page's goes back to its button.
-      if (onCancel === undefined) setAsking(false);
-      setFailed(refusal(answer.code));
-      return;
-    }
-    await onDeleted(answer.body);
-  };
+  const remove = () =>
+    once(async () => {
+      setFailed(null);
+      const answer = await send();
+      if (!answer.ok) {
+        // A row's own Delete keeps its panel, with the reason and its Cancel; the page's goes back to its button.
+        if (onCancel === undefined) setAsking(false);
+        setFailed(refusal(answer.code));
+        return;
+      }
+      await onDeleted(answer.body);
+    });
 
   return (
     <>

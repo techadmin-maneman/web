@@ -1,6 +1,7 @@
 // A client's Care person in their chat (docs/decisions/0131-care-people.md): who looks after them, and for a Customer
 // Care manager, moving them to another of the team.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
@@ -23,16 +24,15 @@ function MoveTo(props: {
   readonly onMoved: (email: string) => void;
 }) {
   const [email, setEmail] = useState(props.now ?? props.team[0]?.email ?? "");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
-  const move = async () => {
-    setBusy(true);
-    setFailure(null);
-    const answer = await careApi.moveCarePerson(props.personId, email);
-    setBusy(false);
-    if (answer.ok) props.onMoved(answer.body.care_person);
-    else setFailure({ code: answer.code, fields: answer.fields });
-  };
+  const move = () =>
+    once(async () => {
+      setFailure(null);
+      const answer = await careApi.moveCarePerson(props.personId, email);
+      if (answer.ok) props.onMoved(answer.body.care_person);
+      else setFailure({ code: answer.code, fields: answer.fields });
+    });
   return (
     <div className={own.closing}>
       <Field label={words.moveTo}>

@@ -3,7 +3,7 @@
 // test below the browser, where the board's fakes stood in.
 
 import { describe, expect, it } from "vitest";
-import type { Block, BoardRow, Unassigned } from "../../../apps/ops/src/api.ts";
+import type { Block, BoardRow, Unassigned } from "../../../../../apps/ops/src/api.ts";
 import {
   begunWord,
   blockOn,
@@ -16,10 +16,10 @@ import {
   whenOf,
   type BlockJob,
   type TrayJob,
-} from "../../../apps/ops/src/dispatch/job.ts";
-import { daysUntil } from "../../../apps/ops/src/lib/due.ts";
-import { whatsappChat } from "../../../packages/web-kit/whatsapp.ts";
-import { firstNameOf } from "../../../src/lib/names.ts";
+} from "../../../../../apps/ops/src/dispatch/job.ts";
+import { daysUntil } from "../../../../../apps/ops/src/lib/due.ts";
+import { whatsappChat } from "../../../../../packages/web-kit/whatsapp.ts";
+import { firstNameOf } from "../../../../../src/lib/names.ts";
 
 const ROHIT = {
   id: "p1",

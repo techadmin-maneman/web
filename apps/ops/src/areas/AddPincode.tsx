@@ -1,6 +1,7 @@
 // Adding a pincode the service area does not hold: its number, what messages call its area, and its city, one of
 // ours. It goes in unserved, so adding one messages nobody; marking it live is the launch panel's.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -35,7 +36,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
   const [typed, setTyped] = useState("");
   const [area, setArea] = useState("");
   const [city, setCity] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [code, setCode] = useState<string | null>(null);
 
   const number = pincode ?? typed.trim();
@@ -43,20 +44,19 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
   const refusals = boxRefusals(number, name);
   const ready = PINCODE.test(number) && AREA_NAME.test(name) && city !== "" && !busy;
 
-  const add = async () => {
-    setBusy(true);
-    setCode(null);
-    const answer = await api.addPincode({ pincode: number, area: name, city });
-    setBusy(false);
-    if (!answer.ok) {
-      setCode(answer.code);
-      return;
-    }
-    setTyped("");
-    setArea("");
-    setCity("");
-    onAdded(answer.body);
-  };
+  const add = () =>
+    once(async () => {
+      setCode(null);
+      const answer = await api.addPincode({ pincode: number, area: name, city });
+      if (!answer.ok) {
+        setCode(answer.code);
+        return;
+      }
+      setTyped("");
+      setArea("");
+      setCity("");
+      onAdded(answer.body);
+    });
 
   const cancel =
     onCancel === undefined ? null : (

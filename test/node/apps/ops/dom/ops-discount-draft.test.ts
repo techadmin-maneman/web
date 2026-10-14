@@ -2,8 +2,8 @@
 // only when it is sent, a limit left empty is left out, and a batch is single-use whatever was typed.
 
 import { describe, expect, it } from "vitest";
-import { settings } from "../../../apps/ops/src/content/settings.ts";
-import { checkLines, codeError, EMPTY, isReady, requestOf } from "../../../apps/ops/src/settings/discount-draft.ts";
+import { settings } from "../../../../../apps/ops/src/content/settings.ts";
+import { checkLines, codeError, EMPTY, isReady, requestOf } from "../../../../../apps/ops/src/settings/discount-draft.ts";
 
 const copy = settings.discountCodes;
 

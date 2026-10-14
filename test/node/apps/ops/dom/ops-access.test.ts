@@ -3,8 +3,8 @@
 // reach it, by the same rules the API asks it with.
 
 import { describe, expect, it } from "vitest";
-import type { Whoami } from "../../../apps/ops/src/api.ts";
-import { accessOf, REFUNDING_A_DISPUTE, taskNeed, WAIVING_A_NO_SHOW } from "../../../apps/ops/src/lib/access.ts";
+import type { Whoami } from "../../../../../apps/ops/src/api.ts";
+import { accessOf, REFUNDING_A_DISPUTE, taskNeed, WAIVING_A_NO_SHOW } from "../../../../../apps/ops/src/lib/access.ts";
 
 type Staff = Whoami["staff"];
 type StaffGrant = Staff["grants"][number];

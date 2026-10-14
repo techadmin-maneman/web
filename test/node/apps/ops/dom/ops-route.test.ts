@@ -19,8 +19,8 @@ import {
   settingsPath,
   technicianPath,
   titleOf,
-} from "../../../apps/ops/src/route.ts";
-import { ROUTE_NEEDS } from "../../../src/policy/console-routes.ts";
+} from "../../../../../apps/ops/src/route.ts";
+import { ROUTE_NEEDS } from "../../../../../src/policy/console-routes.ts";
 
 const CLIENT = "22000000-0000-4000-8000-000000000001";
 const TECHNICIAN = "88000000-0000-4000-8000-000000000001";

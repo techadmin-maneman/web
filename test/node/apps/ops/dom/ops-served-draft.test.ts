@@ -2,7 +2,7 @@
 // with people waiting is a launch, and a file shows only what it would change.
 
 import { describe, expect, it } from "vitest";
-import type { ServedPincode } from "../../../apps/ops/src/api.ts";
+import type { ServedPincode } from "../../../../../apps/ops/src/api.ts";
 import {
   afterSave,
   changesIn,
@@ -11,7 +11,7 @@ import {
   launchesIn,
   servesLater,
   withCity,
-} from "../../../apps/ops/src/areas/served-draft.ts";
+} from "../../../../../apps/ops/src/areas/served-draft.ts";
 
 const TODAY = "2027-09-22";
 

@@ -2,10 +2,10 @@
 // Tasks, and each group's in the section that decides it, marked where any of them is overdue.
 
 import { describe, expect, it } from "vitest";
-import type { TaskGroup, Tasks } from "../../../apps/ops/src/api.ts";
-import { SECTIONS } from "../../../apps/ops/src/route.ts";
-import { DECIDED_IN, waitingIn } from "../../../apps/ops/src/tasks/decided.ts";
-import { TASK_DEPARTMENTS } from "../../../src/policy/console-routes.ts";
+import type { TaskGroup, Tasks } from "../../../../../apps/ops/src/api.ts";
+import { SECTIONS } from "../../../../../apps/ops/src/route.ts";
+import { DECIDED_IN, waitingIn } from "../../../../../apps/ops/src/tasks/decided.ts";
+import { TASK_DEPARTMENTS } from "../../../../../src/policy/console-routes.ts";
 
 const NOW = new Date("2027-09-22T05:00:00.000Z");
 

@@ -2,11 +2,11 @@
 // the navigation's order, and the first task past its day, which the head's overdue count goes to.
 
 import { describe, expect, it } from "vitest";
-import type { TaskGroup } from "../../../apps/ops/src/api.ts";
-import { DEPARTMENTS } from "../../../apps/ops/src/lib/grants.ts";
-import { firstOverdue, ROWS_FOLDED, sectionsOf } from "../../../apps/ops/src/tasks/sections.ts";
-import { TASK_DEPARTMENTS } from "../../../src/policy/console-routes.ts";
-import { TASK_GROUPS } from "../../../src/policy/tasks.ts";
+import type { TaskGroup } from "../../../../../apps/ops/src/api.ts";
+import { DEPARTMENTS } from "../../../../../apps/ops/src/lib/grants.ts";
+import { firstOverdue, ROWS_FOLDED, sectionsOf } from "../../../../../apps/ops/src/tasks/sections.ts";
+import { TASK_DEPARTMENTS } from "../../../../../src/policy/console-routes.ts";
+import { TASK_GROUPS } from "../../../../../src/policy/tasks.ts";
 
 const NOW = new Date("2027-09-22T05:00:00.000Z");
 const LATER = "2027-09-25T06:00:00.000Z";

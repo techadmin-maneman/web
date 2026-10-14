@@ -1,6 +1,7 @@
 // Growth · Spend (docs/decisions/0150-spend.md): a month's offline spend, for a city or national, by channel, which the
 // nightly reporting copy counts beside the ad accounts' own. An entry is added whole, and taken off rather than changed.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -85,29 +86,28 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
   const [campaign, setCampaign] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
-  const add = async () => {
-    setBusy(true);
-    setFailure(null);
-    const answer = await spendApi.add({
-      month,
-      city: city === "" ? null : city,
-      channel,
-      amount: paiseFromRupees(amount),
-      ...(campaign.trim() === "" ? {} : { campaign: campaign.trim() }),
-      ...(note.trim() === "" ? {} : { note: note.trim() }),
+  const add = () =>
+    once(async () => {
+      setFailure(null);
+      const answer = await spendApi.add({
+        month,
+        city: city === "" ? null : city,
+        channel,
+        amount: paiseFromRupees(amount),
+        ...(campaign.trim() === "" ? {} : { campaign: campaign.trim() }),
+        ...(note.trim() === "" ? {} : { note: note.trim() }),
+      });
+      if (!answer.ok) {
+        setFailure({ code: answer.code, fields: answer.fields });
+        return;
+      }
+      setAmount("");
+      setCampaign("");
+      setNote("");
+      onAdded(answer.body);
     });
-    setBusy(false);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setAmount("");
-    setCampaign("");
-    setNote("");
-    onAdded(answer.body);
-  };
   const channelOf = (value: string) => list.channels.find((each) => each === value);
   return (
     <div className={styles.group}>

@@ -3,6 +3,7 @@
 // from the client's own number. Where the API refuses for a booked visit or money held, ops may erase anyway and settle
 // it by hand today.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -97,21 +98,20 @@ interface EraseProps {
 export function Erase({ clientId, name, requested, onErased }: EraseProps) {
   const mayErase = useAccess().mayCall("POST /api/clients/{id}/erasure");
   const [erasing, setErasing] = useState<Erasing>({ step: "closed" });
-  const [sending, setSending] = useState(false);
+  const [sending, once] = useOneAtATime();
   const opener = useRef<HTMLButtonElement>(null);
 
   if (!mayErase || requested) return null;
 
-  const erase = async (settledByHand: boolean) => {
-    setSending(true);
-    const answer = await api.eraseClient(clientId, settledByHand);
-    setSending(false);
-    if (answer.ok) {
-      onErased();
-      return;
-    }
-    setErasing(isOwed(answer.code) ? { step: "owed", code: answer.code } : { step: "failed", code: answer.code });
-  };
+  const erase = (settledByHand: boolean) =>
+    once(async () => {
+      const answer = await api.eraseClient(clientId, settledByHand);
+      if (answer.ok) {
+        onErased();
+        return;
+      }
+      setErasing(isOwed(answer.code) ? { step: "owed", code: answer.code } : { step: "failed", code: answer.code });
+    });
 
   /** Back to the button, and the keyboard with it, rather than to the top of the page. */
   const close = () => {

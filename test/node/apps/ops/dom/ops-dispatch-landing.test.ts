@@ -2,11 +2,11 @@
 // (apps/ops/src/dispatch/board-view.ts).
 
 import { describe, expect, it } from "vitest";
-import type { Block, Board, BoardRow } from "../../../apps/ops/src/api.ts";
-import { answersTo, foundBy, weekOf } from "../../../apps/ops/src/dispatch/board-view.ts";
-import type { BlockJob, Target } from "../../../apps/ops/src/dispatch/job.ts";
-import { doneNotice, moveRefusal, staleWords } from "../../../apps/ops/src/dispatch/landing.ts";
-import { dispatch } from "../../../apps/ops/src/content.ts";
+import type { Block, Board, BoardRow } from "../../../../../apps/ops/src/api.ts";
+import { answersTo, foundBy, weekOf } from "../../../../../apps/ops/src/dispatch/board-view.ts";
+import type { BlockJob, Target } from "../../../../../apps/ops/src/dispatch/job.ts";
+import { doneNotice, moveRefusal, staleWords } from "../../../../../apps/ops/src/dispatch/landing.ts";
+import { dispatch } from "../../../../../apps/ops/src/content.ts";
 
 const ROHIT = {
   id: "p1",

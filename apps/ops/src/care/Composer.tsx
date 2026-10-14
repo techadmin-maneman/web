@@ -1,6 +1,7 @@
 // What Care write in a chat (docs/decisions/0130-replies-from-the-care-inbox.md): a reply sent from our number, a note
 // only staff see, or the chat closed with what it was about. Each answers with the chat as it then stands.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import type { Failure } from "@maneman/web-kit/refusal";
@@ -88,20 +89,19 @@ export function Composer(props: {
   const { conversationId } = props;
   const [text, setText] = useState("");
   const [reason, setReason] = useState<CloseReason>("other");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
-  const act = async (call: () => Promise<Answer<ChatThread>>, said: (thread: ChatThread) => string) => {
-    setBusy(true);
-    setFailure(null);
-    const answer = await call();
-    setBusy(false);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setText("");
-    props.onThread(answer.body, said(answer.body));
-  };
+  const act = (call: () => Promise<Answer<ChatThread>>, said: (thread: ChatThread) => string) =>
+    once(async () => {
+      setFailure(null);
+      const answer = await call();
+      if (!answer.ok) {
+        setFailure({ code: answer.code, fields: answer.fields });
+        return;
+      }
+      setText("");
+      props.onThread(answer.body, said(answer.body));
+    });
   const empty = text.trim() === "";
   return (
     <div className={own.compose}>

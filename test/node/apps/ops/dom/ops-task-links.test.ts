@@ -2,10 +2,10 @@
 // the row it is decided on.
 
 import { describe, expect, it } from "vitest";
-import type { Task } from "../../../apps/ops/src/api.ts";
-import { CLIENT_TABS } from "../../../apps/ops/src/route.ts";
-import { decidedAt, taskClientPath, taskTabOf } from "../../../apps/ops/src/lib/task-links.ts";
-import { TASK_GROUPS } from "../../../src/policy/tasks.ts";
+import type { Task } from "../../../../../apps/ops/src/api.ts";
+import { CLIENT_TABS } from "../../../../../apps/ops/src/route.ts";
+import { decidedAt, taskClientPath, taskTabOf } from "../../../../../apps/ops/src/lib/task-links.ts";
+import { TASK_GROUPS } from "../../../../../src/policy/tasks.ts";
 
 const CLIENT = "22000000-0000-4000-8000-000000000001";
 

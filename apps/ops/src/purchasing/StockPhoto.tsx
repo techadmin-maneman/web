@@ -1,6 +1,7 @@
 // A photograph of stock for a write-off or a claim (docs/decisions/0170-stock-photos.md): taken or chosen, made small
 // in the browser as the technician's camera makes its photographs, stored, and shown once stored.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { FileInput, Label } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -36,21 +37,19 @@ export function StockPhoto({
   onPhoto: (id: string | null) => void;
 }) {
   const inputId = useId();
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
-  const choose = async (file: File) => {
-    setBusy(true);
-    setFailed(null);
-    try {
-      const result = await stored(file);
-      if ("id" in result) onPhoto(result.id);
-      else setFailed(result.code);
-    } catch {
-      setFailed("photo_invalid_file");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const choose = (file: File) =>
+    once(async () => {
+      setFailed(null);
+      try {
+        const result = await stored(file);
+        if ("id" in result) onPhoto(result.id);
+        else setFailed(result.code);
+      } catch {
+        setFailed("photo_invalid_file");
+      }
+    });
   return (
     <div className={form.field}>
       <Label htmlFor={inputId}>{label}</Label>
