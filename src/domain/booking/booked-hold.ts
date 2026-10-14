@@ -60,6 +60,8 @@ export interface HoldRow {
   pincode: string | null;
   /** The pincode's city, where it is one we know. */
   city: string | null;
+  /** Whether the technician it was held with is still switched on: 1, or 0 once ops switched them off. */
+  technician_active: number;
 }
 
 export async function bookingHoldRow(db: D1Database, holdId: string): Promise<HoldRow | null> {
@@ -69,9 +71,10 @@ export async function bookingHoldRow(db: D1Database, holdId: string): Promise<Ho
               h.start_unit, h.technician_id, h.amount, h.state, h.expires_at, h.grace_seconds, h.confirmed_at,
               h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind, h.created_at, h.use_credit,
               h.one_visit,
-              h.pay_by_link, h.refunded_at, h.pincode, sp.city
+              h.pay_by_link, h.refunded_at, h.pincode, sp.city, COALESCE(t.active, 0) AS technician_active
        FROM slot_holds h JOIN people p ON p.id = h.person_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
+       LEFT JOIN technicians t ON t.id = h.technician_id
        WHERE h.id = ?1`,
     )
     .bind(holdId)

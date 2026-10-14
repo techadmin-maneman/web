@@ -2,13 +2,12 @@
 // is sent by the sweeper minutes later (src/scheduled/unsent-messages.ts), so the request goes on either way.
 
 import type { Context } from "hono";
-import { enqueue, enqueueBatch } from "../domain/platform/enqueue.ts";
+import { enqueueBatch, notifyMessage } from "../domain/platform/enqueue.ts";
 import type { AppEnv } from "./context.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 
 export async function queueMessage(c: Context<AppEnv>, messageId: string): Promise<void> {
-  const body = { message_id: messageId, request_id: c.var.requestId } satisfies MessagingMessage;
-  await enqueue(c.env.MESSAGE_QUEUE, body, { log: c.var.log, ifLost: "sweeper" });
+  await notifyMessage(c.env.MESSAGE_QUEUE, { id: messageId, requestId: c.var.requestId }, c.var.log);
 }
 
 /** Messages each held back for its own number of seconds, so that a long run of them leaves in a paced line. */

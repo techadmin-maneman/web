@@ -46,7 +46,7 @@ import type { StaticConfig } from "../guard.ts";
 import type { CallBudget } from "../lib/call-budget.ts";
 import type { MeteredDatabase } from "../lib/d1-meter.ts";
 import type { Logger } from "../log.ts";
-import { enqueue, enqueueBatch } from "../domain/platform/enqueue.ts";
+import { enqueueBatch, notifyMessage } from "../domain/platform/enqueue.ts";
 import { analyticsJob } from "./analytics.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
@@ -186,8 +186,7 @@ async function queueMessages(
 /** Holds paid for, or booked free, whose request failed before they were booked: booked here half an hour on. */
 async function unbookedHoldsJob({ env, deps, log, budget }: CronContext): Promise<void> {
   const notify = (messageId: string) => {
-    const body = { message_id: messageId, request_id: "unbooked-holds" } satisfies MessagingMessage;
-    return enqueue(env.MESSAGE_QUEUE, body, { log, ifLost: "sweeper" });
+    return notifyMessage(env.MESSAGE_QUEUE, { id: messageId, requestId: "unbooked-holds" }, log);
   };
   const pass = { ...deps, notify, budget, log };
   const booked = await bookUnbookedHolds(env.DB, pass, deps.now());

@@ -58,7 +58,7 @@
 import type { LossExtent } from "../../config/booking.ts";
 import type { ToldNotice } from "../../config/notices.ts";
 import type { Logger } from "../../log.ts";
-import { enqueue } from "../platform/enqueue.ts";
+import { enqueue, notifyMessage } from "../platform/enqueue.ts";
 import { testRecordAtCreation } from "../../policy/staging-test-records.ts";
 import type { EnvironmentName } from "../../config/environments.ts";
 import { attribute, type InviteState, type Via } from "../referrals/referrals.ts";
@@ -66,7 +66,6 @@ import { attributeToPartner, isPartnerInvite, type AnyInvite } from "../referral
 import { saveBookingLead, type LeadAttribution } from "../leads/leads.ts";
 import { type Pincode } from "../clients/service-area.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
-import { type MessagingMessage } from "../../config/pipeline.ts";
 import type { AddressPin } from "../clients/profile.ts";
 
 /**
@@ -208,6 +207,5 @@ export async function recordLead(
 
 /** Sends a message written with the form's batch to the messaging queue. One the queue drops, the sweeper sends. */
 export async function queueMessage(form: FormRequest, messageId: string): Promise<void> {
-  const body = { message_id: messageId, request_id: form.requestId } satisfies MessagingMessage;
-  await enqueue(form.queues.messages, body, { log: form.log, ifLost: "sweeper" });
+  await notifyMessage(form.queues.messages, { id: messageId, requestId: form.requestId }, form.log);
 }
