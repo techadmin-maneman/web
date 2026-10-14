@@ -1,9 +1,9 @@
-// The files the Partner commission page hands out (apps/ops/src/settings/partner-commission-csv.ts): a partner's
+// The files the Partner commission page hands out (apps/ops/src/partner-commission/partner-commission-csv.ts): a partner's
 // statement, which holds days and amounts and never a client, and the month for the payout tool. A partner's name is
 // typed by staff, so a spreadsheet must show it as text, never run it.
 
 import { describe, expect, it } from "vitest";
-import { monthCsv, statementCsv } from "../../../../apps/ops/src/settings/partner-commission-csv.ts";
+import { monthCsv, statementCsv } from "../../../../apps/ops/src/partner-commission/partner-commission-csv.ts";
 
 type PartnerStatement = Parameters<typeof statementCsv>[0];
 

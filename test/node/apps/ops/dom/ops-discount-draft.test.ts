@@ -1,9 +1,9 @@
-// A discount code as ops make it (apps/ops/src/settings/discount-draft.ts): the boxes' text becomes numbers and paise
+// A discount code as ops make it (apps/ops/src/discount-codes/discount-draft.ts): the boxes' text becomes numbers and paise
 // only when it is sent, a limit left empty is left out, and a batch is single-use whatever was typed.
 
 import { describe, expect, it } from "vitest";
 import { settings } from "../../../../../apps/ops/src/content/settings.ts";
-import { checkLines, codeError, EMPTY, isReady, requestOf } from "../../../../../apps/ops/src/settings/discount-draft.ts";
+import { checkLines, codeError, EMPTY, isReady, requestOf } from "../../../../../apps/ops/src/discount-codes/discount-draft.ts";
 
 const copy = settings.discountCodes;
 

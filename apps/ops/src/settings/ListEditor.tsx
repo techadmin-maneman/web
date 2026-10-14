@@ -11,7 +11,7 @@ import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts
 import { settings } from "../content/settings.ts";
 import { whoWords } from "../lib/who.ts";
 import { review } from "../content/common.ts";
-import styles from "./consumables.module.css";
+import styles from "./list-editor.module.css";
 import form from "../components/forms.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { FormActions } from "../components/FormActions.tsx";

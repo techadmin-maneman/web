@@ -1,40 +1,20 @@
-// Settings, under Admin: the rules, the days no visit is offered, and the job sheet. The price book, discount codes,
-// service area and Staff list are sections of their own departments (./PanelScreens.tsx); the items and suppliers are
-// Inventory's.
+// Admin › Settings: the rules, the days no visit is offered, and the job sheet. The price book, discount codes,
+// technicians' pay, partners' commission, the Staff list, the items and the suppliers are sections of their own, each
+// in its own folder.
 
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content/settings.ts";
 import { settingsPath, SETTINGS_TAB_NAMES, SETTINGS_TABS, type SettingsTab } from "../route.ts";
 import { Blackouts } from "./Blackouts.tsx";
-import { Consumables } from "./Consumables.tsx";
 import { JobSheet } from "./JobSheet.tsx";
 import { Rules } from "./Rules.tsx";
-import { Suppliers } from "./Suppliers.tsx";
 import form from "../components/forms.module.css";
 
 function Panel({ tab }: { tab: SettingsTab }) {
   if (tab === "blackouts") return <Blackouts />;
   if (tab === "job-sheet") return <JobSheet />;
   return <Rules />;
-}
-
-/** The items we stock, each service's expected use, and the hair systems: a tab of Inventory. */
-export function ItemsScreen() {
-  return (
-    <div className={form.screen}>
-      <Consumables />
-    </div>
-  );
-}
-
-/** The suppliers we buy from, and what each supplies: a tab of Inventory. */
-export function SuppliersScreen() {
-  return (
-    <div className={form.screen}>
-      <Suppliers />
-    </div>
-  );
 }
 
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {

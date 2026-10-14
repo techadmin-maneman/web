@@ -34,25 +34,25 @@ import { TasksScreen } from "./tasks/TasksScreen.tsx";
 const SettingsScreen = lazyScreen(() =>
   import("./settings/SettingsScreen.tsx").then((module) => module.SettingsScreen),
 );
-const PricesScreen = lazyScreen(() => import("./settings/PanelScreens.tsx").then((module) => module.PricesScreen));
+const PricesScreen = lazyScreen(() => import("./prices/PricesScreen.tsx").then((module) => module.PricesScreen));
 const DiscountCodesScreen = lazyScreen(() =>
-  import("./settings/PanelScreens.tsx").then((module) => module.DiscountCodesScreen),
+  import("./discount-codes/DiscountCodesScreen.tsx").then((module) => module.DiscountCodesScreen),
 );
 const TechnicianPayScreen = lazyScreen(() =>
-  import("./settings/PanelScreens.tsx").then((module) => module.TechnicianPayScreen),
+  import("./technician-pay/TechnicianPayScreen.tsx").then((module) => module.TechnicianPayScreen),
 );
 const PartnerCommissionScreen = lazyScreen(() =>
-  import("./settings/PanelScreens.tsx").then((module) => module.PartnerCommissionScreen),
+  import("./partner-commission/PartnerCommissionScreen.tsx").then((module) => module.PartnerCommissionScreen),
 );
-const StaffScreen = lazyScreen(() => import("./settings/PanelScreens.tsx").then((module) => module.StaffScreen));
+const StaffScreen = lazyScreen(() => import("./staff/StaffScreen.tsx").then((module) => module.StaffScreen));
 const CitiesScreen = lazyScreen(() => import("./cities/CitiesScreen.tsx").then((module) => module.CitiesScreen));
 // The queues ops open now and then load when opened, keeping the console's first load within its budget.
 const TechniciansScreen = lazyScreen(() =>
   import("./technicians/TechniciansScreen.tsx").then((module) => module.TechniciansScreen),
 );
-const NoShowsScreen = lazyScreen(() => import("./no-shows/NoShowsScreen.tsx").then((module) => module.NoShowsScreen));
+const NoShowsScreen = lazyScreen(() => import("./payments/NoShowsScreen.tsx").then((module) => module.NoShowsScreen));
 const DeletionsScreen = lazyScreen(() =>
-  import("./deletions/DeletionsScreen.tsx").then((module) => module.DeletionsScreen),
+  import("./deletion-requests/DeletionsScreen.tsx").then((module) => module.DeletionsScreen),
 );
 const GrievancesScreen = lazyScreen(() =>
   import("./grievances/GrievancesScreen.tsx").then((module) => module.GrievancesScreen),
@@ -71,9 +71,9 @@ const MessagesScreen = lazyScreen(() => import("./care/MessagesScreen.tsx").then
 const CareSettingsScreen = lazyScreen(() =>
   import("./care/MessagesScreen.tsx").then((module) => module.CareSettingsScreen),
 );
-const ItemsScreen = lazyScreen(() => import("./settings/SettingsScreen.tsx").then((module) => module.ItemsScreen));
+const ItemsScreen = lazyScreen(() => import("./items/ItemsScreen.tsx").then((module) => module.ItemsScreen));
 const SuppliersScreen = lazyScreen(() =>
-  import("./settings/SettingsScreen.tsx").then((module) => module.SuppliersScreen),
+  import("./suppliers/SuppliersScreen.tsx").then((module) => module.SuppliersScreen),
 );
 const TargetsScreen = lazyScreen(() => import("./targets/TargetsScreen.tsx").then((module) => module.TargetsScreen));
 const StockScreen = lazyScreen(() => import("./stock/StockScreen.tsx").then((module) => module.StockScreen));
