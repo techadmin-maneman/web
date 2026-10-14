@@ -8,7 +8,7 @@ export const photos = {
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   /** The compare's three angles, as the compare names them. */
   compareAngles: { front: "Front", top: "Top", hair: "Hairline" },
-  // A photograph's description for a screen reader; the design draws no captions.
+  // A photo's description for a screen reader.
   alt: (angle: string, phase: "before" | "after", date: string) => `${angle}, ${phase} the visit, ${date}`,
   back: "Back to photos",
   from: "From",
@@ -20,7 +20,7 @@ export const photos = {
     `${String(percent)}% of ${from} on the left, ${String(100 - percent)}% of ${to} on the right`,
   compareNone: "Compare opens once two visits have photos.",
   download: "Download",
-  downloaded: "Downloaded photos sit in your gallery, outside the app.",
+  downloaded: "Saved to your phone’s photos.",
   photoOf: (angle: string, date: string) => `${angle} · ${date}`,
   close: "Close",
   /** A photograph whose link would not load, in its place in a row; a tap reads fresh links. */
@@ -29,7 +29,7 @@ export const photos = {
   /** The large photograph that would not load. */
   largeFailed: "This photo didn’t load.",
   reloadPhotos: "Reload photos",
-  // No board draws the try-on the client made on the site (ADR 0025, items 63 and 65; ADR 0082 and 0084).
+  // The try-on the client made on the site (ADR 0025, items 63 and 65; ADR 0082 and 0084).
   tryOn: {
     title: "Your try-on",
     images: { photo: "Your photo", look: "Your look" },
@@ -44,7 +44,7 @@ export const photos = {
     keptTogether: (until: string) => `Your photo and the look are kept until ${until}.`,
     // A client's try-on, once they have booked (ADR 0084): the photograph for good, the look until the first fit.
     photoKept: "Your photo is kept in your account until you ask us to delete it.",
-    lookKeptToFirstFit: "The look is kept until your first fit is photographed.",
+    lookKeptToFirstFit: "The look is kept until the photos of your first fit are taken.",
     lookKeptUntil: (lookUntil: string) => `The look is kept until ${lookUntil}.`,
   },
 } as const;

@@ -121,7 +121,7 @@ async function show() {
 }
 
 describe("the forecast and the events calendar", () => {
-  it("shows the first city's forecast with each high case, and another city's when picked", async () => {
+  it("shows the first city’s forecast with each high case, and another city’s when picked", async () => {
     await show();
     expect(asked).toEqual(["Gurgaon"]);
     const forecast = page.querySelector('section[aria-labelledby="plan-forecast"]');

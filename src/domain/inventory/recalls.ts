@@ -18,6 +18,8 @@ export interface Recall {
   readonly lotCode: string;
   readonly code: string;
   readonly name: string;
+  /** What one of the lot's item is counted in: strip, ml, piece. */
+  readonly unit: string;
   readonly reason: string;
   readonly raisedAt: string;
   readonly closedAt: string | null;
@@ -48,6 +50,7 @@ type RecallRow = {
   lot_code: string;
   code: string;
   name: string;
+  unit: string;
   reason: string;
   raised_at: string;
   closed_at: string | null;
@@ -60,12 +63,13 @@ const recallOf = (row: RecallRow): Recall => ({
   lotCode: row.lot_code,
   code: row.code,
   name: row.name,
+  unit: row.unit,
   reason: row.reason,
   raisedAt: row.raised_at,
   closedAt: row.closed_at,
 });
 
-const RECALL = `SELECT r.id, r.number, r.lot_id, l.lot_code, l.consumable_code AS code, c.name, r.reason, r.raised_at,
+const RECALL = `SELECT r.id, r.number, r.lot_id, l.lot_code, l.consumable_code AS code, c.name, c.unit, r.reason, r.raised_at,
     r.closed_at
   FROM recalls r JOIN stock_lots l ON l.id = r.lot_id JOIN consumables c ON c.code = l.consumable_code`;
 

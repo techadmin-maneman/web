@@ -11,6 +11,7 @@ const BOOKING: Booking = {
     state: "booked",
     date: "2026-10-16",
     window: "morning",
+    hours: { start: "09:00", end: "12:00" },
     area: "Sector 65",
     credits: false,
     invite: "valid",
@@ -28,7 +29,7 @@ describe("the booking pages' flow", () => {
     expect(OPENED).toMatchObject({ view: "arrival", step: "start", kept: null, plan: "consultation" });
   });
 
-  it("keeps /book's name and number, then goes on to the pincode, the visit and the address", () => {
+  it("keeps /book’s name and number, then goes on to the pincode, the visit and the address", () => {
     const kept = after({ type: "kept", person: PERSON });
     expect(kept).toMatchObject({ step: "pincode", kept: PERSON });
     expect(after({ type: "kept", person: PERSON }, { type: "stepped", step: "address" }).step).toBe("address");
@@ -54,7 +55,7 @@ describe("the booking pages' flow", () => {
   });
 
   // A reload forgets the confirmation, so its history entry opens the form again.
-  it("opens the form for a confirmation's entry it no longer holds", () => {
+  it("opens the form for a confirmation’s entry it no longer holds", () => {
     expect(holdsConfirmation(OPENED, "done")).toBe(false);
     expect(after({ type: "historyMoved", step: "done" })).toMatchObject({ view: "arrival", step: "form" });
   });

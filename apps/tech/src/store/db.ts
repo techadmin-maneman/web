@@ -29,7 +29,7 @@ const VERSION = UPGRADES.length;
 /** A write the phone had no room for. The screens say so plainly, rather than that the camera failed. */
 export class StorageFull extends Error {
   constructor() {
-    super("the phone's storage is full");
+    super("the phone’s storage is full");
     this.name = "StorageFull";
   }
 }

@@ -46,19 +46,9 @@ function stringsIn(value: unknown): string[] {
  */
 const TYPED_PRICE = /(?:Rs\.|₹)\s?\d/;
 
-/**
- * The comparison's first two columns, what a transplant and medication cost elsewhere: the only rupee figures the
- * site gives that are not our prices.
- */
-const OTHER_PEOPLES_PRICES: ReadonlySet<string> = new Set(
-  site.comparison.rows
-    .flatMap((row): site.ComparisonCell[] => row.cells.slice(0, 2))
-    .filter((cell): cell is string => typeof cell === "string"),
-);
-
-/** Every price the pages give that is typed by hand. */
+/** Every price the pages give that is typed by hand, ours or anyone else's. */
 function typedPrices(pages: readonly unknown[]): string[] {
-  return pages.flatMap(stringsIn).filter((text) => TYPED_PRICE.test(text) && !OTHER_PEOPLES_PRICES.has(text));
+  return pages.flatMap(stringsIn).filter((text) => TYPED_PRICE.test(text));
 }
 
 /** A count of visits in figures written into a sentence, "3 service visits", where what a referral earns should build it. */
@@ -91,14 +81,14 @@ export function publishProblems(
     const placeholders: readonly string[] = DESIGN_PLACEHOLDERS[name];
     const left = stringsIn(block).filter((value) => placeholders.includes(value));
     if (left.length > 0) {
-      problems.push(`${name} is published but still holds the design's placeholder material: ${left.join(" | ")}`);
+      problems.push(`${name} is published but still holds the design’s placeholder material: ${left.join(" | ")}`);
     }
   }
   for (const [name, notice] of Object.entries(notices)) {
     if (!notice.approved) problems.push(`the ${name} notice (${notice.version}) is not approved`);
   }
   for (const [name, page] of Object.entries(legalPages)) {
-    if (!page.approved) problems.push(`the ${name} page's wording is not approved`);
+    if (!page.approved) problems.push(`the ${name} page’s wording is not approved`);
   }
   for (const price of typedPrices(pages)) {
     problems.push(

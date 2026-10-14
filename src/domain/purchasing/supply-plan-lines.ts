@@ -14,6 +14,8 @@ export interface PlanLine {
   readonly kind: "transfer" | "order";
   readonly code: string;
   readonly name: string;
+  /** What one is counted in: strip, ml, sachet. */
+  readonly unit: string;
   readonly city: string | null;
   readonly from: string | null;
   readonly to: string | null;
@@ -33,6 +35,7 @@ type LineRow = {
   kind: PlanLine["kind"];
   consumable_code: string;
   name: string;
+  unit: string;
   city: string | null;
   from_name: string | null;
   to_name: string | null;
@@ -54,7 +57,7 @@ const DECIDED_SHOWN_DAYS = 7;
 export async function planLines(db: D1Database, now: Date): Promise<PlanLine[]> {
   const { results } = await db
     .prepare(
-      `SELECT l.id, l.kind, l.consumable_code, c.name, l.city, f.name AS from_name, t.name AS to_name, s.name AS supplier,
+      `SELECT l.id, l.kind, l.consumable_code, c.name, c.unit, l.city, f.name AS from_name, t.name AS to_name, s.name AS supplier,
          l.proposed, l.quantity, l.usable, l.need, l.safety, l.state, l.reject_reason, o.number AS po_number
        FROM plan_lines l JOIN consumables c ON c.code = l.consumable_code
        LEFT JOIN stock_places f ON f.id = l.from_place LEFT JOIN stock_places t ON t.id = l.to_place
@@ -69,6 +72,7 @@ export async function planLines(db: D1Database, now: Date): Promise<PlanLine[]> 
     kind: row.kind,
     code: row.consumable_code,
     name: row.name,
+    unit: row.unit,
     city: row.city,
     from: row.from_name,
     to: row.to_name,

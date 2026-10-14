@@ -14,6 +14,7 @@ const LOAN = {
   kind: "transfer" as const,
   consumable_code: "solvent",
   name: "Solvent",
+  unit: "ml",
   city: "Gurgaon",
   from: "Delhi stockroom",
   to: "Gurgaon stockroom",
@@ -128,7 +129,7 @@ test("rejects a line with why", async ({ page }) => {
   await expect(orders).toContainText("Rejected · Bought last week");
 });
 
-test("shows a city's forecast, and adds an event to the calendar", async ({ page }) => {
+test("shows a city’s forecast, and adds an event to the calendar", async ({ page }) => {
   const diwali = {
     ...WEDDINGS,
     id: "ev-2",

@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { fullDate } from "../../packages/web-kit/dates.ts";
-import { windowSpan } from "../../src/config/scheduling.ts";
+import { WINDOW_TIMES, windowSpan } from "../../src/config/scheduling.ts";
 import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -51,18 +51,18 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   await expect(page.getByText(appCopy.visits.detail.invoice.free)).toBeVisible();
 });
 
-test("a visit to come offers itself to the client's calendar, at its window; one done does not", async ({ page }) => {
+test("a visit to come offers itself to the client’s calendar, at its window; one done does not", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   await page.goto(`/visits/${client.next.id}`);
   const google = new URL((await page.getByRole("link", { name: appCopy.calendar.google }).getAttribute("href")) ?? "");
-  const { start, end } = windowSpan(client.next.date, "afternoon");
+  const { start, end } = windowSpan(client.next.date, WINDOW_TIMES.afternoon);
   const stamp = (instant: Date) => instant.toISOString().replace(/[-:]|\.\d{3}/g, "");
   expect(Object.fromEntries(google.searchParams)).toMatchObject({
     text: "Mane Man: Service visit",
     dates: `${stamp(start)}/${stamp(end)}`,
-    details: "Arriving 12 to 4 pm, with Imran.",
+    details: "Arriving 12–4 pm, with Imran.",
   });
   const file = page.getByRole("link", { name: appCopy.calendar.file });
   const ics = decodeURIComponent((await file.getAttribute("href"))?.split(",")[1] ?? "");
@@ -158,7 +158,7 @@ test("a photograph whose link has run out is shown again through a fresh one", a
   expect(timelines).toBeGreaterThanOrEqual(2);
 });
 
-test("Payments: one list of payments and refunds, an entry's documents, and a document not ready", async ({ page }) => {
+test("Payments: one list of payments and refunds, an entry’s documents, and a document not ready", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await tab(page, "Payments").click();
@@ -209,7 +209,7 @@ test("Payments: one list of payments and refunds, an entry's documents, and a do
   await expect(page.getByText(appCopy.payments.lateRefund)).toBeVisible();
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
     "href",
-    new RegExp(encodeURIComponent("My refund for service visit from")),
+    new RegExp(encodeURIComponent("My refund for my service visit on")),
   );
   await expect(page.getByText("+ Rs. 1,000", { exact: true })).toBeVisible();
 });
@@ -240,7 +240,7 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await expect(page.getByRole("heading", { name: appCopy.home.next.label })).toBeVisible();
   await scan();
   await tab(page, "Visits").click();
-  await expect(page.getByText("Service visit · 12 to 4 pm · Imran")).toBeVisible();
+  await expect(page.getByText("Service visit · 12–4 pm · Imran")).toBeVisible();
   await scan();
   await page.goto(`/visits/${client.service.id}`);
   await expect(page.getByRole("button", { name: "Tax invoice PDF, opens in a new tab", exact: true })).toBeVisible();

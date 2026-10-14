@@ -204,9 +204,9 @@ export async function seedStaging(): Promise<StagingFixture> {
     // What the visits written here keep up beside them, as the domain's own writes keep it.
     ...EVERY_VISIT_UPKEEP,
     `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at, device_label)
-       VALUES ${sqlRow(sessionId, "technician", technicianId, now, now, expiresAt, "Chrome on the proof's desktop")};`,
+       VALUES ${sqlRow(sessionId, "technician", technicianId, now, now, expiresAt, "Chrome on the proof’s desktop")};`,
     `INSERT INTO technician_devices (id, technician_id, device_id, session_id, label, created_at, last_seen_at)
-       VALUES ${sqlRow(id(), technicianId, deviceId, sessionId, "Chrome on the proof's desktop", now, now)};`,
+       VALUES ${sqlRow(id(), technicianId, deviceId, sessionId, "Chrome on the proof’s desktop", now, now)};`,
   ]);
 
   const fixture: StagingFixture = {

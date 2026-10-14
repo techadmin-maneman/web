@@ -6314,7 +6314,7 @@ export interface paths {
                 query?: {
                     actor_kind?: "staff" | "service" | "client" | "technician" | "system";
                     actor?: string;
-                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+                    action?: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
                     /** @description A client's ID: what they did, and what was done to their record, visits, holds and requests. */
                     person?: string;
                     visit?: string;
@@ -11802,7 +11802,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["JobSheetListChange"];
+                    "application/json": components["schemas"]["JobSheetChecklistChange"];
                 };
             };
             responses: {
@@ -11815,7 +11815,7 @@ export interface paths {
                         "application/json": components["schemas"]["JobSheet"];
                     };
                 };
-                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held */
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -11873,7 +11873,7 @@ export interface paths {
                         "application/json": components["schemas"]["JobSheet"];
                     };
                 };
-                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held */
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -11931,7 +11931,7 @@ export interface paths {
                         "application/json": components["schemas"]["JobSheet"];
                     };
                 };
-                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held */
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -13269,6 +13269,64 @@ export interface paths {
                     };
                 };
                 /** @description invalid_request: fields names supplier_id for no active supplier, lines.N for a stock code it does not list or fewer than its minimum, or lines for one named twice */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchase-orders/letterhead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** What a printed order says of us: the legal name, the GSTIN and where the supplier delivers */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PurchaseOrderLetterhead"];
+                };
+            };
+            responses: {
+                /** @description The purchase orders */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PurchaseOrders"];
+                    };
+                };
+                /** @description invalid_request */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -15172,6 +15230,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
+            window_hours: components["schemas"]["WindowHours"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
@@ -15229,6 +15288,13 @@ export interface components {
             /** @description For a consultation and fit in one visit, the code the client typed on /book for it, honoured as it stood then when entered on the visit; null for none. */
             requested_code: string | null;
         };
+        /** @description The window's hours on its day, India's clock, as ops set them (ADR 0102). */
+        WindowHours: {
+            /** @description India's clock, HH:MM. */
+            start: string;
+            /** @description India's clock, HH:MM. */
+            end: string;
+        };
         /** @description Display name and initials only. */
         Technician: {
             name: string;
@@ -15252,6 +15318,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            hours: components["schemas"]["WindowHours"];
             technician: components["schemas"]["Technician"] | null;
             /**
              * Format: date-time
@@ -15269,6 +15336,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
+            window_hours: components["schemas"]["WindowHours"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
@@ -16163,6 +16231,8 @@ export interface components {
                 kind: "transfer" | "order";
                 consumable_code: string;
                 name: string;
+                /** @description What one is counted in: strip, ml, sachet. */
+                unit: string;
                 city: string | null;
                 from: string | null;
                 to: string | null;
@@ -16274,6 +16344,8 @@ export interface components {
             lines: {
                 consumable_code: string;
                 name: string;
+                /** @description What one is counted in: strip, ml, piece. */
+                unit: string;
                 held: number;
                 counted: number;
                 recounted: number | null;
@@ -16350,6 +16422,8 @@ export interface components {
                 lot_code: string;
                 consumable_code: string;
                 name: string;
+                /** @description What one of the lot's item is counted in: strip, ml, piece. */
+                unit: string;
                 reason: string;
                 raised_at: string;
                 closed_at: string | null;
@@ -16368,6 +16442,8 @@ export interface components {
             lot_code: string;
             consumable_code: string;
             name: string;
+            /** @description What one of the lot's item is counted in: strip, ml, piece. */
+            unit: string;
             reason: string;
             raised_at: string;
             closed_at: string | null;
@@ -16945,6 +17021,8 @@ export interface components {
             where: string;
             /** @description The wording in the code. */
             text: string;
+            /** @description Whether a copy review has read the line in the code's wording; false for one written or changed since. */
+            reviewed: boolean;
             /** @description The wording in force: the one set here, else the code's. */
             now: string;
             changed: {
@@ -17001,7 +17079,7 @@ export interface components {
                 name: string | null;
             };
             /** @enum {string} */
-            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
+            action: "ops.call" | "client.call" | "tech.call" | "consent.switch" | "number_change.request" | "number_change.withdraw" | "number_change.decide" | "deletion.request" | "deletion.decide" | "person.erase" | "referral.decide" | "referral.attach" | "channel.add" | "channel.change" | "channel.pause" | "channel.resume" | "word.set" | "chat.reply" | "chat.note" | "chat.close" | "chat.link" | "chat.save" | "care_person.move" | "care_person.move_all" | "care_rota.set" | "care_leave.add" | "care_leave.delete" | "city_matter.raise" | "care_name.set" | "quick_reply.add" | "quick_reply.retire" | "remedy.give" | "remedy.ask" | "remedy.approve" | "remedy.decline" | "word.publish" | "partner_payout.record" | "partner_payout.delete" | "spend.add" | "spend.remove" | "photo.view" | "pincode.launch" | "data.export" | "grievance.raise" | "grievance.resolve" | "no_show.decide" | "technician_device.revoke" | "technician.allow_sign_in" | "no_show.dispute" | "no_show.dispute_rule" | "technician.leave" | "technician.leave_cancelled" | "technician.add" | "technician.change" | "technician.deactivate" | "technician.reactivate" | "technician.delete" | "technician.pay_grade" | "pay_grade.add" | "pay_grade.rename" | "pay_grade.delete" | "pay_rate.set" | "setting.change" | "price.set" | "price.withdraw" | "standard_cost.set" | "target.set" | "target.remove" | "slot_times.set" | "pincode.set" | "pincode.rename" | "pincode.add" | "city.add" | "city.change" | "city.rename" | "gst_registration.set" | "gst_registration.remove" | "city_rule.set" | "city_rule.clear" | "city_price.set" | "city_price.withdraw" | "blackout.add" | "blackout.remove" | "service.add" | "service.rename" | "service.describe" | "service.length" | "service.reorder" | "service.retire" | "service.restore" | "credit.adjust" | "dispatch.client_told" | "dispatch.check_in_cleared" | "dispatch.move_proposed" | "dispatch.proposal_withdrawn" | "consumable.add" | "consumable.change" | "consumable.retire" | "consumable.restore" | "consumable.delete" | "consumable.usage" | "job_sheet.set" | "stock.receive" | "stock.transfer" | "stock.count" | "stock.write_off" | "stock.place_add" | "stock.place_change" | "stock.send" | "stock.receive_transfer" | "stock.send_back" | "stock.label" | "stock.hand_back" | "supplier.add" | "supplier.change" | "supplier.retire" | "supplier.restore" | "supplier.item_set" | "supplier.item_remove" | "purchase_order.letterhead_set" | "purchase_order.draft" | "purchase_order.approve" | "purchase_order.send" | "purchase_order.cancel" | "purchase_order.receive" | "purchase_order.close" | "supplier_claim.send" | "supplier_claim.withdraw" | "supplier_claim.decide" | "piece_return.claim" | "piece_return.write_off" | "custom_order.raise" | "custom_order.cancel" | "custom_order.refund" | "payment.refund" | "plan_line.approve" | "plan_line.reject" | "demand_event.add" | "demand_event.remove" | "count_task.start" | "count_task.count" | "count_task.recount" | "count_task.sign_off" | "consumable.count_class" | "recall.raise" | "recall.close" | "task.assign" | "task.hand_back" | "task.close" | "address.given_to_ops" | "alert.resolve" | "alert.send_again" | "booking.give_back" | "visit.book" | "visit.cancel" | "visit.close" | "visit.checkin_waive" | "visit.lost_reason" | "visit.move_accepted" | "hair_profile.correct" | "discount_code.make" | "discount_code.switch_off" | "discount_code.delete" | "discount_code.apply" | "discount_code.remove" | "staff.set" | "staff.enforce" | "staff.token_add" | "staff.token_remove" | "staff.delete";
             subject: {
                 kind: string;
                 id: string;
@@ -17120,6 +17198,7 @@ export interface components {
             starts_at: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            window_hours: components["schemas"]["WindowHours"];
             /**
              * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
              * @enum {string}
@@ -18602,11 +18681,15 @@ export interface components {
             items: {
                 code: string;
                 label: string;
+                /** @description What the client's record says was done; null for an item only the technician needs. */
+                client: string | null;
             }[];
             /** @description Taken off by ops, and still understood: a phone may have queued one before it knew. */
             retired: {
                 code: string;
                 label: string;
+                /** @description What the client's record says was done; null for an item only the technician needs. */
+                client: string | null;
             }[];
             /** @description Null while the committed list stands. */
             set_by: string | null;
@@ -18626,6 +18709,16 @@ export interface components {
             /** @description Null while the committed list stands. */
             set_by: string | null;
             set_at: string | null;
+        };
+        /** @description The whole checklist, in its order. An item left out is retired. */
+        JobSheetChecklistChange: {
+            items: {
+                /** @description An item already on the list, or retired from it, keeps its code; a new one sends none. */
+                code?: string;
+                label: string;
+                /** @description What the client's record says was done, null for an item only the technician needs. Sent without, the client reads the technician's words. */
+                client?: string | null;
+            }[];
         };
         /** @description The whole list, in its order. An item left out is retired. */
         JobSheetListChange: {
@@ -18985,8 +19078,11 @@ export interface components {
                 id: string;
                 name: string;
                 currency: string;
+                payment_terms_days: number;
                 items: {
                     consumable_code: string;
+                    /** @description The supplier's own code for it, which the order prints. */
+                    their_code: string | null;
                     unit_price: number;
                     pack_size: number;
                     minimum_order: number;
@@ -19001,6 +19097,17 @@ export interface components {
                 unit_cost: number;
             }[];
             second_approval_above_rupees: number;
+            /** @description What a printed order says of us; null until ops set it. */
+            letterhead: {
+                legal_name: string;
+                gstin: string | null;
+                deliver_to: string;
+            } | null;
+        };
+        PurchaseOrderLetterhead: {
+            legal_name: string;
+            gstin: string | null;
+            deliver_to: string;
         };
         PurchaseOrderDraft: {
             supplier_id: string;

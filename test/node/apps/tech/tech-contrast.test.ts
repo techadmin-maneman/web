@@ -25,9 +25,9 @@ interface Pairing {
 }
 
 const PAIRINGS: readonly Pairing[] = [
-  { text: "--paper", ground: "--ink-deep", where: "every screen's words" },
+  { text: "--paper", ground: "--ink-deep", where: "every screen’s words" },
   { text: "--ink-soft", ground: "--ink-deep", where: "a line beneath a heading, access notes, a caution" },
-  { text: "--ink-muted", ground: "--ink-deep", where: "labels: a stage's name, a row's key (the one below 7:1)" },
+  { text: "--ink-muted", ground: "--ink-deep", where: "labels: a stage’s name, a row’s key (the one below 7:1)" },
   { text: "--error-on-ink", ground: "--ink-deep", where: "a check-in that failed, a job whose queue stopped" },
   { text: "--ink-deep", ground: "--gilt", where: "the one primary action" },
   { text: "--ink-deep", ground: "--paper", where: "the offline banner, a ticked box (ADR 0025, item 59)" },
@@ -56,7 +56,7 @@ const EDGE_PAIRINGS: readonly EdgePairing[] = [
     ground: "--ink-deep",
     where: "a field, a box of the sign-in code, a checklist box not yet ticked, a piece to pick",
   },
-  { edge: "--paper", ground: "--ink-deep", where: "the label's field, a ticked box" },
+  { edge: "--paper", ground: "--ink-deep", where: "the label’s field, a ticked box" },
   // A role, read as the ink's: the shared code field's boxes.
   { edge: "--border-control", ground: "--ink-deep", where: "a box of the sign-in code" },
 ];
@@ -121,7 +121,7 @@ function ratioOf(pairing: Pairing): number {
   return tokenRatio(pairing.text, pairing.ground);
 }
 
-describe("the technician app's colour pairings", () => {
+describe("the technician app’s colour pairings", () => {
   it.each(PAIRINGS.map((pairing) => [`${pairing.text} on ${pairing.ground}`, pairing] as const))(
     "%s clears 5.8:1",
     (_name, pairing) => {
@@ -134,13 +134,13 @@ describe("the technician app's colour pairings", () => {
     expect(below).toHaveLength(1);
   });
 
-  it("draws the disabled action at 7:1 or better, which the board's own pair is not", () => {
+  it("draws the disabled action at 7:1 or better, which the board’s own pair is not", () => {
     expect(ratio("#a8b2c2", "#2a3a56")).toBeLessThan(5.8);
     expect(ratioOf({ text: "--ink-tag", ground: "--ink-disabled", where: "" })).toBeGreaterThanOrEqual(7);
   });
 });
 
-describe("the technician app's control edges", () => {
+describe("the technician app’s control edges", () => {
   it.each(EDGE_PAIRINGS.map((pairing) => [`${pairing.edge} on ${pairing.ground}`, pairing] as const))(
     "%s clears 3:1",
     (_name, pairing) => {
@@ -170,7 +170,7 @@ describe("the technician app's control edges", () => {
 describe("what the stylesheets use", () => {
   const used = coloursUsed();
 
-  it("reads every stylesheet's colours, so the checks below check something", () => {
+  it("reads every stylesheet’s colours, so the checks below check something", () => {
     expect(used.texts.size).toBeGreaterThanOrEqual(6);
     expect(used.both.length).toBeGreaterThanOrEqual(5);
     expect(used.both).toContainEqual([".gold", "--ink-deep", "--gilt"]);

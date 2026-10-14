@@ -125,7 +125,7 @@ describe("Razorpay's word that a one visit's link is paid", () => {
     });
     expect("template" in composed && renderMessage(composed.template, composed.params)).toBe(
       "Hi Rohit, thank you: payment received.\nRs. 45,000 for your Mane Man Natural hair system " +
-        `(ref ${reference}). Welcome to Mane Man. Your receipt is in the app.`,
+        `(ref ${reference}). Welcome to Mane Man. Your receipt will be in the app shortly.`,
     );
   });
 

@@ -137,7 +137,7 @@ function api(answers: Record<string, { status: number; json?: unknown }>) {
 const revoked = { status: 401, json: { error: { code: "device_revoked", request_id: "test" } } };
 
 describe("what the phone lets go of", () => {
-  it("keeps today's and tomorrow's lists, and the card, arrival and close-out of each job in them", async () => {
+  it("keeps today’s and tomorrow’s lists, and the card, arrival and close-out of each job in them", async () => {
     await keepDay(TODAY, [summary("a", TODAY)]);
     await keepDay(TOMORROW, [summary("b", TOMORROW)]);
     await keepJob(card("a", TODAY));
@@ -184,7 +184,7 @@ describe("what the phone lets go of", () => {
 
 // A job whose card locked again has no client left on the phone, and is still named by what it does hold.
 describe("what the phone holds of each job", () => {
-  it("is the card where there is one, else the day's list, whether or not the card is open", async () => {
+  it("is the card where there is one, else the day’s list, whether or not the card is open", async () => {
     const moved = { ...card("a", TOMORROW), starts_at: `${TOMORROW}T03:30:00.000Z`, client: null };
     await keepDay(TODAY, [summary("a", TODAY), summary("b", TODAY)]);
     await keepJob(moved);
@@ -201,13 +201,13 @@ describe("what the phone holds of each job", () => {
     expect(held.get("b")).toMatchObject({ starts_at: `${TODAY}T04:00:00.000Z`, client: "Client b" });
   });
 
-  it("names a job on the day's list whose card the phone never fetched", async () => {
+  it("names a job on the day’s list whose card the phone never fetched", async () => {
     await keepDay(TOMORROW, [{ ...summary("c", TOMORROW), unlocked: false }]);
     expect((await keptJobs()).get("c")).toMatchObject({ type: "service", sector: "Sector 65", client: null });
   });
 });
 
-describe("a day's jobs", () => {
+describe("a day’s jobs", () => {
   it("comes from the API when there is signal, and is kept for the next basement", async () => {
     api({ [`/api/tech/jobs?date=${TODAY}`]: { status: 200, json: { date: TODAY, jobs: [summary("a", TODAY)] } } });
     expect(await loadDay(TODAY)).toMatchObject({ state: "loaded", fromPhone: false });
@@ -289,7 +289,7 @@ describe("a day's jobs", () => {
     expect(await loadDay(TODAY)).toMatchObject({ state: "loaded", fromPhone: false });
   });
 
-  it("fails rather than wait for ever when the phone's store will not open", async () => {
+  it("fails rather than wait for ever when the phone’s store will not open", async () => {
     vi.spyOn(indexedDB, "open").mockImplementation(() => {
       throw new DOMException("gone", "InvalidStateError");
     });
@@ -298,7 +298,7 @@ describe("a day's jobs", () => {
   });
 
   // With no signal, the row of a job started since the list was kept lost its "In progress".
-  it("keeps where a job stands as a write's answer said, so the list says it with no signal", async () => {
+  it("keeps where a job stands as a write’s answer said, so the list says it with no signal", async () => {
     await keepDay(TODAY, [summary("a", TODAY), summary("b", TODAY)]);
     await keepLanded("a", { started_at: "2030-09-19T04:05:00.000Z", outcome: null });
 
@@ -328,7 +328,7 @@ describe("a day's jobs", () => {
   });
 });
 
-describe("a job's card", () => {
+describe("a job’s card", () => {
   it("with no signal, is the one the phone kept", async () => {
     await keepJob(card("a", TODAY));
     api({});
@@ -341,7 +341,7 @@ describe("a job's card", () => {
     expect(await loadJob("a")).toEqual({ state: "failed", requestId: "test" });
   });
 
-  it("is not read from the phone when the API says the job is not this technician's", async () => {
+  it("is not read from the phone when the API says the job is not this technician’s", async () => {
     await keepJob(card("a", TODAY));
     api({ "/api/tech/jobs/a": { status: 404, json: { error: { code: "not_found", request_id: "test" } } } });
     expect(await loadJob("a")).toEqual({ state: "failed", requestId: "test" });
@@ -349,7 +349,7 @@ describe("a job's card", () => {
 
   // Kept by a build from before ops set the job sheet and the consumables (docs/decisions/0087-consumables-and-stock.md):
   // its reasons were ids alone and it carried no consumables. With no signal after the update, it still closes.
-  it("kept by an earlier build, is read in today's shape: each reason worded, and no consumables", async () => {
+  it("kept by an earlier build, is read in today’s shape: each reason worded, and no consumables", async () => {
     const { consumables: _none, ...earlier } = card("a", TODAY);
     await firstRelease([
       { id: "a", kind: "job", job: { ...earlier, partial_reasons: ["piece_not_ready", "client_unwell"] } },
@@ -363,13 +363,13 @@ describe("a job's card", () => {
     expect(kept?.consumables).toEqual([]);
   });
 
-  it("kept before a one visit's code was on the card, reads as having none, so the outcome asks", async () => {
+  it("kept before a one visit’s code was on the card, reads as having none, so the outcome asks", async () => {
     const { discount_code: _none, ...earlier } = card("a", TODAY);
     await firstRelease([{ id: "a", kind: "job", job: earlier }]);
     expect((await keptJob("a"))?.discount_code).toBeNull();
   });
 
-  it("kept before a one visit's choice was on the card, knows none, and runs the whole checklist", async () => {
+  it("kept before a one visit’s choice was on the card, knows none, and runs the whole checklist", async () => {
     const whole = [{ id: "scalp_checked", label: "Scalp checked" }];
     const {
       checklist_if_declined: _list,
@@ -382,7 +382,7 @@ describe("a job's card", () => {
     expect(kept?.checklist_if_declined).toEqual(whole);
   });
 
-  it("kept before the card carried the visit's length and the check-in radius, says neither", async () => {
+  it("kept before the card carried the visit’s length and the check-in radius, says neither", async () => {
     const { minutes: _length, checkin_radius_m: _radius, ...earlier } = card("a", TODAY);
     await firstRelease([{ id: "a", kind: "job", job: earlier }]);
     const kept = await keptJob("a");

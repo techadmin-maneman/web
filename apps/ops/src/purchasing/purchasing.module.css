@@ -62,6 +62,11 @@
   font-weight: var(--weight-medium);
 }
 
+/* The delivery address, a line at a time as ops typed it. */
+.sheetAddress {
+  white-space: pre-line;
+}
+
 /* A photograph of stock, once stored. */
 .photo {
   display: block;

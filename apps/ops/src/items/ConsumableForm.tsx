@@ -198,7 +198,7 @@ export function ConsumableForm({
       title={consumable === null ? formWords.addTitle : formWords.changeTitle(consumable.name)}
       steps={steps}
       ready={ready}
-      errors={copy.errors}
+      errors={{ ...copy.errors, unit_cost: copy.unitCostUpTo(rupees(maxUnitCost)) }}
       onCancel={onCancel}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [formWords.confirm.nothing] : lines).map((line) => (

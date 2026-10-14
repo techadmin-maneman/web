@@ -25,7 +25,7 @@ const SALON: PartnerStatement = {
   ],
 };
 
-describe("a partner's statement", () => {
+describe("a partner’s statement", () => {
   it("lists each fit and each taking back by day, then what the month came to and what was paid", () => {
     expect(statementCsv(SALON, "September 2026").split("\n")).toEqual([
       'Partner,"Looks Salon, Sector 29"',
@@ -42,7 +42,7 @@ describe("a partner's statement", () => {
   });
 });
 
-describe("the month's file", () => {
+describe("the month’s file", () => {
   it("gives a row each partner, and a name a spreadsheet would run as a formula as text", () => {
     const formula = { ...SALON, name: "=HYPERLINK(1)", payout: null, owed: 100000 };
     expect(monthCsv([SALON, formula]).split("\n")).toEqual([

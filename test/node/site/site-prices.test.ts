@@ -7,7 +7,7 @@ import * as site from "../../../site/src/content/site.ts";
 import { readJsonc } from "../../../scripts/lib/jsonc.ts";
 import { publishProblems } from "../../../site/src/lib/publish-gate.ts";
 
-describe("the site's prices", () => {
+describe("the site’s prices", () => {
   it("are given nowhere: no sentence holds a hole for one", () => {
     for (const text of [JSON.stringify(site), JSON.stringify(referral)]) {
       expect(text.match(/\{(?:firstFit|service|replacement|firstYear|firstFitRange)\}/g)).toBeNull();
@@ -47,7 +47,7 @@ describe("the publish gate, on prices", () => {
     }
   });
 
-  it("lets through what a transplant and medication cost, which are not our prices", () => {
+  it("lets the site through as it stands, which gives no price, ours or anyone else's", () => {
     expect(publishProblems(undefined, approved, [site, referral], legalApproved)).toEqual([]);
   });
 });

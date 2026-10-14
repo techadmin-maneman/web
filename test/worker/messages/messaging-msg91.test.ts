@@ -39,7 +39,7 @@ describe("MSG91", () => {
     const result = await msg91.send({
       to: "+919810000001",
       template: "no_show_missed_v1",
-      params: ["Arjun", "service visit", "Thu 24 Sep", "12 to 4 pm", "Imran", "", "", "", "15"],
+      params: ["Arjun", "service visit", "Thu 24 Sep", "12–4 pm", "Imran", "", "", "", "15"],
     });
 
     expect(result).toEqual({ ok: true, providerMessageId: "req-1" });
@@ -107,7 +107,7 @@ describe("MSG91", () => {
     const missingStopLink = await msg91.send({
       to: "+919810000001",
       template: "visit_reminder_v1",
-      params: ["Arjun", "service visit", "Thu 24 Sep", "12 to 4 pm", "Imran"],
+      params: ["Arjun", "service visit", "Thu 24 Sep", "12–4 pm", "Imran"],
     });
     for (const result of [missingParam, missingImage, missingStopLink]) {
       expect(result).toMatchObject({ ok: false, transient: false });
@@ -121,7 +121,7 @@ describe("MSG91", () => {
       return createMsg91Messaging(settings, { fetch: http.fetch, log }).send({
         to: "+919810000001",
         template: "visit_moved_v1",
-        params: ["Arjun", "service visit", "Thu 24 Sep", "12 to 4 pm", "Imran"],
+        params: ["Arjun", "service visit", "Thu 24 Sep", "12–4 pm", "Imran"],
       });
     };
     expect(await send(() => json({ message: "Unauthorized" }, 401))).toMatchObject({

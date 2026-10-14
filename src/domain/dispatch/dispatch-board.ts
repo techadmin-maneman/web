@@ -15,6 +15,7 @@ import { namesMoreThanItsKind } from "../../policy/services.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
 import { bookedMinutes } from "../booking/occupancy.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
+import { windowTimesOf, type WindowTimes } from "../../policy/slot-times.ts";
 import { reachBinding, visitCity, withinReach } from "../clients/places.ts";
 import { NO_VISITS_CONSENT } from "../messages/visit-message-text.ts";
 import { latestConsentSql } from "../privacy/consents.ts";
@@ -64,6 +65,8 @@ interface Visit {
 interface Block extends Visit {
   readonly starts_at: string;
   readonly window: BookingWindow;
+  /** The window's hours on the visit's day. */
+  readonly window_hours: WindowTimes;
   readonly status: AppointmentStatus;
   /** The notice the visit was sold under, in hours: inside it, a change of the client's own costs them. */
   readonly notice_hours: number;
@@ -250,7 +253,7 @@ export async function dispatchBoard(
       blocks: scheduled.results
         .filter((job) => job.technician_id === technician.id && indiaDate(new Date(job.window_start)) === date)
         .map((job) => {
-          const about = { untold: untoldOf(job.id), proposal: openProposalOf(job.proposal, now) };
+          const about = { untold: untoldOf(job.id), proposal: openProposalOf(job.proposal, now, schedule) };
           return blockOf(job, about, options.noticeHours ?? FREE_CHANGE_NOTICE_HOURS, schedule);
         }),
     }));
@@ -366,10 +369,12 @@ interface AboutTheVisit {
 
 function blockOf(job: BoardJobRow, about: AboutTheVisit, noticeInForce: number, schedule: SlotSchedule): Block {
   const start = new Date(job.window_start);
+  const { date, window } = schedule.at(start);
   return {
     ...visitOf(job),
     starts_at: start.toISOString(),
-    window: schedule.at(start).window,
+    window,
+    window_hours: windowTimesOf(schedule.on(date))[window],
     status: job.status,
     notice_hours: job.sold_notice_hours ?? noticeInForce,
     untold: about.untold,

@@ -4,6 +4,8 @@
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const partnerCommission = {
+  /** The payout refused, with the most one payment may be. */
+  amountUpTo: (most: string) => `Enter whole rupees, up to ${most}.`,
   title: "Partner commission",
   month: "Month",
   soFar: (month: string) => `${month}, so far`,
@@ -33,7 +35,7 @@ export const partnerCommission = {
   paymentTo: (name: string, month: string) => `the payment to ${name} for ${month}`,
   form: {
     title: (name: string, month: string) => `Payment to ${name}, ${month}`,
-    amount: "Paid, in rupees",
+    amount: "Paid, Rs.",
     paidOn: "Paid on",
     reference: "Reference",
     next: "Review",
@@ -45,7 +47,7 @@ export const partnerCommission = {
     line: (amount: string, day: string, reference: string) => `${amount} paid on ${day}, reference ${reference}.`,
     short: (due: string) => `Less than the ${due} due.`,
     send: "Confirm",
-    saving: "Saving",
+    saving: "Saving…",
     back: "Back",
   },
   done: { recorded: "Payment recorded.", deleted: "Payment deleted." },
@@ -74,9 +76,9 @@ export const partnerCommission = {
   ],
   errors: {
     month: "Only a month that has ended.",
-    paid_on: "A day from the month's first to today.",
-    amount: "A whole amount, up to the most one payment may be.",
-    reference: "The payout's reference, in letters and digits.",
+    paid_on: "A day from the month’s first to today.",
+    amount: "Enter whole rupees.",
+    reference: "The payout’s reference, in letters and digits.",
     taken: changed("Already recorded for this month."),
     not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,

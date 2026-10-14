@@ -6,7 +6,7 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 export const words = {
   title: "Words",
   narrow: "Find words",
-  columns: { page: "Page", where: "Where", wording: "Wording", actions: "Change" },
+  columns: { page: "Page", where: "Where", wording: "Wording", actions: "Actions" },
   /** The site's parts as the Where column names them; any other is its own name in words. */
   places: {
     header: "Header",
@@ -38,7 +38,7 @@ export const words = {
     inCode: (wording: string) => `In the code: ${wording}`,
     keep: (holes: string) => `Keep ${holes}.`,
     longest: (count: number) => `Up to ${String(count)} characters.`,
-    toCode: "Back to the code's wording",
+    toCode: "Back to the code’s wording",
     atOnce: "Sends in these words from the next message.",
     afterApproval: "Changes go live once WhatsApp approves them.",
     next: "Review",
@@ -49,13 +49,13 @@ export const words = {
     was: (wording: string) => `Was: ${wording}`,
     now: (wording: string) => `Now: ${wording}`,
     send: "Confirm",
-    saving: "Saving",
+    saving: "Saving…",
     back: "Back",
   },
   versions: {
     title: (where: string) => `History: ${where}`,
     none: "Never changed.",
-    inCode: "The code's wording",
+    inCode: "The code’s wording",
     by: (by: string, day: string) => `${by}, ${day}`,
     use: "Use",
     useLabel: (day: string) => `Use the wording of ${day}`,
@@ -63,9 +63,11 @@ export const words = {
   },
   done: "Saved.",
   notOnSite: "Not on the site yet",
+  /** The code's wording a copy review has not read: a line written or changed since the last one. */
+  review: { notReviewed: "Not reviewed" },
   publish: {
     open: "Publish the site",
-    title: "Publish the site's words?",
+    title: "Publish the site’s words?",
     changed: (count: number) => `${String(count)} ${count === 1 ? "line" : "lines"} changed since the last publish.`,
     none: "Nothing changed since the last publish.",
     staging: "Live on staging within the hour.",
@@ -75,13 +77,13 @@ export const words = {
     done: "Published.",
   },
   errors: {
-    empty: "Write something, or go back to the code's wording.",
+    empty: "Write something, or go back to the code’s wording.",
     holes: "Keep every {…} the page fills, and add none.",
-    price: "No prices: they come from the price book.",
+    price: "Take the price out: the site gives none.",
     visits: "No visit counts: what a referral earns is set in the console.",
     placeholder: "No placeholder text.",
     length: "Too long for where it sits.",
-    first_line: "The first line shows on a locked phone: no hair system, fitting or visit, and only its own details.",
+    first_line: "The first line shows on a locked phone. Keep hair systems, fittings and visits out of it.",
     ends_on_detail: "End on words, not a detail.",
     not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,

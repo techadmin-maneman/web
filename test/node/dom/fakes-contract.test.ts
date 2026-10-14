@@ -35,12 +35,12 @@ describe("the contract the fakes are held to", () => {
     ]);
   });
 
-  it("reads a path by its most literal route, so /api/technicians/work is not a technician's id", () => {
+  it("reads a path by its most literal route, so /api/technicians/work is not a technician’s id", () => {
     expect(contractErrors("ops", "GET", "/api/technicians/work", 200, ops.TECHNICIAN_WORK)).toEqual([]);
     expect(contractErrors("ops", "GET", `/api/clients/${ID}/pieces`, 200, ops.PIECES)).toEqual([]);
   });
 
-  it("allows what any route can answer: the database check's 503 and the error handler's 500", () => {
+  it("allows what any route can answer: the database check’s 503 and the error handler’s 500", () => {
     const unavailable = { error: { code: "unavailable", request_id: "t" } };
     expect(contractErrors("ops", "GET", "/api/grievances", 503, unavailable)).toEqual([]);
     expect(
@@ -51,7 +51,7 @@ describe("the contract the fakes are held to", () => {
     ).not.toEqual([]);
   });
 
-  it("allows mm-api's own not-found for a path it has no route for, and nothing else there", () => {
+  it("allows mm-api’s own not-found for a path it has no route for, and nothing else there", () => {
     const notFound = { error: { code: "not_found", request_id: "t" } };
     expect(contractErrors("tech", "POST", "/api/tech/jobs/x/nothing", 404, notFound)).toEqual([]);
     expect(contractErrors("tech", "POST", "/api/tech/jobs/x/nothing", 202, {})).not.toEqual([]);
@@ -98,23 +98,23 @@ const OPS_FIXTURES: readonly [method: string, path: string, name: string, body: 
   ["POST", "/api/stock/transfers", "STOCK", ops.STOCK],
 ];
 
-describe("the ops console's fakes", () => {
+describe("the ops console’s fakes", () => {
   it.each(OPS_FIXTURES)("%s %s answers as the document says: %s", (method, path, _name, body) => {
     expect(contractErrors("ops", method, path, 200, body)).toEqual([]);
   });
 
-  it("answers a pincode added, and the waitlist's row for one we do not hold, as the document says", () => {
+  it("answers a pincode added, and the waitlist’s row for one we do not hold, as the document says", () => {
     expect(contractErrors("ops", "POST", "/api/pincodes", 201, ops.ADDED)).toEqual([]);
     const unheld = { ...ops.AREAS, areas: [...ops.AREAS.areas, ops.UNHELD] };
     expect(contractErrors("ops", "GET", "/api/waitlist", 200, unheld)).toEqual([]);
   });
 });
 
-describe("the technician app's fakes", () => {
+describe("the technician app’s fakes", () => {
   const today = tech.todayInIndia();
   const card = (path: string, body: unknown) => contractErrors("tech", "GET", `/api/tech/jobs/${path}`, 200, body);
 
-  it("answers who is signed in and the day's jobs as the document says", () => {
+  it("answers who is signed in and the day’s jobs as the document says", () => {
     expect(contractErrors("tech", "GET", "/api/tech/me", 200, tech.ME)).toEqual([]);
     expect(contractErrors("tech", "GET", "/api/tech/jobs", 200, { date: today, jobs: tech.jobsToday(today) })).toEqual(
       [],

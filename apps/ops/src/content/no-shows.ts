@@ -126,7 +126,7 @@ export const noShows = {
       delivered: (when: string) => `Delivered ${when}`,
       // The board's receipt always arrived; the other four are ours.
       sent: "Sent, not delivered",
-      no_consent: "Not sent · client hasn't opted in to WhatsApp",
+      no_consent: "Not sent · client hasn’t opted in to WhatsApp",
       not_sent: "Not sent",
       none: "No reminder sent",
     },
@@ -139,7 +139,7 @@ export const noShows = {
      */
     waited: (minutes: number, closed: string) => `${String(minutes)} min · closed ${closed}`,
     waitedBoth: (minutes: number, withUs: number, closed: string) =>
-      `${String(minutes)} min by phone, ${String(withUs)} after it reached us · closed ${closed}`,
+      `${String(minutes)} min by phone, ${String(withUs)} min after it reached us · closed ${closed}`,
     notClosed: "Not closed",
     // The board draws no case closed before the booked start's wait had run.
     closedEarly: "Closed before the wait ended. Waive it, or explain in your note.",
@@ -150,7 +150,7 @@ export const noShows = {
      */
     reason: {
       label: "Your note · required",
-      placeholder: "Why you're charging or waiving",
+      placeholder: "Why you’re charging or waiving",
     },
     /**
      * The board's buttons are Refund and Uphold, which rule on a
@@ -163,24 +163,24 @@ export const noShows = {
      * cannot be taken back here.
      */
     confirm: {
-      keepsAll: (paid: string) => `Keep ${paid} of the ${paid} paid?`,
+      keepsAll: (paid: string) => `Keep all ${paid} paid?`,
       keepsPart: (kept: string, paid: string, refund: string) =>
         `Keep ${kept} of the ${paid} paid, and refund ${refund}?`,
       keepsNone: (paid: string) => `Keep nothing, and refund the ${paid} paid?`,
       keepsCredit: "Keep the free service visit it was booked with?",
       nothingPaid: "Nothing was paid. Record the charge?",
       creditToo: "The free service visit is kept too.",
-      who: (name: string, day: string) => `Charging ${name} for the visit of ${day} can't be undone.`,
-      working: "Calculating.",
-      failed: "Couldn't calculate the charge. Try again.",
+      who: (name: string, day: string) => `Charging ${name} for the visit of ${day} can’t be undone.`,
+      working: "Calculating…",
+      failed: "Couldn’t calculate the charge. Try again.",
     },
     // A visit that carries no date, as a charge asked about names it.
     noDay: "an unrecorded day",
     confirmCharge: "Confirm charge",
     back: "Back",
-    deciding: "Saving",
+    deciding: "Saving…",
     /** The board draws no empty queue. */
-    empty: "No no-shows to decide.",
+    empty: "Nothing to decide.",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already decided."),
@@ -227,11 +227,11 @@ export const noShows = {
     /** The board's note, "Your note · required", and its placeholder. */
     reason: {
       label: "Your note · required",
-      placeholder: "Why you're refunding or upholding",
+      placeholder: "Why you’re refunding or upholding",
     },
     refund: "Refund",
     uphold: "Uphold",
-    ruling: "Ruling",
+    ruling: "Ruling…",
     /** The board draws one card, with no panel around it. A panel needs a name to be read by. */
     queueTitle: "Disputed charges",
     /** The board always draws one. */

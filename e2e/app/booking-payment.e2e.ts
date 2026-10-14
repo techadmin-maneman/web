@@ -18,7 +18,7 @@ import {
   refundedAfterPaying,
 } from "./checkout-fakes.ts";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
-import { windowSpan, type BookingWindow } from "../../src/config/scheduling.ts";
+import { windowSpan } from "../../src/config/scheduling.ts";
 import { continueToPayment, TAKEN, windowsAskedAgain } from "./picking.ts";
 import { toPayment, toWindows, holdAs } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
@@ -172,7 +172,7 @@ test("starts one payment, and one order, when the failed step is tapped twice", 
 /** "20261013T063000Z", as a calendar link writes an instant. */
 const stamp = (instant: Date): string => instant.toISOString().replace(/[-:]|\.\d{3}/g, "");
 
-test("offers the visit just booked to the client's calendar, at the window held", async ({ page }) => {
+test("offers the visit just booked to the client’s calendar, at the window held", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   const held = page.waitForResponse(
@@ -180,12 +180,12 @@ test("offers the visit just booked to the client's calendar, at the window held"
       response.request().method() === "POST" && new URL(response.url()).pathname === "/api/holds" && response.ok(),
   );
   await toPayment(page);
-  const hold = (await (await held).json()) as { date: string; window: BookingWindow };
+  const hold = (await (await held).json()) as { date: string; hours: { start: string; end: string } };
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label });
   await expect(confirmed).toBeVisible({ timeout: 15_000 });
 
-  const { start, end } = windowSpan(hold.date, hold.window);
+  const { start, end } = windowSpan(hold.date, hold.hours);
   const google = new URL(
     (await confirmed.getByRole("link", { name: appCopy.calendar.google }).getAttribute("href")) ?? "",
   );
@@ -219,7 +219,7 @@ test("picks another window when one has just gone, and pays for that one", async
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
 });
 
-test("keeps the window picked while the day's windows are still being asked for again", async ({ page }) => {
+test("keeps the window picked while the day’s windows are still being asked for again", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   let taken = false;
@@ -326,7 +326,7 @@ test("says the payment is in, and lets nothing go, when the time ends on a paid 
   );
   await toPayment(page);
   await page.clock.fastForward("11:00");
-  await expect(page.getByRole("dialog", { name: "Your payment is in. We are booking your visit." })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Your payment is in. We’re booking your visit." })).toBeVisible();
   expect(released).toEqual([]);
 });
 
@@ -375,7 +375,7 @@ test("says the slot has gone back, and lets the API let it go, when Checkout clo
   expect(released).toEqual([]);
 });
 
-test("counts the hold on the API's clock, however far out the phone's is", async ({ page }) => {
+test("counts the hold on the API’s clock, however far out the phone’s is", async ({ page }) => {
   await fakeCheckout(page, "paid");
   // Eleven minutes fast: on the phone's own clock, the ten-minute hold would have lapsed before it began.
   await page.clock.install({ time: Date.now() + 11 * 60_000 });

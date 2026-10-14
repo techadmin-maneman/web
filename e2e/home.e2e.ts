@@ -125,7 +125,7 @@ test.describe("skip link", () => {
   });
 
   // The bar sat outside every landmark, and at 1440 its button ran 1,350 px across the screen.
-  test("the bar is a landmark, and its button keeps to a phone's width", async ({ page }) => {
+  test("the bar is a landmark, and its button keeps to a phone’s width", async ({ page }) => {
     await page.goto("/");
     const book = page
       .getByRole("navigation", { name: siteCopy.stickyBar.label })
@@ -188,7 +188,7 @@ test.describe("home sections", () => {
     await expect(hero.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
   });
 
-  test("the hero's opening line is read whole, once, over the footage", async ({ page }) => {
+  test("the hero’s opening line is read whole, once, over the footage", async ({ page }) => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
     await expect(line).toHaveText("Natural up close. 100% real human hair. Fitted at home. Be the Main Man again.");
@@ -196,7 +196,7 @@ test.describe("home sections", () => {
   });
 
   // Every phone downloaded the 2.3 MB film.
-  test("the hero footage is muted, looped, inline, and the screen's own cut once it plays", async ({ page }) => {
+  test("the hero footage is muted, looped, inline, and the screen’s own cut once it plays", async ({ page }) => {
     await page.goto("/");
     const video = page.locator("[data-hero-video]");
     await expect(video).toHaveAttribute("preload", "none");
@@ -207,7 +207,7 @@ test.describe("home sections", () => {
     await expect(video).toHaveAttribute("src", phone ? /\/hero-phone\.[^/]+\.mp4$/ : /\/hero\.[^/]+\.mp4$/);
   });
 
-  test("shows the design's Placeholder tags outside production", async ({ page }) => {
+  test("shows the design’s Placeholder tags outside production", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText(siteCopy.heroFootage.tag)).toBeVisible();
     expect(await page.locator(".label", { hasText: /^Placeholder$/ }).count()).toBeGreaterThan(10);
@@ -226,13 +226,13 @@ test.describe("home sections", () => {
     await page.goto("/");
     const table = page.getByRole("table", { name: siteCopy.comparison.title });
     await expect(table.getByRole("row")).toHaveCount(8);
-    await expect(table.getByRole("rowheader", { name: "Surgery" })).toHaveCount(1);
-    const surgery = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Surgery" }) });
-    await expect(surgery.getByRole("cell")).toHaveText(["Yes", "No", "No"]);
+    // "Surgery" ticked the transplant, so at a glance surgery read as the plus.
+    const surgery = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "No surgery" }) });
+    await expect(surgery.getByRole("cell")).toHaveText(["No", "Yes", "Yes"]);
     const effects = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Side effects" }) });
     await expect(effects.getByRole("cell")).toHaveText([
-      "Infection, scarring, shock loss",
-      "Lower libido, scalp irritation",
+      "Surgical risks",
+      "Possible side effects",
       "Nothing implanted or swallowed",
     ]);
   });
@@ -260,7 +260,11 @@ test.describe("home sections", () => {
     await page.goto("/");
     const steps = page.locator('[data-section="how"] ol > li');
     await expect(steps).toHaveCount(3);
-    await expect(steps.locator("h3")).toHaveText(["Consultation at home", "The fit", "Monthly service"]);
+    await expect(steps.locator("h3")).toHaveText([
+      "Consultation at home",
+      "The first fit",
+      "Service visit, every month",
+    ]);
   });
 
   test("technicians, the range and testimonials: three, four and three cards", async ({ page }) => {
@@ -295,7 +299,7 @@ test.describe("home sections", () => {
     await page.goto("/");
     await expect(page.locator('[data-section="prices"]')).toHaveCount(0);
     await expect(page.locator("[data-price]")).toHaveCount(0);
-    await expect(page.locator('[data-section="comparison"]')).toContainText("Quoted at your free consultation");
+    await expect(page.locator('[data-section="comparison"]')).toContainText("Quoted free, before anything is fitted");
   });
 
   test("FAQ: ten questions, the first open, one open at a time", async ({ page }) => {
@@ -319,7 +323,7 @@ test.describe("home sections", () => {
 test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("the hero's opening line shows its last phrase alone, still", async ({ page }) => {
+  test("the hero’s opening line shows its last phrase alone, still", async ({ page }) => {
     await page.goto("/");
     const phrases = page.locator('[data-section="hero"] .phrase');
     await expect(phrases).toHaveCount(4);
@@ -379,7 +383,7 @@ test.describe("WCAG on the home page", () => {
   });
 
   // A link in its sentence's colour must look like a link (WCAG 1.4.1).
-  test("the FAQ's WhatsApp link is underlined", async ({ page }) => {
+  test("the FAQ’s WhatsApp link is underlined", async ({ page }) => {
     await page.goto("/");
     const link = page.locator('[data-section="faq"]').getByRole("link", { name: siteCopy.faq.intro.link });
     expect(await link.evaluate((element) => getComputedStyle(element).textDecorationLine)).toBe("underline");

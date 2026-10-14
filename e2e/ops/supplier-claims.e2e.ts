@@ -10,9 +10,10 @@ import { purchasing as copy } from "../../apps/ops/src/content/purchasing.ts";
 
 const ORDERS = {
   orders: [],
-  suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD", items: [] }],
+  suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD", payment_terms_days: 0, items: [] }],
   consumables: [],
   second_approval_above_rupees: 0,
+  letterhead: null,
 } satisfies OpsReply<"/api/purchase-orders">;
 
 const CLAIM = {
@@ -167,7 +168,7 @@ test("claims a returned piece inside its warranty, and writes off another with w
   await expect(pieces).toContainText(copy.returns.none);
 });
 
-test("scores each supplier's year: on time in full, lead time against promised, quality and claims", async ({
+test("scores each supplier’s year: on time in full, lead time against promised, quality and claims", async ({
   page,
 }) => {
   await open(page);

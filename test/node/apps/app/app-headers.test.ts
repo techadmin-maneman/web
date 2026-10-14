@@ -19,7 +19,7 @@ const POLICIES = [
   ["the technician app", contentSecurityPolicy(TECHNICIAN_APP_POLICY)],
 ] as const;
 
-describe("the client app's policy", () => {
+describe("the client app’s policy", () => {
   const policy = contentSecurityPolicy(CLIENT_APP_POLICY);
 
   it("loads Checkout and the risk-detection script it pulls in, and Turnstile for the login", () => {
@@ -31,7 +31,7 @@ describe("the client app's policy", () => {
     ]);
   });
 
-  it("frames Turnstile's check, which asking for a login code needs", () => {
+  it("frames Turnstile’s check, which asking for a login code needs", () => {
     expect(sourcesOf(policy, "frame-src")).toContain("https://challenges.cloudflare.com");
   });
 
@@ -52,14 +52,14 @@ describe("the client app's policy", () => {
   });
 });
 
-describe.each(POLICIES)("%s's policy", (_, policy) => {
+describe.each(POLICIES)("%s’s policy", (_, policy) => {
   it("allows no inline script", () => {
     expect(sourcesOf(policy, "script-src")).not.toContain("'unsafe-inline'");
     expect(policy).not.toContain("unsafe-eval");
   });
 });
 
-it("keeps inline styles out of the apps that load nothing of Razorpay's", () => {
+it("keeps inline styles out of the apps that load nothing of Razorpay’s", () => {
   expect(sourcesOf(contentSecurityPolicy(OPS_CONSOLE_POLICY), "style-src")).toEqual(["'self'"]);
   expect(sourcesOf(contentSecurityPolicy(TECHNICIAN_APP_POLICY), "style-src")).toEqual(["'self'"]);
 });

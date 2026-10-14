@@ -1,5 +1,8 @@
 // The profile: the address, what the client has agreed to, and the account.
 
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
+import { timeOfDay, UNBROKEN } from "@rules/lib/time-range.ts";
+
 /** What every visit's photographs are. PLACEHOLDER: awaits counsel (docs/open-points.md, item 69). */
 export const VISIT_PHOTOS =
   "Photos at every visit: five angles, for your record. Only you and your technician see them.";
@@ -8,17 +11,14 @@ export const profile = {
   back: "Back",
   where: "Where we come",
   editAddress: "Edit address and access notes",
-  // The design draws the profile with an address already given, and no form.
   noAddress: "No address yet. Add it before you book.",
   addAddress: "Add your address and access notes",
-  // The design draws no landmark; the client types it as they like, so it shows as typed.
+  // The client types the landmark as they like, so it shows as typed.
   landmark: "Landmark",
   // An address the client gave ops on the phone, which ops saved for them (ADR 0092).
   givenToOps: (date: string) => `You gave us this address by phone on ${date}. Change it if anything’s wrong.`,
   form: {
-    // The design draws no address form at all, so none of the
-    // building search's words are drawn either (ADR 0054). The search is an
-    // addition to the form and never a gate: every field below still works
+    // The building search (ADR 0054) is an addition to the form and never a gate: every field below still works
     // typed, and an address with no building chosen saves without a pin.
     building: {
       label: "Search for your building",
@@ -33,13 +33,13 @@ export const profile = {
     tower: "Tower or block (optional)",
     landmark: "Landmark (optional)",
     // The flat is asked for on its own above, so this line is the building or the street the house is on.
-    line1: "Building, society or street",
+    line1: CLIENT_WORDS.addressLine,
     line2: "Street (optional)",
     locality: "Sector or area",
     city: "City",
     pincode: "Pincode",
     accessNotes: "Access notes (optional)",
-    accessHint: "Gate code or parking. Your technician sees it the day before.",
+    accessHint: CLIENT_WORDS.accessHint,
     save: "Save",
     cancel: "Cancel",
     invalid: "Add your flat or house number, building or street, area, city and 6-digit pincode.",
@@ -55,7 +55,7 @@ export const profile = {
     photos_referral_cards: "Photographs on referral cards",
     photos_marketing: "Photographs in our marketing",
     whatsapp_visits: "WhatsApp about your visits",
-    // The design's profile lists four; the fifth is the waitlist's launch alert.
+    // The waitlist's launch alert, beside the four consents.
     whatsapp_launches: "WhatsApp about launches",
   },
   given: (date: string) => `Given ${date}`,
@@ -65,9 +65,9 @@ export const profile = {
   // Every visit is photographed for the client's record, so there is no switch for it, only this line.
   visitPhotos: VISIT_PHOTOS,
   // A switch the API did not answer stays as it was.
-  switchFailed: "That didn’t go through, so nothing has changed. Try again.",
+  switchFailed: "Couldn’t save that. Try again.",
   /**
-   * The four lines the design shows before a card is turned on, and the line beside them that names the referrer; the consent's notice carries them all.
+   * The four lines shown before a card is turned on, and the line beside them that names the referrer; the consent's notice carries them all.
    */
   referralCards: {
     lines: [
@@ -86,11 +86,10 @@ export const profile = {
     body: "We’ll send a code to both numbers, then confirm with you.",
     prefix: "+91",
     placeholder: "New number",
-    /** The box's name to a screen reader, which the board draws without a label. */
+    /** The box's name to a screen reader, which shows none. */
     newNumber: "New mobile number",
     start: "Start the change",
-    // Our words from here: the design draws the start only.
-    invalid: "Enter a ten-digit mobile number, not the one you use now.",
+    invalid: "Enter a 10-digit mobile number, not the one you use now.",
     codes: "Enter the code sent to each number.",
     oldCode: "Code sent to your current number",
     newCode: (number: string) => `Code sent to ${number}`,
@@ -105,7 +104,7 @@ export const profile = {
     rejected: (number: string, date: string) => `On ${date} we didn’t change your number to ${number}.`,
     why: (reason: string) => `Our reason: ${reason}`,
   },
-  // The design has no card for where the client is signed in (docs/decisions/0029-sessions.md).
+  // Where the client is signed in (docs/decisions/0029-sessions.md).
   sessions: {
     label: "Signed in on",
     thisDevice: "This device",
@@ -125,19 +124,22 @@ export const profile = {
   support: {
     label: "Support",
     message: "Message us on WhatsApp",
-    hint: "Replies the same day. Everything in writing.",
-    /** Their named Care person and Care's hours: "Asha, your Care person · 9 am–9 pm daily". */
-    carePerson: (name: string, hours: string) => `${name}, your Care person · ${hours} daily`,
+    /** "We reply within an hour, 9 am–9 pm daily." */
+    hint: (within: string, hours: string) => `We reply within ${within}, ${hours} daily.`,
+    /** How soon Care answer, as the card says it: "an hour", "2 hours", "30 minutes". */
+    within: (minutes: number) => {
+      if (minutes === 60) return "an hour";
+      if (minutes % 60 === 0) return `${String(minutes / 60)} hours`;
+      return `${String(minutes)} minutes`;
+    },
+    /** Their named Care person: "Asha, your Care person". */
+    carePerson: (name: string) => `${name}, your Care person`,
     /** "9 am–9 pm" */
     hours: (opens: string, closes: string) => `${opens}–${closes}`,
-    /** An hour of the day as the card says it: "9 am", "noon", "9 pm". */
-    hour: (hour: number) => {
-      if (hour === 0) return "midnight";
-      if (hour === 12) return "noon";
-      return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
-    },
+    /** An hour of the day as the card says it: "9 am", "12 noon", "9 pm". */
+    hour: (hour: number) => timeOfDay(`${String(hour).padStart(2, "0")}:00`, UNBROKEN),
   },
-  // The design has no card for the client's rights over their data (docs/decisions/0049-dpdp.md).
+  // The client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {
     label: "Your data",
     body: "Download your data, or raise a concern about how we use it.",
@@ -159,21 +161,20 @@ export const profile = {
   },
   deletion: {
     label: "Delete your account",
-    body: "Deleted within 30 days of your request. Invoices kept eight years, by law.",
+    body: "We act on your request within 30 days. Bookings and payments are settled first, and invoices are kept for 8 years, as the law requires.",
     request: "Request deletion",
-    // The design draws the button only.
     confirm: "Ask us to delete your account? We’ll confirm on WhatsApp before anything is deleted.",
     yes: "Yes, request deletion",
     no: "Keep my account",
     requested: (date: string) => `Deletion requested on ${date}. We’ll confirm on WhatsApp.`,
-    failed: "That didn’t go through, so nothing was requested. Try again.",
+    failed: "Couldn’t send your request. Try again.",
     // A request ops rejected, shown for 30 days with their reason, which is their own words.
     rejected: (date: string) => `On ${date} we didn’t delete your account.`,
     why: (reason: string) => `Our reason: ${reason}`,
     disagree: "Message us if you disagree, or ask again.",
   },
-  // The design has no logout; it ends the session on this device.
+  // Signing out ends the session on this device.
   logout: "Sign out",
   // Only the API can end the session, so a logout it did not answer leaves the client logged in.
-  logoutFailed: "That didn’t go through, so you’re still signed in here. Try again.",
+  logoutFailed: "Couldn’t sign you out. Try again.",
 } as const;

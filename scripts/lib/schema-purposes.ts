@@ -146,6 +146,8 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   photos: "One photograph of a set, by its angle, and where it and its thumbnail are kept in R2 (ADR 0028, ADR 0093).",
   pieces:
     "Each piece fitted, its base and lot, the day it was fitted and the day it falls due, and a failure with its reason. `fsm_id` is FSM's ID for a piece mirrored from FSM, otherwise the row's own (ADR 0032, ADR 0110).",
+  po_letterhead:
+    "One row, once ops set it: the legal name, GSTIN and delivery address a printed purchase order carries (ADR 0166).",
   price_book:
     "Every price from its date, and the only source of prices; an old row stays for what was sold under it (ADR 0045, ADR 0061).",
   razorpay_events: "Each Razorpay webhook event, once, by its event ID (ADR 0044).",

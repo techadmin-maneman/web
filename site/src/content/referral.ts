@@ -15,6 +15,7 @@
 // they are the design's.
 
 import type { Invite, OpenWindows, ReferralConsultation, ReferralReward } from "../lib/api.ts";
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { rupees } from "@maneman/web-kit/money";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
@@ -33,7 +34,7 @@ function lineOf(notice: Notice): string {
 export const rewardWords = {
   serviceVisit: "{count} service visit",
   serviceVisits: "{count} service visits",
-  /** The design's shorter count, once the page has said what they are. */
+  /** The shorter count, once the page has said what they are. */
   visit: "{count} visit",
   visits: "{count} visits",
   /** The navy block's offer, "you" the friend who opened it and "your friend" whoever sent it. */
@@ -166,23 +167,28 @@ export const referral = {
     invited: "{name} sent you this",
     partner: "Recommended by {partner}",
     unnamed: "You have an invite",
+    /** The card beside the invite: the referrer's own before and after, or ours. */
+    card: {
+      personal: "{name}’s before and after with Mane Man",
+      house: "A Mane Man before and after",
+    },
     title: "A hair system, fitted at home. The consultation is free.",
     offer: inviteOffer,
     discount: discountOffer,
     /**
      * A code we do not know: a typo, a revoked code, or one more than 12 months
-     * old (the design's "Code expired"). The API does not say which, so the page
+     * old. The API does not say which, so the page
      * says only what is true of all three, under /book's heading.
      */
     unknown: {
       title: booking.title,
-      notice: "We do not recognise this invite",
+      notice: "We don’t recognise this invite",
       body: unknownBody,
     },
   },
   howItWorks: {
     title: "How it works",
-    // The lengths are the backend's (service.ts), where the design wrote forty minutes and an hour.
+    // The lengths are the backend's (service.ts).
     steps: [
       {
         n: "1",
@@ -191,8 +197,8 @@ export const referral = {
       },
       {
         n: "2",
-        title: "The fit, also at home",
-        body: `${capitalised(visitLength.firstFit)}. You're wearing it by the end.`,
+        title: "The first fit, also at home",
+        body: `${capitalised(visitLength.firstFit)}. You’re wearing it by the end.`,
       },
       {
         n: "3",
@@ -207,11 +213,11 @@ export const referral = {
     label: "Pincode",
     placeholder: "122018",
     check: "Check",
-    checking: "Checking",
+    checking: "Checking…",
     empty: "Enter your pincode.",
-    invalid: "That isn’t a six-digit Indian pincode.",
+    invalid: "That isn’t a 6-digit Indian pincode.",
     failed: "We couldn’t check that right now. Try again.",
-    // Not drawn: a pincode typed wrong could only be put right by reloading the page.
+    // A pincode typed wrong could only be put right by reloading the page.
     change: "Change",
     changeLabel: "Change the pincode",
   },
@@ -225,18 +231,18 @@ export const referral = {
     body: `${capitalised(visitLength.consultation)}, and free. Or have your fit in the same visit.`,
     forPincode: "For {pincode}",
     date: "Pick a date",
-    window: "Window",
-    // A no-break space keeps "am" and "pm" on the line of their hour.
+    window: "Time",
+    /** The windows by name. Their hours are the day's, as the API gives them (site/src/lib/open-windows.ts). */
     windows: [
-      { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
-      { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
-      { id: "evening", label: "Evening", hours: "4 to 8 pm" },
-    ] satisfies readonly { id: ReferralConsultation["window"]; label: string; hours: string }[],
-    // Not drawn: a window nobody is free in, and a fortnight with none open.
+      { id: "morning", label: "Morning" },
+      { id: "afternoon", label: "Afternoon" },
+      { id: "evening", label: "Evening" },
+    ] satisfies readonly { id: ReferralConsultation["window"]; label: string }[],
+    // A window nobody is free in, and a fortnight with none open.
     full: "Full",
     noneOpen: "Fully booked for the next two weeks.",
     noneOpenAction: "Message us on WhatsApp for the next opening",
-    /** Not drawn: what to book, the consultation alone or the consultation and fit in one visit. */
+    /** What to book, the consultation alone or the consultation and fit in one visit. */
     plan: {
       legend: "What to book",
       options: [
@@ -247,7 +253,7 @@ export const referral = {
       note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.",
     },
     /**
-     * Not drawn: a discount code for the consultation and fit in one visit, on /book only
+     * A discount code for the consultation and fit in one visit, on /book only
      * (docs/decisions/0108-discount-codes.md). A code that does not apply is told only that.
      */
     code: {
@@ -257,14 +263,13 @@ export const referral = {
     consent: lineOf(notices.consultation),
     submit: "Book the consultation",
     submitOneVisit: "Book the consultation and fit",
-    // Not drawn: once the WhatsApp code is on its way, the button confirms it and books.
+    // Once the WhatsApp code is on its way, the button confirms it and books.
     confirmOneVisit: "Confirm and book",
-    sending: "Booking",
+    sending: "Booking…",
     told: toldWhenFitted,
   },
   /**
-   * Not drawn: the design puts no address on the consultation form. The site takes the full address before a
-   * consultation is booked (ADR 0081), so the fields are the client app's own (apps/app/src/content.ts, `profile.form`).
+   * The site takes the full address before a consultation is booked (ADR 0081), so the fields are the client app's own (apps/app/src/content.ts, `profile.form`).
    */
   address: {
     legend: "Your address",
@@ -282,7 +287,7 @@ export const referral = {
       flat: "Flat or house number",
       floor: "Floor (optional)",
       tower: "Tower or block (optional)",
-      line1: "Building or society",
+      line1: CLIENT_WORDS.addressLine,
       line2: "Street (optional)",
       landmark: "Landmark (optional)",
       locality: "Sector or area",
@@ -291,18 +296,18 @@ export const referral = {
     },
     errors: {
       flat: "Enter the flat or house number.",
-      line1: "Enter the building or society.",
+      line1: "Enter the building, society or street.",
       locality: "Enter the sector or area.",
       city: "Enter the city.",
     },
     more: "Add floor, tower or landmark",
     pincode: "Pincode",
-    accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
+    accessHint: CLIENT_WORDS.accessHint,
   },
   /** The waitlist form, shown when the pincode is not served. */
   waitlist: {
-    title: "We are not in {area} yet",
-    titleUnknown: "We are not there yet",
+    title: "We’re not in {area} yet",
+    titleUnknown: "We’re not there yet",
     body: `${serviceArea} only, for now.`,
     leave: "Leave us your number",
     forPincode: "For {pincode}{area}",
@@ -311,15 +316,15 @@ export const referral = {
     launchAlert: lineOf(notices.launchAlert),
     optional: "Optional",
     submit: "Add me to the list",
-    sending: "Adding",
-    // Not drawn: who is told, as the consultation form says it.
+    sending: "Adding…",
+    // Who is told, as the consultation form says it.
     holds: "{name}’s invite stays valid for 12 months after we launch there. {name} is told when you are fitted.",
     holdsUnnamed:
       "The invite stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
   },
   /**
-   * Not drawn: /book's line for the invite this browser remembers, before the form sends it with the booking, so the
-   * friend knows who is told of the fit and may go on without it.
+   * /book's line for the invite this browser remembers, before the form sends it with the booking, so the friend
+   * knows who is told of the fit and may go on without it.
    */
   remembered: {
     consultation: rememberedOnBooking,
@@ -332,27 +337,26 @@ export const referral = {
   form: {
     name: "Name",
     namePlaceholder: "Your name",
-    nameError: "Enter your name in letters.",
+    nameError: CLIENT_WORDS.nameError,
     mobile: "Mobile",
-    mobilePlaceholder: "Your number",
+    mobilePlaceholder: CLIENT_WORDS.mobilePlaceholder,
     mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",
     /** Beneath the agreement on every form that takes a name and number: what binds the visitor, and to read it. */
     legal: { before: "Our ", terms: "terms", between: " and ", privacy: "privacy notice", after: " apply." },
-    // Not drawn: by the button once three or more fields are marked.
+    // By the button once three or more fields are marked.
     marked: "Check the {count} fields marked above.",
   },
-  // Not drawn, beyond the label and the WhatsApp line: the day and window picked, what the visit asks of the client,
-  // and the calendar. They restate what was typed, so they tell whoever typed it nothing about the number.
   /**
    * What a booking answers, the same for every number, since whoever typed it may not be its owner: the details
-   * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. Not drawn as worded
-   * here.
+   * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. The day and window
+   * picked, what the visit asks of the client, and the calendar restate what was typed, so they tell whoever typed it
+   * nothing about the number.
    */
   booked: {
     label: "Booked",
     when: "{day}, {hours}",
-    body: "Your technician arrives in that window. Details are on WhatsApp at +91 {mobile}.",
+    body: "Your technician arrives in those hours. Details are on WhatsApp at +91 {mobile}.",
     ready: {
       consultation: `${capitalised(visitLength.consultation)} at home, and free. Nothing is fitted.`,
       oneVisit: `${capitalised(visitLength.firstFit)} at home. You pay once fitted, by a link to your phone.`,
@@ -366,10 +370,10 @@ export const referral = {
       details: "Arriving {hours}. {ready}",
     },
     credits: visitsLand,
-    // Not drawn: the discount code given with the one visit, as it stands on the booking, or not, when another
+    // The discount code given with the one visit, as it stands on the booking, or not, when another
     // booking took its last use a moment before (ADR 0108). What it takes off is before GST.
     code: {
-      applied: "Code {code}: {off}, taken when you pay.",
+      applied: "Code {code}: {off}, applied when you pay.",
       notApplied: "We couldn’t apply code {code}. Your booking stands without it.",
       amountOff: "{amount} off",
       percentOff: "{percent}% off",
@@ -395,8 +399,8 @@ export const referral = {
    */
   requested: {
     label: "Request received",
-    title: "We will message you",
-    body: "On WhatsApp, at +91 {mobile}, to fix the hour.",
+    title: "We’ll message you",
+    body: "On WhatsApp, at +91 {mobile}, to fix the time.",
   },
   listed: {
     label: "On the list",
@@ -410,16 +414,20 @@ export const referral = {
     back: "Back to the site",
   },
   errors: {
-    rateLimited: "That’s too many tries for today. Try again tomorrow.",
+    rateLimited: "That’s too many tries for today.",
+    /** Beside the rate limit: a visit is still booked with us, on WhatsApp. */
+    reachUs: "Message us on WhatsApp and we’ll book you in.",
+    // The visitor's connection, not our side.
+    network: "We couldn’t reach Mane Man. Check your connection and try again.",
     turnstile: "We couldn’t confirm you’re a person. Try again.",
     taken: "That time isn’t available. Pick another.",
     notBookable: "That day’s no longer open. Pick another.",
-    other: "Something went wrong on our side. Try again.",
-    // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108).
+    other: CLIENT_WORDS.failed,
+    // The discount code given does not apply, whatever the reason (ADR 0108).
     codeNotApplicable: "That discount code doesn’t apply. Check it, or leave it out to book without it.",
-    // Not drawn: the one visit was asked for while no hair system is offered in the console.
+    // The one visit was asked for while no hair system is offered in the console.
     noProduct: "Consultation and fit in one visit isn’t open to book yet. Book the consultation instead.",
-    // Not drawn: the WhatsApp code was entered more than 30 minutes before the booking was sent.
+    // The WhatsApp code was entered more than 30 minutes before the booking was sent.
     notProved: "Your WhatsApp code has expired. Book again for a new one.",
   },
   /**

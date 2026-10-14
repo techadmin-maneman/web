@@ -1,5 +1,5 @@
 // The building search on the address form (docs/decisions/0054-address-capture.md): the shared search
-// (@maneman/ui/AddressSearch) in the client app's words and on its form's look. The design draws no search; it follows
+// (@maneman/ui/AddressSearch) in the client app's words and on its form's look. It follows
 // the account section's number field, as the rest of the address form does.
 //
 // The session token is made once when the form opens and sent with every keystroke and again with the address, so

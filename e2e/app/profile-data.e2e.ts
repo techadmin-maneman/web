@@ -4,13 +4,13 @@ import { logIn, signIn } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
-test("offers support on WhatsApp, with the design's line", async ({ page }) => {
+test("offers support on WhatsApp, with the design’s line", async ({ page }) => {
   await loggedIn(page);
   await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toHaveAttribute(
     "href",
     "https://wa.me/919007973247",
   );
-  await expect(page.getByText(appCopy.profile.support.hint)).toBeVisible();
+  await expect(page.getByText("We reply within an hour, 9 am–9 pm daily.")).toBeVisible();
 });
 
 test("Your data: a download of everything held, and a concern sent to ops", async ({ page }) => {
@@ -42,7 +42,7 @@ test("shows the concerns the client raised, and our answer", async ({ page }) =>
         deletion_rejected: null,
         address: null,
         care_person: null,
-        care_hours: { opens: 9, closes: 21 },
+        care_hours: { opens: 9, closes: 21, first_reply: 60 },
         address_given_to_ops: null,
         grievances: [
           {
@@ -92,7 +92,7 @@ test("says when ops kept the account, and why, and still lets the client ask aga
         deletion_rejected: { decided_at: "2026-10-02T06:30:00.000Z", reason: "You still have a consultation booked" },
         address: null,
         care_person: null,
-        care_hours: { opens: 9, closes: 21 },
+        care_hours: { opens: 9, closes: 21, first_reply: 60 },
         address_given_to_ops: null,
         grievances: [],
       },
@@ -132,7 +132,7 @@ test("lists where the client is signed in, and signs another browser out", async
   await expect(phone.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA, with the address form and the card's lines open", async ({ page }) => {
+test("meets WCAG 2.2 AA, with the address form and the card’s lines open", async ({ page }) => {
   await loggedIn(page);
   const scan = async () => {
     expect(await axeViolations(page)).toEqual([]);

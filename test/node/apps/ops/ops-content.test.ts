@@ -11,11 +11,11 @@ import { areas, BOOKING_URL, deletions, dispatch, grievances } from "../../../..
 import { DELETION_ALERT_AFTER_MS } from "../../../../src/domain/privacy/deletion.ts";
 import { renderMessage } from "../../../../src/config/message-templates.ts";
 import { HOSTNAME } from "../../../../src/config/environments.ts";
-import { BOOKING_WINDOWS, WINDOW_TIMES } from "../../../../src/config/scheduling.ts";
+import { BOOKING_WINDOWS } from "../../../../src/config/scheduling.ts";
 import { MOVE_REASONS } from "../../../../src/policy/dispatch.ts";
 import { VISIT_TYPES } from "../../../../src/config/visit-types.ts";
 
-describe("the ops console's content", () => {
+describe("the ops console’s content", () => {
   it("previews the launch alert word for word, with the first name left as a placeholder", () => {
     const url = BOOKING_URL.staging;
     expect(areas.launch.message("Bandra W", url)).toBe(
@@ -23,7 +23,7 @@ describe("the ops console's content", () => {
     );
   });
 
-  it("sends people to the public site's booking page, in each environment", () => {
+  it("sends people to the public site’s booking page, in each environment", () => {
     expect(BOOKING_URL.staging).toBe(`https://${HOSTNAME.staging}/book`);
     expect(BOOKING_URL.production).toBe(`https://${HOSTNAME.production}/book`);
   });
@@ -33,7 +33,7 @@ describe("the ops console's content", () => {
 // promised the client, so the two have to be the same number
 // (docs/decisions/0049-dpdp.md, docs/open-points.md, item 51).
 describe("what the DPDP queues promise", () => {
-  it("counts a grievance down to the answer time the client's app names", () => {
+  it("counts a grievance down to the answer time the client’s app names", () => {
     expect(profile.data.sent).toContain(`within ${String(grievances.queue.answerDays)} days`);
   });
 
@@ -43,17 +43,7 @@ describe("what the DPDP queues promise", () => {
   });
 });
 
-describe("the dispatch board's words", () => {
-  /** "09:00" → "9", the hour as the board's drawer writes it. */
-  const hour = (time: string) => String(Number(time.slice(0, 2)) % 12 === 0 ? 12 : Number(time.slice(0, 2)) % 12);
-
-  it.each(BOOKING_WINDOWS)("%s's hours are WINDOW_TIMES'", (window) => {
-    const hours = dispatch.windowHours[window];
-    const times = WINDOW_TIMES[window];
-    expect(hours, "the start").toMatch(new RegExp(`\\b${hour(times.start)}\\b`));
-    expect(hours, "the end").toMatch(new RegExp(`\\b${hour(times.end)}\\b`));
-  });
-
+describe("the dispatch board’s words", () => {
   it("offers every reason the policy allows but a skill, which nothing records yet, and no other", () => {
     expect(dispatch.move.reasons.map((each) => each.reason)).toEqual(
       MOVE_REASONS.filter((reason) => reason !== "skill_needed"),
@@ -99,10 +89,10 @@ describe("what the console shows ops", () => {
   });
 
   it.each([
-    ["the storage's own name", /\bR2\b/],
+    ["the storage’s own name", /\bR2\b/],
     ["an environment variable", /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/],
     ["a path in the repository", /\b(?:src|apps|docs|packages|scripts|migrations)\/\w/],
-    ["a design board's own words", /\bthe board's\b/i],
+    ["a design board’s own words", /\bthe board's\b/i],
     ["he, his or him for a person", /\b(he|his|him)\b/i],
     ["a tail saying what did not happen", /[.!?]\s+(Nothing was \w+|Not (saved|sent))\.?$/],
   ])("carries no %s", (_, pattern) => {
@@ -112,7 +102,7 @@ describe("what the console shows ops", () => {
 
 // A map widened to every string compiles a lookup by a state the API adds, and the page shows its raw code. A map
 // keyed by a list that is not the API's says a lookup may miss, so each lookup says what it shows then.
-describe("the console's label maps", () => {
+describe("the console’s label maps", () => {
   it("keep their keys, or say a lookup may miss", () => {
     const files = execFileSync("git", ["ls-files", "apps/ops/src/content"], { encoding: "utf8" })
       .split("\n")

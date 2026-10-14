@@ -16,6 +16,7 @@ const BOOKING: BeingBooked = {
   type: "first_fit",
   date: "2026-10-08",
   window: "morning",
+  hours: { start: "09:00", end: "12:00" },
   paid: false,
   one_visit: PRICE,
   told: false,
@@ -23,6 +24,7 @@ const BOOKING: BeingBooked = {
 const CONSULTATION = {
   date: "2026-10-06",
   window: "morning",
+  hours: { start: "09:00", end: "12:00" },
   window_label: "before noon",
   place: "Gurgaon",
   requested: false,
@@ -34,7 +36,7 @@ describe("Upcoming on Visits", () => {
     expect(upcomingEntries([], null, BOOKING)).toEqual([{ kind: "being_booked", booking: BOOKING }]);
   });
 
-  it("lists it in its day's place among the visits FSM has", () => {
+  it("lists it in its day’s place among the visits FSM has", () => {
     const before = visit("v1", "2026-10-06");
     const after = visit("v2", "2026-10-20");
     expect(upcomingEntries([before, after], null, BOOKING)).toEqual([
@@ -44,7 +46,7 @@ describe("Upcoming on Visits", () => {
     ]);
   });
 
-  it("lists a booking's consultation only while FSM has no visit of the client's", () => {
+  it("lists a booking’s consultation only while FSM has no visit of the client’s", () => {
     expect(upcomingEntries([], CONSULTATION, null)).toEqual([{ kind: "consultation", consultation: CONSULTATION }]);
     const booked = visit("v1", "2026-10-06");
     expect(upcomingEntries([booked], CONSULTATION, null)).toEqual([{ kind: "visit", visit: booked }]);
@@ -73,7 +75,7 @@ describe("a visit being booked", () => {
 });
 
 // Home and Visits never said which hair system a first fit was for.
-describe("a visit's title", () => {
+describe("a visit’s title", () => {
   it("names the service beside the kind where the API names one", () => {
     expect(visitTitle({ type: "first_fit", service: "Mane Man Essential" })).toBe("First fit · Mane Man Essential");
     expect(visitTitle({ type: "service", service: null })).toBe("Service visit");

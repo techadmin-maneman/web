@@ -77,13 +77,13 @@ describe("content", () => {
     expect(statSync(path ?? "").size).toBeLessThan(800 * 1024);
   });
 
-  it("offers the backend's six looks in its order, each split at its first dot", () => {
+  it("offers the backend’s six looks in its order, each split at its first dot", () => {
     expect(site.looks.map((look) => look.id)).toEqual(PRESETS.map((preset) => preset.id));
     expect(site.looks[0]).toMatchObject({ name: "Side part", detail: "" });
     expect(site.looks[2]).toMatchObject({ name: "Textured crop", detail: "Low fade" });
   });
 
-  it("builds the consent screen and the gate from the backend's notices, word for word", () => {
+  it("builds the consent screen and the gate from the backend’s notices, word for word", () => {
     const consent = site.consentCopy(site.notices.photo);
     expect(consent.title).toBe("What happens to your photograph.");
     expect(consent.rows.map((row) => row.label)).toEqual([
@@ -113,7 +113,7 @@ describe("content", () => {
     expect(words).not.toMatch(/next screen|Download|Drag the handle|hair patch/i);
   });
 
-  it("makes the small copy the size the API keeps, as the technician's camera makes a visit photograph", () => {
+  it("makes the small copy the size the API keeps, as the technician’s camera makes a visit photograph", () => {
     const encoder = readFileSync("packages/web-kit/small-jpeg.ts", "utf8");
     expect(MAX_COPY_BYTES).toBe(250 * 1024);
     expect(encoder).toContain("SMALL_JPEG_BYTES = 250 * 1024");
@@ -136,19 +136,19 @@ describe("content", () => {
     expect(VISIT_BLOCKS.first_fit.minutes).toBe(180);
     const published = JSON.stringify({ ...site, ...BLOCKS, testimonials: null }) + JSON.stringify(referral);
     expect(published).not.toMatch(/forty minutes|about an hour|one hour|ninety minutes · at your table/i);
-    expect(site.discretionBand.text).toMatch(/^Three hours at your own table/);
+    expect(site.discretionBand.text).toMatch(/^3 hours at your own table/);
     expect(site.howItWorks.steps.map((step) => step.meta)).toEqual([
-      "An hour · free",
-      "Three hours · at your home",
-      "Every month · ninety minutes",
+      "1 hour · free",
+      "3 hours · at your home",
+      "Every month · 90 minutes",
     ]);
-    expect(site.faq.items[2]?.a).toMatch(/About ninety minutes, at your home\.$/);
-    expect(site.closing.title).toBe("The consultation takes an hour and costs nothing.");
-    expect(referral.consultation.body).toBe("An hour, and free. Or have your fit in the same visit.");
+    expect(site.faq.items[2]?.a).toMatch(/About 90 minutes, at your home\.$/);
+    expect(site.closing.title).toBe("The consultation takes 1 hour and costs nothing.");
+    expect(referral.consultation.body).toBe("1 hour, and free. Or have your fit in the same visit.");
     expect(referral.howItWorks.steps.map((step) => step.body)).toEqual([
-      "An hour. A scalp template and a colour match.",
-      "Three hours. You're wearing it by the end.",
-      "Lifted, cleaned, re-bonded, trimmed. Ninety minutes.",
+      "1 hour. A scalp template and a colour match.",
+      "3 hours. You’re wearing it by the end.",
+      "Lifted, cleaned, re-bonded, trimmed. 90 minutes.",
     ]);
   });
 
@@ -201,8 +201,8 @@ describe("content", () => {
   });
 
   // Production keeps a result fourteen days (ADR 0039), as the privacy notice says.
-  it("keeps the try-on's result for as long as the privacy notice says", () => {
-    expect(textOf(site.legalPages.privacy)).toContain("the simulation itself is kept for fourteen days");
+  it("keeps the try-on’s result for as long as the privacy notice says", () => {
+    expect(textOf(site.legalPages.privacy)).toContain("the simulation itself is kept for 14 days");
     expect(site.tryOn.sent.privacy).toBe("We delete it after 14 days.");
   });
 
@@ -253,17 +253,17 @@ describe("the second copy round", () => {
 
   it("says how long each choice on the booking form takes", () => {
     expect(referral.consultation.plan.options.map((option) => option.label)).toEqual([
-      "Consultation · an hour",
-      "Consultation and fit · three hours",
+      "Consultation · 1 hour",
+      "Consultation and fit · 3 hours",
     ]);
   });
 
   // The site promised a refit or a refund within 14 days; the app's pay step, that the technician stops. The FAQ says
   // first that a client who decides against it before the fit pays nothing, as the one visit's flow has it.
-  it("gives the guarantee in one sentence on the home page, in the FAQ and at the app's pay step", () => {
-    const answer = site.faq.items.find((item) => item.q === "What if I do not like it at the fit?")?.a ?? "";
+  it("gives the guarantee in one sentence on the home page, in the FAQ and at the app’s pay step", () => {
+    const answer = site.faq.items.find((item) => item.q === "What if I don’t like it?")?.a ?? "";
     expect(site.guarantee.text).toBe(GUARANTEE);
-    expect(answer.startsWith("Say so before it's fitted and you pay nothing. Once it's fitted: ")).toBe(true);
+    expect(answer.startsWith("Say so before it’s fitted and you pay nothing. Once it’s fitted: ")).toBe(true);
     expect(answer.toLowerCase().endsWith(GUARANTEE.toLowerCase())).toBe(true);
     expect(appBooking.pay.guarantee).toBe(GUARANTEE);
   });
@@ -275,10 +275,10 @@ describe("the second copy round", () => {
     expect(site.stepPhotos.images).toHaveLength(site.howItWorks.steps.length);
   });
 
-  // "for just" sneered. "Two of these are not ours." stays.
-  it("keeps the comparison line and gives a transplant's cost without a sneer", () => {
-    expect(site.comparison.intro).toBe("Two of these are not ours.");
-    expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
+  // "for just" sneered; then the table gave others' rupee figures, unsourced, on a site that gives none of its own.
+  it("compares without a sneer, and without anyone's price", () => {
+    expect(site.comparison.intro).toBe("How a hair system compares.");
+    expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b|Rs\.|₹/);
   });
 });
 
@@ -311,7 +311,7 @@ describe("the legal pages", () => {
     expect(privacy).not.toContain("the same day");
     expect(DELETION_DECIDED_WITHIN_DAYS).toBe(30);
     expect(privacy).toContain("We decide a request to erase within 30 days.");
-    expect(privacy).toContain("Invoices are kept for eight years, as the law requires.");
+    expect(privacy).toContain("Invoices are kept for 8 years, as the law requires.");
     expect(terms).not.toMatch(/on the day of the fit|by messaging us, at no charge|\bcall\b|\bwith him\b|\bpiece\b/);
     expect(terms).toContain("A visit you book in the app is paid when you book it");
     expect(terms).toContain("You can move or cancel a visit in the app.");
@@ -328,8 +328,8 @@ describe("the publish gate", () => {
     expect(publishProblems()).toEqual([
       "the photo notice (photo-v5) is not approved",
       "the gate notice (gate-v5) is not approved",
-      "the privacy page's wording is not approved",
-      "the terms page's wording is not approved",
+      "the privacy page’s wording is not approved",
+      "the terms page’s wording is not approved",
     ]);
     expect(publishProblems(undefined, APPROVED, undefined, LEGAL_APPROVED)).toEqual([]);
   });
@@ -338,7 +338,7 @@ describe("the publish gate", () => {
   it("stops a legal page whose wording is not approved", () => {
     const legal = { ...LEGAL_APPROVED, terms: { approved: false } };
     expect(publishProblems(undefined, APPROVED, undefined, legal)).toEqual([
-      "the terms page's wording is not approved",
+      "the terms page’s wording is not approved",
     ]);
   });
 
@@ -349,7 +349,7 @@ describe("the publish gate", () => {
     ]);
   });
 
-  it("stops a published block that still holds the design's placeholder material", () => {
+  it("stops a published block that still holds the design’s placeholder material", () => {
     const blocks = {
       ...BLOCKS,
       technicians: { ...site.technicians, publish: true },
@@ -358,7 +358,7 @@ describe("the publish gate", () => {
     };
     const problems = publishProblems(blocks, APPROVED, undefined, LEGAL_APPROVED);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatch(/^technicians is published but still holds the design's placeholder material: /);
+    expect(problems[0]).toMatch(/^technicians is published but still holds the design’s placeholder material: /);
     expect(problems[0]).toContain("Imran Qureshi");
   });
 

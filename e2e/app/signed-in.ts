@@ -22,5 +22,5 @@ export async function logIn(page: Page, mobile: string): Promise<void> {
   await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
   await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
   // The sixth digit sends it.
-  await page.getByRole("textbox", { name: "The six-digit code" }).fill(CODE);
+  await page.getByRole("textbox", { name: "The 6-digit code" }).fill(CODE);
 }

@@ -18,6 +18,7 @@ const DETAIL = {
   lot_code: "BAD-0921",
   consumable_code: "hs-1",
   name: "Essential 8x10",
+  unit: "piece",
   reason: "Supplier warned of shedding",
   raised_at: "2026-09-21T06:30:00.000Z",
   closed_at: null,

@@ -171,6 +171,7 @@ export interface Rows {
     readonly retired_at: string | null;
     readonly set_by: string;
     readonly set_at: string;
+    readonly client_label: string | null;
   };
   readonly cities: {
     readonly name: string;
@@ -947,6 +948,14 @@ export interface Rows {
     readonly decided_at: string | null;
     readonly po_id: string | null;
     readonly drafted_at: string;
+  };
+  readonly po_letterhead: {
+    readonly id: number;
+    readonly legal_name: string;
+    readonly gstin: string | null;
+    readonly deliver_to: string;
+    readonly set_by: string;
+    readonly set_at: string;
   };
   readonly po_lines: {
     readonly id: string;

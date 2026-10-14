@@ -30,7 +30,7 @@ const PAGE = `<html><head>
 </head></html>`;
 
 describe("the content security policy", () => {
-  it("allows the page's inline scripts and styles by hash, and never JSON-LD or external files", () => {
+  it("allows the page’s inline scripts and styles by hash, and never JSON-LD or external files", () => {
     const inline = inlineCode(PAGE);
     expect(inline.scripts).toEqual(['if (location.hash === "#book") location.replace("/book");']);
     expect(inline.styles).toEqual(["astro-island{display:contents}"]);
@@ -63,7 +63,7 @@ describe("the content security policy", () => {
     );
   });
 
-  it("adds each tag's hosts only when the tag is set", () => {
+  it("adds each tag’s hosts only when the tag is set", () => {
     const policy = contentSecurityPolicy({ scripts: [], styles: [] }, EVERY_TAG);
     for (const host of [
       "https://www.googletagmanager.com",
@@ -77,7 +77,7 @@ describe("the content security policy", () => {
     expect(metaOnly).not.toContain("google");
   });
 
-  it("fits Cloudflare's line limit with every tag and a dozen inline scripts", () => {
+  it("fits Cloudflare’s line limit with every tag and a dozen inline scripts", () => {
     const scripts = Array.from({ length: 12 }, (_, i) => `console.log(${String(i)})`);
     const file = headersFile(true, contentSecurityPolicy({ scripts, styles: ["a{}", "b{}"] }, EVERY_TAG));
     for (const line of file.split("\n")) expect(line.length).toBeLessThanOrEqual(HEADER_LINE_LIMIT);
@@ -116,7 +116,7 @@ describe("the headers file", () => {
 
 // A security researcher found no contact (RFC 9116).
 describe("security.txt", () => {
-  it("names the security mailbox, then the business's WhatsApp, and lapses a year after the build", () => {
+  it("names the security mailbox, then the business’s WhatsApp, and lapses a year after the build", () => {
     const built = new Date("2026-10-05T00:00:00.000Z");
     expect(securityTxt(built)).toBe(
       "Contact: mailto:security@maneman.in\nContact: https://wa.me/919007973247\nExpires: 2027-10-05T00:00:00.000Z\n" +

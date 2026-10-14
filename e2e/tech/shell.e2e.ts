@@ -37,7 +37,7 @@ test("answers any page path with the app, as a single-page app", async ({ page }
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
-test("keeps the design's column on a wide screen, centred", async ({ page }) => {
+test("keeps the design’s column on a wide screen, centred", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   const box = await page.locator("#root").boundingBox();
@@ -93,7 +93,7 @@ test("signs the phone out and forgets everything it held", async ({ page }) => {
   expect(after).not.toContain("mm-tech");
 });
 
-test("wipes the phone and signs out when the session has ended, as a revoked device's has", async ({ page }) => {
+test("wipes the phone and signs out when the session has ended, as a revoked device’s has", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();

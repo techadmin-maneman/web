@@ -9,6 +9,8 @@ export interface WordLine {
   readonly group: string;
   readonly where: string;
   readonly text: string;
+  /** Whether a copy review has read the line in its wording in the code. */
+  readonly reviewed: boolean;
 }
 
 export const WORD_LINES: readonly WordLine[] = WORDS as readonly WordLine[];

@@ -39,7 +39,7 @@ function sentences(given: ReferralReward | null, name: string | null = "Rohit"):
 // /book says who is told of the fit before it sends the invite this browser remembers. An attribution records
 // these words by version: if a test here fails because the words changed, add a version to TOLD_NOTICES.
 describe(`what /book says of the invite this browser remembers (${TOLD_NOTICES.book})`, () => {
-  it("says who is told of the fit, with the friend's visits as ops set them", () => {
+  it("says who is told of the fit, with the friend’s visits as ops set them", () => {
     expect(referral.remembered.consultation(reward(3, 3))).toBe(
       "You have an invite. Whoever invited you is told when you are fitted. That is when the 3 visits land.",
     );
@@ -52,8 +52,8 @@ describe(`what /book says of the invite this browser remembers (${TOLD_NOTICES.b
   });
 });
 
-describe(`what the invite's own page says of who is told (${TOLD_NOTICES.landing})`, () => {
-  it("says it on the waitlist, by the referrer's name where it has one", () => {
+describe(`what the invite’s own page says of who is told (${TOLD_NOTICES.landing})`, () => {
+  it("says it on the waitlist, by the referrer’s name where it has one", () => {
     expect(referral.waitlist.holds).toBe(
       "{name}’s invite stays valid for 12 months after we launch there. {name} is told when you are fitted.",
     );
@@ -70,7 +70,7 @@ describe(`what the invite's own page says of who is told (${TOLD_NOTICES.landing
 });
 
 describe("what the landing says an invite earns", () => {
-  it("says the design's words while each side gets 3", () => {
+  it("says the design’s words while each side gets 3", () => {
     expect(sentences(reward(3, 3))).toEqual([
       "Get fitted and you both get 3 service visits free.",
       "The consultation is still free; the 3 service visits do not apply.",
@@ -118,7 +118,7 @@ describe("what the landing says an invite earns", () => {
     ]);
   });
 
-  it("promises only the friend's visits where ops give the referrer nothing", () => {
+  it("promises only the friend’s visits where ops give the referrer nothing", () => {
     expect(referral.arrival.offer(reward(0, 2))).toBe("Get fitted and you get 2 service visits free.");
   });
 

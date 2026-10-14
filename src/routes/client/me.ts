@@ -53,7 +53,9 @@ import {
   RemakeSchema,
   VisitSummarySchema,
 } from "../schemas/visits.ts";
-import { PriceSchema } from "../schemas/booking.ts";
+import { PriceSchema, WindowHoursSchema } from "../schemas/booking.ts";
+import { loadSlotSchedule, type SlotSchedule } from "../../domain/booking/slot-times.ts";
+import { windowTimesOf } from "../../policy/slot-times.ts";
 import { OwedPaymentSchema } from "./payments.ts";
 import { creditsBody, CreditsSchema } from "./refer.ts";
 import { wornProduct } from "../../domain/inventory/stock-gap.ts";
@@ -72,6 +74,7 @@ const MeSchema = z
       .object({
         date: z.iso.date(),
         window: z.enum(BOOKING_WINDOWS).openapi({ description: "The window the client asked for." }),
+        hours: WindowHoursSchema,
         window_label: z
           .enum(WINDOW_LABELS)
           .nullable()
@@ -290,12 +293,14 @@ async function consultationOf(
   db: D1Database,
   proposal: ProposedBooking,
   asked: Asked,
-  place: string,
+  where: { readonly place: string; readonly schedule: SlotSchedule },
 ): Promise<Consultation> {
   const date = proposal.proposed_visit_date;
+  const { place, schedule } = where;
   return {
     date,
     window: asked.window,
+    hours: windowTimesOf(schedule.on(date))[asked.window],
     window_label: FIRST_FORM_WORDS[asked.window] ?? null,
     place,
     requested: asked.requested,
@@ -334,13 +339,17 @@ async function formBookingOf(c: Context<AppEnv>, personId: string, today: string
   const proposal = await standingProposal(db, personId, booking, today);
   if (proposal === null) return { booking, proposal, card: null };
 
-  const [asked, address] = await Promise.all([askedFor(db, personId, proposal), currentAddress(db, personId)]);
+  const [asked, address, schedule] = await Promise.all([
+    askedFor(db, personId, proposal),
+    currentAddress(db, personId),
+    loadSlotSchedule(db),
+  ]);
   if (asked === null) {
     c.var.log.warn("consultation_window_unknown", { person_id: personId });
     return { booking, proposal, card: null };
   }
   const place = address === null ? (proposal.city ?? "") : `${address.locality}, ${address.city} ${address.pincode}`;
-  return { booking, proposal, card: await consultationOf(db, proposal, asked, place) };
+  return { booking, proposal, card: await consultationOf(db, proposal, asked, { place, schedule }) };
 }
 
 /** What Home's offer and prompt turn on: the figures ops set, then the client's facts, read together. */

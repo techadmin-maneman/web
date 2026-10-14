@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { errorKindOf, failureKindOf, jobProblem } from "../../../site/src/lib/tryon-errors.ts";
 
-describe("the try-on's error screen", () => {
+describe("the try-on’s error screen", () => {
   it("blames the photograph only when the photograph is the problem", () => {
     expect(errorKindOf("photo_invalid_file")).toBe("photo");
     expect(failureKindOf("photo_unreadable")).toBe("photo");

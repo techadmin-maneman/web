@@ -95,7 +95,7 @@ test("says the visit is still booked when the API fails and the phone kept Home"
       route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "test" } } }),
     );
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your account." })).toBeVisible();
   await expect(page.getByText(appCopy.states.error.booked)).toBeVisible();
 });
 
@@ -121,7 +121,7 @@ test("offline on Visits, which the phone does not keep, says the visits load onc
   await expect(page.getByText(appCopy.errors.load)).toHaveCount(0);
 
   await page.context().setOffline(false);
-  await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
+  await expect(page.getByText("Consultation · 9 am–12 noon")).toBeVisible();
   await expect(waiting).toBeHidden();
   await expect(page.getByText(appCopy.states.offlineOnly)).toBeHidden();
 });
@@ -142,10 +142,10 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page }
   await page.context().setOffline(true);
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your account." })).toHaveCount(0);
 });
 
-test("offers a new build's worker on Home, and loads the page on it at the tap", async ({ page }) => {
+test("offers a new build’s worker on Home, and loads the page on it at the tap", async ({ page }) => {
   await signIn(page);
   await keepHome(page);
 

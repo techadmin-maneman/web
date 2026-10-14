@@ -37,7 +37,7 @@ async function drawnBeforeAndAfterFocus(page: Page, control: Locator, drawn: Loc
   return [before, after];
 }
 
-test.describe("the booking form's own controls show where the keyboard is", () => {
+test.describe("the booking form’s own controls show where the keyboard is", () => {
   for (const path of ["/book?state=served", "/r/RM4K7P?state=served"]) {
     test(`on ${path}: every date, window, hair-loss choice and consent box`, async ({ page }) => {
       await visit(page, path);

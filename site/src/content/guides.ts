@@ -32,7 +32,7 @@ export const guidesPage = {
   title: "Guides",
   pageTitle: "Hair system guides — Mane Man",
   description:
-    "Straight answers on hair systems: how they compare with a transplant, and how they're fitted, cared for and priced.",
+    "Straight answers on hair systems: how they compare with a transplant, and how they’re fitted, cared for and priced.",
   lead: "Straight answers, before you book anything.",
   book: "Book a free consultation",
   /** Beneath each guide: the others, and the try-on and the home page's questions. */
@@ -51,20 +51,20 @@ export const guides: readonly Guide[] = [
     updated: "2026-10-13",
     title: "Hair system or hair transplant",
     description: "Hair system or transplant: what each involves, how soon you see a result, and who each suits.",
-    lead: "Two answers to the same mirror. Here's how they differ.",
+    lead: "Two ways back to a full head of hair. Here’s how they differ.",
     sections: [
       {
         heading: "What each one is",
         paragraphs: [
           "A transplant moves hair you still have, usually from the back of your head, to where it has thinned. It is surgery, and the moved hair grows in over the months that follow.",
-          "A hair system is 100% real human hair on a fine base, shaped to your scalp and bonded over the area you've lost. Nothing is cut or moved, and you leave the visit with the look you chose.",
+          "A hair system is 100% real human hair on a fine base, shaped to your scalp and bonded over the area you’ve lost. Nothing is cut or moved, and you leave the visit with the look you chose.",
         ],
       },
       {
         heading: "When you see it",
         paragraphs: [
           "A transplant takes months to show, and how full it ends up depends on how much hair you have to move.",
-          "A hair system shows the day it's fitted. Its density is matched to the hair at your sides, so it reads as yours, not as new.",
+          "A hair system shows the day it’s fitted. Its density is matched to the hair at your sides, so it reads as yours, not as new.",
         ],
       },
       {
@@ -77,8 +77,8 @@ export const guides: readonly Guide[] = [
       {
         heading: "Which suits you",
         paragraphs: [
-          "If there's little hair left to move, or you'd rather avoid surgery, a hair system is the straighter road. If you have the hair to move and want something you never think about again, a transplant may suit you better: ask a surgeon.",
-          "At the free consultation, your technician looks at your hair, tells you honestly what a hair system will and won't do, and quotes before anything is fitted.",
+          "If there’s little hair left to move, or you’d rather avoid surgery, a hair system is the straighter road. If you have the hair to move and want something you never think about again, a transplant may suit you better: ask a surgeon.",
+          "At the free consultation, your technician looks at your hair, tells you honestly what a hair system will and won’t do, and quotes before anything is fitted.",
         ],
       },
     ],
@@ -90,7 +90,7 @@ export const guides: readonly Guide[] = [
     updated: "2026-10-13",
     title: "What a hair system is",
     description:
-      "100% real human hair on a fine base, bonded to the skin. What a hair system is made of, and why it isn't a wig.",
+      "100% real human hair on a fine base, bonded to the skin. What a hair system is made of, and why it isn’t a wig.",
     lead: "100% real human hair, a fine base, and a hairline that passes a close look.",
     sections: [
       {
@@ -107,9 +107,9 @@ export const guides: readonly Guide[] = [
         ],
       },
       {
-        heading: "Why it isn't a wig",
+        heading: "Why it isn’t a wig",
         paragraphs: [
-          "A wig covers the whole head, is held by tension or clips and comes off at night. A hair system covers only the area you've lost, is bonded to the skin, is cut into your own hair and stays on for weeks at a time. You shower, swim and sleep in it.",
+          "A wig covers the whole head, is held by tension or clips and comes off at night. A hair system covers only the area you’ve lost, is bonded to the skin, is cut into your own hair and stays on for weeks at a time. You shower, swim and sleep in it.",
         ],
       },
     ],
@@ -150,24 +150,24 @@ export const guides: readonly Guide[] = [
     published: "2026-10-11",
     updated: "2026-10-13",
     title: "Looking after a hair system",
-    description: "Daily care for a hair system, what to do after a swim, and what happens at the monthly visit.",
+    description: "Daily care for a hair system, what to do after a swim, and what happens at a service visit.",
     lead: "A few habits at home, and a visit about once a month.",
     sections: [
       {
         heading: "Every day",
         paragraphs: [
-          "Wash and style it like your own hair, gently. It doesn't grow, so the cut stays as it was left.",
+          "Wash and style it like your own hair, gently. It doesn’t grow, so the cut stays as it was left.",
           "Heavy sweating is fine. After a swim in chlorine or the sea, rinse it in fresh water: both shorten the life of the base.",
         ],
       },
       {
-        heading: "The monthly visit",
+        heading: "The service visit",
         paragraphs: [
           `About once a month, your technician comes back to lift the hair system, clean the base and your scalp, bond it again and refresh the cut. It takes ${visitLength.service}, and keeps it looking like the day it was fitted.`,
         ],
       },
       {
-        heading: "When it's time for a new one",
+        heading: "When it’s time for a new one",
         paragraphs: [
           "The base wears before the hair does. When it does, your technician tells you, and your new hair system is matched to the last, so no one notices the change.",
         ],
@@ -187,13 +187,13 @@ export const guides: readonly Guide[] = [
       {
         heading: "What decides it",
         paragraphs: [
-          "The base. A clear skin film looks the most natural and wears the soonest; monofilament mesh outlasts every other base. Heat, sea water and chlorine all shorten its life, and so does skipping the monthly visit.",
+          "The base. A clear skin film looks the most natural and wears the soonest; monofilament mesh outlasts every other base. Heat, sea water and chlorine all shorten its life, and so does skipping service visits.",
         ],
       },
       {
         heading: "How to make it last",
         paragraphs: [
-          "Rinse it in fresh water after a swim, keep the monthly visit, and choose a base that suits how you live: a lace top for the gym and a Delhi summer, a skin base where nothing must show.",
+          "Rinse it in fresh water after a swim, keep your service visits, and choose a base that suits how you live: a lace top for the gym and a Delhi summer, a skin base where nothing must show.",
         ],
       },
       {
@@ -217,7 +217,7 @@ export const guides: readonly Guide[] = [
       {
         heading: "What you pay for",
         paragraphs: [
-          "The hair system itself, and the visits: the fit, then a visit about once a month. No consultation fee, no deposit, no package.",
+          "The hair system itself, and the visits: the first fit, then a service visit about once a month. No consultation fee, no deposit, no package.",
         ],
       },
       {
@@ -229,7 +229,7 @@ export const guides: readonly Guide[] = [
       {
         heading: "When you hear it",
         paragraphs: [
-          "At the free consultation, from your technician, before anything is fitted. If it isn't for you, you owe nothing.",
+          "At the free consultation, from your technician, before anything is fitted. If it isn’t for you, you owe nothing.",
         ],
       },
     ],
@@ -247,7 +247,7 @@ export const areasPage = {
   cities: "Your technician comes to your home in {cities}.",
   /** The pincodes we serve decide the streets, so a visitor checks theirs. */
   streets: "Within each city, we serve by pincode. Check yours to see the days we can come.",
-  next: "Not there yet? Leave your number on the booking page, and we'll tell you when we reach your city.",
+  next: "Not there yet? Leave your number on the booking page, and we’ll tell you when we reach your city.",
   check: "Check your pincode",
   /** Its list of the cities, each a page of its own. */
   cityPages: "City by city",

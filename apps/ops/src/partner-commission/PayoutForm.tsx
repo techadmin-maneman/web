@@ -113,7 +113,7 @@ export function PayoutForm(props: {
       title={formWords.title(statement.name, props.monthName)}
       steps={steps}
       ready={ready}
-      errors={errors}
+      errors={{ ...errors, amount: partnerCommission.amountUpTo(rupees(props.maxAmount)) }}
       onCancel={props.onCancel}
       checking={
         <>

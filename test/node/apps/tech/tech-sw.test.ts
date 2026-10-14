@@ -14,16 +14,16 @@ describe("what the service worker answers", () => {
     expect(answerFor(get("/jobs/a0000000-0000-4000-8000-000000000001", "navigate"), ORIGIN)).toBe("shell");
   });
 
-  it("sends a page marked for Access's sign-in to the network, where Access can sign the founder in again", () => {
+  it("sends a page marked for Access’s sign-in to the network, where Access can sign the founder in again", () => {
     expect(answerFor(get("/jobs/a0000000-0000-4000-8000-000000000001?signin=", "navigate"), ORIGIN)).toBeNull();
   });
 
-  it("answers the app's own files from what it keeps", () => {
+  it("answers the app’s own files from what it keeps", () => {
     expect(answerFor(get("/assets/index-abc.js"), ORIGIN)).toBe("file");
     expect(answerFor(get("/manifest.webmanifest"), ORIGIN)).toBe("file");
   });
 
-  it("leaves the day's list, a card, who is signed in, a piece and a photograph to the network alone", () => {
+  it("leaves the day’s list, a card, who is signed in, a piece and a photograph to the network alone", () => {
     expect(answerFor(get("/api/tech/jobs?date=2030-09-01"), ORIGIN)).toBeNull();
     expect(answerFor(get("/api/tech/jobs/a0000000-0000-4000-8000-000000000001"), ORIGIN)).toBeNull();
     expect(answerFor(get("/api/tech/me"), ORIGIN)).toBeNull();
@@ -31,7 +31,7 @@ describe("what the service worker answers", () => {
     expect(answerFor({ method: "PUT", mode: "cors", url: `${ORIGIN}/api/tech/photos/t` }, ORIGIN)).toBeNull();
   });
 
-  it("never touches a write, or another host's request", () => {
+  it("never touches a write, or another host’s request", () => {
     expect(answerFor({ method: "POST", mode: "cors", url: `${ORIGIN}/api/tech/jobs/a/start` }, ORIGIN)).toBeNull();
     expect(answerFor(get("/", "navigate"), "https://maneman.in")).toBeNull();
   });

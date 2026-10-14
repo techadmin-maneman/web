@@ -8,7 +8,7 @@ import { isOneOf } from "../lib/one-of.ts";
 export const TEMPLATES = {
   // The try-on's look, to the number that claimed it: {{1}} the first name, {{2}} where to book a consultation.
   tryon_result_v1:
-    "Hi {{1}}, your new look is ready.\nIt's a preview: your hair system is matched to your own hair. See it for real at a free consultation: {{2}}",
+    "Hi {{1}}, your new look is ready.\nIt's an illustration: your hair system is matched to your own hair. See it for real at a free consultation: {{2}}",
   // The login code, {{1}}.
   login_code_v1: "{{1}} is your Mane Man code. It expires in 10 minutes. Don't share it with anyone.",
   // A visit's params: {{1}} first name, {{2}} visit, {{3}} day ("Thu 24 Sep"), {{4}} window ("12 to 4 pm"),
@@ -19,12 +19,12 @@ export const TEMPLATES = {
   one_visit_booked_v1:
     "Hi {{1}}, you're booked.\nYour consultation and fit is {{3}}, {{4}}, at home. Choose your hair system with your technician, and pay only once you're fitted.",
   visit_booked_v1:
-    "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. We've received {{6}} (ref {{7}}). Your receipt is in the app.",
+    "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. We've received {{6}} (ref {{7}}). Your receipt will be in the app shortly.",
   visit_booked_credit_v1:
     "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}, covered by one of your free service visits.",
   // The receipt for a one visit paid by its link once the client is fitted: {{2}} the hair system.
   link_paid_v1:
-    "Hi {{1}}, thank you: payment received.\n{{6}} for your {{2}} (ref {{7}}). Welcome to Mane Man. Your receipt is in the app.",
+    "Hi {{1}}, thank you: payment received.\n{{6}} for your {{2}} (ref {{7}}). Welcome to Mane Man. Your receipt will be in the app shortly.",
   // A visit a discount code made free: booked with nothing to pay.
   visit_booked_code_v1:
     "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. Your discount code covers it: nothing to pay.",
@@ -49,11 +49,11 @@ export const TEMPLATES = {
   no_show_missed_v1:
     "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. Book a new time in the Mane Man app.",
   no_show_charged_paid_v1:
-    "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept the {{6}} you paid as the no-show charge. If you were home, dispute it in the Mane Man app.",
+    "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept the {{6}} you paid as the missed-visit charge. If you were home, dispute it in the Mane Man app.",
   no_show_charged_fee_v1:
-    "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept {{6}} as the no-show charge and refunded {{10}} to your {{8}} (5 to 7 working days). If you were home, dispute it in the Mane Man app.",
+    "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. We've kept {{6}} as the missed-visit charge and refunded {{10}} to your {{8}} (5 to 7 working days). If you were home, dispute it in the Mane Man app.",
   no_show_charged_credit_v1:
-    "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. The free service visit it used counts as the no-show charge. If you were home, dispute it in the Mane Man app.",
+    "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. The free service visit it used counts as the missed-visit charge. If you were home, dispute it in the Mane Man app.",
   no_show_waived_v1:
     "Hi {{1}}, we missed you.\n{{5}} waited {{9}} minutes for your {{2}} on {{3}} but couldn't reach you. There's no charge. Book a new time in the Mane Man app.",
   no_show_waived_paid_v1:
@@ -169,10 +169,11 @@ export const TEMPLATES = {
   // The line every message that sends the client to the app ends with, {{1}} the app's address (sendsToApp below).
   app_link_v1: "Open the app: {{1}}",
   // The answer to a STOP reply, once it has withdrawn something.
-  messages_stopped_v1: "Done, {{1}}. We won't message you here about your visits, or when we come to a new area.",
+  messages_stopped_v1: "Done, {{1}}. We'll only message you here about payments and refunds.",
   // The answer to a message sent outside Customer Care's hours (src/domain/care/after-hours.ts): {{1}} when Care open,
   // {{2}} when the message is answered by.
-  care_after_hours_v1: "Thank you for your message.\nOur team is back at {{1}} and will reply by {{2}}.",
+  // {{1}} when Care are back: "9 am tomorrow", or "9 am" to a message written after midnight.
+  care_after_hours_v1: "Thank you for your message.\nWe're back at {{1}} and will reply by {{2}}.",
 } as const satisfies Readonly<Record<string, string>>;
 
 /** A template's name: a misspelt one is a type error, never a message that does not go. */

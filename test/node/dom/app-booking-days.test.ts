@@ -33,7 +33,7 @@ const availability = (days: Day[], last: string): Availability => ({
   days,
 });
 
-describe("the booking sheet's days", () => {
+describe("the booking sheet’s days", () => {
   const days = [day("2026-10-05", true), day("2026-10-06", false), day("2026-10-07", false), day("2026-10-08", true)];
 
   it("chooses the day offered where it is open, else the first open day after it", () => {
@@ -69,12 +69,12 @@ describe("what the date step says of a full day offered", () => {
 
   it("that it is full, and the next open day is chosen", () => {
     expect(offeredFullLine(days, "2026-10-06", "2026-10-07")).toBe(
-      "Tuesday 6 Oct is full. We’ve picked the next open day.",
+      "Tuesday 6 October is full. We’ve picked the next open day.",
     );
   });
 
   it("to pick another day where none after it is open", () => {
-    expect(offeredFullLine(days.slice(0, 1), "2026-10-06", null)).toBe("Tuesday 6 Oct is full. Pick another day.");
+    expect(offeredFullLine(days.slice(0, 1), "2026-10-06", null)).toBe("Tuesday 6 October is full. Pick another day.");
   });
 
   it("nothing once the client has chosen some other day, or where the day offered is open", () => {
@@ -100,7 +100,7 @@ describe("the days the date step marks inside the notice", () => {
   });
 });
 
-describe("the window step's button", () => {
+describe("the window step’s button", () => {
   it("goes on to payment for a day with a price", () => {
     expect(windowContinue(day("2026-10-05", true))).toBe("Continue to payment");
   });

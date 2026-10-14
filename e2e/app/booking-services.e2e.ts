@@ -130,9 +130,9 @@ test("offers every service of the kind it books, the one offered chosen, with ho
   // The service the app offers the next visit as, which the client may keep or change.
   const standard = kind.getByRole("radio", { name: /^Service visit/ });
   await expect(standard).toBeChecked();
-  await expect(kind).toContainText("1 hour 30 minutes");
+  await expect(kind).toContainText("1 hr 30 min");
   await expect(kind).toContainText("Rs. 2,000");
-  await expect(kind).toContainText("2 hours");
+  await expect(kind).toContainText("2 hr");
   // The line ops wrote for a service sits under its name; one with none shows its name alone.
   await expect(kind).toContainText("A deeper clean and a fresh bond.");
   // Once GST applies, what is charged leads and its split sits beneath.
@@ -192,7 +192,7 @@ test("books the one service of its kind without asking, and names it on the pay 
   expect(held).toMatchObject([{ type: "service", tier: "standard" }]);
 });
 
-test("names a first fit's service and how long it takes, and sends no one to WhatsApp for another", async ({
+test("names a first fit’s service and how long it takes, and sends no one to WhatsApp for another", async ({
   page,
 }) => {
   await holdAs(page, {
@@ -205,12 +205,12 @@ test("names a first fit's service and how long it takes, and sends no one to Wha
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText("First fit", { exact: true })).toBeVisible();
-  await expect(pay.getByText("3 hours", { exact: true })).toBeVisible();
+  await expect(pay.getByText("3 hr", { exact: true })).toBeVisible();
   await expect(pay.getByText("Premium? Message us")).toHaveCount(0);
   await expect(pay.locator('a[href*="wa.me"]')).toHaveCount(0);
 });
 
-test("writes a first fit's late fee as charged, with its GST split beside it", async ({ page }) => {
+test("writes a first fit’s late fee as charged, with its GST split beside it", async ({ page }) => {
   await holdAs(page, { type: "first_fit", price: FIRST_FIT, late_fee: LATE_FEE, late_change_charge: "late_fee" });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });

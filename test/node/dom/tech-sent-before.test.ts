@@ -55,7 +55,7 @@ describe("a refused piece", () => {
     });
   });
 
-  it("keeps a one visit's product, or that the client decided against the fit", () => {
+  it("keeps a one visit’s product, or that the client decided against the fit", () => {
     expect(pieceSent(refused("piece", { piece_code: "MM-STD-7193-C", product: "premium" }))).toMatchObject({
       declined: false,
       product: "premium",

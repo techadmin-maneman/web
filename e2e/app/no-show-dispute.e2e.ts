@@ -49,7 +49,7 @@ test("says what the charge kept, and offers its dispute", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Dispute this charge" })).toBeVisible();
 });
 
-test("sends the dispute with the client's words, and says it is with us", async ({ page }) => {
+test("sends the dispute with the client’s words, and says it is with us", async ({ page }) => {
   const visitId = await charged(page, null);
   const disputed = `/api/visits/${visitId}/dispute`;
   assertInContract("client", "POST", disputed, 201, { state: "open" });

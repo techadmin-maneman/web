@@ -97,7 +97,7 @@ test("records a delivery into the store, showing what it holds before and after"
   const form = recording(page);
   await form.getByLabel("Item").selectOption({ label: "Tape strips" });
   await form.getByLabel("How many").fill("100");
-  await form.getByLabel(stock.record.note).fill("Supplier's note 4418");
+  await form.getByLabel(stock.record.note).fill("Supplier’s note 4418");
   await form.getByRole("button", { name: "Review" }).click();
 
   const check = form.getByRole("group", { name: review.title });
@@ -108,14 +108,14 @@ test("records a delivery into the store, showing what it holds before and after"
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "tape_strips",
     quantity: 100,
-    note: "Supplier's note 4418",
+    note: "Supplier’s note 4418",
     lot_code: null,
     expires_on: null,
   });
   await expect(form.getByRole("status")).toHaveText(stock.recorded);
 });
 
-test("takes a delivery's supplier lot and its expiry", async ({ page }) => {
+test("takes a delivery’s supplier lot and its expiry", async ({ page }) => {
   await open(page, { "POST /api/stock/deliveries": json(STOCK) });
   const form = recording(page);
   await form.getByLabel("Item").selectOption({ label: "Solvent" });
@@ -209,7 +209,7 @@ test("a count shows the figure it finds, and one that agrees says it records onl
   await form.getByLabel(stock.record.counted).fill("3");
   await form.getByRole("button", { name: "Review" }).click();
   await expect(form.getByRole("group", { name: review.title })).toContainText(
-    "Matches what's held. Records the count only.",
+    "Matches what’s held. Records the count only.",
   );
 
   await form.getByRole("button", { name: "Edit" }).click();
@@ -238,10 +238,10 @@ test("a loss needs its words, and a refusal names what was wrong", async ({ page
   await form.getByLabel(stock.record.lossNote).fill("Two burst in the heat");
   await form.getByRole("button", { name: "Review" }).click();
   await form.getByRole("button", { name: review.send }).click();
-  await expect(page.getByText("Unknown place. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("Unknown place. Here’s the latest.")).toBeVisible();
 });
 
-test("lists the latest movements, a job's use under the technician who recorded it", async ({ page }) => {
+test("lists the latest movements, a job’s use under the technician who recorded it", async ({ page }) => {
   await open(page);
   const movements = page.getByRole("region", { name: stock.movements.title });
   const used = movements.getByRole("row").filter({ hasText: stock.movements.reasons.used });
@@ -427,7 +427,7 @@ async function catchPrints(page: Page): Promise<() => Promise<string[]>> {
   return () => page.evaluate(() => (window as unknown as { printed: string[] }).printed);
 }
 
-test("opens a hair system's labels after its delivery, the latest batch ticked, and prints them", async ({ page }) => {
+test("opens a hair system’s labels after its delivery, the latest batch ticked, and prints them", async ({ page }) => {
   await open(page, {
     "GET /api/stock": json(withPieces),
     "POST /api/stock/deliveries": json(withPieces),
@@ -471,7 +471,7 @@ test("labels the pieces a place held before labels", async ({ page }) => {
   await expect(labels.getByRole("button", { name: stockLabels.print(2) })).toBeVisible();
 });
 
-test("prints a lot's label for each of its boxes", async ({ page }) => {
+test("prints a lot’s label for each of its boxes", async ({ page }) => {
   await open(page, {
     "GET /api/stock": json(withLot),
     "POST /api/stock/lots/{id}/label": json({ label: "MM-LT-0000001-B" }),
@@ -486,7 +486,7 @@ test("prints a lot's label for each of its boxes", async ({ page }) => {
     .toEqual(Array.from({ length: 3 }, () => "MM-LT-0000001-BTape stripsTS-0901 · Exp 31 Oct 2027"));
 });
 
-test("names a hair system's pieces by their labels, as a scanner types them, and counts them", async ({ page }) => {
+test("names a hair system’s pieces by their labels, as a scanner types them, and counts them", async ({ page }) => {
   await open(page, { "GET /api/stock": json(withPieces), "POST /api/stock/transfers": json(withPieces) });
   const form = recording(page);
   await form.getByRole("radio", { name: stock.record.kinds.transfer }).check();
@@ -513,7 +513,7 @@ test("names a hair system's pieces by their labels, as a scanner types them, and
   });
 });
 
-test("receives a hair system's transfer by the pieces scanned, the rest missing", async ({ page }) => {
+test("receives a hair system’s transfer by the pieces scanned, the rest missing", async ({ page }) => {
   const onTheWay = {
     ...withRoom,
     consumables: [...withRoom.consumables, HAIR],

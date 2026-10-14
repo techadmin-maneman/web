@@ -33,7 +33,7 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
   await expect(page.getByRole("heading", { level: 1, name: "Targets" })).toBeVisible();
 }
 
-test("sets a month's target for a city, by measure", async ({ page }) => {
+test("sets a month’s target for a city, by measure", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "POST /api/targets": (route: Route) => {

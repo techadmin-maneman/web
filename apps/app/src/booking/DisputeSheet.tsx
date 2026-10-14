@@ -1,6 +1,5 @@
 // Dispute this charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md): the client says, in their words,
-// why a no-show's charge is wrong, once a charge, and ops refund or uphold it. No board draws it, so the sheet is
-// ours, in the note sheet's frame, with placeholder words (docs/fidelity-method.md).
+// why a missed visit's charge is wrong, once a charge, and ops refund or uphold it. It takes the note sheet's frame.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { DISPUTE_REASON_MAX_CHARS } from "@rules/policy/no-show.ts";

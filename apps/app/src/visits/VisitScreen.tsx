@@ -19,12 +19,12 @@ import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
 import { api, documentUrl, type VisitDetail } from "../api.ts";
-import { messages, ONE_VISIT, payments, visits } from "../content.ts";
+import { messages, ONE_VISIT, payments, visitLength, visits } from "../content.ts";
 import { AddToCalendar } from "../components/AddToCalendar.tsx";
 import { OpenDocument } from "../components/OpenDocument.tsx";
 import { Shell } from "../components/Shell.tsx";
 import { apiNow } from "@maneman/web-kit/clock";
-import { duration, invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
+import { invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { firstNameOf } from "@rules/lib/names.ts";
 import { Loading } from "../states/Loading.tsx";
@@ -42,6 +42,19 @@ function Fact({ name, value, numeric = false }: { name: string; value: string; n
   );
 }
 
+/** An invoice not here when it should be, with a way to ask us for it on WhatsApp. */
+function AskForInvoice({ visit, line }: { visit: VisitDetail; line: string }) {
+  const message = messages.lateInvoice(visitName(visit.type), shortDate(visit.date));
+  return (
+    <div className={styles.late}>
+      <p className={styles.invoiceLine}>{line}</p>
+      <ButtonLink variant="outline" size="small" className={styles.message} href={whatsappWith(message)} rel="noopener">
+        {visits.detail.invoice.message}
+      </ButtonLink>
+    </div>
+  );
+}
+
 /** The visit's invoice: here to open, still to come, late, or never coming because the visit was free. */
 function Invoice({ visit }: { visit: VisitDetail }) {
   const copy = visits.detail.invoice;
@@ -55,40 +68,10 @@ function Invoice({ visit }: { visit: VisitDetail }) {
       return <p className={styles.invoiceLine}>{copy.generating}</p>;
     case "credit":
       return <p className={styles.invoiceLine}>{copy.credit}</p>;
-    case "checking": {
-      const message = messages.lateInvoice(visitName(visit.type), shortDate(visit.date));
-      return (
-        <div className={styles.late}>
-          <p className={styles.invoiceLine}>{copy.checking}</p>
-          <ButtonLink
-            variant="outline"
-            size="small"
-            className={styles.message}
-            href={whatsappWith(message)}
-            rel="noopener"
-          >
-            {copy.message}
-          </ButtonLink>
-        </div>
-      );
-    }
-    case "late": {
-      const message = messages.lateInvoice(visitName(visit.type), shortDate(visit.date));
-      return (
-        <div className={styles.late}>
-          <p className={styles.invoiceLine}>{copy.late}</p>
-          <ButtonLink
-            variant="outline"
-            size="small"
-            className={styles.message}
-            href={whatsappWith(message)}
-            rel="noopener"
-          >
-            {copy.message}
-          </ButtonLink>
-        </div>
-      );
-    }
+    case "checking":
+    case "delayed":
+    case "late":
+      return <AskForInvoice visit={visit} line={copy[state]} />;
     case "open":
       return visit.document_id === null ? null : (
         <OpenDocument url={documentUrl(visit.document_id)} notReady={payments.unavailable.invoice}>
@@ -173,7 +156,7 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
       <dl className={styles.facts}>
         {visit.technician !== null && <Fact name={copy.technician} value={visit.technician.name} />}
         {visit.duration_minutes !== null && (
-          <Fact name={copy.duration} value={duration(visit.duration_minutes)} numeric />
+          <Fact name={copy.duration} value={visitLength(visit.duration_minutes)} numeric />
         )}
         <Fact name={copy.type} value={visitTitle(visit)} />
         {visit.what_was_done !== null && visit.what_was_done.length > 0 && (
@@ -217,7 +200,7 @@ function Visit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged: ()
             visit={{
               id: visit.id,
               date: visit.date,
-              window: visit.window_label,
+              hours: visit.window_hours,
               name: oneVisitOf(visit) === null ? visitName(visit.type) : ONE_VISIT,
               technician: visit.technician === null ? null : firstNameOf(visit.technician.name),
             }}

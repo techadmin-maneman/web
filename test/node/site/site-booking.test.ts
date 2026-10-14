@@ -40,12 +40,12 @@ describe("attribution", () => {
     });
   });
 
-  it("drops the site's own pages as referrers, and anything not a campaign tag", () => {
+  it("drops the site’s own pages as referrers, and anything not a campaign tag", () => {
     const url = new URL("https://maneman.in/?mobile=9810000000");
     expect(attributionFrom(url, "https://maneman.in/try")).toEqual({ landing_path: "/" });
   });
 
-  it("caps each value at the API's limits", () => {
+  it("caps each value at the API’s limits", () => {
     const url = new URL(`https://maneman.in/?utm_source=${"a".repeat(300)}`);
     expect(attributionFrom(url, "").utm_source).toHaveLength(200);
   });
@@ -135,7 +135,7 @@ describe("the date strip", () => {
     expect(first).toMatchObject({ weekday: "Sat", number: "3", month: "October", label: "Saturday 3 October" });
   });
 
-  it("names the month above it, or both months where it crosses a month's end", () => {
+  it("names the month above it, or both months where it crosses a month’s end", () => {
     expect(stripMonths(dayStrip("2026-10-03", 14))).toBe("October");
     const crossing = dayStrip("2026-10-24", 14);
     expect(crossing.map((day) => day.label).slice(7, 9)).toEqual(["Saturday 31 October", "Sunday 1 November"]);
@@ -144,10 +144,10 @@ describe("the date strip", () => {
 });
 
 // Back left the page and lost the form; each step is now an entry in the history.
-describe("the page's steps in the browser's history", () => {
+describe("the page’s steps in the browser’s history", () => {
   const answer = { pincode: "122018", served: true, area: "Sector 65", city: "Gurgaon" };
 
-  it("reads back the step and the pincode's answer the page wrote", () => {
+  it("reads back the step and the pincode’s answer the page wrote", () => {
     expect(stepOf({ step: "form", answer })).toEqual({ step: "form", answer });
     expect(stepOf({ step: "address", answer })).toEqual({ step: "address", answer });
     expect(stepOf({ step: "done", answer })).toEqual({ step: "done", answer });
@@ -165,10 +165,15 @@ describe("the page's steps in the browser's history", () => {
 describe("the days and windows open", () => {
   const OPEN = { morning: true, afternoon: true, evening: true };
   const SHUT = { morning: false, afternoon: false, evening: false };
+  const HOURS = {
+    morning: { start: "09:00", end: "12:00" },
+    afternoon: { start: "12:00", end: "16:00" },
+    evening: { start: "16:00", end: "20:00" },
+  };
   const days: OpenDays = [
-    { date: "2026-10-03", windows: SHUT },
-    { date: "2026-10-04", windows: { morning: false, afternoon: true, evening: true } },
-    { date: "2026-10-05", windows: OPEN },
+    { date: "2026-10-03", windows: SHUT, hours: HOURS },
+    { date: "2026-10-04", windows: { morning: false, afternoon: true, evening: true }, hours: HOURS },
+    { date: "2026-10-05", windows: OPEN, hours: HOURS },
   ];
   const ALL = ["morning", "afternoon", "evening"] as const;
   const ONE_VISIT = ["morning", "afternoon"] as const;
@@ -181,23 +186,23 @@ describe("the days and windows open", () => {
     expect(isOpen(days, "2026-10-20", "evening")).toBe(false);
   });
 
-  it("closes a day with none of the plan's windows open", () => {
+  it("closes a day with none of the plan’s windows open", () => {
     expect(dayOpen(days, "2026-10-03", ALL)).toBe(false);
     expect(dayOpen(days, "2026-10-04", ALL)).toBe(true);
     const eveningsOnly: OpenDays = [
-      { date: "2026-10-04", windows: { morning: false, afternoon: false, evening: true } },
+      { date: "2026-10-04", windows: { morning: false, afternoon: false, evening: true }, hours: HOURS },
     ];
     expect(dayOpen(eveningsOnly, "2026-10-04", ONE_VISIT)).toBe(false);
     expect(anyOpen(eveningsOnly, ONE_VISIT)).toBe(false);
   });
 
-  it("keeps the visitor's pick while it is open", () => {
+  it("keeps the visitor’s pick while it is open", () => {
     const picked = { date: "2026-10-04", window: "evening" } as const;
     expect(chosenSlot(days, ALL, picked)).toEqual(picked);
     expect(chosenSlot(null, ALL, picked)).toEqual(picked);
   });
 
-  it("moves a full pick to the day's first open window, else to the first day with one", () => {
+  it("moves a full pick to the day’s first open window, else to the first day with one", () => {
     expect(chosenSlot(days, ALL, { date: "2026-10-04", window: "morning" })).toEqual({
       date: "2026-10-04",
       window: "afternoon",
@@ -221,7 +226,7 @@ describe("the days and windows open", () => {
   });
 
   it("leaves the pick where nothing is open at all", () => {
-    const full: OpenDays = [{ date: "2026-10-03", windows: SHUT }];
+    const full: OpenDays = [{ date: "2026-10-03", windows: SHUT, hours: HOURS }];
     expect(chosenSlot(full, ALL, { date: "2026-10-03", window: "morning" })).toEqual({
       date: "2026-10-03",
       window: "morning",

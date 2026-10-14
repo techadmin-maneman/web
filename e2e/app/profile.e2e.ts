@@ -4,7 +4,7 @@ import { signIn } from "./signed-in.ts";
 import { loggedIn } from "./profile-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
-test("opens from Home's button, with the client's name and a way back", async ({ page }) => {
+test("opens from Home’s button, with the client’s name and a way back", async ({ page }) => {
   await loggedIn(page);
   await expect(page.getByRole("banner")).toContainText("Rohit Malhotra");
   await page.getByRole("link", { name: "Back" }).click();
@@ -212,7 +212,7 @@ test("says an address was given to us on the phone, so the client can check it",
           place_id: null,
         },
         care_person: null,
-        care_hours: { opens: 9, closes: 21 },
+        care_hours: { opens: 9, closes: 21, first_reply: 60 },
         address_given_to_ops: "2026-09-21T06:30:00.000Z",
       },
     });

@@ -16,6 +16,10 @@ const WordSchema = z
     group: z.string().openapi({ description: "The page, or Messages." }),
     where: z.string().openapi({ description: "The part of the page, or the message's name." }),
     text: z.string().openapi({ description: "The wording in the code." }),
+    reviewed: z.boolean().openapi({
+      description:
+        "Whether a copy review has read the line in the code's wording; false for one written or changed since.",
+    }),
     now: z.string().openapi({ description: "The wording in force: the one set here, else the code's." }),
     changed: z.union([z.object({ by: z.string(), at: z.iso.datetime() }).strict(), z.null()]),
     longest: z.number().int().openapi({ description: "The longest the line may grow, in characters." }),

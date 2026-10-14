@@ -97,7 +97,7 @@ test("opens the waitlist and the service area at their old addresses, as the tab
 });
 
 // Changing section dropped the focus to the page, and nothing led past the navigation.
-test("moves the keyboard to a new page's heading, and offers a way past the navigation", async ({ page }) => {
+test("moves the keyboard to a new page’s heading, and offers a way past the navigation", async ({ page }) => {
   await page.goto("/areas");
   await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
   await page.keyboard.press("Tab");
@@ -121,7 +121,7 @@ test("titles each page by what it is", async ({ page }) => {
   await expect(page).toHaveTitle("Prices · Mane Man operations");
 });
 
-test("says who is signed in, as the design draws them at the header's right", async ({ page }) => {
+test("says who is signed in, as the design draws them at the header’s right", async ({ page }) => {
   await page.goto("/");
   const header = page.getByRole("banner");
   await expect(header).toContainText("Signed in as ops@localhost");
@@ -144,13 +144,13 @@ test("signs out through Access, where Access stands in front", async ({ page }) 
 test("tells a person the enforced Staff list does not name that the console is closed to them", async ({ page }) => {
   await answer(page, { "GET /api/whoami": signedIn("new.joiner@maneman.in", false, ONLY_SIGNED_IN) });
   await page.goto("/areas");
-  await expect(page.getByRole("status").filter({ hasText: "You're not on the Staff list" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "You’re not on the Staff list" })).toBeVisible();
   await expect(navigation(page).getByRole("link")).toHaveCount(0);
   await expect(page.getByText("Your access does not reach this page.")).toHaveCount(0);
 });
 
 // The title sat on the header's baseline, high in its 56 px.
-test("centres the section's name in the header", async ({ page }) => {
+test("centres the section’s name in the header", async ({ page }) => {
   await page.goto("/areas");
   const header = await page.getByRole("banner").boundingBox();
   const title = await page.getByRole("heading", { level: 1 }).boundingBox();
@@ -233,7 +233,7 @@ test("moves between sections without a reload, and back", async ({ page }) => {
 });
 
 // Each page drew its own frame, so every move drew the navigation again and the header's search lost what was typed.
-test("keeps its frame as the page under it changes, the header's search holding what was typed", async ({ page }) => {
+test("keeps its frame as the page under it changes, the header’s search holding what was typed", async ({ page }) => {
   await page.goto("/");
   const finder = page.getByLabel(opsCopy.shell.find.label);
   await finder.fill("Rohit");
@@ -271,7 +271,7 @@ for (const path of [
 }
 
 // Inventory's nine sections were nine entries of Operations; the job is one entry now, its sections a page's tabs.
-test("heads each section of a group with the group's sections as tabs, and marks the one open", async ({ page }) => {
+test("heads each section of a group with the group’s sections as tabs, and marks the one open", async ({ page }) => {
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/counts");
   const tabs = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.groups.inventory });

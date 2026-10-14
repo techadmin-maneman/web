@@ -13,7 +13,7 @@ export function SupportCard({
   hours,
 }: {
   readonly carePerson: string | null;
-  readonly hours: { readonly opens: number; readonly closes: number };
+  readonly hours: { readonly opens: number; readonly closes: number; readonly first_reply: number };
 }) {
   const copy = profile.support;
   const open = copy.hours(copy.hour(hours.opens), copy.hour(hours.closes));
@@ -32,8 +32,8 @@ export function SupportCard({
         <Icon d={ICONS.whatsapp} size={21} />
         <span>{copy.message}</span>
       </ButtonLink>
-      {carePerson !== null && <p className={styles.cardHint}>{copy.carePerson(carePerson, open)}</p>}
-      <p className={styles.cardHint}>{copy.hint}</p>
+      {carePerson !== null && <p className={styles.cardHint}>{copy.carePerson(carePerson)}</p>}
+      <p className={styles.cardHint}>{copy.hint(copy.within(hours.first_reply), open)}</p>
     </section>
   );
 }

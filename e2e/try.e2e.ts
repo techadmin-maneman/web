@@ -19,7 +19,7 @@ const SCREENS = {
   looks: { label: "Step three of four", progress: 60 },
   gate: { label: "Step four of four", progress: 90 },
   sent: { label: "Sent to WhatsApp", progress: 100 },
-  error: { label: "Cannot use this photograph", progress: 28 },
+  error: { label: "Can’t use this photo", progress: 28 },
 } as const;
 type Screen = keyof typeof SCREENS;
 
@@ -85,7 +85,7 @@ test.describe("upload", () => {
   });
 
   // On a phone the caption sat across the oval's lower corner brackets.
-  test("the frame's caption sits below the oval and its brackets", async ({ page }) => {
+  test("the frame’s caption sits below the oval and its brackets", async ({ page }) => {
     await open(page, "upload");
     const oval = await page.locator("svg").filter({ hasText: siteCopy.tryOn.upload.oval }).boundingBox();
     const caption = await page.getByText(siteCopy.tryOn.upload.previewCaption).boundingBox();
@@ -231,7 +231,7 @@ test.describe("sent", () => {
     await open(page, "sent");
     await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.title })).toBeVisible();
     await expect(
-      page.getByText("It'll reach WhatsApp on +91 98100 00000 within minutes. We delete it after 14 days."),
+      page.getByText("It’ll reach WhatsApp on +91 98100 00000 within minutes. We delete it after 14 days."),
     ).toBeVisible();
     await expect(page.getByText("never shown on this site", { exact: false })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
@@ -263,15 +263,15 @@ test.describe("error", () => {
     {
       kind: "renderFailed",
       step: "Something went wrong",
-      frame: "The simulation failed",
-      heading: "The simulation did not work this time.",
+      frame: "The look didn’t work",
+      heading: "The look didn’t work this time.",
       another: true,
     },
     {
       kind: "busy",
       step: "Please try again shortly",
-      frame: "The simulation is busy",
-      heading: "The simulation is busy just now.",
+      frame: "The try-on is busy",
+      heading: "The try-on is busy just now.",
       another: true,
     },
     {

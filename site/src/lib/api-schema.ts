@@ -2332,7 +2332,20 @@ export interface components {
                     afternoon: boolean;
                     evening: boolean;
                 };
+                /** @description Each window's hours that day, as ops set them. */
+                hours: {
+                    morning: components["schemas"]["WindowHours"];
+                    afternoon: components["schemas"]["WindowHours"];
+                    evening: components["schemas"]["WindowHours"];
+                };
             }[];
+        };
+        /** @description The window's hours on its day, India's clock, as ops set them (ADR 0102). */
+        WindowHours: {
+            /** @description India's clock, HH:MM. */
+            start: string;
+            /** @description India's clock, HH:MM. */
+            end: string;
         };
         Consultation: {
             /**
@@ -2344,6 +2357,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            hours: components["schemas"]["WindowHours"];
             /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */
@@ -2453,6 +2467,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            hours: components["schemas"]["WindowHours"];
             /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */

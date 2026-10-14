@@ -17,7 +17,7 @@ export interface Recommended {
 }
 
 /**
- * No board draws it: every service open to the client, when there is more than one, a kind at a time in the order
+ * Every service open to the client, when there is more than one, a kind at a time in the order
  * ops keep them, each with the line ops wrote for it, how long it takes and what it costs from the first day it can
  * be booked (ADR 0085). The services are native radio buttons of one name, drawn as the window step's rows: one
  * choice among them all, one tab stop, and the arrow keys move between them. `before`: the steps the sheet will take

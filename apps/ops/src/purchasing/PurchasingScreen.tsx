@@ -1,6 +1,7 @@
 // Operations · Purchasing (docs/decisions/0166-purchase-orders.md): every open order and the latest settled, each
-// opened beneath the list to approve, mark sent, cancel or print; a new order drafted from a supplier's list; and the
-// claims on suppliers, with the returned pieces to settle (./Claims.tsx); and each supplier's scorecard.
+// opened beneath the list to approve, mark sent, cancel or print; a new order drafted from a supplier's list; what a
+// printed order says of us (./Letterhead.tsx); the claims on suppliers, with the returned pieces to settle
+// (./Claims.tsx); and each supplier's scorecard.
 
 import { fullDate } from "@maneman/web-kit/dates";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
@@ -17,6 +18,7 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Claims } from "./Claims.tsx";
 import { DraftOrder } from "./DraftOrder.tsx";
+import { Letterhead } from "./Letterhead.tsx";
 import { OrderPanel } from "./OrderPanel.tsx";
 import { SupplierScores } from "./SupplierScores.tsx";
 import type { Orders } from "./types.ts";
@@ -100,6 +102,7 @@ export function PurchasingScreen() {
               }}
             />
           )}
+          {access.mayCall("POST /api/purchase-orders/letterhead") && <Letterhead orders={current} onSaved={changed} />}
           {access.mayCall("GET /api/supplier-claims") && <Claims orders={current} />}
           {access.mayCall("GET /api/supplier-scorecard") && <SupplierScores />}
         </div>

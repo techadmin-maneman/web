@@ -157,5 +157,5 @@ export function assertInContract(
   body?: unknown,
 ): void {
   const errors = contractErrors(surface, method, pathname, status, body);
-  if (errors.length > 0) throw new Error(`A fake answered outside the API's contract:\n${errors.join("\n")}`);
+  if (errors.length > 0) throw new Error(`A fake answered outside the API’s contract:\n${errors.join("\n")}`);
 }

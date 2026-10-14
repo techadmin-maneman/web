@@ -12,6 +12,8 @@ import {
   type StandingCode,
 } from "../../domain/booking/public-consultation.ts";
 import { joinTheWaitlist, type WaitlistRequest } from "../../domain/booking/public-waitlist.ts";
+import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
+import { windowTimesOf, type WindowTimes } from "../../policy/slot-times.ts";
 import { answerKeyed, onceForKey } from "../../http/idempotency.ts";
 import { formRequest } from "../../http/public-form.ts";
 
@@ -29,15 +31,15 @@ function standingCodeBody(standing: StandingCode | null) {
   return { code: standing.code, kind, value, cap };
 }
 
-/** What a booking answers: the day, the window and the area, the credits and the invite. */
-export function bookedBody(booked: Booked) {
+/** What a booking answers: the day, the window and its hours that day, the area, the credits and the invite. */
+export function bookedBody(booked: Booked, hours: WindowTimes) {
   const { state, date, window, area, credits, invite, oneVisit } = booked;
-  return { state, date, window, area, credits, invite, one_visit: oneVisit };
+  return { state, date, window, hours, area, credits, invite, one_visit: oneVisit };
 }
 
 /** What a booking on the site's own page answers: the same, with its discount code as it stands. */
-export const bookedWithCode = (booked: Booked) => ({
-  ...bookedBody(booked),
+export const bookedWithCode = (booked: Booked, hours: WindowTimes) => ({
+  ...bookedBody(booked, hours),
   discount_code: standingCodeBody(booked.discountCode),
 });
 
@@ -46,11 +48,17 @@ export async function bookFromForm<Body>(
   c: Context<AppEnv>,
   keyed: Keyed,
   request: () => Promise<ConsultationRequest>,
-  answerOf: (booked: Booked) => Body,
+  answerOf: (booked: Booked, hours: WindowTimes) => Body,
 ) {
   const run = await onceForKey(c, keyed, async () => {
-    const booked = await bookConsultation(formRequest(c), await request());
-    return booked.ok ? { ok: true as const, body: answerOf(booked) } : booked;
+    // The day's times are read beside the booking, so the answer waits on no further trip.
+    const [booked, schedule] = await Promise.all([
+      request().then((asked) => bookConsultation(formRequest(c), asked)),
+      loadSlotSchedule(c.env.DB),
+    ]);
+    if (!booked.ok) return booked;
+    const hours = windowTimesOf(schedule.on(booked.date))[booked.window];
+    return { ok: true as const, body: answerOf(booked, hours) };
   });
   return answerKeyed(c, run);
 }

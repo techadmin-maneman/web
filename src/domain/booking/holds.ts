@@ -5,7 +5,7 @@
 
 import { withGst } from "../../config/gst.ts";
 import type { BookingWindow } from "../../config/scheduling.ts";
-import { windowTimesOf } from "../../policy/slot-times.ts";
+import { windowTimesOf, type WindowTimes } from "../../policy/slot-times.ts";
 import { VISIT_TYPE_NAMES, type VisitType } from "../../config/visit-types.ts";
 import { indiaInstant } from "../../lib/india-time.ts";
 import {
@@ -101,7 +101,8 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
     holdDiscount(db, { id: row.id, price }),
   ]);
   const { start, end } = visitTimes(row.date, row.start_unit, minutes, schedule);
-  const windowStarts = indiaInstant(row.date, windowTimesOf(schedule.on(row.date))[row.window_label].start);
+  const hours = windowTimesOf(schedule.on(row.date))[row.window_label];
+  const windowStarts = indiaInstant(row.date, hours.start);
   const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
   return {
     id: row.id,
@@ -109,6 +110,7 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
     service: { tier: row.tier, name: row.service_name ?? VISIT_TYPE_NAMES[row.type], minutes },
     date: row.date,
     window: row.window_label,
+    hours,
     starts_at: start.toISOString(),
     ends_at: end.toISOString(),
     technician: { name: row.technician_name, initials: row.technician_initials },
@@ -208,6 +210,8 @@ export interface BookingUnderWay {
   readonly type: VisitType;
   readonly date: string;
   readonly window: BookingWindow;
+  /** The window's hours that day. */
+  readonly hours: WindowTimes;
   /** Paid for in money, rather than free or covered by a credit. */
   readonly paid: boolean;
   /** A consultation and fit in one visit. */
@@ -242,14 +246,19 @@ export async function bookingUnderWay(db: D1Database, personId: string): Promise
     }>();
   if (row === null) return null;
   const paid = row.amount > 0 && row.use_credit !== 1;
+  const [told, schedule] = await Promise.all([
+    paid || consentGiven(db, personId, "whatsapp_visits"),
+    loadSlotSchedule(db),
+  ]);
   return {
     holdId: row.id,
     type: row.type,
     date: row.date,
     window: row.window_label,
+    hours: windowTimesOf(schedule.on(row.date))[row.window_label],
     paid,
     one_visit: row.one_visit === 1,
-    told: paid || (await consentGiven(db, personId, "whatsapp_visits")),
+    told,
   };
 }
 

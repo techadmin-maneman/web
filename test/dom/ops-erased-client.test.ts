@@ -15,6 +15,7 @@ const visit = (changes: Partial<ClientVisit>): ClientVisit => ({
   id: "22222222-2222-4222-8222-222222222222",
   date: "2026-09-10",
   window_label: "morning",
+  window_hours: { start: "09:00", end: "12:00" },
   starts_at: "2026-09-10T04:30:00.000Z",
   ends_at: "2026-09-10T07:30:00.000Z",
   length_minutes: 180,
@@ -129,7 +130,7 @@ async function show(element: React.ReactElement) {
 const buttonNamed = (name: string) =>
   [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === name);
 
-describe("an erased client's page", () => {
+describe("an erased client’s page", () => {
   it("says when they were erased, and keeps their visits and money, with nothing to call or message", async () => {
     await show(createElement(ErasedRecord, { record: ERASED, onChanged: () => undefined }));
 
@@ -150,13 +151,13 @@ describe("an erased client's page", () => {
 });
 
 describe("a deletion decided in the queue", () => {
-  it("says the account is deleted, and what follows", async () => {
+  it("says the client is erased, and what follows", async () => {
     answers.set("GET /api/deletion-requests", () => Response.json({ requests: [REQUEST] }));
     answers.set(`POST /api/deletion-requests/${REQUEST.id}/decision`, () => Response.json({ state: "done" }));
     await show(createElement(DeletionsScreen));
 
     act(() => {
-      buttonNamed("Delete account")?.click();
+      buttonNamed("Erase client")?.click();
     });
     const check = [...page.querySelectorAll("label")].find((label) =>
       label.textContent.includes("confirmed this with the client"),
@@ -165,11 +166,11 @@ describe("a deletion decided in the queue", () => {
       check?.click();
     });
     await act(async () => {
-      buttonNamed("Delete permanently")?.click();
+      buttonNamed(`Erase ${REQUEST.name}`)?.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(page.querySelector('[role="status"]')?.textContent).toBe("Account deleted. The client is told on WhatsApp.");
+    expect(page.querySelector('[role="status"]')?.textContent).toBe("Client erased. They’re told on WhatsApp.");
     expect(page.textContent).toContain("No deletion requests.");
     expect(page.textContent).not.toContain("Rohit Malhotra");
   });

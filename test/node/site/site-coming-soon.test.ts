@@ -19,9 +19,9 @@ afterAll(() => {
   rmSync(out, { recursive: true, force: true });
 });
 
-describe("production's coming-soon page", () => {
+describe("production’s coming-soon page", () => {
   // The placeholder it served was bare, indexable, and sent no headers of its own.
-  it("is never indexed, and says it is mm-site's production page, as the smoke check reads it", () => {
+  it("is never indexed, and says it is mm-site’s production page, as the smoke check reads it", () => {
     for (const page of ["index.html", "404.html"]) {
       expect(read(page), page).toContain('<meta name="robots" content="noindex, nofollow" />');
       expect(read(page), page).toContain('<meta name="mm-worker" content="mm-site" />');
@@ -30,7 +30,7 @@ describe("production's coming-soon page", () => {
     expect(read("robots.txt")).toBe("User-agent: *\nDisallow: /\n");
   });
 
-  it("carries the site's security headers, its noindex among them", () => {
+  it("carries the site’s security headers, its noindex among them", () => {
     const headers = read("_headers");
     expect(headers).toMatch(/Content-Security-Policy: default-src 'self';.*frame-ancestors 'none'/);
     expect(headers).toContain("Strict-Transport-Security: max-age=63072000; includeSubDomains");
@@ -45,7 +45,7 @@ describe("production's coming-soon page", () => {
   });
 
   // Staging's try-on asks YouCam to fetch them from production's host.
-  it("serves the try-on's reference photographs as the site's public files hold them", () => {
+  it("serves the try-on’s reference photographs as the site’s public files hold them", () => {
     const file = "refs/v1/quiff.jpg";
     expect(readFileSync(join(out, file)).equals(readFileSync(`site/public/${file}`))).toBe(true);
   });
@@ -57,7 +57,7 @@ describe("going live in production", () => {
   });
 
   // Going live was two hand edits: the assets folder here, and a build step in the release.
-  it("needs no edit beyond the switch: production's assets are its build, which the release makes", () => {
+  it("needs no edit beyond the switch: production’s assets are its build, which the release makes", () => {
     type Assets = { assets: { directory: string } };
     const config = readJsonc("site/wrangler.jsonc") as Assets & { env: Record<string, Assets> };
     expect(config.env.production?.assets.directory).toBe("./dist/production");

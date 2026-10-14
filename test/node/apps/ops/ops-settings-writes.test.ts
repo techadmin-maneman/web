@@ -90,7 +90,7 @@ describe("Settings", () => {
     expect(readFileSync(file, "utf8")).toMatch(proof);
   });
 
-  it("sends every write from a form's steps or a DeleteAction", () => {
+  it("sends every write from a form’s steps or a DeleteAction", () => {
     const writes = writesOf();
     expect([...writes.values()].reduce((sum, members) => sum + members.size, 0)).toBeGreaterThan(20);
     expect(writes.get("settingsApi")?.size).toBeGreaterThan(3);

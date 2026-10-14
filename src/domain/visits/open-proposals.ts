@@ -5,6 +5,8 @@
 import { BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
 import { z } from "zod";
 import { storedJson } from "../../lib/stored-json.ts";
+import { windowTimesOf } from "../../policy/slot-times.ts";
+import type { SlotSchedule } from "../booking/slot-times.ts";
 
 /** A proposal still open on a visit, as the client's app and the dispatch board show it. */
 export interface ProposedMove {
@@ -12,6 +14,8 @@ export interface ProposedMove {
   /** India's date, and the window, the visit would go to. */
   readonly date: string;
   readonly window: BookingWindow;
+  /** The window's hours on that day, India's clock. */
+  readonly hours: { readonly start: string; readonly end: string };
   readonly technician: { readonly name: string; readonly initials: string } | null;
   /** The last moment it may be accepted. */
   readonly expires_at: string;
@@ -37,7 +41,7 @@ const PROPOSAL = z.object({
 });
 
 /** The open proposal openProposalJson read, while it may still be accepted; null for none. */
-export function openProposalOf(json: string | null, now: Date): ProposedMove | null {
+export function openProposalOf(json: string | null, now: Date, schedule: SlotSchedule): ProposedMove | null {
   if (json === null) return null;
   const read = storedJson(PROPOSAL, json, "openProposalJson");
   if (Date.parse(read.expires_at) <= now.getTime()) return null;
@@ -45,6 +49,7 @@ export function openProposalOf(json: string | null, now: Date): ProposedMove | n
     id: read.id,
     date: read.date,
     window: read.window,
+    hours: windowTimesOf(schedule.on(read.date))[read.window],
     technician:
       read.technician_name === null || read.technician_initials === null
         ? null

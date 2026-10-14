@@ -131,7 +131,7 @@ describe("the Counts page", () => {
     expect(page.textContent).toContain(copy.done);
   });
 
-  it("signs off a difference with why, beside what the ledger held, and changes an item's class", async () => {
+  it("signs off a difference with why, beside what the ledger held, and changes an item’s class", async () => {
     await show();
     await press(opener("Delhi stockroom"));
     expect(page.textContent).toContain(copy.differencesColumns[1]);

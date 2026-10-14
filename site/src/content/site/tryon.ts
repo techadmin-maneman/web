@@ -1,5 +1,6 @@
 // The try-on: the stages, the looks, the consent and the gate, and every screen of /try.
 
+import { CLIENT_WORDS, codeMismatch } from "@maneman/web-kit/client-words";
 import { LOSS_EXTENTS, type LossExtent } from "@rules/config/booking.ts";
 import { PRESETS, type PresetId } from "@rules/config/presets.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
@@ -40,7 +41,7 @@ export const stageOptions: readonly {
   },
 ];
 if (stageOptions.map((stage) => stage.id).join() !== LOSS_EXTENTS.join()) {
-  throw new Error("stageOptions must list the backend's LOSS_EXTENTS in order");
+  throw new Error("stageOptions must list the backend’s LOSS_EXTENTS in order");
 }
 
 /**
@@ -84,8 +85,7 @@ export function gateCopy(gate: Notice) {
 
 /**
  * The try-on's screens. The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so
- * the gate asks for the number before the look is made, and the sent and unavailable screens, which the design does
- * not draw, are ADR 0104's words.
+ * the gate asks for the number before the look is made, and the sent and unavailable screens are ADR 0104's words.
  */
 export const tryOn = {
   back: "Back",
@@ -97,20 +97,20 @@ export const tryOn = {
     looks: "Step three of four",
     gate: "Step four of four",
     sent: "Sent to WhatsApp",
-    error: "Cannot use this photograph",
+    error: "Can’t use this photo",
   },
   upload: {
     title: "One photo, taken straight on.",
-    body: "The simulation is only as good as the photo. Three things matter, and none of them need a good camera.",
+    body: "The look is only as good as the photo. Three things matter, and none of them need a good camera.",
     guidelines: [
       { n: "1", title: "Face the window", body: "Daylight from the front, nothing bright behind you." },
       { n: "2", title: "Straight on, no tilt", body: "Phone at eye level, arm out, chin level." },
       { n: "3", title: "Nothing on your head", body: "No cap, no hood, hair as it is today." },
     ],
-    choose: "Choose a photograph",
+    choose: "Choose a photo",
     camera: "Use the camera",
-    previewCaption: "Your photograph appears here",
-    previewAlt: "The photograph you chose",
+    previewCaption: "Your photo appears here",
+    previewAlt: "The photo you chose",
     oval: "Fill the oval",
   },
   /** With the photo notice's words (consentCopy). */
@@ -131,7 +131,7 @@ export const tryOn = {
   },
   looks: {
     title: "Choose a look.",
-    body: "You get one look, so pick the one you'd wear.",
+    body: "You get one look, so pick the one you’d wear.",
     choose: "Choose one to continue",
     continue: "Continue",
   },
@@ -140,21 +140,21 @@ export const tryOn = {
     frame: "For your WhatsApp only",
     name: "Name",
     namePlaceholder: "Your name",
-    nameError: "Tell us what to call you, in letters.",
+    nameError: CLIENT_WORDS.nameError,
     mobile: "Mobile",
-    mobilePlaceholder: "98100 00000",
+    mobilePlaceholder: CLIENT_WORDS.mobilePlaceholder,
     mobileError: "Enter a valid 10-digit mobile number.",
     submit: "Send my look",
-    // Not drawn: once the WhatsApp code is on its way, the button confirms it and sends the look.
+    // Once the WhatsApp code is on its way, the button confirms it and sends the look.
     confirm: "Confirm and send my look",
-    sending: "Sending",
+    sending: "Sending…",
     /** Said while the look waits on the photograph's upload. */
     photoOnItsWay: "Your photo is still on its way.",
     errors: {
       rateLimited: "This number is out of tries for today. Try again tomorrow.",
       taken: "This look is already on its way to another number.",
-      other: "That didn't go through. Try again in a minute.",
-      // Not drawn: refusals of the WhatsApp code.
+      other: "That didn’t go through. Try again in a minute.",
+      // Refusals of the WhatsApp code.
       codes: "That’s too many codes for this number today. Try again tomorrow.",
       turnstile: "We couldn’t confirm you’re a person. Try again.",
       notProved: "Your WhatsApp code has expired. Press Send my look for a new one.",
@@ -165,76 +165,76 @@ export const tryOn = {
     frame: "On its way to your WhatsApp",
     title: "Your new look is on its way.",
     /** The number the visitor gave goes between the two. */
-    to: { before: "It'll reach WhatsApp on ", after: " within minutes." },
+    to: { before: "It’ll reach WhatsApp on ", after: " within minutes." },
     // Production's RESULT_RETENTION_DAYS, as the privacy notice gives it.
     privacy: "We delete it after 14 days.",
     disclaimer:
-      "An illustrative simulation, not a photograph of a result. Your hair system is matched to your own hair colour, density and growth pattern.",
+      "An illustration, not a photo of a result. Your hair system is matched to your own hair colour, density and growth pattern.",
     book: "Book a free consultation",
     home: "Back to the site",
     /** A visitor who has had their look, back again, whose number the page does not know. */
     returning: {
       title: "Your look has already been sent.",
-      body: "We sent it to the WhatsApp number you gave. It's one look per person, every 30 days.",
+      body: "We sent it to the WhatsApp number you gave. One look every 30 days.",
     },
   },
   error: {
     another: "Choose another",
     book: "Book a consultation instead",
-    /** By ErrorKind (lib/tryon-errors.ts). The design's labels, heading and body are the photograph's. */
+    /** By ErrorKind (lib/tryon-errors.ts). */
     kinds: {
       photo: {
-        step: "Cannot use this photograph",
-        frame: "Cannot read the photograph",
-        title: "We cannot use this photograph.",
+        step: "Can’t use this photo",
+        frame: "Can’t read the photo",
+        title: "We can’t use this photo.",
         body: "Your face may be turned, your hairline covered, or the light too low. Face a window and shoot straight on.",
       },
       noFace: {
-        step: "Cannot see your face",
+        step: "Can’t see your face",
         frame: "Face not clear",
-        title: "We couldn't see your face clearly.",
-        body: "Try a well-lit photograph, taken straight on.",
+        title: "We couldn’t see your face clearly.",
+        body: "Try a well-lit photo, taken straight on.",
       },
       shoulders: {
         step: "Show your shoulders",
         frame: "Shoulders out of frame",
         title: "We need to see your shoulders.",
-        body: "Use a photograph that shows your head and shoulders.",
+        body: "Use a photo that shows your head and shoulders.",
       },
       facing: {
         step: "Face the camera",
         frame: "Face turned away",
         title: "Face the camera straight on.",
-        body: "Then take the photograph again.",
+        body: "Then take the photo again.",
       },
       onePerson: {
         step: "Just you, please",
         frame: "More than one person",
-        title: "Only you in the photograph, please.",
-        body: "Use a photograph with no one else in it.",
+        title: "Only you in the photo, please.",
+        body: "Use a photo with no one else in it.",
       },
       notStyleable: {
-        step: "Try another photograph",
+        step: "Try another photo",
         frame: "Cannot style this one",
-        title: "We couldn't style this photograph.",
+        title: "We couldn’t style this photo.",
         body: "Please try another one.",
       },
       refused: {
-        step: "Try another photograph",
-        frame: "Photograph not accepted",
-        title: "Please try another photograph.",
-        body: "We can't use this one.",
+        step: "Try another photo",
+        frame: "Photo not accepted",
+        title: "Please try another photo.",
+        body: "We can’t use this one.",
       },
       renderFailed: {
         step: "Something went wrong",
-        frame: "The simulation failed",
-        title: "The simulation did not work this time.",
-        body: "The photograph looked fine; the simulation failed on our side. Try again with the same photograph or another, or book a consultation and see it in person.",
+        frame: "The look didn’t work",
+        title: "The look didn’t work this time.",
+        body: "We couldn’t make your look this time. Try again, or book a free consultation to see it in person.",
       },
       busy: {
         step: "Please try again shortly",
-        frame: "The simulation is busy",
-        title: "The simulation is busy just now.",
+        frame: "The try-on is busy",
+        title: "The try-on is busy just now.",
         body: "Try again in a few minutes, or book a consultation and see it in person.",
       },
       /** While WhatsApp cannot send a look, the try-on does not run (ADR 0104). It has no Choose another. */
@@ -242,7 +242,7 @@ export const tryOn = {
         step: "Not available right now",
         frame: "Paused",
         title: "The try-on is paused.",
-        body: "We send every look on WhatsApp, and that isn't switched on yet. Book a free consultation and see the real thing.",
+        body: "Book a free consultation and see the real thing.",
       },
       /** While the simulation itself cannot run. It has no Choose another either. */
       paused: {
@@ -268,13 +268,12 @@ export const numberCode = {
   /** The number the code went to goes after it. */
   sentTo: "Sent on WhatsApp to +91 ",
   hint: "It confirms the number is yours.",
-  incomplete: "Enter the six digits from WhatsApp.",
-  wrong: (left: number) =>
-    left === 1 ? "That code is not right. One try left." : `That code is not right. ${String(left)} tries left.`,
+  incomplete: "Enter the 6 digits from WhatsApp.",
+  wrong: codeMismatch,
   expired: "That code has expired. Send a new one.",
-  failed: "That didn’t go through. Try again.",
+  failed: CLIENT_WORDS.failed,
   again: "Send a new code",
-  checking: "Checking",
+  checking: "Checking…",
 };
 
 // ---------------------------------------------------------------------------

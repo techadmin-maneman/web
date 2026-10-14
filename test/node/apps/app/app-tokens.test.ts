@@ -33,7 +33,7 @@ const defined = new Set([
   ...tokenNames("packages/ui/base.css"),
 ]);
 
-describe.each(APPS)("%s's design tokens", (_app, source) => {
+describe.each(APPS)("%s’s design tokens", (_app, source) => {
   // An app's own sizes, which it alone reads (apps/<app>/src/styles/tokens.css), are where its raw values are written.
   const ownTokens = `${source}/styles/tokens.css`;
   const appDefined = new Set([...defined, ...(existsSync(ownTokens) ? tokenNames(ownTokens) : [])]);

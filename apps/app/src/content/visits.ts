@@ -15,11 +15,11 @@ export const visits = {
   // Offline, the visits are not kept on the phone.
   offline: "Your visits will load when you are back online.",
   cancelled: "Cancelled",
-  notHome: "Not home",
+  notHome: "Missed visit",
   partial: "Partly done",
   /*
    * The client's own record, derived from their visits and
-   * payments (src/domain/visits/client-history.ts). No board draws it. Home writes
+   * payments (src/domain/visits/client-history.ts). Home writes
    * one sentence about a replacement, "Your replacement is due in
    * March.", and that sentence is kept word for word.
    *
@@ -45,27 +45,28 @@ export const visits = {
     duration: "Duration",
     type: "Type",
     done: "What was done",
-    /** The checklist the technician ticked, as one line, as the visit's record writes it. */
-    doneLine: (items: readonly string[]) => `${items.join(", ")}.`,
+    /** The checklist the technician ticked, as one sentence: "Hair system removed, scalp cleaned, cut and styled." */
+    doneLine: (items: readonly string[]) =>
+      `${items.map((item, index) => (index === 0 ? item : item.charAt(0).toLowerCase() + item.slice(1))).join(", ")}.`,
     /** The things a finished visit can say about its invoice (ADR 0056). */
     invoice: {
       open: "Tax invoice",
       newTab: "PDF, opens in a new tab",
-      generating: "The invoice is still generating. Usually ready within the hour.",
-      // A day after the visit, "within the hour" is no longer true.
-      late: "The invoice is taking longer than it should. Message us and we’ll send it.",
+      generating: "Your invoice will be ready within the hour.",
+      // Past the hour, with a way to ask for it; a day after the visit, late.
+      delayed: "Your invoice is on its way. Message us if you need it today.",
+      late: "Your invoice is taking longer than it should. Message us and we’ll send it.",
       message: "Message us",
       // A free visit says "No charge", and never promises a document.
       free: "No charge for this visit, so there is no invoice.",
       // An invoice held back on purpose: a credit visit's, and a draft whose total is not what the visit
       // was sold for, which is checked before it is sent.
-      credit: "Paid with a free service visit. Your invoice will follow.",
+      credit: "Covered by a free service visit.",
       checking: "We’re checking this invoice before sending it. Message us if you need it sooner.",
     },
-    // The design draws no visit the client missed, nor the dispute of its charge (ADR 0096).
-    // The reason ops gave stays with them.
+    // A visit the client missed, and the dispute of its charge (ADR 0096). The reason ops gave stays with them.
     noShow: {
-      label: "Not home",
+      label: "Missed visit",
       line: (minutes: number) => `We came and waited ${String(minutes)} minutes, but no one was home.`,
       decision: {
         undecided: "We are looking at it. Nothing is charged until we have.",

@@ -3,7 +3,7 @@
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const spend = {
-  title: "Offline spend",
+  title: "Spend",
   intro:
     "What we spend to win clients that no ad account reports, before GST. Google and Meta come from their own accounts.",
   month: "Month",
@@ -22,15 +22,15 @@ export const spend = {
   amount: "Amount, Rs.",
   note: "Note",
   add: "Add",
-  adding: "Adding",
+  adding: "Adding…",
   none: "Nothing yet.",
   columns: { month: "Month", city: "City", channel: "Channel", amount: "Amount", note: "Note", by: "Added by" },
-  remove: "Take off",
-  /** "Take off: October 2026 · Gurgaon · Rs. 12,345" */
-  removeLabel: (month: string, city: string, amount: string) => `Take off: ${month} · ${city} · ${amount}`,
+  remove: "Remove",
+  /** "Remove: October 2026 · Gurgaon · Rs. 12,345" */
+  removeLabel: (month: string, city: string, amount: string) => `Remove: ${month} · ${city} · ${amount}`,
   errors: {
-    month: "Pick a month from the list.",
-    city: "Pick a city from the list.",
+    month: "Choose a month from the list.",
+    city: "Choose a city from the list.",
     amount: "Type whole rupees, Rs. 1 or more.",
     invalid_request: "Check the amount and the month.",
     not_found: changed("Already taken off."),

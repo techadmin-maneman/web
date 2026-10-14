@@ -44,7 +44,7 @@ test("sorts the roster by a column, and narrows it by city or a search", async (
 });
 
 // Each technician took some 270 px with their phones and leave beneath them: 34,000 px for 168.
-test("gives each technician one row of the board's height, however many phones and days off", async ({ page }) => {
+test("gives each technician one row of the board’s height, however many phones and days off", async ({ page }) => {
   await open(page);
   for (const name of ["Imran Qureshi", "Sandeep Yadav", "Faizan Ali"]) {
     const box = await page.getByRole("row").filter({ hasText: name }).boundingBox();
@@ -54,7 +54,7 @@ test("gives each technician one row of the board's height, however many phones a
 });
 
 // The roster was a card some 480 px wide in a page with room for far more.
-test("lets the roster take the page's width", async ({ page }) => {
+test("lets the roster take the page’s width", async ({ page }) => {
   await open(page);
   const table = await page.getByRole("table").boundingBox();
   const main = await page.getByRole("main").boundingBox();
@@ -124,20 +124,20 @@ test("puts Leave where the board draws Skill, with no design note beneath the ta
 });
 
 // "AWAY" never said until when.
-test("says in the roster when a technician's next leave begins, or until when they are away", async ({ page }) => {
+test("says in the roster when a technician’s next leave begins, or until when they are away", async ({ page }) => {
   await open(page);
   await expect(page.getByRole("row").filter({ hasText: "Sandeep Yadav" })).toContainText("From 2 Oct");
 
   await page.clock.setFixedTime(new Date("2027-10-03T05:00:00.000Z"));
   await page.reload();
-  const away = page.getByRole("row").filter({ hasText: "Sandeep Yadav" }).getByText("Away to 6 Oct");
+  const away = page.getByRole("row").filter({ hasText: "Sandeep Yadav" }).getByText("Away until 6 Oct");
   await expect(away).toBeVisible();
   // In the board's small capitals, not in sans capitals.
   await expect(away).toHaveCSS("font-variant-caps", "all-small-caps");
 });
 
 // A technician off sick or a lost phone meant finding them in three sections, and the panel had no address.
-test("opens a technician's own page from their name, a tab at a time, each at an address of its own", async ({
+test("opens a technician’s own page from their name, a tab at a time, each at an address of its own", async ({
   page,
 }) => {
   await open(page);
@@ -244,12 +244,12 @@ test("keeps the phone when the revoke is called off", async ({ page }) => {
   await expect(main.getByText("Revoked 22 Sep 2027")).toBeHidden();
 });
 
-test("says so when the phone is no longer that technician's", async ({ page }) => {
+test("says so when the phone is no longer that technician’s", async ({ page }) => {
   await open(page, { [REVOKE_IT]: fails(404, "not_found") });
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
   await main.getByRole("button", { name: opsCopy.technicians.phones.confirm }).click();
-  await expect(page.getByText("That phone is no longer theirs. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("That phone is no longer theirs. Here’s the latest.")).toBeVisible();
 });
 
 test("says so when the roster cannot be loaded, and loads it on Try again", async ({ page }) => {

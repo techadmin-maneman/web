@@ -28,17 +28,17 @@ export const referrals = {
      */
     reason: {
       label: { approve: "Reason for approving", reject: "Reason for rejecting" },
-      confirm: { approve: "Approve grant", reject: "Reject grant" },
+      confirm: { approve: "Approve reward", reject: "Reject reward" },
       cancel: "Cancel",
     },
     /** The board draws no empty queue. */
     empty: "Nothing held for review.",
-    deciding: "Saving",
+    deciding: "Saving…",
     errors: {
       not_permitted: NOT_PERMITTED,
       not_found: changed("Already decided."),
       // A consultation and fit is sold only once paid, so its grant waits for the payment; it can be rejected now.
-      not_paid: "The friend hasn't paid yet. Approve once they have, or reject now.",
+      not_paid: "The friend hasn’t paid yet. Approve once they have, or reject now.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
@@ -51,7 +51,7 @@ export const referrals = {
     columns: {
       referrer: "Referrer",
       opens: "Opens",
-      consults: "Consults",
+      consults: "Consultations",
       fits: "Fits",
       granted: "Granted",
       redeemed: "Redeemed",
@@ -60,6 +60,6 @@ export const referrals = {
     empty: "No referrers yet.",
     /** The table is read fifty referrers at a time, the busiest first. */
     more: "Show more",
-    loading: "Loading",
+    loading: "Loading…",
   },
 } as const;

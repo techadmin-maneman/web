@@ -8,7 +8,7 @@ import { fakeTech } from "./fake-tech.ts";
 import { keptOnPhone, leftOnPhone } from "./on-phone.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
-test("lists the day's jobs in order, with no amount anywhere (board A1)", async ({ page }) => {
+test("lists the day’s jobs in order, with no amount anywhere (board A1)", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/");
 
@@ -34,7 +34,7 @@ test("lists the day's jobs in order, with no amount anywhere (board A1)", async 
 });
 
 // "CONSULTATION AND FIT · PAYS ONCE FITTED" broke into two ragged columns at 375 and 390 px.
-test("keeps a row's type and its badge each on one line on a narrow phone", async ({ page }) => {
+test("keeps a row’s type and its badge each on one line on a narrow phone", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   const fake = await fakeTech(page);
   fake.type = "first_fit";
@@ -124,7 +124,7 @@ test("says there is no signal when nothing answers, even while the phone says it
   await expect(page.getByText(techCopy.today.offline.title)).toHaveCount(0);
 });
 
-test("keeps today's and tomorrow's jobs and lets go of every older day and card as the day arrives", async ({
+test("keeps today’s and tomorrow’s jobs and lets go of every older day and card as the day arrives", async ({
   page,
 }) => {
   await fakeTech(page);
@@ -150,7 +150,7 @@ test("keeps today's and tomorrow's jobs and lets go of every older day and card 
   expect(kept).toContain(`cards:${JOB_ID}`);
 });
 
-test("opens a job's card with its address, access notes and the way in (board A3)", async ({ page }) => {
+test("opens a job’s card with its address, access notes and the way in (board A3)", async ({ page }) => {
   await fakeTech(page);
   await page.goto("/");
   await page.getByText("Rohit M.").first().click();
@@ -181,7 +181,7 @@ test("a job further out shows time, type and sector only, and cannot be started"
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
 });
 
-test("scrolls the whole day on a screen shorter than it, down to tomorrow's last job", async ({ page }) => {
+test("scrolls the whole day on a screen shorter than it, down to tomorrow’s last job", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 480 });
   const fake = await fakeTech(page);
   fake.tomorrow = true;
@@ -199,7 +199,7 @@ test("scrolls the whole day on a screen shorter than it, down to tomorrow's last
   await expect(last).toBeInViewport({ ratio: 1 });
 });
 
-test("every target on every screen is at least the design's 48 px, and the primary action is 64", async ({ page }) => {
+test("every target on every screen is at least the design’s 48 px, and the primary action is 64", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "replacement";
   fake.pieces = [ROHITS_PIECE];

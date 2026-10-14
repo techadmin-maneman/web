@@ -95,7 +95,16 @@ describe("cycle counts", () => {
     expect(alert).not.toBeNull();
     const differs = await request(job.ops, `/api/count-tasks/${weekly}/differences`);
     expect((await differs.json<{ lines: unknown[] }>()).lines).toEqual([
-      { consumable_code: code, name: NAME, held: 2, counted: 1, recounted: 1, missing_labels: [], unknown_labels: [] },
+      {
+        consumable_code: code,
+        name: NAME,
+        unit: "piece",
+        held: 2,
+        counted: 1,
+        recounted: 1,
+        missing_labels: [],
+        unknown_labels: [],
+      },
     ]);
     const signed = await job.opsPost(`/api/count-tasks/${weekly}/sign-off`, { note: "One piece not found" });
     expect((await signed.json<Task>()).task.state).toBe("done");

@@ -7,8 +7,8 @@ import { activityPath } from "../../../../../apps/ops/src/route.ts";
 
 const CLIENT = "22000000-0000-4000-8000-000000000001";
 
-describe("Activity's filters", () => {
-  it("are carried in the page's address, and read back from it", () => {
+describe("Activity’s filters", () => {
+  it("are carried in the page’s address, and read back from it", () => {
     const path = activityPath({ person: CLIENT, action: "visit.cancel", from: "2026-10-01" });
 
     expect(path).toBe(`/activity?person=${CLIENT}&action=visit.cancel&from=2026-10-01`);

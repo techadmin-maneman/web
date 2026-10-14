@@ -31,7 +31,7 @@ afterEach(() => {
 
 const reporter = () => import("../../packages/web-kit/client-errors.ts");
 
-describe("a page's errors", () => {
+describe("a page’s errors", () => {
   // The page's listeners stay for the rest of the file, so they are put on once, here.
   it("posts a script error with where it was thrown, and a promise nobody caught, same-origin", async () => {
     const { reportUncaughtErrors } = await reporter();
@@ -56,7 +56,7 @@ describe("a page's errors", () => {
     expect(posted[1]?.report).toMatchObject({ kind: "unhandled_rejection", message: "Error: The day did not load" });
   });
 
-  it("posts what an error boundary caught, which no listener of the page's hears", async () => {
+  it("posts what an error boundary caught, which no listener of the page’s hears", async () => {
     const { reportRenderError } = await reporter();
     const page = document.createElement("div");
     const root = createRoot(page);
@@ -89,7 +89,7 @@ describe("a page's errors", () => {
     expect(posted).toHaveLength(10);
   });
 
-  it("names the page's build, as its index.html does", async () => {
+  it("names the page’s build, as its index.html does", async () => {
     const meta = Object.assign(document.createElement("meta"), { name: "mm-version", content: "7a782035b563" });
     document.head.append(meta);
     const { reportClientError } = await reporter();

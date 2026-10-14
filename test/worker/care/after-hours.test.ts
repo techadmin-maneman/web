@@ -17,7 +17,7 @@ const EVOLUTION: NonNullable<Settings["messaging"]["evolution"]> = {
   instance: "maneman",
   webhookToken: TOKEN,
 };
-const ANSWER = "Thank you for your message.\nOur team is back at 9 am and will reply by 10 am.";
+const ANSWER = "Thank you for your message.\nWe're back at 9 am tomorrow and will reply by 10 am.";
 
 let sent: { to: string; text: string }[];
 
@@ -83,6 +83,14 @@ describe("the after-hours answer", () => {
     await written("Thanks!", "2026-10-13", "12:00");
     await written("One more thing", "2026-10-13", "21:30");
     expect(sent).toHaveLength(2);
+  });
+
+  // The answer said only the hour, so a message at 10 pm was told Care were back "at 9 am", the next day.
+  it("says Care are back tomorrow, or, to a message after midnight, at the hour that morning", async () => {
+    await written("Up late", "2026-10-13", "01:30");
+    expect(sent).toEqual([
+      { to: "+919810000001", text: "Thank you for your message.\nWe're back at 9 am and will reply by 10 am." },
+    ]);
   });
 
   it("sends nothing while messaging is off", async () => {

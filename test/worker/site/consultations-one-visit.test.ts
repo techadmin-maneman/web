@@ -80,6 +80,7 @@ describe("a consultation and fit in one visit", () => {
       state: "booked",
       date: "2026-09-23",
       window: "morning",
+      hours: { start: "09:00", end: "12:00" },
       area: "Gurgaon South City II",
       credits: false,
       invite: "unknown",

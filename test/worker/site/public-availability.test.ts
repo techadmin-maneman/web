@@ -18,9 +18,15 @@ beforeEach(async () => {
 
 // The form drew every day and window, so a full one failed only after the whole form was filled.
 describe("GET /api/availability/public", () => {
-  type Open = { plan: string; days: { date: string; windows: Record<string, boolean> }[] };
+  type Open = { plan: string; days: { date: string; windows: Record<string, boolean>; hours: unknown }[] };
   const ALL_OPEN = { morning: true, afternoon: true, evening: true };
   const NONE_OPEN = { morning: false, afternoon: false, evening: false };
+  /** Each window's hours that day, the times in code while ops set none. */
+  const HOURS = {
+    morning: { start: "09:00", end: "12:00" },
+    afternoon: { start: "12:00", end: "16:00" },
+    evening: { start: "16:00", end: "20:00" },
+  };
 
   const open = (query: string, settings = {}) => request(site(settings), `/api/availability/public?${query}`);
   const daysOf = async (query: string, settings = {}) => {
@@ -59,7 +65,7 @@ describe("GET /api/availability/public", () => {
     const { plan, days } = JSON.parse(text) as Open;
     expect(plan).toBe("consultation");
     expect(days).toHaveLength(14);
-    expect(days[0]).toEqual({ date: "2026-09-22", windows: ALL_OPEN });
+    expect(days[0]).toEqual({ date: "2026-09-22", windows: ALL_OPEN, hours: HOURS });
     expect(days.at(-1)?.date).toBe("2026-10-05");
   });
 
@@ -82,7 +88,11 @@ describe("GET /api/availability/public", () => {
 
     const days = await daysOf("pincode=122018&plan=one_visit");
 
-    expect(days[0]).toEqual({ date: "2026-09-22", windows: { morning: true, afternoon: true, evening: false } });
+    expect(days[0]).toEqual({
+      date: "2026-09-22",
+      windows: { morning: true, afternoon: true, evening: false },
+      hours: HOURS,
+    });
     expect(windowsOn(days, "2026-09-23")).toEqual(NONE_OPEN);
     const proved = await provedNumberCode("+919810000003");
     const refused = await book({ mobile: "9810000003", one_visit: true, window: "morning", number_code_id: proved });

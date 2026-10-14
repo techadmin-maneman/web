@@ -29,25 +29,22 @@ export const technicianOf = (visit: VisitSummary): string[] =>
 /** A day after the visit, "usually ready within the hour" is no longer true of its invoice. */
 const INVOICE_LATE_MS = 24 * 60 * 60 * 1000;
 
-type InvoiceState = "open" | "free" | "credit" | "checking" | "generating" | "late" | "none";
+/** How long after the visit an invoice is usually raised: past it, the client is offered a way to ask for it. */
+const INVOICE_USUAL_MS = 60 * 60 * 1000;
+
+type InvoiceState = "open" | "free" | "credit" | "checking" | "generating" | "delayed" | "late" | "none";
 
 /**
  * What a finished visit can say of its invoice (ADR 0056): here to open, never coming because the visit was free,
- * held back (ADR 0070) because a credit paid for the visit or because it is being checked, still generating, or
- * late. Nothing at all for a visit not completed, which is billed by hand if at all.
+ * held back (ADR 0070) because a credit paid for the visit or because it is being checked, still generating, past
+ * the hour it usually takes, or late. Nothing at all for a visit not completed, which is billed by hand if at all.
  */
 export function invoiceState(visit: VisitDetail, now: number): InvoiceState {
   if (visit.status !== "completed") return "none";
   if (visit.document_id !== null) return "open";
   if (!visit.invoice_expected) return "free";
   if (visit.invoice_held !== null) return visit.invoice_held;
-  return now - Date.parse(visit.ends_at) > INVOICE_LATE_MS ? "late" : "generating";
-}
-
-/** 85 → "1 h 25 m", as the visit's record writes a duration. */
-export function duration(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  if (hours === 0) return `${String(rest)} m`;
-  return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} m`;
+  const since = now - Date.parse(visit.ends_at);
+  if (since > INVOICE_LATE_MS) return "late";
+  return since > INVOICE_USUAL_MS ? "delayed" : "generating";
 }

@@ -105,13 +105,13 @@ test("asks for a mobile it can read before it sends anything", async ({ page }) 
   expect(sent).toEqual([]);
 });
 
-test("changes a technician's details, sending only what changed", async ({ page }) => {
+test("changes a technician’s details, sending only what changed", async ({ page }) => {
   const { roster, reply } = rosterOf(TECHNICIANS);
   await openWith(page, { [CHANGE]: json({ id: IMRAN }) }, reply);
   const main = await pageOf(page, "Imran Qureshi");
   await expect(main.getByText("+91 98100 00001")).toBeVisible();
 
-  await main.getByRole("button", { name: "Edit Imran Qureshi's details" }).click();
+  await main.getByRole("button", { name: "Edit Imran Qureshi’s details" }).click();
   await main.getByRole("textbox", { name: opsCopy.technicians.fields.zone }).fill("Sec 1–39");
   const sent = page.waitForRequest((request) => request.method() === "PATCH");
   roster.current = {
@@ -130,7 +130,7 @@ test("moves a technician to another city, or to none", async ({ page }) => {
   const main = await pageOf(page, "Imran Qureshi");
   await expect(main.getByRole("definition").filter({ hasText: "Gurgaon" })).toBeVisible();
 
-  await main.getByRole("button", { name: "Edit Imran Qureshi's details" }).click();
+  await main.getByRole("button", { name: "Edit Imran Qureshi’s details" }).click();
   const city = main.getByRole("combobox", { name: "City" });
   await expect(city).toHaveValue("Gurgaon");
   await city.selectOption("No city · no bookings");
@@ -213,7 +213,7 @@ test("lists the technicians switched off apart, and switches one back on", async
   await expect(page.getByRole("row").filter({ hasText: "Ravi Kumar" })).toBeVisible();
 });
 
-test("says so when the number they sign in with is another's now", async ({ page }) => {
+test("says so when the number they sign in with is another’s now", async ({ page }) => {
   await openWith(page, { [SWITCH_ON]: fails(409, "number_in_use") }, json({ ...TECHNICIANS, switched_off: [RAVI] }));
   const main = await pageOf(page, "Ravi Kumar");
   await main.getByRole("button", { name: "Switch Ravi Kumar back on" }).click();
@@ -229,9 +229,9 @@ test("deletes a technician added by mistake, once asked, and goes back to the ro
   const main = await pageOf(page, "Imran Qureshi");
 
   await main.getByRole("button", { name: "Delete Imran Qureshi" }).click();
-  await expect(main.getByText("Delete Imran Qureshi? This can't be undone.")).toBeVisible();
+  await expect(main.getByText("Delete Imran Qureshi? This can’t be undone.")).toBeVisible();
   roster.current = { ...TECHNICIANS, technicians: TECHNICIANS.technicians.filter((each) => each.id !== IMRAN) };
-  await main.getByRole("button", { name: "Delete permanently" }).click();
+  await main.getByRole("button", { name: "Delete", exact: true }).click();
 
   await expect(page).toHaveURL(/\/technicians$/);
   await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toHaveCount(0);
@@ -241,17 +241,17 @@ test("says to switch off instead a technician with work on record", async ({ pag
   await openWith(page, { [DELETE_IT]: fails(409, "in_use") });
   const main = await pageOf(page, "Imran Qureshi");
   await main.getByRole("button", { name: "Delete Imran Qureshi" }).click();
-  await main.getByRole("button", { name: "Delete permanently" }).click();
+  await main.getByRole("button", { name: "Delete", exact: true }).click();
 
   await expect(main.getByRole("alert")).toHaveText(opsCopy.technicians.inUse);
   await expect(main.getByRole("button", { name: "Switch off Imran Qureshi" })).toBeVisible();
 });
 
-test("says plainly when the person's access does not reach a switch", async ({ page }) => {
+test("says plainly when the person’s access does not reach a switch", async ({ page }) => {
   await openWith(page, { [SWITCH_OFF]: fails(403, "not_permitted") });
   const main = await pageOf(page, "Imran Qureshi");
   await main.getByRole("button", { name: "Switch off Imran Qureshi" }).click();
   await main.getByRole("button", { name: "Switch off" }).click();
 
-  await expect(main.getByRole("alert")).toHaveText("Your access doesn't include this. Ask an admin.");
+  await expect(main.getByRole("alert")).toHaveText("Your access doesn’t include this. Ask an admin.");
 });

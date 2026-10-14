@@ -10,7 +10,7 @@ import { Heading } from "./shared.tsx";
 
 /**
  * The address, before any slot, for a client who has given none (ADR 0079): Profile's own form, under its heading.
- * No board draws it. `refused`: the API refused a hold for want of one, so the sheet came back here. `before`: the
+ * `refused`: the API refused a hold for want of one, so the sheet came back here. `before`: the
  * steps the sheet takes before the date, of which this is the last.
  */
 export function AddressStep({ refused, before, onSaved }: { refused: boolean; before: number; onSaved: () => void }) {
@@ -27,7 +27,7 @@ export function AddressStep({ refused, before, onSaved }: { refused: boolean; be
 }
 
 /**
- * No board draws it: the address saved is in a pincode we do not come to, so no day is offered. The client changes it
+ * The address saved is in a pincode we do not come to, so no day is offered. The client changes it
  * in Profile's own form, or joins the waitlist on the site.
  */
 export function NotServedStep({ address, onSaved }: { address: Address; onSaved: () => void }) {

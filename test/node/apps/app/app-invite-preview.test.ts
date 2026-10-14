@@ -17,13 +17,13 @@ const VALID = {
   card: { state: "house" as const, version: 1 },
 };
 
-describe("the app's preview of an invite", () => {
-  it("is titled as the landing's preview, named and not", () => {
+describe("the app’s preview of an invite", () => {
+  it("is titled as the landing’s preview, named and not", () => {
     expect(refer.preview.heading("Rohit")).toBe(inviteTitle("Rohit"));
     expect(refer.preview.heading(null)).toBe(inviteTitle(null));
   });
 
-  it.each([3, 2, 1, 0])("says what a valid invite's preview says beneath it, the friend given %i", (friend) => {
+  it.each([3, 2, 1, 0])("says what a valid invite’s preview says beneath it, the friend given %i", (friend) => {
     const reward = { referrer_visits: 3, friend_visits: friend, valid_days: 365 };
     expect(refer.preview.body(reward)).toBe(inviteDescription(VALID, reward));
   });
@@ -35,14 +35,14 @@ describe("the app's preview of an invite", () => {
   });
 });
 
-describe("the app's promise of what a referral earns", () => {
+describe("the app’s promise of what a referral earns", () => {
   const promise = (mine: number, theirs: number) => refer.promise({ referrer_visits: mine, friend_visits: theirs });
 
-  it("says the board's promise in the reward's one name while each side gets 3", () => {
+  it("says the board’s promise in the reward’s one name while each side gets 3", () => {
     expect(promise(3, 3)).toBe("When a friend you refer is fitted, you both get 3 free service visits.");
   });
 
-  it("says each side's own count, and nothing ops did not give", () => {
+  it("says each side’s own count, and nothing ops did not give", () => {
     expect(promise(3, 2)).toBe(
       "When a friend you refer is fitted, you get 3 free service visits, and your friend gets 2.",
     );
@@ -55,7 +55,7 @@ describe("the app's promise of what a referral earns", () => {
     expect(refer.promise(null)).toBe("When a friend you refer is fitted, we tell you.");
   });
 
-  it("is never a count typed into the app's words", () => {
+  it("is never a count typed into the app’s words", () => {
     expect(JSON.stringify({ refer, empty })).not.toMatch(/\b\d+ (free )?(service )?visits?\b/);
   });
 });

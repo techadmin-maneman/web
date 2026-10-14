@@ -110,6 +110,6 @@ export async function seedTechLive(): Promise<void> {
 /** The day the global setup seeded. */
 export function liveDay(): LiveDay {
   const handed = process.env[HANDOVER];
-  if (handed === undefined) throw new Error("no technician's day: e2e/global-setup.ts seeds one");
+  if (handed === undefined) throw new Error("no technician’s day: e2e/global-setup.ts seeds one");
   return JSON.parse(handed) as LiveDay;
 }

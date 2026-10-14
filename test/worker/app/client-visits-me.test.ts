@@ -324,10 +324,10 @@ describe("what was done on a visit", () => {
     await event("e-1", { done: ["piece_refitted", "piece_removed"] });
 
     const visit = await (await get(`/api/visits/${visitId}`)).json<{ what_was_done: string[] | null }>();
-    expect(visit.what_was_done).toEqual(["Hair system removed", "Hair system refitted"]);
+    expect(visit.what_was_done).toEqual(["Hair system removed", "Refitted"]);
   });
 
-  it("is in the words ops gave the checklist in the console, an item since taken off still named", async () => {
+  it("is in the client's words ops gave the checklist, an item since taken off still named, one for the technician not", async () => {
     const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
     const visitId = ids["ap-done"] ?? "";
@@ -336,17 +336,18 @@ describe("what was done on a visit", () => {
     )
       .bind(NOW.toISOString())
       .run();
-    // Ops renamed two of the committed items, added one, and took one off (docs/decisions/0087-consumables-and-stock.md).
-    const item = (code: string, label: string, position: number, retired: string | null) =>
+    // Ops reworded two of the committed items, added two, and took one off (docs/decisions/0087-consumables-and-stock.md).
+    const item = (code: string, client: string | null, position: number, retired: string | null) =>
       env.DB.prepare(
-        `INSERT INTO checklist_items (visit_type, code, label, position, retired_at, set_by, set_at)
-         VALUES ('service', ?1, ?2, ?3, ?4, 'ops@maneman.in', ?5)`,
-      ).bind(code, label, position, retired, NOW.toISOString());
+        `INSERT INTO checklist_items (visit_type, code, label, client_label, position, retired_at, set_by, set_at)
+         VALUES ('service', ?1, ?1, ?2, ?3, ?4, 'ops@maneman.in', ?5)`,
+      ).bind(code, client, position, retired, NOW.toISOString());
     await env.DB.batch([
       item("piece_removed", "Took the piece off", 0, null),
       item("scalp_massaged", "Scalp massaged", 1, null),
-      item("piece_refitted", "Put the piece back on", 2, null),
-      item("scalp_cleaned", "Scalp cleaned", 3, NOW.toISOString()),
+      item("adhesive_logged", null, 2, null),
+      item("piece_refitted", "Put the piece back on", 3, null),
+      item("scalp_cleaned", "Scalp cleaned", 4, NOW.toISOString()),
     ]);
     await env.DB.prepare(
       `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
@@ -354,7 +355,9 @@ describe("what was done on a visit", () => {
     )
       .bind(
         visitId,
-        JSON.stringify({ done: ["scalp_cleaned", "piece_refitted", "scalp_massaged", "piece_removed"] }),
+        JSON.stringify({
+          done: ["scalp_cleaned", "piece_refitted", "adhesive_logged", "scalp_massaged", "piece_removed"],
+        }),
         NOW.toISOString(),
       )
       .run();

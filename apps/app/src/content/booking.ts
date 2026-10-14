@@ -11,7 +11,7 @@ export const booking = {
   /** How long a visit takes, as the choice of visit and the pay step say it. */
   length: visitLength,
   /**
-   * No board draws it. With more than one service open to them, the client chooses first: every one
+   * With more than one service open to them, the client chooses first: every one
    * ops offer, a kind at a time, with how long it takes and what it costs
    * (docs/decisions/0085-services-ops-can-edit.md). There is no message to send for any other.
    */
@@ -22,10 +22,10 @@ export const booking = {
     free: "Free",
     continue: "Continue",
   },
-  /** No board draws it. A first fit while ops offer no hair system in the console. */
+  /** A first fit while ops offer no hair system in the console. */
   firstFitNotYet: "First fits aren’t open to book yet.",
   /**
-   * No board draws it. A client who has given no address is asked for it before any slot (ADR 0079;
+   * A client who has given no address is asked for it before any slot (ADR 0079;
    * ADR 0025, item 60), under Profile's heading, "Where we come".
    */
   address: {
@@ -33,7 +33,7 @@ export const booking = {
     refused: "Add your address, then pick a time again.",
     save: "Save and continue",
   },
-  /** No board draws it. The client's address is in a pincode we do not come to, so no day is offered. */
+  /** The client's address is in a pincode we do not come to, so no day is offered. */
   notServed: {
     line: (pincode: string) => `We don’t come to ${pincode} yet.`,
     body: "Change your address below, or join the waitlist and we’ll tell you when we arrive.",
@@ -43,10 +43,10 @@ export const booking = {
     title: "Pick a date",
     available: "Available",
     full: "Full",
-    // No board draws it. A day with a window already inside the notice is still sold, and marked.
+    // A day with a window already inside the notice is still sold, and marked.
     within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue",
-    // No board draws the day offered being full, nor the days past the first fortnight.
+    // The day offered being full, and the days past the first fortnight.
     offeredFull: (day: string) => `${day} is full. We’ve picked the next open day.`,
     offeredFullPickAnother: (day: string) => `${day} is full. Pick another day.`,
     later: "Later dates",
@@ -55,7 +55,7 @@ export const booking = {
   window: {
     title: "Pick a time",
     full: "Full",
-    // A window already inside the notice, which no board draws.
+    // A window already inside the notice.
     within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue to payment",
     // A visit that costs nothing has no payment to continue to.
@@ -64,13 +64,13 @@ export const booking = {
   },
   pay: {
     title: "Pay and confirm",
-    // A visit that costs nothing to book, which no board draws.
+    // A visit that costs nothing to book.
     titleFree: "Confirm",
     held: (time: string) => `Held for ${time}`,
     // The pay step says "Free to move until"; cancelling is free until then too.
     freeUntil: (when: string) => `Free to move or cancel until ${when}.`,
     afterThat: " After that, changes are charged.",
-    /** No board draws it. A visit sold already inside its notice says what a change costs at once. */
+    /** A visit sold already inside its notice says what a change costs at once. */
     insideNotice: {
       /** Followed by the fee's GST split, where there is one, and a full stop. */
       lateFee: (hours: number, amount: string) =>
@@ -85,43 +85,43 @@ export const booking = {
     pay: (amount: string) => `Pay ${amount}`,
     neverHandlesMoney: (name: string) => `${name} never handles money.`,
     guarantee: GUARANTEE,
-    // A free consultation has no payment; the design draws the credit board's button.
+    // A free consultation has no payment.
     free: "Free",
     confirm: "Confirm visit",
-    // A free service visit covers it. Our words: the reward's name, in place of the board's.
+    // A free service visit covers it.
     credit: {
-      zero: "Rs. 0",
+      zero: "Free",
       used: "1 free service visit used",
       remaining: (left: number) => `${String(left)} remaining`,
       /** The notice the hold is sold under, which ops set: 24 hours to begin with. */
       note: (hours: number) => `Cancel inside ${String(hours)} hours and the free service visit is gone.`,
     },
     /**
-     * The design never asks. Ticked, it records the client's yes to WhatsApp about their
+     * Ticked, it records the client's yes to WhatsApp about their
      * visits, the reminder, moves and changes among them, on a notice of this line alone.
      */
     remind: "Send me visit updates on WhatsApp",
     // Every visit is photographed for the client's record, which booking says and agrees to nothing more: referral
     // cards are their choice when they first share an invite. PLACEHOLDER: awaits counsel (docs/open-points.md, 69).
     /**
-     * No board draws them. Booking a visit also agrees to the photograph purposes the client has never
+     * Booking a visit also agrees to the photograph purposes the client has never
      * decided on, one tap away beneath Pay. With the referral card's lines (profile.referralCards), they are the
      * notice each consent is recorded under, word for word (src/config/notices.ts; booking/consents.ts).
      */
     photos: { open: "Photos at your visits", lines: [VISIT_PHOTOS] },
     /**
-     * Our words, all of them: no board draws a discount code (docs/decisions/0108-discount-codes.md).
-     * A code that does not apply is told only that, whatever the reason.
+     * A discount code (docs/decisions/0108-discount-codes.md). One that does not apply is told only that, whatever
+     * the reason.
      */
     code: {
       open: "Have a discount code?",
       label: "Discount code",
       apply: "Apply",
-      applying: "Applying",
+      applying: "Applying…",
       /** "Code TENOFF: Rs. 1,234 off", beneath the price: what it takes off the price shown, GST included. */
       applied: (code: string, off: string) => `Code ${code}: ${off} off`,
       remove: "Remove code",
-      removing: "Removing",
+      removing: "Removing…",
       errors: {
         code_not_applicable: "That code doesn’t apply to this visit.",
         rate_limited: "Too many codes tried. Try again tomorrow.",
@@ -156,17 +156,17 @@ export const booking = {
     title: "That time has been released.",
     pickAgain: "Pick again",
   },
-  /** Not drawn: the hair system the consultation recommended, beside its name in the chooser. */
+  /** The hair system the consultation recommended, beside its name in the chooser. */
   recommended: (technician: string | null) => (technician === null ? "Recommended" : `Recommended by ${technician}`),
   confirmed: {
     label: "Confirmed",
-    /** The board writes "Imran messages you the day before."; the reminder is ours, sent automatically. */
+    /** The reminder is ours, sent automatically, not the technician's. */
     tellsYou: "We’ll remind you on WhatsApp the day before.",
     paid: "Paid",
     note: (name: string) => `Add a note for ${name}`,
     close: "Done",
   },
-  confirming: "Confirming your visit.",
+  confirming: "Confirming your visit…",
   // The hold's time ran out on the phone after Razorpay had taken the payment, which keeps it.
   paidIn: PAID_IN,
   slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
@@ -179,8 +179,7 @@ export const booking = {
 } as const;
 
 /**
- * A note on a visit to come, kept on it for the technician's card. Our words: the design draws the
- * "Add a note" button and no sheet behind it.
+ * A note on a visit to come, kept on it for the technician's card.
  */
 export const note = {
   title: (technician: string | null) =>
@@ -193,7 +192,7 @@ export const note = {
   label: "What should they know at the door?",
   offline: "No connection. Save once you’re back online.",
   save: "Save note",
-  saving: "Saving",
+  saving: "Saving…",
   saved: (technician: string | null) =>
     technician === null
       ? "Saved. Your technician reads it before your visit."
@@ -209,7 +208,7 @@ export const problem = {
   title: { hair_system: "What’s wrong with your hair system?", visit: "What went wrong?" },
   label: "In your words",
   send: "Send to Care",
-  sending: "Sending",
+  sending: "Sending…",
   sent: "Sent. Care will reply on WhatsApp.",
   addPhotos: "Add photos on WhatsApp",
   /** What WhatsApp opens with, for the photographs. */
@@ -223,7 +222,7 @@ export const dispute = {
   title: "Dispute this charge",
   label: "Why is the charge wrong?",
   send: "Send",
-  sending: "Sending",
+  sending: "Sending…",
   sent: "Dispute received. We’ll be in touch.",
   already: "You’ve already disputed this charge. We’ll let you know our decision.",
   closed: "The time to dispute this charge has passed. Message us if something’s wrong.",
@@ -246,8 +245,7 @@ export const change = {
     pick: "Pick a new date",
     accept: "Move and accept charge",
     keep: "Keep it",
-    // Our words from here to the end of move: nothing paid, and the way to the cancel sheet, which the design draws but does
-    // not reach. A late fee's line is the credit step's (booking.lateFee).
+    // Nothing paid, and the way to the cancel sheet. A late fee's line is the credit step's (booking.lateFee).
     freeNothingPaid: "Free to move.",
     // What a move in place keeps, on its pay step.
     carriesOver: (amount: string) => `Your ${amount} carries over.`,
@@ -267,7 +265,7 @@ export const change = {
     nothingPaid: "Nothing was paid, so nothing is charged.",
     accept: "Cancel and accept charge",
     creditBack: "Your free service visit comes back.",
-    // The cancel sheet, inside 24 hours, for a booking a free service visit covers. Our words: the reward's name in it.
+    // The cancel sheet, inside 24 hours, for a booking a free service visit covers.
     creditUsed: (left: string | null, expiry: string) =>
       left === null
         ? "Your free service visit is used."

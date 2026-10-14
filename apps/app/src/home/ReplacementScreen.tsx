@@ -1,7 +1,6 @@
 // What a replacement involves: the page Home's prompt opens with "See what that involves", in place of a WhatsApp
 // message to us (docs/open-points.md, item 46; ADR 0025, item 70; ADR 0086). A replacement is booked and paid for in
-// the app like any other visit, so a fitted client books it from here. No board draws the page, and every word on it
-// is a placeholder.
+// the app like any other visit, so a fitted client books it from here.
 
 import { BookButton } from "../booking/index.ts";
 import { replacement, messages } from "../content.ts";

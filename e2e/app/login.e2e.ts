@@ -35,7 +35,7 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await enter(page, CODE);
 
   await expect(page.getByRole("heading", { level: 1, name: "Your consultation" })).toBeVisible();
-  await expect(page.getByText("Morning, 9 am to 12 pm")).toBeVisible();
+  await expect(page.getByText("Morning, 9 am–12 noon")).toBeVisible();
   await expect(page.getByText("Gurgaon", { exact: true })).toBeVisible();
   await expect(page.getByText("Free", { exact: true })).toBeVisible();
   // The site's first form booked nothing: ops confirm the time.
@@ -85,7 +85,7 @@ test("a session that ends mid-use goes back to the login, says why, and returns 
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
 });
 
-test("logging out takes the API's word for it: offline it waits, and a refusal keeps the client in", async ({
+test("logging out takes the API’s word for it: offline it waits, and a refusal keeps the client in", async ({
   page,
 }) => {
   await sendCode(page, bookedNumber());
@@ -103,9 +103,7 @@ test("logging out takes the API's word for it: offline it waits, and a refusal k
     route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "e2e" } } }),
   );
   await logOut.click();
-  await expect(page.getByRole("alert")).toHaveText(
-    "That didn’t go through, so you’re still signed in here. Try again.",
-  );
+  await expect(page.getByRole("alert")).toHaveText("Couldn’t sign you out. Try again.");
   await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
 });
 
@@ -115,7 +113,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   const tabs = page.getByRole("navigation");
 
   await tabs.getByRole("link", { name: "Visits" }).click();
-  await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
+  await expect(page.getByText("Consultation · 9 am–12 noon")).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Visits" })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: "Photos" }).click();
   await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
@@ -133,10 +131,10 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
   await expect(page.getByText("Nothing to pay yet.")).toBeVisible();
 });
 
-test("a wrong code says so, in the design's words, and the fifth voids it", async ({ page }) => {
+test("a wrong code says so, in the design’s words, and the fifth voids it", async ({ page }) => {
   await sendCode(page, bookedNumber());
   const field = page.getByRole("textbox", { name: appCopy.login.code.label });
-  for (const left of ["Four attempts left.", "Three attempts left.", "Two attempts left.", "One attempt left."]) {
+  for (const left of ["4 tries left.", "3 tries left.", "2 tries left.", "1 try left."]) {
     await enter(page, WRONG);
     await expect(page.getByRole("alert")).toHaveText(`That code didn’t match. ${left}`);
     await expect(field).toHaveAttribute("aria-invalid", "true");
@@ -221,11 +219,11 @@ test("a number with no booking sees the same screen, and no code opens it", asyn
   await sendCode(page, randomMobile());
   await expect(page.getByText("has a booking with us, a code is on its way on WhatsApp.")).toBeVisible();
   await enter(page, CODE);
-  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. Four attempts left.");
+  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. 4 tries left.");
 });
 
 // The site's booking confirmation opens the app with the number typed there.
-test("a link from the site's booking fills in its number, and the code is still asked for", async ({ page }) => {
+test("a link from the site’s booking fills in its number, and the code is still asked for", async ({ page }) => {
   const mobile = randomMobile();
   await page.goto(`/#mobile=${mobile}`);
   await expect(page.getByRole("textbox", { name: appCopy.login.mobile.label })).toHaveValue(mobile);
@@ -248,7 +246,7 @@ test("A3 is reached by choice, and points to booking and WhatsApp", async ({ pag
   await expect(page.getByRole("heading", { level: 1, name: "Enter the code" })).toBeVisible();
 });
 
-test("a phone's Back steps back through the login, as its back arrows do, and never out of the app", async ({
+test("a phone’s Back steps back through the login, as its back arrows do, and never out of the app", async ({
   page,
 }) => {
   await sendCode(page, randomMobile());
@@ -287,7 +285,7 @@ test("the WhatsApp resend counts down from 30 seconds, and SMS is offered after 
   await expect(page.getByRole("status")).toHaveText(appCopy.login.code.canResend);
 });
 
-test("the resend's count runs from when the code was sent, across the help screen and back", async ({ page }) => {
+test("the resend’s count runs from when the code was sent, across the help screen and back", async ({ page }) => {
   await page.clock.install();
   await sendCode(page, randomMobile());
   await page.clock.runFor(3_000);
@@ -319,7 +317,7 @@ test("says the code is read automatically only when it comes by SMS, the one a p
   await expect(page.getByText(appCopy.login.code.automatic)).toBeVisible();
 });
 
-test("names each login screen in the browser's title, and puts focus where the client carries on", async ({ page }) => {
+test("names each login screen in the browser’s title, and puts focus where the client carries on", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Your mobile number · Mane Man");
   await sendCode(page, bookedNumber());
@@ -328,7 +326,7 @@ test("names each login screen in the browser's title, and puts focus where the c
   await expect(field).toBeFocused();
 
   await enter(page, WRONG);
-  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. Four attempts left.");
+  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. 4 tries left.");
   await expect(field).toBeFocused();
 
   await page.getByRole("button", { name: "No booking on this number?" }).click();

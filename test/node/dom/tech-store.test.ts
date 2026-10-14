@@ -41,7 +41,7 @@ function deletedFromOutside(): Promise<"deleted" | "blocked"> {
   });
 }
 
-describe("the phone's store", () => {
+describe("the phone’s store", () => {
   it("opens with the stores the app keeps", async () => {
     const db = await open();
     expect([...db.objectStoreNames].sort()).toEqual([
@@ -57,7 +57,7 @@ describe("the phone's store", () => {
   });
 
   // One jobs store held five kinds of record, told apart by their keys, and earlier shapes were mended on read.
-  it("moves what the first release's jobs store held into a store each, in today's shape", async () => {
+  it("moves what the first release’s jobs store held into a store each, in today’s shape", async () => {
     const row = { id: "a", starts_at: "t" };
     const card = { id: "a", partial_reasons: ["piece_not_ready"], checklist: [{ id: "c", label: "C" }] };
     await firstRelease([

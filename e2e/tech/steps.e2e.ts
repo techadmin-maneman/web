@@ -75,7 +75,7 @@ test("the outcome has nothing chosen for the technician, and Next waits for thei
 });
 
 // After a consultation, the outcome asks whether the client is going ahead, and why not (docs/decisions/0149-lost-reasons.md).
-test("a consultation's outcome asks whether the client is going ahead, and why not", async ({ page }) => {
+test("a consultation’s outcome asks whether the client is going ahead, and why not", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "consultation";
   startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
@@ -112,7 +112,7 @@ test("draws nothing in gold but the one primary action", async ({ page }) => {
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("keeps the checklist's ticks when the app closes part-way, and lets them go once sent", async ({ page }) => {
+test("keeps the checklist’s ticks when the app closes part-way, and lets them go once sent", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
@@ -156,7 +156,7 @@ test("says each count as it changes, and ties it to the buttons that change it",
 
 // The consumables are ops', with what each service is expected to use (docs/decisions/0087-consumables-and-stock.md).
 test.describe("the consumables step", () => {
-  test("starts each stepper at what the visit's service expects, and keeps the rest behind Add another", async ({
+  test("starts each stepper at what the visit’s service expects, and keeps the rest behind Add another", async ({
     page,
   }) => {
     const fake = await fakeTech(page);
@@ -201,7 +201,7 @@ test.describe("the consumables step", () => {
   });
 });
 
-test("a focused checklist line shows its whole focus ring, not one cut by the screen's edge", async ({ page }) => {
+test("a focused checklist line shows its whole focus ring, not one cut by the screen’s edge", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
@@ -218,7 +218,7 @@ test("a focused checklist line shows its whole focus ring, not one cut by the sc
     const reach = Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset);
     const ring = element.getBoundingClientRect();
     const outer = { left: ring.left - reach, right: ring.right + reach, top: ring.top - reach };
-    if (outer.left < 0 || outer.right > window.innerWidth) return "the screen's edge";
+    if (outer.left < 0 || outer.right > window.innerWidth) return "the screen’s edge";
     for (let parent = element.parentElement; parent !== null; parent = parent.parentElement) {
       const overflow = getComputedStyle(parent).overflowY;
       if (overflow === "visible") continue;
@@ -233,7 +233,7 @@ test("a focused checklist line shows its whole focus ring, not one cut by the sc
 test.describe("on a 360 × 640 phone", () => {
   test.use({ viewport: { width: 360, height: 640 } });
 
-  test("keeps a long checklist's action at the foot and its head in view, scrolling only the list", async ({
+  test("keeps a long checklist’s action at the foot and its head in view, scrolling only the list", async ({
     page,
   }) => {
     const fake = await fakeTech(page);
@@ -261,7 +261,7 @@ test.describe("on a 360 × 640 phone", () => {
     expect(await pageScrolls(page)).toBe(false);
   });
 
-  test("keeps the hair profile's action at the foot and its head in view, down to its last field", async ({ page }) => {
+  test("keeps the hair profile’s action at the foot and its head in view, down to its last field", async ({ page }) => {
     const fake = await fakeTech(page);
     fake.type = "consultation";
     startedThrough(fake, "before_photos", "checklist", "consumables");

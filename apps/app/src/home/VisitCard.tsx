@@ -51,7 +51,8 @@ export function stageText(visit: VisitSummary): string | null {
 }
 
 /** The window, or where a visit that has begun stands. */
-export const whenText = (visit: VisitSummary): string => stageText(visit) ?? windowText(visit.window_label);
+export const whenText = (visit: VisitSummary): string =>
+  stageText(visit) ?? windowText(visit.window_label, visit.window_hours);
 
 function Reschedule(props: {
   what: string;

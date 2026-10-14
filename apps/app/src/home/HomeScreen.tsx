@@ -96,8 +96,10 @@ function HomeBody({ me, offline }: { me: Me; offline: boolean }) {
     const price = oneVisitOf(me.being_booked);
     if (price === null) return <BeingBooked booking={me.being_booked} />;
     // A one visit booked on /book is booked, as the site told the client; ops move it.
-    const { date, window } = me.being_booked;
-    return <Consultation date={date} when={windowText(window)} place="" changing={null} noting={null} price={price} />;
+    const { date, window, hours } = me.being_booked;
+    return (
+      <Consultation date={date} when={windowText(window, hours)} place="" changing={null} noting={null} price={price} />
+    );
   }
   if (me.remake !== null) return <RemakeCard remake={me.remake} />;
   if (me.state !== "fitted" && me.consulted !== null && me.booking.types.includes("first_fit")) {
@@ -117,7 +119,7 @@ function ProposedConsultation({ consultation }: { consultation: NonNullable<Me["
   return (
     <Consultation
       date={consultation.date}
-      when={windowText(consultation.window)}
+      when={windowText(consultation.window, consultation.hours)}
       place={consultation.place}
       changing={null}
       noting={null}
@@ -239,7 +241,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
       </h1>
       <div className={styles.card}>
         <p className={styles.date}>{shortDate(booking.date)}</p>
-        <p className={styles.window}>{windowText(booking.window)}</p>
+        <p className={styles.window}>{windowText(booking.window, booking.hours)}</p>
         <p className={styles.place}>{bookingName(booking)}</p>
         <p className={styles.free}>{booking.paid ? copy.paid : copy.free}</p>
         {booking.told && <p className={styles.free}>{copy.told}</p>}

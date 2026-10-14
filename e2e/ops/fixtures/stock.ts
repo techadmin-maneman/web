@@ -107,24 +107,35 @@ const list = (items: [string, string][], retired: [string, string][] = [], setBy
   set_at: setBy === null ? null : "2027-09-20T06:00:00.000Z",
 });
 
+/** A checklist, each item with what the client reads: the technician's words unless given, null for none. */
+const checklist = (
+  items: [string, string, (string | null)?][],
+  retired: [string, string][] = [],
+  setBy: string | null = null,
+) => ({
+  ...list([], [], setBy),
+  items: items.map(([code, label, client]) => ({ code, label, client: client === undefined ? label : client })),
+  retired: retired.map(([code, label]) => ({ code, label, client: label })),
+});
+
 /** The service visit's checklist as ops set it, one item taken off; the other kinds' and the reasons committed. */
 export const JOB_SHEET = {
   checklists: [
-    { visit_type: "consultation", ...list([["scalp_checked", "Scalp and hairline checked"]]) },
-    { visit_type: "first_fit", ...list([["template_checked", "Template checked against the head"]]) },
+    { visit_type: "consultation", ...checklist([["scalp_checked", "Scalp and hairline checked"]]) },
+    { visit_type: "first_fit", ...checklist([["template_checked", "Template checked against the head", null]]) },
     {
       visit_type: "service",
-      ...list(
+      ...checklist(
         [
-          ["piece_removed", "Piece removed"],
+          ["piece_removed", "Piece removed", "Hair system removed"],
           ["scalp_cleaned", "Scalp cleaned"],
-          ["piece_refitted", "Piece refitted"],
+          ["piece_refitted", "Piece refitted", "Refitted"],
         ],
         [["adhesive_renewed", "Adhesive renewed"]],
         "ops@maneman.in",
       ),
     },
-    { visit_type: "replacement", ...list([["old_piece_removed", "Old piece removed"]]) },
+    { visit_type: "replacement", ...checklist([["old_piece_removed", "Old piece removed"]]) },
   ],
   partial_reasons: list([
     ["client_stopped_it", "Client stopped it partway"],
@@ -213,7 +224,7 @@ export const STOCK = {
       quantity: 100,
       reason: "received",
       by: "ops@maneman.in",
-      note: "Supplier's note 4417",
+      note: "Supplier’s note 4417",
     },
   ],
   today: "2027-09-21",

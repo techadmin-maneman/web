@@ -40,6 +40,7 @@ function refusal(code: Code): string {
   if (code === "code_not_applicable") return errors.codeNotApplicable;
   if (code === "no_product") return errors.noProduct;
   if (code === "number_not_proved") return errors.notProved;
+  if (code === "network") return errors.network;
   return errors.other;
 }
 

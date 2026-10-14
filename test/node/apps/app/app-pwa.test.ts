@@ -8,10 +8,10 @@ import { ICONS, manifest as manifestOf, precacheList, token, version } from "../
 
 const manifest = (ground: string) => manifestOf(CLIENT_APP, ground);
 
-describe("the client app's manifest", () => {
+describe("the client app’s manifest", () => {
   const ink = token("--ink");
 
-  it("takes its colours from the brand's ink", () => {
+  it("takes its colours from the brand’s ink", () => {
     expect(ink).toBe("#16233a");
     expect(manifest(ink)).toMatchObject({ background_color: ink, theme_color: ink });
   });
@@ -39,7 +39,7 @@ describe("the client app's manifest", () => {
     expect(html).toContain('<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />');
   });
 
-  it("keeps a maskable icon's crown inside the circle a launcher may crop it to", () => {
+  it("keeps a maskable icon’s crown inside the circle a launcher may crop it to", () => {
     const maskable = ICONS.find((icon) => icon.purpose === "maskable");
     // The favicon drawing is 64 by 44.3: its corners must sit within a circle 80% of the icon wide.
     const art = maskable?.art ?? Infinity;
@@ -47,7 +47,7 @@ describe("the client app's manifest", () => {
   });
 });
 
-describe("the service worker's files", () => {
+describe("the service worker’s files", () => {
   it("keeps the app as / and every other file of the build, but not index.html or itself", () => {
     expect(precacheList(["index.html", "sw.js", "assets/index-a1.js", "icon-192.png", "assets/index-b2.css"])).toEqual([
       "/",

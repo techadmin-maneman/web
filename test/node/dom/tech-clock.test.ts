@@ -27,14 +27,14 @@ describe("a phone three hours fast", () => {
     vi.setSystemTime(API_SAYS + THREE_HOURS);
   });
 
-  it("works the API's day, not the phone's", async () => {
+  it("works the API’s day, not the phone’s", async () => {
     expect(todayInIndia()).toBe("2026-10-15");
     await heardClock(new Date(API_SAYS).toUTCString());
     expect(todayInIndia()).toBe("2026-10-14");
     expect(Math.abs(apiNow() - API_SAYS)).toBeLessThan(1000);
   });
 
-  it("opens with no signal on the API's day, from the difference it kept", async () => {
+  it("opens with no signal on the API’s day, from the difference it kept", async () => {
     await heardClock(new Date(API_SAYS).toUTCString());
 
     // The app closed and opened again in a basement: nothing has answered yet.

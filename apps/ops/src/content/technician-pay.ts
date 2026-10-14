@@ -5,6 +5,8 @@ import { fullMonth } from "@maneman/web-kit/dates";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const technicianPay = {
+  /** The rate refused, with the most a visit may pay. */
+  amountUpTo: (most: string) => `Enter whole rupees, up to ${most} a visit.`,
   kinds: {
     consultation: "Consultation",
     one_visit: "Consultation and fit",
@@ -21,7 +23,7 @@ export const technicianPay = {
     none: "No grades yet.",
     grade: "Grade",
     technicians: "Technicians",
-    actions: "Change",
+    actions: "Actions",
     empty: "—",
     /** A city's cell with no rate of its own: every city's stands in. */
     inherited: (amount: string) => `${amount} (every city)`,
@@ -53,7 +55,7 @@ export const technicianPay = {
     rateTitle: (grade: string) => `New rate: ${grade}`,
     kind: "Visit",
     city: "City",
-    amount: "Per visit, in rupees",
+    amount: "Per visit, Rs.",
     none: "No rate from this day",
     from: "Starts",
     gradeTitle: (name: string) => `Grade: ${name}`,
@@ -70,10 +72,10 @@ export const technicianPay = {
     /** "Senior · Service visit · Delhi". */
     where: (grade: string, kind: string, city: string) => `${grade} · ${kind} · ${city}`,
     nothing: "none",
-    everyCitys: "every city's rate",
+    everyCitys: "every city’s rate",
     grade: (name: string, was: string, now: string) => `${name}: ${was} → ${now}`,
     send: "Confirm",
-    saving: "Saving",
+    saving: "Saving…",
     back: "Back",
   },
   /** The month's pay at the rates per visit, with its CSV. */
@@ -97,7 +99,7 @@ export const technicianPay = {
     in_use: "In use: a technician holds it, or a rate names it.",
     from: "A rate starts today or later, so a month already worked keeps its own.",
     city: "Choose one of our cities.",
-    amount: "A whole amount, up to the most a visit may pay.",
+    amount: "Enter whole rupees.",
     not_found: changed("Already gone."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

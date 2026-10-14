@@ -12,6 +12,7 @@ import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { BookVisit } from "../clients/index.ts";
 import { quality as copy } from "../content/quality.ts";
+import { stock } from "../content/stock.ts";
 import { useAccess } from "../lib/access.ts";
 import { FormActions } from "../components/FormActions.tsx";
 import { RowHead } from "../components/RowHead.tsx";
@@ -128,7 +129,7 @@ export function RecallDetail({
       ) : (
         <Rows
           columns={copy.heldColumns}
-          rows={recall.held.map((each) => [each.place, String(each.quantity)] as const)}
+          rows={recall.held.map((each) => [each.place, stock.held(each.quantity, recall.unit)] as const)}
         />
       )}
       <h3 className={form.ruleTitle}>{copy.worn}</h3>

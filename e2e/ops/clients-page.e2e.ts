@@ -16,7 +16,7 @@ import * as opsCopy from "../../apps/ops/src/content.ts";
 
 // What a client has bought and how
 // often they have been served belongs on the ops console as well as in the app.
-test("counts the client's visits and replacements, and the day their piece falls due", async ({ page }) => {
+test("counts the client’s visits and replacements, and the day their piece falls due", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/history`);
   const history = page.getByRole("region", { name: opsCopy.clients.history.title });
   const fact = (label: string) =>

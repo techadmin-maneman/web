@@ -96,7 +96,7 @@ test("says a rename moves every row naming the city before it is sent", async ({
   await expect(form).toContainText(copy.form.renames("Gurgaon", "Gurugram"));
 });
 
-test("shows a city's own rule beside the national one, and gives it back to the national rule", async ({ page }) => {
+test("shows a city’s own rule beside the national one, and gives it back to the national rule", async ({ page }) => {
   await open(page, { "DELETE /api/cities/{name}/rules/{rule}": empty() });
   const rules = page.getByRole("region", { name: copy.rules.panel });
   await rules.getByLabel(copy.rules.city).selectOption("Mumbai");
@@ -107,7 +107,7 @@ test("shows a city's own rule beside the national one, and gives it back to the 
   await expect(rules.getByText(copy.rules.saved)).toBeVisible();
 });
 
-test("withdraws a city's price still to come, asked first", async ({ page }) => {
+test("withdraws a city’s price still to come, asked first", async ({ page }) => {
   await open(page, { "DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}": empty() });
   const prices = page.getByRole("region", { name: copy.prices.panel });
   await prices.getByRole("button", { name: copy.prices.withdrawLabel(copy.prices.items.service, "Mumbai") }).click();
@@ -116,7 +116,7 @@ test("withdraws a city's price still to come, asked first", async ({ page }) => 
   await expect(prices.getByText(copy.prices.withdrawn)).toBeVisible();
 });
 
-test("refuses a GSTIN another state has, in the form's own words", async ({ page }) => {
+test("refuses a GSTIN another state has, in the form’s own words", async ({ page }) => {
   await open(page, {
     "POST /api/gst-registrations": json({ error: { code: "taken", request_id: "test" } }, 409),
   });

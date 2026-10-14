@@ -19,7 +19,7 @@ const visit = (overrides: Partial<VisitDetail>): VisitDetail =>
     ...overrides,
   }) as VisitDetail;
 
-describe("a visit's invoice", () => {
+describe("a visit’s invoice", () => {
   const ended = Date.parse("2030-09-19T08:00:00.000Z");
 
   it("opens once Books has issued it, and is never promised for a free visit", () => {
@@ -27,9 +27,11 @@ describe("a visit's invoice", () => {
     expect(invoiceState(visit({ invoice_expected: false }), ended)).toBe("free");
   });
 
-  it("is still generating for a day after the visit, and late after that", () => {
-    expect(invoiceState(visit({}), ended + 2 * HOUR)).toBe("generating");
-    expect(invoiceState(visit({}), ended + 23 * HOUR)).toBe("generating");
+  // "Usually ready within the hour" was said for a whole day after the visit.
+  it("is coming within the hour, then on its way with a way to ask for it, and late after a day", () => {
+    expect(invoiceState(visit({}), ended + HOUR / 2)).toBe("generating");
+    expect(invoiceState(visit({}), ended + 2 * HOUR)).toBe("delayed");
+    expect(invoiceState(visit({}), ended + 23 * HOUR)).toBe("delayed");
     expect(invoiceState(visit({}), ended + 25 * HOUR)).toBe("late");
   });
 
@@ -63,7 +65,7 @@ const payment = (overrides: Record<string, unknown>) =>
 const booked = (underWay: boolean) =>
   payment({ visit: null, booking: { type: "first_fit", date: "2030-09-19", under_way: underWay } });
 
-describe("a payment's invoice not yet raised", () => {
+describe("a payment’s invoice not yet raised", () => {
   it("is raised once the visit is done, which it is not yet", () => {
     expect(missingInvoice(payment({}), "2030-09-12")).toBe("invoiceAfterVisit");
   });
@@ -73,15 +75,15 @@ describe("a payment's invoice not yet raised", () => {
     expect(missingInvoice(booked(true), "2030-09-12")).toBe("invoiceAfterVisit");
   });
 
-  it("is still generating on the visit's day and the day after, and late after that", () => {
+  it("is still generating on the visit’s day and the day after, and late after that", () => {
     expect(missingInvoice(payment({}), "2030-09-19")).toBe("invoice");
     expect(missingInvoice(payment({}), "2030-09-20")).toBe("invoice");
     expect(missingInvoice(payment({}), "2030-09-21")).toBe("invoiceLate");
   });
 });
 
-describe("a payment's documents", () => {
-  it("are the visit's invoice and the receipt for a visit paid for", () => {
+describe("a payment’s documents", () => {
+  it("are the visit’s invoice and the receipt for a visit paid for", () => {
     expect(documentsOf(payment({}))).toEqual(["invoice", "receipt"]);
   });
 
@@ -111,7 +113,7 @@ describe("a payment's documents", () => {
 describe("a refund still processing", () => {
   const refund = (date: string) => ({ kind: "refund", status: "created", date }) as unknown as Entry;
 
-  it("is on time for Razorpay's 5 to 7 working days, which are ten days at most", () => {
+  it("is on time for Razorpay’s 5 to 7 working days, which are ten days at most", () => {
     expect(refundIsLate(refund("2030-09-10"), "2030-09-20")).toBe(false);
   });
 

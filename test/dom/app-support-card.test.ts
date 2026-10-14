@@ -26,19 +26,26 @@ afterEach(() => {
 
 const draw = (carePerson: string | null) => {
   act(() => {
-    root.render(createElement(SupportCard, { carePerson, hours: { opens: 9, closes: 21 } }));
+    root.render(createElement(SupportCard, { carePerson, hours: { opens: 9, closes: 21, first_reply: 60 } }));
   });
 };
 
 describe("the Support card", () => {
-  it("names the client's Care person", () => {
+  it("names the client’s Care person", () => {
     draw("Asha");
-    expect(page.textContent).toContain("Asha, your Care person · 9 am–9 pm daily");
+    expect(page.textContent).toContain("Asha, your Care person");
     expect(page.textContent).toContain(profile.support.message);
   });
 
   it("says nothing of one before they have a name", () => {
     draw(null);
     expect(page.textContent).not.toContain("your Care person");
+  });
+
+  // It promised a reply the same day, where a message after hours waits for the morning, and gave the hours only to a
+  // client with a Care person.
+  it("promises the reply time and the hours Care set, to every client", () => {
+    draw(null);
+    expect(page.textContent).toContain("We reply within an hour, 9\u00a0am–9\u00a0pm daily.");
   });
 });

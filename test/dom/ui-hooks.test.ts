@@ -31,7 +31,7 @@ function deferred<T>() {
 }
 
 describe("one thing at a time", () => {
-  it("runs a second tap's work only once the first has finished, and says it is busy meanwhile", async () => {
+  it("runs a second tap’s work only once the first has finished, and says it is busy meanwhile", async () => {
     const hook = render(() => useOneAtATime());
     const first = deferred<undefined>();
     let runs = 0;
@@ -100,8 +100,8 @@ describe("an async read", () => {
   });
 });
 
-describe("a page's load", () => {
-  it("is the API's answer, a not-found apart from any other failure, and loads again on retry", async () => {
+describe("a page’s load", () => {
+  it("is the API’s answer, a not-found apart from any other failure, and loads again on retry", async () => {
     let answer: { ok: true; body: string } | { ok: false; status: number; requestId: string | null } = {
       ok: false,
       status: 404,
@@ -128,7 +128,7 @@ describe("a page's load", () => {
     expect(hook.current()[0]).toEqual({ state: "failed", notFound: false, requestId: null });
   });
 
-  it("keeps its answer's identity from one render to the next", async () => {
+  it("keeps its answer’s identity from one render to the next", async () => {
     const load = () => Promise.resolve({ ok: true as const, body: 1 });
     const hook = render((_render: number) => useLoad(load), 0);
     await settled();

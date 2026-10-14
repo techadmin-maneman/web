@@ -72,7 +72,7 @@ test("C7: a visit more than 24 hours out moves for free, its payment carried ove
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.change.moved)).toBeVisible();
 });
 
-test("C8: cancelling more than 24 hours out, from the visit's own page, gives the payment back in full", async ({
+test("C8: cancelling more than 24 hours out, from the visit’s own page, gives the payment back in full", async ({
   page,
 }) => {
   await logIn(page, changingClients().free.mobile);
@@ -113,7 +113,7 @@ test("C8 inside 24 hours shows the charge before anything is cancelled, and Keep
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();
 });
 
-test("C7 inside 24 hours: a service visit's move is charged, and the new visit is paid separately", async ({
+test("C7 inside 24 hours: a service visit’s move is charged, and the new visit is paid separately", async ({
   page,
 }) => {
   await fakeCheckout(page, "paid");

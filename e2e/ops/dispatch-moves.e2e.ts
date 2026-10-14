@@ -69,7 +69,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await press(page, "Move and notify");
 
   // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
-  await expect(page.getByRole("status")).toHaveText("Moved. Rohit M. is told on WhatsApp.");
+  await expect(page.getByRole("status")).toHaveText("Moved. Rohit M. gets the new window on WhatsApp.");
   expect(sent).toEqual([
     {
       appointment_id: ROHIT_JOB?.appointment_id,
@@ -99,7 +99,7 @@ test("asks the client to confirm a move to another day, sending it as a proposal
   await press(page, TO_SANDEEP);
   await reason(page, "Zone rebalance");
   const picker = page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" });
-  await expect(picker).toContainText("We'll ask Rohit M. on WhatsApp. It moves when they accept.");
+  await expect(picker).toContainText("We’ll ask Rohit M. on WhatsApp. It moves when they accept.");
   await press(page, "Ask Rohit M. to confirm");
 
   await expect(page.getByRole("status")).toHaveText("Asked Rohit M. on WhatsApp to confirm Sat 20 Sep, morning.");
@@ -107,7 +107,7 @@ test("asks the client to confirm a move to another day, sending it as a proposal
   expect(moved).toEqual([]);
 });
 
-test("shows a proposal waiting on the client in the visit's drawer, and takes it back", async ({ page }) => {
+test("shows a proposal waiting on the client in the visit’s drawer, and takes it back", async ({ page }) => {
   const waiting = structuredClone(BOARD);
   const block = waiting.technicians[0]?.days[0]?.blocks[0];
   if (block !== undefined) {
@@ -115,6 +115,7 @@ test("shows a proposal waiting on the client in the visit's drawer, and takes it
       id: PROPOSED.proposal_id,
       date: "2025-09-20",
       window: "morning",
+      hours: { start: "09:00", end: "12:00" },
       technician: { name: "Sandeep Yadav", initials: "SY" },
       expires_at: "2025-09-20T03:30:00.000Z",
     };
@@ -250,11 +251,11 @@ test("says a window has no room for the visit, rather than naming a clash", asyn
   await reason(page, "Client asked");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("alert")).toHaveText("Service visit: no room in Sandeep Yadav's morning on Sat 20 Sep.");
+  await expect(page.getByRole("alert")).toHaveText("Service visit: no room in Sandeep Yadav’s morning on Sat 20 Sep.");
 });
 
 // A move lands only at a start still ahead, and the server names a window already over.
-test("says a window's starts have all passed, and keeps the job in hand", async ({ page }) => {
+test("says a window’s starts have all passed, and keeps the job in hand", async ({ page }) => {
   await open(page, { [MOVE_IT]: fails(409, "window_passed") });
   await press(page, ROHIT_BLOCK);
   await press(page, "Move visit");
@@ -281,7 +282,7 @@ test("asks why before a move onto a blacked-out day, and sends the reason with i
   await picker.getByLabel("Reason").fill("Their only free day before they travel");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. is told on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");
   expect(sent).toEqual([expect.objectContaining({ blackout_reason: "Their only free day before they travel" })]);
 });
 
@@ -300,7 +301,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   await page.getByRole("radio", { name: "Client asked" }).check();
   await page.getByRole("button", { name: opsCopy.dispatch.move.sendQuietly, exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Moved. Vikram S. is told on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Vikram S. gets the new window on WhatsApp.");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -328,7 +329,7 @@ test("asks ops to call a client who has not agreed to WhatsApp, and records the 
   await press(page, "Move Vikram S. to Sandeep Yadav, Sat 20 Sep, morning");
   const picker = page.getByRole("dialog", { name: "Move Vikram S. to Sandeep Yadav" });
   await expect(picker).toContainText(
-    "Vikram Sethi isn't on WhatsApp updates. Call +91 98100 00002 with the new window.",
+    "Vikram Sethi isn’t on WhatsApp updates. Call +91 98100 00002 with the new window.",
   );
   // No message goes, so the button promises none.
   await expect(picker.getByRole("button", { name: opsCopy.dispatch.move.send })).toHaveCount(0);
@@ -337,7 +338,7 @@ test("asks ops to call a client who has not agreed to WhatsApp, and records the 
 
   const status = page.getByRole("status");
   await expect(status).toContainText(
-    "Vikram S. moved. Vikram Sethi isn't on WhatsApp updates: call +91 98100 00002 with the new window.",
+    "Vikram S. moved. Vikram Sethi isn’t on WhatsApp updates: call +91 98100 00002 with the new window.",
   );
   await status.getByRole("button", { name: "Told by phone" }).click();
   await expect(page.getByRole("status")).toHaveText(`Recorded: ${VIKRAM.name} told by phone.`);
@@ -385,7 +386,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. is told on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");
   expect(sent).toHaveLength(1);
 });
 
@@ -411,7 +412,7 @@ test("refuses a move made from a stale board, and says where the job is now", as
   await press(page, "Move and notify");
 
   await expect(page.getByRole("alert")).toHaveText(
-    "Rohit M. was just moved by someone else. It's now with Arjun Negi, Sat 20 Sep, evening.",
+    "Rohit M. was just moved by someone else. It’s now with Arjun Negi, Sat 20 Sep, evening.",
   );
   await expect(page.getByText("Moving Rohit M.")).toBeHidden();
 });

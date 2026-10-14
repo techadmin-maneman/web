@@ -20,7 +20,7 @@ function lookRequests(page: Page): string[] {
   return asked;
 }
 
-test("a drawn photograph's look is made once the gate has the number, and never shown", async ({ page }) => {
+test("a drawn photograph’s look is made once the gate has the number, and never shown", async ({ page }) => {
   test.setTimeout(120_000);
   await fakeTurnstile(page);
   await page.clock.install();

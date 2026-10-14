@@ -32,7 +32,7 @@ test("enters a discount code on a visit not yet paid for, says when one does not
   await row.getByRole("button", { name: "Enter a discount code on the visit of 25 Sep 2027" }).click();
   await row.getByLabel(opsCopy.clients.visits.code.label).fill("wrong1");
   await row.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
-  await expect(row.getByRole("alert")).toHaveText("That code doesn't apply to this visit.");
+  await expect(row.getByRole("alert")).toHaveText("That code doesn’t apply to this visit.");
   // One ops switched off said only that it did not apply.
   await row.getByLabel(opsCopy.clients.visits.code.label).fill("RPLC2K");
   await row.getByRole("button", { name: opsCopy.clients.visits.code.apply }).click();
@@ -102,7 +102,7 @@ test("says who closed a visit left partly done without a follow-up, when and why
 });
 
 // Why a client is not going ahead after their consultation, set as they tell Care (docs/decisions/0149-lost-reasons.md).
-test("sets why a client is not going ahead on a closed consultation, from the job sheet's list", async ({ page }) => {
+test("sets why a client is not going ahead on a closed consultation, from the job sheet’s list", async ({ page }) => {
   const [done] = RECORD.visits.past;
   if (done === undefined) throw new Error("the record has no visit done");
   const consultation = {
@@ -161,7 +161,7 @@ test("names a payment for a booking not yet a visit by what is being booked", as
 });
 
 // A client who lost Razorpay's text could not be sent the link again; the address sat only in D1.
-test("lists the payment links sent, and copies an open one's address to send again", async ({ page, context }) => {
+test("lists the payment links sent, and copies an open one’s address to send again", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await openClient(page, `/clients/${CLIENT.id}/payments`);
   const links = page.getByRole("region", { name: opsCopy.clients.links.title });
@@ -183,7 +183,7 @@ test("lists the payment links sent, and copies an open one's address to send aga
   await expect(paidLink.getByRole("button")).toHaveCount(0);
 });
 
-test("says where each finished visit's invoice stands in Books", async ({ page }) => {
+test("says where each finished visit’s invoice stands in Books", async ({ page }) => {
   const withDraft = {
     ...RECORD,
     invoices: [
@@ -216,7 +216,7 @@ test("says so when nothing was linked or invoiced yet", async ({ page }) => {
 });
 
 // A credit given or taken in error once needed SQL to put right.
-test("puts a client's credits right, with the reason, and shows the balance it answers", async ({ page }) => {
+test("puts a client’s credits right, with the reason, and shows the balance it answers", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
     [ADD_CREDITS]: json({ visits: 1, earliest_expiry: "2028-01-03T06:00:00.000Z" }),
   });
@@ -258,5 +258,5 @@ test("says so when the API would take away more than the client holds", async ({
   await credits.getByLabel(opsCopy.clients.credits.change).fill("-5");
   await credits.getByRole("radio", { name: "Correction" }).check();
   await credits.getByRole("button", { name: opsCopy.clients.credits.save }).click();
-  await expect(credits.getByRole("alert")).toContainText("-12 to 12, and no more than they hold.");
+  await expect(credits.getByRole("alert")).toContainText(/^Enter -12 to 12\. They hold \d+, so remove at most \d+\.$/);
 });

@@ -72,7 +72,7 @@ export const test = base.extend<{ contentSecurityPolicy: undefined; appTurnstile
       const errors = (await Promise.all(answers))
         .flat()
         .filter((error) => !meant.some((route) => error.startsWith(route)));
-      expect(errors, "the page was answered outside the API's contract").toEqual([]);
+      expect(errors, "the page was answered outside the API’s contract").toEqual([]);
     },
     { auto: true },
   ],

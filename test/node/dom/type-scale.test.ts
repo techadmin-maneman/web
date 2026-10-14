@@ -48,7 +48,7 @@ describe("the type scale", () => {
     }
   });
 
-  it("sets the body's leading, and bold at a weight the fonts load", () => {
+  it("sets the body’s leading, and bold at a weight the fonts load", () => {
     const base = read("packages/ui/base.css");
     expect(base).toMatch(/body \{[^}]*line-height: var\(--lh-145\)/);
     expect(base).toMatch(/strong,\s*b \{\s*font-weight: var\(--weight-medium\)/);

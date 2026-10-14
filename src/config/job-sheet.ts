@@ -14,47 +14,48 @@ import type { VisitType } from "./visit-types.ts";
 export interface JobSheetItem {
   readonly id: string;
   readonly label: string;
+  /** A checklist item's words on the client's record, under "What was done"; null for one only the technician needs. */
+  readonly client?: string | null;
 }
 
 /**
  * The checklist per visit type. A service visit has the design's six items;
- * the other types have the steps their screens show. The client reads the
- * labels too, under "What was done", so a piece is their hair system. The ids
- * are what a visit records, and never change.
+ * the other types have the steps their screens show. The ids are what a visit
+ * records, and never change.
  */
 export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
   // PLACEHOLDER: the consultation's checklist, until ops give theirs (open point 28).
   consultation: [
-    { id: "scalp_checked", label: "Scalp and hairline checked" },
-    { id: "measurements_taken", label: "Measurements taken" },
-    { id: "options_shown", label: "Options and prices shown" },
+    { id: "scalp_checked", label: "Scalp and hairline checked", client: "Scalp and hairline checked" },
+    { id: "measurements_taken", label: "Measurements taken", client: "Measurements taken" },
+    { id: "options_shown", label: "Options and prices shown", client: "Options and prices talked through" },
   ],
   // PLACEHOLDER: the first fit's checklist, until ops give theirs (open point 28).
   first_fit: [
-    { id: "template_checked", label: "Template checked against the head" },
-    { id: "base_trimmed", label: "Base trimmed and shaped" },
-    { id: "adhesive_applied", label: "Adhesive applied" },
-    { id: "piece_set", label: "Hair system set and pressed" },
-    { id: "cut_and_styled", label: "Cut and styled" },
-    { id: "aftercare_explained", label: "Aftercare explained" },
+    { id: "template_checked", label: "Template checked against the head", client: null },
+    { id: "base_trimmed", label: "Base trimmed and shaped", client: "Base trimmed and shaped" },
+    { id: "adhesive_applied", label: "Adhesive applied", client: "Adhesive applied" },
+    { id: "piece_set", label: "Hair system set and pressed", client: "Hair system set and pressed" },
+    { id: "cut_and_styled", label: "Cut and styled", client: "Cut and styled" },
+    { id: "aftercare_explained", label: "Aftercare explained", client: "Aftercare explained" },
   ],
   // PLACEHOLDER: the service visit's checklist, until ops give theirs (open point 28).
   service: [
-    { id: "piece_removed", label: "Hair system removed" },
-    { id: "scalp_cleaned", label: "Scalp cleaned" },
-    { id: "piece_cleaned", label: "Hair system cleaned" },
-    { id: "adhesive_renewed", label: "Adhesive renewed" },
-    { id: "piece_refitted", label: "Hair system refitted" },
-    { id: "cut_and_styled", label: "Cut and styled" },
+    { id: "piece_removed", label: "Hair system removed", client: "Hair system removed" },
+    { id: "scalp_cleaned", label: "Scalp cleaned", client: "Scalp cleaned" },
+    { id: "piece_cleaned", label: "Hair system cleaned", client: "Hair system cleaned" },
+    { id: "adhesive_renewed", label: "Adhesive renewed", client: "Adhesive renewed" },
+    { id: "piece_refitted", label: "Hair system refitted", client: "Refitted" },
+    { id: "cut_and_styled", label: "Cut and styled", client: "Cut and styled" },
   ],
   // PLACEHOLDER: the replacement's checklist, until ops give theirs (open point 28).
   replacement: [
-    { id: "old_piece_removed", label: "Old hair system removed" },
-    { id: "scalp_cleaned", label: "Scalp cleaned" },
-    { id: "new_piece_checked", label: "New hair system checked against its label" },
-    { id: "adhesive_applied", label: "Adhesive applied" },
-    { id: "piece_set", label: "Hair system set and pressed" },
-    { id: "cut_and_styled", label: "Cut and styled" },
+    { id: "old_piece_removed", label: "Old hair system removed", client: "Old hair system removed" },
+    { id: "scalp_cleaned", label: "Scalp cleaned", client: "Scalp cleaned" },
+    { id: "new_piece_checked", label: "New hair system checked against its label", client: null },
+    { id: "adhesive_applied", label: "Adhesive applied", client: "Adhesive applied" },
+    { id: "piece_set", label: "Hair system set and pressed", client: "New hair system set and pressed" },
+    { id: "cut_and_styled", label: "Cut and styled", client: "Cut and styled" },
   ],
 };
 

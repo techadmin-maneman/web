@@ -2,6 +2,7 @@
 // directly, with the design's own pincodes and number, for the fidelity screenshots and the browser tests.
 
 import { useEffect } from "preact/hooks";
+import { WINDOW_TIMES } from "@rules/config/scheduling.ts";
 import { useLatest } from "../useLatest.ts";
 import type { PincodeAnswer, ReferralConsultation } from "../../lib/api.ts";
 import { indiaTomorrow } from "../../lib/dates.ts";
@@ -31,6 +32,7 @@ function sampleBooking(state: "booked" | "requested" | "expired"): Booking {
     state: state === "requested" ? "requested" : "booked",
     date: indiaTomorrow(),
     window: "morning",
+    hours: WINDOW_TIMES.morning,
     area: SAMPLE.served.area,
     credits: state !== "expired",
     invite: state === "expired" ? "expired" : "valid",

@@ -36,8 +36,8 @@ export const settings = {
     percent: "Percentage",
     amount: "Amount",
     value: "Per cent",
-    rupeesOff: "Rupees",
-    cap: "Cap, in rupees (optional)",
+    rupeesOff: "Amount off, Rs.",
+    cap: "Cap, Rs. (optional)",
     covers: "Applies to",
     coverNames: {
       first_fit: "First fits, and consultation-and-fit visits",
@@ -50,7 +50,7 @@ export const settings = {
     check: "Review",
     checkTitle: "Make these codes?",
     send: "Confirm",
-    sending: "Making",
+    sending: "Making…",
     back: "Back",
     /** One line of the check: what each code takes off. */
     off: (what: string) => `${what} off before GST`,
@@ -114,7 +114,7 @@ export const settings = {
     switchOffLabel: (code: string) => `Switch off ${code}`,
     switchTitle: (code: string) => `Switch off ${code}?`,
     switchLine: (uses: number) =>
-      `It can't be used again. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it.`,
+      `It can’t be used again. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it.`,
     switching: "Switching off",
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -123,7 +123,7 @@ export const settings = {
       value: "A percentage is 1–100. An amount is whole rupees.",
       cap: "Only a percentage takes a cap.",
       covers: "Choose what it applies to.",
-      expires_on: "The last day can't be in the past.",
+      expires_on: "The last day can’t be in the past.",
       max_uses: "Generated codes are single-use.",
       code_exists: "That code already exists.",
       not_found: changed("That code no longer exists."),
@@ -170,7 +170,7 @@ export const settings = {
     /** A rule with many boxes, shut: "Show all 18". */
     showAll: (count: number) => `Show all ${String(count)}`,
     save: "Save",
-    saving: "Saving",
+    saving: "Saving…",
     saved: "Saved.",
     reset: "Reset to default",
     /** The open-keyed rule's extra row: a base, and the cycle for it. */
@@ -188,7 +188,7 @@ export const settings = {
       late_change_charge: dispatch.typeNames,
       no_show_charge: dispatch.typeNames,
       // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
-      no_show_waiver: { payment: "The visit's payment", credit: "The free service visit used" },
+      no_show_waiver: { payment: "The visit’s payment", credit: "The free service visit used" },
       task_sla_hours: tasks.groups,
       // The phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
       phone_clock: {
@@ -214,16 +214,16 @@ export const settings = {
         first_fit_to_book: "First fit booked within",
         horizon: "Bookable ahead",
         invoice_prompt: "New invoice shown on Home",
-        replacement_order_lead: "Order a replacement before it's due",
+        replacement_order_lead: "Order a replacement before it’s due",
       },
       // What a referral earns, each side apart (docs/decisions/0107-referral-rewards-in-the-console.md).
       referral_reward: {
         referrer_visits: "Referrer",
         friend_visits: "Friend",
-        valid_days: "Free visits valid for",
+        valid_days: "Free service visits valid for",
       },
       // Remedies (docs/decisions/0143-remedies.md).
-      remedy_limit: { visits: "Free visits", days: "Over" },
+      remedy_limit: { visits: "Free service visits", days: "Over" },
       // The rest of the rules (docs/decisions/0193-the-rest-of-the-rules-in-the-console.md).
       payment_links: {
         holds_hours: "Holds the slot for",
@@ -250,7 +250,7 @@ export const settings = {
         quarterly: "Quarterly items, every",
         recount_above_percent: "Recount a difference above",
       },
-      kit_check: { from_hour: "Check from", one_visit_range: "One-visit range", top_up_weekday: "Week's top-up on" },
+      kit_check: { from_hour: "Check from", one_visit_range: "One-visit range", top_up_weekday: "Week’s top-up on" },
       forecast_assumptions: {
         baseline_periods: "Baseline averages",
         learning_days: "Rates learned over",
@@ -290,7 +290,9 @@ export const settings = {
       back: "Edit",
     },
     /** A section's Save sends its rules one by one, so a refusal speaks for its own rule only. */
-    outside: (field: string) => `${field}: out of range.`,
+    outside: (field: string, range: string) => `${field}: ${range}`,
+    /** A choice refused: where the field is one of a list. */
+    chooseOne: "Choose one of its options.",
     conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”.`,
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -317,7 +319,7 @@ export const settings = {
       `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} booked on these days. Move ${
         visits === 1 ? "it" : "them"
       } on the dispatch board.`,
-    uncounted: "Booked visits couldn't be counted. Check the dispatch board.",
+    uncounted: "Booked visits couldn’t be counted. Check the dispatch board.",
     added: "Closed.",
     none: "No closed days.",
     /** "Tue 20 Oct to Thu 22 Oct", and "Tue 20 Oct" for one day. */
@@ -337,7 +339,7 @@ export const settings = {
     reopen: (period: string) => `Reopen ${period}?`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      from: "The first day can't be in the past.",
+      from: "The first day can’t be in the past.",
       to: "The last day must follow the first, within a month.",
       reason: "Up to 60 letters or digits.",
       city: "Choose one of our cities.",
@@ -396,7 +398,7 @@ export const settings = {
       late_fee_replacement: "Late fee on a replacement",
     },
     /** The link to the rule that says when a late fee is charged. */
-    lateFeeRule: "When it's charged",
+    lateFeeRule: "When it’s charged",
     actions: {
       edit: "Edit",
       price: "New price",
@@ -429,7 +431,7 @@ export const settings = {
     form: {
       priceTitle: (name: string) => `New price: ${name}`,
       correctTitle: (name: string, from: string) => `Correct the ${name} price from ${from}`,
-      amount: "Price before GST, in rupees",
+      amount: "Price before GST, Rs.",
       gst: "GST",
       from: "Starts",
       /** A day typed before tomorrow, said beside the box before anything is checked. */
@@ -485,30 +487,37 @@ export const settings = {
       send: "Confirm",
       back: "Back",
       takeBackConfirm: "Confirm withdrawal",
-      keep: "Keep",
+      keep: "Keep price",
     },
-    saving: "Saving",
+    saving: "Saving…",
     done: {
       price: "Price set.",
       takenBack: "Price withdrawn.",
       saved: "Saved.",
+    },
+    /** A refusal of a box with the limit the API gave the form, as the API checks it (src/routes/ops/services.ts). */
+    limits: {
+      description: (most: number) => `Up to ${String(most)} characters, on one line.`,
+      minutes: (min: number, max: number) => `Enter ${String(min)}–${String(max)} minutes.`,
+      amount: (most: string) => `Enter whole rupees, up to ${most}.`,
+      gst: (most: number) => `Enter a whole percentage, 0–${String(most)}.`,
     },
     /** A refusal names the box it came from (src/routes/ops/services.ts, ops-settings.ts); these are said of each. */
     errors: {
       not_permitted: NOT_PERMITTED,
       tier: "No such code, or none can be made from that name.",
       name: "2–60 characters, starting with a letter or digit.",
-      description: "One line, within the limit.",
-      minutes: "Outside the allowed range.",
+      description: "Keep it to one line.",
+      minutes: "Enter the minutes allowed.",
       retired_date: "Retire from today or later. Restore a retired service first.",
       order: changed("The order changed elsewhere."),
-      amount_ex_gst: "Whole rupees, within the range.",
-      gst_percent: "A whole percentage, within the range.",
+      amount_ex_gst: "Enter whole rupees.",
+      gst_percent: "Enter a whole percentage.",
       valid_from: "A new price starts tomorrow at the earliest.",
       was_valid_from: "That price is already in effect, so it stays.",
       service_exists: "That name or code is already in use.",
       last_of_kind: "Each kind needs one priced service. Add and price its replacement first.",
-      service_retired: "It's retired by then, so it can't be priced.",
+      service_retired: "It’s retired by then, so it can’t be priced.",
       not_found: changed("No longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -518,6 +527,8 @@ export const settings = {
     takeBackErrors: {
       not_permitted: NOT_PERMITTED,
       valid_from: "That price is already in effect, so it stays.",
+      offline: OFFLINE,
+      unknown: FAILED,
     },
   },
   // No design draws them (docs/decisions/0165-suppliers.md).
@@ -556,7 +567,7 @@ export const settings = {
       warranty: "Warranty, days",
       add: "Add",
       save: "Save supplier",
-      saving: "Saving",
+      saving: "Saving…",
       cancel: "Cancel",
       added: "Added.",
       saved: "Saved.",
@@ -593,7 +604,7 @@ export const settings = {
       saved: "Saved.",
       remove: "Remove",
       removeLabel: (name: string) => `Remove ${name}`,
-      removeQuestion: (item: string, supplier: string) => `Take ${item} off ${supplier}'s list?`,
+      removeQuestion: (item: string, supplier: string) => `Take ${item} off ${supplier}’s list?`,
       removed: "Removed.",
     },
     errors: {
@@ -601,7 +612,7 @@ export const settings = {
       consumable_code: changed("That item is no longer listed."),
       id: changed("That supplier is gone."),
       not_found: changed("That supplier is gone."),
-      invalid_request: "Check the details.",
+      invalid_request: "Check the name, the GSTIN (15 characters) and the phone (10 digits).",
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
@@ -650,7 +661,7 @@ export const settings = {
       colour: "Colour",
       grey: "Grey, %",
       density: "Density",
-      cost: "Cost each, in rupees",
+      cost: "Cost each, Rs.",
       kit: "Kit low at (optional)",
       store: "Hub or stockroom low at (optional)",
       central: "Warehouse low at (optional)",
@@ -659,9 +670,9 @@ export const settings = {
       adding: (spec: string, cost: string) => `${spec}, at ${cost} each`,
       added: "Added.",
       errors: {
-        product: "Pick a product from the list.",
+        product: "Choose a product from the list.",
         hair_system: "That spec is already in stock.",
-        invalid_request: "Check the figures.",
+        invalid_request: "Check the size in inches, and grey and density as percentages, 0–100.",
         not_permitted: NOT_PERMITTED,
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
@@ -673,14 +684,14 @@ export const settings = {
       changeTitle: (name: string) => `Change ${name}`,
       name: "Name",
       unit: "Unit",
-      cost: "Cost each, in rupees",
+      cost: "Cost each, Rs.",
       kit: "Kit low at (optional)",
       store: "Hub or stockroom low at (optional)",
       central: "Warehouse low at (optional)",
       shelf: "Shelf life, days (optional)",
       add: "Add",
       save: "Save consumable",
-      saving: "Saving",
+      saving: "Saving…",
       cancel: "Cancel",
       added: "Added.",
       saved: "Saved.",
@@ -707,7 +718,7 @@ export const settings = {
     retiring: {
       title: (name: string) => `Retire ${name}`,
       from: "Retire from",
-      question: (name: string, from: string) => `Technicians can't log ${name} from ${from}. Past jobs keep it.`,
+      question: (name: string, from: string) => `Technicians can’t log ${name} from ${from}. Past jobs keep it.`,
       restore: (name: string) => `Offer ${name} again?`,
       done: "Done.",
     },
@@ -730,12 +741,14 @@ export const settings = {
       },
       saved: "Saved.",
     },
+    /** The cost refused, with the most the API takes. */
+    unitCostUpTo: (most: string) => `Enter whole rupees, up to ${most}.`,
     /** A refusal, said of the box it names (src/routes/ops/consumables.ts). */
     errors: {
       not_permitted: NOT_PERMITTED,
-      name: "That name is taken, or doesn't start with a letter or digit.",
+      name: "That name is taken, or doesn’t start with a letter or digit.",
       unit: "Letters only: strip, ml, sachet.",
-      unit_cost: "Outside the allowed range.",
+      unit_cost: "Enter the cost in whole rupees.",
       reorder_kit: "A whole number, or blank.",
       reorder_store: "A whole number, or blank.",
       reorder_central: "A whole number, or blank.",
@@ -757,6 +770,10 @@ export const settings = {
     /** Why a client is not going ahead after a consultation (docs/decisions/0149-lost-reasons.md). */
     lostReasons: "Reasons not going ahead",
     item: (position: number) => `Item ${String(position)}`,
+    clientWords: (position: number) => `Item ${String(position)}, as the client reads it`,
+    clientNote:
+      "The second box is what the client’s record says was done. Leave it empty for a step only the technician needs.",
+    clientNone: "Only the technician sees it",
     reason: (position: number) => `Reason ${String(position)}`,
     /** The buttons beside an item: each names the item after what it does, so a screen reader says which. */
     upButton: "Move up",
@@ -774,7 +791,7 @@ export const settings = {
     committed: "Default",
     setBy: (who: string, when: string) => `Set by ${who} on ${when}`,
     save: "Save",
-    saving: "Saving",
+    saving: "Saving…",
     saved: "Saved.",
     confirm: {
       title: "Review the change",
@@ -783,15 +800,24 @@ export const settings = {
       added: (label: string) => `Added: ${label}`,
       renamed: (was: string, now: string) => `Renamed: ${was} → ${now}`,
       takenOff: (label: string) => `Removed: ${label}`,
+      clientReads: (label: string, words: string) => `${label}: the client reads “${words}”`,
+      clientNone: (label: string) => `${label}: only the technician sees it`,
       moved: "Order changed.",
       send: "Confirm",
       back: "Edit",
       nothing: "No changes.",
     },
+    /** A refusal of the list with the limits the API gave it. */
+    limits: {
+      items: (most: number) => `Keep 1 to ${String(most)} items.`,
+      label: (longest: number) => `Give each item words, up to ${String(longest)} characters, with no repeats.`,
+      client: (longest: number) => `Keep the client’s words to ${String(longest)} characters.`,
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
-      items: "Too few or too many items.",
-      label: "Each item needs words, within the limit, with no repeats.",
+      items: "Keep at least one item.",
+      label: "Give each item words, with no repeats.",
+      client: "Shorten the client’s words.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
@@ -834,7 +860,7 @@ export const settings = {
       takes: (grant: string) => `Removes ${grant}`,
       nothing: "No changes.",
       send: "Confirm",
-      sending: "Saving",
+      sending: "Saving…",
       back: "Edit",
     },
     saved: "Saved.",
@@ -845,7 +871,7 @@ export const settings = {
       label: (email: string) => `Remove ${email}`,
       warning: (email: string) => `Remove ${email} from staff?`,
       confirm: "Remove",
-      sending: "Removing",
+      sending: "Removing…",
       cancel: "Cancel",
     },
     errors: {
@@ -862,7 +888,7 @@ export const settings = {
     enforcement: {
       title: "Access control",
       off: "Off. Everyone signed in sees every section.",
-      on: "On. People see only what they're granted.",
+      on: "On. People see only what they’re granted.",
       setBy: (who: string, when: string) => `Changed by ${who} on ${when}`,
       start: "Turn on",
       stop: "Turn off",
@@ -870,7 +896,7 @@ export const settings = {
       startLine: "Only listed people can use the console.",
       stopTitle: "Turn off access control?",
       stopLine: "Everyone signed in will see every section.",
-      sending: "Saving",
+      sending: "Saving…",
       back: "Cancel",
       onlyNational: "Only national Admin · Manage can change this.",
       errors: {
@@ -892,7 +918,7 @@ export const settings = {
       remove: "Remove",
       removeLabel: (label: string) => `Remove ${label}`,
       removeTitle: (label: string) => `Remove ${label}?`,
-      removeLine: "It's refused once access control is on.",
+      removeLine: "It’s refused once access control is on.",
       onlyNational: "Only national Admin · Manage can change service tokens.",
       errors: {
         client_id: "Paste the client ID exactly as shown.",

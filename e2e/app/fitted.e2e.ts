@@ -7,14 +7,14 @@ import { tab } from "./fitted-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 import { holdOpen } from "./one-tap.ts";
 
-test("Home shows a fitted client's next visit, with the technician, and Reschedule", async ({ page }) => {
+test("Home shows a fitted client’s next visit, with the technician, and Reschedule", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   await expect(page.getByText(shortDate(client.next.date))).toBeVisible();
-  await expect(page.getByText("Afternoon, 12 to 4 pm")).toBeVisible();
+  await expect(page.getByText("Afternoon, 12–4 pm")).toBeVisible();
   await expect(page.getByText("Imran", { exact: true })).toBeVisible();
-  await expect(page.getByText("Service visit · 1 hour 30 minutes")).toBeVisible();
+  await expect(page.getByText("Service visit · 1 hr 30 min")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
   // Home's one prompt: this client has given no address, which comes before the replacement falling due.
   await expect(page.getByText(appCopy.home.prompt.address)).toBeVisible();
@@ -29,14 +29,14 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await logIn(page, client.mobile);
   await tab(page, "Visits").click();
   await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
-  await expect(page.getByText("Service visit · 12 to 4 pm · Imran")).toBeVisible();
+  await expect(page.getByText("Service visit · 12–4 pm · Imran")).toBeVisible();
   // Self-serve booking is on locally: the footer opens the booking sheet (e2e/app/booking.e2e.ts).
   await expect(page.getByRole("button", { name: appCopy.home.next.book })).toBeVisible();
 
   // Every visit opens its own page: the one coming, then the three done.
   const visits = page.getByRole("main").getByRole("link");
   await expect(visits).toHaveCount(4);
-  await expect(visits.nth(0)).toContainText("Service visit · 12 to 4 pm · Imran");
+  await expect(visits.nth(0)).toContainText("Service visit · 12–4 pm · Imran");
   await expect(visits.nth(1)).toContainText(`${fullDate(client.service.date)}Service visit · Imran`);
   await expect(visits.nth(2)).toContainText(`${fullDate(client.firstFit.date)}First fit · Imran`);
   await expect(visits.nth(3)).toContainText(`${fullDate(client.consultation.date)}Consultation · Imran`);
@@ -44,10 +44,10 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await visits.nth(1).click();
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByText("Imran Qureshi")).toBeVisible();
-  await expect(page.getByText("1 h 25 m")).toBeVisible();
+  await expect(page.getByText("1 hr 25 min")).toBeVisible();
   // The visit's "What was done": the checklist the technician ticked, from their phone.
   await expect(page.getByRole("term").filter({ hasText: appCopy.visits.detail.done }).locator("+ dd")).toHaveText(
-    "Hair system removed, Scalp cleaned, Hair system cleaned.",
+    "Hair system removed, scalp cleaned, hair system cleaned.",
   );
   // The row shows the thumbnail the technician's phone made, not the whole photograph (ADR 0093).
   const front = page.getByRole("button", { name: `Front, after the visit, ${fullDate(client.service.date)}` });
@@ -58,7 +58,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   // The visit coming opens too, as Home's card, with the ways to change it.
   await visits.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.next.date) })).toBeVisible();
-  await expect(page.getByText("Afternoon, 12 to 4 pm")).toBeVisible();
+  await expect(page.getByText("Afternoon, 12–4 pm")).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();
 
   // With self-serve booking on, the note is kept on the visit for the technician, not sent to WhatsApp.
@@ -119,7 +119,7 @@ test("an open note sheet keeps its words through a dropped signal, and Back clos
 });
 
 // A visit that is not this client's, or a payment, says so rather than offering to try again for ever.
-test("a visit or a payment that is not the client's says it could not be found", async ({ page }) => {
+test("a visit or a payment that is not the client’s says it could not be found", async ({ page }) => {
   await logIn(page, fittedClient().mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   const nobody = "00000000-0000-4000-8000-000000000000";
@@ -175,7 +175,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   expect(await axeViolations(page)).toEqual([]);
 
   await tab(page, "Visits").click();
-  await expect(page.getByText("Service visit · Done · notes on the way · Imran")).toBeVisible();
+  await expect(page.getByText("Service visit · Done · record on its way · Imran")).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.next.book })).toHaveCount(0);
 
   // An invoice just issued is a line of its own, beneath whichever prompt leads.
@@ -196,7 +196,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
 // The client's own record, above their visits: a client's history belongs in
 // the app as well as the console. The replacement is a month and never a day, because the day is
 // worked out afresh from FSM on every sync (ADR 0059).
-test("Visits heads the client's own record with the month their replacement falls due", async ({ page }) => {
+test("Visits heads the client’s own record with the month their replacement falls due", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await tab(page, "Visits").click();

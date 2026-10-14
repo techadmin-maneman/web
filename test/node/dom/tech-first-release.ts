@@ -23,7 +23,7 @@ export function firstRelease(records: readonly object[], name: "jobs" | "outbox"
         resolve();
       };
       transaction.onabort = () => {
-        reject(new Error("could not seed the first release's store"));
+        reject(new Error("could not seed the first release’s store"));
       };
     };
   });
@@ -47,7 +47,7 @@ export function thirdRelease(cards: readonly object[]): Promise<void> {
         resolve();
       };
       transaction.onabort = () => {
-        reject(new Error("could not seed the third release's cards"));
+        reject(new Error("could not seed the third release’s cards"));
       };
     };
   });

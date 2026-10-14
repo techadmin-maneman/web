@@ -45,17 +45,21 @@ function inviteHeading(invite: Invite | null): string {
 
 /** The invite's card, the referrer's own where they have one, and the house card where it will not load. */
 function InviteCard(props: { invite: Invite | null }) {
+  const src = props.invite === null ? HOUSE_CARD : cardPath(props.invite, codeInPath());
+  const name = props.invite?.referrer_first_name ?? null;
+  const { personal, house } = referral.arrival.card;
   return (
     <img
       class={styles.inviteCard}
-      src={props.invite === null ? HOUSE_CARD : cardPath(props.invite, codeInPath())}
+      src={src}
       width={CARD_WIDTH}
       height={CARD_HEIGHT}
       // The page's largest first paint on a wide screen.
       fetchpriority="high"
-      alt=""
+      alt={src === HOUSE_CARD || name === null ? house : fill(personal, { name })}
       onError={(event) => {
         event.currentTarget.src = HOUSE_CARD;
+        event.currentTarget.alt = house;
       }}
     />
   );

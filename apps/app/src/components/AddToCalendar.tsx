@@ -4,15 +4,17 @@
 
 import { ButtonLink } from "@maneman/ui/Button";
 import { capsLook } from "@maneman/ui/Caps";
-import { windowSpan, type BookingWindow } from "@rules/config/scheduling.ts";
+import { windowSpan } from "@rules/config/scheduling.ts";
 import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
-import { calendar, WINDOW_HOURS } from "../content.ts";
+import { timeRange } from "@rules/lib/time-range.ts";
+import { calendar } from "../content.ts";
 import styles from "./add-to-calendar.module.css";
 
 interface CalendarVisit {
   readonly id: string;
   readonly date: string;
-  readonly window: BookingWindow;
+  /** The window's hours on its day, as the API gives them. */
+  readonly hours: { readonly start: string; readonly end: string };
   /** "First fit", as the visit's card names it. */
   readonly name: string;
   readonly technician: string | null;
@@ -21,8 +23,9 @@ interface CalendarVisit {
 export function AddToCalendar({ visit, onInk = false }: { visit: CalendarVisit; onInk?: boolean }) {
   const entry: CalendarEntry = {
     title: calendar.title(visit.name),
-    ...windowSpan(visit.date, visit.window),
-    details: calendar.details(WINDOW_HOURS[visit.window], visit.technician),
+    ...windowSpan(visit.date, visit.hours),
+    // A calendar wraps as it likes, so its hours keep plain spaces.
+    details: calendar.details(timeRange(visit.hours.start, visit.hours.end), visit.technician),
     uid: `${visit.id}@maneman.in`,
   };
   const variant = onInk ? "outlineOnInk" : "outline";

@@ -27,7 +27,7 @@ test.describe("the services and their prices", () => {
       .filter({ has: page.getByRole("rowheader").getByText(name, { exact: true }) });
   const edit = (page: Page, name: string) => page.getByRole("button", { name: `Edit ${name}`, exact: true }).click();
 
-  test("lists each kind's services as a table: length, price, GST and the next price", async ({ page }) => {
+  test("lists each kind’s services as a table: length, price, GST and the next price", async ({ page }) => {
     await open(page, "/prices");
     for (const kind of ["Consultation", "First fit", "Service visit", "Replacement"]) {
       await expect(page.getByRole("heading", { level: 3, name: kind, exact: true })).toBeVisible();
@@ -47,7 +47,7 @@ test.describe("the services and their prices", () => {
     await expect(page.getByRole("main")).not.toContainText("No description");
   });
 
-  test("keeps a row's prices still to come and its earlier ones under its Edit", async ({ page }) => {
+  test("keeps a row’s prices still to come and its earlier ones under its Edit", async ({ page }) => {
     await open(page, "/prices");
     await expect(page.getByText(/Rs\. 1,500/)).toBeHidden();
     await edit(page, "Service visit");
@@ -160,7 +160,7 @@ test.describe("the services and their prices", () => {
     await page.getByRole("button", { name: "Change the price of Premium" }).click();
     await page.getByRole("button", { name: "Review" }).click();
     await page.getByRole("button", { name: review.send }).click();
-    await expect(page.getByRole("alert")).toContainText("It's retired by then");
+    await expect(page.getByRole("alert")).toContainText("It’s retired by then");
   });
 
   test("takes back a price still to come, once asked", async ({ page }) => {
@@ -209,7 +209,7 @@ test.describe("the services and their prices", () => {
     await expect(page.getByRole("button", { name: /^Correct/ })).toHaveCount(1);
   });
 
-  test("adds a hair system to the first fit, its code made from its name and its length its kind's", async ({
+  test("adds a hair system to the first fit, its code made from its name and its length its kind’s", async ({
     page,
   }) => {
     await open(page, "/prices", { "POST /api/services": json(SERVICES, 201) });
@@ -276,7 +276,7 @@ test.describe("the services and their prices", () => {
     expect((await request).postDataJSON()).toEqual({ minutes: 300 });
   });
 
-  test("retires a service from a day, and says why a kind's last one stays", async ({ page }) => {
+  test("retires a service from a day, and says why a kind’s last one stays", async ({ page }) => {
     await open(page, "/prices", {
       "POST /api/services/replacement/standard/retire": fails(409, "last_of_kind"),
     });
@@ -328,7 +328,7 @@ test.describe("the services and their prices", () => {
 });
 
 // What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md).
-test("takes a hair system's cost in whole rupees, from today", async ({ page }) => {
+test("takes a hair system’s cost in whole rupees, from today", async ({ page }) => {
   const products = [{ item: "first_fit", tier: "standard", name: "Mane Man Natural", cost: null, since: null }];
   await open(page, "/prices", {
     "GET /api/standard-costs": json({ products }),

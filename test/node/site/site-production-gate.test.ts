@@ -34,8 +34,8 @@ describe("the production site build", () => {
     expect(problems.slice(0, 4)).toEqual([
       "  - the photo notice (photo-v5) is not approved",
       "  - the gate notice (gate-v5) is not approved",
-      "  - the privacy page's wording is not approved",
-      "  - the terms page's wording is not approved",
+      "  - the privacy page’s wording is not approved",
+      "  - the terms page’s wording is not approved",
     ]);
     // The sentences counsel has still to see are marked in the site's content, and refused with the rest.
     expect(problems.slice(4)).toEqual([
@@ -50,7 +50,7 @@ describe("the production site build", () => {
     expect(build.status, `${build.stdout}${build.stderr}`).toBe(0);
   });
 
-  it.runIf(BUILDS)("ships no placeholder tag, no noindex and none of the design's placeholder text", () => {
+  it.runIf(BUILDS)("ships no placeholder tag, no noindex and none of the design’s placeholder text", () => {
     const pages = readdirSync(OUT).filter((file) => file.endsWith(".html"));
     expect(pages.length).toBeGreaterThan(5);
     const placeholders = Object.values(DESIGN_PLACEHOLDERS)
@@ -69,7 +69,7 @@ describe("the production site build", () => {
   });
 
   // REQ-S4-01: a placeholder photograph is not published by leaving it at a hashed address nothing links to.
-  it.runIf(BUILDS)("ships none of the design's placeholder photographs or footage, even unlinked", () => {
+  it.runIf(BUILDS)("ships none of the design’s placeholder photographs or footage, even unlinked", () => {
     const files = readdirSync(`${OUT}/_astro`);
     const stems = Object.values(DESIGN_PLACEHOLDERS)
       .flat()

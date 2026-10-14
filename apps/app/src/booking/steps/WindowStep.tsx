@@ -4,7 +4,7 @@ import { Button } from "@maneman/ui/Button";
 import { WindowChoice } from "@maneman/ui/WindowChoice";
 import { weekdayDate } from "@maneman/web-kit/dates";
 import type { BookingWindow } from "../../api.ts";
-import { booking, WINDOW_HOURS, WINDOW_NAMES } from "../../content.ts";
+import { booking, WINDOW_NAMES, windowHours } from "../../content.ts";
 import { windowContinue, type Day } from "../days.ts";
 import styles from "../booking.module.css";
 import { TITLE_ID, stepOf, Heading } from "./shared.tsx";
@@ -33,10 +33,10 @@ export function WindowStep(props: {
       <WindowChoice
         name="booking-window"
         labelledBy={TITLE_ID}
-        options={props.day.windows.map(({ window, open, change_charged: changeCharged }) => ({
+        options={props.day.windows.map(({ window, open, change_charged: changeCharged, start, end }) => ({
           id: window,
           name: WINDOW_NAMES[window],
-          hours: WINDOW_HOURS[window],
+          hours: windowHours({ start, end }),
           open,
           note: open && changeCharged ? copy.within(props.noticeHours) : undefined,
         }))}

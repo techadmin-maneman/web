@@ -110,7 +110,7 @@ async function landed(kind: string): Promise<number> {
 
 test.describe.configure({ mode: "serial" });
 
-test("the code request carries the phone's own ID, and a wrong code is not an error", async ({ page }) => {
+test("the code request carries the phone’s own ID, and a wrong code is not an error", async ({ page }) => {
   // A write from outside a page of this host is refused before anything else.
   const crossOrigin = await page.request.post("/api/tech/auth/otp", {
     data: { mobile: fixture.technicianMobile, device_id: fixture.deviceId },
@@ -138,7 +138,7 @@ test("the code request carries the phone's own ID, and a wrong code is not an er
   const unlistedBody = (await unlisted).postDataJSON() as { device_id?: string };
   record("otp for an unlisted number", { device_id_sent: unlistedBody.device_id !== undefined });
   expect(unlistedBody.device_id ?? "").toMatch(/^[A-Za-z0-9_-]{8,64}$/);
-  await expect(page.getByText("A six-digit code is on its way.")).toBeVisible();
+  await expect(page.getByText("A 6-digit code is on its way.")).toBeVisible();
 
   // That request may read FSM's list again, which never names the seeded technician. They are written by hand, so
   // the sync leaves them active (migration 0046). Before, it could switch them off, and an inactive technician's
@@ -192,7 +192,7 @@ test("the session survives a reload, and /tech/me names the technician and the p
   await expect(page.getByRole("button", { name: "ST Sign out" })).toBeVisible();
 });
 
-test("the day's list, and the card that unlocks the day before", async ({ page, context }) => {
+test("the day’s list, and the card that unlocks the day before", async ({ page, context }) => {
   await signIn(context);
   const day = await bodyOf<Day>(await page.request.get(`/api/tech/jobs?date=${fixture.today.date}`));
   record("GET /tech/jobs today", day);
@@ -209,7 +209,7 @@ test("the day's list, and the card that unlocks the day before", async ({ page, 
   // address. Which of the two this run proves depends on the hour it is run at.
   const tomorrow = await bodyOf<Card>(await page.request.get(`/api/tech/jobs/${fixture.tomorrow.id}`));
   const open = Date.now() >= Date.parse(tomorrow.unlocks_at);
-  record("tomorrow's card", {
+  record("tomorrow’s card", {
     unlocks_at: tomorrow.unlocks_at,
     unlocked: tomorrow.unlocked,
     has_address: tomorrow.address !== null,
@@ -390,7 +390,7 @@ test("a revoked phone learns so on its next call, and drops what it held", async
   const next = page.waitForResponse((response) => response.url().endsWith("/api/tech/me"));
   await page.goto("/");
   const answer = await next;
-  record("the phone's next /tech/me", `${String(answer.status())} ${await answer.text()}`);
+  record("the phone’s next /tech/me", `${String(answer.status())} ${await answer.text()}`);
   expect(answer.status()).toBe(401);
 
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();

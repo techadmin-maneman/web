@@ -17,7 +17,9 @@ import * as opsCopy from "../../apps/ops/src/content.ts";
 const FIRST = DELETION_REQUESTS.requests[0];
 const DECISION = `/api/deletion-requests/${FIRST?.id ?? ""}/decision` as const;
 const DECIDE: Call = `POST ${DECISION}`;
-const DELETE = "Delete the account of Rohit Malhotra";
+const DELETE = opsCopy.deletions.queue.deleteLabel("Rohit Malhotra");
+const CONFIRMING = opsCopy.deletions.queue.confirmLabel("Rohit Malhotra");
+const ERASE = opsCopy.deletions.queue.confirm("Rohit Malhotra");
 
 /** The API's refusal while the client still has a visit booked, naming it (src/routes/ops/profile.ts). */
 const VISIT_BOOKED = {
@@ -34,7 +36,7 @@ const VISIT_BOOKED = {
   payments: [],
   links: [],
 } satisfies OpsReply<"/api/deletion-requests/{id}/decision", "post", 409>;
-const CHECKED = "I've confirmed this with the client, on their own number.";
+const CHECKED = "I’ve confirmed this with the client, on their own number.";
 
 async function open(page: Page, decision = json({ state: "done" })): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
@@ -49,10 +51,10 @@ const row = (page: Page, name: string) => queue(page).getByRole("listitem").filt
 /** Opens the confirmation on the first request, which is as far as anything goes without the check. */
 async function ask(page: Page): Promise<void> {
   await row(page, "Rohit Malhotra").getByRole("button", { name: DELETE }).click();
-  await expect(page.getByRole("group", { name: "Deleting the account of Rohit Malhotra" })).toBeVisible();
+  await expect(page.getByRole("group", { name: CONFIRMING })).toBeVisible();
 }
 
-test("lists every request with the client's number, the day, and the days left of the 30", async ({ page }) => {
+test("lists every request with the client’s number, the day, and the days left of the 30", async ({ page }) => {
   await open(page);
   await expect(queue(page).getByRole("listitem")).toHaveCount(3);
   await expect(row(page, "Rohit Malhotra")).toContainText("+91 98100 04417 · requested 28 Aug 2027");
@@ -74,24 +76,24 @@ test("offers no one-tap delete: the first button only opens the confirmation", a
 test("says what a deletion destroys and what it keeps, before it can be sent", async ({ page }) => {
   await open(page);
   await ask(page);
-  const confirm = page.getByRole("group", { name: "Deleting the account of Rohit Malhotra" });
-  await expect(confirm).toContainText("It can't be undone");
+  const confirm = page.getByRole("group", { name: CONFIRMING });
+  await expect(confirm).toContainText("It can’t be undone");
   await expect(confirm.getByRole("heading", { name: opsCopy.deletions.queue.deleted.title })).toBeVisible();
   await expect(confirm).toContainText("Every photo: visits and try-ons");
   await expect(confirm.getByRole("heading", { name: "Kept" })).toBeVisible();
-  await expect(confirm).toContainText("Invoices in Books, for eight years, by law");
+  await expect(confirm).toContainText("Invoices in Books, for 8 years, by law");
 });
 
 test("takes focus when it opens, so it is read before anything is sent", async ({ page }) => {
   await open(page);
   await ask(page);
-  await expect(page.getByRole("group", { name: "Deleting the account of Rohit Malhotra" })).toBeFocused();
+  await expect(page.getByRole("group", { name: CONFIRMING })).toBeFocused();
 });
 
 test("keeps the delete unusable until ops say they have checked the request", async ({ page }) => {
   await open(page);
   await ask(page);
-  const send = page.getByRole("button", { name: "Delete permanently" });
+  const send = page.getByRole("button", { name: ERASE });
   await expect(send).toBeDisabled();
   await page.getByRole("checkbox", { name: CHECKED }).check();
   await expect(send).toBeEnabled();
@@ -103,7 +105,7 @@ test("deletes the account once it is confirmed, and the request leaves the queue
   await page.getByRole("checkbox", { name: CHECKED }).check();
 
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
-  await page.getByRole("button", { name: "Delete permanently" }).click();
+  await page.getByRole("button", { name: ERASE }).click();
   // The route wants the field either way, and a deletion carries no reason.
   expect((await sent).postDataJSON()).toEqual({ decision: "delete", reason: null });
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
@@ -118,11 +120,11 @@ test("keeps the account when the confirmation is called off", async ({ page }) =
   await expect(row(page, "Rohit Malhotra").getByRole("button", { name: DELETE })).toBeFocused();
 });
 
-test("moves the keyboard to the queue's heading once a request is decided", async ({ page }) => {
+test("moves the keyboard to the queue’s heading once a request is decided", async ({ page }) => {
   await open(page);
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
-  await page.getByRole("button", { name: "Delete permanently" }).click();
+  await page.getByRole("button", { name: ERASE }).click();
   await expect(page.getByRole("heading", { name: "Waiting for a decision" })).toBeFocused();
 });
 
@@ -140,12 +142,12 @@ test("rejects a request with a reason, which it will not send without", async ({
   const send = page.getByRole("button", { name: opsCopy.deletions.queue.reason.confirm });
   await expect(send).toBeDisabled();
 
-  await page.getByRole("textbox", { name: "Reason" }).fill("The number's owner says they did not ask.");
+  await page.getByRole("textbox", { name: "Reason" }).fill("The number’s owner says they did not ask.");
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
   await send.click();
   expect((await sent).postDataJSON()).toEqual({
     decision: "reject",
-    reason: "The number's owner says they did not ask.",
+    reason: "The number’s owner says they did not ask.",
   });
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
 });
@@ -160,9 +162,9 @@ test("says so when someone has decided it already, reads the queue again, and th
   const reread = page.waitForRequest(
     (request) => request.url().endsWith("/api/deletion-requests") && request.method() === "GET",
   );
-  await page.getByRole("button", { name: "Delete permanently" }).click();
+  await page.getByRole("button", { name: ERASE }).click();
   await reread;
-  await expect(page.getByText("Already decided. Here's the latest.")).toBeVisible();
+  await expect(page.getByText("Already decided. Here’s the latest.")).toBeVisible();
   await expect(row(page, "Rohit Malhotra")).toBeVisible();
 });
 
@@ -170,7 +172,7 @@ test("says what to settle first when the client still has a visit booked, and er
   await open(page, json(VISIT_BOOKED, 409));
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
-  await page.getByRole("button", { name: "Delete permanently" }).click();
+  await page.getByRole("button", { name: ERASE }).click();
   await expect(page.getByRole("alert")).toContainText("They have a visit booked.");
   await expect(
     page.getByRole("alert").getByRole("link", { name: opsCopy.deletions.queue.settleOn.visits }),

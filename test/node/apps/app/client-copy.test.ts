@@ -22,7 +22,7 @@ function shown(value: unknown, out: string[]): string[] {
   return out;
 }
 
-describe("the client app's copy", () => {
+describe("the client app’s copy", () => {
   const strings = shown(Object.values(app), []);
 
   it("reads every line of it", () => {

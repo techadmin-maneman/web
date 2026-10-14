@@ -94,7 +94,7 @@ async function typeThenChoose() {
   await wait(WELL_PAST_THE_PAUSE);
 }
 
-describe("the client app's building search", () => {
+describe("the client app’s building search", () => {
   it("asks once typing pauses, and not again for the building chosen", async () => {
     show(createElement(AddressForm, { address: null, saveLabel: "Save", onSaved: () => undefined }));
 
@@ -128,7 +128,7 @@ describe("the client app's building search", () => {
   });
 });
 
-describe("the console's building search, for an address given on the phone", () => {
+describe("the console’s building search, for an address given on the phone", () => {
   it("asks once typing pauses, and not again for the building chosen", async () => {
     show(
       createElement(GivenAddressForm, { clientId: "client-1", onSaved: () => undefined, onCancel: () => undefined }),

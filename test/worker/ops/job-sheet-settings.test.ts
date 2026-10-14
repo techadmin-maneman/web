@@ -15,8 +15,8 @@ import { markDatabase, request } from "../helpers.ts";
 import { JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
 interface List {
-  items: { code: string; label: string }[];
-  retired: { code: string; label: string }[];
+  items: { code: string; label: string; client?: string | null }[];
+  retired: { code: string; label: string; client?: string | null }[];
   set_by: string | null;
   set_at: string | null;
 }
@@ -53,7 +53,7 @@ describe("before ops save a list", () => {
 
     expect(serviceList(answer)).toEqual({
       visit_type: "service",
-      items: CHECKLIST.service.map((item) => ({ code: item.id, label: item.label })),
+      items: CHECKLIST.service.map((item) => ({ code: item.id, label: item.label, client: item.client })),
       retired: [],
       set_by: null,
       set_at: null,
@@ -63,7 +63,7 @@ describe("before ops save a list", () => {
 
   it("gives the technician's card the committed checklist and reasons, words and all", async () => {
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<Record<string, unknown>>();
-    expect(card.checklist).toEqual(CHECKLIST.service);
+    expect(card.checklist).toEqual(CHECKLIST.service.map(({ id, label }) => ({ id, label })));
     expect(card.partial_reasons).toEqual(PARTIAL_REASONS);
   });
 });
@@ -74,15 +74,20 @@ describe("a checklist ops save", () => {
 
     expect(answer.status).toBe(200);
     const list = serviceList(await answer.json<Sheet>());
-    expect(list?.items).toEqual([
-      { code: "piece_removed", label: "Piece removed" },
-      { code: "scalp_cleaned", label: "Scalp cleaned and dried" },
-      { code: "piece_cleaned", label: "Piece cleaned" },
-      { code: "piece_refitted", label: "Piece refitted" },
-      { code: "cut_and_styled", label: "Cut and styled" },
-      { code: "photo_angles_checked", label: "Photo angles checked" },
+    // Sent without client words, each item's are the technician's.
+    expect(list?.items).toEqual(
+      [
+        { code: "piece_removed", label: "Piece removed" },
+        { code: "scalp_cleaned", label: "Scalp cleaned and dried" },
+        { code: "piece_cleaned", label: "Piece cleaned" },
+        { code: "piece_refitted", label: "Piece refitted" },
+        { code: "cut_and_styled", label: "Cut and styled" },
+        { code: "photo_angles_checked", label: "Photo angles checked" },
+      ].map((item) => ({ ...item, client: item.label })),
+    );
+    expect(list?.retired).toEqual([
+      { code: "adhesive_renewed", label: "Adhesive renewed", client: "Adhesive renewed" },
     ]);
-    expect(list?.retired).toEqual([{ code: "adhesive_renewed", label: "Adhesive renewed" }]);
     expect(list?.set_by).toBe("ops@localhost");
 
     const audit = await env.DB.prepare(
@@ -105,7 +110,9 @@ describe("a checklist ops save", () => {
     const answer = await sheet();
     const list = serviceList(answer);
     expect(list?.items.map((item) => item.code)).toContain("adhesive_renewed");
-    expect(list?.retired).toEqual([{ code: "photo_angles_checked", label: "Photo angles checked" }]);
+    expect(list?.retired).toEqual([
+      { code: "photo_angles_checked", label: "Photo angles checked", client: "Photo angles checked" },
+    ]);
     expect(answer.checklists.find((each) => each.visit_type === "replacement")?.set_by).toBeNull();
   });
 
@@ -119,12 +126,32 @@ describe("a checklist ops save", () => {
     ],
     ["a code the list never held", { items: [{ code: "made_up", label: "Made up" }] }, "items.0.code"],
     ["a label of nothing but spaces", { items: [{ label: "   " }] }, "items.0.label"],
+    ["client words of nothing but spaces", { items: [{ label: "Piece removed", client: "  " }] }, "items.0.client"],
   ])("refuses %s, and changes nothing", async (_, body, field) => {
     const answer = await job.opsPost("/api/job-sheet/checklists/service", body);
 
     expect(answer.status).toBe(400);
     expect((await answer.json<{ error: { fields: string[] } }>()).error.fields).toContain(field);
     expect(serviceList(await sheet())?.set_by).toBeNull();
+  });
+
+  it("keeps what the client reads apart from the technician's words, and nothing for an item only they need", async () => {
+    const answer = await job.opsPost("/api/job-sheet/checklists/service", {
+      items: [
+        { code: "piece_removed", label: "Piece removed", client: "Hair system removed" },
+        { label: "Base checked against its label", client: null },
+      ],
+    });
+
+    expect(serviceList(await answer.json<Sheet>())?.items).toEqual([
+      { code: "piece_removed", label: "Piece removed", client: "Hair system removed" },
+      { code: "base_checked_against_its_label", label: "Base checked against its label", client: null },
+    ]);
+    const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ checklist: unknown }>();
+    expect(card.checklist).toEqual([
+      { id: "piece_removed", label: "Piece removed" },
+      { id: "base_checked_against_its_label", label: "Base checked against its label" },
+    ]);
   });
 
   it("reaches the technician's card, and a phone that ticked a retired item offline is still taken", async () => {

@@ -14,6 +14,8 @@ export const purchasingApi = {
     client.post("/api/supplier-claims/{id}/decide", { path: { id }, body }),
   draftOrder: (body: Sent<paths["/api/purchase-orders"]["post"]>) => client.post("/api/purchase-orders", { body }),
   orders: () => client.get("/api/purchase-orders"),
+  setLetterhead: (body: Sent<paths["/api/purchase-orders/letterhead"]["post"]>) =>
+    client.post("/api/purchase-orders/letterhead", { body }),
   receive: (id: string, body: Sent<paths["/api/purchase-orders/{id}/receipts"]["post"]>) =>
     client.post("/api/purchase-orders/{id}/receipts", { path: { id }, body }),
   scorecard: () => client.get("/api/supplier-scorecard"),

@@ -69,7 +69,7 @@ test.describe("the rules", () => {
       ...ruleNamed("checkin_radius_m"),
       name: "reminder_hour",
       title: "Reminder time",
-      note: "When the WhatsApp reminders of tomorrow's visit go.",
+      note: "When the WhatsApp reminders of tomorrow’s visit go.",
       unit: "hour of the day, in India",
       min: 8,
       max: 21,
@@ -156,8 +156,8 @@ test.describe("the rules", () => {
     await expect(radius).not.toHaveAttribute("aria-invalid", "true");
   });
 
-  // The refusal named its field and the console dropped it, so every refusal read the same.
-  test("names the box the API refused", async ({ page }) => {
+  // The refusal named its field and the console dropped it, so every refusal read the same; then it named no range.
+  test("names the box the API refused, and what it may hold", async ({ page }) => {
     await open(page, "/settings", {
       "POST /api/settings/no_show_wait_min": fails(400, "invalid_request", ["no_show_wait_min.first_fit"]),
     });
@@ -166,7 +166,7 @@ test.describe("the rules", () => {
     await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
-      "First fit: out of range.",
+      /^First fit: Enter \d+–\d+ minutes\.$/,
     );
   });
 
@@ -210,7 +210,7 @@ test.describe("the rules", () => {
     expect(await axeViolations(page)).toEqual([]);
   });
 
-  test("sends a section's changes with one Save, after showing every figure that moves", async ({ page }) => {
+  test("sends a section’s changes with one Save, after showing every figure that moves", async ({ page }) => {
     const sent: string[] = [];
     const saved = (rule: FixtureRule) => (route: Route) => {
       sent.push(rule.name);
@@ -237,7 +237,7 @@ test.describe("the rules", () => {
     await expect(section(page, "Visits in the field").getByRole("button", { name: "Review" })).toBeDisabled();
   });
 
-  test("says which rule was refused when one of a section's changes is, and keeps the one that saved", async ({
+  test("says which rule was refused when one of a section’s changes is, and keeps the one that saved", async ({
     page,
   }) => {
     const radius = ruleNamed("checkin_radius_m");
@@ -257,7 +257,7 @@ test.describe("the rules", () => {
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
 
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
-      "Service visit: out of range.",
+      /^Service visit: Enter \d+–\d+ minutes\.$/,
     );
     const radiusItem = page.getByRole("listitem").filter({ has: page.getByLabel("Check-in radius") });
     await expect(radiusItem.getByLabel("Check-in radius")).toHaveValue("150");
@@ -281,7 +281,7 @@ test.describe("the rules", () => {
   });
 
   // One input for the next visit's days, each box with its own range (docs/decisions/0086-the-next-visit-is-offered.md).
-  test("gives each of the next visit's days its own box and range, and sends the one changed", async ({ page }) => {
+  test("gives each of the next visit’s days its own box and range, and sends the one changed", async ({ page }) => {
     await open(page, "/settings", {
       "POST /api/settings/booking_days": (route) => {
         const days = SETTINGS.settings.find((rule) => rule.name === "booking_days");
@@ -341,7 +341,7 @@ test.describe("the rules", () => {
     const reward = page.getByRole("group", { name: "Referral reward" });
     await expect(reward.getByLabel("Referrer")).toHaveValue("3");
     await expect(reward.getByLabel("Friend")).toHaveValue("3");
-    await expect(reward.getByLabel("Free visits valid for")).toHaveValue("365");
+    await expect(reward.getByLabel("Free service visits valid for")).toHaveValue("365");
 
     await reward.getByLabel("Referrer").fill("2");
     await reward.getByLabel("Friend").fill("0");
@@ -361,7 +361,7 @@ test.describe("the rules", () => {
   });
 
   // Every figure a rule of the code held is ops' now (docs/decisions/0088-every-policy-in-the-console.md).
-  test("says each box's own unit where a rule's figures count in two", async ({ page }) => {
+  test("says each box’s own unit where a rule’s figures count in two", async ({ page }) => {
     await open(page);
     const clock = page.getByRole("group", { name: "Phone clock limits" });
     await expect(clock.getByLabel("Earliest check-in before the start")).toHaveValue("60");
@@ -370,7 +370,7 @@ test.describe("the rules", () => {
     await expect(clock).toContainText("hours");
   });
 
-  test("offers each kind of visit only what it may cost, in the console's words, and sends the one chosen", async ({
+  test("offers each kind of visit only what it may cost, in the console’s words, and sends the one chosen", async ({
     page,
   }) => {
     await open(page, "/settings", {

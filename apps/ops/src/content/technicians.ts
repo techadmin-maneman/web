@@ -13,10 +13,10 @@ export const technicians = {
    * Four of the design's five columns, and Leave where it draws Skill: nothing
    * records a skill, and a day off is what ops need to see down the roster.
    */
-  columns: ["Technician", "City", "Jobs", "Avg service", "Leave"],
+  columns: ["Technician", "City", "Jobs", "Average visit", "Leave"],
   narrow: "Filter technicians",
   /** The Leave column: away today until when, the first day of leave to come, or nothing. */
-  away: (until: string) => `Away to ${until}`,
+  away: (until: string) => `Away until ${until}`,
   from: (date: string) => `From ${date}`,
   /** A zone a technician has none of, written as the design's tables write a gap. */
   unknown: "—",
@@ -66,17 +66,17 @@ export const technicians = {
     none: "No phones signed in.",
     revoke: "Revoke",
     /** The button's whole name, since a roster holds many phones and each button says "Revoke". */
-    revokeLabel: (phone: string, technician: string) => `Revoke ${phone} of ${technician}`,
+    revokeLabel: (phone: string, technician: string) => `Revoke ${technician}’s phone (${phone})`,
     confirm: "Revoke this phone",
     cancel: "Cancel",
-    revoking: "Revoking",
+    revoking: "Revoking…",
     revoked: (date: string) => `Revoked ${date}`,
     /** The board draws no revoke, so nothing writes what one does. */
-    warning: "Signs the phone out. They can't sign in again until you allow it.",
+    warning: "Signs the phone out. They can’t sign in again until you allow it.",
     // The board draws no revoke, so nothing writes what follows one.
     stopped: (date: string) => `Sign-in blocked since ${date}, when a phone was revoked.`,
     allow: "Allow sign-in",
-    allowing: "Allowing",
+    allowing: "Allowing…",
     allowed: "They can sign in again.",
     errors: {
       not_permitted: NOT_PERMITTED,
@@ -100,16 +100,16 @@ export const technicians = {
     to: "Last day",
     note: "Note (optional)",
     save: "Record",
-    saving: "Recording",
+    saving: "Recording…",
     cancel: "Cancel",
     /** Taking leave back, which lets those days be worked again, asked once more before it is sent. */
     take: "Cancel leave",
-    takeLabel: (period: string, technician: string) => `Cancel ${technician}'s leave, ${period}`,
+    takeLabel: (period: string, technician: string) => `Cancel ${technician}’s leave, ${period}`,
     check: {
       title: (period: string) => `Cancel leave, ${period}?`,
       line: "They can be booked on those days again.",
       send: "Cancel leave",
-      sending: "Cancelling",
+      sending: "Cancelling…",
       back: "Keep leave",
     },
     recorded: "Leave recorded.",
@@ -150,7 +150,7 @@ export const technicians = {
     open: "Add a technician",
     title: "Add a technician",
     save: "Add technician",
-    saving: "Adding",
+    saving: "Adding…",
     cancel: "Cancel",
     added: (name: string) => `${name} added. They can sign in now.`,
   },
@@ -163,9 +163,9 @@ export const technicians = {
     trained: "Trained",
     notTrained: "Not trained, so no first fits",
     change: "Edit details",
-    changeLabel: (name: string) => `Edit ${name}'s details`,
+    changeLabel: (name: string) => `Edit ${name}’s details`,
     save: "Save",
-    saving: "Saving",
+    saving: "Saving…",
     cancel: "Cancel",
   },
   /** A technician added by mistake; one with work on record is switched off instead. */
@@ -179,7 +179,7 @@ export const technicians = {
         ? "Signs them out. Nothing is booked on them."
         : `Signs them out. ${String(visits)} upcoming ${visits === 1 ? "visit goes" : "visits go"} back to the dispatch board with nobody, each on Tasks until someone is sent.`,
     confirm: "Switch off",
-    sending: "Switching off",
+    sending: "Switching off…",
     cancel: "Cancel",
     returned: (count: number) =>
       count === 0
@@ -190,10 +190,10 @@ export const technicians = {
     move: "Reassign on the dispatch board",
   },
   switchOn: {
-    note: "Switched off. Can't sign in or be booked.",
+    note: "Switched off. Can’t sign in or be booked.",
     open: "Switch back on",
     openLabel: (name: string) => `Switch ${name} back on`,
-    sending: "Switching on",
+    sending: "Switching on…",
     done: (name: string) => `${name} can sign in again.`,
   },
   switchedOff: "Switched off",

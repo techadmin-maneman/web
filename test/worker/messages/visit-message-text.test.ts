@@ -48,7 +48,7 @@ describe("what a visit message says", () => {
     await visit();
     await paid();
     expect(await text("payment_receipt")).toBe(
-      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12 to 4 pm, with Imran. We've received Rs. 2,000 (ref MM-2026-0841). Your receipt is in the app.",
+      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12–4 pm, with Imran. We've received Rs. 2,000 (ref MM-2026-0841). Your receipt will be in the app shortly.",
     );
   });
 
@@ -56,13 +56,13 @@ describe("what a visit message says", () => {
     await consent(true);
     await visit("consultation", "2026-09-24T03:30:00.000Z");
     expect(await text("consultation_confirmation")).toBe(
-      "Hi Rohit, you're booked.\nYour free consultation is Thu 24 Sep, 9 am to 12 pm, at home. To change it, open the Mane Man app.",
+      "Hi Rohit, you're booked.\nYour free consultation is Thu 24 Sep, 9 am–12 noon, at home. To change it, open the Mane Man app.",
     );
     expect(await text("visit_reminder")).toBe(
-      "Hi Rohit, see you tomorrow.\nYour consultation is Thu 24 Sep, 9 am to 12 pm, with Imran. Need to move it? Open the Mane Man app.",
+      "Hi Rohit, see you tomorrow.\nYour consultation is Thu 24 Sep, 9 am–12 noon, with Imran. Need to move it? Open the Mane Man app.",
     );
     expect(await text("reschedule_confirmation")).toBe(
-      "Hi Rohit, your booking has moved.\nYour consultation is now Thu 24 Sep, 9 am to 12 pm, with Imran. See it in the Mane Man app.",
+      "Hi Rohit, your booking has moved.\nYour consultation is now Thu 24 Sep, 9 am–12 noon, with Imran. See it in the Mane Man app.",
     );
   });
 
@@ -152,13 +152,13 @@ describe("what a visit message says", () => {
     await visit();
     await paid();
     expect(await text("payment_receipt")).toContain(
-      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12 to 4 pm, with Imran. We've received Rs. 2,000 (ref MM-2026-0841). Your receipt is in the app.",
+      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12–4 pm, with Imran. We've received Rs. 2,000 (ref MM-2026-0841). Your receipt will be in the app shortly.",
     );
     expect(await text("visit_reminder")).toEqual({ skip: "no consent to WhatsApp about visits" });
     await consent(true, "2026-09-20T06:30:00.000Z");
     await consent(false);
     expect(await text("payment_receipt")).toContain(
-      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12 to 4 pm, with Imran. We've received Rs. 2,000 (ref MM-2026-0841). Your receipt is in the app.",
+      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12–4 pm, with Imran. We've received Rs. 2,000 (ref MM-2026-0841). Your receipt will be in the app shortly.",
     );
     expect(await text("reschedule_confirmation")).toEqual({ skip: "no consent to WhatsApp about visits" });
   });

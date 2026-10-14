@@ -61,7 +61,7 @@ describe("the Served tab", () => {
     expect(servesLater([heldLater], later, TODAY)).toBe(false);
   });
 
-  it("shows a file's changes only for pincodes we hold that it would change", () => {
+  it("shows a file’s changes only for pincodes we hold that it would change", () => {
     const held = [BANDRA, KHAR];
     const rows = fileChanges(held, draftOf(held), [
       { pincode: "400050", served: true, launch_on: null },

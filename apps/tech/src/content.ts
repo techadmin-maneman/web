@@ -13,7 +13,7 @@ export const signIn = {
   prefix: "+91",
   mobileLabel: "Mobile number",
   mobilePlaceholder: "98110 00000",
-  mobileError: "Enter your ten-digit mobile number.",
+  mobileError: "Enter your 10-digit mobile number.",
   codeLabel: "Code",
   submit: "Sign in",
   // The Prototype draws one screen and no errors.
@@ -30,7 +30,7 @@ export const signIn = {
   attemptsLeft: (left: number) => `That code didn’t match. ${String(left)} ${left === 1 ? "try" : "tries"} left.`,
   sendCode: "Send the code",
   // The Prototype shows the code field from the start.
-  codeSent: "A six-digit code is on its way.",
+  codeSent: "A 6-digit code is on its way.",
   // The Prototype draws no way back from a code sent to the wrong number, or one that never came.
   changeNumber: "Change number",
   resend: "Send a new code",
@@ -133,7 +133,7 @@ export const queue = {
   never: "Never saved to this phone’s gallery.",
   retry: "Retry",
   states: {
-    uploading: "Uploading",
+    uploading: "Uploading…",
     waiting: "Waiting",
     failed: "Failed",
   },
@@ -180,7 +180,7 @@ const stopped: Readonly<Record<string, string>> = {
   technician: "This job is someone else’s now.",
   time: "Ops moved this job to another time.",
   status: "This job was cancelled while the phone was offline.",
-  out_of_order: "A step arrived out of order.",
+  out_of_order: "Steps arrived out of order. Open the job again.",
   not_today: "This job is on another day. Arrive and start it on the day.",
   too_early_to_arrive: "Too early for this job. Tap again from the time on its card.",
   already_started: "This job was started, so it can’t close as a no-show.",
@@ -193,10 +193,10 @@ const stopped: Readonly<Record<string, string>> = {
   old_piece: "The label of the piece that came off wasn’t accepted.",
   // A one visit's product, no longer offered when the step reached us (ADR 0105).
   product: "That product isn’t offered that day.",
-  done: "A checklist item wasn’t recognised.",
+  done: "This job’s checklist changed. Open the job again.",
   reason: "That reason wasn’t accepted.",
-  invalid_request: "We couldn’t record this.",
-  unknown: "We couldn’t record this.",
+  invalid_request: "We couldn’t record this. Tap Retry, or call ops.",
+  unknown: "We couldn’t record this. Tap Retry, or call ops.",
 } as const;
 
 /**
@@ -339,8 +339,8 @@ export const job = {
     },
     none: "No piece recorded for this client yet.",
     lastVisit: (date: string, who: string | null) =>
-      who === null ? `Last visit, after. ${date}.` : `Last visit, after. ${date}, ${who}.`,
-    lastVisitImage: "Last visit, after",
+      who === null ? `Last visit’s after photo · ${date}` : `Last visit’s after photo · ${date} · ${who}`,
+    lastVisitImage: "Last visit’s after photo",
   },
   // The board draws no failure for a job's card.
   failed: "This job’s card didn’t load.",
@@ -387,7 +387,7 @@ export const notHome = {
     // as who it went to. The board draws only the delivered one.
     delivered: (who: string, time: string) => `WhatsApp to ${who}: delivered ${time}.`,
     notDelivered: (who: string) => `WhatsApp to ${who}: sent, not delivered.`,
-    onItsWay: (who: string) => `Telling ${who} you're here.`,
+    onItsWay: (who: string) => `Telling ${who} you’re here.`,
     noneSent: (who: string) => `No WhatsApp went to ${who}.`,
     theClient: "the client",
   },
@@ -502,9 +502,9 @@ export const steps = {
     camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
     expired: "This piece has expired. Hand it in and use another.",
     expiredAction: "That piece has expired",
-    placeholder: "MM-STD-4417-B",
+    placeholder: "MM-ESS-0000123-K",
     // The board draws no label typed wrong.
-    malformed: "Type it as on the tag, like MM-STD-4417-B.",
+    malformed: "Type it as on the label, like MM-ESS-0000123-K.",
     checkFirst: "Check the label to continue",
     look: "Check the label",
     unknown: "Unknown label. It’s saved as you typed it.",
@@ -589,8 +589,8 @@ export const closeOut = {
 /** The badge, and nothing else about money, anywhere in this app. */
 export const badges = {
   prepaid: "Prepaid",
-  credit: "Credit",
-  free: "Free",
+  credit: "Free visit",
+  free: "No charge",
   // No board draws a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
   at_visit: "Pays once fitted",
 } as const;
@@ -630,7 +630,7 @@ export const oneVisit = {
   code: {
     label: "Discount code, if the client has one",
     apply: "Apply code",
-    applying: "Checking",
+    applying: "Checking…",
     /** Said once it applies: the link carries it, and nothing else is shown. */
     applied: (code: string) => `Code ${code} applied. The payment link will take it off.`,
     /** A code the client gave as they booked, or ops on the booking: there is no box to type another in. */
@@ -751,7 +751,7 @@ export const session = {
   switchedOff: "Your account is switched off. Ask ops to switch it back on, then sign in.",
   workKept:
     "Your account is switched off. Unsent work stays on this phone for 7 days and sends once you’re switched back on and sign in.",
-  checking: "Loading",
+  checking: "Loading…",
 } as const;
 
 // The kit (docs/decisions/0164-the-kit-screen.md). No board draws it; every line is ours.

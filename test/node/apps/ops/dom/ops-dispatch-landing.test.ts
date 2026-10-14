@@ -29,6 +29,7 @@ const block = (overrides: Partial<Block> = {}): Block => ({
   client_note: null,
   starts_at: "2025-09-19T03:30:00.000Z",
   window: "morning",
+  window_hours: { start: "09:00", end: "12:00" },
   status: "scheduled",
   notice_hours: 24,
   untold: null,
@@ -89,14 +90,14 @@ describe("what a move says once it is sent", () => {
   });
 });
 
-describe("the board's search", () => {
-  it("keeps a technician's row by his name, and outlines no block for it", () => {
+describe("the board’s search", () => {
+  it("keeps a technician’s row by his name, and outlines no block for it", () => {
     expect(answersTo(SALIM, "salim")).toBe(true);
     expect(answersTo(IMRAN, "salim")).toBe(false);
     expect(foundBy(board([IMRAN, SALIM]), "salim")).toBeNull();
   });
 
-  it("finds a visit by its client's full name or its pincode, and outlines it", () => {
+  it("finds a visit by its client’s full name or its pincode, and outlines it", () => {
     const found = foundBy(board([IMRAN, SALIM]), " malhotra ");
     expect(found?.(block())).toBe(true);
     expect(found?.(block({ client: "Aman S.", person: null }))).toBe(false);

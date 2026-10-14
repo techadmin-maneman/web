@@ -106,7 +106,7 @@ describe("a move to another day ops ask the client to confirm", () => {
     expect(message).toMatchObject({ kind: "move_proposed", subject_kind: "move_proposal", subject_id: proposalId });
     expect(await composeMoveProposed(env.DB, proposalId, ROHIT, NOW)).toEqual({
       template: "move_proposed_v1",
-      params: ["Rohit", "service visit", "Tue 22 Sep", "Wed 23 Sep", "9 am to 12 pm", "Sameer"],
+      params: ["Rohit", "service visit", "Tue 22 Sep", "Wed 23 Sep", "9 am–12 noon", "Sameer"],
     });
   });
 

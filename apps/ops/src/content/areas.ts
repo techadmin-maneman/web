@@ -38,12 +38,12 @@ export const areas = {
     send: (alerts: number) => (alerts === 0 ? "Mark live" : `Send to ${String(alerts)}`),
     /** A save on Served sends every change in the table with the messages. */
     saveAndSend: (alerts: number) => `Save and send to ${String(alerts)}`,
-    sending: "Sending",
+    sending: "Sending…",
     cancel: "Cancel",
     /** The board's note beneath the panel, with the figures filled in. */
     note: (quiet: number) => {
       if (quiet === 0) return "Everyone waiting opted in.";
-      return `${String(quiet)} didn't opt in and won't be messaged.`;
+      return `${String(quiet)} didn’t opt in and won’t be messaged.`;
     },
     done: (alerts: number) => (alerts === 0 ? "Live. No one messaged." : `Live. ${String(alerts)} messages sent.`),
     errors: {
@@ -68,7 +68,7 @@ export const areas = {
     chooseCity: "Choose a city",
     noCity: "Your access covers no city.",
     add: "Add",
-    adding: "Adding",
+    adding: "Adding…",
     added: (pincode: string, city: string) => `${pincode} added to ${city}.`,
     badPincode: "Six digits, starting 1–8.",
     badName: "2–40 characters, starting with a letter or digit.",
@@ -99,7 +99,7 @@ export const areas = {
     /** The name a row's box holds: a letter or a digit first, as the API takes it. */
     badName: (pincode: string) => `${pincode}: 2–40 characters, starting with a letter or digit.`,
     save: "Save",
-    saving: "Saving",
+    saving: "Saving…",
     saved: (changed: number, alerted: number) => {
       const pincodes = changed === 1 ? "One pincode changed." : `${String(changed)} pincodes changed.`;
       if (alerted === 0) return pincodes;

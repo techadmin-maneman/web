@@ -87,7 +87,7 @@ test("names leave when the server refuses a move onto a day off", async ({ page 
 });
 
 // The tray paired the offered day with the asked window, and named no client.
-test("lists the tray's jobs with their client, the window asked beside the one offered, and who invited them", async ({
+test("lists the tray’s jobs with their client, the window asked beside the one offered, and who invited them", async ({
   page,
 }) => {
   await open(page);
@@ -107,7 +107,7 @@ test("lists the tray's jobs with their client, the window asked beside the one o
 });
 
 // A tray click picked the job up at once, so it could not be read before it was assigned.
-test("opens a tray job's drawer, with the client, Assign and Open client", async ({ page }) => {
+test("opens a tray job’s drawer, with the client, Assign and Open client", async ({ page }) => {
   await open(page);
   const job = page.getByRole("complementary", { name: opsCopy.dispatch.tray.title }).getByRole("button").first();
   await job.click();
@@ -135,12 +135,12 @@ test("opens a tray job's drawer, with the client, Assign and Open client", async
 });
 
 // The drawer's badge, WhatsApp {client} and Open client.
-test("opens a block's drawer with the client, the badge, and both ways to reach them", async ({ page }) => {
+test("opens a block’s drawer with the client, the badge, and both ways to reach them", async ({ page }) => {
   await open(page);
   await press(page, ROHIT_BLOCK);
 
   const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });
-  await expect(drawer).toContainText("Fri 19 Sep · 9 am to 12 pm · Imran Qureshi");
+  await expect(drawer).toContainText("Fri 19 Sep · 9 am–12 noon · Imran Qureshi");
   await expect(drawer).toContainText("Prepaid");
   await expect(drawer).toContainText("Service visit · 1 slot");
   await expect(drawer).toContainText("Sec 65 · 122018");

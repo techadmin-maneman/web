@@ -2464,6 +2464,9 @@ Request body:
           ],
           "description": "The window the client asked for."
         },
+        "hours": {
+          "$ref": "#/components/schemas/WindowHours"
+        },
         "window_label": {
           "type": [
             "string",
@@ -2499,6 +2502,7 @@ Request body:
       "required": [
         "date",
         "window",
+        "hours",
         "window_label",
         "place",
         "requested",
@@ -2555,6 +2559,9 @@ Request body:
                 "evening"
               ]
             },
+            "hours": {
+              "$ref": "#/components/schemas/WindowHours"
+            },
             "paid": {
               "type": "boolean",
               "description": "Paid for in money, rather than free or covered by a credit."
@@ -2579,6 +2586,7 @@ Request body:
             "type",
             "date",
             "window",
+            "hours",
             "paid",
             "one_visit",
             "told"
@@ -2932,6 +2940,32 @@ Request body:
 }
 ```
 
+### WindowHours
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "start": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "India's clock, HH:MM."
+    },
+    "end": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "India's clock, HH:MM."
+    }
+  },
+  "required": [
+    "start",
+    "end"
+  ],
+  "additionalProperties": false,
+  "description": "The window's hours on its day, India's clock, as ops set them (ADR 0102)."
+}
+```
+
 ### OneVisitPrice
 
 ```json
@@ -2996,6 +3030,9 @@ Request body:
         "afternoon",
         "evening"
       ]
+    },
+    "window_hours": {
+      "$ref": "#/components/schemas/WindowHours"
     },
     "starts_at": {
       "type": "string",
@@ -3124,6 +3161,7 @@ Request body:
     "id",
     "date",
     "window_label",
+    "window_hours",
     "starts_at",
     "ends_at",
     "length_minutes",
@@ -3188,6 +3226,9 @@ Request body:
         "evening"
       ]
     },
+    "hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "technician": {
       "anyOf": [
         {
@@ -3208,6 +3249,7 @@ Request body:
     "id",
     "date",
     "window",
+    "hours",
     "technician",
     "expires_at"
   ],
@@ -3508,11 +3550,16 @@ Request body:
         },
         "closes": {
           "type": "integer"
+        },
+        "first_reply": {
+          "type": "integer",
+          "description": "Minutes a message in those hours is answered within."
         }
       },
       "required": [
         "opens",
-        "closes"
+        "closes",
+        "first_reply"
       ],
       "additionalProperties": false,
       "description": "The hours Customer Care are on every day, India's clock, as ops set them (ADR 0132)."
@@ -4348,6 +4395,9 @@ Request body:
         "evening"
       ]
     },
+    "window_hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "starts_at": {
       "type": "string",
       "format": "date-time"
@@ -4561,6 +4611,7 @@ Request body:
     "id",
     "date",
     "window_label",
+    "window_hours",
     "starts_at",
     "ends_at",
     "length_minutes",
@@ -6398,6 +6449,9 @@ Request body:
         "evening"
       ]
     },
+    "hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "starts_at": {
       "type": "string",
       "format": "date-time"
@@ -6572,6 +6626,7 @@ Request body:
     "service",
     "date",
     "window",
+    "hours",
     "starts_at",
     "ends_at",
     "technician",

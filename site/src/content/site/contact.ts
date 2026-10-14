@@ -12,12 +12,12 @@ export const whatsapp = {
 };
 
 /**
- * The bar that asks for consent to the ad and measurement tags (site/src/components/ConsentBar.astro): our words,
- * which counsel has still to see, so the bar is switched off until they approve (CONSENT_BAR_SHOWN).
+ * The bar that asks for consent to the ad and measurement tags (site/src/components/ConsentBar.astro). Counsel has
+ * still to see its words, so the bar is switched off until they approve (CONSENT_BAR_SHOWN).
  */
 export const consentBar = {
   publish: true,
-  text: "We'd like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them.",
+  text: "We’d like to measure visits and the ads that bring them, with cookies from Google and Meta. Nothing you type in a form goes to them.",
   privacy: "How we use your details",
   accept: "Allow",
   decline: "No thanks",
@@ -26,7 +26,7 @@ export const consentBar = {
 /** The booking form or the try-on, when it failed to draw: the way to us instead. */
 export const islandFailed = {
   publish: true,
-  message: "This didn't load. Message us on WhatsApp and we'll help you from there.",
+  message: "This didn’t load. Message us on WhatsApp and we’ll help you from there.",
   action: "Message us on WhatsApp",
 };
 

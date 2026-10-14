@@ -8,11 +8,15 @@ import { planStartsIn, type Plan } from "../../policy/one-visit.ts";
 import { siteVisit } from "./site-visit.ts";
 import { availability } from "./availability.ts";
 import { ONE_VISIT_FIT, type Fitting } from "./occupancy.ts";
+import { loadSlotSchedule } from "./slot-times.ts";
+import { windowTimesOf, type WindowTimes } from "../../policy/slot-times.ts";
 
 /** A day the form offers, and whether booking each of its windows would be taken. */
 interface OpenDay {
   readonly date: string;
   readonly windows: Readonly<Record<BookingWindow, boolean>>;
+  /** Each window's hours that day. */
+  readonly hours: Readonly<Record<BookingWindow, WindowTimes>>;
 }
 
 /** How a booking on a day is taken: not at all, as a request ops fix the hour of, or as a slot of this length. */
@@ -73,7 +77,7 @@ export async function openDays(
     pincode,
     fitting: plan === "one_visit" ? ONE_VISIT_FIT : null,
   };
-  const free = await freeWindows(db, asking, first, now);
+  const [free, schedule] = await Promise.all([freeWindows(db, asking, first, now), loadSlotSchedule(db)]);
 
   return days.map(({ date, booking }) => {
     const isOpen = (window: BookingWindow): boolean => {
@@ -84,6 +88,7 @@ export async function openDays(
     return {
       date,
       windows: { morning: isOpen("morning"), afternoon: isOpen("afternoon"), evening: isOpen("evening") },
+      hours: windowTimesOf(schedule.on(date)),
     };
   });
 }

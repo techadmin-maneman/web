@@ -87,7 +87,7 @@ export function DescribeForm(props: {
       title={formWords.describeTitle(service.name)}
       steps={steps}
       ready={line.trim() !== was}
-      errors={copy.errors}
+      errors={{ ...copy.errors, description: copy.limits.description(props.maxLength) }}
       onCancel={props.onCancel}
       checking={<p className={form.checkLine}>{check.describe(service.name, was, line.trim())}</p>}
     >
@@ -129,7 +129,7 @@ export function LengthForm(props: {
       title={formWords.lengthTitle(service.name)}
       steps={steps}
       ready={minutes.trim() !== "" && Number(minutes) !== service.minutes}
-      errors={copy.errors}
+      errors={{ ...copy.errors, minutes: copy.limits.minutes(bounds.min, bounds.max) }}
       onCancel={props.onCancel}
       checking={<p className={form.checkLine}>{check.length(service.name, service.minutes, Number(minutes))}</p>}
     >
@@ -276,7 +276,7 @@ export function AddForm(props: {
       title={formWords.addTitle(kindName)}
       steps={steps}
       ready={ready}
-      errors={copy.errors}
+      errors={{ ...copy.errors, minutes: copy.limits.minutes(bounds.min, bounds.max) }}
       onCancel={props.onCancel}
       checking={<p className={form.checkLine}>{check.add(kindName, name.trim(), Number(minutes), codeSent)}</p>}
     >

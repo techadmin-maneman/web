@@ -13,7 +13,7 @@ import * as techCopy from "../../apps/tech/src/content.ts";
 
 // The client's hair profile, which no board draws: the fit spec, then the history, sent as one write, on no consent
 // of its own (docs/decisions/0106-a-clients-hair-profile.md).
-test.describe("the client's hair profile", () => {
+test.describe("the client’s hair profile", () => {
   async function atTheProfile(page: Page, profile: HairProfile | null = null): Promise<Fake> {
     const fake = await fakeTech(page);
     fake.type = "consultation";
@@ -153,7 +153,7 @@ test.describe("the client's hair profile", () => {
     });
   });
 
-  test("puts the profile's hair system, colour, adhesive and scalp on the card's hair profile", async ({ page }) => {
+  test("puts the profile’s hair system, colour, adhesive and scalp on the card’s hair profile", async ({ page }) => {
     const fake = await fakeTech(page);
     fake.profile = ROHITS_PROFILE;
     await page.goto(`/jobs/${JOB_ID}`);

@@ -170,6 +170,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     tables: [
       "ops_settings",
       "price_book",
+      "po_letterhead",
       "standard_costs",
       "targets",
       "services",

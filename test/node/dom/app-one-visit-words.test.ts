@@ -10,7 +10,7 @@ import { summaryName } from "../../../apps/app/src/lib/visit.ts";
 
 const PRICE = { amount: 3_000_000, from: false, code: null };
 
-describe("a one visit's card", () => {
+describe("a one visit’s card", () => {
   it("says what it costs once fitted, only if the client goes ahead, and that a link comes by text", () => {
     expect(oneVisitLines(PRICE)).toEqual([
       "Rs. 30,000, only if you go ahead",
@@ -37,7 +37,7 @@ describe("a one visit's card", () => {
   });
 });
 
-describe("a visit's name and length", () => {
+describe("a visit’s name and length", () => {
   const summary = (oneVisit: VisitSummary["one_visit"]) => ({ type: "first_fit", one_visit: oneVisit }) as VisitSummary;
 
   it("calls a one visit a consultation and fit, and a first fit by its own name", () => {
@@ -46,9 +46,9 @@ describe("a visit's name and length", () => {
   });
 
   it("gives the length in hours and minutes, as booking does", () => {
-    expect(home.next.length("Consultation and fit", 180)).toBe("Consultation and fit · 3 hours");
-    expect(home.next.length("Service visit", 90)).toBe("Service visit · 1 hour 30 minutes");
-    expect(visitLength(60)).toBe("1 hour");
-    expect(visitLength(45)).toBe("45 minutes");
+    expect(home.next.length("Consultation and fit", 180)).toBe("Consultation and fit · 3 hr");
+    expect(home.next.length("Service visit", 90)).toBe("Service visit · 1 hr 30 min");
+    expect(visitLength(60)).toBe("1 hr");
+    expect(visitLength(45)).toBe("45 min");
   });
 });

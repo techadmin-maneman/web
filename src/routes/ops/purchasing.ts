@@ -15,13 +15,15 @@ import {
   purchaseOrders,
 } from "../../domain/purchasing/purchase-orders.ts";
 import { receiptsOf } from "../../domain/purchasing/receipts.ts";
-import { allSuppliers } from "../../domain/purchasing/suppliers.ts";
+import { allSuppliers, type Supplier } from "../../domain/purchasing/suppliers.ts";
+import { poLetterhead, setPoLetterhead } from "../../domain/purchasing/letterhead.ts";
 import { written } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { needsSecondApproval, PO_STATES } from "../../policy/purchasing.ts";
+import { GSTIN } from "../../policy/suppliers.ts";
 
 const Text = z.string();
 const MaybeText = z.union([z.string(), z.null()]);
@@ -90,10 +92,14 @@ const OrdersSchema = z
             id: Text,
             name: Text,
             currency: Text,
+            payment_terms_days: z.number().int(),
             items: z.array(
               z
                 .object({
                   consumable_code: Text,
+                  their_code: MaybeText.openapi({
+                    description: "The supplier's own code for it, which the order prints.",
+                  }),
                   unit_price: z.number().int(),
                   pack_size: z.number().int(),
                   minimum_order: z.number().int(),
@@ -119,6 +125,11 @@ const OrdersSchema = z
         .strict(),
     ),
     second_approval_above_rupees: z.number().int(),
+    letterhead: z
+      .object({ legal_name: Text, gstin: MaybeText, deliver_to: Text })
+      .strict()
+      .nullable()
+      .openapi({ description: "What a printed order says of us; null until ops set it." }),
   })
   .strict()
   .openapi("PurchaseOrders");
@@ -138,12 +149,53 @@ const listRoute = opsRoute({
   responses: { 200: ORDERS, 403: ACCESS },
 });
 
+/** A supplier as an order names it; a retired one lists nothing to order. */
+const supplierJson = (supplier: Supplier) => ({
+  id: supplier.id,
+  name: supplier.name,
+  currency: supplier.currency,
+  payment_terms_days: supplier.paymentTermsDays,
+  items:
+    supplier.retiredAt === null
+      ? supplier.items.map((item) => ({
+          consumable_code: item.code,
+          their_code: item.theirCode,
+          unit_price: item.unitPrice,
+          pack_size: item.packSize,
+          minimum_order: item.minimumOrder,
+          lead_time_days: item.leadTimeDays,
+        }))
+      : [],
+});
+
 export const Note = z
   .string()
   .trim()
   .min(1)
   .max(MAX_NOTE)
   .regex(/^[^\p{Cc}]+$/u);
+
+const letterheadRoute = opsRoute({
+  method: "post",
+  path: "/api/purchase-orders/letterhead",
+  summary: "What a printed order says of us: the legal name, the GSTIN and where the supplier delivers",
+  request: {
+    body: {
+      required: true,
+      ...json(
+        z
+          .object({
+            legal_name: z.string().trim().min(2).max(120),
+            gstin: z.string().trim().toUpperCase().regex(GSTIN).nullable(),
+            deliver_to: z.string().trim().min(5).max(400),
+          })
+          .strict()
+          .openapi("PurchaseOrderLetterhead"),
+      ),
+    },
+  },
+  responses: { 200: ORDERS, 400: errorResponse("invalid_request"), 403: ACCESS },
+});
 
 const draftRoute = opsRoute({
   method: "post",
@@ -207,7 +259,7 @@ const cancelRoute = opsRoute({
 });
 
 export async function ordersAnswer(c: Context<AppEnv>) {
-  const [orders, suppliers, consumables, inputs] = await Promise.all([
+  const [orders, suppliers, consumables, inputs, letterhead] = await Promise.all([
     purchaseOrders(c.env.DB),
     allSuppliers(c.env.DB),
     c.env.DB.prepare("SELECT code, name, unit, unit_cost FROM consumables ORDER BY name COLLATE NOCASE").all<{
@@ -217,6 +269,7 @@ export async function ordersAnswer(c: Context<AppEnv>) {
       unit_cost: number;
     }>(),
     opsInputs(c),
+    poLetterhead(c.env.DB),
   ]);
   const above = inputs.poSecondApprovalAboveRupees;
   const receipts = await receiptsOf(
@@ -265,23 +318,13 @@ export async function ordersAnswer(c: Context<AppEnv>) {
           })),
         })),
     })),
-    suppliers: suppliers.map((supplier) => ({
-      id: supplier.id,
-      name: supplier.name,
-      currency: supplier.currency,
-      items:
-        supplier.retiredAt === null
-          ? supplier.items.map((item) => ({
-              consumable_code: item.code,
-              unit_price: item.unitPrice,
-              pack_size: item.packSize,
-              minimum_order: item.minimumOrder,
-              lead_time_days: item.leadTimeDays,
-            }))
-          : [],
-    })),
+    suppliers: suppliers.map(supplierJson),
     consumables: consumables.results,
     second_approval_above_rupees: above,
+    letterhead:
+      letterhead === null
+        ? null
+        : { legal_name: letterhead.legalName, gstin: letterhead.gstin, deliver_to: letterhead.deliverTo },
   };
 }
 
@@ -294,6 +337,13 @@ export async function after(c: Context<AppEnv>, changed: Awaited<ReturnType<type
 
 export function registerOpsPurchasing(app: App): void {
   app.openapi(listRoute, async (c) => c.json(await ordersAnswer(c), 200));
+
+  app.openapi(letterheadRoute, async (c) => {
+    const body = c.req.valid("json");
+    const letterhead = { legalName: body.legal_name, gstin: body.gstin, deliverTo: body.deliver_to };
+    await setPoLetterhead(c.env.DB, letterhead, written(c));
+    return c.json(await ordersAnswer(c), 200);
+  });
 
   app.openapi(draftRoute, async (c) => {
     const body = c.req.valid("json");

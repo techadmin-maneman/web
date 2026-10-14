@@ -38,7 +38,7 @@ const kept = (): JobSummary =>
   ({ id: "a", date: "2030-09-19", progress: { started_at: null, outcome: null } }) as JobSummary;
 
 describe("a write the job has moved under", () => {
-  it("carries the job's start as the phone held it when it was queued", async () => {
+  it("carries the job’s start as the phone held it when it was queued", async () => {
     await queue("start", "a", null, "2030-09-19T04:00:00.000Z");
     const sent = api(() => accepted);
     await replay();
@@ -60,7 +60,7 @@ describe("a write the job has moved under", () => {
     ]);
   });
 
-  it("takes the card's start again once the technician has let go of the job's work and checks in afresh", async () => {
+  it("takes the card’s start again once the technician has let go of the job’s work and checks in afresh", async () => {
     const sent = api(() => accepted);
     await queue("check_in", "a", { lat: 28.39, lng: 77.07 }, "2030-09-19T04:00:00.000Z");
     await replay();
@@ -75,7 +75,7 @@ describe("a write the job has moved under", () => {
     ]);
   });
 
-  it("stops a job whose photographs' links are refused as no longer this technician's, as moved", async () => {
+  it("stops a job whose photographs' links are refused as no longer this technician’s, as moved", async () => {
     await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
     await queue("before_photos", "a", { phase: "before" });
     api(() => ({ status: 404, json: { error: { code: "not_found", request_id: "t" } } }));
@@ -130,7 +130,7 @@ describe("a step the API refused", () => {
   });
 
   // Without the report, nobody but the technician would know the write never landed.
-  it("keeps the refusal's request ID for the waiting screen, and reports the give-up", async () => {
+  it("keeps the refusal’s request ID for the waiting screen, and reports the give-up", async () => {
     await queue("piece", "a", { piece_code: "MM-STD-0000-A" });
     const refusal = { error: { code: "piece_code", request_id: "0192a8e4-0000-7000-8000-0000000000aa" } };
     const reports: unknown[] = [];
@@ -214,7 +214,7 @@ describe("a photograph the API refuses", () => {
     expect(await events()).toEqual([]);
   });
 
-  it("is not marked when the set's link is refused rather than the file", async () => {
+  it("is not marked when the set’s link is refused rather than the file", async () => {
     await keepFrame({ jobId: "a", angle: "front", phase: "before", frame: new Blob(["front"]) });
     await queue("before_photos", "a", { phase: "before" });
     api(() => ({ status: 400, json: { error: { code: "invalid_request", request_id: "t", fields: ["phase"] } } }));
@@ -240,7 +240,7 @@ describe("a step the API says is early", () => {
     expect(await events()).toEqual([]);
   });
 
-  it("keeps one early refusal a job's step at a time", async () => {
+  it("keeps one early refusal a job’s step at a time", async () => {
     const early = () => ({ status: 425, json: { error: { code: "too_early_to_arrive", request_id: "t" } } });
     await queue("check_in", "a", { lat: 28.39, lng: 77.07 });
     api(early);
@@ -255,7 +255,7 @@ describe("a step the API says is early", () => {
 
 describe("where a job stands, once a write of its lands", () => {
   // With no signal, the row of a job started since the list was kept lost its "In progress".
-  it("is kept in the day the phone holds, from the write's answer", async () => {
+  it("is kept in the day the phone holds, from the write’s answer", async () => {
     await keepDay("2030-09-19", [kept()]);
     await queue("start", "a", null);
     const progress = { started_at: "2030-09-19T04:05:00.000Z", outcome: null };
@@ -269,7 +269,7 @@ describe("where a job stands, once a write of its lands", () => {
     });
   });
 
-  it("is kept from a no-show's answer, which carries the step it recorded", async () => {
+  it("is kept from a no-show’s answer, which carries the step it recorded", async () => {
     await keepDay("2030-09-19", [kept()]);
     await queue("no_show", "a", null);
     const recorded = { ...accepted.json, progress: { started_at: null, outcome: "no_show" } };
@@ -282,7 +282,7 @@ describe("where a job stands, once a write of its lands", () => {
 });
 
 // After "Got it" deleted a job's work, Today still read "Closed out" from the phone's own close-out mark.
-describe("letting go of a job's stopped work", () => {
+describe("letting go of a job’s stopped work", () => {
   it("lets go of its arrival and close-out too, since only what landed speaks for the job", async () => {
     await keepArrival("a", {
       passed: true,

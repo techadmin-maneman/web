@@ -86,8 +86,8 @@ test("erases a client from their page, once ops confirm the request came from th
 
   const confirm = page.getByRole("group", { name: `Erasing ${CLIENT.name}` });
   await expect(confirm).toBeFocused();
-  await expect(confirm).toContainText("Invoices in Books, for eight years, by law");
-  const now = confirm.getByRole("button", { name: opsCopy.clients.erasure.confirm });
+  await expect(confirm).toContainText("Invoices in Books, for 8 years, by law");
+  const now = confirm.getByRole("button", { name: opsCopy.clients.erasure.confirm(CLIENT.name) });
   await expect(now).toBeDisabled();
   await confirm.getByRole("checkbox", { name: opsCopy.clients.erasure.checked }).check();
 
@@ -104,7 +104,7 @@ test("erases anyway when a visit is booked, once ops say they will settle it by 
   const erasing = page.getByRole("region", { name: opsCopy.clients.erasure.title });
   await erasing.getByRole("button", { name: `Erase ${CLIENT.name}` }).click();
   await erasing.getByRole("checkbox", { name: opsCopy.clients.erasure.checked }).check();
-  await erasing.getByRole("button", { name: opsCopy.clients.erasure.confirm }).click();
+  await erasing.getByRole("button", { name: opsCopy.clients.erasure.confirm(CLIENT.name) }).click();
 
   await expect(erasing).toContainText("They have a visit booked. Cancel it on Visits");
   await expect(erasing).toContainText("Cancel it on Visits, which refunds them, then erase.");

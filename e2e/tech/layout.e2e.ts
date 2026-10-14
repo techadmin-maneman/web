@@ -7,7 +7,7 @@ import { fakeTech } from "./fake-tech.ts";
 
 const SCREENS = ["/", `/jobs/${JOB_ID}`, `/jobs/${JOB_ID}/checklist`, "/waiting"] as const;
 
-test("reflows Today, a job's card, a step and the waiting list into 320 px without scrolling sideways", async ({
+test("reflows Today, a job’s card, a step and the waiting list into 320 px without scrolling sideways", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 640 });

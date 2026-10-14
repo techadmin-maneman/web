@@ -19,7 +19,7 @@ const tab = (page: Page, name: string) => page.getByRole("navigation").getByRole
 const arrived = async (button: ReturnType<Page["getByRole"]>) =>
   expect.poll(() => button.locator("img").evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(600);
 
-test("Photos shows a booked client's before photo beside its look, each kept, each opening in the sheet", async ({
+test("Photos shows a booked client’s before photo beside its look, each kept, each opening in the sheet", async ({
   page,
 }) => {
   const client = tryOnClient();
@@ -39,7 +39,7 @@ test("Photos shows a booked client's before photo beside its look, each kept, ea
   await expect(
     tryOn.getByText(
       "Your photo is kept in your account until you ask us to delete it. " +
-        "The look is kept until your first fit is photographed.",
+        "The look is kept until the photos of your first fit are taken.",
     ),
   ).toBeVisible();
   // No visit has photographs yet: the design's lines, beneath the try-on.

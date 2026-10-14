@@ -17,7 +17,7 @@ export const stockTransit = {
   short: (lost: number, unit: string) => `${String(lost)} ${unit} lost on the way.`,
   errors: {
     received: "More arrived than was sent. Check the figure.",
-    units: "A label scanned wasn't on this transfer.",
+    units: "A label scanned wasn’t on this transfer.",
     transfer_settled: changed("Already received or sent back."),
     not_found: changed("That transfer is gone."),
     not_permitted: NOT_PERMITTED,

@@ -23,7 +23,7 @@ describe("the shared stylesheets", () => {
     expect(css.startsWith("@layer base, ui;")).toBe(true);
   });
 
-  it.each(layered)("%s puts every rule in a layer, so an app's own rule wins over it", (name) => {
+  it.each(layered)("%s puts every rule in a layer, so an app’s own rule wins over it", (name) => {
     const css = read(`packages/ui/${name}`)
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .trim();
@@ -149,7 +149,7 @@ const WORKER_KIT = ["packages/web-kit/sw-shell.ts", "packages/web-kit/sw-request
 const importsOf = (path: string) =>
   [...read(path).matchAll(/^import [^;]*? from "([^"]+)";/gms)].map((match) => match[1] ?? "");
 
-describe.each(["apps/app", "apps/tech"])("%s's service worker", (app) => {
+describe.each(["apps/app", "apps/tech"])("%s’s service worker", (app) => {
   it("imports only its own files and the workers' kit", () => {
     const imports = filesUnder(`${app}/sw`)
       .filter((path) => path.endsWith(".ts"))
@@ -184,7 +184,7 @@ function filesUnder(directory: string): string[] {
 // The client and technician apps draw every box inside the shared Field, which ties its label, hint and error to it;
 // a box named or described by hand is how the two apps' boxes came to read differently to a screen reader. The console
 // labels a box in a table row by its column instead (packages/ui/Field.tsx, Label).
-describe.each(["apps/app", "apps/tech"] as const)("%s's boxes", (app) => {
+describe.each(["apps/app", "apps/tech"] as const)("%s’s boxes", (app) => {
   const screens = filesUnder(`${app}/src`).filter((path) => path.endsWith(".tsx"));
 
   it("are each drawn inside the shared Field", () => {

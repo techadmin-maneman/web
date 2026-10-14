@@ -17,6 +17,12 @@
   min-width: 0;
 }
 
+/* A checklist item's words for the client, on their own line under the technician's. */
+.client {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
 /* A button beside an item, as tall as the box: the same outlined ink as a row's own. */
 .retired {
   margin: var(--sp-16) 0 0;

@@ -79,14 +79,14 @@ describe("the register", () => {
     setting.keys === null || setting.keys === "open" ? [] : setting.keys;
 
   it.each(REGISTER.filter((setting) => fixedKeys(setting).length > 0))(
-    "$name's every box is named in the console's words, not its key",
+    "$name’s every box is named in the console’s words, not its key",
     (setting) => {
       const names = settings.rules.keyNames[setting.name] ?? {};
       for (const key of fixedKeys(setting)) expect(names[key], key).toBeTruthy();
     },
   );
 
-  it.each(CHOICES)("$name's every choice is named in the console's words", (setting) => {
+  it.each(CHOICES)("$name’s every choice is named in the console’s words", (setting) => {
     const names = settings.rules.choiceNames[setting.name] ?? {};
     for (const choice of Object.values(setting.choices).flat()) expect(names[choice], choice).toBeTruthy();
   });
@@ -103,11 +103,11 @@ describe("the register", () => {
     expect(note).not.toContain("does not take effect");
   });
 
-  it.each(REGISTER)("$name's note is written for ops, not for whoever reads the code", (setting) => {
+  it.each(REGISTER)("$name’s note is written for ops, not for whoever reads the code", (setting) => {
     expect(setting.note).not.toMatch(/\b(he|his|him)\b|src\/|PLACEHOLDER/);
   });
 
-  it.each(NUMBERS)("$name's own default is inside its own bounds, each key's where it has them", (setting) => {
+  it.each(NUMBERS)("$name’s own default is inside its own bounds, each key’s where it has them", (setting) => {
     const figures: [string | undefined, number][] =
       typeof setting.fallback === "number" ? [[undefined, setting.fallback]] : Object.entries(setting.fallback);
     for (const [key, figure] of figures) {
@@ -120,7 +120,7 @@ describe("the register", () => {
     }
   });
 
-  it("gives the next visit's days one input, with each key's bounds", () => {
+  it("gives the next visit’s days one input, with each key’s bounds", () => {
     const days = numbered("booking_days");
     expect(days.keys).toEqual(Object.keys(NEXT_VISIT_DAYS));
     expect(days.bounds).toEqual(NEXT_VISIT_DAY_BOUNDS);
@@ -149,7 +149,7 @@ describe("what a rule will take", () => {
     expect(allowed(numbered("piece_cycle_days"))).toBe("30–1095 days");
   });
 
-  it("wants one figure for each of a closed set's keys, and refuses a set that is short or long", () => {
+  it("wants one figure for each of a closed set’s keys, and refuses a set that is short or long", () => {
     const wait = named("no_show_wait_min");
     expect(checkValue(wait, { consultation: 20, service: 20, replacement: 20, first_fit: 20 }).ok).toBe(true);
     expect(checkValue(wait, { consultation: 20, service: 20 }).ok).toBe(false);
@@ -178,7 +178,7 @@ describe("what a rule will take", () => {
     expect(checkValue(named("no_show_wait_min"), [15, 15, 15, 15]).ok).toBe(false);
   });
 
-  it("holds each key of the next visit's days to its own bounds, and says them in the refusal", () => {
+  it("holds each key of the next visit’s days to its own bounds, and says them in the refusal", () => {
     const days = numbered("booking_days");
     expect(checkValue(days, { ...NEXT_VISIT_DAYS, first_fit_lead: 0 }).ok).toBe(true);
     // Nought is the lead time's floor, and ten days the cadence's ceiling is far above, but neither is the horizon's.

@@ -35,7 +35,7 @@ const USAGE = {
   ],
 } satisfies OpsReply<"/api/stock/usage">;
 
-test("opens a flagged technician to their items, beside each place's losses", async ({ page }) => {
+test("opens a flagged technician to their items, beside each place’s losses", async ({ page }) => {
   await answer(page, { "GET /api/stock/usage": json(USAGE) });
   await page.goto("/usage");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();

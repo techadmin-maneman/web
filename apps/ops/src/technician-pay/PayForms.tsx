@@ -254,7 +254,7 @@ export function SetRateForm(props: FormProps & { readonly grade: Grade; readonly
       title={formWords.rateTitle(grade.name)}
       steps={steps}
       ready={amountOk && draft.from >= pay.today}
-      errors={errors}
+      errors={{ ...errors, amount: technicianPay.amountUpTo(rupees(pay.max_amount)) }}
       onCancel={props.onCancel}
       checking={<p className={form.checkLine}>{check.rate(where, was, now, shortDate(draft.from))}</p>}
     >

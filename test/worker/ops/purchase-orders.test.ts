@@ -8,7 +8,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { needsSecondApproval } from "../../../src/policy/purchasing.ts";
-import { A_NUMBER, markDatabase } from "../helpers.ts";
+import { A_NUMBER, markDatabase, request } from "../helpers.ts";
 import { working, type Working } from "../job-fixtures.ts";
 
 let job: Working;
@@ -145,5 +145,35 @@ describe("an approved order", () => {
       "purchase_order.send",
       "purchase_order.cancel",
     ]);
+  });
+});
+
+describe("the letterhead a printed order carries", () => {
+  const LETTERHEAD = { legal_name: "Mane Man Grooming Services Private Limited", gstin: null, deliver_to: "Sector 37" };
+
+  it("is none until set, then is the one row each change replaces, the GSTIN taken in capitals", async () => {
+    const read = async () =>
+      (await (await request(job.ops, "/api/purchase-orders")).json<{ letterhead: unknown }>()).letterhead;
+    expect(await read()).toBeNull();
+
+    expect((await job.opsPost("/api/purchase-orders/letterhead", LETTERHEAD)).status).toBe(200);
+    const again = { ...LETTERHEAD, gstin: "06aabcm1234a1z5", deliver_to: "Warehouse 4, Sector 37\nGurgaon 122001" };
+    expect((await job.opsPost("/api/purchase-orders/letterhead", again)).status).toBe(200);
+    expect(await read()).toEqual({ ...again, gstin: "06AABCM1234A1Z5" });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM po_letterhead").first("n")).toBe(1);
+    const audited = await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log WHERE action = ?1")
+      .bind("purchase_order.letterhead_set")
+      .first("n");
+    expect(audited).toBe(2);
+  });
+
+  it("refuses a GSTIN that is not one, and an empty address", async () => {
+    const refused = await job.opsPost("/api/purchase-orders/letterhead", {
+      ...LETTERHEAD,
+      gstin: "123",
+      deliver_to: "",
+    });
+    expect(refused.status).toBe(400);
+    expect((await fieldsOf(refused)).fields).toEqual(expect.arrayContaining(["gstin", "deliver_to"]));
   });
 });

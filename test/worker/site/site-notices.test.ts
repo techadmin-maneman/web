@@ -93,7 +93,7 @@ describe("a consultation still to happen", () => {
     await consentToVisitMessages();
     await consultationToCome();
     expect((await send("consultation_exists")).text).toBe(
-      "Hi Karan, this number was just used to book on our site.\nYour consultation is already booked for Wed 23 Sep, 9 am to 12 pm, so we haven't booked another. See or move it in the Mane Man app.",
+      "Hi Karan, this number was just used to book on our site.\nYour consultation is already booked for Wed 23 Sep, 9 am–12 noon, so we haven't booked another. See or move it in the Mane Man app.",
     );
   });
 
@@ -108,7 +108,7 @@ describe("a consultation still to happen", () => {
       .bind(PERSON, NOW.toISOString())
       .run();
     expect((await send("consultation_exists")).text).toContain(
-      "Your consultation and fit is already booked for Wed 23 Sep, 9 am to 12 pm",
+      "Your consultation and fit is already booked for Wed 23 Sep, 9 am–12 noon",
     );
   });
 
@@ -117,7 +117,7 @@ describe("a consultation still to happen", () => {
     await consultationToCome();
     await appointment("first_fit", "scheduled", "2026-09-30T03:30:00.000Z", "2026-09-30T06:30:00.000Z");
     expect((await send("consultation_exists")).text).toContain(
-      "Your consultation is already booked for Wed 23 Sep, 9 am to 12 pm",
+      "Your consultation is already booked for Wed 23 Sep, 9 am–12 noon",
     );
   });
 

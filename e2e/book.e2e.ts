@@ -29,6 +29,7 @@ const BOOKED = {
   state: "booked",
   date: "2026-09-25",
   window: "morning",
+  hours: { start: "09:00", end: "12:00" },
   area: SERVED.area,
   credits: false,
   invite: "unknown",
@@ -53,6 +54,12 @@ const OPEN_WINDOWS = /\/api\/availability\/public\?/;
 /** The page's clock for the tests that answer it: the strip opens on Saturday 3 October, as the answers do. */
 const NOON_2_OCTOBER = new Date("2026-10-02T06:30:00Z");
 const ALL_OPEN = { morning: true, afternoon: true, evening: true };
+/** Each window's hours, as ops set them by default. */
+const HOURS = {
+  morning: { start: "09:00", end: "12:00" },
+  afternoon: { start: "12:00", end: "16:00" },
+  evening: { start: "16:00", end: "20:00" },
+};
 const FULL = { morning: false, afternoon: false, evening: false };
 type Windows = typeof ALL_OPEN;
 
@@ -60,7 +67,7 @@ type Windows = typeof ALL_OPEN;
 function openDays(given: Record<string, Windows> = {}, otherwise: Windows = ALL_OPEN) {
   return Array.from({ length: 14 }, (_, index) => {
     const date = new Date(Date.UTC(2026, 9, 3 + index)).toISOString().slice(0, 10);
-    return { date, windows: given[date] ?? otherwise };
+    return { date, windows: given[date] ?? otherwise, hours: HOURS };
   });
 }
 
@@ -193,7 +200,7 @@ test("the page introduces itself, with no invite and no card", async ({ page }) 
 
   await expect(page.getByRole("heading", { level: 1, name: "Book a free consultation" })).toBeVisible();
   await expect(page.getByText("sent you this")).toBeHidden();
-  await expect(page.getByText("We do not recognise this invite")).toBeHidden();
+  await expect(page.getByText("We don’t recognise this invite")).toBeHidden();
   await expect(page.locator("img[width='1200']")).toHaveCount(0);
 });
 
@@ -318,7 +325,7 @@ test("a number with +91, 91, 0 or 0091 in front books its own ten digits, pasted
   await continueAndBook(page);
 
   await expect(
-    page.getByText("Your technician arrives in that window. Details are on WhatsApp at +91 98765 43210."),
+    page.getByText("Your technician arrives in those hours. Details are on WhatsApp at +91 98765 43210."),
   ).toBeVisible();
   expect(leads[0]?.postDataJSON()).toMatchObject({ mobile: "9876543210" });
   expect(requests[0]?.postDataJSON()).toMatchObject({ mobile: "9876543210" });
@@ -330,7 +337,7 @@ test("restates the day and window booked, says what the visit asks, and offers i
   await mockApi(page);
   await bookHere(page);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am–12 noon" })).toBeVisible();
   await expect(page.getByText(referralCopy.referral.booked.ready.consultation)).toBeVisible();
   const google = new URL(
     (await page.getByRole("link", { name: referralCopy.referral.booked.calendar.google }).getAttribute("href")) ?? "",
@@ -347,7 +354,7 @@ test("a request waiting for ops to fix the hour offers no calendar", async ({ pa
   await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, state: "requested" } } });
   await bookHere(page);
 
-  await expect(page.getByRole("heading", { level: 1, name: "We will message you" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "We’ll message you" })).toBeVisible();
   await expect(page.getByRole("link", { name: referralCopy.referral.booked.calendar.google })).toHaveCount(0);
 });
 
@@ -389,8 +396,8 @@ test("offers the consultation and fit in one visit, and says what it holds", asy
 
   const plan = page.getByRole("group", { name: referralCopy.referral.consultation.plan.legend });
   await expect(plan.getByRole("radio")).toHaveCount(2);
-  await plan.getByRole("radio", { name: "Consultation and fit · three hours" }).check();
-  await expect(plan.getByRole("radio", { name: "Consultation and fit · three hours" })).toBeChecked();
+  await plan.getByRole("radio", { name: "Consultation and fit · 3 hours" }).check();
+  await expect(plan.getByRole("radio", { name: "Consultation and fit · 3 hours" })).toBeChecked();
   await expect(page.getByText(/^Starts in the morning or the afternoon\./)).toBeVisible();
   // The page's heading follows what it books.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.booking.titleOneVisit);
@@ -425,7 +432,7 @@ test("books the one visit only with the right WhatsApp code", async ({ page }) =
   await openForm(page);
   await page
     .getByRole("group", { name: referralCopy.referral.consultation.plan.legend })
-    .getByRole("radio", { name: "Consultation and fit · three hours" })
+    .getByRole("radio", { name: "Consultation and fit · 3 hours" })
     .check();
   await toAddress(page);
   await fillAddress(page);
@@ -433,7 +440,7 @@ test("books the one visit only with the right WhatsApp code", async ({ page }) =
 
   await page.getByLabel(siteCopy.numberCode.label).fill("111111");
   await page.getByRole("button", { name: referralCopy.referral.consultation.confirmOneVisit }).click();
-  await expect(page.getByText("That code is not right. 4 tries left.")).toBeVisible();
+  await expect(page.getByText("That code didn’t match. 4 tries left.")).toBeVisible();
   expect(requests).toHaveLength(0);
 
   await page.getByLabel(siteCopy.numberCode.label).fill(NUMBER_CODE);
@@ -451,7 +458,7 @@ async function bookOneVisitWithCode(page: Page, code: string): Promise<void> {
   await openForm(page);
   await page
     .getByRole("group", { name: referralCopy.referral.consultation.plan.legend })
-    .getByRole("radio", { name: "Consultation and fit · three hours" })
+    .getByRole("radio", { name: "Consultation and fit · 3 hours" })
     .check();
   await toAddress(page);
   await page.getByLabel(referralCopy.referral.consultation.code.label).fill(code);
@@ -487,7 +494,7 @@ test("says a wrong code under its box, and what a right one takes off once booke
   await box.fill(" WEDDNG25 ");
   await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
-  await expect(page.getByText("Code WEDDNG25: Rs. 1,000 off, taken when you pay.")).toBeVisible();
+  await expect(page.getByText("Code WEDDNG25: Rs. 1,000 off, applied when you pay.")).toBeVisible();
   const sent = requests.at(-1)?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, discount_code: "WEDDNG25" });
 });
@@ -511,7 +518,7 @@ test("says what a percentage code takes off, up to its cap", async ({ page }) =>
   const standing = { code: "TENPC", kind: "percent", value: 10, cap: 200_000 };
   await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: standing } } });
   await bookOneVisitWithCode(page, "tenpc");
-  await expect(page.getByText("Code TENPC: 10% off, up to Rs. 2,000, taken when you pay.")).toBeVisible();
+  await expect(page.getByText("Code TENPC: 10% off, up to Rs. 2,000, applied when you pay.")).toBeVisible();
 });
 
 test("offers the one visit the morning and the afternoon, never the evening, and the consultation all three", async ({
@@ -523,12 +530,12 @@ test("offers the one visit the morning and the afternoon, never the evening, and
   const windows = page.getByRole("group", { name: referralCopy.referral.consultation.window });
   await windows.getByRole("radio", { name: /Evening/ }).check();
 
-  await plan.getByRole("radio", { name: "Consultation and fit · three hours" }).check();
+  await plan.getByRole("radio", { name: "Consultation and fit · 3 hours" }).check();
   await expect(windows.getByRole("radio")).toHaveCount(2);
   await expect(windows.getByText("Evening")).toHaveCount(0);
   await expect(windows.getByRole("radio", { name: /Morning/ })).toBeChecked();
 
-  await plan.getByRole("radio", { name: "Consultation · an hour", exact: true }).check();
+  await plan.getByRole("radio", { name: "Consultation · 1 hour", exact: true }).check();
   await expect(windows.getByRole("radio")).toHaveCount(3);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a free consultation");
 
@@ -587,9 +594,9 @@ test("every number is sent to WhatsApp, and offered the app with the number fill
   await mockApi(page);
   await bookHere(page);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am–12 noon" })).toBeVisible();
   await expect(
-    page.getByText("Your technician arrives in that window. Details are on WhatsApp at +91 98100 00000."),
+    page.getByText("Your technician arrives in those hours. Details are on WhatsApp at +91 98100 00000."),
   ).toBeVisible();
   const app = page.getByRole("link", { name: referralCopy.referral.booked.app });
   // The link carries no number until it is followed, so no tag that reads the page's links sees it.
@@ -625,7 +632,7 @@ test("says nothing about an invite to someone who came here directly", async ({ 
 test("a pincode we do not serve lists the number kept, with the launch alert offered", async ({ page }) => {
   const requests = await mockApi(page);
   await openWaitlist(page);
-  await expect(page.getByText("We are not in Bandra yet")).toBeVisible();
+  await expect(page.getByText("We’re not in Bandra yet")).toBeVisible();
   await expect(page.getByText("Step 3 of 3 · The list")).toBeVisible();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
 
@@ -671,7 +678,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
 
 // A friend who opened an invite, left, and booked here later: the invite came with the booking, and the confirmation
 // says what the landing's does (ADR 0089).
-test("a friend who opened an invite books here with it, and is told the invite's visits land when fitted", async ({
+test("a friend who opened an invite books here with it, and is told the invite’s visits land when fitted", async ({
   page,
 }) => {
   const requests = await mockApi(page, {
@@ -754,7 +761,7 @@ test("an invite opened more than 30 days ago, or one we do not know, is not sent
     }),
   );
   await visit(page, "/r/ZZ9999");
-  await expect(page.getByText("We do not recognise this invite")).toBeVisible();
+  await expect(page.getByText("We don’t recognise this invite")).toBeVisible();
   expect(await remembered(page)).toBeNull();
 
   const opened = new Date(Date.now() - 31 * 86_400_000).toISOString();
@@ -770,7 +777,7 @@ test("an invite opened more than 30 days ago, or one we do not know, is not sent
 });
 
 // A browser can refuse storage outright (private windows, a setting, a policy): both pages still book.
-test("a browser that blocks storage books on the invite's page and here, and sends no remembered invite", async ({
+test("a browser that blocks storage books on the invite’s page and here, and sends no remembered invite", async ({
   page,
 }) => {
   const requests = await mockApi(page);
@@ -817,7 +824,7 @@ test("booking through WhatsApp for now is confirmed as a request, not refused", 
   await bookHere(page);
 
   await expect(page.getByText(referralCopy.referral.requested.label)).toBeVisible();
-  await expect(page.getByText("On WhatsApp, at +91 98100 00000, to fix the hour.")).toBeVisible();
+  await expect(page.getByText("On WhatsApp, at +91 98100 00000, to fix the time.")).toBeVisible();
   await expect(page.getByRole("button", { name: referralCopy.referral.consultation.submit })).toBeHidden();
 });
 
@@ -887,7 +894,7 @@ test("a name that is not letters is marked at its field, focused, and not sent",
 
   const name = page.getByLabel(siteCopy.tryOn.gate.name);
   await expect(name).toHaveAttribute("aria-invalid", "true");
-  await expect(name).toHaveAccessibleDescription("Enter your name in letters.");
+  await expect(name).toHaveAccessibleDescription("Enter your name.");
   await expect(name).toBeFocused();
   expect(leads).toHaveLength(0);
 });
@@ -979,7 +986,7 @@ test("asks again for one visit, whose three hours may not fit where a consultati
 
   await page
     .getByRole("group", { name: referralCopy.referral.consultation.plan.legend })
-    .getByRole("radio", { name: "Consultation and fit · three hours" })
+    .getByRole("radio", { name: "Consultation and fit · 3 hours" })
     .check();
 
   await expect(days.nth(0)).toBeDisabled();

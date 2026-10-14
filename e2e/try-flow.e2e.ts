@@ -124,7 +124,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 // The browser's Back, or a phone's back gesture, left /try altogether from any screen, and the photo and choices with it.
-test("the browser's Back steps back through the try-on, and leaves it only from its first screen", async ({ page }) => {
+test("the browser’s Back steps back through the try-on, and leaves it only from its first screen", async ({ page }) => {
   await mockApi(page);
   await page.goto("/");
   await visit(page, "/try");
@@ -169,7 +169,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   await sendFromGate(page, MOBILE);
   await screenIs(page, "sent");
   await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.title })).toBeVisible();
-  await expect(page.getByText("It'll reach WhatsApp on +91 98100 00000", { exact: false })).toBeVisible();
+  await expect(page.getByText("It’ll reach WhatsApp on +91 98100 00000", { exact: false })).toBeVisible();
 
   // A WhatsApp code to the number first, with a fresh Turnstile token; the claim carries the code that proved it.
   expect(named(seen, "code")[0]?.postDataJSON()).toEqual({
@@ -236,7 +236,7 @@ test("the gate claims nothing until the WhatsApp code sent to the number is ente
   await expect(page.getByLabel(siteCopy.numberCode.label)).toBeFocused();
   await page.getByLabel(siteCopy.numberCode.label).fill("111111");
   await page.getByRole("button", { name: siteCopy.tryOn.gate.confirm }).click();
-  await expect(page.getByText("That code is not right. 4 tries left.")).toBeVisible();
+  await expect(page.getByText("That code didn’t match. 4 tries left.")).toBeVisible();
   expect(named(seen, "claim")).toHaveLength(0);
 
   await page.getByLabel(siteCopy.numberCode.label).fill(NUMBER_CODE);
@@ -258,7 +258,7 @@ test("the gate says when a number has had its codes for today, and claims nothin
   expect(named(seen, "claim")).toHaveLength(0);
 });
 
-test("a render that fails once the look is on its way shows the render's error, and another may be tried", async ({
+test("a render that fails once the look is on its way shows the render’s error, and another may be tried", async ({
   page,
 }) => {
   await mockApi(page, {
@@ -336,9 +336,9 @@ test("while WhatsApp cannot send a look, the visitor is told on arrival, and not
 
 // A refused upload shows as soon as it happens, while the visitor is still choosing.
 for (const [name, answers, heading] of [
-  ["a full day's uploads", { uploadUrl: refusal(503, "busy") }, "The simulation is busy just now."],
-  ["a failed Turnstile check", { uploadUrl: refusal(403, "turnstile_failed") }, "The simulation is busy just now."],
-  ["a refused file", { upload: refusal(422, "photo_invalid_file") }, "We cannot use this photograph."],
+  ["a full day’s uploads", { uploadUrl: refusal(503, "busy") }, "The try-on is busy just now."],
+  ["a failed Turnstile check", { uploadUrl: refusal(403, "turnstile_failed") }, "The try-on is busy just now."],
+  ["a refused file", { upload: refusal(422, "photo_invalid_file") }, "We can’t use this photo."],
   [
     "WhatsApp switched off since the page opened",
     { uploadUrl: refusal(503, "whatsapp_unavailable") },
@@ -359,8 +359,8 @@ for (const [name, answers, heading] of [
 }
 
 for (const [name, answers, heading] of [
-  ["the hourly render limit", { generate: refusal(429, "rate_limited") }, "The simulation is busy just now."],
-  ["today's render ceiling", { generate: refusal(503, "busy") }, "The simulation is busy just now."],
+  ["the hourly render limit", { generate: refusal(429, "rate_limited") }, "The try-on is busy just now."],
+  ["today’s render ceiling", { generate: refusal(503, "busy") }, "The try-on is busy just now."],
   ["WhatsApp switched off at the gate", { claim: refusal(503, "whatsapp_unavailable") }, "The try-on is paused."],
 ] as const) {
   test(`the gate: ${name} shows "${heading}"`, async ({ page }) => {
@@ -384,7 +384,7 @@ test("the gate says when a number is out of tries for today, and makes none", as
   expect(named(seen, "generate")).toHaveLength(0);
 });
 
-test("the gate says when the try-on is already another number's", async ({ page }) => {
+test("the gate says when the try-on is already another number’s", async ({ page }) => {
   await mockApi(page, {
     claim: refusal(409, "job_not_claimable"),
     status: { status: 200, json: { job_id: JOB, state: "queued" } },
@@ -397,7 +397,7 @@ test("the gate says when the try-on is already another number's", async ({ page 
 });
 
 // A refusal naming the number was said as "That did not go through", with nothing marked.
-test("the gate marks the field a claim's refusal names, and focuses it", async ({ page }) => {
+test("the gate marks the field a claim’s refusal names, and focuses it", async ({ page }) => {
   const refused = { error: { code: "invalid_request", request_id: "test", fields: ["mobile"] } };
   await mockApi(page, { claim: { status: 400, json: refused } });
   await visit(page, "/try");

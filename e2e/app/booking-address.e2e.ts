@@ -100,7 +100,7 @@ test("offers no day at an address we do not come to, but the address to change a
 });
 
 // Every visit is photographed for the client's record, said one tap away beneath Pay; booking agrees to no consent.
-test("puts Pay above what every visit's photographs are, one tap away, and sends no consent", async ({ page }) => {
+test("puts Pay above what every visit’s photographs are, one tap away, and sends no consent", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   await profileAs(page, { reminders: true, undecided: PHOTOS });

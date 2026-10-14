@@ -14,16 +14,16 @@ export const booking = {
   titleWaitlist: "Not in your area yet",
   intro: `Your technician measures your scalp and matches your colour: ${visitLength.consultation}, free. Or add the fit and wear your hair system the same day.`,
   /** Where we do not come yet: what the list is for. */
-  introWaitlist: "Join the list and we'll WhatsApp you the week we start coming to you.",
+  introWaitlist: "Join the list and we’ll WhatsApp you the week we start coming to you.",
   extent: "Extent of hair loss (optional)",
   /**
-   * Not drawn: the page's steps, the name and number first, kept before anything else
+   * The page's steps, the name and number first, kept before anything else
    * (docs/decisions/0116-book-asks-for-the-name-and-number-first.md).
    */
   step: "Step {at} of {of} · {name}",
   steps: { you: "You", area: "Your area", visit: "Your visit", address: "Your address", list: "The list" },
   next: "Continue",
-  saving: "One moment",
+  saving: "One moment…",
   /** Beneath the first step, the name and number it kept, and the way back to them. */
   bookingFor: "For {name}, +91 {mobile}",
   changeYou: "Change",
@@ -36,7 +36,7 @@ export const booking = {
 // ---------------------------------------------------------------------------
 
 export const notFound = {
-  title: "This page is not here.",
+  title: "This page isn’t here.",
   body: "The address may have changed. Everything is on the home page.",
   home: "Back to the site",
 };
@@ -53,7 +53,8 @@ export const stopMessages = {
   },
   done: {
     title: "Done.",
-    whatsapp_visits: "We won’t message you on WhatsApp about your visits any more. We’ll call you about any change.",
+    whatsapp_visits:
+      "We’ll only message you on WhatsApp about payments and refunds, and call you about any change to a visit.",
     whatsapp_launches: "We won’t message you when we come to a new area any more.",
     again: "Changed your mind? Switch them back on in the Mane Man app, or message us at {whatsapp}.",
   },
@@ -80,5 +81,5 @@ export const pageDescriptions = {
   tryOn: tryOnTeaser.body,
   book: booking.intro,
   privacy: "What Mane Man keeps about you, who processes it, how long it is kept, and how to have it erased.",
-  terms: "The terms of Mane Man's hair system service.",
+  terms: "The terms of Mane Man’s hair system service.",
 };

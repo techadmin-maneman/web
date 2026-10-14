@@ -102,7 +102,7 @@ describe("what the outbox sends, and in what order", () => {
 });
 
 describe("the account of what has not reached us", () => {
-  it("counts each job's waiting writes, oldest job first", () => {
+  it("counts each job’s waiting writes, oldest job first", () => {
     const queue = [event(1, "a"), event(2, "b"), event(3, "a")];
     expect(account(queue)).toEqual([
       { job_id: "a", waiting: 2, stopped: null },
@@ -152,7 +152,7 @@ describe("the account of what has not reached us", () => {
   });
 
   // The waiting screen shows it, for the technician to quote.
-  it("keeps the API's ID for a refusal", () => {
+  it("keeps the API’s ID for a refusal", () => {
     const refused = { state: "refused", note: "piece_code", fields: [], request_id: "0192a8e4-aaaa" } as const;
     expect(account([event(1, "a", refused)])[0]?.stopped?.requestId).toBe("0192a8e4-aaaa");
   });

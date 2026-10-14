@@ -43,7 +43,7 @@ test("lists the four consents off, and switches one on with its date and off aga
   await expect(visitsOff).toBeVisible();
 });
 
-test("shows the referral card's lines, and the naming line, before that consent can be switched on", async ({
+test("shows the referral card’s lines, and the naming line, before that consent can be switched on", async ({
   page,
 }) => {
   await loggedIn(page);
@@ -89,7 +89,7 @@ test("a consent that did not go through says so, and the switch stays as it was"
   );
   const visits = page.getByRole("switch", { name: appCopy.profile.purposes.whatsapp_visits });
   await visits.click();
-  await expect(page.getByRole("alert")).toHaveText("That didn’t go through, so nothing has changed. Try again.");
+  await expect(page.getByRole("alert")).toHaveText("Couldn’t save that. Try again.");
   await expect(visits).toHaveAttribute("aria-checked", "false");
 });
 
@@ -177,7 +177,7 @@ test("raises one grievance when Send is tapped twice", async ({ page }) => {
   expect({ asked: held.asked(), liveWhileBusy }).toEqual({ asked: 1, liveWhileBusy: false });
 });
 
-test("refuses the client's own number as the new one", async ({ page }) => {
+test("refuses the client’s own number as the new one", async ({ page }) => {
   const mobile = await loggedIn(page);
   await page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).fill(mobile);
   await page.getByRole("button", { name: appCopy.profile.change.start }).click();

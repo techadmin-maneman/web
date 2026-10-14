@@ -39,7 +39,7 @@ test("lists the pincodes with their counts, and marks the ones we already come t
 });
 
 // The area was packed into what the figure columns left, each drawn wider than the board draws it.
-test("gives the area the room the board does, and each figure the board's own width", async ({ page }) => {
+test("gives the area the room the board does, and each figure the board’s own width", async ({ page }) => {
   await open(page);
   const width = async (name: string) =>
     (await page.getByRole("columnheader", { name, exact: true }).boundingBox())?.width ?? 0;
@@ -71,7 +71,7 @@ test("asks what a launch would send before anything goes out", async ({ page }) 
   await expect(panel.getByText(opsCopy.areas.launch.rows.alerts)).toBeVisible();
   await expect(panel.getByText(opsCopy.areas.launch.rows.referred)).toBeVisible();
   await expect(panel).toContainText("Mane Man now comes to Bandra W");
-  await expect(panel).toContainText("33 didn't opt in and won't be messaged.");
+  await expect(panel).toContainText("33 didn’t opt in and won’t be messaged.");
 });
 
 test("launches the pincode on the second press, and says how many went out", async ({ page }) => {

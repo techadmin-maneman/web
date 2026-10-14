@@ -13,7 +13,7 @@ import { ICONS, manifest as manifestOf, precacheList, token, version } from "../
 
 const manifest = (ground: string) => manifestOf(TECH_APP, ground);
 
-describe("the technician app's manifest", () => {
+describe("the technician app’s manifest", () => {
   const ink = token("--ink-deep");
 
   it("takes its colour from the ink the app is drawn on", () => {
@@ -42,7 +42,7 @@ describe("the technician app's manifest", () => {
     expect(html).toContain('<meta name="apple-mobile-web-app-capable" content="yes" />');
   });
 
-  it("lists the launcher's icons and leaves the Apple touch icon to index.html", () => {
+  it("lists the launcher’s icons and leaves the Apple touch icon to index.html", () => {
     expect(manifest(ink).icons).toEqual([
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },

@@ -10,6 +10,7 @@ import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
 import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
 import { windowSpan } from "@rules/config/scheduling.ts";
+import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { referral } from "../../content/referral.ts";
 import type { Consultation, ReferralReward } from "../../lib/api.ts";
 import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";
@@ -75,9 +76,8 @@ function codeNote(booking: Booking): string | null {
   return fill(words.applied, { code: standing.code, off: offOf(standing) });
 }
 
-/** The window's hours as the form offered them: "12 to 4 pm". */
-const hoursOf = (window: Booking["result"]["window"]): string =>
-  referral.consultation.windows.find((option) => option.id === window)?.hours ?? "";
+/** The window's hours that day, as the booking answered: "12–4 pm". */
+const hoursOf = (result: Booking["result"]): string => timeRange(result.hours.start, result.hours.end, UNBROKEN);
 
 /** Google's link, and the .ics file for every other calendar, holding the window booked. */
 function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
@@ -85,8 +85,9 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
   const { result } = props;
   const entry: CalendarEntry = {
     title: result.one_visit ? calendar.title.oneVisit : calendar.title.consultation,
-    ...windowSpan(result.date, result.window),
-    details: fill(calendar.details, { hours: hoursOf(result.window), ready: props.ready }),
+    ...windowSpan(result.date, result.hours),
+    // A calendar wraps as it likes, so its hours keep plain spaces.
+    details: fill(calendar.details, { hours: timeRange(result.hours.start, result.hours.end), ready: props.ready }),
     uid: `${result.date}-${result.window}@maneman.in`,
   };
   return (
@@ -108,7 +109,7 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
 function headlineOf(result: Booking["result"]): { label: string; title: string; body: string } {
   if (result.state === "requested") return referral.requested;
   const { booked } = referral;
-  const title = fill(booked.when, { day: longDay(result.date), hours: hoursOf(result.window) });
+  const title = fill(booked.when, { day: longDay(result.date), hours: hoursOf(result) });
   return { label: booked.label, title, body: booked.body };
 }
 

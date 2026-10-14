@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 describe("the Care numbers page", () => {
-  it("shows the week's figures, reasons, remedies and each Care person", async () => {
+  it("shows the week’s figures, reasons, remedies and each Care person", async () => {
     await act(async () => {
       root.render(createElement(CareNumbersScreen));
       await new Promise((resolve) => setTimeout(resolve, 0));

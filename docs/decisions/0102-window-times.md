@@ -30,9 +30,9 @@ A held booking keeps its half-slot's place in the day (`slot_holds.start_unit`),
 - the window a change's 24 hours count back from;
 - the hours in a visit's WhatsApp message.
 
-**The API says the hours.** Each window the app is offered carries its hours that day (`/api/availability`). Ops read and set the times at `GET` and `POST /api/slot-times`. The CRM's `Booked_Window` pick-list names the window alone ("Afternoon"), since a pick-list's values are fixed in the org and cannot follow a setting.
+**The API says the hours.** Each window the app is offered carries its hours that day (`/api/availability`), and so does every answer that names a booked window: a hold, a visit and a move proposed for it, Home's consultation and the visit being booked, the site form's days (`/api/availability/public`) and its booking, and the dispatch board's blocks (`WindowHours`). Every surface writes them one way, "9 am–12 noon", "12–4 pm" (`src/lib/time-range.ts`), as the WhatsApp messages do. Ops read and set the times at `GET` and `POST /api/slot-times`. The CRM's `Booked_Window` pick-list names the window alone ("Afternoon"), since a pick-list's values are fixed in the org and cannot follow a setting.
 
-**Owed: the surfaces.** The console's Settings section for the times, and the site, the app and the console reading every hour, and the site each service's length, from the API rather than at build. Until they do, they print the hours in code. No change can apply sooner than the furthest bookable day, 46 days out with the horizon at 45, so the surfaces are built before any change takes effect.
+**Owed: the console's section, and the site's lengths.** The site, the app and the console read every hour from the API (15 October 2026), but the console has no Settings section for the times yet: they are set through `POST /api/slot-times`. The site's prose still says each visit's length as `VISIT_BLOCKS` gives it at build ("90 minutes"), where the app reads each service's own; a length ops change in the console reaches the site's prose at its next deploy.
 
 ## Consequences
 

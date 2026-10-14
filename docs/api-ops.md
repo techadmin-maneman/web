@@ -7861,7 +7861,7 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/JobSheetListChange"
+  "$ref": "#/components/schemas/JobSheetChecklistChange"
 }
 ```
 
@@ -7873,7 +7873,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
 
 ```json
 {
@@ -7909,7 +7909,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
 
 ```json
 {
@@ -7945,7 +7945,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
 
 ```json
 {
@@ -8807,6 +8807,42 @@ Request body:
 ```
 
 **400**: invalid_request: fields names supplier_id for no active supplier, lines.N for a stock code it does not list or fewer than its minimum, or lines for one named twice
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**403**: access_required
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+### POST /api/purchase-orders/letterhead
+
+What a printed order says of us: the legal name, the GSTIN and where the supplier delivers
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrderLetterhead"
+}
+```
+
+**200**: The purchase orders
+
+```json
+{
+  "$ref": "#/components/schemas/PurchaseOrders"
+}
+```
+
+**400**: invalid_request
 
 ```json
 {
@@ -10696,6 +10732,9 @@ Request body:
         "evening"
       ]
     },
+    "window_hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "starts_at": {
       "type": "string",
       "format": "date-time"
@@ -10957,6 +10996,7 @@ Request body:
     "id",
     "date",
     "window_label",
+    "window_hours",
     "starts_at",
     "ends_at",
     "length_minutes",
@@ -10979,6 +11019,32 @@ Request body:
     "requested_code"
   ],
   "additionalProperties": false
+}
+```
+
+### WindowHours
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "start": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "India's clock, HH:MM."
+    },
+    "end": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "India's clock, HH:MM."
+    }
+  },
+  "required": [
+    "start",
+    "end"
+  ],
+  "additionalProperties": false,
+  "description": "The window's hours on its day, India's clock, as ops set them (ADR 0102)."
 }
 ```
 
@@ -11069,6 +11135,9 @@ Request body:
         "evening"
       ]
     },
+    "hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "technician": {
       "anyOf": [
         {
@@ -11089,6 +11158,7 @@ Request body:
     "id",
     "date",
     "window",
+    "hours",
     "technician",
     "expires_at"
   ],
@@ -11118,6 +11188,9 @@ Request body:
         "afternoon",
         "evening"
       ]
+    },
+    "window_hours": {
+      "$ref": "#/components/schemas/WindowHours"
     },
     "starts_at": {
       "type": "string",
@@ -11246,6 +11319,7 @@ Request body:
     "id",
     "date",
     "window_label",
+    "window_hours",
     "starts_at",
     "ends_at",
     "length_minutes",
@@ -15115,6 +15189,10 @@ Request body:
           "name": {
             "type": "string"
           },
+          "unit": {
+            "type": "string",
+            "description": "What one is counted in: strip, ml, sachet."
+          },
           "city": {
             "type": [
               "string",
@@ -15183,6 +15261,7 @@ Request body:
           "kind",
           "consumable_code",
           "name",
+          "unit",
           "city",
           "from",
           "to",
@@ -15642,6 +15721,10 @@ Request body:
           "name": {
             "type": "string"
           },
+          "unit": {
+            "type": "string",
+            "description": "What one is counted in: strip, ml, piece."
+          },
           "held": {
             "type": "integer"
           },
@@ -15672,6 +15755,7 @@ Request body:
         "required": [
           "consumable_code",
           "name",
+          "unit",
           "held",
           "counted",
           "recounted",
@@ -16011,6 +16095,10 @@ Request body:
           "name": {
             "type": "string"
           },
+          "unit": {
+            "type": "string",
+            "description": "What one of the lot's item is counted in: strip, ml, piece."
+          },
           "reason": {
             "type": "string"
           },
@@ -16031,6 +16119,7 @@ Request body:
           "lot_code",
           "consumable_code",
           "name",
+          "unit",
           "reason",
           "raised_at",
           "closed_at"
@@ -16094,6 +16183,10 @@ Request body:
     },
     "name": {
       "type": "string"
+    },
+    "unit": {
+      "type": "string",
+      "description": "What one of the lot's item is counted in: strip, ml, piece."
     },
     "reason": {
       "type": "string"
@@ -16171,6 +16264,7 @@ Request body:
     "lot_code",
     "consumable_code",
     "name",
+    "unit",
     "reason",
     "raised_at",
     "closed_at",
@@ -18863,6 +18957,10 @@ Request body:
       "type": "string",
       "description": "The wording in the code."
     },
+    "reviewed": {
+      "type": "boolean",
+      "description": "Whether a copy review has read the line in the code's wording; false for one written or changed since."
+    },
     "now": {
       "type": "string",
       "description": "The wording in force: the one set here, else the code's."
@@ -18913,6 +19011,7 @@ Request body:
     "group",
     "where",
     "text",
+    "reviewed",
     "now",
     "changed",
     "longest",
@@ -19258,6 +19357,7 @@ Request body:
         "supplier.restore",
         "supplier.item_set",
         "supplier.item_remove",
+        "purchase_order.letterhead_set",
         "purchase_order.draft",
         "purchase_order.approve",
         "purchase_order.send",
@@ -19860,6 +19960,9 @@ Request body:
         "evening"
       ]
     },
+    "window_hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -19951,6 +20054,7 @@ Request body:
     "client_note",
     "starts_at",
     "window",
+    "window_hours",
     "status",
     "notice_hours",
     "untold",
@@ -26316,11 +26420,23 @@ Request body:
           },
           "label": {
             "type": "string"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the client's record says was done; null for an item only the technician needs."
           }
         },
         "required": [
           "code",
-          "label"
+          "label",
+          "client"
         ],
         "additionalProperties": false
       },
@@ -26336,11 +26452,23 @@ Request body:
           },
           "label": {
             "type": "string"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the client's record says was done; null for an item only the technician needs."
           }
         },
         "required": [
           "code",
-          "label"
+          "label",
+          "client"
         ],
         "additionalProperties": false
       },
@@ -26456,6 +26584,61 @@ Request body:
     "set_at"
   ],
   "additionalProperties": false
+}
+```
+
+### JobSheetChecklistChange
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "An item already on the list, or retired from it, keeps its code; a new one sends none."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\p{Cc}]+$/u"
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[^\\p{Cc}]+$/u"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the client's record says was done, null for an item only the technician needs. Sent without, the client reads the technician's words."
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 20
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false,
+  "description": "The whole checklist, in its order. An item left out is retired."
 }
 ```
 
@@ -28248,6 +28431,9 @@ Request body:
           "currency": {
             "type": "string"
           },
+          "payment_terms_days": {
+            "type": "integer"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -28255,6 +28441,17 @@ Request body:
               "properties": {
                 "consumable_code": {
                   "type": "string"
+                },
+                "their_code": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The supplier's own code for it, which the order prints."
                 },
                 "unit_price": {
                   "type": "integer"
@@ -28271,6 +28468,7 @@ Request body:
               },
               "required": [
                 "consumable_code",
+                "their_code",
                 "unit_price",
                 "pack_size",
                 "minimum_order",
@@ -28284,6 +28482,7 @@ Request body:
           "id",
           "name",
           "currency",
+          "payment_terms_days",
           "items"
         ],
         "additionalProperties": false
@@ -28320,13 +28519,78 @@ Request body:
     },
     "second_approval_above_rupees": {
       "type": "integer"
+    },
+    "letterhead": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "legal_name": {
+          "type": "string"
+        },
+        "gstin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deliver_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "legal_name",
+        "gstin",
+        "deliver_to"
+      ],
+      "additionalProperties": false,
+      "description": "What a printed order says of us; null until ops set it."
     }
   },
   "required": [
     "orders",
     "suppliers",
     "consumables",
-    "second_approval_above_rupees"
+    "second_approval_above_rupees",
+    "letterhead"
+  ],
+  "additionalProperties": false
+}
+```
+
+### PurchaseOrderLetterhead
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "legal_name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 120
+    },
+    "gstin": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{2}[A-Z]{5}\\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$"
+    },
+    "deliver_to": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 400
+    }
+  },
+  "required": [
+    "legal_name",
+    "gstin",
+    "deliver_to"
   ],
   "additionalProperties": false
 }

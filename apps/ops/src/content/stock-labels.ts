@@ -10,7 +10,7 @@ export const stockLabels = {
   unlabelled: (count: number) => `${pieces(count)} here without a label.`,
   labelThem: (count: number) => `Label ${pieces(count)}`,
   labelling: "Labelling…",
-  notLabelled: "Those pieces weren't labelled. Try again.",
+  notLabelled: "Those pieces weren’t labelled. Try again.",
   /** "Labelled 21 Sep, 12:00 · 3 pieces" */
   batch: (when: string, count: number) => `Labelled ${when} · ${pieces(count)}`,
   /** Said to a screen reader: the batches to print labels for. */
@@ -22,7 +22,7 @@ export const stockLabels = {
   noLots: "No lots here to label.",
   lot: "Lot",
   expires: (date: string) => `Exp ${date}`,
-  noLabel: "That label couldn't be made. Try again.",
+  noLabel: "That label couldn’t be made. Try again.",
   scan: {
     label: "Label",
     add: "Add",

@@ -10,16 +10,16 @@ export const supplyPlan = {
   none: "Nothing to approve.",
   transferColumns: ["Item", "From", "To", "For", "Quantity", ""],
   orderColumns: ["Item", "Supplier", "For", "Quantity", ""],
-  /** "Needs 12.5 with 4 safety · can use 3" */
+  /** "Needs 13 (4 buffer) · 3 on hand": the need, rounded up, with the buffer it holds. */
   why: (line: { need: number; safety: number; usable: number }) =>
-    `Needs ${String(line.need)} with ${String(line.safety)} safety · can use ${String(line.usable)}`,
+    `Needs ${String(Math.ceil(line.need))} (${String(Math.ceil(line.safety))} buffer) · ${String(line.usable)} on hand`,
   everyCity: "Every city",
   quantity: (name: string) => `Quantity of ${name}`,
   approve: "Approve",
   reject: "Reject",
-  why_label: "Why it is rejected",
+  why_label: "Reason",
   confirmReject: "Reject it",
-  keep: "Keep it",
+  keep: "Keep line",
   draft: "Draft again",
   drafted: "Drafted again from the latest forecast.",
   approvedSaid: "Approved.",
@@ -41,8 +41,8 @@ export const supplyPlan = {
   },
   accuracy: {
     title: "Accuracy",
-    none: "Measured once a forecast's first period has passed.",
-    note: "Off by: each miss over what was used. Bias above nought: the forecast ran high.",
+    none: "Measured once a forecast’s first period has passed.",
+    note: "Off by: how far the forecast missed what was used. A bias above zero means it ran high.",
     periodColumns: ["Period from", "Expected", "Used", "Off by", "Bias", "Within high case"],
     itemColumns: ["Item", "Expected", "Used", "Off by", "Bias"],
     /** "18%", or a dash where nothing was used */
@@ -60,10 +60,10 @@ export const supplyPlan = {
     columns: ["Event", "City", "Days", "Change", ""],
     /** "+20%", "−10%" */
     change: (percent: number) => (percent < 0 ? `−${String(-percent)}%` : `+${String(percent)}%`),
-    /** "1 Nov – 15 Nov 2026" */
-    days: (from: string, to: string) => (from === to ? from : `${from} – ${to}`),
-    remove: (name: string) => `Take off ${name}`,
-    removeShort: "Take off",
+    /** "1 Nov to 15 Nov 2026" */
+    days: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
+    remove: (name: string) => `Remove ${name}`,
+    removeShort: "Remove",
     removed: "Event taken off.",
     add: "Add an event",
     name: "Event",
@@ -75,7 +75,7 @@ export const supplyPlan = {
     added: "Event added.",
     errors: {
       ends_on: "It ends before it starts.",
-      city: "We do not serve that city.",
+      city: "We don’t serve that city.",
       not_found: changed("That event is gone."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
@@ -86,7 +86,7 @@ export const supplyPlan = {
   errors: {
     order_state: changed("That line is decided already, or no forecast has run."),
     not_found: changed("That line is gone."),
-    invalid_request: changed("That could not be made: stock or the supplier moved since."),
+    invalid_request: changed("That couldn’t be made: stock or the supplier moved since."),
     supplier_id: "That supplier is retired. Reject the line, or draft again.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

@@ -108,7 +108,7 @@ export const norwood = {
   intro: "Hair loss in men is graded in seven stages.",
   early: {
     label: "Stages one and two · nothing to fit yet",
-    note: "A system here would cover hair you still have.",
+    note: "A hair system here would cover hair you still have.",
     stages: [
       {
         numeral: "I",
@@ -174,30 +174,35 @@ export type ComparisonCell = string | boolean;
 
 export const comparison = {
   title: "Why choose a hair system",
-  intro: "Two of these are not ours.",
+  intro: "How a hair system compares.",
   columns: ["Transplant", "Medication", "Hair system"],
   yes: "Yes",
   no: "No",
   rows: [
     {
       label: "Cost",
+      // No figure of anyone else's: the site gives no price, ours or theirs.
       cells: [
-        "Rs. 1.2–3 lakh for 4,000–5,000 hairs",
-        "Rs. 800–2,000 a month, for life",
-        "Quoted at your free consultation",
+        "A large one-off cost, often repeated",
+        "Every month, for life",
+        "Quoted free, before anything is fitted",
       ],
     },
     { label: "Visible result", cells: ["9–12 months", "4–6 months", "The same day"] },
     { label: "Covers advanced loss", cells: [false, false, true] },
-    { label: "Surgery", cells: [true, false, false] },
+    { label: "No surgery", cells: [false, true, true] },
     {
       label: "Side effects",
-      cells: ["Infection, scarring, shock loss", "Lower libido, scalp irritation", "Nothing implanted or swallowed"],
+      cells: ["Surgical risks", "Possible side effects", "Nothing implanted or swallowed"],
     },
     { label: "Reversible", cells: [false, true, true] },
     {
       label: "Upkeep",
-      cells: ["Loss carries on; often a second transplant in a few years", "Daily, for life", "One visit a month"],
+      cells: [
+        "Loss carries on; often a second transplant in a few years",
+        "Daily, for life",
+        "One service visit a month",
+      ],
     },
   ] satisfies { label: string; cells: [ComparisonCell, ComparisonCell, ComparisonCell] }[],
 };
@@ -206,7 +211,7 @@ export const tryOnTeaser = {
   eyebrow: "Try-on",
   title: "See yourself with hair before anyone comes to your home.",
   // The look on WhatsApp only is ADR 0104's.
-  body: "One photograph, one look from six, sent privately to your WhatsApp. A simulation, not a photograph of a result. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days.",
+  body: "One photo, one look from six, sent privately to your WhatsApp. An illustration, not a photo of a result. Your photo is deleted within the hour; a small copy stays with your look for up to 14 days.",
   start: "Start the try-on",
   before: "Before",
   after: "After",
@@ -232,13 +237,13 @@ export const howItWorks = {
     },
     {
       number: "02",
-      title: "The fit",
+      title: "The first fit",
       body: "The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Your new look, on the spot.",
       meta: `${capitalised(visitLength.firstFit)} · at your home`,
     },
     {
       number: "03",
-      title: "Monthly service",
+      title: "Service visit, every month",
       body: "Lifted, cleaned, re-bonded and trimmed to your own growth, so it looks right every month.",
       meta: `Every month · ${visitLength.service}`,
     },
@@ -379,7 +384,7 @@ export const materials: { readonly title: string; readonly intro: string; readon
           { name: "80% · Light", text: "The scalp shows at a parting. For men over sixty." },
           {
             name: "100% · Medium light",
-            text: "Natural, without much volume. Most men's choice, and ours over forty.",
+            text: "Natural, without much volume. Most men’s choice, and ours over forty.",
           },
           {
             name: "120% · Medium",
@@ -428,7 +433,7 @@ export const guarantee = {
 
 export const faq = {
   title: "Questions",
-  intro: { before: "If yours is not here, ", link: "ask on WhatsApp", after: "." },
+  intro: { before: "If yours isn’t here, ", link: "ask on WhatsApp", after: "." },
   items: [
     {
       q: "Will anyone be able to tell?",
@@ -436,10 +441,10 @@ export const faq = {
     },
     {
       q: "How long does a hair system last?",
-      a: "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. The monthly visit keeps it at its best.",
+      a: "Months, not years: the base wears out before the hair does. How many depends on the base you choose, the heat and your care, and your technician tells you what to expect from yours. A service visit every month keeps it at its best.",
     },
     {
-      q: "What happens during the monthly service visit?",
+      q: "What happens at a service visit?",
       a: `The technician lifts the hair system, cleans the adhesive off the base and your scalp, checks the knots, re-bonds it and trims the hair to match your own growth. About ${visitLength.service}, at your home.`,
     },
     {
@@ -455,15 +460,15 @@ export const faq = {
       a: "Colour is matched against forty samples in daylight at the consultation, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed with you before anything is fitted.",
     },
     {
-      q: "What if I do not like it at the fit?",
-      a: `Say so before it's fitted and you pay nothing. Once it's fitted: ${GUARANTEE.charAt(0).toLowerCase()}${GUARANTEE.slice(1)}`,
+      q: "What if I don’t like it?",
+      a: `Say so before it’s fitted and you pay nothing. Once it’s fitted: ${GUARANTEE.charAt(0).toLowerCase()}${GUARANTEE.slice(1)}`,
     },
     {
       q: "Which cities do you cover?",
       // As built, naming no city; the site's Worker writes in the cities ops serve (site/src/lib/cities.ts).
-      a: "We come by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are.",
+      a: "We come by pincode. Check yours on the booking page; if we’re not there yet, leave your number and we’ll tell you when we are.",
       cities:
-        "We're in {cities}, by pincode. Check yours on the booking page; if we're not there yet, leave your number and we'll tell you when we are.",
+        "We’re in {cities}, by pincode. Check yours on the booking page; if we’re not there yet, leave your number and we’ll tell you when we are.",
     },
     {
       q: "What does it cost?",

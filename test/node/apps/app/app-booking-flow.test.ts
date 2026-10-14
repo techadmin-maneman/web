@@ -15,7 +15,7 @@ const ADDRESS = { pincode: "400050" } as Address;
 /** The step a run of events leads to, from the sheet opening. */
 const after = (...events: BookingEvent[]): Step => events.reduce<Step>(nextStep, { kind: "loading" });
 
-describe("the booking sheet's way through", () => {
+describe("the booking sheet’s way through", () => {
   it("goes from the days to the window, a hold, Checkout and the visit booked", () => {
     const steps = [
       { kind: "answered", picking: false, addressMissing: false },
@@ -102,13 +102,13 @@ describe("an answer that comes too late", () => {
     }
   });
 
-  it("never lets a hold's lapse undo a payment already confirming", () => {
+  it("never lets a hold’s lapse undo a payment already confirming", () => {
     const confirming: Step = { kind: "confirming", hold: HOLD };
     expect(nextStep(confirming, { kind: "lapsed" })).toBe(confirming);
     expect(nextStep(confirming, { kind: "held", hold: HOLD })).toBe(confirming);
   });
 
-  it("drops a poll's answer once the sheet is no longer waiting on one", () => {
+  it("drops a poll’s answer once the sheet is no longer waiting on one", () => {
     const pay: Step = { kind: "pay", hold: HOLD };
     expect(nextStep(pay, { kind: "booked", hold: PAID })).toBe(pay);
     expect(nextStep({ kind: "date" }, { kind: "answered", picking: false, addressMissing: false })).toEqual({

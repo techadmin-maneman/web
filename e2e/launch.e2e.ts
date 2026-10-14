@@ -8,7 +8,7 @@ import { expect, fakeTurnstile, test } from "./support.ts";
 
 const JS_BUDGET_BYTES = 60 * 1024;
 
-test("the home page loads under 60 KB of JavaScript, gzipped, and none of the try-on's", async ({ page }) => {
+test("the home page loads under 60 KB of JavaScript, gzipped, and none of the try-on’s", async ({ page }) => {
   const scripts: { url: string; bytes: number }[] = [];
   page.on("response", async (response) => {
     if (response.request().resourceType() !== "script") return;
@@ -104,7 +104,7 @@ test("every page is served with the security headers, and only /try may use the 
 });
 
 // The kit's favicons, drawn on ink at 16, 32 and 48 px, the 16 in its silhouette cut, with no metadata.
-test("the tab icons are the kit's favicons on ink, and carry nothing else", async ({ page, request }) => {
+test("the tab icons are the kit’s favicons on ink, and carry nothing else", async ({ page, request }) => {
   await page.goto("/");
   const icons = page.locator('link[rel="icon"]');
   await expect(icons).toHaveCount(3);

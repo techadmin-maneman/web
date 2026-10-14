@@ -31,7 +31,7 @@ const TO_GATE: TryOnEvent[] = [
   { type: "lookDone" },
 ];
 
-describe("the try-on's machine", () => {
+describe("the try-on’s machine", () => {
   it("starts on the upload screen with nothing chosen", () => {
     expect(START).toMatchObject({ screen: "upload", demo: false, photo: null, consent: false, look: -1 });
     expect(START.returning).toBe(false);
@@ -71,7 +71,7 @@ describe("the try-on's machine", () => {
     expect(step(back, { type: "lookChosen", look: 1 }).look).toBe(1);
   });
 
-  it("names the looks screen's button for where the visitor is", () => {
+  it("names the looks screen’s button for where the visitor is", () => {
     expect(lookLabel(-1)).toBe(tryOn.looks.choose);
     expect(lookLabel(2)).toBe(tryOn.looks.continue);
   });
@@ -87,7 +87,7 @@ describe("the try-on's machine", () => {
     expect(step(START, { type: "back" })).toBe(START);
   });
 
-  it("shows a failure's own copy, and Choose another returns to the upload", () => {
+  it("shows a failure’s own copy, and Choose another returns to the upload", () => {
     const failed = step(walk(...TO_GATE), { type: "failed", kind: "busy" });
     expect(failed).toMatchObject({ screen: "error", errorKind: "busy" });
     expect(step(failed, { type: "again" }).screen).toBe("upload");
@@ -106,7 +106,7 @@ describe("the try-on's machine", () => {
     expect(step(walk(...TO_GATE.slice(0, 3)), { type: "alreadySent" }).screen).toBe("sent");
   });
 
-  it("keeps the gate's name and number across screens", () => {
+  it("keeps the gate’s name and number across screens", () => {
     const gate = walk(...TO_GATE);
     const typed = step(step(gate, { type: "nameTyped", name: "Asha" }), { type: "mobileTyped", mobile: "98100 00000" });
     const returned = step(step(typed, { type: "back" }), { type: "lookDone" });
@@ -114,7 +114,7 @@ describe("the try-on's machine", () => {
   });
 });
 
-describe("the try-on's previews (?state=, never in production)", () => {
+describe("the try-on’s previews (?state=, never in production)", () => {
   const preview = (screen: string, kind: string | null = null) => {
     const found = screenNamed(screen);
     if (found === undefined) throw new Error(`no screen ${screen}`);
@@ -135,12 +135,12 @@ describe("the try-on's previews (?state=, never in production)", () => {
     expect(preview("gate")).toMatchObject({ screen: "gate", demo: true, look: 0 });
   });
 
-  it("opens the sent screen with the gate's number, or a returning visitor's without one", () => {
+  it("opens the sent screen with the gate’s number, or a returning visitor’s without one", () => {
     expect(preview("sent")).toMatchObject({ screen: "sent", returning: false, mobile: tryOn.gate.mobilePlaceholder });
     expect(preview("sent", "returning")).toMatchObject({ screen: "sent", returning: true, mobile: "" });
   });
 
-  it("opens each error's copy, and the photograph's for a kind it does not know", () => {
+  it("opens each error’s copy, and the photograph’s for a kind it does not know", () => {
     expect(preview("error", "busy").errorKind).toBe("busy");
     expect(preview("error", "unavailable").errorKind).toBe("unavailable");
     expect(preview("error", "lookLimit").errorKind).toBe("photo");

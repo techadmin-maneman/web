@@ -21,13 +21,13 @@ const task = (id: string): Task => ({
 
 // A bare link to a client opened their Pieces, whatever the task was about.
 describe("where a task leads", () => {
-  it("leads every group to a tab the client's page has", () => {
+  it("leads every group to a tab the client’s page has", () => {
     for (const group of TASK_GROUPS) {
       expect(CLIENT_TABS, group).toContain(taskTabOf(group));
     }
   });
 
-  it("opens the client's page on the tab the task is about", () => {
+  it("opens the client’s page on the tab the task is about", () => {
     expect(taskClientPath("first_fit_to_book", CLIENT)).toBe(`/clients/${CLIENT}/visits`);
     expect(taskClientPath("referral_review", CLIENT)).toBe(`/clients/${CLIENT}/visits`);
     expect(taskClientPath("replacement_order", CLIENT)).toBe(`/clients/${CLIENT}/pieces`);
@@ -35,7 +35,7 @@ describe("where a task leads", () => {
     expect(taskClientPath("grievance", CLIENT)).toBe(`/clients/${CLIENT}/consents`);
   });
 
-  it("leads a task decided in its own section to its row there, and one done on the client's page nowhere else", () => {
+  it("leads a task decided in its own section to its row there, and one done on the client’s page nowhere else", () => {
     expect(decidedAt("number_change", task("94000000-0000-4000-8000-000000000001"))).toBe(
       "/number-changes#change-94000000-0000-4000-8000-000000000001",
     );

@@ -38,6 +38,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { LOSS_EXTENTS } from "../../config/booking.ts";
 import { TOLD_NOTICES } from "../../config/notices.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
+import { WindowHoursSchema } from "../schemas/booking.ts";
 import { openDays } from "../../domain/booking/open-windows.ts";
 import { isServed } from "../../domain/clients/service-area.ts";
 import { DISCOUNT_KINDS } from "../../policy/discount-codes.ts";
@@ -190,6 +191,7 @@ const ConsultationSchema = z
     }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
+    hours: WindowHoursSchema,
     area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
     credits: CreditsSchema,
     invite: InviteStateSchema,
@@ -236,6 +238,10 @@ const OpenWindowsSchema = z
               .object({ morning: z.boolean(), afternoon: z.boolean(), evening: z.boolean() })
               .strict()
               .openapi({ description: "true where booking that window now would be taken; false where it is full." }),
+            hours: z
+              .object({ morning: WindowHoursSchema, afternoon: WindowHoursSchema, evening: WindowHoursSchema })
+              .strict()
+              .openapi({ description: "Each window's hours that day, as ops set them." }),
           })
           .strict(),
       )

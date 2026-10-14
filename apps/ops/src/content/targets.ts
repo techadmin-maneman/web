@@ -5,7 +5,7 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const targets = {
   title: "Targets",
-  intro: "Each month's plan, city by city, which every scorecard shows beside the actual.",
+  intro: "Each month’s plan, city by city, which every scorecard shows beside the actual.",
   month: "Month",
   city: "City",
   measure: "Measure",
@@ -23,13 +23,13 @@ export const targets = {
   set: "Set",
   none: "No targets for this month.",
   columns: { city: "City", measure: "Measure", target: "Target", by: "Set by" },
-  remove: "Take off",
-  /** "Take off: Gurgaon · New clients" */
-  removeLabel: (city: string, measure: string) => `Take off: ${city} · ${measure}`,
+  remove: "Remove",
+  /** "Remove: Gurgaon · New clients" */
+  removeLabel: (city: string, measure: string) => `Remove: ${city} · ${measure}`,
   errors: {
-    month: "Pick a month from the list.",
-    city: "Pick a city from the list.",
-    target: "That is more than this measure takes.",
+    month: "Choose a month from the list.",
+    city: "Choose a city from the list.",
+    target: "Too high for this measure: a percentage goes up to 100, a count or an amount to 1,00,00,000.",
     invalid_request: "Type a whole number.",
     not_found: changed("Already taken off."),
     not_permitted: NOT_PERMITTED,
