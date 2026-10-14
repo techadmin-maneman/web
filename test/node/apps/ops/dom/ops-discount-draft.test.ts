@@ -3,7 +3,13 @@
 
 import { describe, expect, it } from "vitest";
 import { settings } from "../../../../../apps/ops/src/content/settings.ts";
-import { checkLines, codeError, EMPTY, isReady, requestOf } from "../../../../../apps/ops/src/discount-codes/discount-draft.ts";
+import {
+  checkLines,
+  codeError,
+  EMPTY,
+  isReady,
+  requestOf,
+} from "../../../../../apps/ops/src/discount-codes/discount-draft.ts";
 
 const copy = settings.discountCodes;
 
