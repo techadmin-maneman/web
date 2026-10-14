@@ -5,19 +5,17 @@ import { capsLook } from "@maneman/ui/Caps";
 import { messageLook } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { ChoiceCard } from "@maneman/ui/ChoiceCard";
-import { Checkbox, Fieldset, Label, TextInput } from "@maneman/ui/Field";
-import { MobileInput } from "@maneman/ui/MobileInput";
+import { Checkbox, Fieldset } from "@maneman/ui/Field";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { useEffect, useRef } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
-import { formatMobileField } from "@maneman/web-kit/mobile";
-import { MOST_NAME_LENGTH } from "@maneman/web-kit/names";
 import type { LossExtent } from "@rules/config/booking.ts";
 import { referral } from "../../content/referral.ts";
 import { booking, stageOptions } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
 import { fill } from "../../lib/text.ts";
 import { StageDrawing } from "../Drawings.tsx";
+import { MobileField, NameField } from "../PersonFields.tsx";
 import styles from "./Invite.module.css";
 import type { PersonField, PersonFields } from "./useTurnstileForm.ts";
 
@@ -89,57 +87,27 @@ export function PersonFieldset(props: {
   onChange: (fields: PersonFields) => void;
 }) {
   const { fields, idPrefix } = props;
-  const nameBad = props.bad.includes("name");
-  const mobileBad = props.bad.includes("mobile");
   return (
     <>
       <div class={styles.fields}>
-        <div>
-          <Label htmlFor={`${idPrefix}-name`}>{referral.form.name}</Label>
-          <TextInput
-            id={`${idPrefix}-name`}
-            value={fields.name}
-            placeholder={referral.form.namePlaceholder}
-            autocomplete="name"
-            maxLength={MOST_NAME_LENGTH}
-            aria-required="true"
-            aria-invalid={nameBad}
-            aria-describedby={nameBad ? `${idPrefix}-name-error` : undefined}
-            onInput={(event) => {
-              props.onChange({ ...fields, name: event.currentTarget.value });
-            }}
-          />
-          <div aria-live="polite">
-            {nameBad && (
-              <div id={`${idPrefix}-name-error`} class={messageLook({ tone: "error", className: styles.error })}>
-                {referral.form.nameError}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor={`${idPrefix}-mobile`}>{referral.form.mobile}</Label>
-          <MobileInput
-            prefix="+91"
-            id={`${idPrefix}-mobile`}
-            value={fields.mobile}
-            placeholder={referral.form.mobilePlaceholder}
-            aria-required="true"
-            aria-invalid={mobileBad}
-            aria-describedby={mobileBad ? `${idPrefix}-mobile-error` : undefined}
-            onInput={(event) => {
-              props.onChange({ ...fields, mobile: formatMobileField(event.currentTarget.value) });
-            }}
-          />
-          <div aria-live="polite">
-            {mobileBad && (
-              <div id={`${idPrefix}-mobile-error`} class={messageLook({ tone: "error", className: styles.error })}>
-                {referral.form.mobileError}
-              </div>
-            )}
-          </div>
-        </div>
+        <NameField
+          id={`${idPrefix}-name`}
+          value={fields.name}
+          bad={props.bad.includes("name")}
+          words={referral.form}
+          onInput={(name) => {
+            props.onChange({ ...fields, name });
+          }}
+        />
+        <MobileField
+          id={`${idPrefix}-mobile`}
+          value={fields.mobile}
+          bad={props.bad.includes("mobile")}
+          words={referral.form}
+          onInput={(mobile) => {
+            props.onChange({ ...fields, mobile });
+          }}
+        />
       </div>
 
       <ConsentBox
@@ -156,6 +124,36 @@ export function PersonFieldset(props: {
   );
 }
 
+/** An agreement's box: its words, and a note after them, "Required" or "Optional". */
+export function AgreementBox(props: {
+  checked: boolean;
+  label: string;
+  note: string;
+  onChange: (checked: boolean) => void;
+  /** Where the agreement is required: marked and described by its error. */
+  required?: { bad: boolean; errorId: string };
+}) {
+  const { required } = props;
+  return (
+    <Checkbox
+      className={styles.consent}
+      checked={props.checked}
+      aria-required={required === undefined ? undefined : "true"}
+      aria-invalid={required?.bad}
+      aria-describedby={required?.bad === true ? required.errorId : undefined}
+      onChange={(event) => {
+        props.onChange(event.currentTarget.checked);
+      }}
+      label={
+        <span class={styles.consentText}>
+          {props.label}
+          {props.note !== "" && <span class={styles.consentNote}>{` ${props.note}`}</span>}
+        </span>
+      }
+    />
+  );
+}
+
 /** The agreement a form needs, required, with its error once the form is checked. */
 export function ConsentBox(props: {
   checked: boolean;
@@ -168,21 +166,12 @@ export function ConsentBox(props: {
   const { bad, idPrefix } = props;
   return (
     <>
-      <Checkbox
-        className={styles.consent}
+      <AgreementBox
         checked={props.checked}
-        aria-required="true"
-        aria-invalid={bad}
-        aria-describedby={bad ? `${idPrefix}-consent-error` : undefined}
-        onChange={(event) => {
-          props.onChange(event.currentTarget.checked);
-        }}
-        label={
-          <span class={styles.consentText}>
-            {props.label}
-            {props.note !== "" && <span class={styles.consentNote}>{` ${props.note}`}</span>}
-          </span>
-        }
+        label={props.label}
+        note={props.note}
+        onChange={props.onChange}
+        required={{ bad, errorId: `${idPrefix}-consent-error` }}
       />
       <div aria-live="polite">
         {bad && (

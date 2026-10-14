@@ -2,19 +2,18 @@
 // (../useNumberCode.ts), the claim that saves where the look goes, and only then the look asked for. A refusal the
 // visitor can act on is a line on the gate, or marks the field it names; any other goes to the error screen.
 
-import { useMemo, useRef, useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { isPersonName } from "@maneman/web-kit/names";
 import type { TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { looks, notices, stageOptions, tryOn } from "../../content/site.ts";
 import { track } from "../../lib/analytics.ts";
 import { claimLook, jobStatus, type Code } from "../../lib/api.ts";
-import { keyPerRequest } from "../../lib/idempotency.ts";
 import { startRender, type Outcome, type Uploaded } from "../../lib/tryon.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
 import { readAttribution } from "../../lib/visit.ts";
-import { useInvalidFocus } from "../useInvalidFocus.ts";
 import { useNumberCode } from "../useNumberCode.ts";
+import { useSubmission } from "../useSubmission.ts";
 import type { GateCode } from "./Gate.tsx";
 import type { TryOnEvent, TryOnState } from "./machine.ts";
 
@@ -73,32 +72,13 @@ async function uploaded(
 
 export function useGate({ state, send, uploading, jobId, turnstile, fail, refused }: TryOnWork) {
   const { demo, name, mobile } = state;
-  const [touched, setTouched] = useState(false);
   // Sending, and, past a moment's wait on the photograph's upload, waiting for it.
   const [sending, setSending] = useState<false | "sending" | "waiting">(false);
-  const [failure, setFailure] = useState<string | null>(null);
-  // The gate's fields the last refusal named.
-  const [named, setNamed] = useState<readonly string[]>([]);
-  const form = useRef<HTMLFormElement>(null);
-  const showInvalid = useInvalidFocus(form);
+  const submission = useSubmission(GATE_FIELDS);
+  const { touched, failure, setFailure, refusedFields: named, form, keyFor, markRefused } = submission;
   const numberCode = useNumberCode();
-  const keyFor = useMemo(keyPerRequest, []);
   // The try-on whose claim analytics has counted.
   const claimCounted = useRef<string | null>(null);
-
-  /** A refusal that names the gate's fields marks them and focuses the first; false when it names none. */
-  function markRefused(code: Code, fields: readonly string[]): boolean {
-    const marked = code === "invalid_request" ? fields.filter((field) => GATE_FIELDS.includes(field)) : [];
-    setNamed(marked);
-    if (marked.length === 0) return false;
-    showInvalid();
-    return true;
-  }
-
-  /** A field the API refused is no longer marked once it has been changed. */
-  function unmark(field: string) {
-    setNamed((marked) => marked.filter((each) => each !== field));
-  }
 
   /** A claim refused: a line on the gate where the visitor can act on it, else the error screen. */
   async function claimRefused(code: Code, fields: readonly string[], job: string) {
@@ -119,7 +99,6 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
     }
     // A code entered more than 30 minutes ago no longer proves the number: the next press sends a new one.
     if (code === "number_not_proved") numberCode.forget();
-    if (code === "invalid_request") setTouched(true);
     if (markRefused(code, fields)) return;
     setFailure(GATE_REFUSALS[code] ?? tryOn.gate.errors.other);
   }
@@ -167,8 +146,7 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
   /** A WhatsApp code to the number typed, under a fresh Turnstile token. */
   async function askForCode(digits: string) {
     setSending("sending");
-    setFailure(null);
-    setNamed([]);
+    submission.starting();
     const token = (await turnstile.current?.token()) ?? null;
     if (token === null) {
       setFailure(tryOn.gate.errors.turnstile);
@@ -196,9 +174,7 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
     if (sending || numberCode.checking) return;
     const digits = mobileDigits(mobile);
     if (!isPersonName(name) || digits === null) {
-      setTouched(true);
-      setFailure(null);
-      showInvalid();
+      submission.stopAtFields();
       return;
     }
     if (demo) {
@@ -206,8 +182,7 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
       return;
     }
 
-    setFailure(null);
-    setNamed([]);
+    submission.starting();
     const numberCodeId = await provedNumber(digits);
     if (numberCodeId === null) return;
     setSending("sending");
@@ -248,11 +223,11 @@ export function useGate({ state, send, uploading, jobId, turnstile, fail, refuse
     code,
     form,
     onName: (typed: string) => {
-      unmark("name");
+      submission.unmark((field) => field === "name");
       send({ type: "nameTyped", name: typed });
     },
     onMobile: (typed: string) => {
-      unmark("mobile");
+      submission.unmark((field) => field === "mobile");
       send({ type: "mobileTyped", mobile: typed });
     },
     onSubmit: (event: Event) => void submit(event),

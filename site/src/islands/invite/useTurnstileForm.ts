@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { isPersonName } from "@maneman/web-kit/names";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { referral } from "../../content/referral.ts";
 import type { Answer, Code } from "../../lib/api.ts";
-import { keyPerRequest } from "../../lib/idempotency.ts";
-import { useInvalidFocus } from "../useInvalidFocus.ts";
+import { useSubmission } from "../useSubmission.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
 
 /** What both forms hold: the name, the number and the agreement. */
@@ -96,15 +95,10 @@ export function useTurnstileForm(
   given: PersonFields = { name: "", mobile: "", consent: false },
 ) {
   const [fields, setFields] = useState<PersonFields>(given);
-  const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
-  // The fields the last refusal named that the form marks.
-  const [refusedFields, setRefusedFields] = useState<readonly string[]>([]);
   const box = useRef<HTMLDivElement>(null);
-  const element = useRef<HTMLFormElement>(null);
-  const keyFor = useMemo(keyPerRequest, []);
-  const showInvalid = useInvalidFocus(element);
+  const submission = useSubmission(marks);
+  const { touched, failure, setFailure, refusedFields, form: element, keyFor } = submission;
 
   const { widget, ensure } = useFormWidget(element, box, siteKey);
 
@@ -116,21 +110,13 @@ export function useTurnstileForm(
 
   /** A change to the person's fields. A field the API refused is no longer marked once it has been changed. */
   function changeFields(next: PersonFields) {
-    setRefusedFields((refused) => refused.filter((field) => !isPersonField(field) || next[field] === fields[field]));
+    submission.unmark((field) => isPersonField(field) && next[field] !== fields[field]);
     setFields(next);
   }
 
   /** A refusal: fields the form marks are marked and the first focused; any other refusal is said by the button. */
   function refused(code: Code, named: readonly string[]) {
-    const marked = named.filter((field) => marks.includes(field));
-    if (code === "invalid_request") setTouched(true);
-    setRefusedFields(marked);
-    if (marked.length === 0) {
-      setFailure(refusal(code));
-      return;
-    }
-    setFailure(null);
-    showInvalid();
+    if (!submission.markRefused(code, named)) setFailure(refusal(code));
   }
 
   /**
@@ -148,14 +134,11 @@ export function useTurnstileForm(
     event.preventDefault();
     if (sending) return;
     if (!complete || problems.length > 0) {
-      setTouched(true);
-      setFailure(null);
-      showInvalid();
+      submission.stopAtFields();
       return;
     }
     setSending(true);
-    setFailure(null);
-    setRefusedFields([]);
+    submission.starting();
     const token = (await ensure()?.token()) ?? null;
     if (token === null) {
       setFailure(referral.errors.turnstile);

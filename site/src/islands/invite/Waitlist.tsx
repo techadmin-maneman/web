@@ -1,4 +1,3 @@
-import { Checkbox } from "@maneman/ui/Field";
 import { useState } from "preact/hooks";
 import type { LossExtent } from "@rules/config/booking.ts";
 import { referral } from "../../content/referral.ts";
@@ -9,6 +8,7 @@ import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
 import type { Listing } from "./Done.tsx";
 import {
+  AgreementBox,
   ConsentBox,
   ExtentFieldset,
   ForPincode,
@@ -111,19 +111,7 @@ export function Waitlist(props: FormProps & { person: PersonFields | null; onLis
         />
       )}
 
-      <Checkbox
-        className={styles.consent}
-        checked={alert}
-        onChange={(event) => {
-          setAlert(event.currentTarget.checked);
-        }}
-        label={
-          <span class={styles.consentText}>
-            {waitlist.launchAlert}
-            <span class={styles.consentNote}>{` ${waitlist.optional}`}</span>
-          </span>
-        }
-      />
+      <AgreementBox checked={alert} label={waitlist.launchAlert} note={waitlist.optional} onChange={setAlert} />
 
       {remembered !== null && (
         <RememberedInvite

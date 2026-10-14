@@ -1,0 +1,5 @@
+/* The name and mobile fields' errors (./PersonFields.tsx). */
+
+.error {
+  margin-top: var(--sp-8);
+}
