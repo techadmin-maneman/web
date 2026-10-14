@@ -49,11 +49,22 @@ const PATTERNS = [
   /\bline-height\s*:\s*\d*\.?\d+(?![\w%])/g,
   // A line's weight in a drawing, which a size names as any other does.
   /\bstroke-width\s*:\s*\d/g,
+  // A print or a type unit: points, millimetres, centimetres, characters and x-heights.
+  /\b\d+(?:\.\d+)?(?:pt|mm|cm|ch|ex)\b/g,
+  // A layer, and an opacity that is neither none nor all.
+  /\bz-index\s*:\s*-?\d+/g,
+  /\bopacity\s*:\s*(?!(?:0|1)\s*[;}])\d*\.?\d+/g,
 ] as const;
 
-/** Comments and media conditions, which cannot use custom properties, taken out. */
+/**
+ * Comments, media conditions and @page rules taken out: a condition, and a printed page's size, cannot use custom
+ * properties. A condition's widths are held to the one list in packages/brand/breakpoints.ts instead.
+ */
 export function withoutCommentsAndConditions(css: string): string {
-  return css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@media[^{]*\{/g, "@media {");
+  return css
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/@media[^{]*\{/g, "@media {")
+    .replace(/@page[^{]*\{[^}]*\}/g, "");
 }
 
 /**

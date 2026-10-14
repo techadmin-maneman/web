@@ -22,7 +22,7 @@
 
   .radio {
     position: absolute;
-    z-index: 1;
+    z-index: var(--z-raised);
     inset: 0;
     width: 100%;
     height: 100%;

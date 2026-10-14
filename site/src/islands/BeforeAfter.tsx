@@ -7,6 +7,7 @@
 
 import { capsLook } from "@maneman/ui/Caps";
 import { RangeInput } from "@maneman/ui/Field";
+import { Icon } from "@maneman/ui/Icon";
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { ICONS } from "@maneman/brand/icons";
@@ -46,19 +47,7 @@ export default function BeforeAfter(props: Props) {
       <div class={styles.line} />
       <div class={styles.handle}>
         {[ICONS.handleLeft, ICONS.handleRight].map((path) => (
-          <svg
-            key={path}
-            viewBox="0 0 24 24"
-            width={15}
-            height={15}
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            aria-hidden="true"
-          >
-            <path d={path} />
-          </svg>
+          <Icon key={path} d={path} size="xs" />
         ))}
       </div>
       <RangeInput

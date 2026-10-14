@@ -57,6 +57,15 @@ describe("icons", () => {
     );
   });
 
+  // A drawing's line was written as 1.4, 1.5, 1.6, 1.65, 1.7, 1.8, 2 or 2.6, wherever it was drawn.
+  it("is drawn at the set's strokes, never one written out", () => {
+    const drawn = ["apps/app/src", "apps/ops/src", "apps/tech/src", "packages/ui", "site/src"]
+      .flatMap(filesUnder)
+      .filter((path) => /\.(tsx|astro)$/.test(path))
+      .filter((path) => /stroke-?[wW]idth=\{?"?\d/.test(readFileSync(path, "utf8")));
+    expect(drawn).toEqual([]);
+  });
+
   it("ICONS is frozen as the Phase 1 site draws it", () => {
     // A change here changes the site's island bundles: add a glyph to a new set instead.
     expect(createHash("sha256").update(JSON.stringify(ICONS)).digest("hex")).toBe(

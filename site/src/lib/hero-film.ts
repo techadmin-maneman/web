@@ -1,7 +1,9 @@
 // When the hero film plays by itself, and which cut a screen gets. A visitor can always start it with Play.
 
+import { MEDIA } from "@maneman/brand/breakpoints";
+
 /** Screens this narrow get the phone cut, the film's upright centre (heroFootage.phoneVideo in content/site.ts). */
-export const PHONE_SCREEN = "(max-width: 600px)";
+export const PHONE_SCREEN = MEDIA.phone;
 
 /** What Chromium says of the visitor's connection (navigator.connection); other browsers say nothing. */
 export interface Connection {

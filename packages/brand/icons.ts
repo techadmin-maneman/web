@@ -77,5 +77,8 @@ export const TAB_ICONS = {
   refer: APP_ICONS.share,
 } as const;
 
+/** The stage drawings' two lines: the head's outline, and the hair and the thinning zone within it. */
+export const DRAWING_STROKES = { outline: 1.4, detail: 1.1 } as const;
+
 /** The head outline behind the stage drawings, in a 64 × 74 box. */
 export const HEAD_OUTLINE = "M32 5 C47 5 55 19 55 39 C55 58 45 69 32 69 C19 69 9 58 9 39 C9 19 17 5 32 5 Z";

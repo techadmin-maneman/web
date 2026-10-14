@@ -141,6 +141,18 @@
   --duration-phrase: 1200ms; /* one phrase of the hero's opening line, faded in, held and faded out */
   --ease-house: cubic-bezier(0.22, 0.61, 0.36, 1);
 
+  /* ---- Layers: what sits over what, from low to high ---------------------- */
+  --z-raised: 1; /* a part over its neighbour: a radio over its card, the hero's words over its film */
+  --z-sticky: 2; /* a table's head or first column, held as it scrolls */
+  --z-sticky-corner: 3; /* where a held head and a held column meet */
+  --z-consent: 30; /* the cookie bar, beneath the header */
+  --z-header: 40; /* the site's header */
+  --z-bar: 50; /* a bar fixed at the foot */
+  --z-skip: 100; /* the skip link, over any bar a page fixes in place */
+
+  /* ---- Opacity ---------------------------------------------------------------- */
+  --dim: 0.85; /* a photo held back behind what is laid over it */
+
   /* ---- The viewport: no board draws these; each lets a layout reach past its column -------------- */
   --app-column-max: 480px; /* the client app's column, filling a phone wider than the design's 390 px */
   --photo-max-h: 56dvh; /* a photograph opened large, with room for its caption beneath */

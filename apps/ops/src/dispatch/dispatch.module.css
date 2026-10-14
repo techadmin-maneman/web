@@ -100,7 +100,7 @@
 .day {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: var(--z-sticky);
   border-bottom: var(--hairline) solid var(--text);
   background: var(--paper);
 }
@@ -108,14 +108,14 @@
 .tech {
   position: sticky;
   left: 0;
-  z-index: 1;
+  z-index: var(--z-raised);
   border-bottom: var(--hairline) solid var(--paper-line);
   background: var(--paper);
 }
 
 .corner {
   left: 0;
-  z-index: 3;
+  z-index: var(--z-sticky-corner);
 }
 
 .day {
@@ -604,7 +604,7 @@
 
 /* ---- A narrow window, or 200% zoom: the tray goes beneath the grid --- */
 
-@media (max-width: 1000px) {
+@media (max-width: 1023px) {
   .area {
     flex-direction: column;
     overflow-y: auto;

@@ -165,7 +165,7 @@ const showFootage = isShown(heroFootage);
   /* The way to stop the footage (WCAG 2.2.2), at the corner the placeholder tag leaves free (ADR 0022). */
   .pause {
     position: absolute;
-    z-index: 1;
+    z-index: var(--z-raised);
     top: var(--hero-tag-top);
     right: var(--gutter);
   }
