@@ -337,7 +337,7 @@ Asked on the same day about a separate consent to the history, **the owner ruled
      - `--tracking-number`, 0.04 em: a mobile number spaced for reading.
      - `--tech-row`, 88 px, and `--tech-time`, 76 px: the technician board's job row, and its time column, which holds "12:30 pm" on one line.
 
-   A new size starts as a scale token; one that cannot is added to this list and the test's together.
+A new size starts as a scale token; one that cannot is added to this list and the test's together.
 
 ## Inputs still owed
 

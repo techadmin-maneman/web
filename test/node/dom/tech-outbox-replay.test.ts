@@ -8,7 +8,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { onSessionEnded } from "../../../apps/tech/src/api.ts";
 import { wipe } from "../../../apps/tech/src/store/db.ts";
 import { keptArrival, keptJob } from "../../../apps/tech/src/store/jobs.ts";
-import { events, frames, held, keepFrame, queue, replay, unsentJobs } from "../../../apps/tech/src/store/outbox.ts";
+import {
+  events,
+  frames,
+  held,
+  keepFrame,
+  queue,
+  replay,
+  STUCK,
+  unsentJobs,
+} from "../../../apps/tech/src/store/outbox.ts";
+import { MOST_TRIES } from "../../../apps/tech/src/store/replay.ts";
 import { api, accepted, TAKE, answerPhotos } from "./tech-outbox-replay-fixtures.ts";
 
 afterEach(async () => {
@@ -26,6 +36,30 @@ describe("sending what the phone holds", () => {
     expect(sent.map((call) => call.url)).toEqual(["/api/tech/jobs/a/start", "/api/tech/jobs/a/checklist"]);
     expect(sent.map((call) => call.eventId)).toEqual([start.id, checklist.id]);
     expect(await events()).toEqual([]);
+  });
+
+  it("waits longer after each failure at the API's end while other jobs go on, and stops as stuck after its tries", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2030-09-01T04:00:00.000Z"));
+    await queue("start", "a", null);
+    await queue("start", "b", null);
+    const failing = { status: 500, json: { error: { code: "internal_error", request_id: "r", fields: [] } } };
+    const sent = api((_method, url) => (url.startsWith("/api/tech/jobs/a/") ? failing : accepted));
+
+    await replay();
+    let [waiting] = await events();
+    expect(waiting).toMatchObject({ job_id: "a", attempts: 1, state: "waiting" });
+    expect(waiting?.next_at ?? 0).toBeGreaterThan(Date.now());
+    expect(sent.map((call) => call.url)).toContain("/api/tech/jobs/b/start");
+
+    for (let tried = 2; tried <= MOST_TRIES; tried += 1) {
+      vi.setSystemTime((waiting?.next_at ?? Date.now()) + 1);
+      await replay();
+      [waiting] = await events();
+    }
+    expect(waiting).toMatchObject({ job_id: "a", note: STUCK });
+    expect(sent.filter((call) => call.url === "/api/tech/jobs/a/start")).toHaveLength(MOST_TRIES);
+    vi.useRealTimers();
   });
 
   it("keeps everything when there is no signal, to send later", async () => {
