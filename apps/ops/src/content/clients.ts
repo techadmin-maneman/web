@@ -313,8 +313,7 @@ export const clients = {
         credit: "Paid with a free service visit.",
         nothing: "Nothing paid.",
       },
-      /** Where a refund goes, by the payment's method. */
-      /** Razorpay's methods, which Razorpay adds to: one not named here is otherDestination. */
+      /** Where a refund goes, by the payment's method: Razorpay adds methods, and one not named here is otherDestination. */
       destinations: { upi: "UPI", card: "card", netbanking: "bank account" } as Readonly<
         Record<string, string | undefined>
       >,
