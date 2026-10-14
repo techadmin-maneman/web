@@ -1,6 +1,6 @@
-// A client's pieces (docs/prompts/phase2-backend.md, "Pieces tab"), recorded as the technician's piece step lands.
+// A client's pieces, recorded as the technician's piece step lands.
 //
-// "For each piece: code, base, fitted date, supplier lot, replacement due date, and failure with reason." The
+// Each piece keeps its code, base, fitted date, supplier lot, replacement due date, and failure with its reason. The
 // replacement due date is computed from the base's cycle (src/config/pieces.ts).
 //
 // The technician's label lookup reads these rows, so scanning a label works with no signal.

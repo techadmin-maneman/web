@@ -1,16 +1,14 @@
 // The technician app's outbox, landing on the server
 // (docs/decisions/0038-offline-writes.md).
 //
-// "Offline writes from the technician app are queued on the device with a
-// client-generated ID, and sent in order when the phone is back online. The
-// server makes each write idempotent on that ID." The ID is unique per job, so
+// The technician app queues each write on the phone with an ID of its own, and sends them in order once the phone
+// has signal; each write lands once on that ID. The ID is unique per job, so
 // a phone that replays its outbox lands each event once and gets the first
 // answer back: the event that landed, or the refusal of one that was
 // superseded.
 //
-// "If the job has changed underneath (for example ops reassigned the job while
-// the phone was offline), the write is rejected with 409 superseded. The
-// technician sees what changed. Nothing is merged silently." The rejection is recorded as
+// A write to a job that changed underneath it, given to another technician while the phone was offline, say, is refused
+// as superseded and the technician sees what changed: nothing is merged silently. The refusal is recorded as
 // an event too, marked superseded, so the record says the phone tried. A job
 // moved to another time is superseded like one given to another technician, and
 // one given to another technician names them to the phone, by first name, with

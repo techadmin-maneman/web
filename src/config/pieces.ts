@@ -1,5 +1,4 @@
-// Pieces, as the pieces tab reads them (docs/prompts/phase2-backend.md,
-// "Pieces tab"). These are the figures computed from a piece as it is recorded.
+// Pieces, as the pieces tab reads them. These are the figures computed from a piece as it is recorded.
 //
 // A piece falls due for replacement 180 days after it is fitted, whatever its
 // base. Ops may give a base a cycle of its own in the console (Settings · Rules).

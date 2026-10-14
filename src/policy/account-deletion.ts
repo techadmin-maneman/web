@@ -1,4 +1,4 @@
-// What deleting an account deletes, and when (docs/prompts/phase2-backend.md, "Business rules, decided").
+// What deleting an account deletes, and when (docs/decisions/0066-erasure-all-or-nothing.md).
 // How soon a request is decided, and what stands in the way of the erasure. A request is decided in the console
 // (src/domain/privacy/deletion.ts); the erasure that follows, which deletes the photographs at once and blanks the person
 // while the invoices stay in Books, is src/domain/privacy/erasure.ts.
@@ -9,7 +9,7 @@ import { VISIT_LIVE } from "../config/statuses.ts";
 export const DELETION_DECIDED_WITHIN_DAYS = 30;
 
 /**
- * Ours, not the prompt's (docs/decisions/0066-erasure-all-or-nothing.md): an
+ * What stands in an erasure's way (docs/decisions/0066-erasure-all-or-nothing.md): an
  * account is not erased while a visit of theirs is still to happen, or a booking
  * of theirs is paid for or free but not yet a visit; while we hold a payment of
  * theirs with no visit behind it, or owe them a cancelled visit's refund; or

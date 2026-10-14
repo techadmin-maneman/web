@@ -1,5 +1,4 @@
-// The client app's visits and photographs (docs/prompts/phase2-backend.md,
-// "Read endpoints").
+// The client app's visits and photographs.
 //
 //   GET /api/visits                 upcoming and past, with what they add up to
 //   GET /api/visits/:id             one visit, with its photographs

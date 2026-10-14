@@ -1,5 +1,4 @@
-// The client app's payments and documents (docs/prompts/phase2-backend.md,
-// "Read endpoints"), from the payments mirror (docs/decisions/0044-payments-mirror.md)
+// The client app's payments and documents, from the payments mirror (docs/decisions/0044-payments-mirror.md)
 // and Zoho Books (docs/decisions/0032-fsm-mirror.md).
 //
 //   GET /api/payments                what is owed, then one list of payments and refunds, newest first

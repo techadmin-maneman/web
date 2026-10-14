@@ -1,6 +1,4 @@
-// Who may log in to the technician app, and the phone they log in on
-// (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the
-// designs"; docs/decisions/0029-sessions.md).
+// Who may log in to the technician app, and the phone they log in on (docs/decisions/0029-sessions.md).
 //
 // The code is the client's: same table, same ten minutes, same five wrong
 // attempts (docs/decisions/0030-one-time-codes.md). What differs is the

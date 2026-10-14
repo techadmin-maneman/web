@@ -195,7 +195,7 @@ export const NOTICES = [
       "No password, no account, no marketing. Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days. If you book a visit in that time, the copy stays in your Mane Man account as your before photo, and the simulation until your first fit is photographed.",
     ],
   },
-  // The five consents (docs/prompts/phase2-backend.md, "Consents"), as the client app's profile names them.
+  // The five consents (docs/decisions/0049-dpdp.md), as the client app's profile names them.
   // Counsel's sign-off is outstanding.
   {
     version: "photos-own-record-v1",

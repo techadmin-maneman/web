@@ -4,10 +4,6 @@
 
 import { addDays } from "../lib/india-time.ts";
 
-// Its rules, as the brief states them:
-// - credit-expiry reminders at 30 and 7 days
-// - a booking made before expiry keeps the credit
-
 export const CREDIT_REMINDER_KEYS = ["first", "last"] as const;
 /** How many days before their last day a client is reminded of free service visits: first, and last. */
 export type CreditReminderDays = Readonly<Record<(typeof CREDIT_REMINDER_KEYS)[number], number>>;

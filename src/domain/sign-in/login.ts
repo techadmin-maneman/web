@@ -1,7 +1,6 @@
 // Who may log in to the client app, and the one-time-code challenges that let
-// them (docs/decisions/0030-one-time-codes.md). The rule, as the brief states it
-// (docs/prompts/phase2-backend.md, "Business rules, decided"): "Open to any
-// person with a booked consultation or any later appointment. No password."
+// them (docs/decisions/0030-one-time-codes.md): anyone with a consultation booked, or any visit after it, with a code
+// to their number and no password, so a client has nothing to remember.
 
 import type { CodeChannel } from "../../providers/codes.ts";
 import {

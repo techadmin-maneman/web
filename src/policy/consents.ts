@@ -1,9 +1,9 @@
-// What a client consents to (docs/prompts/phase2-backend.md, "Business rules, decided").
+// What a client consents to (docs/decisions/0049-dpdp.md).
 // The purposes, each with its own date. A client switches each in src/domain/clients/profile.ts;
 // ops read them in the console (src/routes/ops/client-consents.ts) and never write one. Each consent also records where it
 // was given (docs/decisions/0094-where-a-consent-was-given.md).
 
-/** The five purposes, in the prompt's order. */
+/** The five purposes, in the order the profile lists them. */
 export const CONSENT_PURPOSES = [
   "photos_own_record",
   "photos_referral_cards",

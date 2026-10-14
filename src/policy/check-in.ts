@@ -1,4 +1,4 @@
-// Arriving at a job (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
+// Arriving at a job: the technician is checked in where the client is, so a no-show's charge stands on evidence.
 //
 // The address's coordinates come from the geocoder, Google where one is connected
 // (docs/decisions/0054-address-capture.md). Until an address has them there is

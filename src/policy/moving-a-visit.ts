@@ -1,4 +1,4 @@
-// A client moving or cancelling a visit, and ops moving one (docs/prompts/phase2-backend.md, "Business rules, decided").
+// A client moving or cancelling a visit, and ops moving one.
 // What a client's change costs, and what a move by ops does
 // (docs/decisions/0046-moving-and-cancelling.md, docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The
 // terms are worked out in src/domain/visits/visit-changes.ts, and a move is booked in src/domain/booking/bookings.ts.

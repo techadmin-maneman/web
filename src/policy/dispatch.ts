@@ -1,12 +1,11 @@
-// The dispatch board (docs/prompts/phase2-backend.md, "Technician and dispatch rules, from the designs").
-// The clash check, and the reasons a move must carry (docs/decisions/0034-clash-check.md).
+// The dispatch board: the clash check, and the reasons a move must carry (docs/decisions/0034-clash-check.md).
 //
 // The board counts in slots and the day in half-slots, so a replacement's slot
 // and a half is a whole number (docs/decisions/0035-window-slot-map.md). Where a
-// visit fits inside a window is src/domain/booking/occupancy.ts; the clash check below
-// is the prompt's, and both booking and dispatch answer to it. A block's
-// size now comes from its service's length rather than its kind's alone, by the
-// one rule in src/policy/visit-length.ts, which gives the prompt's four sizes for
+// visit fits inside a window is src/domain/booking/occupancy.ts; both booking and
+// dispatch answer to the clash check below. A block's
+// size comes from its service's length rather than its kind's alone, by the
+// one rule in src/policy/visit-length.ts, which gives the board's four sizes for
 // the four kinds' own lengths (docs/decisions/0085-services-ops-can-edit.md).
 //
 // A move is written to our own database, and ops record leave in the console, where the same clash check reads it

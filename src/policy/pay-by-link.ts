@@ -4,10 +4,6 @@
 
 import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
-// Its rules, as the brief states them:
-// - What Book a visit in the console covers: every kind, consultation, first fit, one visit, service, replacement. A
-//   paid visit goes out as a payment link; a free or credit visit books at once.
-
 export const PAYMENT_LINK_KEYS = ["holds_hours", "closes_before_hours", "pay_within_days"] as const;
 /**
  * The longest a console link keeps its slot; how long before the visit it closes at the latest, so the technician
