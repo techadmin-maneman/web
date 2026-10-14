@@ -50,9 +50,43 @@ function refusal(code: Code): string {
 }
 
 /**
+ * A form's Turnstile widget: made once the visitor starts on the form and removed with it, so no challenge runs for a
+ * page that is only read. `ensure()` makes it for a form sent without ever being focused, as a button pressed in
+ * Safari leaves it.
+ */
+function useFormWidget(
+  element: { readonly current: HTMLFormElement | null },
+  box: { readonly current: HTMLDivElement | null },
+  siteKey: string,
+) {
+  const widget = useRef<TurnstileWidget | null>(null);
+  useEffect(() => {
+    const form = element.current;
+    const container = box.current;
+    if (form === null || container === null) return;
+    const start = () => {
+      widget.current ??= turnstileWidget(container, siteKey);
+    };
+    form.addEventListener("focusin", start);
+    form.addEventListener("input", start);
+    return () => {
+      form.removeEventListener("focusin", start);
+      form.removeEventListener("input", start);
+      void widget.current?.remove();
+      widget.current = null;
+    };
+  }, [element, box, siteKey]);
+  const ensure = () => {
+    if (widget.current === null && box.current !== null) widget.current = turnstileWidget(box.current, siteKey);
+    return widget.current;
+  };
+  return { widget, ensure };
+}
+
+/**
  * What the consultation and the waitlist forms share: the person's fields, whether they have been checked, and
- * sending them with a Turnstile token. The widget is made when the form appears: the box it renders into does not
- * exist until the pincode has decided which form the page shows. `marks` are the fields, by the API's names, that the
+ * sending them with a Turnstile token. The widget is made once the visitor starts on the form, and removed with it:
+ * the box it renders into does not exist until the pincode has decided which form the page shows. `marks` are the fields, by the API's names, that the
  * form marks itself when a refusal names them; a refusal that names none of them is said by the button. On /book the
  * name and number are given first (./AboutYou.tsx), and the forms after it start from them.
  */
@@ -69,13 +103,10 @@ export function useTurnstileForm(
   const [refusedFields, setRefusedFields] = useState<readonly string[]>([]);
   const box = useRef<HTMLDivElement>(null);
   const element = useRef<HTMLFormElement>(null);
-  const widget = useRef<TurnstileWidget | null>(null);
   const keyFor = useMemo(keyPerRequest, []);
   const showInvalid = useInvalidFocus(element);
 
-  useEffect(() => {
-    if (box.current !== null) widget.current = turnstileWidget(box.current, siteKey);
-  }, [siteKey]);
+  const { widget, ensure } = useFormWidget(element, box, siteKey);
 
   const problems = personProblems(fields);
   /** The person's fields to mark: those wrong once the form was checked, and those the API refused. */
@@ -125,7 +156,7 @@ export function useTurnstileForm(
     setSending(true);
     setFailure(null);
     setRefusedFields([]);
-    const token = (await widget.current?.token()) ?? null;
+    const token = (await ensure()?.token()) ?? null;
     if (token === null) {
       setFailure(referral.errors.turnstile);
       setSending(false);

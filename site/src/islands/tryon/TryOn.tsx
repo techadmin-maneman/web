@@ -85,9 +85,6 @@ function TryOnFlow(props: Props) {
       send({ type: "preview", screen: wanted, kind: params.get("kind") });
       return;
     }
-    if (turnstileBox.current !== null) {
-      turnstile.current = turnstileWidget(turnstileBox.current, props.turnstileSiteKey);
-    }
     const asked = onArrival();
     arriving.current = asked;
     void asked.then((arrival) => {
@@ -95,7 +92,20 @@ function TryOnFlow(props: Props) {
       if (arrival === "hadLook") send({ type: "alreadySent" });
       if (arrival === "unavailable") send({ type: "failed", kind: "unavailable" });
     });
-  }, [props.allowStateSwitch, props.turnstileSiteKey]);
+  }, [props.allowStateSwitch]);
+
+  // The widget, and the challenge it runs, start once a photograph is chosen, not as the page loads; its token is
+  // ready by the time the consent is read. It goes with the page.
+  useEffect(() => {
+    if (state.screen === "upload" || turnstile.current !== null || turnstileBox.current === null) return;
+    turnstile.current = turnstileWidget(turnstileBox.current, props.turnstileSiteKey);
+  }, [state.screen, props.turnstileSiteKey]);
+  useEffect(
+    () => () => {
+      void turnstile.current?.remove();
+    },
+    [],
+  );
 
   // Each new screen starts at the top, with its heading focused for screen readers.
   useEffect(() => {
