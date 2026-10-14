@@ -178,6 +178,9 @@ export const photosRoute = techRoute({
   method: "post",
   path: "/api/tech/jobs/{id}/photos",
   summary: "The phase's five photographs are in",
+  description:
+    "With `unavailable`, the phone's camera would not open: the set goes with the photographs that reached us, " +
+    "none perhaps, and ops are told.",
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(PhotosRequestSchema) } },
   responses: {
     202: RECORDED,

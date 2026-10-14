@@ -428,6 +428,9 @@ export const capture = {
   retry: "Try again",
   // The board draws no capture that failed.
   missed: "That photo didn’t save. Take it again.",
+  blank: "That photo came out blank. Take it again.",
+  // A camera that will not open does not stop the job: the set goes without its photographs, and ops look at it.
+  withoutPhotos: "Go on without photos",
   done: "All five are on the phone.",
   finish: "Done",
   // The board draws no set the API refused.

@@ -3691,6 +3691,12 @@ Request body:
         "before",
         "after"
       ]
+    },
+    "unavailable": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
     }
   },
   "required": [

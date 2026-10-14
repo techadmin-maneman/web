@@ -22,6 +22,8 @@ import { technicianOf } from "../../http/technician-session.ts";
 import { takesStep } from "../../policy/in-job-steps.ts";
 import { uploadUrlRoute, uploadRoute, smallUploadRoute, photosRoute } from "./jobs.routes.ts";
 import { type Ctx, hasClosed, namedJob, step, superseded, refusalOf } from "./jobs.record.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
+import { indiaDate } from "../../lib/india-time.ts";
 
 /**
  * Whether the job has closed, and whether the technician's phone may upload another today, read together. The body is
@@ -107,13 +109,7 @@ export function registerPhotographs(app: App): void {
     return c.body(null, 204);
   });
 
-  app.openapi(photosRoute, async (c) => {
-    const phase = c.req.valid("json").phase;
-    return step(c, photoStepOf(phase), async (job) => {
-      if (!takesPhotoSet(job, phase)) return { invalid: ["phase"] };
-      return { phase, angles: await anglesHeld(c.env.DB, job.id, phase) };
-    });
-  });
+  app.openapi(photosRoute, (c) => photoSet(c, c.req.valid("json")));
 }
 
 /** The slot an upload link names, while its job is still this technician's; null for any other link. */
@@ -129,4 +125,28 @@ const photoStepOf = (phase: Phase) => (phase === "before" ? "before_photos" : "a
 /** Whether the job takes this set of photographs: a consultation takes none after. */
 function takesPhotoSet(job: WorkableJob, phase: Phase): boolean {
   return takesStep(photoStepOf(phase), job.type, job.oneVisit !== null);
+}
+
+/** A phase's photographs, in: the set lands with the angles that reached us. */
+async function photoSet(c: Ctx, { phase, unavailable }: { phase: Phase; unavailable?: true | undefined }) {
+  let reached = 0;
+  return step(
+    c,
+    photoStepOf(phase),
+    async (job) => {
+      if (!takesPhotoSet(job, phase)) return { invalid: ["phase"] };
+      const angles = await anglesHeld(c.env.DB, job.id, phase);
+      reached = angles.length;
+      return unavailable === true ? { phase, angles, unavailable } : { phase, angles };
+    },
+    // A set that went without its photographs is ops' to look at: the client's record may need them taken again.
+    async (job) => {
+      if (unavailable !== true) return;
+      await c.var.deps.alertOnce({
+        key: `photos_unavailable:${job.id}:${phase}`,
+        message: ALERT_WORDS.photos_unavailable({ phase, day: indiaDate(job.windowStart), reached }),
+        link: `/clients/${job.personId}`,
+      });
+    },
+  );
 }

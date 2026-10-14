@@ -12,7 +12,7 @@ import { capture as copy, job as jobCopy } from "../content.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { dropFrame, events as queuedEvents, frames as keptFrames, keepFrame } from "../store/outbox.ts";
 import { ANGLES, anglesRefused, anglesTaken, type TakenAngle } from "../lib/sets.ts";
-import { captureFrame, openCamera } from "./capture.ts";
+import { BlankFrame, captureFrame, openCamera } from "./capture.ts";
 import { useCamera } from "@maneman/ui/useCamera";
 import { useThumbnails } from "./useThumbnails.ts";
 import styles from "./capture.module.css";
@@ -40,6 +40,21 @@ function FramingGuide() {
         d="M36 44 H78 M36 44 V86 M284 44 H242 M284 44 V86 M36 376 H78 M36 376 V334 M284 376 H242 M284 376 V334"
       />
     </svg>
+  );
+}
+
+/** A camera that would not open: asked for again, or the step goes on without its photographs, for ops to look at. */
+function NoCamera(props: { onRetry: () => void; onWithout: () => void }) {
+  return (
+    <div className={styles.unavailable} role="alert">
+      <p className={styles.unavailableLine}>{copy.unavailable}</p>
+      <Button variant="outlineOnInk" size="small" onClick={props.onRetry}>
+        {copy.retry}
+      </Button>
+      <Button variant="outlineOnInk" size="small" onClick={props.onWithout}>
+        {copy.withoutPhotos}
+      </Button>
+    </div>
   );
 }
 
@@ -124,7 +139,8 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
   const [taken, setTaken] = useState<readonly TakenAngle[]>([]);
   const [refusedAngles, setRefusedAngles] = useState<readonly Angle[]>([]);
   const [ready, setReady] = useState(false);
-  const [missed, setMissed] = useState(false);
+  // Why the last tap kept no frame: it did not save, or it came out blank.
+  const [missed, setMissed] = useState<"missed" | "blank" | null>(null);
   const [, once] = useOneAtATime();
   const settled = useSettled();
   const pictures = useThumbnails(taken);
@@ -171,10 +187,10 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
       try {
         const frame = await captureFrame(video.current);
         const frameId = await keepFrame({ jobId: id, angle, phase, frame: frame.photo.blob, small: frame.small.blob });
-        setMissed(false);
+        setMissed(null);
         setTaken((already) => [...already.filter((one) => one.angle !== angle), { angle, frameId, sending: false }]);
-      } catch {
-        setMissed(true);
+      } catch (error) {
+        setMissed(error instanceof BlankFrame ? "blank" : "missed");
       }
     });
 
@@ -228,12 +244,7 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
     >
       <div className={styles.stage}>
         {camera.state === "refused" ? (
-          <div className={styles.unavailable} role="alert">
-            <p className={styles.unavailableLine}>{copy.unavailable}</p>
-            <Button variant="outlineOnInk" size="small" onClick={reopen}>
-              {copy.retry}
-            </Button>
-          </div>
+          <NoCamera onRetry={reopen} onWithout={() => void finish({ phase, unavailable: true })} />
         ) : (
           <>
             {/* Muted and inline: a technician's phone never plays sound, and never goes full screen. */}
@@ -248,9 +259,9 @@ export function CaptureScreen({ id, phase }: { id: string; phase: Phase }) {
               }}
             />
             <FramingGuide />
-            {missed ? (
+            {missed !== null ? (
               <p className={styles.guide} role="alert">
-                {copy.missed}
+                {copy[missed]}
               </p>
             ) : (
               <p className={styles.guide}>{angle === undefined ? copy.done : copy.guides[angle]}</p>

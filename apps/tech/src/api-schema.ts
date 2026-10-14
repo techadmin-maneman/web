@@ -991,7 +991,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The phase's five photographs are in */
+        /**
+         * The phase's five photographs are in
+         * @description With `unavailable`, the phone's camera would not open: the set goes with the photographs that reached us, none perhaps, and ops are told.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -2407,6 +2410,8 @@ export interface components {
         TechnicianPhotosRequest: {
             /** @enum {string} */
             phase: "before" | "after";
+            /** @enum {boolean} */
+            unavailable?: true;
         };
         ChecklistRequest: {
             done: string[];

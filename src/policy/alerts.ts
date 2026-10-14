@@ -98,6 +98,7 @@ const OPERATIONS_KINDS = [
   "booked_unassigned",
   "low_stock",
   "fit_without_piece",
+  "photos_unavailable",
   "stock_expiring",
   "transfer_overdue",
   "technician_code_refused",

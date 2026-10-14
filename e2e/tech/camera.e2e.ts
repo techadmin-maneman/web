@@ -265,3 +265,46 @@ test("the frames waiting show on the waiting screen, with the design's line abou
   await expect(page.getByText("1 photo set waiting")).toBeVisible();
   await expect(page.getByText(techCopy.queue.never)).toBeVisible();
 });
+
+test("goes on without photos when the camera will not open, and the set says so for ops", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException("denied", "NotAllowedError"));
+  });
+  await page.goto(BEFORE);
+  await expect(page.getByText(techCopy.capture.unavailable)).toBeVisible();
+
+  await page.getByRole("button", { name: techCopy.capture.withoutPhotos }).click();
+  await expect
+    .poll(() => fake.writes.find((write) => write.path === `/api/tech/jobs/${JOB_ID}/photos`)?.body)
+    .toEqual({ phase: "before", unavailable: true });
+});
+
+test("asks for the angle again when a frame comes out blank, and keeps none of it", async ({ page }) => {
+  await fakeTech(page);
+  // A camera that gives one flat grey, as a covered lens does.
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.height = 480;
+      const context = canvas.getContext("2d");
+      const paint = () => {
+        if (context === null) return;
+        context.fillStyle = "#777";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      };
+      paint();
+      window.setInterval(paint, 100);
+      return Promise.resolve(canvas.captureStream(10));
+    };
+  });
+  await page.goto(BEFORE);
+  const capture = page.getByRole("button", { name: techCopy.capture.take });
+  await expect(capture).toBeEnabled();
+  await capture.click();
+
+  await expect(page.getByRole("alert")).toHaveText(techCopy.capture.blank);
+  await expect(page.getByText("0 of 5")).toBeVisible();
+  expect((await heldOnPhone(page)).frames).toBe(0);
+});
