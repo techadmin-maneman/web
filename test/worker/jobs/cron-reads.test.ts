@@ -170,10 +170,10 @@ const HISTORY = [
    SELECT 'cu-' || i, 'a-' || i, 'je-' || i, 'Bond strip', 2, '${AGO}' FROM n`,
   `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at)
    SELECT 'hp-' || i, 'p-' || i, 'a-' || i, 'event-' || i, 't-history', '${AGO}' FROM n`,
-  `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, told_at,
-     created_at, updated_at)
-   SELECT 'mv-' || i, 'a-' || i, '${AGO}', '${AGO}', 'client_asked', 'ops@localhost', 'written', '${AGO}', '${AGO}',
-     '${AGO}' FROM n`,
+  `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, write_state,
+     told_at, created_at, updated_at)
+   SELECT 'mv-' || i, 'a-' || i, '${AGO}', '${AGO}', 'client_asked', 'ops@localhost', 'written', 'written', '${AGO}',
+     '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO move_proposals (id, appointment_id, technician_id, date, window_label, reason, proposed_by,
      expected_start, created_at, expires_at, answered_at, answer, move_id)
    SELECT 'mp-' || i, 'a-' || i, 't-history', date('${AGO}'), 'morning', 'zone_rebalance', 'ops@localhost', '${AGO}',

@@ -65,9 +65,9 @@ async function insertVisit(id: string, client: string, technician: string, pinco
 /** A move ops made of a visit, to its time now, which its client has not heard of. */
 async function untoldMove(id: string, visit: string): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, created_at,
-       updated_at)
-     VALUES (?1, ?2, '2026-09-22T08:30:00.000Z', ?3, 'client_asked', 'ops@localhost', 'written', ?4, ?4)`,
+    `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, write_state,
+       created_at, updated_at)
+     VALUES (?1, ?2, '2026-09-22T08:30:00.000Z', ?3, 'client_asked', 'ops@localhost', 'written', 'written', ?4, ?4)`,
   )
     .bind(id, visit, TUESDAY_MORNING, AT)
     .run();

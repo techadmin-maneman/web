@@ -78,7 +78,7 @@ describe("a link at the visit's close", () => {
     const sent = await sendPaymentLink(env.DB, linkDeps(), { ...FITTED, tier: "retired_system" }, NOW);
 
     expect(sent).toBe("unpriced");
-    expect(deps.alerts).toEqual([expect.stringContaining("fitted with retired_system, which the price book has no")]);
+    expect(deps.alerts).toEqual([expect.stringContaining("Price retired_system in the price book")]);
   });
 
   it("is not asked for again once Razorpay refused it", async () => {

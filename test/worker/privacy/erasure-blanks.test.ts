@@ -80,9 +80,9 @@ describe("erasure blanks what ops wrote about the client", () => {
       // A visit of their ops moved onto a day they had blacked out.
       env.DB.prepare(
         `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
-           reason, actor, fsm_write_state, created_at, updated_at, blackout_reason)
+           reason, actor, fsm_write_state, write_state, created_at, updated_at, blackout_reason)
          VALUES ('move-9', 'visit-9', 't1', 't1', '2026-09-18T03:30:00.000Z', '2026-09-19T03:30:00.000Z',
-           'client_asked', 'ops@localhost', 'written', ?1, ?1, 'His only day off before the wedding')`,
+           'client_asked', 'ops@localhost', 'written', 'written', ?1, ?1, 'His only day off before the wedding')`,
       ).bind(at),
     ]);
   }
