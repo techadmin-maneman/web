@@ -166,7 +166,7 @@ test.describe("the rules", () => {
     await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
-      "First fit: out of range. Not saved.",
+      "First fit: out of range.",
     );
   });
 
@@ -184,7 +184,7 @@ test.describe("the rules", () => {
     await section(page, "Booking and payment").getByRole("button", { name: "Review" }).click();
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByRole("listitem").filter({ has: days }).getByRole("alert")).toHaveText(
-      "“Bookable ahead” must be at least “Between service visits”. Not saved.",
+      "“Bookable ahead” must be at least “Between service visits”.",
     );
   });
 
@@ -257,7 +257,7 @@ test.describe("the rules", () => {
     await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
 
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
-      "Service visit: out of range. Not saved.",
+      "Service visit: out of range.",
     );
     const radiusItem = page.getByRole("listitem").filter({ has: page.getByLabel("Check-in radius") });
     await expect(radiusItem.getByLabel("Check-in radius")).toHaveValue("150");

@@ -758,7 +758,7 @@ export const clients = {
       not_found: "Already erased. Reload.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
-      unknown: "That didn't work. Nothing was erased.",
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
   },
   /*

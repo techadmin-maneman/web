@@ -101,6 +101,8 @@ describe("what the console shows ops", () => {
     ["an environment variable", /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/],
     ["a path in the repository", /\b(?:src|apps|docs|packages|scripts|migrations)\/\w/],
     ["a design board's own words", /\bthe board's\b/i],
+    ["he, his or him for a person", /\b(he|his|him)\b/i],
+    ["a tail saying what did not happen", /[.!?]\s+(Nothing was \w+|Not (saved|sent))\.?$/],
   ])("carries no %s", (_, pattern) => {
     expect(strings.filter((each) => pattern.test(each))).toEqual([]);
   });

@@ -93,7 +93,7 @@ export const deletions = {
       payment_owed: "A payment link is still unpaid. Delete once it's paid.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
-      unknown: "That didn't work. Nothing was erased.",
+      unknown: FAILED,
     } as Readonly<Record<string, string>>,
     /** Beneath a refusal, the client's tab that settles it. */
     settleOn: { visits: "Open Visits", payments: "Open Payments" },

@@ -290,11 +290,11 @@ export const settings = {
       back: "Edit",
     },
     /** A section's Save sends its rules one by one, so a refusal speaks for its own rule only. */
-    outside: (field: string) => `${field}: out of range. Not saved.`,
-    conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”. Not saved.`,
+    outside: (field: string) => `${field}: out of range.`,
+    conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”.`,
     errors: {
       not_permitted: NOT_PERMITTED,
-      invalid_request: "Out of range. Not saved.",
+      invalid_request: "Out of range.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,

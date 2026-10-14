@@ -62,7 +62,7 @@ export const care = {
     sent: "Sent.",
     noted: "Note added.",
     closed: "Chat closed.",
-    failed: "Not sent. Try again, or call the client.",
+    failed: "That didn't send. Try again, or call the client.",
   },
   carePerson: {
     label: "Care person",
