@@ -149,7 +149,7 @@ test("a photograph the API refused is taken again on a job closed on the phone, 
 });
 
 // A technician ops switch off keeps the work their phone has not sent, for them alone, and the clients' cards go.
-test("keeps a switched-off technician's unsent step, and sends it once he is back on and signs in", async ({
+test("keeps a switched-off technician's unsent step, and sends it once they are back on and sign in", async ({
   page,
   context,
 }) => {
@@ -176,8 +176,8 @@ test("keeps a switched-off technician's unsent step, and sends it once he is bac
   fake.signedIn = false;
   await page.getByRole("textbox", { name: techCopy.signIn.mobileLabel }).fill("9811000000");
   await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  // The sixth digit sends the code.
   await page.getByRole("textbox", { name: techCopy.signIn.codeLabel }).fill(LOCAL_LOGIN_CODE);
-  await page.getByRole("button", { name: techCopy.signIn.submit }).click();
 
   await expect.poll(() => fake.writes.length, { timeout: 15_000 }).toBe(already + 1);
   expect(fake.writes.at(-1)?.path).toBe(`/api/tech/jobs/${JOB_ID}/start`);

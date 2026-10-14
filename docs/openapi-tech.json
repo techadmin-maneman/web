@@ -325,11 +325,16 @@
           },
           "expires_in_s": {
             "type": "integer"
+          },
+          "resend_in_s": {
+            "type": "integer",
+            "description": "Seconds until a new code may be asked for."
           }
         },
         "required": [
           "challenge_id",
-          "expires_in_s"
+          "expires_in_s",
+          "resend_in_s"
         ],
         "additionalProperties": false
       },
@@ -2430,6 +2435,12 @@
               "before",
               "after"
             ]
+          },
+          "unavailable": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
           }
         },
         "required": [
@@ -3963,6 +3974,7 @@
     "/api/tech/jobs/{id}/photos": {
       "post": {
         "summary": "The phase's five photographs are in",
+        "description": "With `unavailable`, the phone's camera would not open: the set goes with the photographs that reached us, none perhaps, and ops are told.",
         "parameters": [
           {
             "schema": {

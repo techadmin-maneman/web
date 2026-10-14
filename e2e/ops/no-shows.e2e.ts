@@ -198,10 +198,10 @@ test("offers Refund and Uphold only once the note is written, and sends the ruli
 test("upholds a charge with its note", async ({ page }) => {
   await open(page);
   const card = disputeCard(page);
-  await card.getByLabel("Your note · required").fill("He rang twice and waited");
+  await card.getByLabel("Your note · required").fill("They rang twice and waited");
   const sent = page.waitForRequest((request) => request.url().includes("/ruling") && request.method() === "POST");
   await card.getByRole("button", { name: opsCopy.noShows.dispute.uphold }).click();
-  expect((await sent).postDataJSON()).toEqual({ ruling: "upheld", reason: "He rang twice and waited" });
+  expect((await sent).postDataJSON()).toEqual({ ruling: "upheld", reason: "They rang twice and waited" });
 });
 
 test("says so when someone else has ruled on the dispute already", async ({ page }) => {

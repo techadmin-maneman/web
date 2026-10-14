@@ -1,22 +1,6 @@
-// The technician app: the sign-in until there is a session, then the day's
-// jobs. Whether there is a session is the API's to say — the cookie is
-// HttpOnly, and the app keeps no token — but the phone keeps enough to open in
-// a basement with no signal, and the API is asked again as soon as there is any.
-//
-// The session is bound to this device (docs/decisions/0052-technician-sessions.md).
-// A 401 from any call means it has ended, whether it ran out or ops revoked the
-// device: whatever screen is showing, everything the phone holds is wiped
-// before the sign-in is shown again, and a `device_revoked` code only changes
-// what it says. A technician ops switched off keeps the work they have not sent
-// (./store/set-aside.ts), which goes on once they sign in again.
-//
-// A store that has never held a session is a third case, and the one an iPhone
-// makes: an app installed to the home screen has its own cookie jar, so the
-// technician arrives signed out on a phone they signed in on an hour ago. The
-// sign-in is told which of the three it is, so it can say so (ADR 0053).
-//
-// The session's lifecycle is ./lib/useSessionLifecycle.ts, and the moments the
-// phone sends what it holds ./lib/useReplayTriggers.ts.
+// The technician app: the sign-in until there is a session, then the day's jobs, the session bound to this phone
+// (docs/decisions/0052-technician-sessions.md). A 401 from any call wipes the phone and shows the sign-in. The
+// session's lifecycle is ./lib/useSessionLifecycle.ts, and when the phone sends what it holds ./lib/useReplayTriggers.ts.
 
 import { CaptureScreen } from "./camera/CaptureScreen.tsx";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
@@ -31,6 +15,7 @@ import { SignIn } from "./login/SignIn.tsx";
 import { routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext, useOnline, type Session } from "./session.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
+import { Loading } from "./states/States.tsx";
 import { Checklist } from "./steps/Checklist.tsx";
 import { CloseOut } from "./steps/CloseOut.tsx";
 import { Consumables } from "./steps/Consumables.tsx";
@@ -99,7 +84,11 @@ export function App() {
 
   switch (state.kind) {
     case "checking":
-      return <div className={styles.checking} aria-busy="true" />;
+      return (
+        <div className={styles.checking}>
+          <Loading />
+        </div>
+      );
     case "out":
       return <SignIn why={state.why} onSignedIn={() => void check()} />;
     case "in": {

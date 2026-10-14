@@ -1,7 +1,7 @@
 // The hair profile's fields (./Profile.tsx): a field's choices as one group named by its title, a figure typed with
 // the range it must be in, and the base in centimetres beside its inches.
 
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
 import type { Typed } from "@maneman/web-kit/hair-profile";
@@ -100,29 +100,29 @@ export function Figure({
   hint: string;
   onChange: (text: string) => void;
 }) {
-  const id = useId();
+  // The range always shows, so a figure outside it is never refused without saying why.
   return (
-    <div className={styles.figure}>
-      <Label onInk className={styles.fieldLabel} htmlFor={id}>
-        {label}
-      </Label>
-      <TextInput
-        onInk
-        className={styles.box64}
-        id={id}
-        value={value}
-        inputMode="decimal"
-        autoComplete="off"
-        aria-invalid={invalid}
-        aria-describedby={`${id}-hint`}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      />
-      {/* The range always shows, so a figure outside it is never refused without saying why. */}
-      <p className={invalid ? styles.hint : styles.range} id={`${id}-hint`}>
-        {hint}
-      </p>
-    </div>
+    <Field
+      onInk
+      className={styles.figure}
+      label={label}
+      hint={invalid ? undefined : hint}
+      error={invalid ? hint : null}
+      look={{ label: styles.fieldLabel, hint: styles.range, error: styles.hint }}
+    >
+      {(control) => (
+        <TextInput
+          {...control}
+          onInk
+          className={styles.box64}
+          value={value}
+          inputMode="decimal"
+          autoComplete="off"
+          onChange={(event) => {
+            onChange(event.target.value);
+          }}
+        />
+      )}
+    </Field>
   );
 }

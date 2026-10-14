@@ -2,12 +2,12 @@
 // the label with its lookup and the client's pieces to pick from, the base and the lot, and on a replacement the piece
 // that came off.
 
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput, type FieldControl } from "@maneman/ui/Field";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { QrCamera } from "@maneman/ui/ScanField";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Job, PieceLookup } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { TAG } from "../icons.ts";
@@ -25,6 +25,14 @@ export type Looked =
 
 export const NOT_LOOKED: Looked = { state: "none" };
 
+/** A field on the ink, labelled as the technician board labels its boxes. */
+function InkField(props: { label: string; children: (control: FieldControl) => ReactNode }) {
+  return (
+    <Field onInk label={props.label} look={{ label: styles.fieldLabel }}>
+      {props.children}
+    </Field>
+  );
+}
 /** The products the client may choose, by name, and the choice against the fit: one tap each. */
 export function ChoiceList({
   products,
@@ -217,30 +225,29 @@ export function LabelField(props: {
   return (
     <>
       <div className={styles.field}>
-        <Label onInk className={styles.fieldLabel} htmlFor="piece-code">
-          {copy.piece.label}
-        </Label>
-        <TextInput
+        <Field
           onInk
-          icon={TAG}
-          className={styles.labelInput}
-          id="piece-code"
-          value={code}
-          placeholder={copy.piece.placeholder}
-          autoCapitalize="characters"
-          autoComplete="off"
-          spellCheck={false}
-          aria-describedby={malformed ? "piece-code-format" : undefined}
-          onChange={(event) => {
-            props.onCode(asLabel(event.target.value));
-          }}
-        />
-
-        {malformed && (
-          <p className={styles.hint} id="piece-code-format">
-            {copy.piece.malformed}
-          </p>
-        )}
+          label={copy.piece.label}
+          error={malformed ? copy.piece.malformed : null}
+          look={{ label: styles.fieldLabel, error: styles.hint }}
+        >
+          {(control) => (
+            <TextInput
+              {...control}
+              onInk
+              icon={TAG}
+              className={styles.labelInput}
+              value={code}
+              placeholder={copy.piece.placeholder}
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => {
+                props.onCode(asLabel(event.target.value));
+              }}
+            />
+          )}
+        </Field>
         <ScanButton onCode={props.onCode} />
         <Button
           variant="outlineOnInk"
@@ -299,35 +306,37 @@ export function BaseAndLot(props: {
 }) {
   return (
     <div className={styles.field}>
-      <Label onInk className={styles.fieldLabel} htmlFor="piece-base">
-        {copy.piece.base}
-      </Label>
-      <TextInput
-        onInk
-        className={styles.box64}
-        id="piece-base"
-        value={props.base}
-        autoComplete="off"
-        spellCheck={false}
-        onChange={(event) => {
-          props.onBase(event.target.value);
-        }}
-      />
-      <Label onInk className={styles.fieldLabel} htmlFor="piece-lot">
-        {copy.piece.lot}
-      </Label>
-      <TextInput
-        onInk
-        className={styles.box64}
-        id="piece-lot"
-        value={props.lot}
-        autoCapitalize="characters"
-        autoComplete="off"
-        spellCheck={false}
-        onChange={(event) => {
-          props.onLot(event.target.value);
-        }}
-      />
+      <InkField label={copy.piece.base}>
+        {(control) => (
+          <TextInput
+            {...control}
+            onInk
+            className={styles.box64}
+            value={props.base}
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => {
+              props.onBase(event.target.value);
+            }}
+          />
+        )}
+      </InkField>
+      <InkField label={copy.piece.lot}>
+        {(control) => (
+          <TextInput
+            {...control}
+            onInk
+            className={styles.box64}
+            value={props.lot}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => {
+              props.onLot(event.target.value);
+            }}
+          />
+        )}
+      </InkField>
     </div>
   );
 }
@@ -348,36 +357,38 @@ export function OldPiece(props: {
       <h2 className={capsLook(styles.fieldTitle)} id="old-piece-title">
         {copy.piece.old.title}
       </h2>
-      <Label onInk className={styles.fieldLabel} htmlFor="old-piece-code">
-        {copy.piece.old.label}
-      </Label>
-      <TextInput
-        onInk
-        className={styles.box64}
-        id="old-piece-code"
-        value={props.code}
-        placeholder={copy.piece.placeholder}
-        autoCapitalize="characters"
-        autoComplete="off"
-        spellCheck={false}
-        onChange={(event) => {
-          props.onCode(asLabel(event.target.value));
-        }}
-      />
+      <InkField label={copy.piece.old.label}>
+        {(control) => (
+          <TextInput
+            {...control}
+            onInk
+            className={styles.box64}
+            value={props.code}
+            placeholder={copy.piece.placeholder}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => {
+              props.onCode(asLabel(event.target.value));
+            }}
+          />
+        )}
+      </InkField>
       <Picker pieces={props.pieces} open={props.picking} onToggle={props.onTogglePicking} onPick={props.onPick} />
-      <Label onInk className={styles.fieldLabel} htmlFor="old-piece-reason">
-        {copy.piece.old.reason}
-      </Label>
-      <TextInput
-        onInk
-        className={styles.box64}
-        id="old-piece-reason"
-        value={props.reason}
-        autoComplete="off"
-        onChange={(event) => {
-          props.onReason(event.target.value);
-        }}
-      />
+      <InkField label={copy.piece.old.reason}>
+        {(control) => (
+          <TextInput
+            {...control}
+            onInk
+            className={styles.box64}
+            value={props.reason}
+            autoComplete="off"
+            onChange={(event) => {
+              props.onReason(event.target.value);
+            }}
+          />
+        )}
+      </InkField>
     </section>
   );
 }

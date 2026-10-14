@@ -1,10 +1,11 @@
 // Lighthouse on the built site and the client app, with the front-end
 // prompts' budgets. It starts the local mm-api (stub providers) and serves the
 // local builds the way the browser tests do, then audits each page on
-// Lighthouse's mobile profile: the site's home, try-on and booking pages, an
-// invite's landing, and the client app's first screen.
+// Lighthouse's mobile profile, its processor slowed four times: the site's home, try-on and booking pages, an
+// invite's landing, and the client and technician apps' first screens.
 //
-//   npm run build:site -- --env local && npm run build:app -- --env local && node scripts/ci/lighthouse.ts
+//   npm run build:site -- --env local && npm run build:app -- --env local && npm run build:tech -- --env local
+//   node scripts/ci/lighthouse.ts
 //
 // Reports go to lighthouse/ (git-ignored). Every score and metric is printed;
 // the run fails on any the page's budget names.
@@ -22,12 +23,14 @@ import { serveDirectory } from "../lib/static-server.ts";
 
 const SITE_PORT = 4331;
 const APP_PORT = 4332;
+const TECH_PORT = 4333;
 const API_PORT = 8797;
 const DEBUG_PORT = 9333;
 
 const SITE = `http://127.0.0.1:${String(SITE_PORT)}`;
 // As the browser tests reach it: mm-api chooses the client surface by this host (docs/decisions/0026).
 const APP = `http://app.localhost:${String(APP_PORT)}`;
+const TECH = `http://tech.localhost:${String(TECH_PORT)}`;
 
 const CATEGORIES = ["performance", "accessibility", "best-practices", "seo"] as const;
 const METRICS = ["largest-contentful-paint", "cumulative-layout-shift", "total-blocking-time"] as const;
@@ -44,13 +47,13 @@ const SITE_BUDGET: Budget = {
 };
 
 /**
- * The client app's (docs/prompts/phase2-frontend.md): LCP under 2.5 s, and
- * WCAG 2.2 AA, for which Lighthouse's accessibility audits are the floor. Its
- * 150 KB of JavaScript is checked by its build (scripts/lib/spa-build.ts).
+ * The apps' (docs/prompts/phase2-frontend.md): LCP under 2.5 s, the main thread blocked under 200 ms on the slowed
+ * processor, and WCAG 2.2 AA, for which Lighthouse's accessibility audits are the floor. Each app's 150 KB of
+ * JavaScript is checked by its build (scripts/lib/spa-build.ts).
  */
 const APP_BUDGET: Budget = {
   scores: { accessibility: 0.95, "best-practices": 0.95 },
-  metrics: { "largest-contentful-paint": 2500 },
+  metrics: { "largest-contentful-paint": 2500, "total-blocking-time": 200 },
 };
 
 /** Each page audited: its report's name, its address, and its budget. */
@@ -62,6 +65,7 @@ const PAGES: readonly { name: string; url: string; budget: Budget }[] = [
   // code, so the page shows its unknown-invite state.
   { name: "invite", url: `${SITE}/r/PREVIEW1`, budget: SITE_BUDGET },
   { name: "app", url: `${APP}/`, budget: APP_BUDGET },
+  { name: "tech", url: `${TECH}/`, budget: APP_BUDGET },
 ];
 
 const answers = (url: string) =>
@@ -91,7 +95,7 @@ function stop(child: ChildProcess): void {
   else process.kill(-child.pid);
 }
 
-for (const port of [SITE_PORT, APP_PORT, API_PORT]) {
+for (const port of [SITE_PORT, APP_PORT, TECH_PORT, API_PORT]) {
   if ((await answers(`http://127.0.0.1:${String(port)}/`)) !== null) throw new Error(`port ${String(port)} is in use`);
 }
 
@@ -110,6 +114,10 @@ const api = spawn(
 );
 const site = await serveDirectory("site/dist/local", SITE_PORT, `http://127.0.0.1:${String(API_PORT)}`);
 const app = await serveDirectory("apps/app/dist/local", APP_PORT, `http://127.0.0.1:${String(API_PORT)}`, {
+  spa: true,
+  keepHost: true,
+});
+const tech = await serveDirectory("apps/tech/dist/local", TECH_PORT, `http://127.0.0.1:${String(API_PORT)}`, {
   spa: true,
   keepHost: true,
 });
@@ -154,6 +162,7 @@ try {
   await browser.close();
   site.close();
   app.close();
+  tech.close();
   stop(api);
 }
 

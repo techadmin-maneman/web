@@ -135,7 +135,7 @@ test("opens a tray job's drawer, with the client, Assign and Open client", async
 });
 
 // The drawer's badge, WhatsApp {client} and Open client.
-test("opens a block's drawer with the client, the badge, and both ways to reach him", async ({ page }) => {
+test("opens a block's drawer with the client, the badge, and both ways to reach them", async ({ page }) => {
   await open(page);
   await press(page, ROHIT_BLOCK);
 

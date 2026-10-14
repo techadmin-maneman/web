@@ -26,7 +26,7 @@ test("attaches an invite to a client who came with none, with why, and shows it 
     referrer: { id: "22000000-0000-4000-8000-000000000008", name: "Rohit Malhotra" },
     grant: "pending",
     since: "2027-09-22T05:12:00.000Z",
-    attached: { by: "ops@maneman.in", reason: "Told us Rohit sent him" },
+    attached: { by: "ops@maneman.in", reason: "Told us Rohit sent them" },
   } satisfies OpsReply<"/api/clients/{id}/referral", "post", 201>;
   await openClient(page, `/clients/${CLIENT.id}/referrals`, {
     [READ_RECORD]: json(NEW_RECORD),
@@ -40,18 +40,18 @@ test("attaches an invite to a client who came with none, with why, and shows it 
 
   await invite.getByLabel(opsCopy.clients.invite.form.code).fill("rm4k7p");
   await expect(attach).toBeDisabled();
-  await invite.getByLabel("Reason").fill("Told us Rohit sent him");
+  await invite.getByLabel("Reason").fill("Told us Rohit sent them");
   expect(await axeViolations(page)).toEqual([]);
   const sent = page.waitForRequest((request) => request.url().endsWith("/referral") && request.method() === "POST");
   await attach.click();
-  expect((await sent).postDataJSON()).toEqual({ code: "rm4k7p", reason: "Told us Rohit sent him" });
+  expect((await sent).postDataJSON()).toEqual({ code: "rm4k7p", reason: "Told us Rohit sent them" });
 
   await expect(invite.getByRole("status")).toHaveText(opsCopy.clients.invite.news.attached);
   // The head names who sent it as the API answered, without the record being read again.
   await expect(invitedBy(page)).toHaveText("Rohit Malhotra (RM4K7P)");
   await expect(invite).toContainText("RewardGiven once this client is fitted");
   await expect(invite).toContainText("Attached byops@maneman.in");
-  await expect(invite).toContainText("ReasonTold us Rohit sent him");
+  await expect(invite).toContainText("ReasonTold us Rohit sent them");
 });
 
 test.describe("says why an invite was not attached", () => {
@@ -66,7 +66,7 @@ test.describe("says why an invite was not attached", () => {
       });
       const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
       await invite.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
-      await invite.getByLabel("Reason").fill("Told us Rohit sent him");
+      await invite.getByLabel("Reason").fill("Told us Rohit sent them");
       await invite.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
       await expect(invite.getByRole("alert")).toContainText(words);
       await expect(invite.getByLabel(opsCopy.clients.invite.form.code)).toHaveValue("RM4K7P");
@@ -88,7 +88,7 @@ test.describe("says why an invite was not attached", () => {
     });
     const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
     await invite.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
-    await invite.getByLabel("Reason").fill("Told us Rohit sent him");
+    await invite.getByLabel("Reason").fill("Told us Rohit sent them");
     await invite.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
     await expect(invite.getByRole("status")).toHaveText(opsCopy.clients.invite.news.already_invited);
     await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");

@@ -1,6 +1,7 @@
 // Refer (board F): the invite, the card and the tracker.
 
 import { freeServiceVisits, freeVisitsTile } from "./home.ts";
+import { SERVICE_AREA } from "@maneman/web-kit/service-area";
 
 /** What a referral earns each side, as ops set it in the console (docs/decisions/0107-referral-rewards-in-the-console.md). */
 interface Reward {
@@ -86,12 +87,13 @@ export const refer = {
       name === null ? "You have a Mane Man invite" : `${name} sent you a Mane Man invite`,
     body: (reward: Reward | null) => {
       const friend = reward?.friend_visits ?? 0;
-      if (friend === 0) return "Home-fitted hair systems across Delhi NCR.";
-      return `Home-fitted hair systems across Delhi NCR. ${serviceVisits(friend)} free when you’re fitted.`;
+      if (friend === 0) return `Home-fitted hair systems across ${SERVICE_AREA}.`;
+      return `Home-fitted hair systems across ${SERVICE_AREA}. ${serviceVisits(friend)} free when you’re fitted.`;
     },
     domain: "maneman.in",
     // In place of the board's message.
-    message: (link: string) => `Got my hair system fitted at home by Mane Man. Worth a look: ${link}`,
+    // A first line that says nothing of the sender's own hair: the landing page says what Mane Man does.
+    message: (link: string) => `Thought you’d like this: Mane Man, at home. ${link}`,
     via: "Share via",
     whatsapp: "WhatsApp",
     other: "Other apps",
@@ -100,7 +102,7 @@ export const refer = {
     /** The empty tracker's share failure, and its way on. */
     failed: {
       label: "Share failed",
-      line: "The link didn’t generate. Nothing was sent.",
+      line: "Couldn’t create your link. Try again.",
       retry: "Try again",
     },
   },

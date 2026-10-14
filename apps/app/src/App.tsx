@@ -1,7 +1,7 @@
 // The client app: the login until there is a session, then Home and its tabs.
 // Whether there is a session is the API's to say: the cookie is HttpOnly, and
 // the app keeps no token of its own. A 401 from any call means the session has
-// ended, wherever the client is: the kept Home is forgotten and the login
+// ended, wherever the client is: the cached Home is forgotten and the login
 // shown on the same page, saying why. Offline, Home is the last one the
 // service worker kept, until the connection is back.
 //
@@ -9,31 +9,36 @@
 // Home kept, a phone that signed out opens on the login; any other client
 // sees the error state, since their visit may still be booked.
 
-import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { Suspense, useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { api, forgetHome, keptHome, onSessionEnded, type Me } from "./api.ts";
 import { titles, update } from "./content.ts";
 import { HomeScreen } from "./home/HomeScreen.tsx";
-import { ReplacementScreen } from "./home/ReplacementScreen.tsx";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
-import { nameInTitle } from "./lib/arrival.ts";
+import { lazyScreen } from "@maneman/ui/lazyScreen";
+import { titled } from "./lib/arrival.ts";
+import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { forgetSignedOut, rememberSignedOut, signedOutHere } from "./lib/signed-out.ts";
-import { ReferScreen } from "./refer/ReferScreen.tsx";
+import { ReplacementScreen } from "./home/ReplacementScreen.tsx";
 import { TrackerScreen } from "./refer/TrackerScreen.tsx";
-import { Login } from "./login/Login.tsx";
 import { EntryScreen } from "./payments/EntryScreen.tsx";
 import { PaymentsScreen } from "./payments/PaymentsScreen.tsx";
-import { CompareScreen } from "./photos/CompareScreen.tsx";
 import { PhotosScreen } from "./photos/PhotosScreen.tsx";
-import { ProfileScreen } from "./profile/ProfileScreen.tsx";
+import { VisitScreen } from "./visits/VisitScreen.tsx";
+import { VisitsScreen } from "./visits/VisitsScreen.tsx";
+import { Login } from "./login/Login.tsx";
 import { go, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext } from "./session.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import { LoadFailed } from "./states/LoadFailed.tsx";
 import { Loading } from "./states/Loading.tsx";
-import { VisitScreen } from "./visits/VisitScreen.tsx";
-import { VisitsScreen } from "./visits/VisitsScreen.tsx";
 import styles from "./app.module.css";
+
+// The pages opened least, and the heaviest, load when first opened; the service worker keeps them, so they open
+// offline too. Every other page comes with Home: split, they would cost more to fetch than they save.
+const ReferScreen = lazyScreen(() => import("./refer/ReferScreen.tsx").then((module) => module.ReferScreen));
+const CompareScreen = lazyScreen(() => import("./photos/CompareScreen.tsx").then((module) => module.CompareScreen));
+const ProfileScreen = lazyScreen(() => import("./profile/ProfileScreen.tsx").then((module) => module.ProfileScreen));
 
 type Session =
   | { readonly kind: "checking" }
@@ -143,7 +148,7 @@ export function App({ linkedMobile }: { linkedMobile: string }) {
     void check();
   }, [check]);
 
-  // Signed in, a 401 from any call ends the session: the screens go first, then the kept Home.
+  // Signed in, a 401 from any call ends the session: the screens go first, then the cached Home.
   const signedIn = session.kind === "in";
   useEffect(() => {
     if (!signedIn) return;
@@ -161,11 +166,11 @@ export function App({ linkedMobile }: { linkedMobile: string }) {
     document.body.dataset.ground = session.kind === "out" ? "ink" : "paper";
   }, [session.kind]);
 
-  // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind.
+  // Each page is named in the browser's title, and its heading takes the focus the tap that opened it left behind. The
+  // login names its own steps.
+  useScreenTitle(signedIn ? titled(titles[routeOf(path).page]) : null);
   useEffect(() => {
-    if (!signedIn) return;
-    nameInTitle(titles[routeOf(path).page]);
-    focusIfLost(document.querySelector("h1"));
+    if (signedIn) focusIfLost(document.querySelector("h1"));
   }, [path, signedIn]);
 
   /** Only the API can end the session: with no answer from it, the client is still logged in, and is told so. */
@@ -195,7 +200,9 @@ export function App({ linkedMobile }: { linkedMobile: string }) {
         <SessionContext value={{ me: session.me, offline: session.offline, refresh: () => void refresh(), logOut }}>
           <UpdateReady copy={update} resting={routeOf(path).page === "home"} />
           {/* Keyed by the path, so each page opens at its top with its own data, and one that failed stays behind. */}
-          <ErrorBoundary key={path}>{pageFor(routeOf(path), () => void refresh())}</ErrorBoundary>
+          <ErrorBoundary key={path}>
+            <Suspense fallback={<Loading />}>{pageFor(routeOf(path), () => void refresh())}</Suspense>
+          </ErrorBoundary>
         </SessionContext>
       );
   }

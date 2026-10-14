@@ -17,6 +17,7 @@ import { isStorageFull, onStorageFull } from "../store/db.ts";
 import type { HeldJob } from "../store/jobs.ts";
 import { account, type JobAccount } from "../store/outbox.ts";
 import styles from "./banner.module.css";
+import { apiDate } from "../lib/when.ts";
 
 /** While the phone has just refused a write for want of room (../store/db.ts), above whichever screen is showing. */
 export function StorageFull() {
@@ -48,7 +49,7 @@ type StoppedJob = NonNullable<JobAccount["stopped"]>;
 
 /** "4 pm consultation · Gurgaon: Ops moved this job to 9 am tomorrow.", from what the phone holds of the job. */
 function stoppedLine(stopped: StoppedJob, held: HeldJob | undefined): string {
-  const what = whatStopped(stopped, new Date(), held?.starts_at ?? null);
+  const what = whatStopped(stopped, apiDate(), held?.starts_at ?? null);
   return copy.line(jobLabel(held, stopped.startsAt), what);
 }
 

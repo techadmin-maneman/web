@@ -68,7 +68,7 @@ const HOUSE_CARD = readFileSync("apps/app/src/refer/invite-house.jpg");
 /** The invite's own card sent as a photograph, with the invite's words as its caption. */
 const cardWithInvite = (size: number) => ({
   files: [{ name: "mane-man-invite.jpg", type: "image/jpeg", size }],
-  text: expect.stringMatching(/Worth a look: .*\/r\/[A-Z0-9]{8}$/) as unknown as string,
+  text: expect.stringMatching(/Mane Man, at home\. .*\/r\/[A-Z0-9]{8}$/) as unknown as string,
 });
 
 const scan = async (page: Page) => {
@@ -97,9 +97,7 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   // The preview: the chat's bubble, exactly as the friend will see it, with the house card itself in it.
   const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(preview.getByText("You have a Mane Man invite")).toBeVisible();
-  await expect(
-    preview.getByText(/Got my hair system fitted at home by Mane Man\. Worth a look: .*\/r\/[A-Z0-9]{8}/),
-  ).toBeVisible();
+  await expect(preview.getByText(/Thought you’d like this: Mane Man, at home\. .*\/r\/[A-Z0-9]{8}/)).toBeVisible();
   await expect(preview.locator("img").first()).toHaveAttribute("src", /invite-house/);
   await expect(preview.getByRole("link", { name: appCopy.refer.preview.whatsapp })).toHaveAttribute(
     "href",
@@ -182,7 +180,7 @@ test("keeps WhatsApp's link, with the words alone, where the phone shares no fil
   await whatsapp.click();
   const opened = await opening;
   await opened.waitForLoadState();
-  expect(opened.url()).toMatch(/^https:\/\/wa\.me\/\?text=Got%20my%20hair.*%2Fr%2F[A-Z0-9]{8}$/);
+  expect(opened.url()).toMatch(/^https:\/\/wa\.me\/\?text=Thought%20you.*%2Fr%2F[A-Z0-9]{8}$/);
 
   await preview.getByRole("button", { name: appCopy.refer.preview.other }).click();
   await expect

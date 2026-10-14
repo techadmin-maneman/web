@@ -5,6 +5,7 @@ import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 import { tab } from "./fitted-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { holdOpen } from "./one-tap.ts";
 
 test("Home shows a fitted client's next visit, with the technician, and Reschedule", async ({ page }) => {
   const client = fittedClient();
@@ -64,8 +65,13 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await page.getByRole("button", { name: appCopy.home.note }).click();
   const sheet = page.getByRole("dialog");
   await sheet.getByRole("textbox", { name: appCopy.note.label }).fill("The lift is out");
-  await sheet.getByRole("button", { name: appCopy.note.save }).click();
+  // Two taps, the second inside the first's round trip, save it once (e2e/app/one-tap.ts).
+  const held = await holdOpen(page, "**/api/appointments/*/note");
+  const save = sheet.locator("button[type=submit]");
+  await save.click();
+  await save.click({ force: true });
   await expect(sheet.getByRole("heading", { name: /^Saved\./ })).toBeVisible();
+  expect(held.asked()).toBe(1);
 
   // And shown back: on the card, and in the sheet when it opens again.
   await sheet.getByRole("button", { name: "Close" }).first().click();

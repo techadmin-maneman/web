@@ -338,7 +338,7 @@ test("the before set: a link for each angle, the PUT, then the set", async ({ pa
   expect(await landed("before_photos")).toBe(1);
 });
 
-test("the deployed service worker keeps the day and refuses everything else", async ({ page, context }) => {
+test("the deployed service worker keeps the shell and no API answer", async ({ page, context }) => {
   await signIn(context);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "1 job today" })).toBeVisible();
@@ -357,12 +357,12 @@ test("the deployed service worker keeps the day and refuses everything else", as
 
   const held = await cachedPaths(page);
   record("the caches the deployed worker holds", held);
-  expect(held["mm-tech-day"]).toEqual([`/api/tech/jobs?date=${fixture.today.date}`]);
-  const everything = Object.values(held).flat();
-  expect(everything.filter((path) => path.startsWith("/api/tech/jobs/"))).toEqual([]);
-  expect(everything.filter((path) => path.startsWith("/api/tech/me"))).toEqual([]);
-  expect(everything.filter((path) => path.startsWith("/api/tech/pieces"))).toEqual([]);
-  expect(everything.filter((path) => path.startsWith("/api/tech/photos"))).toEqual([]);
+  expect(Object.keys(held).filter((name) => !name.startsWith("mm-tech-shell-"))).toEqual([]);
+  expect(
+    Object.values(held)
+      .flat()
+      .filter((path) => path.startsWith("/api/")),
+  ).toEqual([]);
 
   // The basement: no signal at all, the app closed and opened again.
   await context.setOffline(true);
@@ -379,7 +379,6 @@ test("a revoked phone learns so on its next call, and drops what it held", async
   await inCharge(page);
   await page.reload();
   await expect(page.getByRole("heading", { name: "1 job today" })).toBeVisible();
-  expect(Object.keys(await cachedPaths(page))).toContain("mm-tech-day");
 
   const revoked = await page.request.post(
     `${OPS}/api/technicians/${fixture.technicianId}/devices/${fixture.deviceId}/revoke`,
@@ -396,7 +395,6 @@ test("a revoked phone learns so on its next call, and drops what it held", async
 
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
   await expect(page.getByText("This phone is no longer signed in. Ask ops, then sign in again.")).toBeVisible();
-  expect(Object.keys(await cachedPaths(page))).not.toContain("mm-tech-day");
 
   const device = await query<{ revoked_at: string | null; wiped_at: string | null }>(
     `SELECT revoked_at, wiped_at FROM technician_devices WHERE technician_id = '${fixture.technicianId}';`,

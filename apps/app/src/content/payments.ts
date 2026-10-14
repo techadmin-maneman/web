@@ -27,7 +27,7 @@ export const payments = {
   // The design draws no discount code on a payment (docs/decisions/0108-discount-codes.md).
   discount: {
     label: "Discount code",
-    /** "AUDTEST: Rs. 1,000 off", before GST; the code alone where what it took off is not known. */
+    /** "AUDTEST: Rs. 100 off", before GST; the code alone where what it took off is not known. */
     fact: (code: string, off: string | null) => (off === null ? code : `${code}: ${off} off`),
   },
   /** No board draws it. A one visit's payment still owed, above the payments made. */
@@ -136,6 +136,8 @@ export const payments = {
    * The documents' line for a document not yet raised. An invoice is raised once the visit is done, so what it says
    * depends on when that was (ADR 0056). Our words: every line but the invoice's first.
    */
+  /** A document the API would not give when it was tapped. */
+  notOpened: "That didn’t open. Try again.",
   unavailable: {
     invoice: "The invoice is still generating. Usually ready within the hour.",
     invoiceAfterVisit: "The tax invoice is raised once the visit is done.",

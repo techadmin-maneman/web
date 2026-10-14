@@ -385,7 +385,7 @@ export const settings = {
     now: (price: string, since: string) => `${price} since ${since}`,
     unpriced: "Not priced",
     toCome: (price: string, from: string) => `${price} from ${from}`,
-    /** "Rs. 2,000 + 18% GST": a price as the check compares two. */
+    /** "Rs. 1,234 + 18% GST": a price as the check compares two. */
     price: (rupees: string, gst: number) => `${rupees} + ${String(gst)}% GST`,
     earlier: (prices: readonly string[]) => `Earlier: ${prices.join(" · ")}`,
     percent: (value: number) => `${String(value)}%`,

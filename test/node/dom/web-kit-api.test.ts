@@ -310,6 +310,29 @@ describe("no connection", () => {
     expect(await answer).toMatchObject({ ok: false, code: "offline" });
   });
 
+  it("is an answer whose body never ends, given up on after the same patience, a file's as well", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", (_url: string, init: RequestInit) => {
+      // Headers at once, then a body that stalls until the call gives up on it.
+      const body = new ReadableStream({
+        start(controller) {
+          init.signal?.addEventListener("abort", () => {
+            controller.error(new DOMException("gave up", "AbortError"));
+          });
+        },
+      });
+      return Promise.resolve(new Response(body, { status: 200, headers: { "Content-Type": "application/json" } }));
+    });
+    const client = createClient<Paths, Code>({ patience: { read: 4_000, write: 9_000 } });
+    const answer = settled(client.get("/api/visits/{id}", { path: { id: "a" } }));
+    const file = settled(client.request("GET", "/api/visits/a/document", { file: true }));
+    await vi.advanceTimersByTimeAsync(3_999);
+    expect([answer.value, file.value]).toEqual([undefined, undefined]);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(answer.value).toMatchObject({ ok: false, code: "offline" });
+    expect(file.value).toMatchObject({ ok: false, code: "offline" });
+  });
+
   it("waits a write's patience for anything but a GET", async () => {
     neverAnswering();
     const client = createClient<Paths, Code>({ patience: { read: 4_000, write: 9_000 } });

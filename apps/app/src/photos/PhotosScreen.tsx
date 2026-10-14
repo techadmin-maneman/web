@@ -4,7 +4,7 @@
 // (ADR 0082). A photograph opens in a sheet, to download.
 
 import { ButtonLink } from "@maneman/ui/Button";
-import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
+import { useLiveLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -17,6 +17,7 @@ import { visitName } from "../lib/visit.ts";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { ANGLES, PhotoRow, type OpenPhoto } from "./PhotoRow.tsx";
 import { PhotoSheet } from "./PhotoSheet.tsx";
+import { LINKS_FRESH_MS, type Relink, useRelink } from "./relink.ts";
 import { TryOnGroup } from "./TryOnGroup.tsx";
 import styles from "./photos.module.css";
 
@@ -38,7 +39,15 @@ function PhotosLoading() {
  * Each visit's photographs, newest first, beneath the try-ons still kept (ADR 0082); before the first
  * fit, Photos' empty state, or its lines beneath a try-on.
  */
-function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (photo: OpenPhoto) => void }) {
+function Timeline({
+  timeline,
+  onOpen,
+  relink,
+}: {
+  timeline: PhotoTimeline;
+  onOpen: (photo: OpenPhoto) => void;
+  relink: Relink;
+}) {
   const { visits, try_ons: tryOns } = timeline;
   if (visits.length === 0 && tryOns.length === 0) {
     const tryOn = (
@@ -52,7 +61,7 @@ function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (phot
     <>
       <div className={styles.timeline}>
         {tryOns.map((tryOn) => (
-          <TryOnGroup key={tryOn.id} tryOn={tryOn} onOpen={onOpen} />
+          <TryOnGroup key={tryOn.id} tryOn={tryOn} onOpen={onOpen} relink={relink} />
         ))}
         {visits.length > 0 && <p className={styles.basis}>{photos.basis}</p>}
         {visits.map((visit) => (
@@ -63,7 +72,7 @@ function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (phot
               </h2>
               <p className={styles.groupWhat}>{visitName(visit.type)}</p>
             </div>
-            <PhotoRow set={visit.photos} date={visit.date} onOpen={onOpen} />
+            <PhotoRow set={visit.photos} date={visit.date} onOpen={onOpen} relink={relink} />
           </section>
         ))}
       </div>
@@ -73,7 +82,8 @@ function Timeline({ timeline, onOpen }: { timeline: PhotoTimeline; onOpen: (phot
 }
 
 export function PhotosScreen() {
-  const [loaded, retry] = useLoad(api.photos);
+  const { loaded, refresh, retry } = useLiveLoad(api.photos, LINKS_FRESH_MS);
+  const relink = useRelink(refresh);
   const [open, setOpen] = useState<OpenPhoto | null>(null);
   const visits = loaded.state === "loaded" ? loaded.value.visits : [];
   const compare =
@@ -88,11 +98,12 @@ export function PhotosScreen() {
       {whenLoaded(loaded, {
         loading: <PhotosLoading />,
         failed: <PageFailed onRetry={retry} />,
-        loaded: (timeline) => <Timeline timeline={timeline} onOpen={setOpen} />,
+        loaded: (timeline) => <Timeline timeline={timeline} onOpen={setOpen} relink={relink} />,
       })}
       {open !== null && (
         <PhotoSheet
           photo={open}
+          relink={relink}
           onClose={() => {
             setOpen(null);
           }}

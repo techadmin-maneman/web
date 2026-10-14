@@ -1,7 +1,7 @@
 // Something wrong with the hair system, or with a visit, told to Care in the client's words; Care answer on
 // WhatsApp, where the client's photographs go too. No board draws it, so the sheet is ours, in the note sheet's frame.
 
-import { Field, TextArea } from "@maneman/ui/Field";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { PROBLEM_MAX_CHARS } from "@rules/policy/problems.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
@@ -12,6 +12,7 @@ import { api } from "../api.ts";
 import { booking, problem as copy } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import styles from "./booking.module.css";
+import { WordsField } from "../components/WordsField.tsx";
 
 type Step = "writing" | "sent" | "limited" | "failed";
 
@@ -47,7 +48,7 @@ function ProblemSheet({ about, onClose }: { about: About; onClose: () => void })
   const dialog = useRef<HTMLDialogElement>(null);
   const [text, setText] = useState("");
   const [step, setStep] = useState<Step>("writing");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
 
   useEffect(() => {
     focusIfLost(dialog.current?.querySelector<HTMLElement>("#problem-title") ?? null);
@@ -55,14 +56,13 @@ function ProblemSheet({ about, onClose }: { about: About; onClose: () => void })
 
   const close = () => dialog.current?.close();
 
-  const send = async () => {
-    setBusy(true);
-    const visitId = about.about === "visit" ? about.visitId : null;
-    const answer = await api.reportProblem({ about: about.about, visit_id: visitId, text: text.trim() });
-    setBusy(false);
-    if (answer.ok) setStep("sent");
-    else setStep(answer.code === "rate_limited" ? "limited" : "failed");
-  };
+  const send = () =>
+    once(async () => {
+      const visitId = about.about === "visit" ? about.visitId : null;
+      const answer = await api.reportProblem({ about: about.about, visit_id: visitId, text: text.trim() });
+      if (answer.ok) setStep("sent");
+      else setStep(answer.code === "rate_limited" ? "limited" : "failed");
+    });
 
   return (
     <Sheet ref={dialog} className={styles.dialog} labelledBy="problem-title" onClose={onClose}>
@@ -79,20 +79,13 @@ function ProblemSheet({ about, onClose }: { about: About; onClose: () => void })
             <h2 className={styles.changeTitle} id="problem-title">
               {copy.title[about.about]}
             </h2>
-            <Field className={styles.noteField} label={copy.label}>
-              {(control) => (
-                <TextArea
-                  {...control}
-                  rows={4}
-                  maxLength={PROBLEM_MAX_CHARS}
-                  required
-                  value={text}
-                  onChange={(event) => {
-                    setText(event.target.value);
-                  }}
-                />
-              )}
-            </Field>
+            <WordsField
+              className={styles.noteField}
+              label={copy.label}
+              text={text}
+              max={PROBLEM_MAX_CHARS}
+              onText={setText}
+            />
             <Button
               variant="primary"
               size="action"

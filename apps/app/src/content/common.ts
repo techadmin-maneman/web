@@ -93,7 +93,7 @@ export function visitLength(minutes: number): string {
   return parts.filter((part) => part !== "").join(" ");
 }
 
-/** A price's GST, beneath the amount charged once GST applies: "Rs. 30,000 + Rs. 5,400 GST". */
+/** A price's GST, beneath the amount charged once GST applies: "Rs. 1,000 + Rs. 180 GST". */
 export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
 
 /**
@@ -157,6 +157,11 @@ export const states = {
     retry: "Try again",
     message: "Message us",
   },
+} as const;
+
+/** A box with a limit, said beneath it: how much is left. */
+export const fields = {
+  left: (count: number) => (count === 1 ? "1 character left" : `${String(count)} characters left`),
 } as const;
 
 export const errors = {

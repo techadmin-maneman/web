@@ -144,3 +144,22 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page }
   await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toHaveCount(0);
 });
+
+test("offers a new build's worker on Home, and loads the page on it at the tap", async ({ page }) => {
+  await signIn(page);
+  await keepHome(page);
+
+  // The next release: a worker at another address for the same scope, which installs and waits as a new build does.
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.register("/sw.js?next-build");
+  });
+
+  const update = page.getByRole("button", { name: appCopy.update.action });
+  await expect(update).toBeVisible({ timeout: 15_000 });
+  await update.click();
+  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  // The page loaded again under the new build's worker.
+  await expect
+    .poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL ?? ""))
+    .toContain("next-build");
+});

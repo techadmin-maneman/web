@@ -26,6 +26,13 @@ const BARE_LAZY = {
   message: "Load a part of a screen with lazyScreen (@maneman/ui/lazyScreen).",
 };
 
+/** A write runs through useOneAtATime, whose ref holds between a tap and the next render (ADR 0058). */
+const HAND_BUSY = {
+  selector: "CallExpression[callee.name=/^set(Busy|Working|Sending|Saving)$/][arguments.0.value=true]",
+  message:
+    "Run a write through useOneAtATime (@maneman/ui/useOneAtATime): a busy flag alone lets a second tap through.",
+};
+
 /** A size rule at a level, counting code lines alone. */
 const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
   level,
@@ -34,7 +41,7 @@ const sized = (level: "error" | "warn", max: number): Linter.RuleEntry => [
 
 /**
  * The files of src/ past SIZE today, each at the size it has: its code lines, and its longest function's. Lower a
- * figure when a file is split, and delete its line once it is within SIZE (the 2 Oct audit, CQ-10).
+ * figure when a file is split, and delete its line once it is within SIZE.
  */
 const PINNED: Readonly<Record<string, { readonly lines?: number; readonly fn?: number }>> = {
   // A table read top to bottom, every table holding a client's rows in turn: kept whole on purpose.
@@ -276,6 +283,10 @@ export default defineConfig(
     // A screen that picks between three things says so in a function that returns early.
     files: ["apps/**/*.{ts,tsx}", "packages/**/*.{ts,tsx}", "site/src/**/*.{ts,tsx}"],
     rules: { "no-nested-ternary": "error", "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY] },
+  },
+  {
+    files: ["apps/app/src/**/*.{ts,tsx}", "apps/tech/src/**/*.{ts,tsx}"],
+    rules: { "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY, HAND_BUSY] },
   },
   {
     files: ["packages/ui/lazyScreen.ts"],

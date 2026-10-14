@@ -56,6 +56,26 @@ describe("the photographs", () => {
     expect(await env.CLIENT_PHOTOS.head(stored?.r2_key ?? "")).not.toBeNull();
   });
 
+  it("lands a set the camera would not take, and tells ops which visit's photographs to look at", async () => {
+    await startJob();
+    const sent = await post(
+      `/api/tech/jobs/${TODAY_JOB}/photos`,
+      { phase: "before", unavailable: true },
+      "event-photos-09",
+    );
+    expect(sent.status).toBe(202);
+
+    const event = await env.DB.prepare(
+      "SELECT body FROM job_events WHERE appointment_id = ?1 AND kind = 'before_photos' AND superseded = 0",
+    )
+      .bind(TODAY_JOB)
+      .first<{ body: string }>();
+    expect(JSON.parse(event?.body ?? "{}")).toMatchObject({ phase: "before", angles: [], unavailable: true });
+    expect(deps.alerts).toEqual([
+      expect.stringContaining("the technician's camera would not open, and 0 of 5 reached us"),
+    ]);
+  });
+
   /** A JPEG of this size in pixels, padded to exactly `length` bytes. */
   function jpegOf(length: number, width = 1200, height = 1600): Uint8Array {
     const header = syntheticJpeg(width, height);

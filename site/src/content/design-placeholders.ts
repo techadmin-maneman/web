@@ -21,9 +21,9 @@ export const DESIGN_PLACEHOLDERS = {
     "client-1.jpg",
     "client-2.jpg",
     "client-3.jpg",
-    "He came on a Sunday morning and was finished by eleven. I had a wedding that week and nobody said a word about my hair.",
-    "The first fit took about ninety minutes. What I did not expect was the monthly visit — he lifts it, cleans the base, re-cuts it, and is gone inside an hour.",
-    "I asked what happens if I hate it. He gave me the fourteen-day terms before taking any money, which is why I went ahead.",
+    "The technician came on a Sunday morning and was finished by eleven. I had a wedding that week and nobody said a word about my hair.",
+    "The first fit took about ninety minutes. What I did not expect was the monthly visit — they lift it, clean the base, re-cut it, and are gone inside an hour.",
+    "I asked what happens if I hate it. They gave me the fourteen-day terms before taking any money, which is why I went ahead.",
   ],
   founderNote: [
     "I started losing my hair at twenty-six. By thirty I had been to four clinics, and not one would tell me a price before I was sitting in the chair with a consultant beside me.",

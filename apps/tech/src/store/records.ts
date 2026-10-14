@@ -1,4 +1,4 @@
-// What each of the phone's stores holds (./db.ts): one record type per store, so a read says what it gets.
+// What each IndexedDB store holds (./db.ts): one record type per store, so a read says what it gets.
 
 import type { FitForm, HistoryForm } from "@maneman/web-kit/hair-profile";
 import type { Angle, CheckIn, Job, JobSummary, Me, Phase } from "../api.ts";
@@ -49,9 +49,11 @@ export type DeviceRecord =
   | { readonly key: "device"; readonly id: string; readonly enrolled_at: number | null }
   /** Who is signed in: a technician's own name and initials, and nothing of a client's. */
   | { readonly key: "me"; readonly me: Me }
+  /** How far the phone's clock is from the API's, so an offline open dates the day by the API's (./device.ts). */
+  | { readonly key: "clock"; readonly offset: number }
   /** Only ever "granted": a refusal is asked again on the next start (./persist.ts). */
   | { readonly key: "keeping"; readonly keeping: "granted" }
-  /** A switched-off technician's unsent work, kept for him; the seven days run from `at` (./set-aside.ts). */
+  /** A switched-off technician's unsent work, kept for them; the seven days run from `at` (./set-aside.ts). */
   | { readonly key: "set_aside"; readonly technician_id: string; readonly at: number }
   /** A hair profile half filled in, as typed, so closing the app loses none of it; gone once sent (../steps/Profile.tsx). */
   | {

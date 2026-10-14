@@ -1,7 +1,10 @@
 // Paying for a hold through Razorpay Checkout, from the booking sheet.
 
-import type { Booking } from "../api.ts";
+import type { Booking, Hold } from "../api.ts";
 import { loadCheckout, pay, type Paid } from "./checkout.ts";
+
+/** A hold that costs the client nothing now: a free visit, or one a credit covers. Checkout never opens for it. */
+export const paysNothing = (hold: Hold): boolean => hold.price.amount === 0 || hold.credit !== null;
 
 /**
  * A sheet opened with showModal() sits in the browser's top layer and makes the rest of the page inert, so Checkout's

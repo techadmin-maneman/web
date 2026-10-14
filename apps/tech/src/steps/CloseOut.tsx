@@ -1,20 +1,6 @@
-// The close-out: the job's name and outcome, how long it took, how many
-// photographs are on their way, and the next job. A no-show closes with board
-// B5's evidence summary instead — when they checked in, how far from the door,
-// whether the day-before WhatsApp reached the client — and what happens next.
-//
-// It says what is true and nothing more: a job whose outcome neither landed nor
-// waits on the phone — a no-show the API refused as early, say — is not closed,
-// and the screen says so rather than "done".
-//
-// The duration is the phone's own: it runs from the `started_at` the API keeps
-// to the instant the technician took the outcome, because nothing gives the
-// closing time back (docs/open-points.md, item 60).
-//
-// A consultation and fit in one visit closed with the client fitted says where
-// its payment link stands, once the card the API gives back has one, which no
-// board draws; one the client declined closes as a free consultation
-// (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+// The close-out: the job, its outcome, how long it took, its photographs on their way, and the next job; a no-show's
+// evidence summary instead. It says what is true: a job whose outcome neither landed nor waits on the phone
+// is not called closed.
 
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";

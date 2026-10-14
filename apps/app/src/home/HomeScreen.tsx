@@ -14,14 +14,12 @@ import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
 import { BookButton, BookNext, ProblemLink, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
-import { lazyScreen } from "@maneman/ui/lazyScreen";
-import { Suspense } from "react";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { documentUrl, type Me, type OneVisitPrice, type VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { bookingName, oneVisitOf, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
@@ -37,18 +35,16 @@ import {
   type NotingVisit,
 } from "./VisitCard.tsx";
 import { ProposedMove } from "./ProposedMove.tsx";
+import { CustomOrderCard } from "./CustomOrderCard.tsx";
 import { RemakeCard } from "./RemakeCard.tsx";
 import styles from "./home.module.css";
 
-/** A custom order on its way, read apart from Home and loaded apart from it (./CustomOrderCard.tsx). */
-const CustomOrderCard = lazyScreen(() => import("./CustomOrderCard.tsx").then((module) => module.CustomOrderCard));
 import { firstNameOf } from "@rules/lib/names.ts";
 
 export function HomeScreen() {
   const { me, offline } = useSession();
-  // A Home the phone kept from an earlier release has no invoice line, nor any payment owed.
-  const invoice = me.invoice ?? null;
-  const owed = me.payment_owed ?? null;
+  const invoice = me.invoice;
+  const owed = me.payment_owed;
   // A recall leads Home above whatever else is booked, until its replacement is; with nothing booked it is Home.
   const booked = me.next_visit !== null || me.consultation !== null || me.being_booked !== null;
   const recallFirst = me.remake?.why === "recall" && booked ? me.remake : null;
@@ -60,9 +56,7 @@ export function HomeScreen() {
         {owed !== null && <PaymentOwed owed={owed} />}
         {me.credits !== null && <CreditTile credits={me.credits} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
-        <Suspense fallback={null}>
-          <CustomOrderCard />
-        </Suspense>
+        <CustomOrderCard />
         {invoice !== null && <InvoiceLine invoice={invoice} />}
         {me.state === "fitted" && <ProblemLink about={{ about: "hair_system" }} className={styles.problem} />}
       </div>

@@ -88,7 +88,7 @@ function madeLine(draft: Draft): string {
   return isBatch(draft) ? copy.manyGenerated(Number(draft.count)) : copy.oneGenerated;
 }
 
-/** What each code takes off, as the check says it: "10%, at most Rs. 500", or "Rs. 1,000". */
+/** What each code takes off, as the check says it: "10%, at most Rs. 1,234", or "Rs. 100". */
 function offWords(sent: DiscountCodesNew): string {
   if (sent.kind === "amount") return rupees(sent.value);
   const cap = sent.cap ?? null;

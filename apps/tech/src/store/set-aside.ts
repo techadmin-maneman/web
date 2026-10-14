@@ -4,7 +4,7 @@
 
 import { reportClientError } from "@maneman/web-kit/client-errors";
 import { DEVICE_REVOKED, TECHNICIAN_INACTIVE } from "../api.ts";
-import { clear, DAY_CACHE, deviceRecord, put, remove, wipe } from "./db.ts";
+import { clear, deviceRecord, put, remove, wipe } from "./db.ts";
 import { keptMe } from "./device.ts";
 import { dropCards, dropJobs } from "./jobs.ts";
 import { unsentJobs } from "./outbox.ts";
@@ -30,7 +30,7 @@ export async function leaveSignedOut(code: string | null, now: number = Date.now
   }
   // A delete the browser refused is tried once more, and told to us if it fails again: clients' details may be left.
   if (!(await wipe()) && !(await wipe())) {
-    reportClientError({ kind: "error", message: "the phone's store could not be wiped when its session ended" });
+    reportClientError({ kind: "error", message: "IndexedDB could not be wiped when its session ended" });
   }
   return false;
 }
@@ -49,8 +49,6 @@ async function keepsWork(code: string | null, now: number): Promise<boolean> {
 }
 
 async function dropAllButWork(): Promise<void> {
-  // No cache storage outside a secure context, and none in the development server.
-  if (typeof caches !== "undefined") await caches.delete(DAY_CACHE).catch(() => false);
   await dropCards();
   await remove("device", "me");
 }

@@ -6,6 +6,7 @@
 // Areas, the settings sections and a technician's page load the first time they open, so
 // the console's first load stays within its 150 KB budget (scripts/lib/spa-build.ts).
 
+import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Fragment, Suspense, useEffect, type ComponentType } from "react";
 import { ClientScreen } from "./clients/ClientScreen.tsx";
@@ -146,10 +147,7 @@ export function App() {
   const path = usePath();
   const route = routeOf(path);
   const mayCall = useMayCall();
-  const title = titleOf(route);
-  useEffect(() => {
-    document.title = title;
-  }, [title]);
+  useScreenTitle(titleOf(route));
   useEffect(() => {
     const to = redirectOf(path, mayCall);
     // The hash names a row to land on, as "/no-shows#case-…" from an older task.

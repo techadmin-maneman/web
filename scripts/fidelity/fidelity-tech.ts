@@ -15,7 +15,7 @@
 import { rmSync } from "node:fs";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
-import { chromium, type Browser, type Page, type Route } from "@playwright/test";
+import { chromium, expect, type Browser, type Page, type Route } from "@playwright/test";
 import sharp from "sharp";
 import { pair, rest, routeDesignLibraries, STILL } from "../lib/fidelity.ts";
 import { serveDirectory } from "../lib/static-server.ts";
@@ -462,7 +462,7 @@ async function steps(browser: Browser, design: Page): Promise<void> {
   await piece.getByLabel("The new piece’s label").fill("MM-STD-4417-B");
   await piece.getByRole("button", { name: "Check the label", exact: true }).click();
   // The lookup fills the base in, as the board's "Base · Mono" reads it.
-  await piece.waitForFunction(() => document.querySelector<HTMLInputElement>("#piece-base")?.value === "Mono");
+  await expect(piece.getByRole("textbox", { name: "Base", exact: true })).toHaveValue("Mono");
   await settle(piece);
   await pair({
     dir: OUT,

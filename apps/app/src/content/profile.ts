@@ -86,6 +86,8 @@ export const profile = {
     body: "We’ll send a code to both numbers, then confirm with you.",
     prefix: "+91",
     placeholder: "New number",
+    /** The box's name to a screen reader, which the board draws without a label. */
+    newNumber: "New mobile number",
     start: "Start the change",
     // Our words from here: the design draws the start only.
     invalid: "Enter a ten-digit mobile number, not the one you use now.",
@@ -113,7 +115,12 @@ export const profile = {
     /** The button's name to a screen reader, which hears every row's "Sign out". */
     signOutOf: (device: string) => `Sign out ${device}`,
     signOutOthers: "Sign out everywhere else",
+    /** Asked before every other device is signed out, which cannot be undone. */
+    confirmOthers: "Sign out of every other device?",
+    yes: "Sign out",
+    no: "Keep them",
     failed: "That didn’t go through. Try again.",
+    notLoaded: "Where you’re signed in didn’t load.",
   },
   support: {
     label: "Support",

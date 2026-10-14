@@ -22,7 +22,7 @@ const technician = (
   city,
   mobile: `+9198100000${String(n).padStart(2, "0")}`,
   fits_trained: true,
-  // Imran's two visits to come, which switching him off leaves with nobody.
+  // Imran's two visits to come, which switching them off leaves with nobody.
   visits_to_come: n === 1 ? 2 : 0,
   sign_in_stopped_at: null,
   devices,

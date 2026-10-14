@@ -1,34 +1,23 @@
-// What every in-job step needs: the job it belongs to, and one way to finish it.
-//
-// Finishing queues the event and moves on. It never waits for the API: a step
-// taken in a basement is recorded on the phone and sent when there is signal
-// (docs/decisions/0038-offline-writes.md).
-//
-// A step the API refused — a label it would not take — is opened again to be
-// put right, starting from what it sent. Finishing it then sends the corrected
-// step in the place the refused one had, and the steps queued behind it follow
-// (../store/outbox.ts).
-//
-// A closed job takes no more steps. The close-out takes the outcome's place in
-// the history, and a step screen opened on a closed job, by Back or an old link,
-// goes to the job's card instead.
+// What every in-job step needs: its job, and one way to finish it, which queues the event and moves on without waiting
+// for the API (docs/decisions/0038-offline-writes.md). A step the API refused opens again to be put right; a closed job
+// takes no more steps.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useEffect, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
 import { closed, done, stepsOf } from "../lib/progress.ts";
-import type { Loaded } from "../lib/useDay.ts";
+import type { KeptLoad } from "../lib/useDay.ts";
 import { useJob } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
 import { go, redirect, stepPath, type InJobStep } from "../route.ts";
 import { keepClosed } from "../store/jobs.ts";
 import { correct, queue, replay, type Queued } from "../store/outbox.ts";
 
-const LOADING: Loaded<Job> = { state: "loading" };
+const LOADING: KeptLoad<Job> = { state: "loading" };
 
 interface Standing<K extends InJobStep> {
   /** Loading until the outbox has been read as well, so a step being put right starts from what it sent. */
-  readonly loaded: Loaded<Job>;
+  readonly loaded: KeptLoad<Job>;
   readonly retry: () => void;
   /** This step as it was sent and refused, when the technician is putting it right. */
   readonly refused: Queued | null;

@@ -9,7 +9,7 @@ interface Session {
   readonly me: Me;
   readonly offline: boolean;
   readonly refresh: () => void;
-  /** Ends the session with the API's word for it: false when the API did not answer, and the client is still in. */
+  /** Ends the session, as the API answers: false when the API did not answer, and the client is still in. */
   readonly logOut: () => Promise<boolean>;
 }
 

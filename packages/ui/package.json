@@ -51,9 +51,12 @@
     "./ToggleButton": "./ToggleButton.tsx",
     "./UpdateReady": "./UpdateReady.tsx",
     "./useAsync": "./useAsync.ts",
+    "./useCamera": "./useCamera.ts",
+    "./useScreenTitle": "./useScreenTitle.ts",
     "./useFocusOnMount": "./useFocusOnMount.ts",
     "./useLoad": "./useLoad.ts",
     "./useOneAtATime": "./useOneAtATime.ts",
+    "./useOtpChallenge": "./useOtpChallenge.ts",
     "./useSecondsLeft": "./useSecondsLeft.ts",
     "./VisuallyHidden": "./VisuallyHidden.tsx",
     "./WindowChoice": "./WindowChoice.tsx"

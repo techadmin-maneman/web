@@ -3,15 +3,15 @@
 
 import { useEffect, useEffectEvent } from "react";
 import { api, type Hold } from "../api.ts";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import type { BookingEvent } from "./flow.ts";
-import { paysNothing } from "./steps/shared.tsx";
+import { paysNothing } from "./pay.ts";
 
 /** How often, and for how long, the sheet asks whether a paid hold is booked. */
 const POLL_MS = 2_000;
 const POLL_FOR_MS = 60_000;
 
-/** Calls `lapse` when the hold's countdown ends, by the API's clock (lib/clock.ts); nothing while there is no hold. */
+/** Calls `lapse` when the hold's countdown ends, by the API's clock (packages/web-kit/clock.ts); nothing while there is no hold. */
 export function useHoldLapse(hold: Hold | null, lapse: (hold: Hold) => void): void {
   // The newest lapse the sheet drew, without starting the clock again each time it draws one.
   const onLapse = useEffectEvent(lapse);

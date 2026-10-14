@@ -1,18 +1,6 @@
-// Whether the phone has promised to keep what the outbox holds.
-//
-// Open point 124 is now "any phone, including iPhones", and an iPhone treats
-// this store differently from an Android one. WebKit puts every origin in a
-// "best-effort mode, which means their persistence is not guaranteed and their
-// data can be evicted", and evicts least-recently-used; an origin escapes that
-// only if "its storage is in persistent mode". WebKit "currently grants a
-// request based on heuristics like whether the website is opened as a Home
-// Screen Web App" (webkit.org/blog/14403/updates-to-storage-policy/), which is
-// why the app is installable — see apps/tech/index.html.
-//
-// So the answer is not ours to decide, and it may be no. A job captured in a
-// basement and evicted before it uploads is lost work and lost evidence, so
-// when the phone will not promise, the technician is told rather than left to
-// find out (apps/tech/src/today/TodayScreen.tsx).
+// Whether the phone has promised to keep what the outbox holds. An iPhone keeps an origin's storage only in persistent
+// mode, which WebKit grants by its own heuristics (webkit.org/blog/14403/updates-to-storage-policy/), so a phone that
+// will not promise is said on Today, rather than left to lose a basement's work.
 
 import { deviceRecord, put } from "./db.ts";
 

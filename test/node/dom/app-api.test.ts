@@ -1,10 +1,10 @@
 // The client app's one way to the API (apps/app/src/api.ts): what a 401 sets
 // off, what an answer that is not the API's counts as, how long a call waits,
-// and whose clock a hold is counted on (apps/app/src/lib/clock.ts).
+// and whose clock a hold is counted on (packages/web-kit/clock.ts).
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, makeCard, onSessionEnded } from "../../../apps/app/src/api.ts";
-import { apiNow } from "../../../apps/app/src/lib/clock.ts";
+import { apiNow } from "../../../packages/web-kit/clock.ts";
 
 afterEach(() => {
   vi.unstubAllGlobals();

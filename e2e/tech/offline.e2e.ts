@@ -9,7 +9,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { JOB_ID, todayInIndia } from "./fixtures.ts";
+import { JOB_ID } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
@@ -34,7 +34,7 @@ async function installed(page: Page): Promise<void> {
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, undefined, { timeout: 30_000 });
 }
 
-test("opens with no connection at all, from the shell and today's jobs it cached", async ({ page, context }) => {
+test("opens with no connection at all, from the shell and the day the phone kept", async ({ page, context }) => {
   const fake = await fakeTech(page, false, context);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
@@ -50,7 +50,8 @@ test("opens with no connection at all, from the shell and today's jobs it cached
   expect(shell?.[1]?.some((path) => path.startsWith("/assets/"))).toBe(true);
   // Fonts the app never draws with are not the phone's to keep (apps/tech/sw-build.ts).
   expect(shell?.[1]?.filter((path) => /latin-ext|rupee/.test(path))).toEqual([]);
-  expect(held["mm-tech-day"]).toEqual([`/api/tech/jobs?date=${todayInIndia()}`]);
+  // The day is the phone's own store's to keep; the worker holds the shell alone.
+  expect(Object.keys(held).filter((name) => !name.startsWith("mm-tech-shell-"))).toEqual([]);
 
   // The basement: no signal, and the app closed and reopened.
   fake.online = false;
@@ -82,26 +83,7 @@ test("opens on a signal that never answers, from the shell and what the phone ho
   await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
 });
 
-test("keeps only today's list in its day cache, and lets an earlier day's go", async ({ page, context }) => {
-  await fakeTech(page, false, context);
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await installed(page);
-
-  // Yesterday's list, as yesterday's worker would have left it.
-  await page.evaluate(async () => {
-    const cache = await window.caches.open("mm-tech-day");
-    await cache.put("/api/tech/jobs?date=2020-01-01", new Response('{"date":"2020-01-01","jobs":[]}'));
-  });
-
-  await page.reload();
-  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await expect
-    .poll(async () => (await cachedPaths(page))["mm-tech-day"])
-    .toEqual([`/api/tech/jobs?date=${todayInIndia()}`]);
-});
-
-test("caches no client's card, nobody signed in, and no photograph", async ({ page, context }) => {
+test("caches no API answer: no day, no card, nobody signed in, no photograph", async ({ page, context }) => {
   await fakeTech(page, false, context);
   await page.goto(`/jobs/${JOB_ID}`);
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
@@ -110,23 +92,5 @@ test("caches no client's card, nobody signed in, and no photograph", async ({ pa
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
 
   const everything = Object.values(await cachedPaths(page)).flat();
-  expect(everything.filter((path) => path.startsWith(`/api/tech/jobs/${JOB_ID}`))).toEqual([]);
-  expect(everything.filter((path) => path.startsWith("/api/tech/me"))).toEqual([]);
-  expect(everything.filter((path) => path.startsWith("/api/tech/photos"))).toEqual([]);
-  expect(everything.filter((path) => path.startsWith("/api/tech/pieces"))).toEqual([]);
-});
-
-test("the day the phone cached goes when the technician signs out", async ({ page, context }) => {
-  await fakeTech(page, false, context);
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  await installed(page);
-  await page.reload();
-  await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
-  expect(Object.keys(await cachedPaths(page))).toContain("mm-tech-day");
-
-  await page.getByRole("button", { name: techCopy.today.signOut }).click();
-  await page.getByRole("alert").getByRole("button", { name: techCopy.today.signOut }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
-  expect(Object.keys(await cachedPaths(page))).not.toContain("mm-tech-day");
+  expect(everything.filter((path) => path.startsWith("/api/"))).toEqual([]);
 });

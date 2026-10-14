@@ -230,7 +230,7 @@ test("lists the cases ruled on today with their ruling, and reads them and the d
   await expect(decided.getByRole("listitem").filter({ hasText: "Arjun Mehra" })).toContainText("Waived · 9:05 am");
 
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("He was stuck in the lift; we have his call");
+  await first.getByLabel("Your note · required").fill("They were stuck in the lift; we have their call");
   const readAgain = Promise.all([
     page.waitForRequest((request) => request.url().includes("/api/no-shows/decided")),
     page.waitForRequest((request) => request.url().includes("/api/payments")),
@@ -266,12 +266,12 @@ test("sends nothing when the charge is taken back, and hands the keyboard to Cha
 test("waives a case with its reason, and the case leaves the queue", async ({ page }) => {
   await open(page);
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("He was stuck in the lift; we have his call");
+  await first.getByLabel("Your note · required").fill("They were stuck in the lift; we have their call");
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
   await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
   expect((await sent).postDataJSON()).toEqual({
     decision: "waived",
-    reason: "He was stuck in the lift; we have his call",
+    reason: "They were stuck in the lift; we have their call",
   });
   await expect(page.getByText(FIRST)).toBeHidden();
 });

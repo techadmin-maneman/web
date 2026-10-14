@@ -10,8 +10,9 @@ import { classes } from "@maneman/ui/classes";
 import { Mark } from "@maneman/ui/Mark";
 import { ARRIVE } from "@maneman/ui/motion";
 import { Link } from "@maneman/ui/router";
-import type { ReactNode } from "react";
-import { home, states, tabs } from "../content.ts";
+import { focusIfLost } from "@maneman/ui/arrival";
+import { useEffect, type ReactNode } from "react";
+import { home, states, tabs, tabsLabel } from "../content.ts";
 import { TAB_ICONS } from "../icons.ts";
 import type { Tab } from "../route.ts";
 import { useSession } from "../session.ts";
@@ -68,6 +69,10 @@ function PageHeader({ header }: { header: Header }) {
 }
 
 export function Shell({ header, tab, footer, kept = false, children }: Props) {
+  // A page that loaded after the path changed draws its heading after App looked for it, so the page itself asks.
+  useEffect(() => {
+    focusIfLost(document.querySelector("h1"));
+  }, []);
   const { offline } = useSession();
   return (
     <div className={styles.shell}>
@@ -83,7 +88,7 @@ export function Shell({ header, tab, footer, kept = false, children }: Props) {
       </div>
       <main className={classes(styles.page, ARRIVE)}>{children}</main>
       {footer !== undefined && <div className={styles.footer}>{footer}</div>}
-      <nav className={styles.tabs}>
+      <nav className={styles.tabs} aria-label={tabsLabel}>
         {tabs.map((each) => (
           <Link key={each.page} className={styles.tab} to={each.page} current={each.page === tab}>
             <Icon d={TAB_ICONS[each.icon]} size={21} />

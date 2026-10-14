@@ -10,6 +10,9 @@ export const tabs = [
   { page: "/refer", label: "Refer", icon: "refer" },
 ] as const;
 
+/** The tab bar, as a screen reader names it. */
+export const tabsLabel = "Main";
+
 /**
  * The referral reward has this one name wherever the client reads it: "1 free service visit", "3 free
  * service visits".

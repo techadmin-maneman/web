@@ -10,7 +10,7 @@
 // Figures are typed, to one decimal, and checked against the API's ranges before Next takes them. Everything else is
 // one tap, and a second tap on what is chosen takes it off.
 
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { capsLook } from "@maneman/ui/Caps";
 import { useEffect, useId, useState } from "react";
 import type { FitSpec, HairProfile, History, Job, ProfileRequest } from "../api.ts";
@@ -211,7 +211,6 @@ function HistoryFields({
   thisYear: number;
   onChange: (form: HistoryForm) => void;
 }) {
-  const skinId = useId();
   return (
     <>
       <Chips
@@ -236,22 +235,21 @@ function HistoryFields({
           />
         </div>
       )}
-      <div className={styles.field}>
-        <Label onInk className={styles.fieldLabel} htmlFor={skinId}>
-          {copy.history.skin}
-        </Label>
-        <TextInput
-          onInk
-          className={styles.box64}
-          id={skinId}
-          value={form.skin}
-          maxLength={200}
-          autoComplete="off"
-          onChange={(event) => {
-            onChange({ ...form, skin: event.target.value });
-          }}
-        />
-      </div>
+      <Field onInk className={styles.field} label={copy.history.skin} look={{ label: styles.fieldLabel }}>
+        {(control) => (
+          <TextInput
+            {...control}
+            onInk
+            className={styles.box64}
+            value={form.skin}
+            maxLength={200}
+            autoComplete="off"
+            onChange={(event) => {
+              onChange({ ...form, skin: event.target.value });
+            }}
+          />
+        )}
+      </Field>
     </>
   );
 }

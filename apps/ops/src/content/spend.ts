@@ -26,7 +26,7 @@ export const spend = {
   none: "Nothing yet.",
   columns: { month: "Month", city: "City", channel: "Channel", amount: "Amount", note: "Note", by: "Added by" },
   remove: "Take off",
-  /** "Take off: October 2026 · Gurgaon · Rs. 25,000" */
+  /** "Take off: October 2026 · Gurgaon · Rs. 12,345" */
   removeLabel: (month: string, city: string, amount: string) => `Take off: ${month} · ${city} · ${amount}`,
   errors: {
     month: "Pick a month from the list.",

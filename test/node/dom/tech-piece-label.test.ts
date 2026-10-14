@@ -41,6 +41,11 @@ const setWrite = (job: string, kind: "before_photos" | "after_photos"): Queued =
   state: "waiting",
   note: null,
   fields: [],
+  starts_at: null,
+  moved: null,
+  request_id: null,
+  attempts: 0,
+  next_at: null,
 });
 
 describe("a photograph set on its way", () => {
@@ -81,9 +86,18 @@ describe("the angles of a set already taken", () => {
   it("are the frames on the phone, in the order taken, while the set is being taken", () => {
     const taken = anglesTaken([frame("a", "before", "left", 2), frame("a", "before", "front", 1)], [], "a", "before");
     expect(taken).toEqual([
-      { angle: "front", frameId: "a:before:front" },
-      { angle: "left", frameId: "a:before:left" },
+      { angle: "front", frameId: "a:before:front", sending: false },
+      { angle: "left", frameId: "a:before:left", sending: false },
     ]);
+  });
+
+  it("are not taken again while the finished set waits to go, since a frame may be going up", () => {
+    const held = [frame("a", "before", "hair", 1)];
+    expect(anglesTaken(held, [setWrite("a", "before_photos")], "a", "before")).toContainEqual({
+      angle: "hair",
+      frameId: "a:before:hair",
+      sending: true,
+    });
   });
 
   it("count each angle no longer on the phone once the set is finished, and leave out a refused frame", () => {
@@ -92,10 +106,10 @@ describe("the angles of a set already taken", () => {
     const finished: Queued = { ...setWrite("a", "before_photos"), state: "refused", note: "photo_rejected" };
 
     expect(anglesTaken(held, [finished], "a", "before")).toEqual([
-      { angle: "front", frameId: null },
-      { angle: "left", frameId: null },
-      { angle: "right", frameId: null },
-      { angle: "hair", frameId: "a:before:hair" },
+      { angle: "front", frameId: null, sending: false },
+      { angle: "left", frameId: null, sending: false },
+      { angle: "right", frameId: null, sending: false },
+      { angle: "hair", frameId: "a:before:hair", sending: false },
     ]);
     expect(anglesRefused(held, "a", "before")).toEqual(["top"]);
   });

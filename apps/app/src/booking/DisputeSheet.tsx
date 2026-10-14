@@ -2,7 +2,7 @@
 // why a no-show's charge is wrong, once a charge, and ops refund or uphold it. No board draws it, so the sheet is
 // ours, in the note sheet's frame, with placeholder words (docs/fidelity-method.md).
 
-import { Field, TextArea } from "@maneman/ui/Field";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { DISPUTE_REASON_MAX_CHARS } from "@rules/policy/no-show.ts";
 import { Button } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
@@ -11,6 +11,7 @@ import { api } from "../api.ts";
 import { booking, dispute as copy } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import styles from "./booking.module.css";
+import { WordsField } from "../components/WordsField.tsx";
 
 type Step = "writing" | "sent" | "already" | "closed" | "failed";
 
@@ -21,7 +22,7 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
   const dialog = useRef<HTMLDialogElement>(null);
   const [text, setText] = useState("");
   const [step, setStep] = useState<Step>("writing");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
 
   useEffect(() => {
     focusIfLost(dialog.current?.querySelector<HTMLElement>("#dispute-title") ?? null);
@@ -29,13 +30,12 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
 
   const close = () => dialog.current?.close();
 
-  const send = async () => {
-    setBusy(true);
-    const answer = await api.dispute(props.visitId, text.trim());
-    setBusy(false);
-    if (answer.ok) setStep("sent");
-    else setStep(REFUSALS[answer.code] ?? "failed");
-  };
+  const send = () =>
+    once(async () => {
+      const answer = await api.dispute(props.visitId, text.trim());
+      if (answer.ok) setStep("sent");
+      else setStep(REFUSALS[answer.code] ?? "failed");
+    });
 
   return (
     <Sheet
@@ -59,20 +59,13 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
             <h2 className={styles.changeTitle} id="dispute-title">
               {copy.title}
             </h2>
-            <Field className={styles.noteField} label={copy.label}>
-              {(control) => (
-                <TextArea
-                  {...control}
-                  rows={4}
-                  maxLength={DISPUTE_REASON_MAX_CHARS}
-                  required
-                  value={text}
-                  onChange={(event) => {
-                    setText(event.target.value);
-                  }}
-                />
-              )}
-            </Field>
+            <WordsField
+              className={styles.noteField}
+              label={copy.label}
+              text={text}
+              max={DISPUTE_REASON_MAX_CHARS}
+              onText={setText}
+            />
             <Button
               variant="primary"
               size="action"

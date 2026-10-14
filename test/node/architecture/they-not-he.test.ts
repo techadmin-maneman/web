@@ -1,5 +1,5 @@
 // A technician, a client or anyone else the code's words name is "they" (CONTRIBUTING.md, "Words"): in the alerts ops
-// read and in the API's descriptions as much as in its comments, which the published documents and the console carry.
+// read, the API's descriptions, the apps' and the site's own words, and the tests' sample text alike.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -18,9 +18,9 @@ function gendered(text: string): string[] {
   });
 }
 
-const files = execFileSync("git", ["ls-files", "src"], { encoding: "utf8" })
+const files = execFileSync("git", ["ls-files", "src", "apps", "packages", "site/src", "e2e"], { encoding: "utf8" })
   .split("\n")
-  .filter((file) => file.endsWith(".ts") && !file.endsWith("worker-configuration.d.ts"));
+  .filter((file) => /\.(ts|tsx)$/.test(file) && !/(worker-configuration\.d|api-schema)\.ts$/.test(file));
 
 describe("the words the code says to people", () => {
   it("know a gendered word in a string, and leave comments and other words alone", () => {

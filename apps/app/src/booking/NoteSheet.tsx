@@ -3,7 +3,7 @@
 // sheet, so the sheet is ours, in the change sheet's frame, with placeholder words (docs/fidelity-method.md).
 // Should the app be told booking is with ops after all, the note goes to them on WhatsApp, as it did before.
 
-import { Field, TextArea } from "@maneman/ui/Field";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { CLIENT_NOTE_MAX_CHARS } from "@rules/policy/client-notes.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
@@ -14,6 +14,7 @@ import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import styles from "./booking.module.css";
+import { WordsField } from "../components/WordsField.tsx";
 
 type Step =
   | { readonly kind: "writing" }
@@ -37,7 +38,7 @@ export function NoteSheet(props: {
   const dialog = useRef<HTMLDialogElement>(null);
   const [text, setText] = useState(props.initial ?? "");
   const [step, setStep] = useState<Step>({ kind: "writing" });
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
 
   useEffect(() => {
     focusIfLost(dialog.current?.querySelector<HTMLElement>("#note-title") ?? null);
@@ -45,15 +46,14 @@ export function NoteSheet(props: {
 
   const close = () => dialog.current?.close();
 
-  const save = async () => {
-    setBusy(true);
-    const answer = await api.note(props.visitId, text.trim());
-    setBusy(false);
-    if (answer.ok) {
-      setStep({ kind: "saved" });
-      props.onSaved?.(answer.body.note);
-    } else setStep({ kind: answer.code === "ops_assisted" ? "with_ops" : "failed" });
-  };
+  const save = () =>
+    once(async () => {
+      const answer = await api.note(props.visitId, text.trim());
+      if (answer.ok) {
+        setStep({ kind: "saved" });
+        props.onSaved?.(answer.body.note);
+      } else setStep({ kind: answer.code === "ops_assisted" ? "with_ops" : "failed" });
+    });
 
   return (
     <Sheet ref={dialog} className={styles.dialog} labelledBy="note-title" onClose={props.onClose}>
@@ -70,20 +70,13 @@ export function NoteSheet(props: {
             <h2 className={styles.changeTitle} id="note-title">
               {props.initial === null ? copy.title(props.technician) : copy.yours(props.technician)}
             </h2>
-            <Field className={styles.noteField} label={copy.label}>
-              {(control) => (
-                <TextArea
-                  {...control}
-                  rows={4}
-                  maxLength={CLIENT_NOTE_MAX_CHARS}
-                  required
-                  value={text}
-                  onChange={(event) => {
-                    setText(event.target.value);
-                  }}
-                />
-              )}
-            </Field>
+            <WordsField
+              className={styles.noteField}
+              label={copy.label}
+              text={text}
+              max={CLIENT_NOTE_MAX_CHARS}
+              onText={setText}
+            />
             {offline && (
               <p className={styles.offlineLine} role="status">
                 {copy.offline}

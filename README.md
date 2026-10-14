@@ -106,7 +106,7 @@ src/                  mm-api
   guard.ts            the startup guard and the database-identity check
   log.ts              the only logger; it redacts personal data
 migrations/           D1, numbered and forward-only
-site/                 mm-site: the Astro site and the Worker in front of it (docs/frontend.md)
+site/                 mm-site: the Astro site and the Worker in front of it (docs/site.md)
 apps/app/             mm-app: the client app (docs/front-ends.md)
 apps/ops/             mm-ops: the ops console
 apps/tech/            mm-tech: the technician app, and its service worker

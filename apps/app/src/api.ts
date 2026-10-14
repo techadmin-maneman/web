@@ -6,13 +6,15 @@
 // Every call is same-origin, so the session cookie goes with it and the Origin matches.
 
 import { signInAgain } from "@maneman/web-kit/access";
-import { createClient, type Answer as Answered, type OperationAt, type Success } from "@maneman/web-kit/api";
+import { createClient, type Answer as Answered } from "@maneman/web-kit/api";
 import type { components, paths } from "./api-schema.ts";
-import { heardFromApi } from "./lib/clock.ts";
+import { heardFromApi } from "@maneman/web-kit/clock";
 
 type Schemas = components["schemas"];
 export type LoginChallenge = Schemas["LoginChallenge"];
 export type Me = Schemas["Me"];
+/** A hair system made to the client's profile, as Home shows it on its way. */
+export type CustomOrder = Schemas["MyCustomOrders"]["orders"][number];
 export type Profile = Schemas["Profile"];
 export type Address = Schemas["Address"];
 type AddressSave = Schemas["AddressSave"];
@@ -72,7 +74,6 @@ export type Answer<T> = Answered<T, ErrorCode>;
 
 /** Named as in apps/app/sw/sw.ts. */
 const HOME_CACHE = "mm-app-home";
-const SERVED_FROM = "Mm-Served-From";
 const HOME_PATH = "/api/me";
 
 /** The kept Home is the one personal thing the app keeps on the phone: gone at logout, and once the session has ended. */
@@ -82,26 +83,12 @@ export async function forgetHome(): Promise<void> {
 
 /**
  * The Home the phone kept, if any: the error state can then say the visit is still booked. It is this release's own:
- * the service worker drops the kept Home when a new release takes over (apps/app/sw/sw.ts).
+ * the service worker drops the cached Home when a new release takes over (apps/app/sw/sw.ts).
  */
 export async function keptHome(): Promise<Me | null> {
   if (!("caches" in window)) return null;
   const kept = await caches.match(HOME_PATH, { cacheName: HOME_CACHE });
   return kept === undefined ? null : ((await kept.json()) as Me);
-}
-
-const sessionListeners = new Set<() => void>();
-
-/**
- * A 401 from any call means the session has ended: it ran out, or the client
- * logged out on another phone. App forgets the kept Home and shows the login
- * (apps/app/src/App.tsx), wherever the client was, so no page has to handle it.
- */
-export function onSessionEnded(listener: () => void): () => void {
-  sessionListeners.add(listener);
-  return () => {
-    sessionListeners.delete(listener);
-  };
 }
 
 /**
@@ -117,14 +104,17 @@ const client = createClient<paths, ErrorCode>({
   patience: PATIENCE_MS,
   // Staging's Access sign-in ran out: the page goes back through it, past the service worker's copy.
   onAccessLapsed: signInAgain,
-  onSessionEnded: () => {
-    for (const listener of sessionListeners) listener();
-  },
   // A hold is counted on the API's clock. The Home the phone kept is as old as the day it was kept, so it is not asked.
-  onAnswer: (response) => {
-    if (response.ok && response.headers.get(SERVED_FROM) !== "cache") heardFromApi(response.headers.get("Date"));
+  onFreshAnswer: (response) => {
+    if (response.ok) heardFromApi(response.headers.get("Date"));
   },
 });
+
+/**
+ * A 401 from any call means the session has ended: it ran out, or the client logged out on another phone. App forgets
+ * the cached Home and shows the login (apps/app/src/App.tsx).
+ */
+export const onSessionEnded = (listener: () => void) => client.onSessionEnded(listener);
 
 export const api = {
   sendCode: (mobile: string, turnstileToken: string) =>
@@ -202,10 +192,7 @@ export const documentUrl = (id: string) => `/api/documents/${id}`;
 export const receiptUrl = (paymentId: string) => `/api/payments/${paymentId}/receipt`;
 
 /** Asks the API to make the client's own referral card from their first fit's photographs, which takes a moment. */
-export const makeCard = () =>
-  client.request<Success<OperationAt<paths, "/api/refer/card", "post">>>("POST", "/api/refer/card", {
-    patience: CARD_PATIENCE_MS,
-  });
+export const makeCard = () => client.post("/api/refer/card", { patience: CARD_PATIENCE_MS });
 
 /** The client's card as stored, which the phone keeps a day: each version has a link of its own. */
 export const cardUrl = (version: number) => `/api/refer/card?v=${String(version)}`;

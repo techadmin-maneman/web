@@ -11,11 +11,16 @@ const refused = (kind: Queued["kind"], body: unknown): Queued => ({
   job_id: "a",
   kind,
   path: "",
-  body,
+  body: body as Queued["body"],
   queued_at: 0,
   state: "refused",
   note: "invalid_request",
   fields: [],
+  starts_at: null,
+  moved: null,
+  request_id: null,
+  attempts: 0,
+  next_at: null,
 });
 
 describe("a refused checklist", () => {

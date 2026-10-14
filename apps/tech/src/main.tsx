@@ -20,8 +20,8 @@ createRoot(root).render(
   </StrictMode>,
 );
 
-// The service worker keeps the shell and today's jobs, so a phone in a basement
-// can close the app and reopen it (apps/tech/sw/sw.ts), and a new build waits for
+// The service worker keeps the shell, so a phone in a basement can close the app
+// and reopen it on the day its store kept (apps/tech/sw/sw.ts), and a new build waits for
 // the app to take it (packages/web-kit/sw-update.ts). A build has one; Vite's
 // development server does not.
 if (import.meta.env.PROD && "serviceWorker" in navigator) {

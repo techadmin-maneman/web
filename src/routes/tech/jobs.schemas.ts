@@ -391,7 +391,7 @@ export const UploadUrlSchema = z
   .openapi("TechnicianPhotoUrl");
 
 export const PhotosRequestSchema = z
-  .object({ phase: z.enum(PHASES) })
+  .object({ phase: z.enum(PHASES), unavailable: z.literal(true).optional() })
   .strict()
   .openapi("TechnicianPhotosRequest");
 

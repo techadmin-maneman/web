@@ -211,7 +211,7 @@ const siteSecurityHeaders: Check = async ({ options, site }) => {
     const response = await site(path);
     const html = await response.text();
     if (options.environment === "production" && html.includes(PRODUCTION_PLACEHOLDER)) {
-      return "production still serves its placeholder (docs/frontend.md, Going live in production)";
+      return "production still serves its placeholder (docs/site.md, Going live in production)";
     }
     assert(response.status === 200, `${path} answered ${String(response.status)}`);
     const headers = response.headers;

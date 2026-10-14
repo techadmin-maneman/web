@@ -10,6 +10,7 @@
     "./api": "./api.ts",
     "./client-errors": "./client-errors.ts",
     "./headers": "./headers.ts",
+    "./clock": "./clock.ts",
     "./dates": "./dates.ts",
     "./guarantee": "./guarantee.ts",
     "./hair-profile": "./hair-profile.ts",
@@ -20,6 +21,7 @@
     "./turnstile": "./turnstile.ts",
     "./names": "./names.ts",
     "./refusal": "./refusal.ts",
+    "./service-area": "./service-area.ts",
     "./pwa": "./pwa.ts",
     "./sw-update": "./sw-update.ts",
     "./load-or-reload": "./load-or-reload.ts"

@@ -18,7 +18,7 @@ import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
 import { useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { fullDate, listMonth, monthInIndia, shortDate, yearInIndia } from "@maneman/web-kit/dates";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
 import { home, ONE_VISIT, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";

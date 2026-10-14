@@ -9,14 +9,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { components } from "../../../../apps/tech/src/api-schema.ts";
-import {
-  EVENT_ID_HEADER,
-  pathFor,
-  ROUTES,
-  ROUTES_ASSUMED,
-  type EventBody,
-  type EventKind,
-} from "../../../../apps/tech/src/routes.ts";
+import { EVENT_ID_HEADER, pathFor, ROUTES, type EventBody, type EventKind } from "../../../../apps/tech/src/routes.ts";
 
 interface Document {
   paths: Record<string, Record<string, { responses: Record<string, { description?: string }> }>>;
@@ -36,10 +29,6 @@ describe("the routes the technician app calls", () => {
       expect(documented(route), `${route.method} /api${route.path} is not in docs/openapi-tech.json`).toBeDefined();
     },
   );
-
-  it("assumes no route at all: the document settles every one of them", () => {
-    expect(ROUTES_ASSUMED).toEqual([]);
-  });
 
   it("sends each of the outbox's events to a route the document writes", () => {
     const job = "00000000-0000-7000-8000-000000000000";

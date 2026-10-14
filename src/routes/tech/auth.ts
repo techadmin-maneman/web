@@ -33,7 +33,7 @@ import { countCode, knownCode, mayAskForCode, sendCodeAfterResponse, type CodeGa
 import { clearTechnicianCookie, setTechnicianCookie, technicianOf } from "../../http/technician-session.ts";
 import { visitorOf } from "../../http/visitor.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
-import { CODE_TEXT, newLoginCode } from "../../policy/one-time-code.ts";
+import { CODE_TEXT, newLoginCode, whatsappResendAt } from "../../policy/one-time-code.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** Why an active technician was refused a code, and what they can do, in ops' words. */
@@ -97,6 +97,7 @@ const TechChallengeSchema = z
   .object({
     challenge_id: z.uuid(),
     expires_in_s: z.number().int(),
+    resend_in_s: z.number().int().openapi({ description: "Seconds until a new code may be asked for." }),
   })
   .strict()
   .openapi("TechnicianChallenge");
@@ -217,8 +218,13 @@ export function registerTechAuth(app: App): void {
       now,
     });
     await sendCodeAfterResponse({ c, mobileE164: sendsTo, testRecord, channel: "whatsapp", code });
+    const secondsUntil = (instant: Date) => Math.max(0, Math.ceil((instant.getTime() - now.getTime()) / 1000));
     return c.json(
-      { challenge_id: challenge.id, expires_in_s: Math.ceil((challenge.expiresAt.getTime() - now.getTime()) / 1000) },
+      {
+        challenge_id: challenge.id,
+        expires_in_s: secondsUntil(challenge.expiresAt),
+        resend_in_s: secondsUntil(whatsappResendAt(challenge.lastSentAt)),
+      },
       202,
     );
   });

@@ -5,7 +5,7 @@
 @layer ui {
   .ref {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: var(--sp-8);
     margin: 0;
     font-size: var(--fs-13);
@@ -16,8 +16,10 @@
     letter-spacing: var(--tracking-number);
   }
 
+  /* A link to look at, a full touch target to press: the technician app's is its own, for a gloved thumb. */
   .copy {
-    padding: 0;
+    min-height: var(--copy-target);
+    padding: 0 var(--sp-8);
     border: 0;
     background: none;
     color: inherit;

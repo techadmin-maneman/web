@@ -15,10 +15,6 @@
 
 import { SMALL_JPEG_LONG_EDGE, smallJpeg, still, thumbnailJpeg, type SmallJpeg } from "@maneman/web-kit/small-jpeg";
 
-export function cameraAvailable(): boolean {
-  return "mediaDevices" in navigator && typeof navigator.mediaDevices.getUserMedia === "function";
-}
-
 /** The back camera, held open for the whole of one step's five angles. */
 export function openCamera(): Promise<MediaStream> {
   return navigator.mediaDevices.getUserMedia({
@@ -31,15 +27,41 @@ export function openCamera(): Promise<MediaStream> {
   });
 }
 
-export function closeCamera(stream: MediaStream | null): void {
-  for (const track of stream?.getTracks() ?? []) track.stop();
-}
-
 interface Captured {
   /** The photograph, at or about 250 KB. */
   readonly photo: SmallJpeg;
   /** Its thumbnail, from the same frame. */
   readonly small: SmallJpeg;
+}
+
+/** A frame all one shade: the lens covered, or a camera that gives black frames. It is taken again. */
+export class BlankFrame extends Error {
+  constructor() {
+    super("the frame is all one shade");
+    this.name = "BlankFrame";
+  }
+}
+
+/** How little a photograph's light may vary, by its standard deviation from 0 to 255, before it is blank. */
+const LEAST_SPREAD = 6;
+
+/** The side of the square a frame is shrunk to before its light is read: enough to tell a picture from a blank. */
+const SAMPLE = 32;
+
+function isBlank(frame: HTMLCanvasElement): boolean {
+  const sample = still(frame, SAMPLE, SAMPLE);
+  const pixels = sample.getContext("2d")?.getImageData(0, 0, SAMPLE, SAMPLE).data;
+  if (pixels === undefined) return false;
+  let sum = 0;
+  let squares = 0;
+  for (let at = 0; at < pixels.length; at += 4) {
+    const light = 0.2126 * (pixels[at] ?? 0) + 0.7152 * (pixels[at + 1] ?? 0) + 0.0722 * (pixels[at + 2] ?? 0);
+    sum += light;
+    squares += light * light;
+  }
+  const count = pixels.length / 4;
+  const mean = sum / count;
+  return Math.sqrt(Math.max(0, squares / count - mean * mean)) < LEAST_SPREAD;
 }
 
 /** One tap's frame, held still so the photograph and its thumbnail are the same moment. */
@@ -48,6 +70,7 @@ export async function captureFrame(video: HTMLVideoElement): Promise<Captured> {
   const height = video.videoHeight;
   if (width === 0 || height === 0) throw new Error("the camera has no frame yet");
   const frame = still(video, width, height);
+  if (isBlank(frame)) throw new BlankFrame();
   return {
     photo: await smallJpeg(frame, frame.width, frame.height),
     small: await thumbnailJpeg(frame, frame.width, frame.height),

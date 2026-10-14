@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, DEVICE_REVOKED, onSessionEnded, TECHNICIAN_INACTIVE, type Me } from "../api.ts";
 import { go } from "../route.ts";
 import type { Out, SignOut } from "../session.ts";
-import { enrolled, enrolledAt, keepMe, keptMe } from "../store/device.ts";
+import { enrolled, enrolledAt, keepMe, keptMe, startFromKeptClock } from "../store/device.ts";
 import { replay } from "../store/outbox.ts";
 import { askToKeep, type Keeping } from "../store/persist.ts";
 import { leaveSignedOut, settleSetAside } from "../store/set-aside.ts";
@@ -82,6 +82,7 @@ export function useSessionLifecycle(): Lifecycle {
     // The 401 has already ended the session (`end` above).
     if (answer.status === 401) return;
     // No signal, or the API is having a bad minute: the phone works from what it holds.
+    await startFromKeptClock().catch(() => undefined);
     const kept = await keptMe().catch(() => null);
     if (kept === null) {
       setState({ kind: "out", why: "fresh" });

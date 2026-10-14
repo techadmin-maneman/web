@@ -64,7 +64,7 @@ test("shows the referral card's lines, and the naming line, before that consent 
 
 test("changes the number: a code to each, then it waits for us", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("textbox", { name: appCopy.profile.change.placeholder }).fill(randomMobile());
+  await page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).fill(randomMobile());
   await page.getByRole("button", { name: appCopy.profile.change.start }).click();
   await expect(page.getByText(appCopy.profile.change.codes)).toBeVisible();
   await page.getByLabel(appCopy.profile.change.oldCode).fill(CODE);
@@ -107,7 +107,7 @@ test("a deletion request that did not go through says so, and asks again", async
 
 test("starts one number change, and checks the codes once, however often each is tapped", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("textbox", { name: appCopy.profile.change.placeholder }).fill(randomMobile());
+  await page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).fill(randomMobile());
 
   // Starting again withdraws the request just made and sends a fresh pair: four codes for one intent.
   const starts = await holdOpen(page, "**/api/number-change");
@@ -179,7 +179,7 @@ test("raises one grievance when Send is tapped twice", async ({ page }) => {
 
 test("refuses the client's own number as the new one", async ({ page }) => {
   const mobile = await loggedIn(page);
-  await page.getByRole("textbox", { name: appCopy.profile.change.placeholder }).fill(mobile);
+  await page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).fill(mobile);
   await page.getByRole("button", { name: appCopy.profile.change.start }).click();
   await expect(page.getByRole("alert")).toHaveText(appCopy.profile.change.invalid);
 });

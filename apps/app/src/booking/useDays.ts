@@ -97,3 +97,6 @@ export function useDays(asked: DaysAsked) {
     askAgainFrom,
   };
 }
+
+/** The days the sheet offers, and the client's day and window among them. */
+export type Days = ReturnType<typeof useDays>;

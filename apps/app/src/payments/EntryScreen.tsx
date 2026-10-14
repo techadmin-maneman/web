@@ -7,7 +7,8 @@
 // client itself. A refund past its working days says it is late.
 
 import { ButtonLink } from "@maneman/ui/Button";
-import { DocumentButton, DocumentLink } from "@maneman/ui/DocumentLink";
+import { DocumentButton } from "@maneman/ui/DocumentLink";
+import { OpenDocument } from "../components/OpenDocument.tsx";
 import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
@@ -19,7 +20,7 @@ import { useCallback, useState } from "react";
 import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
 import { messages, payments } from "../content.ts";
 import { Shell } from "../components/Shell.tsx";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../lib/money.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { Loading } from "../states/Loading.tsx";
@@ -46,11 +47,11 @@ function Document(props: { name: string; href: string | null; missing: Missing; 
   const icon = <Icon className={styles.documentIcon} d={ICONS.download} size={18} />;
   if (props.href !== null) {
     return (
-      <DocumentLink href={props.href}>
+      <OpenDocument url={props.href} notReady={payments.unavailable[props.missing]}>
         <span>{props.name}</span>
         <VisuallyHidden>{payments.newTab}</VisuallyHidden>
         {icon}
-      </DocumentLink>
+      </OpenDocument>
     );
   }
   return (

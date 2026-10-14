@@ -8,14 +8,15 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold, MoveTerms } from "../../api.ts";
 import { booking, change, WINDOW_HOURS } from "../../content.ts";
-import { apiNow } from "../../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../../lib/money.ts";
 import { CodeBox } from "../CodeBox.tsx";
 import { photoLines } from "../consents.ts";
 import { atStake, insideNotice, type AtStake } from "../late-change.ts";
 import styles from "../booking.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
-import { minutesAndSeconds, useHoldLeft, paysNothing, Heading, LastMinute, LateFee } from "./shared.tsx";
+import { paysNothing } from "../pay.ts";
+import { minutesAndSeconds, useHoldLeft, Heading, LastMinute, LateFee } from "./shared.tsx";
 
 /** What the pay step names: the service booked, or, for a move, the visit moved or its late fee. */
 function itemName(hold: Hold, moving: MoveTerms | undefined): string {
@@ -46,7 +47,7 @@ function carriedOver(moving: MoveTerms): string | null {
 /** What a change inside the notice takes, where it takes anything. */
 type Charged = Exclude<AtStake, { readonly kind: "nothing" }>;
 
-/** "This visit is less than 24 hours away: moving or cancelling it costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST)." */
+/** "This visit is less than 24 hours away: moving or cancelling it costs Rs. 1,180 (Rs. 1,000 + Rs. 180 GST)." */
 function InsideNotice({ stake, hours }: { stake: Charged; hours: number }) {
   const copy = booking.pay.insideNotice;
   if (stake.kind === "credit") return copy.credit(hours);

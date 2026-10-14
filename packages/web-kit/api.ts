@@ -142,8 +142,10 @@ export interface ClientOptions {
   readonly sessionEnded?: (response: Response, code: string | undefined) => boolean;
   /** The one place a session that has ended is heard, with the API's code, whichever call met it. */
   readonly onSessionEnded?: (code: string) => void;
-  /** Every answer that reached the API, once read: the client app sets its clock from it, the technician app its signal. */
+  /** Every answer that reached the API, once read: the technician app sets its signal from it. */
   readonly onAnswer?: (response: Response) => void;
+  /** Each answer the API gave now, not one a service worker answered from its copy: the apps set their clock from it. */
+  readonly onFreshAnswer?: (response: Response) => void;
   /** A call that reached nothing, or nothing that was the API. */
   readonly onUnreached?: () => void;
   /**
@@ -220,18 +222,30 @@ export function urlOf(template: string, path: object | undefined, query: object 
   return text === "" ? filled : `${filled}?${text}`;
 }
 
-/** One request, or null when nothing answered in time. */
-async function reach(url: string, init: RequestInit, patience: number): Promise<Response | null> {
+/**
+ * One request, or null when nothing answered in time. Its patience runs on until `finished`, once the body is read, so
+ * a body that stalls is given up on too.
+ */
+async function reach(
+  url: string,
+  init: RequestInit,
+  patience: number,
+): Promise<{ readonly response: Response; readonly finished: () => void } | null> {
   const giveUp = new AbortController();
   const timer = setTimeout(() => {
     giveUp.abort();
   }, patience);
   try {
-    return await fetch(url, { ...init, credentials: "same-origin", signal: giveUp.signal });
+    const response = await fetch(url, { ...init, credentials: "same-origin", signal: giveUp.signal });
+    return {
+      response,
+      finished: () => {
+        clearTimeout(timer);
+      },
+    };
   } catch {
-    return null;
-  } finally {
     clearTimeout(timer);
+    return null;
   }
 }
 
@@ -284,6 +298,44 @@ export interface Client<Paths, Code extends string> {
    * queued write replayed from the phone's store -- read as every other answer is.
    */
   request<T>(method: string, url: string, init?: Asking): Promise<Answer<T, Code>>;
+  /**
+   * Hears each session that has ended, with the API's code, whichever call met it, until the answer is called. The app
+   * forgets what it keeps and shows its sign-in, wherever the person was, so no page has to handle it.
+   */
+  onSessionEnded(listener: (code: string) => void): () => void;
+}
+
+/** Listeners, told each value in turn; `join` adds one until the answer it gives is called. */
+function listeners<T>() {
+  const joined = new Set<(value: T) => void>();
+  return {
+    tell: (value: T) => {
+      for (const listener of joined) listener(value);
+    },
+    join: (listener: (value: T) => void) => {
+      joined.add(listener);
+      return () => {
+        joined.delete(listener);
+      };
+    },
+  };
+}
+
+/** A refusal as the client answers it, with the code the API gave, if any. */
+async function refusalAnswer(response: Response, missingCode: (status: number) => string) {
+  const { code, fields, moved, request_id } = await refusalOf(response);
+  return {
+    given: code,
+    answer: {
+      ok: false,
+      status: response.status,
+      // The API's codes are the document's; one it did not send is the app's own reading of the status.
+      code: code ?? missingCode(response.status),
+      fields: fields ?? [],
+      moved: moved ?? null,
+      requestId: request_id ?? response.headers.get(REQUEST_ID),
+    } as const,
+  };
 }
 
 export function createClient<Paths, Code extends string = string>(options: ClientOptions = {}): Client<Paths, Code> {
@@ -293,15 +345,21 @@ export function createClient<Paths, Code extends string = string>(options: Clien
   const patience = options.patience ?? DEFAULT_PATIENCE;
   /** Each keyed write sent and never answered, by what it sent, with the key it went with. */
   const unanswered = new Map<string, string>();
+  const ended = listeners<string>();
+
+  function answered(response: Response): void {
+    options.onAnswer?.(response);
+    if (response.headers.get(SERVED_FROM) !== "cache") options.onFreshAnswer?.(response);
+  }
 
   async function read<T>(response: Response, file: boolean): Promise<Answer<T, Code>> {
     if (response.ok) {
-      const body = file ? await response.blob() : await bodyOf(response);
+      const body = file ? await response.blob().catch(() => undefined) : await bodyOf(response);
       if (body === undefined) {
         options.onUnreached?.();
         return OFFLINE;
       }
-      options.onAnswer?.(response);
+      answered(response);
       return {
         ok: true,
         status: response.status,
@@ -309,19 +367,13 @@ export function createClient<Paths, Code extends string = string>(options: Clien
         cached: response.headers.get(SERVED_FROM) === "cache",
       };
     }
-    options.onAnswer?.(response);
-    const { code, fields, moved, request_id } = await refusalOf(response);
-    if (sessionEnded(response, code)) options.onSessionEnded?.(code ?? "unknown");
-    // The API's codes are the document's; one it did not send is the app's own reading of the status.
-    const said = (code ?? missingCode(response.status)) as Code | LocalCode;
-    return {
-      ok: false,
-      status: response.status,
-      code: said,
-      fields: fields ?? [],
-      moved: moved ?? null,
-      requestId: request_id ?? response.headers.get(REQUEST_ID),
-    };
+    answered(response);
+    const { given, answer } = await refusalAnswer(response, missingCode);
+    if (sessionEnded(response, given)) {
+      options.onSessionEnded?.(given ?? "unknown");
+      ended.tell(given ?? "unknown");
+    }
+    return { ...answer, code: answer.code as Code | LocalCode };
   }
 
   async function request<T>(method: string, url: string, init: Asking = {}): Promise<Answer<T, Code>> {
@@ -329,7 +381,7 @@ export function createClient<Paths, Code extends string = string>(options: Clien
     const body = init.json === undefined ? init.body : JSON.stringify(init.json);
     const sent = options.keyWrites === true && method !== "GET" ? `${method} ${url} ${textOf(body)}` : null;
     const key = keyFor(unanswered, sent, headers);
-    const response = await reach(
+    const reached = await reach(
       url,
       {
         method,
@@ -339,17 +391,18 @@ export function createClient<Paths, Code extends string = string>(options: Clien
       },
       init.patience ?? patienceFor(patience, method),
     );
-    if (sent !== null && key !== null) heardOf(unanswered, { sent, key, answered: response !== null });
-    if (response === null) {
+    if (sent !== null && key !== null) heardOf(unanswered, { sent, key, answered: reached !== null });
+    if (reached === null) {
       options.onUnreached?.();
       return sent === null ? OFFLINE : UNCONFIRMED;
     }
-    if (response.type === "opaqueredirect" && options.onAccessLapsed !== undefined) {
+    if (reached.response.type === "opaqueredirect" && options.onAccessLapsed !== undefined) {
+      reached.finished();
       options.onAccessLapsed();
       options.onUnreached?.();
       return OFFLINE;
     }
-    return read<T>(response, init.file === true);
+    return read<T>(reached.response, init.file === true).finally(reached.finished);
   }
 
   /** A typed call: the document's path filled in, its query added and its body sent as JSON. */
@@ -369,5 +422,6 @@ export function createClient<Paths, Code extends string = string>(options: Clien
     patch: call("patch"),
     delete: call("delete"),
     request,
+    onSessionEnded: ended.join,
   } as Client<Paths, Code>;
 }

@@ -185,6 +185,9 @@ export const ALERT_WORDS = {
     (a.nowhere.length === 0
       ? ""
       : ` ${a.source ?? "Its stockroom"} can't cover ${a.nowhere.join(", ")}: order or move one.`),
+  photos_unavailable: (a: { readonly phase: "before" | "after"; readonly day: string; readonly reached: number }) =>
+    `Check the ${a.phase} photographs of the visit on ${a.day}: the technician's camera would not open, and ` +
+    `${String(a.reached)} of 5 reached us.`,
   fit_without_piece: (a: {
     readonly day: string;
     readonly item: string;

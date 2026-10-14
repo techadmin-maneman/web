@@ -42,13 +42,6 @@ export const ROUTES: readonly TechRoute[] = [
   { method: "POST", path: "/tech/kit/hand-back" },
 ];
 
-/**
- * Nothing. The shell assumed `GET /tech/me` and `POST /tech/auth/logout`
- * because the technician API's first list did not write them; the API now has both, so there is
- * no route left that only the app believes in (`docs/open-points.md`, item 132).
- */
-export const ROUTES_ASSUMED: readonly TechRoute[] = [];
-
 /** The header every write carries, which makes it idempotent however often it is replayed. */
 export const EVENT_ID_HEADER = "X-Client-Event-Id";
 

@@ -4,16 +4,14 @@
 
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import { useEffect } from "react";
 import { states, whatsapp } from "../content.ts";
-import { nameInTitle } from "../lib/arrival.ts";
+import { titled } from "../lib/arrival.ts";
+import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import styles from "./states.module.css";
 
 export function LoadFailed({ booked, onRetry }: { booked: boolean; onRetry: () => void }) {
   const copy = states.error;
-  useEffect(() => {
-    nameInTitle(copy.title);
-  }, [copy.title]);
+  useScreenTitle(titled(copy.title));
   return (
     <main className={styles.failed}>
       <div role="alert">

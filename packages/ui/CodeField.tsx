@@ -21,12 +21,25 @@ interface Props {
   readonly autoFocus?: boolean;
   readonly className?: string | undefined;
   readonly onChange: (value: string) => void;
+  /** The code once its last digit is typed or pasted, which both sign-ins send at once. */
+  readonly onComplete?: (code: string) => void;
   /** The input itself, so a screen can put focus back in it after a wrong code. */
   readonly ref?: Ref<HTMLInputElement>;
 }
 
 export function CodeField(props: Props) {
-  const { value, label, invalid = false, describedBy, disabled, autoFocus, className, onChange, ref } = props;
+  const {
+    value,
+    label,
+    invalid = false,
+    describedBy,
+    disabled,
+    autoFocus,
+    className,
+    onChange,
+    onComplete,
+    ref,
+  } = props;
   return (
     <div className={classes(styles.field, className)} data-invalid={invalid}>
       <input
@@ -35,7 +48,9 @@ export function CodeField(props: Props) {
         value={value}
         disabled={disabled}
         onChange={(event) => {
-          onChange(codeDigits(event.target.value));
+          const typed = codeDigits(event.target.value);
+          onChange(typed);
+          if (typed.length === ONE_TIME_CODE.digits && typed !== value) onComplete?.(typed);
         }}
         inputMode="numeric"
         autoComplete="one-time-code"

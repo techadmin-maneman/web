@@ -51,6 +51,15 @@ The React parts the three Phase 2 apps share: the client app, the ops console an
 | `@maneman/ui/classes`        | `classes()`, which joins an element's class names                                                                                                                                                               |
 | `@maneman/ui/cssToken`       | A token's value as the page has it, for what is drawn outside a stylesheet: a canvas, a checkout                                                                                                                |
 
+## A screen's four states
+
+- **Loading:** `Loading` from `@maneman/ui/States`, with the words a screen reader hears; never a spinner. A page read again keeps what it shows (`useLiveLoad`'s `refresh`).
+- **Failed:** `Failed`, one line and "Try again", where the page's data did not come; `ErrorRef` beside it carries the request's ID wherever the API answered. A write that did not go through says so beside its button, which stays (`InlineMessage` with the `error` tone).
+- **Asked first:** a tap that cannot be taken back asks before it goes: `ConfirmSheet` in the technician app and the console, and the card's own question, in its own words, in the client app.
+- **Done:** `InlineMessage` with the `saved` tone where the change was made, or the next step itself.
+
+Every write runs through `useOneAtATime`, so a second tap inside the first's round trip asks nothing (ADR 0058); ESLint refuses a hand-set busy flag in the client and technician apps.
+
 ## Sizes by app
 
 A button's size is what it is for, and each app says how big that is. `base.css` sets the client app's and the console's (`--action-height` 56 px at 16, `--control-height` 48 at 15, `--small-height` 44 at 15); the technician app sets its own on its body, from its board's "Targets": 64 at 18, 56 at 17 and 48 at 17, its outlined words in the regular weight.

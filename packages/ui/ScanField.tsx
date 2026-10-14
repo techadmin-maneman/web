@@ -3,6 +3,7 @@
 // is read for a QR code, in a worker (./qr-decoder.ts), until one is found.
 
 import { useEffect, useRef, useState } from "react";
+import { useCamera } from "./useCamera.ts";
 import { Button } from "./Button.tsx";
 import { Field, TextInput } from "./Field.tsx";
 import { qrDecoder } from "./qr-decoder.ts";
@@ -24,6 +25,10 @@ const READ_WIDTH = 640;
 /** How long between frames read. */
 const EVERY_MS = 150;
 
+/** The back camera, as a label is held up to it. */
+const openBackCamera = () =>
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+
 /** The back camera, reading each frame for a QR code until one is found, which `onRead` is given once. */
 export function QrCamera({
   words,
@@ -34,27 +39,26 @@ export function QrCamera({
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const read = useRef(onRead);
-  const [state, setState] = useState<"opening" | "open" | "refused">("opening");
+  const [camera] = useCamera(openBackCamera);
+  // A reader that did not start, which the label is typed past as it is with no camera.
+  const [broken, setBroken] = useState(false);
+  const state = broken ? "refused" : camera.state;
   useEffect(() => {
     read.current = onRead;
   }, [onRead]);
   useEffect(() => {
+    if (camera.state !== "open") return;
     let live = true;
-    let stream: MediaStream | null = null;
     let timer = 0;
     const decoder = qrDecoder();
-    // No camera, or a reader that did not start: either way the label is typed.
     const refuse = () => {
-      if (live) setState("refused");
+      if (live) setBroken(true);
     };
     const open = async () => {
-      const media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-      stream = media;
       const element = video.current;
       if (!live || element === null) return;
-      element.srcObject = media;
+      element.srcObject = camera.stream;
       await element.play();
-      setState("open");
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d", { willReadFrequently: true });
       const frame = async () => {
@@ -80,9 +84,8 @@ export function QrCamera({
       live = false;
       window.clearTimeout(timer);
       decoder.close();
-      for (const track of stream?.getTracks() ?? []) track.stop();
     };
-  }, []);
+  }, [camera]);
   return (
     <div className={styles.camera}>
       <video ref={video} className={styles.video} muted playsInline aria-hidden="true" />
@@ -96,15 +99,19 @@ export function QrCamera({
   );
 }
 
+/** `onInk`: on the technician app's ground, as its kit reads labels. */
 export function ScanField({
   words,
   onScan,
   className,
+  onInk = false,
 }: {
   words: ScanWords;
   onScan: (label: string) => void;
   className?: string;
+  onInk?: boolean;
 }) {
+  const variant = onInk ? "outlineOnInk" : "outline";
   const [typed, setTyped] = useState("");
   const [reading, setReading] = useState(false);
   const add = (text: string) => {
@@ -115,10 +122,12 @@ export function ScanField({
   };
   return (
     <div className={className}>
-      <Field label={words.label}>
+      <Field onInk={onInk} label={words.label}>
         {(control) => (
           <TextInput
             {...control}
+            onInk={onInk}
+            autoCapitalize="characters"
             autoComplete="off"
             spellCheck={false}
             value={typed}
@@ -135,7 +144,7 @@ export function ScanField({
       </Field>
       <div className={styles.actions}>
         <Button
-          variant="outline"
+          variant={variant}
           size="small"
           disabled={scanned(typed) === ""}
           onClick={() => {
@@ -145,7 +154,7 @@ export function ScanField({
           {words.add}
         </Button>
         <Button
-          variant="outline"
+          variant={variant}
           size="small"
           aria-pressed={reading}
           onClick={() => {

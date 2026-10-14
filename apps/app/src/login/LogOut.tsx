@@ -1,5 +1,5 @@
 // Logging out, at the foot of the profile. Only the API can end the session:
-// a phone that forgot it without the API's word would come back signed in on
+// a phone that forgot it without the API's answer would come back signed in on
 // the next open, which on a shared phone is someone else's. So the button waits
 // for a connection, and says so when the API does not answer.
 

@@ -21,9 +21,6 @@ export { RECORD_VERSION, STEP_INDEX };
 
 export const DATABASE = "mm-tech";
 
-/** The one cache the service worker keeps an API answer in, wiped with the database. */
-export const DAY_CACHE = "mm-tech-day";
-
 const STORES = ["device", "days", "cards", "arrivals", "closures", "starts", "outbox", "frames"] as const;
 type StoreName = (typeof STORES)[number] & keyof Records;
 
@@ -45,7 +42,7 @@ function settle<T>(request: IDBRequest<T>): Promise<T> {
       resolve(request.result);
     };
     request.onerror = () => {
-      reject(request.error ?? new Error("the phone's store refused the request"));
+      reject(request.error ?? new Error("IndexedDB refused the request"));
     };
   });
 }
@@ -57,7 +54,7 @@ function committed(transaction: IDBTransaction): Promise<void> {
       resolve();
     };
     transaction.onabort = () => {
-      reject(transaction.error ?? new Error("the phone's store did not keep the write"));
+      reject(transaction.error ?? new Error("IndexedDB did not keep the write"));
     };
   });
 }
@@ -85,7 +82,7 @@ function connect(): Promise<IDBDatabase> {
       resolve(db);
     };
     request.onerror = () => {
-      reject(request.error ?? new Error("the phone's store could not be opened"));
+      reject(request.error ?? new Error("IndexedDB could not be opened"));
     };
   });
 }
@@ -198,7 +195,7 @@ export async function addUnless(
     (target) =>
       new Promise((resolve, reject) => {
         const failed = (request: IDBRequest) => () => {
-          reject(request.error ?? new Error("the phone's store refused the request"));
+          reject(request.error ?? new Error("IndexedDB refused the request"));
         };
         const found = target.index(index).getKey(key);
         found.onerror = failed(found);
@@ -239,17 +236,11 @@ const WIPE_WAIT_MS = 3_000;
  * (docs/decisions/0029-sessions.md). Called on the device's next contact with
  * the backend, so nothing of a client's stays on a phone that is no longer ours.
  *
- * The service worker's day cache goes with it: today's list, which names each
- * unlocked job's client, and a phone that is no longer ours keeps none of it
- * (apps/tech/sw/sw.ts).
- *
  * A delete held up by another connection is not abandoned when the wait runs
  * out: the browser carries it out the moment that connection closes. Answers
  * false when the browser refused the delete, so the caller can try again.
  */
 export async function wipe(patience: number = WIPE_WAIT_MS): Promise<boolean> {
-  // No cache storage outside a secure context, and none in the development server.
-  if (typeof caches !== "undefined") await caches.delete(DAY_CACHE).catch(() => false);
   const db = await open().catch(() => null);
   db?.close();
   opening = null;

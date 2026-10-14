@@ -8,13 +8,14 @@
 // rather than leaving the app. Signing in goes back past them, so Back
 // from Home leaves the app as before.
 
-import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { useOtpChallenge } from "@maneman/ui/useOtpChallenge";
 import { useEffect, useRef, useState } from "react";
 import { api, type LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
-import { nameInTitle } from "../lib/arrival.ts";
-import { apiNow } from "../lib/clock.ts";
+import { titled } from "../lib/arrival.ts";
+import { useScreenTitle } from "@maneman/ui/useScreenTitle";
+import { apiNow } from "@maneman/web-kit/clock";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
 import { MobileScreen } from "./MobileScreen.tsx";
@@ -56,23 +57,13 @@ function rewind(): void {
 }
 
 /**
- * `ended`: the session ended while the app was open, and the first screen says so. `linkedMobile`: the number the
- * site's booking confirmation opened the app with, or "".
+ * The login's steps, each with its own entry in the history, so Back and Forward move between them; and the last code
+ * sent, which a step back and then forward again returns to. A reload loses the code, so the login starts again at
+ * the number. Each screen is named, and its heading takes focus unless the screen put it in a field (the code's).
  */
-export function Login({
-  ended,
-  linkedMobile,
-  onSignedIn,
-}: {
-  ended: boolean;
-  linkedMobile: string;
-  onSignedIn: () => void;
-}) {
+function useSteps() {
   const [step, setStep] = useState<Step>({ kind: "mobile" });
-  // The last code sent, which a step back and then forward again returns to.
   const lastChallenge = useRef<LoginChallenge | null>(null);
-  // When it was sent, by the API's clock: its countdowns run from then, however often the code screen is left.
-  const [sentAt, setSentAt] = useState(0);
 
   /** A step forward, with its own entry in the history. */
   const forward = (next: Step) => {
@@ -80,7 +71,6 @@ export function Login({
     setStep(next);
   };
 
-  // Back and Forward move between the steps. A reload loses the code, so the login starts again at the number.
   useEffect(() => {
     if (stepInHistory() !== "mobile") window.history.replaceState(null, "");
     const moved = () => {
@@ -94,18 +84,37 @@ export function Login({
     };
   }, []);
 
-  // Each screen is named, and its heading takes focus unless the screen put it in a field (the code's).
+  useScreenTitle(titled(TITLES[step.kind]));
   useEffect(() => {
-    nameInTitle(TITLES[step.kind]);
     focusIfLost(document.querySelector("h1"));
   }, [step.kind]);
+
+  return { step, setStep, forward, lastChallenge };
+}
+
+/**
+ * `ended`: the session ended while the app was open, and the first screen says so. `linkedMobile`: the number the
+ * site's booking confirmation opened the app with, or "".
+ */
+export function Login({
+  ended,
+  linkedMobile,
+  onSignedIn,
+}: {
+  ended: boolean;
+  linkedMobile: string;
+  onSignedIn: () => void;
+}) {
+  const { step, setStep, forward, lastChallenge } = useSteps();
+  // The code sent, when, by the API's clock, and one request at a time: a second send bills a second code, voids the
+  // first, and takes another from this number's daily ceiling, which can leave a client unable to log in at all.
+  const otp = useOtpChallenge<LoginChallenge>(apiNow);
+  const { busy, once } = otp;
+
   const [mobile, setMobile] = useState(linkedMobile);
   // The API's reason no code was sent.
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
-  // One code at a time: a second send bills a second code, voids the first, and takes another
-  // from this number's daily ceiling, which can leave a client unable to log in at all.
-  const [busy, once] = useOneAtATime();
   const turnstile = useTurnstile();
 
   /** Back to the number, saying why no code was sent. */
@@ -131,7 +140,7 @@ export function Login({
       setMobileError(null);
       setProblem(null);
       lastChallenge.current = answer.body;
-      setSentAt(apiNow());
+      otp.sent(answer.body);
       // A fresh code from the code screen stays on it; from the number, the code is a step forward.
       if (stepInHistory() === "mobile") forward({ kind: "code", challenge: answer.body });
       else setStep({ kind: "code", challenge: answer.body });
@@ -145,7 +154,7 @@ export function Login({
       if (answer.ok) {
         setProblem(null);
         lastChallenge.current = answer.body;
-        setSentAt(apiNow());
+        otp.sent(answer.body);
         setStep({ kind: "code", challenge: answer.body });
       } else {
         setProblem(sendAgainProblem(answer.status, answer.code));
@@ -193,7 +202,7 @@ export function Login({
     <CodeScreen
       mobile={mobile}
       challenge={challenge}
-      sentAt={sentAt}
+      sentAt={otp.sentAt}
       busy={busy}
       problem={problem}
       turnstileBox={turnstile.box}

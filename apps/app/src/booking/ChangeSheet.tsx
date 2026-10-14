@@ -3,10 +3,11 @@
 // sheet's date and window, then pays whatever the move costs. Cancelling is confirmed on the terms shown; if the
 // 24 hours ran out meanwhile, the new terms are shown instead.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { TextButton } from "@maneman/ui/TextLink";
 import { refundDestination } from "../payments/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
-import { fullDate, indiaDate, weekdayDate } from "@maneman/web-kit/dates";
+import { fullDate, indiaDate, weekdayName } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
@@ -17,7 +18,7 @@ import { booking, change, states } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
-import { BookingSheet } from "./BookingSheet.tsx";
+import { BookingSheet } from "./lazy-sheet.tsx";
 import { moveButton } from "./late-change.ts";
 import { LateFee } from "./steps/shared.tsx";
 import styles from "./booking.module.css";
@@ -84,19 +85,111 @@ function cancelledLine(terms: CancelTerms, credits: Me["credits"]): string {
   return cancelLine(terms, credits);
 }
 
+/** What a change sheet did to the visit, once it closes; null when nothing changed. */
+export type VisitChange = "moved" | "cancelled" | null;
+
+/** Picking the new time is the booking sheet's, in its own dialog. */
+function PickAnother(props: { type: ChangingVisit["type"]; terms: MoveTerms; onClose: (change: VisitChange) => void }) {
+  return (
+    <BookingSheet
+      type={props.type}
+      moving={props.terms}
+      onClose={(moved) => {
+        props.onClose(moved ? "moved" : null);
+      }}
+    />
+  );
+}
+
+/** What moving costs, and the ways on: another time, keeping the visit, or cancelling it instead. */
+function MoveStep(props: {
+  name: string;
+  terms: MoveTerms;
+  onPick: () => void;
+  onKeep: () => void;
+  onCancelInstead: () => void;
+}) {
+  return (
+    <>
+      <h2 className={styles.changeTitle} id="change-title">
+        {change.move.title(props.name)}
+      </h2>
+      <p className={termsClass(props.terms.cost !== "free")}>{moveLine(props.terms)}</p>
+      <div className={styles.pair}>
+        <Button variant="primary" size="control" className={styles.primary} onClick={props.onPick}>
+          {moveButton(props.terms)}
+        </Button>
+        <Button variant="outline" size="control" className={styles.secondary} onClick={props.onKeep}>
+          {change.move.keep}
+        </Button>
+      </div>
+      <TextButton tone="muted" className={styles.quiet} onClick={props.onCancelInstead}>
+        {change.move.cancelInstead}
+      </TextButton>
+    </>
+  );
+}
+
+/** What cancelling costs, said before anything is cancelled, and the way to keep the visit instead. */
+function CancelStep(props: {
+  name: string;
+  terms: CancelTerms;
+  changed: boolean;
+  credits: Me["credits"];
+  problem: string | null;
+  busy: boolean;
+  onCancel: () => void;
+  onKeep: () => void;
+}) {
+  const { terms } = props;
+  return (
+    <>
+      <h2 className={styles.changeTitle} id="change-title">
+        {change.cancel.title(props.name)}
+      </h2>
+      {props.changed && (
+        <p className={styles.problem} role="alert">
+          {change.termsChanged}
+        </p>
+      )}
+      <p className={termsClass(terms.kept > 0 || terms.credit === "lost")}>{cancelLine(terms, props.credits)}</p>
+      {props.problem !== null && (
+        <p className={styles.problem} role="alert">
+          {props.problem}
+        </p>
+      )}
+      <div className={styles.pair}>
+        <Button
+          variant="primary"
+          size="control"
+          className={styles.primary}
+          disabled={props.busy}
+          busy={props.busy}
+          onClick={props.onCancel}
+        >
+          {cancelButton(terms)}
+        </Button>
+        <Button variant="outline" size="control" className={styles.secondary} onClick={props.onKeep}>
+          {change.cancel.keep}
+        </Button>
+      </div>
+    </>
+  );
+}
+
 export function ChangeSheet(props: {
   visit: ChangingVisit;
   start: "move" | "cancel";
-  onClose: (changed: boolean) => void;
+  onClose: (change: VisitChange) => void;
 }) {
   const { visit, onClose } = props;
   const { me } = useSession();
   const dialog = useRef<HTMLDialogElement>(null);
   const [step, setStep] = useState<Step>({ kind: "loading" });
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [problem, setProblem] = useState<string | null>(null);
-  const changed = useRef(false);
-  const name = change.visit(weekdayDate(visit.date).split(" ")[0] ?? "");
+  const changed = useRef<VisitChange>(null);
+  const name = change.visit(weekdayName(visit.date));
 
   const show = useCallback(
     async (what: "move" | "cancel") => {
@@ -125,26 +218,22 @@ export function ChangeSheet(props: {
 
   const close = () => dialog.current?.close();
 
-  const cancel = async (terms: CancelTerms) => {
-    setBusy(true);
-    setProblem(null);
-    const answer = await api.cancel(visit.id, terms.notice);
-    setBusy(false);
-    if (answer.ok) {
-      changed.current = true;
-      setStep({ kind: "cancelled", terms: answer.body });
-    } else if (answer.code === "terms_changed") {
-      const fresh = await api.cancelTerms(visit.id);
-      if (fresh.ok) setStep({ kind: "cancel", terms: fresh.body, changed: true });
-      else setStep({ kind: "broken" });
-    } else if (answer.code === "not_changeable") setStep({ kind: "unchangeable" });
-    else setProblem(change.failed);
-  };
+  const cancel = (terms: CancelTerms) =>
+    once(async () => {
+      setProblem(null);
+      const answer = await api.cancel(visit.id, terms.notice);
+      if (answer.ok) {
+        changed.current = "cancelled";
+        setStep({ kind: "cancelled", terms: answer.body });
+      } else if (answer.code === "terms_changed") {
+        const fresh = await api.cancelTerms(visit.id);
+        if (fresh.ok) setStep({ kind: "cancel", terms: fresh.body, changed: true });
+        else setStep({ kind: "broken" });
+      } else if (answer.code === "not_changeable") setStep({ kind: "unchangeable" });
+      else setProblem(change.failed);
+    });
 
-  // Picking the new time is the booking sheet's, in its own dialog.
-  if (step.kind === "picking") {
-    return <BookingSheet type={visit.type} moving={step.terms} onClose={onClose} />;
-  }
+  if (step.kind === "picking") return <PickAnother type={visit.type} terms={step.terms} onClose={onClose} />;
 
   return (
     <Sheet
@@ -166,65 +255,27 @@ export function ChangeSheet(props: {
           </>
         )}
         {step.kind === "move" && (
-          <>
-            <h2 className={styles.changeTitle} id="change-title">
-              {change.move.title(name)}
-            </h2>
-            <p className={termsClass(step.terms.cost !== "free")}>{moveLine(step.terms)}</p>
-            <div className={styles.pair}>
-              <Button
-                variant="primary"
-                size="control"
-                className={styles.primary}
-                onClick={() => {
-                  setStep({ kind: "picking", terms: step.terms });
-                }}
-              >
-                {moveButton(step.terms)}
-              </Button>
-              <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
-                {change.move.keep}
-              </Button>
-            </div>
-            <TextButton tone="muted" className={styles.quiet} onClick={() => void show("cancel")}>
-              {change.move.cancelInstead}
-            </TextButton>
-          </>
+          <MoveStep
+            name={name}
+            terms={step.terms}
+            onPick={() => {
+              setStep({ kind: "picking", terms: step.terms });
+            }}
+            onKeep={close}
+            onCancelInstead={() => void show("cancel")}
+          />
         )}
         {step.kind === "cancel" && (
-          <>
-            <h2 className={styles.changeTitle} id="change-title">
-              {change.cancel.title(name)}
-            </h2>
-            {step.changed && (
-              <p className={styles.problem} role="alert">
-                {change.termsChanged}
-              </p>
-            )}
-            <p className={termsClass(step.terms.kept > 0 || step.terms.credit === "lost")}>
-              {cancelLine(step.terms, me.credits)}
-            </p>
-            {problem !== null && (
-              <p className={styles.problem} role="alert">
-                {problem}
-              </p>
-            )}
-            <div className={styles.pair}>
-              <Button
-                variant="primary"
-                size="control"
-                className={styles.primary}
-                disabled={busy}
-                busy={busy}
-                onClick={() => void cancel(step.terms)}
-              >
-                {cancelButton(step.terms)}
-              </Button>
-              <Button variant="outline" size="control" className={styles.secondary} onClick={close}>
-                {change.cancel.keep}
-              </Button>
-            </div>
-          </>
+          <CancelStep
+            name={name}
+            terms={step.terms}
+            changed={step.changed}
+            credits={me.credits}
+            problem={problem}
+            busy={busy}
+            onCancel={() => void cancel(step.terms)}
+            onKeep={close}
+          />
         )}
         {step.kind === "cancelled" && (
           <div role="status">

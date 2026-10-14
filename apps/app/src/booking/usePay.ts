@@ -5,12 +5,11 @@
 import { useEffect, useRef, type Dispatch, type RefObject } from "react";
 import { api, type Hold } from "../api.ts";
 import { booking } from "../content.ts";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { loadCheckout, type Paid } from "./checkout.ts";
 import { holdOf, type BookingEvent, type Step } from "./flow.ts";
 import { useHoldLapse, usePollHold } from "./hold-clocks.ts";
-import { throughCheckout } from "./pay.ts";
-import { paysNothing } from "./steps/shared.tsx";
+import { paysNothing, throughCheckout } from "./pay.ts";
 
 /** Whether the hold's countdown has run out, by the API's clock. */
 const hasRunOut = (hold: Hold) => apiNow() >= Date.parse(hold.expires_at);
@@ -23,7 +22,8 @@ interface Paying {
   /** The photograph purposes booking a new visit also agrees to. */
   /** What the client asked for on the pay step before the booking starts: their reminders switched on. */
   readonly beforeStarting: () => Promise<void>;
-  readonly setBusy: (busy: boolean) => void;
+  /** The sheet's one-tap guard (packages/ui/useOneAtATime.ts), which holding a window shares. */
+  readonly once: (work: () => Promise<void>) => Promise<void>;
   readonly setProblem: (problem: string | null) => void;
 }
 
@@ -37,7 +37,6 @@ interface Refs {
 /** The visit credit this hold counted on went on another booking: the client sees the price before Checkout opens. */
 async function showPriceInstead(holdId: string, context: Paying): Promise<void> {
   const fresh = await api.holdById(holdId);
-  context.setBusy(false);
   if (!fresh.ok) {
     context.setProblem(booking.failedToStart);
     return;
@@ -74,8 +73,7 @@ async function startPaying(hold: Hold, context: Paying, refs: Refs): Promise<Pai
 export function usePay(step: Step, context: Paying) {
   const changed = useRef(false);
   const paying = useRef(false);
-  // True from the tap until Checkout has answered. `busy` disables the buttons, but only on
-  // the next render, and a tap in that gap would pay for the hold a second time (ADR 0057).
+  // True from the tap until Checkout has answered, so the hold's lapse waits for that answer (ADR 0057).
   const starting = useRef(false);
   const ordered = useRef<string | null>(null);
   const { dispatch } = context;
@@ -113,24 +111,22 @@ export function usePay(step: Step, context: Paying) {
     if (toPay) loadCheckout().catch(() => undefined);
   }, [toPay]);
 
-  const payFor = async (hold: Hold) => {
-    if (starting.current) return;
-    starting.current = true;
-    context.setBusy(true);
-    context.setProblem(null);
-    const outcome = await startPaying(hold, context, { paying, ordered }).finally(() => {
-      starting.current = false;
-      context.setBusy(false);
+  const payFor = (hold: Hold) =>
+    context.once(async () => {
+      starting.current = true;
+      context.setProblem(null);
+      const outcome = await startPaying(hold, context, { paying, ordered }).finally(() => {
+        starting.current = false;
+      });
+      if (outcome === "paid") {
+        changed.current = true;
+        dispatch({ kind: "paid", hold });
+        return;
+      }
+      // The hold's time may have run out while the client was paying, and its lapse waited for this answer.
+      if (hasRunOut(hold)) void lapse(hold);
+      else if (outcome === "failed") dispatch({ kind: "payFailed", hold });
     });
-    if (outcome === "paid") {
-      changed.current = true;
-      dispatch({ kind: "paid", hold });
-      return;
-    }
-    // The hold's time may have run out while the client was paying, and its lapse waited for this answer.
-    if (hasRunOut(hold)) void lapse(hold);
-    else if (outcome === "failed") dispatch({ kind: "payFailed", hold });
-  };
 
   return { payFor, letGo, changed, paying };
 }

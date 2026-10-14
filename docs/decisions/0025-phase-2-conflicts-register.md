@@ -327,6 +327,18 @@ Asked on the same day about a separate consent to the history, **the owner ruled
 
 101. **Departures taken from the audit of 11 October 2026, with the owner's go to fix what it found.** No board draws them: a sheet rises over the screen it came from with that screen still in view, under ink at 72% (`--sheet-scrim`), where solid ink hid it; the consultation card on Home names its technician, as every other visit's card does, once one has it; and the code screen sends the code at its sixth digit.
 
+## Sizes off the scale, 14 October 2026
+
+102. **The type scale keeps the boards' sizes, and the apps' other sizes are scale tokens but for eight.** The fourth audit counted the type sizes and found sizes written as raw values where the scale had them. The type scale (`packages/brand/tokens.css`, `--fs-13` to `--fs-56`) stays as the boards draw it: each step is a size a board sets, and collapsing them to fewer steps would redraw every board, which is a design change for the designer to make, not a fix. Every other size the apps name is a scale token's name (`--tech-primary` is `--sp-64`) except these, which a board draws off the scale and which `test/node/packages/brand-package.test.ts` lists:
+     - `--app-column`, 390 px: the boards' phone width.
+     - `--wa-bubble-width`, 310 px: WhatsApp's own bubble, where a board draws a message as WhatsApp shows it.
+     - `--switch-width`, 46 px: a consent's switch, as the client app's profile board draws it.
+     - `--skeleton-label` and `--skeleton-card`, 120 and 150 px: the loading state's two blocks.
+     - `--tracking-number`, 0.04 em: a mobile number spaced for reading.
+     - `--tech-row`, 88 px, and `--tech-time`, 76 px: the technician board's job row, and its time column, which holds "12:30 pm" on one line.
+
+A new size starts as a scale token; one that cannot is added to this list and the test's together.
+
 ## Inputs still owed
 
 The inputs each milestone needs are listed in the Phase 2 plan and in the provisioning table of `docs/prompts/phase2-backend.md`; what is still owed before production is `docs/open-points.md`. The FSM trial's findings are written up in `docs/archive/fsm-trial.md`. The licence for our own apps was ruled by the owner on 23 September 2026, so P2-M4 went ahead (`docs/archive/fsm-licensing.md`); Zoho's written answer is still wanted for the file (`docs/open-points.md`, item 30). (Corrected 27 September 2026: this said both were pending. Migration 0026's header still says P2-M4 waits on the licence; an applied migration is never edited, so `docs/migrations.md` records the correction.)

@@ -2,3 +2,4 @@
 
 export { type OpenPhoto, PhotoRow } from "./PhotoRow.tsx";
 export { PhotoSheet } from "./PhotoSheet.tsx";
+export { LINKS_FRESH_MS, type Relink, useRelink } from "./relink.ts";

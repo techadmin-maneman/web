@@ -6,18 +6,13 @@ import { firstNameOf } from "@rules/lib/names.ts";
 
 export const visitName = (type: VisitSummary["type"]) => (type === null ? OTHER_VISIT : VISIT_TYPES[type]);
 
-/**
- * A one visit's price; null for any other visit or booking. A Home the phone kept from an earlier release has none:
- * no field at all, or only true or false on a booking.
- */
-export const oneVisitOf = (visit: { readonly one_visit?: OneVisitPrice | boolean | null }): OneVisitPrice | null =>
-  typeof visit.one_visit === "object" ? visit.one_visit : null;
+/** A one visit's price; null for any other visit or booking. */
+export const oneVisitOf = (visit: { readonly one_visit: OneVisitPrice | null }): OneVisitPrice | null =>
+  visit.one_visit;
 
 /** The visit's kind, and its service where that says more: "First fit · Mane Man Essential". */
 export function visitTitle(visit: Pick<VisitSummary, "type" | "service">): string {
-  // A visit the phone kept from an earlier release names no service.
-  const service = visit.service ?? null;
-  return service === null ? visitName(visit.type) : `${visitName(visit.type)} · ${service}`;
+  return visit.service === null ? visitName(visit.type) : `${visitName(visit.type)} · ${visit.service}`;
 }
 
 /** A visit being booked, by its kind; a consultation and fit in one visit by that name. */

@@ -6,7 +6,7 @@
 import type { Moved } from "@maneman/web-kit/api";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Angle, FitSpec, History } from "./api.ts";
-import { clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
+import { apiDate, clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
 
 export const signIn = {
   title: "Technician sign in",
@@ -58,7 +58,7 @@ export const today = {
   },
   offline: {
     title: "No signal · working offline",
-    body: "Today’s jobs and cards are on the phone. Photos go up when signal returns.",
+    body: "Today’s jobs and cards are on the phone.",
   },
   // The board draws no failure for the day's list.
   failed: "The day’s jobs didn’t load.",
@@ -110,7 +110,7 @@ export const update = {
 /** A screen that failed to draw, which React would otherwise leave blank. */
 export const broken = {
   // Neither file draws a screen that failed.
-  message: "This screen didn’t open. Nothing you recorded is lost.",
+  message: "Couldn’t open this screen.",
   reload: "Reload",
 } as const;
 
@@ -187,8 +187,8 @@ const stopped: Readonly<Record<string, string>> = {
   photo_rejected: "The photos wouldn’t upload.",
   // Failed at our end after several tries: nothing is wrong with what was done.
   stuck: "This couldn’t reach us after several tries. Send it again.",
-  not_found: "This job is no longer on your list, so what it holds can’t reach us.",
-  already_closed: "This job is closed, so what it holds can’t reach us.",
+  not_found: "This job is no longer on your list.",
+  already_closed: "This job is closed.",
   piece_code: "The piece’s label wasn’t accepted.",
   old_piece: "The label of the piece that came off wasn’t accepted.",
   // A one visit's product, no longer offered when the step reached us (ADR 0105).
@@ -244,7 +244,7 @@ function startMoved(why: Why, startsNow: string | null): startsNow is string {
  * them; a job moved to another time names the new one once `startsNow`, the
  * start on the card the phone holds, differs; a cancellation is named first.
  */
-export function whatStopped(why: Why, now: Date = new Date(), startsNow: string | null = null): string {
+export function whatStopped(why: Why, now: Date = apiDate(), startsNow: string | null = null): string {
   const field = why.fields.find((each) => stopped[each] !== undefined);
   const moved = why.moved ?? null;
   if (field === "technician" && moved !== null) return movedTo(moved, now);
@@ -271,7 +271,7 @@ export const titles = {
 } as const;
 
 /** When a locked card opens. One that opened while the screen was up says to open the job again. */
-function opensAt(unlocksAt: string, now: Date = new Date()): string {
+function opensAt(unlocksAt: string, now: Date = apiDate()): string {
   if (Date.parse(unlocksAt) > now.getTime()) return `Opens at ${timeAndDay(unlocksAt, now)}.`;
   return `Open since ${timeAndDay(unlocksAt, now)}. Go back and open the job again.`;
 }
@@ -399,7 +399,7 @@ export const notHome = {
     no: "Not yet",
   },
   appears: {
-    // The board writes "He appears".
+    // The board's "appears" screen, which names the client, not a pronoun.
     title: "Client’s here",
     atTheDoor: (who: string) => `${who} is at the door`,
     body: "The timer stops. Nothing is charged.",
@@ -428,7 +428,10 @@ export const capture = {
   retry: "Try again",
   // The board draws no capture that failed.
   missed: "That photo didn’t save. Take it again.",
-  done: "All five are on the phone. They go up when there is signal.",
+  blank: "That photo came out blank. Take it again.",
+  // A camera that will not open does not stop the job: the set goes without its photographs, and ops look at it.
+  withoutPhotos: "Go on without photos",
+  done: "All five are on the phone.",
   finish: "Done",
   // The board draws no set the API refused.
   refusedPhotos: (angles: readonly string[]) =>
@@ -759,6 +762,7 @@ export const kit = {
   failed: "Your kit didn’t load.",
   retry: "Try again",
   needsSignal: "Needs signal",
+  notDone: "That didn’t go through. Try again.",
   coming: {
     title: "On its way",
     /** "From Gurgaon stockroom · sent Mon 21 Sep" */

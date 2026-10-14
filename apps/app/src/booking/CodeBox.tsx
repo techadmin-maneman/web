@@ -3,11 +3,12 @@
 // what is left. A code that does not apply is told only that. The box is shut while the sheet is busy paying; once
 // Checkout is closed unpaid, the code may change again, and the next Pay makes a new order for the new price.
 
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api, type Hold } from "../api.ts";
 import { booking } from "../content.ts";
 import { amountOff } from "../lib/money.ts";
@@ -16,6 +17,31 @@ import styles from "./booking.module.css";
 const copy = booking.pay.code;
 
 const said = (code: string): string => copy.errors[code] ?? copy.errors.unknown ?? "";
+
+/** A code on the hold: what it took off, and the way to take it off again. */
+function Applied(props: {
+  hold: Hold;
+  applied: NonNullable<Hold["discount"]>;
+  busy: boolean;
+  removing: boolean;
+  onRemove: () => void;
+  children: ReactNode;
+}) {
+  const { applied } = props;
+  return (
+    <div className={styles.code}>
+      {applied.list_price !== null && (
+        <p className={styles.codeApplied}>
+          {copy.applied(applied.code, amountOff(applied.list_price, props.hold.price))}
+        </p>
+      )}
+      <TextButton tone="muted" disabled={props.busy} onClick={props.onRemove}>
+        {props.removing ? copy.removing : copy.remove}
+      </TextButton>
+      {props.children}
+    </div>
+  );
+}
 
 export function CodeBox(props: {
   hold: Hold;
@@ -27,40 +53,37 @@ export function CodeBox(props: {
   const { hold, busy, onHold } = props;
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
-  const [sending, setSending] = useState(false);
+  const [sending, once] = useOneAtATime();
   const [problem, setProblem] = useState<string | null>(null);
   const applied = hold.discount;
+  const { onSending } = props;
+  useEffect(() => {
+    onSending(sending);
+  }, [sending, onSending]);
 
-  const send = (going: boolean) => {
-    setSending(going);
-    props.onSending(going);
-  };
+  const apply = () =>
+    once(async () => {
+      setProblem(null);
+      const answer = await api.enterCode(hold.id, typed.trim());
+      if (!answer.ok) {
+        setProblem(said(answer.code));
+        return;
+      }
+      setTyped("");
+      setOpen(false);
+      onHold(answer.body);
+    });
 
-  const apply = async () => {
-    send(true);
-    setProblem(null);
-    const answer = await api.enterCode(hold.id, typed.trim());
-    send(false);
-    if (!answer.ok) {
-      setProblem(said(answer.code));
-      return;
-    }
-    setTyped("");
-    setOpen(false);
-    onHold(answer.body);
-  };
-
-  const remove = async () => {
-    send(true);
-    setProblem(null);
-    const answer = await api.removeCode(hold.id);
-    send(false);
-    if (!answer.ok) {
-      setProblem(said(answer.code));
-      return;
-    }
-    onHold(answer.body);
-  };
+  const remove = () =>
+    once(async () => {
+      setProblem(null);
+      const answer = await api.removeCode(hold.id);
+      if (!answer.ok) {
+        setProblem(said(answer.code));
+        return;
+      }
+      onHold(answer.body);
+    });
 
   const shown = problem !== null && (
     <p className={styles.problem} role="alert">
@@ -70,15 +93,9 @@ export function CodeBox(props: {
 
   if (applied !== null) {
     return (
-      <div className={styles.code}>
-        {applied.list_price !== null && (
-          <p className={styles.codeApplied}>{copy.applied(applied.code, amountOff(applied.list_price, hold.price))}</p>
-        )}
-        <TextButton tone="muted" disabled={busy || sending} onClick={() => void remove()}>
-          {sending ? copy.removing : copy.remove}
-        </TextButton>
+      <Applied hold={hold} applied={applied} busy={busy || sending} removing={sending} onRemove={() => void remove()}>
         {shown}
-      </div>
+      </Applied>
     );
   }
 
@@ -106,26 +123,31 @@ export function CodeBox(props: {
         void apply();
       }}
     >
-      <Label className={capsLook(styles.label)} htmlFor="discount-code">
-        {copy.label}
-      </Label>
-      <div className={styles.codeRow}>
-        <TextInput
-          id="discount-code"
-          className={styles.codeInput}
-          autoCapitalize="characters"
-          autoComplete="off"
-          value={typed}
-          onChange={(event) => {
-            setTyped(event.target.value);
-            setProblem(null);
-          }}
-        />
-        <Button type="submit" variant="outline" size="control" disabled={busy || sending || typed.trim() === ""}>
-          {sending ? copy.applying : copy.apply}
-        </Button>
-      </div>
-      {shown}
+      <Field
+        label={copy.label}
+        error={problem}
+        announce
+        look={{ label: capsLook(styles.label), error: styles.problem }}
+      >
+        {(control) => (
+          <div className={styles.codeRow}>
+            <TextInput
+              {...control}
+              className={styles.codeInput}
+              autoCapitalize="characters"
+              autoComplete="off"
+              value={typed}
+              onChange={(event) => {
+                setTyped(event.target.value);
+                setProblem(null);
+              }}
+            />
+            <Button type="submit" variant="outline" size="control" disabled={busy || sending || typed.trim() === ""}>
+              {sending ? copy.applying : copy.apply}
+            </Button>
+          </div>
+        )}
+      </Field>
     </form>
   );
 }
