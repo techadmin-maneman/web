@@ -542,7 +542,7 @@ Made by `0107_city_blackouts_and_fitters.sql`.
 
 A matter Customer Care sent from a chat to the client's city, on that city's Tasks until it is closed (ADR 0135).
 
-Made by `0118_city_matters.sql`.
+Made by `0118_city_matters.sql`; changed by `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -556,6 +556,7 @@ Made by `0118_city_matters.sql`.
 
 Indexes:
 
+- `city_matters_by_conversation`: on (`conversation_id`), where `conversation_id IS NOT NULL`
 - `city_matters_by_person`: on (`person_id`)
 
 ## city_prices
@@ -1047,7 +1048,7 @@ Indexes:
 
 Every move ops make on the dispatch board: from where to where, by whom, why, what FSM said, and whether the client was told (ADR 0069).
 
-Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`, `0094_dispatch_move_blackout_reason.sql`, `0104_fsm_columns_expand.sql`.
+Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `0060_flat_task_reads.sql`, `0090_board_version.sql`, `0094_dispatch_move_blackout_reason.sql`, `0104_fsm_columns_expand.sql`, `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1072,6 +1073,7 @@ Made by `0026_field_operations.sql`; changed by `0040_dispatch_claims.sql`, `006
 Indexes:
 
 - `dispatch_moves_by_appointment`: on (`appointment_id`, `created_at`)
+- `dispatch_moves_by_message`: on (`message_id`), where `message_id IS NOT NULL`
 - `dispatch_moves_one_at_a_time`: unique on (`appointment_id`), where `fsm_write_state = 'pending'`
 - `dispatch_moves_untold`: on (`now_start`), where `fsm_write_state = 'written' AND told_at IS NULL`
 
@@ -1461,7 +1463,7 @@ Indexes:
 
 The evidence a no-show is ruled on, the ruling, and what a charge cost the client (ADR 0065, ADR 0072, ADR 0096).
 
-Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0065_dispute_window.sql`.
+Made by `0026_field_operations.sql`; changed by `0042_no_show_reasons.sql`, `0044_hand_offs_and_messages.sql`, `0054_policies_in_the_console.sql`, `0059_no_show_charges_and_disputes.sql`, `0065_dispute_window.sql`, `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1490,6 +1492,7 @@ Indexes:
 
 - `no_show_cases_by_appointment`: on (`appointment_id`, `created_at`)
 - `no_show_cases_by_decision`: on (`decision`, `created_at`)
+- `no_show_cases_by_message`: on (`message_id`), where `message_id IS NOT NULL`
 - A `UNIQUE` constraint: unique on (`checkin_id`)
 
 ## no_show_disputes

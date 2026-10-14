@@ -451,29 +451,28 @@ describe("the check itself", () => {
     ]);
   });
 
+  // A move's proposals point at it by move_id, which no index leads with, so writing a move plans a scan of them.
   it("lets through the look a write plans for rows pointing at the key it writes", () => {
-    const write = `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state,
-        queued_at)
-      SELECT ?1, ?2, ?3, 'visit_reminder', 'appointment', ?4, 'queued', ?2
-      WHERE NOT EXISTS (SELECT 1 FROM outbound_messages WHERE subject_id = ?4 AND kind = 'visit_reminder')`;
+    const write = `INSERT INTO dispatch_moves (id, appointment_id, reason, actor, fsm_write_state, created_at, updated_at)
+      SELECT ?1, ?2, 'client_asked', 'ops', 'none', ?3, ?3
+      WHERE NOT EXISTS (SELECT 1 FROM dispatch_moves WHERE appointment_id = ?2)`;
     const plan = (db.prepare(`EXPLAIN QUERY PLAN ${write}`).all() as { detail: string }[]).map((step) => step.detail);
-    expect(plan).toContain("SCAN dispatch_moves");
+    expect(plan).toContain("SCAN move_proposals");
     expect(fullReads(db, write)).toEqual([]);
     // One that does read the table names it, and is caught.
-    expect(fullReads(db, `${write} RETURNING (SELECT MAX(reason) FROM dispatch_moves)`)).toContain(
-      "SCAN dispatch_moves",
+    expect(fullReads(db, `${write} RETURNING (SELECT MAX(reason) FROM move_proposals)`)).toContain(
+      "SCAN move_proposals",
     );
   });
 
   it("tells that look from the write's own read of the same table under an alias", () => {
-    const write = `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state,
-        queued_at)
-      SELECT ?1, ?2, ?3, 'visit_moved', 'appointment', ?4, 'queued', ?2
-      WHERE EXISTS (SELECT 1 FROM dispatch_moves m WHERE m.appointment_id = ?4)`;
+    const write = `INSERT INTO dispatch_moves (id, appointment_id, reason, actor, fsm_write_state, created_at, updated_at)
+      SELECT ?1, ?2, 'client_asked', 'ops', 'none', ?3, ?3
+      WHERE EXISTS (SELECT 1 FROM move_proposals p WHERE p.id = ?4)`;
     const plan = (db.prepare(`EXPLAIN QUERY PLAN ${write}`).all() as { detail: string }[]).map((step) => step.detail);
-    expect(plan).toContain("SCAN dispatch_moves");
+    expect(plan).toContain("SCAN move_proposals");
     expect(fullReads(db, write)).toEqual([]);
-    expect(fullReads(db, write.replace("m.appointment_id = ?4", "m.reason IS NOT NULL"))).toEqual(["SCAN m EXISTS"]);
+    expect(fullReads(db, write.replace("p.id = ?4", "p.reason IS NOT NULL"))).toEqual(["SCAN p EXISTS"]);
   });
 
   it("lets through a result SQLite makes itself from a subquery", () => {

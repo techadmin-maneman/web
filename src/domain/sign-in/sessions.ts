@@ -16,7 +16,7 @@ type SessionKind = "client" | "technician";
  * The longest a session lasts from its sign-in, however often it is used: a technician signs in again each month, so a
  * copied cookie, or a phone kept after leaving, works no longer than that; a client, each half year.
  */
-export const SESSION_LIFETIME_MS: Readonly<Record<SessionKind, number>> = {
+const SESSION_LIFETIME_MS: Readonly<Record<SessionKind, number>> = {
   client: 180 * DAY_MS,
   technician: 30 * DAY_MS,
 };

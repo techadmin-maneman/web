@@ -131,6 +131,7 @@ const HISTORY = [
    SELECT 'rm-' || i, 'p-' || i, 1, 'fit_problem', 'Edge lifting.', 'care@maneman.in', '${AGO}', 'given' FROM n`,
   `INSERT INTO care_owners (person_id, email, since, assigned_by)
    SELECT 'p-' || i, 'care-' || (i % 5) || '@maneman.in', '${AGO}', 'system' FROM n`,
+  `INSERT INTO razorpay_events (event_id, event, received_at) SELECT 'evt-' || i, 'payment.captured', '${AGO}' FROM n`,
   `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at)
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
   `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)

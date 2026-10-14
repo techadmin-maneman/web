@@ -15,6 +15,7 @@ import {
   WAITLIST_AFTER_LAUNCH_MONTHS,
 } from "../../policy/retention.ts";
 import { DAY_MS } from "../../lib/durations.ts";
+import { expiredMessagesStatement } from "../messages/queued-messages.ts";
 
 /**
  * People who never had a visit or a payment (`client_since`, which a visit's write stamps, and migration 0099's
@@ -86,32 +87,29 @@ const STRANGER_CHATS = `SELECT c.id FROM conversations c INDEXED BY conversation
  */
 export async function dropExpired(db: D1Database, now: Date): Promise<number> {
   const before = (months: number) => monthsBefore(now, months);
-  const run = (sql: string, months: number) => db.prepare(sql).bind(before(months), PURGED_PER_RUN);
   const results = await db.batch([
-    run(
-      `DELETE FROM alerts WHERE id IN (
-         SELECT id FROM alerts INDEXED BY alerts_resolved WHERE resolved_at < ?1 ORDER BY resolved_at LIMIT ?2)`,
-      RESOLVED_ALERT_MONTHS,
-    ),
-    run(
-      `DELETE FROM razorpay_events WHERE event_id IN (
-         SELECT event_id FROM razorpay_events WHERE received_at < ?1 ORDER BY received_at LIMIT ?2)`,
-      RAZORPAY_EVENT_MONTHS,
-    ),
-    run(`DELETE FROM chat_messages WHERE conversation_id IN (${STRANGER_CHATS})`, STRANGER_CHAT_MONTHS),
-    run(`DELETE FROM conversations WHERE id IN (${STRANGER_CHATS})`, STRANGER_CHAT_MONTHS),
-    run(
-      `DELETE FROM outbound_messages WHERE id IN (
-         SELECT m.id FROM outbound_messages m WHERE m.created_at < ?1
-           AND NOT EXISTS (SELECT 1 FROM no_show_cases n WHERE n.message_id = m.id)
-           AND NOT EXISTS (SELECT 1 FROM dispatch_moves d WHERE d.message_id = m.id)
-         ORDER BY m.created_at LIMIT ?2)`,
-      SENT_MESSAGE_MONTHS,
-    ),
-    run(
-      `DELETE FROM audit_log WHERE id IN (SELECT id FROM audit_log WHERE at < ?1 ORDER BY at LIMIT ?2)`,
-      AUDIT_LOG_MONTHS,
-    ),
+    db
+      .prepare(
+        `DELETE FROM alerts WHERE id IN (
+           SELECT id FROM alerts INDEXED BY alerts_resolved WHERE resolved_at < ?1 ORDER BY resolved_at LIMIT ?2)`,
+      )
+      .bind(before(RESOLVED_ALERT_MONTHS), PURGED_PER_RUN),
+    db
+      .prepare(
+        `DELETE FROM razorpay_events WHERE event_id IN (
+           SELECT event_id FROM razorpay_events WHERE received_at < ?1 ORDER BY received_at LIMIT ?2)`,
+      )
+      .bind(before(RAZORPAY_EVENT_MONTHS), PURGED_PER_RUN),
+    db
+      .prepare(`DELETE FROM chat_messages WHERE conversation_id IN (${STRANGER_CHATS})`)
+      .bind(before(STRANGER_CHAT_MONTHS), PURGED_PER_RUN),
+    db
+      .prepare(`DELETE FROM conversations WHERE id IN (${STRANGER_CHATS})`)
+      .bind(before(STRANGER_CHAT_MONTHS), PURGED_PER_RUN),
+    expiredMessagesStatement(db, before(SENT_MESSAGE_MONTHS), PURGED_PER_RUN),
+    db
+      .prepare("DELETE FROM audit_log WHERE id IN (SELECT id FROM audit_log WHERE at < ?1 ORDER BY at LIMIT ?2)")
+      .bind(before(AUDIT_LOG_MONTHS), PURGED_PER_RUN),
   ]);
-  return results.reduce((sum, result) => sum + (result.meta.changes ?? 0), 0);
+  return results.reduce((sum, result) => sum + result.meta.changes, 0);
 }
