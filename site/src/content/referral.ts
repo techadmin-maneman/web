@@ -15,6 +15,7 @@
 // they are the design's.
 
 import type { Invite, OpenWindows, ReferralConsultation, ReferralReward } from "../lib/api.ts";
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
 import { rupees } from "@maneman/web-kit/money";
 import { fill } from "../lib/text.ts";
 import { capitalised, serviceArea, visitLength } from "./service.ts";
@@ -287,7 +288,7 @@ export const referral = {
       flat: "Flat or house number",
       floor: "Floor (optional)",
       tower: "Tower or block (optional)",
-      line1: "Building or society",
+      line1: CLIENT_WORDS.addressLine,
       line2: "Street (optional)",
       landmark: "Landmark (optional)",
       locality: "Sector or area",
@@ -296,13 +297,13 @@ export const referral = {
     },
     errors: {
       flat: "Enter the flat or house number.",
-      line1: "Enter the building or society.",
+      line1: "Enter the building, society or street.",
       locality: "Enter the sector or area.",
       city: "Enter the city.",
     },
     more: "Add floor, tower or landmark",
     pincode: "Pincode",
-    accessHint: "A gate code, or where to park. Your technician sees it the day before the visit.",
+    accessHint: CLIENT_WORDS.accessHint,
   },
   /** The waitlist form, shown when the pincode is not served. */
   waitlist: {
@@ -337,9 +338,9 @@ export const referral = {
   form: {
     name: "Name",
     namePlaceholder: "Your name",
-    nameError: "Enter your name in letters.",
+    nameError: CLIENT_WORDS.nameError,
     mobile: "Mobile",
-    mobilePlaceholder: "Your number",
+    mobilePlaceholder: CLIENT_WORDS.mobilePlaceholder,
     mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",
     /** Beneath the agreement on every form that takes a name and number: what binds the visitor, and to read it. */
@@ -423,7 +424,7 @@ export const referral = {
     turnstile: "We couldn’t confirm you’re a person. Try again.",
     taken: "That time isn’t available. Pick another.",
     notBookable: "That day’s no longer open. Pick another.",
-    other: "Something went wrong on our side. Try again.",
+    other: CLIENT_WORDS.failed,
     // Not drawn: the discount code given does not apply, whatever the reason (ADR 0108).
     codeNotApplicable: "That discount code doesn’t apply. Check it, or leave it out to book without it.",
     // Not drawn: the one visit was asked for while no hair system is offered in the console.

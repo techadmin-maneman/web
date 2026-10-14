@@ -2538,7 +2538,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "tryOn",
-    "text": "Tell us what to call you, in letters."
+    "text": "Enter your name."
   },
   {
     "key": "site:tryon/tryOn.gate.mobile",
@@ -3042,7 +3042,7 @@
     "surface": "site",
     "group": "Try-on",
     "where": "numberCode",
-    "text": "Enter the six digits from WhatsApp."
+    "text": "Enter the 6 digits from WhatsApp."
   },
   {
     "key": "site:tryon/numberCode.expired",
@@ -4337,7 +4337,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Building or society"
+    "text": "Building, society or street"
   },
   {
     "key": "site:referral/referral.address.labels.line2",
@@ -4386,7 +4386,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Enter the building or society."
+    "text": "Enter the building, society or street."
   },
   {
     "key": "site:referral/referral.address.errors.locality",
@@ -4421,7 +4421,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "A gate code, or where to park. Your technician sees it the day before the visit."
+    "text": "Gate code or parking. Your technician sees it the day before."
   },
   {
     "key": "site:referral/referral.waitlist.title",
@@ -4554,7 +4554,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Enter your name in letters."
+    "text": "Enter your name."
   },
   {
     "key": "site:referral/referral.form.mobile",
@@ -4562,13 +4562,6 @@
     "group": "Invite page",
     "where": "referral",
     "text": "Mobile"
-  },
-  {
-    "key": "site:referral/referral.form.mobilePlaceholder",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Your number"
   },
   {
     "key": "site:referral/referral.form.mobileError",
@@ -4897,7 +4890,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Something went wrong on our side. Try again."
+    "text": "That didn’t go through. Try again."
   },
   {
     "key": "site:referral/referral.errors.codeNotApplicable",

@@ -134,7 +134,7 @@ test("the tabs reach Visits and the empty Photos, Payments and Refer", async ({ 
 test("a wrong code says so, in the design’s words, and the fifth voids it", async ({ page }) => {
   await sendCode(page, bookedNumber());
   const field = page.getByRole("textbox", { name: appCopy.login.code.label });
-  for (const left of ["Four attempts left.", "Three attempts left.", "Two attempts left.", "One attempt left."]) {
+  for (const left of ["4 tries left.", "3 tries left.", "2 tries left.", "1 try left."]) {
     await enter(page, WRONG);
     await expect(page.getByRole("alert")).toHaveText(`That code didn’t match. ${left}`);
     await expect(field).toHaveAttribute("aria-invalid", "true");
@@ -219,7 +219,7 @@ test("a number with no booking sees the same screen, and no code opens it", asyn
   await sendCode(page, randomMobile());
   await expect(page.getByText("has a booking with us, a code is on its way on WhatsApp.")).toBeVisible();
   await enter(page, CODE);
-  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. Four attempts left.");
+  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. 4 tries left.");
 });
 
 // The site's booking confirmation opens the app with the number typed there.
@@ -326,7 +326,7 @@ test("names each login screen in the browser’s title, and puts focus where the
   await expect(field).toBeFocused();
 
   await enter(page, WRONG);
-  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. Four attempts left.");
+  await expect(page.getByRole("alert")).toHaveText("That code didn’t match. 4 tries left.");
   await expect(field).toBeFocused();
 
   await page.getByRole("button", { name: "No booking on this number?" }).click();

@@ -1,5 +1,7 @@
 // The profile: the address, what the client has agreed to, and the account.
 
+import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
+
 /** What every visit's photographs are. PLACEHOLDER: awaits counsel (docs/open-points.md, item 69). */
 export const VISIT_PHOTOS =
   "Photos at every visit: five angles, for your record. Only you and your technician see them.";
@@ -33,13 +35,13 @@ export const profile = {
     tower: "Tower or block (optional)",
     landmark: "Landmark (optional)",
     // The flat is asked for on its own above, so this line is the building or the street the house is on.
-    line1: "Building, society or street",
+    line1: CLIENT_WORDS.addressLine,
     line2: "Street (optional)",
     locality: "Sector or area",
     city: "City",
     pincode: "Pincode",
     accessNotes: "Access notes (optional)",
-    accessHint: "Gate code or parking. Your technician sees it the day before.",
+    accessHint: CLIENT_WORDS.accessHint,
     save: "Save",
     cancel: "Cancel",
     invalid: "Add your flat or house number, building or street, area, city and 6-digit pincode.",

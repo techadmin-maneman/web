@@ -1,5 +1,7 @@
 // Signing in: the number, the code and the help.
 
+import { CLIENT_WORDS, codeMismatch } from "@maneman/web-kit/client-words";
+
 export const login = {
   /** Under a limit on codes, on the number and the code screens. */
   messageUs: "Message us on WhatsApp",
@@ -18,7 +20,7 @@ export const login = {
       busy: "We can’t send codes right now. Try again in a few minutes.",
       turnstile_failed: "We couldn’t confirm you’re a person. Try again.",
       offline: "You’re offline. Reconnect and try again.",
-      unknown: "Something went wrong. Try again.",
+      unknown: CLIENT_WORDS.failed,
     },
   },
   code: {
@@ -41,11 +43,8 @@ export const login = {
     canResend: "You can ask for a new code now.",
     submit: "Continue",
     noBooking: "No booking on this number?",
-    /** The design's one line, "That code did not match. Two attempts left." */
-    mismatch: (left: number) =>
-      left === 0
-        ? "That code didn’t match, and it no longer works."
-        : `That code didn’t match. ${ATTEMPTS[left] ?? `${String(left)} attempts left.`}`,
+    /** "That code didn’t match. 2 tries left.", as the site says it. */
+    mismatch: codeMismatch,
     // The design draws the void code, but not these words or the ones below.
     expired: "This code no longer works.",
     fresh: "Send a new code",
@@ -63,10 +62,3 @@ export const login = {
     message: "Message us",
   },
 } as const;
-
-const ATTEMPTS: Readonly<Record<number, string>> = {
-  1: "One attempt left.",
-  2: "Two attempts left.",
-  3: "Three attempts left.",
-  4: "Four attempts left.",
-};

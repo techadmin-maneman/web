@@ -1,5 +1,6 @@
 // The try-on: the stages, the looks, the consent and the gate, and every screen of /try.
 
+import { CLIENT_WORDS, codeMismatch } from "@maneman/web-kit/client-words";
 import { LOSS_EXTENTS, type LossExtent } from "@rules/config/booking.ts";
 import { PRESETS, type PresetId } from "@rules/config/presets.ts";
 import type { ErrorKind } from "../../lib/tryon-errors.ts";
@@ -140,9 +141,9 @@ export const tryOn = {
     frame: "For your WhatsApp only",
     name: "Name",
     namePlaceholder: "Your name",
-    nameError: "Tell us what to call you, in letters.",
+    nameError: CLIENT_WORDS.nameError,
     mobile: "Mobile",
-    mobilePlaceholder: "98100 00000",
+    mobilePlaceholder: CLIENT_WORDS.mobilePlaceholder,
     mobileError: "Enter a valid 10-digit mobile number.",
     submit: "Send my look",
     // Not drawn: once the WhatsApp code is on its way, the button confirms it and sends the look.
@@ -268,11 +269,10 @@ export const numberCode = {
   /** The number the code went to goes after it. */
   sentTo: "Sent on WhatsApp to +91 ",
   hint: "It confirms the number is yours.",
-  incomplete: "Enter the six digits from WhatsApp.",
-  wrong: (left: number) =>
-    left === 1 ? "That code is not right. One try left." : `That code is not right. ${String(left)} tries left.`,
+  incomplete: "Enter the 6 digits from WhatsApp.",
+  wrong: codeMismatch,
   expired: "That code has expired. Send a new one.",
-  failed: "That didn’t go through. Try again.",
+  failed: CLIENT_WORDS.failed,
   again: "Send a new code",
   checking: "Checking…",
 };

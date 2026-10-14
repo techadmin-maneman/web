@@ -236,7 +236,7 @@ test("the gate claims nothing until the WhatsApp code sent to the number is ente
   await expect(page.getByLabel(siteCopy.numberCode.label)).toBeFocused();
   await page.getByLabel(siteCopy.numberCode.label).fill("111111");
   await page.getByRole("button", { name: siteCopy.tryOn.gate.confirm }).click();
-  await expect(page.getByText("That code is not right. 4 tries left.")).toBeVisible();
+  await expect(page.getByText("That code didn’t match. 4 tries left.")).toBeVisible();
   expect(named(seen, "claim")).toHaveLength(0);
 
   await page.getByLabel(siteCopy.numberCode.label).fill(NUMBER_CODE);

@@ -433,7 +433,7 @@ test("books the one visit only with the right WhatsApp code", async ({ page }) =
 
   await page.getByLabel(siteCopy.numberCode.label).fill("111111");
   await page.getByRole("button", { name: referralCopy.referral.consultation.confirmOneVisit }).click();
-  await expect(page.getByText("That code is not right. 4 tries left.")).toBeVisible();
+  await expect(page.getByText("That code didn’t match. 4 tries left.")).toBeVisible();
   expect(requests).toHaveLength(0);
 
   await page.getByLabel(siteCopy.numberCode.label).fill(NUMBER_CODE);
@@ -887,7 +887,7 @@ test("a name that is not letters is marked at its field, focused, and not sent",
 
   const name = page.getByLabel(siteCopy.tryOn.gate.name);
   await expect(name).toHaveAttribute("aria-invalid", "true");
-  await expect(name).toHaveAccessibleDescription("Enter your name in letters.");
+  await expect(name).toHaveAccessibleDescription("Enter your name.");
   await expect(name).toBeFocused();
   expect(leads).toHaveLength(0);
 });

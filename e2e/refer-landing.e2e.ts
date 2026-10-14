@@ -471,7 +471,7 @@ test("the fields the form needs are marked as required", async ({ page }) => {
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveAttribute("aria-required", "true");
   await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAttribute("aria-required", "true");
   await expect(page.getByRole("checkbox")).toHaveAttribute("aria-required", "true");
-  for (const part of ["Flat or house number", "Building or society", "Sector or area", "City"]) {
+  for (const part of ["Flat or house number", "Building, society or street", "Sector or area", "City"]) {
     await expect(page.getByLabel(part)).toHaveAttribute("aria-required", "true");
   }
   for (const part of ["Street (optional)", "Access notes (optional)"]) {
@@ -724,7 +724,7 @@ test("the desktop page is the design’s two columns, and its fields keep to the
 
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
-  for (const field of ["Building or society", "Name"]) {
+  for (const field of ["Building, society or street", "Name"]) {
     const box = await page.getByLabel(field).boundingBox();
     expect(box?.width ?? 0, field).toBeLessThanOrEqual(width / 2);
   }
@@ -753,7 +753,7 @@ test("the form fits a 320 px screen", async ({ page }) => {
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByRole("button", { name: referralCopy.referral.consultation.submit })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-  for (const field of ["Building or society", "Access notes (optional)", "Name", "Mobile"]) {
+  for (const field of ["Building, society or street", "Access notes (optional)", "Name", "Mobile"]) {
     const box = await page.getByLabel(field).boundingBox();
     expect((box?.x ?? 0) + (box?.width ?? 0), field).toBeLessThanOrEqual(320);
   }
