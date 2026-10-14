@@ -298,7 +298,7 @@
     "surface": "site",
     "group": "Home",
     "where": "norwood",
-    "text": "A system here would cover hair you still have."
+    "text": "A hair system here would cover hair you still have."
   },
   {
     "key": "site:home/norwood.early.stages.0.name",
@@ -1957,7 +1957,7 @@
     "surface": "site",
     "group": "Stop messages",
     "where": "stopMessages",
-    "text": "We won’t message you on WhatsApp about your visits any more. We’ll call you about any change."
+    "text": "We’ll only message you on WhatsApp about payments and refunds, and call you about any change to a visit."
   },
   {
     "key": "site:pages/stopMessages.done.whatsapp_launches",
@@ -3927,6 +3927,20 @@
     "text": "You have an invite"
   },
   {
+    "key": "site:referral/referral.arrival.card.personal",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{name}’s before and after with Mane Man"
+  },
+  {
+    "key": "site:referral/referral.arrival.card.house",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "A Mane Man before and after"
+  },
+  {
     "key": "site:referral/referral.arrival.title",
     "surface": "site",
     "group": "Invite page",
@@ -3945,7 +3959,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "We do not recognise this invite"
+    "text": "We don’t recognise this invite"
   },
   {
     "key": "site:referral/referral.howItWorks.title",
@@ -5422,7 +5436,7 @@
     "surface": "message",
     "group": "Messages",
     "where": "messages_stopped_v1",
-    "text": "Done, {{1}}. We won't message you here about your visits, or when we come to a new area."
+    "text": "Done, {{1}}. We'll only message you here about payments and refunds."
   },
   {
     "key": "message:care_after_hours_v1",

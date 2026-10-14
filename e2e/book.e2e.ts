@@ -193,7 +193,7 @@ test("the page introduces itself, with no invite and no card", async ({ page }) 
 
   await expect(page.getByRole("heading", { level: 1, name: "Book a free consultation" })).toBeVisible();
   await expect(page.getByText("sent you this")).toBeHidden();
-  await expect(page.getByText("We do not recognise this invite")).toBeHidden();
+  await expect(page.getByText("We don’t recognise this invite")).toBeHidden();
   await expect(page.locator("img[width='1200']")).toHaveCount(0);
 });
 
@@ -754,7 +754,7 @@ test("an invite opened more than 30 days ago, or one we do not know, is not sent
     }),
   );
   await visit(page, "/r/ZZ9999");
-  await expect(page.getByText("We do not recognise this invite")).toBeVisible();
+  await expect(page.getByText("We don’t recognise this invite")).toBeVisible();
   expect(await remembered(page)).toBeNull();
 
   const opened = new Date(Date.now() - 31 * 86_400_000).toISOString();

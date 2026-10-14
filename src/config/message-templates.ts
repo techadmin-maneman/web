@@ -169,7 +169,7 @@ export const TEMPLATES = {
   // The line every message that sends the client to the app ends with, {{1}} the app's address (sendsToApp below).
   app_link_v1: "Open the app: {{1}}",
   // The answer to a STOP reply, once it has withdrawn something.
-  messages_stopped_v1: "Done, {{1}}. We won't message you here about your visits, or when we come to a new area.",
+  messages_stopped_v1: "Done, {{1}}. We'll only message you here about payments and refunds.",
   // The answer to a message sent outside Customer Care's hours (src/domain/care/after-hours.ts): {{1}} when Care open,
   // {{2}} when the message is answered by.
   // {{1}} when Care are back: "9 am tomorrow", or "9 am" to a message written after midnight.

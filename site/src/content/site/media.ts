@@ -104,7 +104,7 @@ export const technicians = {
 export const testimonials = {
   publish: false,
   title: "What clients say",
-  intro: "Three men who had a system fitted at home in the last year.",
+  intro: "Three men who had a hair system fitted at home in the last year.",
   quotes: [
     {
       photo: { file: "client-1.jpg", alt: "Portrait of a Mane Man client" },
@@ -116,14 +116,14 @@ export const testimonials = {
     {
       photo: { file: "client-2.jpg", alt: "Portrait of a Mane Man client" },
       quote:
-        "The first fit took about ninety minutes. What I did not expect was the monthly visit — they lift it, clean the base, re-cut it, and are gone inside an hour.",
+        "The first fit took the morning. What I didn’t expect was how easy the visits after it are — they lift it, clean the base, re-cut it, and are gone before lunch.",
       name: "Client name",
       meta: "Age · Norwood V · Noida",
     },
     {
       photo: { file: "client-3.jpg", alt: "Portrait of a Mane Man client" },
       quote:
-        "I asked what happens if I hate it. They gave me the fourteen-day terms before taking any money, which is why I went ahead.",
+        "I asked what happens if I hate it. They gave me the 14-day terms before taking any money, which is why I went ahead.",
       name: "Client name",
       meta: "Age · Norwood III · Delhi",
     },

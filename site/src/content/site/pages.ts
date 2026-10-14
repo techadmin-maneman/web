@@ -53,7 +53,7 @@ export const stopMessages = {
   },
   done: {
     title: "Done.",
-    whatsapp_visits: "We won’t message you on WhatsApp about your visits any more. We’ll call you about any change.",
+    whatsapp_visits: "We’ll only message you on WhatsApp about payments and refunds, and call you about any change to a visit.",
     whatsapp_launches: "We won’t message you when we come to a new area any more.",
     again: "Changed your mind? Switch them back on in the Mane Man app, or message us at {whatsapp}.",
   },

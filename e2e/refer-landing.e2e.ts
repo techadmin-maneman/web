@@ -274,7 +274,8 @@ test("a code we do not know still books, without the invite’s visits", async (
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a free consultation");
   await expect(page).toHaveTitle("Book a free consultation — Mane Man");
   await expect(page.getByText(referralCopy.referral.arrival.unnamed)).toBeHidden();
-  await expect(page.getByText("We do not recognise this invite")).toBeVisible();
+  await expect(page.getByText("We don’t recognise this invite")).toBeVisible();
+  await expect(page.getByRole("img", { name: "A Mane Man before and after" })).toBeVisible();
   await expect(page.getByText("The consultation is still free; the 3 service visits do not apply.")).toBeVisible();
   await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeHidden();
 
@@ -322,7 +323,7 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
     "A hair system, fitted at home. The consultation is free.",
   );
   await expect(page.getByText(referralCopy.referral.arrival.unnamed)).toBeVisible();
-  await expect(page.getByText("We do not recognise this invite")).toBeHidden();
+  await expect(page.getByText("We don’t recognise this invite")).toBeHidden();
   await expect(page.getByText(/3 service visits/)).toHaveCount(0);
   await page.getByLabel("Pincode").fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
@@ -717,7 +718,7 @@ test("the desktop page is the design’s two columns, and its fields keep to the
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   const title = await page.getByRole("heading", { level: 1 }).boundingBox();
-  const card = await page.locator("img[width='1200']").boundingBox();
+  const card = await page.getByRole("img", { name: "Rohit’s before and after with Mane Man" }).boundingBox();
   expect(card?.x ?? 0).toBeGreaterThan(width / 2);
   expect(card?.y ?? 0).toBeLessThan(title?.y ?? 0);
 

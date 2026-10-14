@@ -166,6 +166,11 @@ export const referral = {
     invited: "{name} sent you this",
     partner: "Recommended by {partner}",
     unnamed: "You have an invite",
+    /** The card beside the invite: the referrer's own before and after, or ours. */
+    card: {
+      personal: "{name}’s before and after with Mane Man",
+      house: "A Mane Man before and after",
+    },
     title: "A hair system, fitted at home. The consultation is free.",
     offer: inviteOffer,
     discount: discountOffer,
@@ -176,7 +181,7 @@ export const referral = {
      */
     unknown: {
       title: booking.title,
-      notice: "We do not recognise this invite",
+      notice: "We don’t recognise this invite",
       body: unknownBody,
     },
   },

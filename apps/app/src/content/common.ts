@@ -110,7 +110,7 @@ export const messages = {
   // A visit's invoice that has not come in the day it should have.
   lateInvoice: (what: string, date: string) => `Please send me the invoice for my ${what.toLowerCase()} on ${date}.`,
   // A refund that has taken longer than Razorpay's working days.
-  lateRefund: (what: string, date: string) => `My refund for ${what.toLowerCase()} from ${date} hasn’t arrived.`,
+  lateRefund: (what: string, date: string) => `My refund for my ${what.toLowerCase()} on ${date} hasn’t arrived.`,
   // A client moving to another city while a visit is booked.
   moveCity: "I’m moving to another city and have a visit booked.",
 } as const;

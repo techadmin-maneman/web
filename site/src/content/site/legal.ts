@@ -96,7 +96,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "Prices and payment",
         paragraphs: [
-          "Prices include GST, and are the ones shown before you pay. A visit you book in the app is paid when you book it, by UPI or card; a consultation and fit in one visit is paid once you are fitted. A first fit covers the hair system, the fitting and the cut. Your technician never handles money. We take no deposit and sell no package.",
+          "Prices include GST, and are the ones shown before you pay. A visit you book in the app is paid when you book it, by UPI, card or any method Razorpay offers; a consultation and fit in one visit is paid once you are fitted. A first fit covers the hair system, the fitting and the cut. Your technician never handles money. We take no deposit and sell no package.",
         ],
       },
       {
@@ -109,7 +109,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "The guarantee",
         paragraphs: [
-          "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within 14 days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a system is not suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we give are typical, not promised.",
+          "If the fit is not right, we refit it at no charge, or refund you in full, including the fitting and the cut, within 14 days of the fit. A hair system is bonded to the skin, so tell the technician about any skin condition, allergy or treatment before the fit; if a hair system isn’t suitable for you, we say so and do not fit it. A base wears with use and its life depends on its care, so the replacement intervals we give are typical, not promised.",
         ],
       },
       {

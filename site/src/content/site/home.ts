@@ -108,7 +108,7 @@ export const norwood = {
   intro: "Hair loss in men is graded in seven stages.",
   early: {
     label: "Stages one and two · nothing to fit yet",
-    note: "A system here would cover hair you still have.",
+    note: "A hair system here would cover hair you still have.",
     stages: [
       {
         numeral: "I",

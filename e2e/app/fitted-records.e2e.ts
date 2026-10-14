@@ -209,7 +209,7 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
   await expect(page.getByText(appCopy.payments.lateRefund)).toBeVisible();
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
     "href",
-    new RegExp(encodeURIComponent("My refund for service visit from")),
+    new RegExp(encodeURIComponent("My refund for my service visit on")),
   );
   await expect(page.getByText("+ Rs. 1,000", { exact: true })).toBeVisible();
 });
