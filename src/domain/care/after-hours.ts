@@ -5,6 +5,7 @@
 import { renderMessage } from "../../config/message-templates.ts";
 import type { MessagingSettings } from "../../config/settings.ts";
 import { indiaHour } from "../../lib/india-time.ts";
+import { timeOfDay } from "../../lib/time-range.ts";
 import { careIsOn, lastClosed, type CareHours } from "../../policy/care-hours.ts";
 import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
 import type { MessagingProvider } from "../../providers/messaging/index.ts";
@@ -15,12 +16,8 @@ export const AUTO_REPLY = "auto";
 
 const TEMPLATE = "care_after_hours_v1";
 
-/** "9 am", "noon", "9 pm", as the message says an hour. */
-function hourWords(hour: number): string {
-  if (hour === 0) return "midnight";
-  if (hour === 12) return "noon";
-  return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
-}
+/** "9 am", "12 noon", "9 pm", as the message says an hour. */
+const hourWords = (hour: number): string => timeOfDay(`${String(hour).padStart(2, "0")}:00`);
 
 /** When Care are back, as the message says it: "9 am tomorrow", or "9 am" before they open on the same day. */
 function backWords(at: Date, hours: CareHours): string {

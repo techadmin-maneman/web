@@ -16,6 +16,7 @@ import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { isMovable, movesIfCheckInCleared, nameOf, type BlockJob, type VisitChange, windowWord } from "./job.ts";
 import { firstNameOf } from "@rules/lib/names.ts";
+import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 
 /** Each action is null when the person's access does not let them take it. */
 interface Props {
@@ -48,6 +49,9 @@ function warningOf(job: BlockJob): string | null {
   return dispatch.drawer.stays;
 }
 
+/** The window's hours on the visit's day, as ops set them: "12–4 pm". */
+const hoursOf = ({ block }: BlockJob) => timeRange(block.window_hours.start, block.window_hours.end, UNBROKEN);
+
 export function BlockDrawer(props: Props) {
   const { job, onMove, onMoveAnyway, onTold, onWithdraw, change, onChange, onLetIn, onClose } = props;
   const copy = dispatch.drawer;
@@ -72,7 +76,7 @@ export function BlockDrawer(props: Props) {
     <Drawer
       titleId="drawer-title"
       title={person?.name ?? nameOf(job)}
-      sub={copy.when(shortDate(job.date), dispatch.windowHours[block.window], job.technician.name)}
+      sub={copy.when(shortDate(job.date), hoursOf(job), job.technician.name)}
       aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge]}</span>}
       canClose
       onDismiss={onClose}

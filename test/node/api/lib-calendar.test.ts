@@ -1,10 +1,10 @@
 // A visit in the client's calendar (src/lib/calendar.ts): Google's link and the .ics file, at India's hours.
 
 import { describe, expect, it } from "vitest";
-import { windowSpan } from "../../../src/config/scheduling.ts";
+import { WINDOW_TIMES, windowSpan } from "../../../src/config/scheduling.ts";
 import { googleCalendarLink, icsFile, icsHref, type CalendarEntry } from "../../../src/lib/calendar.ts";
 
-const afternoon = windowSpan("2026-10-13", "afternoon");
+const afternoon = windowSpan("2026-10-13", WINDOW_TIMES.afternoon);
 const entry: CalendarEntry = {
   title: "Mane Man consultation",
   ...afternoon,

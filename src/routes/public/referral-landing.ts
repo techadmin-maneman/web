@@ -18,6 +18,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { HOUSE_CARD } from "../../config/house-card.ts";
 import { TOLD_NOTICES, type ToldNotice } from "../../config/notices.ts";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
+import { WindowHoursSchema } from "../schemas/booking.ts";
 import { countInviteMiss, countInviteOpen, inviteMissesSpent } from "../../domain/referrals/invite-lookups.ts";
 import { pincodeOf } from "../../domain/clients/service-area.ts";
 import { liveCard } from "../../domain/referrals/referral-cards.ts";
@@ -210,6 +211,7 @@ const consultationRoute = createRoute({
               }),
               date: z.iso.date(),
               window: z.enum(BOOKING_WINDOWS),
+              hours: WindowHoursSchema,
               area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
               credits: CreditsSchema,
               invite: InviteStateSchema,

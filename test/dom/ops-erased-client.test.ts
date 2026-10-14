@@ -15,6 +15,7 @@ const visit = (changes: Partial<ClientVisit>): ClientVisit => ({
   id: "22222222-2222-4222-8222-222222222222",
   date: "2026-09-10",
   window_label: "morning",
+  window_hours: { start: "09:00", end: "12:00" },
   starts_at: "2026-09-10T04:30:00.000Z",
   ends_at: "2026-09-10T07:30:00.000Z",
   length_minutes: 180,

@@ -10732,6 +10732,9 @@ Request body:
         "evening"
       ]
     },
+    "window_hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "starts_at": {
       "type": "string",
       "format": "date-time"
@@ -10993,6 +10996,7 @@ Request body:
     "id",
     "date",
     "window_label",
+    "window_hours",
     "starts_at",
     "ends_at",
     "length_minutes",
@@ -11015,6 +11019,32 @@ Request body:
     "requested_code"
   ],
   "additionalProperties": false
+}
+```
+
+### WindowHours
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "start": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "India's clock, HH:MM."
+    },
+    "end": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "India's clock, HH:MM."
+    }
+  },
+  "required": [
+    "start",
+    "end"
+  ],
+  "additionalProperties": false,
+  "description": "The window's hours on its day, India's clock, as ops set them (ADR 0102)."
 }
 ```
 
@@ -11105,6 +11135,9 @@ Request body:
         "evening"
       ]
     },
+    "hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "technician": {
       "anyOf": [
         {
@@ -11125,6 +11158,7 @@ Request body:
     "id",
     "date",
     "window",
+    "hours",
     "technician",
     "expires_at"
   ],
@@ -11154,6 +11188,9 @@ Request body:
         "afternoon",
         "evening"
       ]
+    },
+    "window_hours": {
+      "$ref": "#/components/schemas/WindowHours"
     },
     "starts_at": {
       "type": "string",
@@ -11282,6 +11319,7 @@ Request body:
     "id",
     "date",
     "window_label",
+    "window_hours",
     "starts_at",
     "ends_at",
     "length_minutes",
@@ -19917,6 +19955,9 @@ Request body:
         "evening"
       ]
     },
+    "window_hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "status": {
       "type": "string",
       "enum": [
@@ -20008,6 +20049,7 @@ Request body:
     "client_note",
     "starts_at",
     "window",
+    "window_hours",
     "status",
     "notice_hours",
     "untold",

@@ -6,7 +6,7 @@ import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type VisitSummary } from "../api.ts";
-import { home, WINDOW_HOURS } from "../content.ts";
+import { home, windowHours } from "../content.ts";
 import { useSession } from "../session.ts";
 import styles from "./home.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
@@ -20,7 +20,7 @@ export function ProposedMove({ visitId, proposal }: { visitId: string; proposal:
   const { refresh, offline } = useSession();
   const [answered, setAnswered] = useState<Answered>("open");
   const copy = home.proposal;
-  const when = `${shortDate(proposal.date)}, ${WINDOW_HOURS[proposal.window]}`;
+  const when = `${shortDate(proposal.date)}, ${windowHours(proposal.hours)}`;
   const technician = proposal.technician === null ? null : firstNameOf(proposal.technician.name);
 
   async function accept() {

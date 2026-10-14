@@ -16,6 +16,17 @@ export const PriceSchema = z
   .strict()
   .openapi("Price");
 const TechnicianSchema = z.object({ name: z.string(), initials: z.string() }).strict();
+
+const TIME = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+  .openapi({ description: "India's clock, HH:MM." });
+
+/** A window's hours on its day, as ops set them (ADR 0102): what every surface says the window is. */
+export const WindowHoursSchema = z
+  .object({ start: TIME, end: TIME })
+  .strict()
+  .openapi("WindowHours", { description: "The window's hours on its day, India's clock, as ops set them (ADR 0102)." });
 /** A service as a booking names it: its code within its kind, its name, and how long it takes. */
 export const ServiceSchema = z
   .object({
@@ -42,6 +53,7 @@ export const HoldSchema = z
     service: ServiceSchema.openapi({ description: "What it is for, with the length it is held and booked for." }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
+    hours: WindowHoursSchema,
     starts_at: z.iso.datetime(),
     ends_at: z.iso.datetime(),
     technician: TechnicianSchema,

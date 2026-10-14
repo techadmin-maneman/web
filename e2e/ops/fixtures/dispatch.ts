@@ -2,6 +2,7 @@
 // could land, and what a move answers.
 
 import type { OpsReply } from "../answer.ts";
+import { WINDOW_TIMES } from "../../../src/config/scheduling.ts";
 
 type Board = OpsReply<"/api/dispatch">;
 type Block = Board["technicians"][number]["days"][number]["blocks"][number];
@@ -75,6 +76,7 @@ const job = (
   client_note: null,
   starts_at: `${dateOf(day)}T${STARTS[window]}:00.000Z`,
   window,
+  window_hours: WINDOW_TIMES[window],
   status: "scheduled",
   notice_hours: 24,
   untold: null,

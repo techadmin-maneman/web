@@ -165,10 +165,15 @@ describe("the page’s steps in the browser’s history", () => {
 describe("the days and windows open", () => {
   const OPEN = { morning: true, afternoon: true, evening: true };
   const SHUT = { morning: false, afternoon: false, evening: false };
+  const HOURS = {
+    morning: { start: "09:00", end: "12:00" },
+    afternoon: { start: "12:00", end: "16:00" },
+    evening: { start: "16:00", end: "20:00" },
+  };
   const days: OpenDays = [
-    { date: "2026-10-03", windows: SHUT },
-    { date: "2026-10-04", windows: { morning: false, afternoon: true, evening: true } },
-    { date: "2026-10-05", windows: OPEN },
+    { date: "2026-10-03", windows: SHUT, hours: HOURS },
+    { date: "2026-10-04", windows: { morning: false, afternoon: true, evening: true }, hours: HOURS },
+    { date: "2026-10-05", windows: OPEN, hours: HOURS },
   ];
   const ALL = ["morning", "afternoon", "evening"] as const;
   const ONE_VISIT = ["morning", "afternoon"] as const;
@@ -185,7 +190,7 @@ describe("the days and windows open", () => {
     expect(dayOpen(days, "2026-10-03", ALL)).toBe(false);
     expect(dayOpen(days, "2026-10-04", ALL)).toBe(true);
     const eveningsOnly: OpenDays = [
-      { date: "2026-10-04", windows: { morning: false, afternoon: false, evening: true } },
+      { date: "2026-10-04", windows: { morning: false, afternoon: false, evening: true }, hours: HOURS },
     ];
     expect(dayOpen(eveningsOnly, "2026-10-04", ONE_VISIT)).toBe(false);
     expect(anyOpen(eveningsOnly, ONE_VISIT)).toBe(false);
@@ -221,7 +226,7 @@ describe("the days and windows open", () => {
   });
 
   it("leaves the pick where nothing is open at all", () => {
-    const full: OpenDays = [{ date: "2026-10-03", windows: SHUT }];
+    const full: OpenDays = [{ date: "2026-10-03", windows: SHUT, hours: HOURS }];
     expect(chosenSlot(full, ALL, { date: "2026-10-03", window: "morning" })).toEqual({
       date: "2026-10-03",
       window: "morning",

@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { heldVisitTimes } from "../../../src/domain/visits/visit-times.ts";
 import { occupancy } from "../../../src/domain/booking/occupancy.ts";
 import { loadSlotSchedule, setSlotTimes } from "../../../src/domain/booking/slot-times.ts";
+import { hoursOfWindow } from "../../../src/domain/messages/visit-message-text.ts";
 import { DEFAULT_SLOT_TIMES, type SlotTimes } from "../../../src/policy/slot-times.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 
@@ -147,6 +148,15 @@ describe("a day under a change of times", () => {
     const after = { ...before, date: EARLIEST };
     expect((await heldVisitTimes(env.DB, before)).start.toISOString()).toBe("2026-11-05T06:30:00.000Z"); // 12:00
     expect((await heldVisitTimes(env.DB, after)).start.toISOString()).toBe(`${EARLIEST}T07:00:00.000Z`); // 12:30
+  });
+
+  // The site, the app and the console printed the hours in code while WhatsApp said the times ops set.
+  it("gives each window the hours ops set for that day, where every surface reads them", async () => {
+    await set(EARLIEST);
+    const schedule = await loadSlotSchedule(env.DB);
+    expect(hoursOfWindow("2026-11-05", "afternoon", schedule)).toBe("12–4 pm");
+    expect(hoursOfWindow(EARLIEST, "afternoon", schedule)).toBe("12:30–5 pm");
+    expect(hoursOfWindow(EARLIEST, "morning", schedule)).toBe("10 am–12:30 pm");
   });
 
   it("puts a visit in the half-slot and window its time falls in that day", async () => {

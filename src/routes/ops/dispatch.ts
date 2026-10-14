@@ -23,6 +23,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import { BEGUN, UNTOLD_REASONS } from "../../policy/dispatch.ts";
 import { PAYMENT_BADGES } from "../../policy/job-visibility.ts";
 import { ProposedMoveSchema } from "../schemas/visits.ts";
+import { WindowHoursSchema } from "../schemas/booking.ts";
 
 const ClientSchema = z
   .object({
@@ -69,6 +70,7 @@ const BlockSchema = z
   .object({
     ...VISIT,
     window: z.enum(BOOKING_WINDOWS),
+    window_hours: WindowHoursSchema,
     status: z.enum(APPOINTMENT_STATUSES).openapi({ description: STATUS_MEANINGS }),
     notice_hours: z.number().int().openapi({
       description:

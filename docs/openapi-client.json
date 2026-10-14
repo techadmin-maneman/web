@@ -489,6 +489,9 @@
                 ],
                 "description": "The window the client asked for."
               },
+              "hours": {
+                "$ref": "#/components/schemas/WindowHours"
+              },
               "window_label": {
                 "type": [
                   "string",
@@ -524,6 +527,7 @@
             "required": [
               "date",
               "window",
+              "hours",
               "window_label",
               "place",
               "requested",
@@ -580,6 +584,9 @@
                       "evening"
                     ]
                   },
+                  "hours": {
+                    "$ref": "#/components/schemas/WindowHours"
+                  },
                   "paid": {
                     "type": "boolean",
                     "description": "Paid for in money, rather than free or covered by a credit."
@@ -604,6 +611,7 @@
                   "type",
                   "date",
                   "window",
+                  "hours",
                   "paid",
                   "one_visit",
                   "told"
@@ -955,6 +963,27 @@
         ],
         "additionalProperties": false
       },
+      "WindowHours": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "description": "India's clock, HH:MM."
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "description": "India's clock, HH:MM."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "additionalProperties": false,
+        "description": "The window's hours on its day, India's clock, as ops set them (ADR 0102)."
+      },
       "OneVisitPrice": {
         "type": "object",
         "properties": {
@@ -1011,6 +1040,9 @@
               "afternoon",
               "evening"
             ]
+          },
+          "window_hours": {
+            "$ref": "#/components/schemas/WindowHours"
           },
           "starts_at": {
             "type": "string",
@@ -1139,6 +1171,7 @@
           "id",
           "date",
           "window_label",
+          "window_hours",
           "starts_at",
           "ends_at",
           "length_minutes",
@@ -1193,6 +1226,9 @@
               "evening"
             ]
           },
+          "hours": {
+            "$ref": "#/components/schemas/WindowHours"
+          },
           "technician": {
             "anyOf": [
               {
@@ -1213,6 +1249,7 @@
           "id",
           "date",
           "window",
+          "hours",
           "technician",
           "expires_at"
         ],
@@ -2253,6 +2290,9 @@
               "evening"
             ]
           },
+          "window_hours": {
+            "$ref": "#/components/schemas/WindowHours"
+          },
           "starts_at": {
             "type": "string",
             "format": "date-time"
@@ -2466,6 +2506,7 @@
           "id",
           "date",
           "window_label",
+          "window_hours",
           "starts_at",
           "ends_at",
           "length_minutes",
@@ -4203,6 +4244,9 @@
               "evening"
             ]
           },
+          "hours": {
+            "$ref": "#/components/schemas/WindowHours"
+          },
           "starts_at": {
             "type": "string",
             "format": "date-time"
@@ -4377,6 +4421,7 @@
           "service",
           "date",
           "window",
+          "hours",
           "starts_at",
           "ends_at",
           "technician",

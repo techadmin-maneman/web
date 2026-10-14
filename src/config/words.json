@@ -4130,13 +4130,6 @@
     "text": "Morning"
   },
   {
-    "key": "site:referral/referral.consultation.windows.0.hours",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "9 am to 12 pm"
-  },
-  {
     "key": "site:referral/referral.consultation.windows.1.label",
     "surface": "site",
     "group": "Invite page",
@@ -4144,25 +4137,11 @@
     "text": "Afternoon"
   },
   {
-    "key": "site:referral/referral.consultation.windows.1.hours",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "12 to 4 pm"
-  },
-  {
     "key": "site:referral/referral.consultation.windows.2.label",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
     "text": "Evening"
-  },
-  {
-    "key": "site:referral/referral.consultation.windows.2.hours",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "4 to 8 pm"
   },
   {
     "key": "site:referral/referral.consultation.full",

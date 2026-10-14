@@ -3216,6 +3216,7 @@ export interface components {
                  * @enum {string}
                  */
                 window: "morning" | "afternoon" | "evening";
+                hours: components["schemas"]["WindowHours"];
                 /**
                  * @description Deprecated: read `window`. The window in the first booked page's words; null for the afternoon, which it had no words for.
                  * @enum {string|null}
@@ -3240,6 +3241,7 @@ export interface components {
                 date: string;
                 /** @enum {string} */
                 window: "morning" | "afternoon" | "evening";
+                hours: components["schemas"]["WindowHours"];
                 /** @description Paid for in money, rather than free or covered by a credit. */
                 paid: boolean;
                 /** @description A consultation and fit in one visit, booked on /book: what it costs once fitted, after the code entered there. Null for any other visit. */
@@ -3332,6 +3334,13 @@ export interface components {
                 referrer_first_name: string | null;
             } | null;
         };
+        /** @description The window's hours on its day, India's clock, as ops set them (ADR 0102). */
+        WindowHours: {
+            /** @description India's clock, HH:MM. */
+            start: string;
+            /** @description India's clock, HH:MM. */
+            end: string;
+        };
         OneVisitPrice: {
             /** @description In paise, GST included, after the visit's discount code: the least a hair system offered on the visit's day costs. Null while none is priced. */
             amount: number | null;
@@ -3350,6 +3359,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
+            window_hours: components["schemas"]["WindowHours"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
@@ -3394,6 +3404,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            hours: components["schemas"]["WindowHours"];
             technician: components["schemas"]["Technician"] | null;
             /**
              * Format: date-time
@@ -3662,6 +3673,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
+            window_hours: components["schemas"]["WindowHours"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
@@ -4159,6 +4171,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            hours: components["schemas"]["WindowHours"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */

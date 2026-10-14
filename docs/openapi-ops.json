@@ -834,6 +834,9 @@
               "evening"
             ]
           },
+          "window_hours": {
+            "$ref": "#/components/schemas/WindowHours"
+          },
           "starts_at": {
             "type": "string",
             "format": "date-time"
@@ -1095,6 +1098,7 @@
           "id",
           "date",
           "window_label",
+          "window_hours",
           "starts_at",
           "ends_at",
           "length_minutes",
@@ -1117,6 +1121,27 @@
           "requested_code"
         ],
         "additionalProperties": false
+      },
+      "WindowHours": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "description": "India's clock, HH:MM."
+          },
+          "end": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "description": "India's clock, HH:MM."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "additionalProperties": false,
+        "description": "The window's hours on its day, India's clock, as ops set them (ADR 0102)."
       },
       "Technician": {
         "type": "object",
@@ -1192,6 +1217,9 @@
               "evening"
             ]
           },
+          "hours": {
+            "$ref": "#/components/schemas/WindowHours"
+          },
           "technician": {
             "anyOf": [
               {
@@ -1212,6 +1240,7 @@
           "id",
           "date",
           "window",
+          "hours",
           "technician",
           "expires_at"
         ],
@@ -1236,6 +1265,9 @@
               "afternoon",
               "evening"
             ]
+          },
+          "window_hours": {
+            "$ref": "#/components/schemas/WindowHours"
           },
           "starts_at": {
             "type": "string",
@@ -1364,6 +1396,7 @@
           "id",
           "date",
           "window_label",
+          "window_hours",
           "starts_at",
           "ends_at",
           "length_minutes",
@@ -9379,6 +9412,9 @@
               "evening"
             ]
           },
+          "window_hours": {
+            "$ref": "#/components/schemas/WindowHours"
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -9470,6 +9506,7 @@
           "client_note",
           "starts_at",
           "window",
+          "window_hours",
           "status",
           "notice_hours",
           "untold",

@@ -6,7 +6,7 @@
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { FITTED } from "../clients/fitted.ts";
-import { openProposalJson, openProposalOf } from "./open-proposals.ts";
+import { openProposalJson, openProposalOf, type ProposedMove } from "./open-proposals.ts";
 import { signToken, type SigningSecret } from "../../lib/signed-token.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import { namesMoreThanItsKind } from "../../policy/services.ts";
@@ -18,6 +18,7 @@ import { oneVisitPrice, type OneVisitPrice } from "../money/one-visit-money.ts";
 import { priceOf } from "../money/price-book.ts";
 import { currentAddress } from "../clients/profile.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
+import { windowTimesOf } from "../../policy/slot-times.ts";
 import { landedOutcome, visitBegun } from "./visit-begun.ts";
 import { ANGLES, type Angle, type Phase } from "../field/visit-photos.ts";
 import { MINUTE_MS, minutesBetween } from "../../lib/durations.ts";
@@ -43,6 +44,8 @@ interface VisitSummary {
   /** India's calendar date, YYYY-MM-DD. */
   readonly date: string;
   readonly window_label: VisitWindowLabel;
+  /** The window's hours on the visit's day, India's clock. */
+  readonly window_hours: { readonly start: string; readonly end: string };
   readonly starts_at: string;
   readonly ends_at: string;
   readonly length_minutes: number;
@@ -63,13 +66,7 @@ interface VisitSummary {
   /** The client's note to the technician on this visit, as they last wrote it; null for none. */
   readonly client_note: string | null;
   /** A move to another day ops asked the client to confirm, still open (ADR 0115); null for none. */
-  readonly proposed_move: {
-    readonly id: string;
-    readonly date: string;
-    readonly window: VisitWindowLabel;
-    readonly technician: { readonly name: string; readonly initials: string } | null;
-    readonly expires_at: string;
-  } | null;
+  readonly proposed_move: ProposedMove | null;
 }
 
 interface AppointmentRow {
@@ -157,10 +154,12 @@ async function visitSummaryOf(
   context: SummaryContext,
   now: Date,
 ): Promise<VisitSummary> {
+  const { date, window } = context.schedule.at(row.window_start);
   return {
     id: row.id,
     date: indiaDate(new Date(row.window_start)),
-    window_label: context.schedule.at(row.window_start).window,
+    window_label: window,
+    window_hours: windowTimesOf(context.schedule.on(date))[window],
     starts_at: row.window_start,
     ends_at: row.window_end,
     length_minutes: minutesBetween(row.window_start, row.window_end),
@@ -177,7 +176,7 @@ async function visitSummaryOf(
     place: context.place(row),
     one_visit: await oneVisitOf(db, row),
     client_note: row.client_note,
-    proposed_move: openProposalOf(row.proposal, now),
+    proposed_move: openProposalOf(row.proposal, now, context.schedule),
   };
 }
 

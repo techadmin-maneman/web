@@ -1,6 +1,7 @@
 // Which of the booking form's days and windows can be booked, as GET /api/availability/public answers. Until that
 // answer comes, or when it cannot be had, every one is drawn open, and booking still refuses a full one.
 
+import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import type { OpenWindows } from "./api.ts";
 
 export type OpenDays = OpenWindows["days"];
@@ -16,6 +17,12 @@ export interface Slot {
 export function isOpen(days: OpenDays | null, date: string, window: BookingWindow): boolean {
   if (days === null) return true;
   return days.find((day) => day.date === date)?.windows[window] ?? false;
+}
+
+/** A window's hours on a day, as the answer gives them: "12–4 pm". Nothing before the answer, or for a day it lacks. */
+export function hoursOn(days: OpenDays | null, date: string, window: BookingWindow): string {
+  const hours = days?.find((day) => day.date === date)?.hours[window];
+  return hours === undefined ? "" : timeRange(hours.start, hours.end, UNBROKEN);
 }
 
 /** The first of these windows open on a day; null for none. */

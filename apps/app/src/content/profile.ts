@@ -1,6 +1,7 @@
 // The profile: the address, what the client has agreed to, and the account.
 
 import { CLIENT_WORDS } from "@maneman/web-kit/client-words";
+import { timeOfDay, UNBROKEN } from "@rules/lib/time-range.ts";
 
 /** What every visit's photographs are. PLACEHOLDER: awaits counsel (docs/open-points.md, item 69). */
 export const VISIT_PHOTOS =
@@ -139,12 +140,8 @@ export const profile = {
     carePerson: (name: string) => `${name}, your Care person`,
     /** "9 am–9 pm" */
     hours: (opens: string, closes: string) => `${opens}–${closes}`,
-    /** An hour of the day as the card says it: "9 am", "noon", "9 pm". */
-    hour: (hour: number) => {
-      if (hour === 0) return "midnight";
-      if (hour === 12) return "noon";
-      return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
-    },
+    /** An hour of the day as the card says it: "9 am", "12 noon", "9 pm". */
+    hour: (hour: number) => timeOfDay(`${String(hour).padStart(2, "0")}:00`, UNBROKEN),
   },
   // The design has no card for the client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {

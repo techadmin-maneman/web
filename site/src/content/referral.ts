@@ -232,12 +232,12 @@ export const referral = {
     forPincode: "For {pincode}",
     date: "Pick a date",
     window: "Time",
-    // A no-break space keeps "am" and "pm" on the line of their hour.
+    /** The windows by name. Their hours are the day's, as the API gives them (site/src/lib/open-windows.ts). */
     windows: [
-      { id: "morning", label: "Morning", hours: "9 am to 12 pm" },
-      { id: "afternoon", label: "Afternoon", hours: "12 to 4 pm" },
-      { id: "evening", label: "Evening", hours: "4 to 8 pm" },
-    ] satisfies readonly { id: ReferralConsultation["window"]; label: string; hours: string }[],
+      { id: "morning", label: "Morning" },
+      { id: "afternoon", label: "Afternoon" },
+      { id: "evening", label: "Evening" },
+    ] satisfies readonly { id: ReferralConsultation["window"]; label: string }[],
     // Not drawn: a window nobody is free in, and a fortnight with none open.
     full: "Full",
     noneOpen: "Fully booked for the next two weeks.",

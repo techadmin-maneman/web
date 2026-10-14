@@ -69,7 +69,7 @@ test("moves a job from a list, sends the board it was taken from, and says only 
   await press(page, "Move and notify");
 
   // Queued is not sent: the notice says the message is on its way, and what happens if it fails.
-  await expect(page.getByRole("status")).toHaveText("Moved. Rohit M. is told on WhatsApp.");
+  await expect(page.getByRole("status")).toHaveText("Moved. Rohit M. gets the new window on WhatsApp.");
   expect(sent).toEqual([
     {
       appointment_id: ROHIT_JOB?.appointment_id,
@@ -115,6 +115,7 @@ test("shows a proposal waiting on the client in the visit’s drawer, and takes 
       id: PROPOSED.proposal_id,
       date: "2025-09-20",
       window: "morning",
+      hours: { start: "09:00", end: "12:00" },
       technician: { name: "Sandeep Yadav", initials: "SY" },
       expires_at: "2025-09-20T03:30:00.000Z",
     };
@@ -281,7 +282,7 @@ test("asks why before a move onto a blacked-out day, and sends the reason with i
   await picker.getByLabel("Reason").fill("Their only free day before they travel");
   await press(page, "Move and notify");
 
-  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. is told on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");
   expect(sent).toEqual([expect.objectContaining({ blackout_reason: "Their only free day before they travel" })]);
 });
 
@@ -300,7 +301,7 @@ test("assigns a tray job through the assign route, with no technician expected",
   await page.getByRole("radio", { name: "Client asked" }).check();
   await page.getByRole("button", { name: opsCopy.dispatch.move.sendQuietly, exact: true }).click();
 
-  await expect(page.getByRole("status")).toContainText("Moved. Vikram S. is told on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Vikram S. gets the new window on WhatsApp.");
   expect(moved).toEqual([]);
   expect(assigned).toEqual([
     {
@@ -385,7 +386,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
 
   release();
-  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. is told on WhatsApp.");
+  await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");
   expect(sent).toHaveLength(1);
 });
 

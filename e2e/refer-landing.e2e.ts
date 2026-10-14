@@ -69,6 +69,7 @@ async function mockApi(page: Page, answers: Answers = {}): Promise<Request[]> {
         state: "booked",
         date: "2026-09-25",
         window: "morning",
+        hours: { start: "09:00", end: "12:00" },
         area: SERVED.area,
         credits: true,
         invite: "valid",
@@ -261,6 +262,7 @@ test("a code we do not know still books, without the invite’s visits", async (
         state: "booked",
         date: "2026-09-25",
         window: "morning",
+        hours: { start: "09:00", end: "12:00" },
         area: SERVED.area,
         credits: false,
         invite: "unknown",
@@ -357,6 +359,7 @@ test("a consultation nobody can book outright is confirmed as a request", async 
         state: "requested",
         date: "2026-09-25",
         window: "morning",
+        hours: { start: "09:00", end: "12:00" },
         area: SERVED.area,
         credits: true,
         invite: "valid",
@@ -535,6 +538,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
       state: "booked",
       date: "2026-09-25",
       window: "morning",
+      hours: { start: "09:00", end: "12:00" },
       area: SERVED.area,
       credits: true,
       invite: "valid",
@@ -570,6 +574,7 @@ test("gives up on a request that never answers, says so, and sends it again unde
       state: "booked",
       date: "2026-09-25",
       window: "morning",
+      hours: { start: "09:00", end: "12:00" },
       area: SERVED.area,
       credits: true,
       invite: "valid",
@@ -619,7 +624,14 @@ async function bookThrough(page: Page): Promise<void> {
 
 // The invite had lapsed for this friend, which only the booking's answer can say (ADR 0025, item 40).
 test("an invite that has expired for this friend says so once the booking is made", async ({ page }) => {
-  const expired = { state: "booked", date: "2026-09-25", window: "morning", area: SERVED.area, credits: false };
+  const expired = {
+    state: "booked",
+    date: "2026-09-25",
+    window: "morning",
+    hours: { start: "09:00", end: "12:00" },
+    area: SERVED.area,
+    credits: false,
+  };
   await mockApi(page, { consultation: { status: 201, body: { ...expired, invite: "expired", one_visit: false } } });
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
@@ -635,7 +647,7 @@ test("a booking sends the details to WhatsApp, and opens the app with the number
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);
-  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am–12 noon" })).toBeVisible();
   await expect(
     page.getByText("Your technician arrives in those hours. Details are on WhatsApp at +91 98100 00000."),
   ).toBeVisible();
@@ -661,6 +673,7 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
     state: "requested",
     date: "2026-09-25",
     window: "morning",
+    hours: { start: "09:00", end: "12:00" },
     area: SERVED.area,
     credits: true,
     invite: "valid",
@@ -702,7 +715,14 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
 });
 
 test("a consultation asked for, not booked, still offers the app, where the request shows", async ({ page }) => {
-  const requested = { state: "requested", date: "2026-09-25", window: "morning", area: SERVED.area, credits: true };
+  const requested = {
+    state: "requested",
+    date: "2026-09-25",
+    window: "morning",
+    hours: { start: "09:00", end: "12:00" },
+    area: SERVED.area,
+    credits: true,
+  };
   await mockApi(page, { consultation: { status: 201, body: { ...requested, invite: "valid", one_visit: false } } });
   await visit(page, `/r/${CODE}`);
   await bookThrough(page);

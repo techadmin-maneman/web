@@ -21,7 +21,7 @@ import { fullDate, listMonth, monthInIndia, shortDate, yearInIndia } from "@mane
 import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
-import { home, ONE_VISIT, VISIT_TYPES, visits, WINDOW_HOURS } from "../content.ts";
+import { home, ONE_VISIT, VISIT_TYPES, visits, windowHours } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
 import { CHEVRON } from "../icons.ts";
 import { bookingName, oneVisitOf, technicianOf, visitTitle } from "../lib/visit.ts";
@@ -48,7 +48,7 @@ function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly 
 
 /** A visit, which opens its own page; the window, or where one that has begun stands. */
 function Upcoming({ visit }: { visit: VisitSummary }) {
-  const when = stageText(visit) ?? WINDOW_HOURS[visit.window_label];
+  const when = stageText(visit) ?? windowHours(visit.window_hours);
   // A one visit still to happen goes by that name; any other by its kind, and its service where that says more.
   const what = oneVisitOf(visit) === null ? visitTitle(visit) : ONE_VISIT;
   const parts = [what, when, ...technicianOf(visit)];
@@ -69,7 +69,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
   const words = home.beingBooked;
   return (
     <li className={styles.card}>
-      <UpcomingCard date={booking.date} parts={[bookingName(booking), WINDOW_HOURS[booking.window]]} prepaid={false} />
+      <UpcomingCard date={booking.date} parts={[bookingName(booking), windowHours(booking.hours)]} prepaid={false} />
       {oneVisitOf(booking) === null && (
         <span className={styles.cardNote}>{booking.paid ? words.paid : words.free}</span>
       )}
@@ -80,7 +80,7 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
 /** A consultation from the site: what it is, its window, and whether it is only asked for. */
 function proposedParts(consultation: NonNullable<Me["consultation"]>): string[] {
   const what = oneVisitOf(consultation) === null ? VISIT_TYPES.consultation : ONE_VISIT;
-  const parts = [what, WINDOW_HOURS[consultation.window]];
+  const parts = [what, windowHours(consultation.hours)];
   if (consultation.requested) parts.push(visits.requested);
   return parts;
 }

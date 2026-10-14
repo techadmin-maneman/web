@@ -200,7 +200,7 @@ function Visit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged: ()
             visit={{
               id: visit.id,
               date: visit.date,
-              window: visit.window_label,
+              hours: visit.window_hours,
               name: oneVisitOf(visit) === null ? visitName(visit.type) : ONE_VISIT,
               technician: visit.technician === null ? null : firstNameOf(visit.technician.name),
             }}

@@ -3,6 +3,7 @@
 
 import type { EnvironmentName } from "@rules/config/environments.ts";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
+import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { notYetFittedLines } from "./refer.ts";
 
 export const app = {
@@ -50,12 +51,19 @@ export const TRY_ON_URL: Readonly<Record<EnvironmentName, string>> = {
 /** The three windows a visit is booked in (design/phase2/Client App, the windows data). */
 export const WINDOW_NAMES = { morning: "Morning", afternoon: "Afternoon", evening: "Evening" } as const;
 
-export const WINDOW_HOURS = { morning: "9 am to 12 pm", afternoon: "12 to 4 pm", evening: "4 to 8 pm" } as const;
+/** A window's hours on its day, as the API gives them: "12:00" to "16:00". */
+interface Hours {
+  readonly start: string;
+  readonly end: string;
+}
+
+/** "12–4 pm", "9 am–12 noon": a window's hours as ops set them for its day. */
+export const windowHours = (hours: Hours) => timeRange(hours.start, hours.end, UNBROKEN);
 
 type WindowLabel = keyof typeof WINDOW_NAMES;
 
-/** "Afternoon, 12 to 4 pm", as a visit's card gives its window. */
-export const windowText = (label: WindowLabel) => `${WINDOW_NAMES[label]}, ${WINDOW_HOURS[label]}`;
+/** "Afternoon, 12–4 pm", as a visit's card gives its window. */
+export const windowText = (label: WindowLabel, hours: Hours) => `${WINDOW_NAMES[label]}, ${windowHours(hours)}`;
 
 /** Not drawn: a visit to come, offered to the client's own calendar. */
 export const calendar = {

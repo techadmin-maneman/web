@@ -14,7 +14,15 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
-  const waiting = { type: "service", date: "2027-09-25", window: "morning", paid: true, one_visit: null, told: true };
+  const waiting = {
+    type: "service",
+    date: "2027-09-25",
+    window: "morning",
+    hours: { start: "09:00", end: "12:00" },
+    paid: true,
+    one_visit: null,
+    told: true,
+  };
   await page.route("**/api/me", (route) =>
     route.fulfill({ json: { ...me, next_visit: null, prompt: null, being_booked: waiting } }),
   );
@@ -22,7 +30,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
 
   const card = page.getByRole("region", { name: appCopy.home.next.label });
   await expect(card).toContainText(shortDate("2027-09-25"));
-  await expect(card).toContainText("Morning, 9 am to 12 pm");
+  await expect(card).toContainText("Morning, 9 am–12 noon");
   await expect(card).toContainText(appCopy.VISIT_TYPES.service);
   await expect(card).toContainText("Your payment is in. We’re booking your visit.");
   await expect(card).toContainText("We’ll message you on WhatsApp when it’s booked.");
@@ -47,6 +55,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
     type: "first_fit",
     date: "2027-09-25",
     window: "morning",
+    hours: { start: "09:00", end: "12:00" },
     paid: false,
     one_visit: price,
     told: false,
@@ -66,7 +75,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   await tab(page, "Visits").click();
   const card = page.getByRole("main").getByRole("listitem").first();
   await expect(card).toContainText(shortDate("2027-09-25"));
-  await expect(card).toContainText("Consultation and fit · 9 am to 12 pm");
+  await expect(card).toContainText("Consultation and fit · 9 am–12 noon");
   await expect(card).not.toContainText(appCopy.home.beingBooked.free);
   await expect(page.getByText("Nothing booked yet.")).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
@@ -91,7 +100,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   await page.reload();
 
   const card = page.getByRole("region", { name: "Your consultation and fit" });
-  await expect(card).toContainText("Consultation and fit · 3 hours");
+  await expect(card).toContainText("Consultation and fit · 3 hr");
   await expect(card).toContainText("Rs. 27,000, only if you go ahead");
   await expect(card).toContainText("Code TENPC applied");
   await expect(card).toContainText(appCopy.home.oneVisit.paidBy);
@@ -101,7 +110,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   expect(await axeViolations(page)).toEqual([]);
 
   await tab(page, "Visits").click();
-  await expect(page.getByRole("main").getByRole("link").first()).toContainText("Consultation and fit · 12 to 4 pm");
+  await expect(page.getByRole("main").getByRole("link").first()).toContainText("Consultation and fit · 12–4 pm");
 });
 
 // Once fitted, the link to pay by lived only in Razorpay's SMS.

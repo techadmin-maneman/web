@@ -9,6 +9,7 @@ import { isTransactional } from "../../policy/consents.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { minutesBetween } from "../../lib/durations.ts";
+import { timeRange } from "../../lib/time-range.ts";
 import { type VisitType, VISIT_TYPE_NAMES } from "../../config/visit-types.ts";
 import { statusIn, PAYMENT_HELD } from "../../config/statuses.ts";
 import type { BookingWindow } from "../../config/scheduling.ts";
@@ -67,23 +68,16 @@ function waivedTemplate(paid: PaidAhead["kind"], waiver: Waiver, credit: VisitCr
 
 const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean =>
   STILL_TRUE_WHILE[kind] === "any" || STILL_TRUE_WHILE[kind].includes(status);
-/** "12 to 4 pm", as the app writes a window, by the times in force on the visit's day. */
+/** "12–4 pm", as the app writes a window, by the times in force on the visit's day. */
 function windowHours(start: Date, schedule: SlotSchedule): string {
   const { date, window } = schedule.at(start);
   return hoursOfWindow(date, window, schedule);
 }
 
-/** "12 to 4 pm" for a day's window, by the times in force that day. */
+/** "12–4 pm" for a day's window, by the times in force that day. */
 export function hoursOfWindow(date: string, window: BookingWindow, schedule: SlotSchedule): string {
-  const { start: from, end: to } = windowTimesOf(schedule.on(date))[window];
-  const hour = (time: string) => {
-    const hours = Number(time.slice(0, 2));
-    return { number: String(hours % 12 === 0 ? 12 : hours % 12), half: hours < 12 ? "am" : "pm" };
-  };
-  const [first, last] = [hour(from), hour(to)];
-  return first.half === last.half
-    ? `${first.number} to ${last.number} ${last.half}`
-    : `${first.number} ${first.half} to ${last.number} ${last.half}`;
+  const { start, end } = windowTimesOf(schedule.on(date))[window];
+  return timeRange(start, end);
 }
 
 /** What a message calls a consultation and fit in one visit while it is still to happen (ADR 0105). */

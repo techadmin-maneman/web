@@ -67,6 +67,7 @@ describe("the session", () => {
       consultation: {
         date: "2026-09-24",
         window: "evening",
+        hours: { start: "16:00", end: "20:00" },
         window_label: "after four",
         place: "Gurgaon",
         requested: true,
@@ -144,6 +145,7 @@ describe("the session", () => {
       expect((await res.json<{ consultation: unknown }>()).consultation).toEqual({
         date: "2026-09-25",
         window: "afternoon",
+        hours: { start: "12:00", end: "16:00" },
         window_label: null,
         place: "Gurgaon",
         requested: true,
@@ -190,6 +192,7 @@ describe("the session", () => {
       expect((await res.json<{ consultation: unknown }>()).consultation).toEqual({
         date: "2026-09-25",
         window: "evening",
+        hours: { start: "16:00", end: "20:00" },
         window_label: "after four",
         place: "Gurgaon",
         requested: false,

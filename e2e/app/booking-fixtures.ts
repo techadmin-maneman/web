@@ -3,6 +3,7 @@
 
 import type { Page } from "@playwright/test";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
+import { WINDOW_TIMES } from "../../src/config/scheduling.ts";
 import { expect } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { bookerClient } from "./booker.ts";
@@ -141,6 +142,7 @@ export async function holdAs(page: Page, terms: Hold): Promise<() => Hold> {
       service: { tier: "standard", name: "Service visit", minutes: 90 },
       date: asked.date,
       window: asked.window,
+      hours: WINDOW_TIMES[asked.window as keyof typeof WINDOW_TIMES],
       starts_at: `${asked.date}T06:30:00.000Z`,
       ends_at: `${asked.date}T10:30:00.000Z`,
       technician: { name: "Imran Qureshi", initials: "IQ" },

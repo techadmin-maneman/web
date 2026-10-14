@@ -26,6 +26,7 @@ async function proposeOnHome(page: Page): Promise<void> {
           id: "6a000000-0000-4000-8000-000000000001",
           date: PROPOSED,
           window: "morning",
+          hours: { start: "09:00", end: "12:00" },
           technician: { name: "Sameer Bhatt", initials: "SB" },
           expires_at: "2099-01-05T06:30:00.000Z",
         },
@@ -48,7 +49,7 @@ test("Home asks the client to confirm a move ops proposed, beside another time o
   });
   await logIn(page, fittedClient().mobile);
 
-  const when = `${shortDate(PROPOSED)}, 9 am to 12 pm`;
+  const when = `${shortDate(PROPOSED)}, 9 am–12 noon`;
   await expect(page.getByText(`We need to move this visit. Could you do ${when} with Sameer instead?`)).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.proposal.pick })).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);

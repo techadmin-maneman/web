@@ -30,10 +30,9 @@ export const WINDOW_TIMES: Readonly<Record<BookingWindow, { start: string; end: 
   evening: { start: "16:00", end: "20:00" },
 };
 
-/** A window on a date under the default times, as the instants it starts and ends: what a client's calendar holds. */
-export function windowSpan(date: string, window: BookingWindow): { start: Date; end: Date } {
-  const { start, end } = WINDOW_TIMES[window];
-  return { start: indiaInstant(date, start), end: indiaInstant(date, end) };
+/** A window's hours on a date, as the instants it starts and ends: what a client's calendar holds. */
+export function windowSpan(date: string, hours: { readonly start: string; readonly end: string }): { start: Date; end: Date } {
+  return { start: indiaInstant(date, hours.start), end: indiaInstant(date, hours.end) };
 }
 
 /** WINDOW_SLOT_MAP: the half-slots a visit booked in each window may start in. */

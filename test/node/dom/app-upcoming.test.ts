@@ -16,6 +16,7 @@ const BOOKING: BeingBooked = {
   type: "first_fit",
   date: "2026-10-08",
   window: "morning",
+  hours: { start: "09:00", end: "12:00" },
   paid: false,
   one_visit: PRICE,
   told: false,
@@ -23,6 +24,7 @@ const BOOKING: BeingBooked = {
 const CONSULTATION = {
   date: "2026-10-06",
   window: "morning",
+  hours: { start: "09:00", end: "12:00" },
   window_label: "before noon",
   place: "Gurgaon",
   requested: false,

@@ -121,7 +121,7 @@ test("offline on Visits, which the phone does not keep, says the visits load onc
   await expect(page.getByText(appCopy.errors.load)).toHaveCount(0);
 
   await page.context().setOffline(false);
-  await expect(page.getByText("Consultation · 9 am to 12 pm")).toBeVisible();
+  await expect(page.getByText("Consultation · 9 am–12 noon")).toBeVisible();
   await expect(waiting).toBeHidden();
   await expect(page.getByText(appCopy.states.offlineOnly)).toBeHidden();
 });

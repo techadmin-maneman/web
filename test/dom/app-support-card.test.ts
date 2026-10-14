@@ -46,6 +46,6 @@ describe("the Support card", () => {
   // client with a Care person.
   it("promises the reply time and the hours Care set, to every client", () => {
     draw(null);
-    expect(page.textContent).toContain("We reply within an hour, 9 am–9 pm daily.");
+    expect(page.textContent).toContain("We reply within an hour, 9\u00a0am–9\u00a0pm daily.");
   });
 });

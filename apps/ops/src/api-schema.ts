@@ -15230,6 +15230,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
+            window_hours: components["schemas"]["WindowHours"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
@@ -15287,6 +15288,13 @@ export interface components {
             /** @description For a consultation and fit in one visit, the code the client typed on /book for it, honoured as it stood then when entered on the visit; null for none. */
             requested_code: string | null;
         };
+        /** @description The window's hours on its day, India's clock, as ops set them (ADR 0102). */
+        WindowHours: {
+            /** @description India's clock, HH:MM. */
+            start: string;
+            /** @description India's clock, HH:MM. */
+            end: string;
+        };
         /** @description Display name and initials only. */
         Technician: {
             name: string;
@@ -15310,6 +15318,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            hours: components["schemas"]["WindowHours"];
             technician: components["schemas"]["Technician"] | null;
             /**
              * Format: date-time
@@ -15327,6 +15336,7 @@ export interface components {
             date: string;
             /** @enum {string} */
             window_label: "morning" | "afternoon" | "evening";
+            window_hours: components["schemas"]["WindowHours"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
@@ -17186,6 +17196,7 @@ export interface components {
             starts_at: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            window_hours: components["schemas"]["WindowHours"];
             /**
              * @description scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart
              * @enum {string}

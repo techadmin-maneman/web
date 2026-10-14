@@ -2140,11 +2140,33 @@ Razorpay's webhook: payments and refunds
             ],
             "additionalProperties": false,
             "description": "true where booking that window now would be taken; false where it is full."
+          },
+          "hours": {
+            "type": "object",
+            "properties": {
+              "morning": {
+                "$ref": "#/components/schemas/WindowHours"
+              },
+              "afternoon": {
+                "$ref": "#/components/schemas/WindowHours"
+              },
+              "evening": {
+                "$ref": "#/components/schemas/WindowHours"
+              }
+            },
+            "required": [
+              "morning",
+              "afternoon",
+              "evening"
+            ],
+            "additionalProperties": false,
+            "description": "Each window's hours that day, as ops set them."
           }
         },
         "required": [
           "date",
-          "windows"
+          "windows",
+          "hours"
         ],
         "additionalProperties": false
       },
@@ -2156,6 +2178,32 @@ Razorpay's webhook: payments and refunds
     "days"
   ],
   "additionalProperties": false
+}
+```
+
+### WindowHours
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "start": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "India's clock, HH:MM."
+    },
+    "end": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "India's clock, HH:MM."
+    }
+  },
+  "required": [
+    "start",
+    "end"
+  ],
+  "additionalProperties": false,
+  "description": "The window's hours on its day, India's clock, as ops set them (ADR 0102)."
 }
 ```
 
@@ -2184,6 +2232,9 @@ Razorpay's webhook: payments and refunds
         "afternoon",
         "evening"
       ]
+    },
+    "hours": {
+      "$ref": "#/components/schemas/WindowHours"
     },
     "area": {
       "type": "string",
@@ -2222,6 +2273,7 @@ Razorpay's webhook: payments and refunds
     "state",
     "date",
     "window",
+    "hours",
     "area",
     "credits",
     "invite",
@@ -2688,6 +2740,9 @@ Razorpay's webhook: payments and refunds
         "evening"
       ]
     },
+    "hours": {
+      "$ref": "#/components/schemas/WindowHours"
+    },
     "area": {
       "type": "string",
       "description": "The area once ops have named it, its city until then."
@@ -2714,6 +2769,7 @@ Razorpay's webhook: payments and refunds
     "state",
     "date",
     "window",
+    "hours",
     "area",
     "credits",
     "invite",

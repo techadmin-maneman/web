@@ -12,7 +12,7 @@ import { referral } from "../../content/referral.ts";
 import { whatsapp } from "../../content/site.ts";
 import type { OpenWindows } from "../../lib/api.ts";
 import { stripMonths, type StripDay } from "../../lib/dates.ts";
-import { dayOpen, isOpen, type OpenDays, type Slot } from "../../lib/open-windows.ts";
+import { dayOpen, hoursOn, isOpen, type OpenDays, type Slot } from "../../lib/open-windows.ts";
 import styles from "./Invite.module.css";
 
 const { consultation } = referral;
@@ -138,7 +138,12 @@ export function DayWindows({
     <WindowChoice
       name="window"
       legend={consultation.window}
-      options={windows.map(({ id, label, hours }) => ({ id, name: label, hours, open: isOpen(open, slot.date, id) }))}
+      options={windows.map(({ id, label }) => ({
+        id,
+        name: label,
+        hours: hoursOn(open, slot.date, id),
+        open: isOpen(open, slot.date, id),
+      }))}
       chosen={slot.window}
       fullWord={consultation.full}
       fullInPlaceOfHours

@@ -29,6 +29,7 @@ const BOOKED = {
   state: "booked",
   date: "2026-09-25",
   window: "morning",
+  hours: { start: "09:00", end: "12:00" },
   area: SERVED.area,
   credits: false,
   invite: "unknown",
@@ -53,6 +54,12 @@ const OPEN_WINDOWS = /\/api\/availability\/public\?/;
 /** The page's clock for the tests that answer it: the strip opens on Saturday 3 October, as the answers do. */
 const NOON_2_OCTOBER = new Date("2026-10-02T06:30:00Z");
 const ALL_OPEN = { morning: true, afternoon: true, evening: true };
+/** Each window's hours, as ops set them by default. */
+const HOURS = {
+  morning: { start: "09:00", end: "12:00" },
+  afternoon: { start: "12:00", end: "16:00" },
+  evening: { start: "16:00", end: "20:00" },
+};
 const FULL = { morning: false, afternoon: false, evening: false };
 type Windows = typeof ALL_OPEN;
 
@@ -60,7 +67,7 @@ type Windows = typeof ALL_OPEN;
 function openDays(given: Record<string, Windows> = {}, otherwise: Windows = ALL_OPEN) {
   return Array.from({ length: 14 }, (_, index) => {
     const date = new Date(Date.UTC(2026, 9, 3 + index)).toISOString().slice(0, 10);
-    return { date, windows: given[date] ?? otherwise };
+    return { date, windows: given[date] ?? otherwise, hours: HOURS };
   });
 }
 
@@ -330,7 +337,7 @@ test("restates the day and window booked, says what the visit asks, and offers i
   await mockApi(page);
   await bookHere(page);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am–12 noon" })).toBeVisible();
   await expect(page.getByText(referralCopy.referral.booked.ready.consultation)).toBeVisible();
   const google = new URL(
     (await page.getByRole("link", { name: referralCopy.referral.booked.calendar.google }).getAttribute("href")) ?? "",
@@ -587,7 +594,7 @@ test("every number is sent to WhatsApp, and offered the app with the number fill
   await mockApi(page);
   await bookHere(page);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am to 12 pm" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9 am–12 noon" })).toBeVisible();
   await expect(
     page.getByText("Your technician arrives in those hours. Details are on WhatsApp at +91 98100 00000."),
   ).toBeVisible();

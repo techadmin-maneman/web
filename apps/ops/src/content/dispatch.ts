@@ -35,17 +35,6 @@ export const dispatch = {
   },
   windows: { morning: "morning", afternoon: "afternoon", evening: "evening" },
   /**
-   * Each window's hours, which the drawer writes as the board does
-   * ("12 to 4 pm"). They are src/config/scheduling.ts's WINDOW_TIMES, still the
-   * owner's to rule (docs/open-points.md, item 53); test/node/apps/ops/ops-content.test.ts
-   * holds the two together.
-   */
-  windowHours: {
-    morning: "9 am to 12 pm",
-    afternoon: "12 to 4 pm",
-    evening: "4 to 8 pm",
-  },
-  /**
    * The week and the city the board shows, and a way to find a row among many.
    * The board letters the city in the header ("Gurgaon") and draws no control;
    * the brief asks for "a city and week picker", so they sit in a row

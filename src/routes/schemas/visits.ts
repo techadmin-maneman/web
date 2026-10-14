@@ -3,6 +3,7 @@
 
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
+import { WindowHoursSchema } from "./booking.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { ANGLES } from "../../domain/field/visit-photos.ts";
 import { APPOINTMENT_STATUSES, STATUS_MEANINGS } from "../../domain/visits/visit-status.ts";
@@ -58,6 +59,7 @@ export const ProposedMoveSchema = z
     id: z.uuid(),
     date: z.iso.date().openapi({ description: "India's date the visit would move to." }),
     window: z.enum(["morning", "afternoon", "evening"]),
+    hours: WindowHoursSchema,
     technician: z.union([TechnicianSchema, z.null()]),
     expires_at: z.iso.datetime().openapi({ description: "The last moment it may be accepted." }),
   })
@@ -69,6 +71,7 @@ export const VisitSummarySchema = z
     id: z.uuid(),
     date: z.iso.date().openapi({ description: "India's calendar date." }),
     window_label: z.enum(["morning", "afternoon", "evening"]),
+    window_hours: WindowHoursSchema,
     starts_at: z.iso.datetime(),
     ends_at: z.iso.datetime(),
     length_minutes: z.number().int(),
@@ -186,6 +189,7 @@ export const BeingBookedSchema = z
     type: z.enum(VISIT_TYPES),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
+    hours: WindowHoursSchema,
     paid: z.boolean().openapi({ description: "Paid for in money, rather than free or covered by a credit." }),
     one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
       description:

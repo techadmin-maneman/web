@@ -18,7 +18,7 @@ import {
   refundedAfterPaying,
 } from "./checkout-fakes.ts";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
-import { windowSpan, type BookingWindow } from "../../src/config/scheduling.ts";
+import { windowSpan } from "../../src/config/scheduling.ts";
 import { continueToPayment, TAKEN, windowsAskedAgain } from "./picking.ts";
 import { toPayment, toWindows, holdAs } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
@@ -180,12 +180,12 @@ test("offers the visit just booked to the client’s calendar, at the window hel
       response.request().method() === "POST" && new URL(response.url()).pathname === "/api/holds" && response.ok(),
   );
   await toPayment(page);
-  const hold = (await (await held).json()) as { date: string; window: BookingWindow };
+  const hold = (await (await held).json()) as { date: string; hours: { start: string; end: string } };
   await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
   const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label });
   await expect(confirmed).toBeVisible({ timeout: 15_000 });
 
-  const { start, end } = windowSpan(hold.date, hold.window);
+  const { start, end } = windowSpan(hold.date, hold.hours);
   const google = new URL(
     (await confirmed.getByRole("link", { name: appCopy.calendar.google }).getAttribute("href")) ?? "",
   );
