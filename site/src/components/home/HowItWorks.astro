@@ -45,7 +45,7 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
     padding-top: var(--section-gap);
   }
   .section-title {
-    margin-bottom: var(--how-title-gap);
+    margin-bottom: var(--space-xl);
   }
   .steps {
     list-style: none;
@@ -56,15 +56,15 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
   .step {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min)), 1fr));
-    gap: var(--how-gap);
+    gap: var(--space-xl);
     align-items: center;
-    padding: var(--how-step-pad) 0;
+    padding: var(--space-l) 0;
     border-bottom: var(--hairline) solid var(--paper-line);
   }
   /* The text starts at the number's top. */
   .text {
     display: flex;
-    gap: var(--how-number-gap);
+    gap: var(--space-s);
     align-items: flex-start;
   }
   /* Trimmed to the capitals, so the tops of the number and the title line up exactly; the title keeps its space below. */

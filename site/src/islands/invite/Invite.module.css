@@ -52,7 +52,7 @@
   margin: var(--sp-24) 0 0;
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
-  font-size: var(--landing-title);
+  font-size: var(--fs-h1);
   line-height: var(--lh-115);
   letter-spacing: var(--tracking-heading);
 }
@@ -120,7 +120,7 @@
 .stepNumber {
   flex: none;
   font-family: var(--font-serif);
-  font-size: var(--landing-step-number);
+  font-size: var(--fs-h5);
   line-height: var(--lh-100);
   color: var(--text-muted);
   font-variant-numeric: oldstyle-nums;
@@ -160,7 +160,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
-  font-size: var(--landing-panel-title);
+  font-size: var(--fs-h5);
   line-height: var(--lh-115);
 }
 
@@ -195,7 +195,7 @@
   gap: var(--sp-12);
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
-  font-size: var(--landing-answer);
+  font-size: var(--fs-26);
   line-height: var(--lh-115);
 }
 
@@ -242,12 +242,12 @@
 }
 
 .formTitle {
-  font-size: var(--landing-form-title);
+  font-size: var(--fs-30);
   line-height: var(--lh-115);
 }
 
 .waitlistTitle {
-  font-size: var(--landing-waitlist-title);
+  font-size: var(--fs-28);
   line-height: var(--lh-115);
 }
 
@@ -423,7 +423,7 @@
   margin: var(--sp-16) 0 0;
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
-  font-size: var(--landing-done-title);
+  font-size: var(--fs-28);
   line-height: var(--lh-115);
   text-wrap: balance;
 }
@@ -451,7 +451,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-weight: var(--weight-regular);
-  font-size: var(--landing-answer);
+  font-size: var(--fs-26);
   line-height: var(--lh-115);
 }
 

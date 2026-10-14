@@ -90,7 +90,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     margin-bottom: var(--sp-12);
   }
   .intro {
-    margin: 0 0 var(--norwood-intro-gap);
+    margin: 0 0 var(--space-l);
   }
   .group-label {
     margin-bottom: var(--sp-16);
@@ -99,7 +99,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
   }
   .late .group-label {
     margin: var(--norwood-late-gap) 0 var(--sp-16);
-    padding-top: var(--norwood-late-pad);
+    padding-top: var(--space-l);
     border-top: var(--hairline) solid var(--paper-line);
     color: var(--ink);
   }
@@ -116,7 +116,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
   .flow {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--norwood-flow-basis), 1fr));
-    gap: var(--norwood-gap);
+    gap: var(--space-2xs);
     max-width: var(--norwood-flow-row-max);
   }
   @media (min-width: 1024px) {
@@ -166,7 +166,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
   }
   .head {
     grid-row: 2;
-    padding: var(--norwood-card-pad) var(--norwood-card-pad) 0;
+    padding: var(--space-2xs) var(--space-2xs) 0;
     border-top: var(--hairline) solid var(--paper-line);
     display: flex;
     align-items: baseline;
@@ -175,7 +175,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
   }
   .name {
     font-family: var(--font-serif);
-    font-size: var(--fs-large);
+    font-size: var(--fs-lead);
     line-height: var(--lh-115);
   }
   .tag {
@@ -192,7 +192,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
   }
   .description {
     grid-row: 3;
-    padding: var(--sp-8) var(--norwood-card-pad) var(--norwood-card-pad);
+    padding: var(--sp-8) var(--space-2xs) var(--space-2xs);
     font-size: var(--fs-14);
     line-height: var(--lh-160);
     color: var(--text-soft);
@@ -241,7 +241,7 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     }
   }
   .actions {
-    margin-top: var(--norwood-actions-gap);
+    margin-top: var(--space-m);
     display: flex;
     flex-wrap: wrap;
     gap: var(--sp-16) var(--sp-32);

@@ -41,7 +41,7 @@
 .inner {
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: var(--flow-pad-top) var(--gutter) var(--flow-pad-bottom);
+  padding: var(--space-xl) var(--gutter) var(--flow-pad-bottom);
 }
 /* On a narrow phone the step label goes beneath Back, whole, rather than either breaking in two. */
 .topline {
@@ -50,7 +50,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0 var(--sp-20);
-  margin-bottom: var(--flow-topline-gap);
+  margin-bottom: var(--space-s);
 }
 .back,
 .stepLabel {
@@ -127,7 +127,7 @@
 .guidelines {
   list-style: none;
   padding: 0;
-  margin: var(--flow-guidelines-gap) 0 0;
+  margin: var(--space-m) 0 0;
   display: flex;
   flex-direction: column;
   gap: var(--sp-16);
@@ -161,7 +161,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-16);
-  margin-top: var(--flow-actions-gap);
+  margin-top: var(--space-m);
 }
 .preview {
   width: 100%;
@@ -214,7 +214,7 @@
   max-width: var(--measure-lead);
 }
 .rows {
-  margin: var(--flow-rows-gap) 0 0;
+  margin: var(--space-s) 0 0;
   border-top: var(--hairline) solid var(--ink-rule);
 }
 .row {
@@ -251,7 +251,7 @@
   max-width: var(--flow-medium-max);
 }
 .stageGrid {
-  margin-top: var(--flow-choices-gap);
+  margin-top: var(--space-s);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--stage-min)), 1fr));
   gap: var(--sp-16);
@@ -273,7 +273,7 @@
   line-height: var(--lh-145);
 }
 .lookGrid {
-  margin-top: var(--flow-choices-gap);
+  margin-top: var(--space-s);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(46%, var(--look-min)), 1fr));
   gap: var(--sp-16);
@@ -361,7 +361,7 @@
   }
 }
 .fields {
-  margin-top: var(--flow-choices-gap);
+  margin-top: var(--space-s);
   display: flex;
   flex-direction: column;
   gap: var(--sp-20);
@@ -416,7 +416,7 @@
   font-size: var(--fs-15);
 }
 .noticeTitle {
-  margin-top: var(--error-title-gap);
+  margin-top: var(--space-s);
   font-size: var(--fs-h3);
   line-height: var(--lh-115);
   text-wrap: balance;

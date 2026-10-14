@@ -30,7 +30,7 @@ import { range } from "../../content/site.ts";
     margin-bottom: var(--sp-12);
   }
   .intro {
-    margin: 0 0 var(--intro-gap);
+    margin: 0 0 var(--space-l);
   }
   .products {
     list-style: none;
@@ -38,11 +38,11 @@ import { range } from "../../content/site.ts";
     padding: 0;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--range-card-min)), 1fr));
-    column-gap: var(--split-gap);
+    column-gap: var(--space-2xl);
     border-top: var(--hairline) solid var(--text);
   }
   .product {
-    padding: var(--range-pad-y) 0;
+    padding: var(--space-s) 0;
     border-bottom: var(--hairline) solid var(--paper-line);
   }
   h3 {
@@ -54,7 +54,7 @@ import { range } from "../../content/site.ts";
   .tagline {
     margin: var(--sp-12) 0 0;
     font-family: var(--font-serif);
-    font-size: var(--fs-range-tagline);
+    font-size: var(--fs-h4);
     line-height: var(--lh-115);
     letter-spacing: var(--tracking-heading);
     text-wrap: balance;

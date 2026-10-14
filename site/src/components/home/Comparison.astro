@@ -62,7 +62,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
     margin-bottom: var(--sp-12);
   }
   .intro {
-    margin: 0 0 var(--intro-gap);
+    margin: 0 0 var(--space-l);
   }
   .table {
     border-top: var(--hairline) solid var(--text);
@@ -75,7 +75,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
   }
   .head {
     align-items: stretch;
-    padding: var(--comparison-head-pad-top) 0 var(--comparison-head-pad-bottom);
+    padding: var(--space-2xs) 0 var(--space-2xs);
   }
   .entry {
     border-top: var(--hairline) solid var(--paper-line);
@@ -94,7 +94,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
     color: var(--text-muted);
   }
   .cell {
-    padding: 0 var(--comparison-cell-pad);
+    padding: 0 var(--space-2xs);
     border-left: var(--hairline) solid var(--paper-line);
     font-size: var(--fs-17);
     line-height: var(--lh-145);
@@ -108,7 +108,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
   }
   .column-head {
     font-family: var(--font-serif);
-    font-size: var(--fs-column-head);
+    font-size: var(--fs-h5);
     line-height: var(--lh-115);
   }
   .yes {
@@ -123,7 +123,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
       padding: 0 0 var(--sp-16);
     }
     .head {
-      padding: var(--comparison-head-pad-top) 0 var(--comparison-head-pad-bottom);
+      padding: var(--space-2xs) 0 var(--space-2xs);
     }
     .corner {
       display: none;
@@ -144,7 +144,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
       font-size: var(--fs-15);
     }
     .column-head {
-      font-size: var(--fs-column-head);
+      font-size: var(--fs-h5);
     }
   }
 </style>
