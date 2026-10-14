@@ -6,7 +6,7 @@
 import type { Composed } from "./visit-message-text.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import { firstNameOf } from "../../lib/names.ts";
-import { signToken, verifyToken } from "../../lib/signed-token.ts";
+import { signToken, verifyToken, type SigningSecret } from "../../lib/signed-token.ts";
 import { isMessagePurpose, MESSAGE_PURPOSES, type ConsentSource, type MessagePurpose } from "../../policy/consents.ts";
 import { auditStatementIfWritten } from "../platform/audit.ts";
 import { recordConsent } from "../privacy/consents.ts";
@@ -27,7 +27,7 @@ interface StopLinkSubject {
 /** The link to the site's /stop page. The token goes in the fragment, which no server receives or logs. */
 export async function stopLink(
   origin: string,
-  signingKey: string,
+  signingKey: SigningSecret,
   subject: StopLinkSubject,
   now: Date,
 ): Promise<string> {
@@ -37,7 +37,7 @@ export async function stopLink(
 }
 
 /** The subject of a stop link's token, or null when it is forged, expired or names no purpose we message under. */
-export async function readStopToken(signingKey: string, token: string, now: Date): Promise<StopLinkSubject | null> {
+export async function readStopToken(signingKey: SigningSecret, token: string, now: Date): Promise<StopLinkSubject | null> {
   const subject = await verifyToken(signingKey, "stop_messages", token, now);
   if (subject === null) return null;
   const [purpose, personId] = subject.split(" ");

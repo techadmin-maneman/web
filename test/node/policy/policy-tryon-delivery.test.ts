@@ -6,13 +6,15 @@ import { tryOnRuns, undelivered } from "../../../src/policy/tryon-delivery.ts";
 
 const ON = { enabled: true };
 const OFF = { enabled: false };
-const SENDS = { messaging: ON, heldBack: false, capSpent: false };
+const SENDS = { messaging: ON, bridgeDown: false, heldBack: false, capSpent: false };
 
 describe("the try-on's look, on WhatsApp only", () => {
   describe("the look, sent on WhatsApp and never shown on the site", () => {
     it("runs only while WhatsApp can send its look", () => {
-      expect(tryOnRuns(ON)).toBe(true);
-      expect(tryOnRuns(OFF)).toBe(false);
+      expect(tryOnRuns(ON, false)).toBe(true);
+      expect(tryOnRuns(OFF, false)).toBe(false);
+      // The bridge down: no look made now would reach anyone.
+      expect(tryOnRuns(ON, true)).toBe(false);
     });
 
     it("sends the look for a number when nothing holds it back", () => {
@@ -21,7 +23,8 @@ describe("the try-on's look, on WhatsApp only", () => {
 
     it("sends none while WhatsApp is off, whatever else holds", () => {
       expect(undelivered({ ...SENDS, messaging: OFF })).toBe("whatsapp_off");
-      expect(undelivered({ messaging: OFF, heldBack: true, capSpent: true })).toBe("whatsapp_off");
+      expect(undelivered({ messaging: OFF, bridgeDown: false, heldBack: true, capSpent: true })).toBe("whatsapp_off");
+      expect(undelivered({ ...SENDS, bridgeDown: true })).toBe("whatsapp_off");
     });
 
     it("sends none to a number staging's allowlist would hold back", () => {

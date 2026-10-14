@@ -233,6 +233,18 @@ describe("the session", () => {
     expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).status).toBe(401);
   });
 
+  // A session slid for ever with use, so a copied cookie never stopped working.
+  it("ends half a year after its sign-in, however often it is used", async () => {
+    const cookie = await loggedIn();
+    const DAY = 24 * 60 * 60;
+    for (const days of [30, 30, 30, 30, 30, 29]) {
+      later(days * DAY);
+      expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).status).toBe(200);
+    }
+    later(DAY);
+    expect((await request(app, "/api/me", { headers: { Cookie: cookie } })).status).toBe(401);
+  });
+
   it("ends at logout, and the cookie goes with it", async () => {
     const cookie = await loggedIn();
     const res = await post("/api/auth/logout", {}, { Cookie: cookie });

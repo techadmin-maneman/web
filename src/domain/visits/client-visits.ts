@@ -7,7 +7,7 @@ import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { FITTED } from "../clients/fitted.ts";
 import { openProposalJson, openProposalOf } from "./open-proposals.ts";
-import { signToken } from "../../lib/signed-token.ts";
+import { signToken, type SigningSecret } from "../../lib/signed-token.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import { namesMoreThanItsKind } from "../../policy/services.ts";
 import type { AppointmentStatus, VisitOutcome } from "./visit-status.ts";
@@ -364,7 +364,7 @@ export async function visitDetail({
   db: D1Database;
   personId: string;
   visitId: string;
-  signingKey: string;
+  signingKey: SigningSecret;
   now: Date;
 }): Promise<VisitDetail | null> {
   const row = await db
@@ -426,7 +426,7 @@ interface PhotoRow {
 export async function photoSets(
   db: D1Database,
   appointmentIds: readonly string[],
-  signingKey: string,
+  signingKey: SigningSecret,
   now: Date,
 ): Promise<Map<string, PhotoSet>> {
   const sets = new Map<string, PhotoSet>();

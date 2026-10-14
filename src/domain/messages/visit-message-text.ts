@@ -261,7 +261,6 @@ async function refundDestination(db: D1Database, appointmentId: string): Promise
   return DESTINATIONS[payment?.method ?? ""] ?? "payment method";
 }
 
-/** Whether a service-visit credit paid for the visit. */
 /**
  * A booking's receipt with no payment behind it: a visit a credit paid for, or one a discount code made free, which
  * is told it is booked as a paid one is (docs/decisions/0108-discount-codes.md). A
@@ -274,6 +273,7 @@ async function bookedWithNothingPaid(db: D1Database, appointmentId: string, para
   return { skip: "no captured payment for the visit" };
 }
 
+/** Whether a service-visit credit paid for the visit. */
 async function paidWithCredit(db: D1Database, appointmentId: string): Promise<boolean> {
   const credit = await db
     .prepare(`SELECT ${creditSpentOn("?1")} AS spent`)

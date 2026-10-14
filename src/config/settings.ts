@@ -4,6 +4,7 @@
 // docs/decisions/0003-environment-identity-guard.md. Each var is read through ./env-reader.ts, and each section of
 // the settings in ./settings-sections.ts.
 
+import type { SigningKeys } from "../lib/signed-token.ts";
 import type { EvolutionSettings } from "./evolution.ts";
 import type { SentryDsn } from "../lib/sentry-dsn.ts";
 import type { Msg91Settings, Msg91SmsSettings } from "./msg91.ts";
@@ -42,7 +43,7 @@ export interface TryonSettings {
   /** Alert when YouCam's balance falls below this many units. */
   readonly unitFloor: number;
   /** Signs upload and result links. */
-  readonly linkSigningKey: string;
+  readonly linkSigningKey: SigningKeys;
   /** Present when IMAGE_PROVIDER is "youcam". */
   readonly youcamApiKey: string | null;
   /** Where YouCam fetches the looks' reference photographs: https, ending in their version. */

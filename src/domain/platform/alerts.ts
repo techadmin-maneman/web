@@ -198,10 +198,6 @@ function isTellingDue(sighting: Sighting, after: number, retellAfter: number, no
 }
 
 /**
- * Marks the alert told now: from its first telling it waits on the Tasks board's "Needs a hand". False where another
- * sighting told it first, so the chat hears of it once.
- */
-/**
  * Takes back a telling the chat did not take, so the next sighting, or for a first telling the next retell pass, tells
  * it again. The alert stays on the Tasks board's "Needs a hand" meanwhile. Only the telling this one marked is taken.
  */
@@ -216,6 +212,10 @@ async function unmarkTold(db: D1Database, sighting: Sighting, toldAt: Date, log:
   }
 }
 
+/**
+ * Marks the alert told now: from its first telling it waits on the Tasks board's "Needs a hand". False where another
+ * sighting told it first, so the chat hears of it once.
+ */
 async function markTold(db: D1Database, sighting: Sighting, now: Date): Promise<boolean> {
   const result = await db
     .prepare(

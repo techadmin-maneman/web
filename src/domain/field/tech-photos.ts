@@ -17,7 +17,7 @@
 // never shows another take's copy. A photograph with none is shown itself.
 
 import { fileExtension, inspectImage } from "../../lib/image-bytes.ts";
-import { signToken, verifyToken } from "../../lib/signed-token.ts";
+import { signToken, verifyToken, type SigningSecret } from "../../lib/signed-token.ts";
 import { deleteCounted, putCounted } from "../platform/storage-meter.ts";
 import type { Angle, Phase } from "./visit-photos.ts";
 import { MINUTE_MS } from "../../lib/durations.ts";
@@ -46,7 +46,7 @@ export interface PhotoSlot {
 
 /** The path the app PUTs the bytes to, signed for one slot of one job. */
 export async function uploadLink(
-  secret: string,
+  secret: SigningSecret,
   slot: PhotoSlot,
   now: Date,
 ): Promise<{ url: string; smallUrl: string; expiresAt: Date }> {
@@ -57,7 +57,7 @@ export async function uploadLink(
 }
 
 /** The slot a link names, or null when the token is wrong, forged or expired. */
-export async function slotOfLink(secret: string, token: string, now: Date): Promise<PhotoSlot | null> {
+export async function slotOfLink(secret: SigningSecret, token: string, now: Date): Promise<PhotoSlot | null> {
   const subject = await verifyToken(secret, "tech_photo", token, now);
   if (subject === null) return null;
   const [appointmentId, phase, angle, ...rest] = subject.split(":");

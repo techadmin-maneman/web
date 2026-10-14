@@ -129,6 +129,20 @@ describe("POST /api/hooks/evolution/:token", () => {
     expect((await message())?.delivered_at).not.toBeNull();
   });
 
+  // A token in the path sits in every proxy log on the way.
+  it("takes the token as an Authorization header at the path without one", async () => {
+    const send = (token: string) =>
+      request(app(), "/api/hooks/evolution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(receipt("DELIVERY_ACK")),
+      });
+    expect((await send("not-the-token")).status).toBe(401);
+    expect(await message()).toEqual({ delivered_at: null, read_at: null });
+    expect((await send(TOKEN)).status).toBe(204);
+    expect(await message()).toEqual({ delivered_at: "2026-09-21T06:30:00.000Z", read_at: null });
+  });
+
   it("refuses a wrong token, and changes nothing", async () => {
     const res = await post(receipt("READ"), "not-the-token");
     expect(res.status).toBe(401);
@@ -248,6 +262,19 @@ describe("a STOP reply (messages.upsert)", () => {
     expect(await answers()).toHaveLength(1);
     expect(queue.sent).toHaveLength(1);
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM consents WHERE granted = 0").first("n")).toBe(2);
+  });
+
+  // A captured request sent again withdrew consents the client had since given back.
+  it("acts on a STOP once, however often the same message is sent again", async () => {
+    await postWithQueue(incoming("STOP"));
+    await env.DB.prepare(
+      `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at, source)
+       VALUES ('back', 'p1', 'whatsapp_visits', 'v1', 1, '2026-09-21T07:00:00Z', 'app_profile')`,
+    ).run();
+    await postWithQueue(incoming("STOP"));
+
+    expect(await latestConsents()).toContainEqual({ purpose: "whatsapp_visits", granted: 1, source: "app_profile" });
+    expect(queue.sent).toHaveLength(1);
   });
 
   it("finds the sender's number where WhatsApp names the chat by its private address", async () => {

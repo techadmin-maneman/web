@@ -52,7 +52,8 @@ export async function takeInbound(context: InboundContext, events: readonly Inbo
       receipts += await recordReceipt(context, event);
       continue;
     }
-    await fileInbound(context.db, { ...event, at: context.now });
+    // A message reported again, or a captured request replayed, files nothing and answers or stops nothing again.
+    if (!(await fileInbound(context.db, { ...event, at: context.now }))) continue;
     filed += 1;
     if (!isStopReply(event.text)) {
       await answerAfterHours(context.db, context.messaging, context.messagingSettings, {

@@ -17,11 +17,12 @@ export interface Inbound {
 
 /**
  * Files a client's message in their thread, opening the thread or reopening it; once, however often it is reported.
- * A client with no Care person yet is given one (./care-people.ts).
+ * A client with no Care person yet is given one (./care-people.ts). False for a message filed before: a report sent
+ * again, or replayed, which nothing should act on twice.
  */
-export async function fileInbound(db: D1Database, inbound: Inbound): Promise<void> {
+export async function fileInbound(db: D1Database, inbound: Inbound): Promise<boolean> {
   const at = inbound.at.toISOString();
-  await db.batch([
+  const [, message] = await db.batch([
     db
       .prepare(
         `INSERT INTO conversations (id, person_id, mobile_e164, state, opened_at, last_message_at, last_inbound_at,
@@ -52,6 +53,7 @@ export async function fileInbound(db: D1Database, inbound: Inbound): Promise<voi
     .bind(inbound.mobileE164)
     .first<{ person_id: string | null }>();
   if (filed !== null && filed.person_id !== null) await giveCarePerson(db, filed.person_id, inbound.at);
+  return message?.meta.changes === 1;
 }
 
 export const INBOX_VIEWS = ["mine", "open", "waiting", "closed", "all"] as const;

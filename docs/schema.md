@@ -223,7 +223,7 @@ Indexes:
 
 One row per alert while it is open, kept once it is resolved; raising it again counts it (ADR 0067).
 
-Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`, `0088_alerts_retold.sql`.
+Made by `0038_alerts.sql`; changed by `0087_alerts_told.sql`, `0088_alerts_retold.sql`, `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -242,6 +242,7 @@ Indexes:
 
 - `alerts_open_by_key`: unique on (`key`), where `resolved_at IS NULL`
 - `alerts_open_told`: on (`told_at`), where `resolved_at IS NULL AND told_at IS NOT NULL`
+- `alerts_resolved`: on (`resolved_at`), where `resolved_at IS NOT NULL`
 
 ## appointments
 
@@ -307,7 +308,7 @@ Triggers: `appointments_kept_whole`, `appointments_whole`.
 
 Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 
-Made by `0005_audit.sql`.
+Made by `0005_audit.sql`; changed by `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -325,6 +326,7 @@ Made by `0005_audit.sql`.
 Indexes:
 
 - `audit_log_actor`: on (`actor_kind`, `actor`, `at`)
+- `audit_log_by_at`: on (`at`)
 - `audit_log_subject`: on (`subject_kind`, `subject_id`, `at`)
 
 Triggers: `audit_log_append_only_delete`, `audit_log_append_only_update`.
@@ -1645,7 +1647,7 @@ Indexes:
 
 Each WhatsApp message, from queued to sent, delivered and read (ADR 0041).
 
-Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`.
+Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand_offs_and_messages.sql`, `0093_outbound_message_due_at.sql`, `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -1668,6 +1670,7 @@ Made by `0003_tryon.sql`; changed by `0006_outbound_messages_v2.sql`, `0044_hand
 
 Indexes:
 
+- `outbound_messages_by_created`: on (`created_at`)
 - `outbound_messages_by_provider_id`: on (`provider_message_id`)
 - `outbound_messages_by_state`: on (`state`, `queued_at`)
 - `outbound_messages_by_subject`: on (`subject_id`)
@@ -2090,13 +2093,17 @@ Made by `0122_quick_replies.sql`.
 
 Each Razorpay webhook event, once, by its event ID (ADR 0044).
 
-Made by `0014_payments.sql`.
+Made by `0014_payments.sql`; changed by `0172_retention_reaches_every_table.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
 | `event_id` | TEXT | no |  | primary key |
 | `event` | TEXT | no |  |  |
 | `received_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `razorpay_events_by_received`: on (`received_at`)
 
 ## recall_pieces
 
