@@ -7,6 +7,7 @@
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { levelAt } from "../../policy/stock.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
+import { tierOf } from "../../config/visit-types.ts";
 
 interface Item {
   readonly code: string;
@@ -114,7 +115,7 @@ async function readStock(db: D1Database) {
     db.prepare(
       `SELECT a.technician_id, a.window_start, u.consumable_code AS code, u.quantity
        FROM appointments a JOIN technicians t ON t.id = a.technician_id AND t.test_record = 0
-       JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = COALESCE(a.tier, 'standard')
+       JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
        WHERE a.status = 'completed' AND a.deleted_at IS NULL`,
     ),
   ]);

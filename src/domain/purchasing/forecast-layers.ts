@@ -11,6 +11,9 @@ import { latestFits } from "../clients/hair-profiles.ts";
 import { addDays } from "../../lib/india-time.ts";
 import { learnedRate, periodOf, type ForecastAssumptions } from "../../policy/forecast.ts";
 import { hairSystemSpecs, matchingCode } from "../inventory/hair-systems.ts";
+import { tierOf } from "../../config/visit-types.ts";
+import { bookedAhead } from "../../config/statuses.ts";
+import { visitCity } from "../clients/places.ts";
 
 export interface Horizon {
   readonly today: string;
@@ -48,21 +51,16 @@ export async function bookedLayer(db: D1Database, horizon: Horizon): Promise<Lay
   >([
     db
       .prepare(
-        `SELECT a.person_id, a.type, a.tier, a.window_start, COALESCE(t.city, sp.city) AS city
-         FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-         LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
-         WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
-           AND a.deleted_at IS NULL AND a.type IN ('first_fit', 'replacement')`,
+        `SELECT a.person_id, a.type, a.tier, a.window_start, ${visitCity("a")} AS city
+         FROM appointments a
+         WHERE ${bookedAhead("a")} AND a.type IN ('first_fit', 'replacement')`,
       )
       .bind(horizon.today, lastDay(horizon)),
     db
       .prepare(
-        `SELECT u.consumable_code AS code, COALESCE(t.city, sp.city) AS city, a.window_start, u.quantity
-         FROM appointments a JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = COALESCE(a.tier, 'standard')
-         LEFT JOIN technicians t ON t.id = a.technician_id
-         LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
-         WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
-           AND a.deleted_at IS NULL`,
+        `SELECT u.consumable_code AS code, ${visitCity("a")} AS city, a.window_start, u.quantity
+         FROM appointments a JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
+         WHERE ${bookedAhead("a")}`,
       )
       .bind(horizon.today, lastDay(horizon)),
   ]);
@@ -113,11 +111,9 @@ export async function dueLayer(db: D1Database, horizon: Horizon): Promise<{ laye
   const rate = await dueRate(db, horizon);
   const { results } = await db
     .prepare(
-      `SELECT p.person_id, p.replacement_due_at AS due, COALESCE(t.city, sp.city) AS city
+      `SELECT p.person_id, p.replacement_due_at AS due, ${visitCity("a")} AS city
        FROM pieces p INDEXED BY pieces_to_replace JOIN people pe ON pe.id = p.person_id
        LEFT JOIN appointments a ON a.id = p.appointment_id
-       LEFT JOIN technicians t ON t.id = a.technician_id
-       LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
        WHERE p.replacement_booked = 0 AND p.deleted_at IS NULL AND p.failed_at IS NULL AND p.replaced_at IS NULL
          AND p.replacement_due_at IS NOT NULL AND p.replacement_due_at >= ?1 AND p.replacement_due_at < ?2
          AND pe.erased_at IS NULL`,
@@ -183,11 +179,9 @@ export async function pipelineLayer(db: D1Database, horizon: Horizon): Promise<{
   const [rate, mix] = await Promise.all([fitRate(db, horizon), cityMix(db, horizon)]);
   const { results } = await db
     .prepare(
-      `SELECT a.window_start, COALESCE(t.city, sp.city) AS city
-       FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-       LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
-       WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
-         AND a.deleted_at IS NULL AND a.type = 'consultation'`,
+      `SELECT a.window_start, ${visitCity("a")} AS city
+       FROM appointments a
+       WHERE ${bookedAhead("a")} AND a.type = 'consultation'`,
     )
     .bind(horizon.today, lastDay(horizon))
     .all<{ window_start: string; city: string | null }>();

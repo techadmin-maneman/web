@@ -6,6 +6,9 @@
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { latestFits, type FitToMatch } from "../clients/hair-profiles.ts";
 import { hairSystemSpecs, matchingCode, type HairSystemSpec } from "../inventory/hair-systems.ts";
+import { tierOf } from "../../config/visit-types.ts";
+import { bookedAhead } from "../../config/statuses.ts";
+import { visitCity } from "../clients/places.ts";
 
 /** One stock code's expected use in one city over the weeks ahead, beside what the city holds. */
 export interface Demand {
@@ -25,13 +28,7 @@ export interface AtRisk {
   readonly code: string | null;
 }
 
-/** The visits booked ahead, `a`, with their city: the technician's, or the address's. */
-const BOOKED_AHEAD = `LEFT JOIN technicians t ON t.id = a.technician_id
-  LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
-  WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
-    AND a.deleted_at IS NULL`;
-
-const CITY = "COALESCE(t.city, sp.city)";
+const CITY = visitCity("a");
 
 interface FitRow {
   readonly id: string;
@@ -80,7 +77,7 @@ async function heldByCity(db: D1Database, codes: readonly string[] | null): Prom
 const fitsStatement = (db: D1Database, from: string, to: string) =>
   db
     .prepare(
-      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, ${CITY} AS city FROM appointments a ${BOOKED_AHEAD}
+      `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, ${CITY} AS city FROM appointments a WHERE ${bookedAhead("a")}
          AND a.type IN ('first_fit', 'replacement') ORDER BY a.window_start`,
     )
     .bind(from, to);
@@ -143,8 +140,8 @@ export async function stockDemand(
       .prepare(
         `SELECT u.consumable_code AS code, ${CITY} AS city, SUM(u.quantity) AS expected
          FROM appointments a
-         JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = COALESCE(a.tier, 'standard')
-         ${BOOKED_AHEAD}
+         JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
+         WHERE ${bookedAhead("a")}
          GROUP BY 1, 2`,
       )
       .bind(from, to),

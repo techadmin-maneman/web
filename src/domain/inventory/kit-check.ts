@@ -14,6 +14,8 @@ import type { KitCheck } from "../../policy/kit-check.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import { hairSystemSpecs, matchingCode } from "./hair-systems.ts";
 import { addTheWeek } from "./kit-week.ts";
+import { tierOf } from "../../config/visit-types.ts";
+import { bookedAhead } from "../../config/statuses.ts";
 
 type UseRow = { technician_id: string; code: string; quantity: number };
 type FitRow = {
@@ -39,17 +41,15 @@ async function neededTomorrow(
     db
       .prepare(
         `SELECT a.technician_id, u.consumable_code AS code, SUM(u.quantity) AS quantity
-         FROM appointments a JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = COALESCE(a.tier, 'standard')
-         WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
-           AND a.deleted_at IS NULL AND a.technician_id IS NOT NULL GROUP BY 1, 2`,
+         FROM appointments a JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
+         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL GROUP BY 1, 2`,
       )
       .bind(from, to),
     db
       .prepare(
         `SELECT a.technician_id, a.person_id, a.type, a.tier, a.one_visit, t.city
          FROM appointments a JOIN technicians t ON t.id = a.technician_id
-         WHERE a.window_start >= ?1 AND a.window_start < ?2 AND a.status IN ('scheduled', 'dispatched')
-           AND a.deleted_at IS NULL AND a.technician_id IS NOT NULL AND a.type IN ('first_fit', 'replacement')`,
+         WHERE ${bookedAhead("a")} AND a.technician_id IS NOT NULL AND a.type IN ('first_fit', 'replacement')`,
       )
       .bind(from, to),
   ]);

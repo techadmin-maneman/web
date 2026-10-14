@@ -5,7 +5,7 @@
 
 import { type BookingWindow, SLOTS_PER_DAY } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
-import { addDays, indiaInstant, indiaDate } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaDateSql, indiaInstant } from "../../lib/india-time.ts";
 import { type PlacesReached, reachesCity } from "../../policy/access.ts";
 import { type UntoldReason, type Begun, slotsFor, begunFrom } from "../../policy/dispatch.ts";
 import { type PaymentBadge, paymentBadge } from "../../policy/job-visibility.ts";
@@ -15,7 +15,7 @@ import { namesMoreThanItsKind } from "../../policy/services.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
 import { bookedMinutes } from "../booking/occupancy.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
-import { withinReach, reachBinding } from "../clients/places.ts";
+import { reachBinding, visitCity, withinReach } from "../clients/places.ts";
 import { NO_VISITS_CONSENT } from "../messages/visit-message-text.ts";
 import { latestConsentSql } from "../privacy/consents.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
@@ -23,6 +23,8 @@ import type { AppointmentStatus } from "../visits/visit-status.ts";
 import { boardCities } from "../cities/cities.ts";
 import { leaveBetween } from "./leave.ts";
 import { openProposalJson, openProposalOf, type ProposedMove } from "../visits/open-proposals.ts";
+import { tierOf } from "../../config/visit-types.ts";
+import { statusIn, VISIT_LIVE, VISIT_ON_THE_BOARD } from "../../config/statuses.ts";
 
 /** Seven days, as the board shows them. */
 export const BOARD_DAYS = 7;
@@ -141,10 +143,6 @@ export const UNTOLD_MOVE = `m.fsm_write_state = 'written' AND m.was_start <> m.n
 export const UNTOLD_REASON = `CASE WHEN m.message_id IS NULL OR EXISTS (
     SELECT 1 FROM outbound_messages o WHERE o.id = m.message_id AND o.last_error = '${NO_VISITS_CONSENT}')
   THEN 'no_consent' ELSE 'not_sent' END`;
-/** The statuses of a job still to finish. One under way is live, though it is not moved. */
-export const LIVE = "('scheduled', 'dispatched', 'in_progress')";
-/** What a day on the board holds: its live jobs, and the ones already done, so a past day reads as it was worked. */
-const ON_THE_BOARD = "('scheduled', 'dispatched', 'in_progress', 'completed')";
 /** Whether the technician's phone has landed a step of this kind on job `a`, set-aside steps apart. */
 const landed = (kind: string): string =>
   `EXISTS (SELECT 1 FROM job_events e WHERE e.appointment_id = a.id AND e.kind = '${kind}' AND e.superseded = 0)`;
@@ -170,8 +168,8 @@ const BOARD_JOBS = `
     (SELECT COALESCE(h.change_notice_hours, ?4) FROM slot_holds h
      WHERE h.appointment_id = a.id AND h.state = 'booked' ORDER BY h.updated_at DESC LIMIT 1) AS sold_notice_hours,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
-              WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
-                AND b.valid_from <= date(a.window_start, '+330 minutes')
+              WHERE b.item = a.type AND b.tier = ${tierOf("a.tier")}
+                AND b.valid_from <= ${indiaDateSql("a.window_start")}
               ORDER BY b.valid_from DESC LIMIT 1), 0) AS free,
     ${landed("check_in")} AS checked_in, ${landed("start")} AS started, ${landed("outcome")} AS closed,
     ${openProposalJson("a")} AS proposal
@@ -179,9 +177,9 @@ const BOARD_JOBS = `
   LEFT JOIN technicians t ON t.id = a.technician_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
-  LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
-  WHERE a.deleted_at IS NULL AND a.status IN ${ON_THE_BOARD} AND a.window_start >= ?1 AND a.window_start < ?2
-    AND (?3 IS NULL OR a.service_city = ?3) AND ${withinReach("visit", "a", "?5")}
+  LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
+  WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_ON_THE_BOARD)} AND a.window_start >= ?1 AND a.window_start < ?2
+    AND (?3 IS NULL OR ${visitCity("a")} = ?3) AND ${withinReach("visit", "a", "?5")}
   ORDER BY a.window_start`;
 /** The board's seven days from `from`. */
 export const weekFrom = (from: string): string[] =>
@@ -231,7 +229,7 @@ export async function dispatchBoard(
       .prepare(
         `SELECT m.id, m.appointment_id, m.now_start, ${UNTOLD_REASON} AS reason FROM appointments a
          JOIN dispatch_moves m ON m.appointment_id = a.id
-         WHERE a.deleted_at IS NULL AND a.status IN ${LIVE} AND a.window_start >= ?1 AND a.window_start < ?2
+         WHERE a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_LIVE)} AND a.window_start >= ?1 AND a.window_start < ?2
            AND ${UNTOLD_MOVE}`,
       )
       .bind(fromAt, toAt)

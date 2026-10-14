@@ -3,9 +3,10 @@
 // invite or a partner's code gave, valued at its service's price on the day it was used. A free visit given back, as a
 // cancel in time gives it, is no spend. Rupees before GST.
 
-import { indiaDate } from "../../lib/india-time.ts";
+import { indiaDate, indiaDateSql } from "../../lib/india-time.ts";
 import { CHANNELS, type Channel } from "../../policy/channels.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
+import { tierOf } from "../../config/visit-types.ts";
 
 interface EntryRow {
   readonly key: string;
@@ -31,8 +32,8 @@ const channelNamed = (code: string): Channel => CHANNELS.find((each) => each.cod
 /** Each free visit a referral grant paid for, not given back, with its service's price on its day. */
 const CREDITS_USED = `SELECT r.id, a.window_start, a.service_city AS city, r.visits,
     EXISTS (SELECT 1 FROM channel_attributions c WHERE c.id = g.source_id) AS from_partner,
-    (SELECT b.amount_ex_gst FROM price_book b WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
-       AND b.valid_from <= date(a.window_start, '+330 minutes') ORDER BY b.valid_from DESC LIMIT 1) AS price
+    (SELECT b.amount_ex_gst FROM price_book b WHERE b.item = a.type AND b.tier = ${tierOf("a.tier")}
+       AND b.valid_from <= ${indiaDateSql("a.window_start")} ORDER BY b.valid_from DESC LIMIT 1) AS price
   FROM credit_ledger r JOIN credit_ledger g ON g.id = r.grant_id JOIN appointments a ON a.id = r.source_id
   JOIN people p ON p.id = r.person_id
   WHERE r.kind = 'redeem' AND g.source_kind = 'referral' AND p.test_record = 0

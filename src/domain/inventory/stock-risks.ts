@@ -4,6 +4,7 @@
 // blocked: the booking stands, and ops have the days before it to put the stock right.
 
 import { fitsAtRisk } from "../purchasing/stock-demand.ts";
+import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 
 /**
  * The open risks, as the Tasks board reads its rows (src/domain/ops/tasks.ts): only of a visit still to come, so one
@@ -15,7 +16,7 @@ export const STOCK_RISKS_OPEN = `SELECT 'stock_at_risk' AS "group", r.appointmen
     a.window_start AS due_by, '' AS episode
   FROM stock_risks r INDEXED BY stock_risks_open
   JOIN appointments a ON a.id = r.appointment_id LEFT JOIN people pe ON pe.id = a.person_id
-  WHERE r.cleared_at IS NULL AND a.deleted_at IS NULL AND a.status IN ('scheduled', 'dispatched')
+  WHERE r.cleared_at IS NULL AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
     AND (pe.id IS NULL OR pe.erased_at IS NULL)`;
 
 /** The fits at risk today kept, each once, and those no longer at risk cleared. How many are open now. */

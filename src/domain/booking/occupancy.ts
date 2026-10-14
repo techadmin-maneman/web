@@ -3,7 +3,7 @@
 
 import { keepingItsTime, ownAtCheckout, ownUnpaid } from "./hold-stages.ts";
 import { UNITS_PER_DAY, VISIT_BLOCKS, WINDOW_SLOT_MAP, type BookingWindow } from "../../config/scheduling.ts";
-import { isAFitting, type VisitType } from "../../config/visit-types.ts";
+import { isAFitting, tierOf, type VisitType } from "../../config/visit-types.ts";
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import { clashes } from "../../policy/dispatch.ts";
 import { bookedLength, unitsFor } from "../../policy/visit-length.ts";
@@ -34,7 +34,7 @@ export async function loadBlackouts(
   const { results } = await db
     .prepare(
       `SELECT date FROM visit_blackouts WHERE date BETWEEN ?1 AND ?2
-       UNION SELECT date FROM city_blackouts WHERE date BETWEEN ?1 AND ?2 AND city = ${visitCity("?3", "?4")}`,
+       UNION SELECT date FROM city_blackouts WHERE date BETWEEN ?1 AND ?2 AND city = ${bookingCity("?3", "?4")}`,
     )
     .bind(from, to, place?.pincode ?? null, place?.personId ?? null)
     .all<{ date: string }>();
@@ -89,10 +89,11 @@ export interface Technician {
 }
 
 /**
- * The city a visit is in, as SQL: the city of the pincode it is at, else of its client's current address; null where
- * neither is known. `pincode` and `person` are the statement's parameters for them.
+ * The city a visit being booked or moved is in, as SQL: the city of the pincode it is at, else of its client's current
+ * address; null where neither is known. `pincode` and `person` are the statement's parameters for them. A visit once
+ * booked keeps the city it was booked in (src/domain/clients/places.ts, visitCity).
  */
-export const visitCity = (pincode: string, person: string): string => `COALESCE(
+export const bookingCity = (pincode: string, person: string): string => `COALESCE(
     (SELECT p.city FROM serviceable_pincodes p WHERE p.pincode = ${pincode}),
     (SELECT p.city FROM addresses a JOIN serviceable_pincodes p ON p.pincode = a.pincode
       WHERE a.person_id = ${person} AND a.replaced_at IS NULL))`;
@@ -109,7 +110,7 @@ interface VisitPlace {
  * ops set one (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
  */
 const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technicians t
-  WHERE t.active = 1 AND (t.id = ?3 OR (t.city = ${visitCity("?1", "?2")} AND (?4 = 0 OR t.fits_trained = 1)
+  WHERE t.active = 1 AND (t.id = ?3 OR (t.city = ${bookingCity("?1", "?2")} AND (?4 = 0 OR t.fits_trained = 1)
     AND (?5 IS NULL OR EXISTS (
       SELECT 1 FROM stock_balances b WHERE b.consumable_code = ?5 AND b.quantity > 0
         AND (b.place = t.id OR b.place IN (SELECT r.id FROM stock_places r
@@ -244,7 +245,7 @@ export async function occupancy({
     db
       .prepare(
         `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes FROM appointments a
-         LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
+         LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
          WHERE a.deleted_at IS NULL AND a.technician_id IS NOT NULL
            AND ${statusIn("a.status", VISIT_LIVE)}
            AND a.window_start >= ?1 AND a.window_start < ?2 AND a.id IS NOT ?3`,

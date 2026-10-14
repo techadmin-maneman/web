@@ -20,6 +20,9 @@ import { describe, expect, it } from "vitest";
 import * as STATUSES from "../../../src/config/statuses.ts";
 import { graceEnds, keepingItsTime, ownUnpaid, paidNotBooked } from "../../../src/domain/booking/hold-stages.ts";
 import { creditSpentOn } from "../../../src/domain/visits/visit-facts.ts";
+import { visitCity } from "../../../src/domain/clients/places.ts";
+import { tierOf } from "../../../src/config/visit-types.ts";
+import { indiaDateSql } from "../../../src/lib/india-time.ts";
 
 /**
  * Each module the entry imports, and each one those import in turn: every statement the entry could run is in one of
@@ -246,13 +249,17 @@ const collapsed = (text: string): string => text.replace(/\s+/g, " ");
 
 /** The SQL fragments the queries share, written out as each call site's arguments ask. */
 const FRAGMENTS: Readonly<Record<string, (...names: never[]) => string>> = {
+  bookedAhead: STATUSES.bookedAhead,
   creditSpentOn,
   graceEnds,
+  indiaDateSql,
   keepingItsTime,
   ownUnpaid,
   paidNotBooked,
   statusIn: STATUSES.statusIn,
   statusNotIn: STATUSES.statusNotIn,
+  tierOf,
+  visitCity,
 };
 
 /** A status set a fragment is handed, by its name in src/config/statuses.ts. */

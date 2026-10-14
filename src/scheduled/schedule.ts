@@ -1,6 +1,8 @@
 // When the cron's jobs run (src/scheduled/cron.ts). The trigger fires every minute, and each run takes only the jobs
 // due in that minute, so the work is spread over the hour.
 
+import { INDIA_OFFSET_MINUTES } from "../lib/india-time.ts";
+
 /** The trigger in wrangler.jsonc: a run every minute. */
 export const EVERY_MINUTE = "* * * * *";
 
@@ -35,7 +37,7 @@ export interface Slot {
   readonly weekday?: number;
 }
 
-const IST_OFFSET_MS = 330 * 60_000;
+const IST_OFFSET_MS = INDIA_OFFSET_MINUTES * 60_000;
 const DAY_MS = 24 * 60 * 60_000;
 
 /** When the slot last began, at or before `now`. */

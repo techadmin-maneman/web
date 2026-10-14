@@ -4,7 +4,13 @@
 
 import { DAY_MS, MINUTE_MS } from "./durations.ts";
 
-const IST_OFFSET_MS = (5 * 60 + 30) * MINUTE_MS;
+/** India's offset from UTC, in minutes. */
+export const INDIA_OFFSET_MINUTES = 5 * 60 + 30;
+const IST_OFFSET_MS = INDIA_OFFSET_MINUTES * MINUTE_MS;
+
+/** In SQL, the India date of the instant in `column`, with any of SQLite's date modifiers after, as "'+1 day'". */
+export const indiaDateSql = (column: string, ...modifiers: string[]): string =>
+  `date(${[column, `'+${String(INDIA_OFFSET_MINUTES)} minutes'`, ...modifiers].join(", ")})`;
 
 /** The calendar date in India at `instant`. */
 export function indiaDate(instant: Date): string {

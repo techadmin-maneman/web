@@ -3,7 +3,7 @@
 // read it. A city's rate stands in for every city's there, and a city's rate of none falls back to every city's. A
 // visit with no rate at all still counts, at none, so the gap shows.
 
-import { indiaInstant } from "../../lib/india-time.ts";
+import { indiaDateSql, indiaInstant } from "../../lib/india-time.ts";
 import type { VISIT_PAY_KINDS } from "./technician-pay.ts";
 
 type VisitPayKind = (typeof VISIT_PAY_KINDS)[number];
@@ -27,7 +27,7 @@ export interface PayLine {
  */
 const STATEMENT = `WITH closed AS (
   SELECT a.technician_id, t.name AS technician, t.pay_grade_id, a.service_city AS city,
-    date(a.window_start, '+330 minutes') AS day,
+    ${indiaDateSql("a.window_start")} AS day,
     CASE WHEN o.outcome = 'no_show' THEN 'no_show'
          WHEN a.one_visit IS NOT NULL AND a.type = 'first_fit' THEN 'one_visit'
          ELSE a.type END AS kind

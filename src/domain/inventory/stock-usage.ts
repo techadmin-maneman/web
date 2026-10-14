@@ -12,6 +12,7 @@ import {
   type StockUsage,
 } from "../../policy/stock-usage.ts";
 import { allPlaces, type Place } from "./stock-places.ts";
+import { tierOf } from "../../config/visit-types.ts";
 
 interface ItemUsage {
   readonly code: string;
@@ -62,7 +63,7 @@ export async function usageAgainstExpected(
   >([
     db
       .prepare(
-        `SELECT technician_id, type, COALESCE(tier, 'standard') AS tier, COUNT(*) AS visits
+        `SELECT technician_id, type, ${tierOf("tier")} AS tier, COUNT(*) AS visits
          FROM appointments INDEXED BY appointments_done_visits
          WHERE status = 'completed' AND type IN ('first_fit', 'service', 'replacement') AND deleted_at IS NULL
            AND window_start >= ?1 AND technician_id IS NOT NULL GROUP BY 1, 2, 3`,
