@@ -7,7 +7,8 @@ import { firstNameOf } from "@rules/lib/names.ts";
 export const visitName = (type: VisitSummary["type"]) => (type === null ? OTHER_VISIT : VISIT_TYPES[type]);
 
 /** A one visit's price; null for any other visit or booking. */
-export const oneVisitOf = (visit: { readonly one_visit: OneVisitPrice | null }): OneVisitPrice | null => visit.one_visit;
+export const oneVisitOf = (visit: { readonly one_visit: OneVisitPrice | null }): OneVisitPrice | null =>
+  visit.one_visit;
 
 /** The visit's kind, and its service where that says more: "First fit · Mane Man Essential". */
 export function visitTitle(visit: Pick<VisitSummary, "type" | "service">): string {

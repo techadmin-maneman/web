@@ -97,9 +97,7 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   // The preview: the chat's bubble, exactly as the friend will see it, with the house card itself in it.
   const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(preview.getByText("You have a Mane Man invite")).toBeVisible();
-  await expect(
-    preview.getByText(/Thought you’d like this: Mane Man, at home\. .*\/r\/[A-Z0-9]{8}/),
-  ).toBeVisible();
+  await expect(preview.getByText(/Thought you’d like this: Mane Man, at home\. .*\/r\/[A-Z0-9]{8}/)).toBeVisible();
   await expect(preview.locator("img").first()).toHaveAttribute("src", /invite-house/);
   await expect(preview.getByRole("link", { name: appCopy.refer.preview.whatsapp })).toHaveAttribute(
     "href",

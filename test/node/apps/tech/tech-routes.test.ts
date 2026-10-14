@@ -9,13 +9,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { components } from "../../../../apps/tech/src/api-schema.ts";
-import {
-  EVENT_ID_HEADER,
-  pathFor,
-  ROUTES,
-  type EventBody,
-  type EventKind,
-} from "../../../../apps/tech/src/routes.ts";
+import { EVENT_ID_HEADER, pathFor, ROUTES, type EventBody, type EventKind } from "../../../../apps/tech/src/routes.ts";
 
 interface Document {
   paths: Record<string, Record<string, { responses: Record<string, { description?: string }> }>>;

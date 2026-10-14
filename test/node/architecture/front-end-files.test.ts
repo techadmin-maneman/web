@@ -19,7 +19,9 @@ function importsAfterCode(file: string): string[] {
     .split("\n")
     .forEach((line, index) => {
       const trimmed = line.trim();
-      const opensImport = /^(import|export\s+(\*|\{[^}]*\}|type\s+\{[^}]*\})\s+from|export\s+(type\s+)?\{)/.test(trimmed);
+      const opensImport = /^(import|export\s+(\*|\{[^}]*\}|type\s+\{[^}]*\})\s+from|export\s+(type\s+)?\{)/.test(
+        trimmed,
+      );
       if (inImport) {
         if (trimmed.endsWith(";")) inImport = false;
         return;

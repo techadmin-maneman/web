@@ -358,7 +358,11 @@ test("the deployed service worker keeps the shell and no API answer", async ({ p
   const held = await cachedPaths(page);
   record("the caches the deployed worker holds", held);
   expect(Object.keys(held).filter((name) => !name.startsWith("mm-tech-shell-"))).toEqual([]);
-  expect(Object.values(held).flat().filter((path) => path.startsWith("/api/"))).toEqual([]);
+  expect(
+    Object.values(held)
+      .flat()
+      .filter((path) => path.startsWith("/api/")),
+  ).toEqual([]);
 
   // The basement: no signal at all, the app closed and opened again.
   await context.setOffline(true);
