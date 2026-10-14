@@ -85,7 +85,7 @@ function newGrievancesMessage(raised: number, queueLink: string): string {
 }
 
 /** The message that tells the client their concern is answered; for the batch that records the answer. */
-export function concernAnsweredMessage(
+function concernAnsweredMessage(
   db: D1Database,
   input: { readonly grievanceId: string; readonly personId: string; readonly now: Date },
 ): { id: string; statement: D1PreparedStatement } {
