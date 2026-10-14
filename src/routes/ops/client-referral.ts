@@ -6,7 +6,7 @@
 //
 // The client is attributed through the landing's own function, so its rules hold here too: never the code's own
 // referrer, never a client who came with an invite already; one attached after the friend's first fit waits for ops'
-// review (src/policy/fraud-holds.ts, LATE_ATTACH_RULE). Who attached it and why are
+// review (src/policy/fraud-holds.ts, attached_after_fit). Who attached it and why are
 // kept with it, and its audit entry is written in the same batch. The CRM is then sent the client again, and reads
 // the invite they now carry.
 
@@ -161,7 +161,7 @@ export function registerOpsClientReferral(app: App): void {
       },
     });
     if (outcome.outcome === "own_invite") return refuse(c, "own_invite");
-    // Ops may attach after the friend's first fit; the grant is held for their review (LATE_ATTACH_RULE).
+    // Ops may attach after the friend's first fit; the grant is held for their review (attached_after_fit).
     if (outcome.outcome === "fitted") throw new Error("an invite ops attach is never refused for a first fit");
     if (outcome.outcome === "already_attributed") {
       return c.json({ ...errorBody("already_invited", requestId), invite: { code: outcome.code } }, 409);

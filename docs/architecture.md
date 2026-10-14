@@ -24,9 +24,9 @@ Within a layer, modules import each other freely, as long as no cycle forms.
   Worker's types.
 - **A queue's message and its retry ceiling** go in `config/pipeline.ts`, so whoever sends to the queue and the
   consumer that reads it share the contract without importing each other.
-- **Sending to a queue** is `domain/enqueue.ts`, which the domain, the routes and the jobs all use.
+- **Sending to a queue** is `domain/platform/enqueue.ts`, which the domain, the routes and the jobs all use.
 - **A vendor's error** is `providers/provider-error.ts`, which the domain reads without naming the vendor.
-- **What a domain function works with**, the database, the clock, a provider and the logger, comes as one context object, the request's logger always among them: booking and giving back a hold take `BookingContext` (`domain/booked-hold.ts`). A module takes one when it is next changed; nothing makes its own logger.
+- **What a domain function works with**, the database, the clock, a provider and the logger, comes as one context object, the request's logger always among them: booking and giving back a hold take `BookingContext` (`domain/booking/booked-hold.ts`). A module takes one when it is next changed; nothing makes its own logger.
 
 ## The domain's folders
 
@@ -94,7 +94,7 @@ holds the routes to that, from a baseline of today's imports that only shrinks.
 ## A hold's stages
 
 A hold (`slot_holds`) keeps a window while the client pays, and its stage is read from a few columns. Every query
-names a stage through `domain/hold-stages.ts` rather than spelling out the columns, so a new query cannot miss one.
+names a stage through `domain/booking/hold-stages.ts` rather than spelling out the columns, so a new query cannot miss one.
 
 ```text
 held, unpaid ──paid, or taken free or on a credit──▶ held, confirmed ──visit written──▶ booked

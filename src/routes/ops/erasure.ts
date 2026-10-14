@@ -1,6 +1,6 @@
 // POST /api/clients/:id/erasure: ops erase a client the day they ask, from the client's page
 // (docs/decisions/0019-erasure.md). A request the client made in their app is decided in Deletion requests instead
-// (src/routes/ops-profile.ts); both erase through eraseAndQueue, audited under the member of staff who did it, and
+// (src/routes/ops/profile.ts); both erase through eraseAndQueue, audited under the member of staff who did it, and
 // keep to the caller's cities. Refused while the client has a visit or booking still to happen, a payment held or a
 // payment link unpaid, unless ops say they will settle it by hand today
 // (docs/decisions/0066-erasure-all-or-nothing.md).

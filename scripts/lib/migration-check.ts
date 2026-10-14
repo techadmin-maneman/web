@@ -2,7 +2,7 @@
 // expand, deploy, then contract in a later release. A contract step (a drop,
 // rename or delete) must name the ADR that sequences it:
 //
-//   -- contract: docs/decisions/0042-drop-legacy-column.md
+//   -- contract: docs/decisions/<number>-<name>.md
 //
 // See docs/decisions/0006-deployment-pipeline.md.
 
