@@ -123,6 +123,7 @@ describe("the label the technician scans", () => {
         replaced_at: null,
       },
       belongs_to_this_job: true,
+      in_kit: false,
     });
     const unknown = await request(tech, "/api/tech/pieces/lookup?code=MM-STD-0000-Z", {
       headers: { Cookie: cookie },
