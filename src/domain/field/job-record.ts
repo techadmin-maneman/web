@@ -15,7 +15,7 @@ import { closeVisit, moveVisit } from "../visits/visit-status.ts";
 import { visitUpkeep } from "../visits/visit-upkeep.ts";
 
 export interface LandingStep {
-  readonly visit: { readonly id: string; readonly personId: string | null };
+  readonly visit: { readonly id: string; readonly personId: string };
   readonly kind: JobEventKind;
   readonly body: Record<string, unknown>;
   /** The phone's time for the step, within bounds. */
@@ -77,11 +77,10 @@ async function startedAtOf(db: D1Database, appointmentId: string): Promise<strin
 
 /**
  * The piece fitted, due a cycle of its base from the day in India the phone fitted it, each that failed, and the one
- * it took the place of. A visit with no client of ours has nobody to record a piece for.
+ * it took the place of.
  */
 function pieceStatements(db: D1Database, step: LandingStep): D1PreparedStatement[] {
   const personId = step.visit.personId;
-  if (personId === null) return [];
   const pieces = pieceStepOf(step.body);
   const failed = pieces.failed.map((failure) =>
     failedPieceStatement(db, { personId, pieceCode: failure.code, reason: failure.reason, now: step.now }),

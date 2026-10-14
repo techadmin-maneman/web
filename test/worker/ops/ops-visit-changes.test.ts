@@ -287,12 +287,8 @@ describe("POST /api/visits/:id/cancel: what it refuses", () => {
     expect(await statusOf()).toBe("scheduled");
   });
 
-  it("refuses a visit that has passed or is no client's", async () => {
+  it("refuses a visit that has passed", async () => {
     await visit("service", THIS_MORNING);
-    expect((await cancel({}, { confirm: false })).status).toBe(409);
-    await env.DB.prepare("UPDATE appointments SET window_start = ?2, person_id = NULL WHERE id = ?1")
-      .bind(VISIT, TUESDAY_MORNING)
-      .run();
     expect((await cancel({}, { confirm: false })).status).toBe(409);
   });
 

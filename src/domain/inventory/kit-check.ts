@@ -18,7 +18,7 @@ import { addTheWeek } from "./kit-week.ts";
 type UseRow = { technician_id: string; code: string; quantity: number };
 type FitRow = {
   technician_id: string;
-  person_id: string | null;
+  person_id: string;
   type: string;
   tier: string | null;
   one_visit: string | null;
@@ -64,12 +64,12 @@ async function neededTomorrow(
   if (fitRows.length === 0) return needs;
   const profiles = await latestFits(
     db,
-    fitRows.flatMap((fit) => fit.person_id ?? []),
+    fitRows.map((fit) => fit.person_id),
   );
   const specs = await hairSystemSpecs(db);
   const unknown: FitRow[] = [];
   for (const fit of fitRows) {
-    const profile = fit.person_id === null ? undefined : profiles.get(fit.person_id);
+    const profile = profiles.get(fit.person_id);
     if (profile === undefined) {
       if (fit.one_visit === "booked") unknown.push(fit);
       continue;

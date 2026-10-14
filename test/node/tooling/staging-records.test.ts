@@ -102,11 +102,14 @@ function stagingDatabase(): DatabaseSync {
         '2026-10-02T00:00:00Z'),
       ('here', '2026-10-01T00:00:00Z', '+919800000001', 'Staging test Asha', 'customer-here', 'lead-here', NULL),
       ('new', '2026-10-01T00:00:00Z', '+919800000002', 'Staging test Ravi', NULL, NULL, NULL);
-    INSERT INTO appointments (id, fsm_id, person_id, status, synced_at, fsm_invoice_id, invoice_issued_at) VALUES
-      ('visit-issued', 'ours:visit-issued', 'here', 'completed', '2026-10-02T00:00:00Z', 'invoice-1',
-        '2026-10-02T00:00:00Z'),
-      ('visit-draft', 'ours:visit-draft', 'erased', 'completed', '2026-10-02T00:00:00Z', 'invoice-2', NULL),
-      ('visit-new', 'ours:visit-new', 'new', 'scheduled', '2026-10-02T00:00:00Z', NULL, NULL);
+    INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, synced_at, fsm_invoice_id,
+        invoice_issued_at) VALUES
+      ('visit-issued', 'ours:visit-issued', 'here', 'service', '2026-10-02T03:30:00Z', '2026-10-02T05:00:00Z',
+        'completed', '2026-10-02T00:00:00Z', 'invoice-1', '2026-10-02T00:00:00Z'),
+      ('visit-draft', 'ours:visit-draft', 'erased', 'service', '2026-10-02T03:30:00Z', '2026-10-02T05:00:00Z',
+        'completed', '2026-10-02T00:00:00Z', 'invoice-2', NULL),
+      ('visit-new', 'ours:visit-new', 'new', 'service', '2026-10-09T03:30:00Z', '2026-10-09T05:00:00Z', 'scheduled',
+        '2026-10-02T00:00:00Z', NULL, NULL);
     INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, status, created_at, updated_at,
         captured_at, books_payment_id, books_applied_at) VALUES
       ('applied', 'here', 'pay_1', 2900000, 'INR', 'captured', '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z',

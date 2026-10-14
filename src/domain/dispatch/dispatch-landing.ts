@@ -19,7 +19,7 @@ import { LIVE } from "./dispatch-board.ts";
 
 export interface LiveJob {
   id: string;
-  person_id: string | null;
+  person_id: string;
   type: VisitType;
   status: AppointmentStatus;
   window_start: string;

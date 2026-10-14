@@ -225,8 +225,8 @@ describe("what the board carries of each visit", () => {
          VALUES ('consultation', 'at_home', 50000, 0, '2026-01-01'), ('first_fit', 'premium', 4000000, 0, '2026-01-01')`,
       ),
     ]);
-    await insertJob(A, { type: "consultation", start: TUESDAY["09:00"], technician: IMRAN, person: null });
-    await insertJob(B, { type: "first_fit", start: TUESDAY["12:00"], technician: SAMEER, person: null });
+    await insertJob(A, { type: "consultation", start: TUESDAY["09:00"], technician: IMRAN, person: VIKRAM });
+    await insertJob(B, { type: "first_fit", start: TUESDAY["12:00"], technician: SAMEER, person: VIKRAM });
     await env.DB.batch([
       env.DB.prepare("UPDATE appointments SET tier = 'at_home' WHERE id = ?1").bind(A),
       env.DB.prepare("UPDATE appointments SET tier = 'premium' WHERE id = ?1").bind(B),

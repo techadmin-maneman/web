@@ -140,7 +140,6 @@ describe("restoring the whole database", () => {
       "visits",
       "first_fit_requests",
       "stock_balances",
-      "last_visits",
       "ops_settings_snapshot",
       "board_version",
       "conversations",

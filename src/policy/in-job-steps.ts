@@ -73,12 +73,11 @@ export type CardStep = (typeof CARD_STEPS)[number];
 
 /**
  * The screens the card runs, in order: the visit type's steps, with the profile just before the after photographs,
- * or before the outcome where there are none. A job with no client of ours has nobody to keep a profile for, so its
- * card has no profile step.
+ * or before the outcome where there are none.
  */
-export function cardStepsFor(type: VisitType, oneVisit = false, hasClient = true): (JobStep | typeof PROFILE_STEP)[] {
+export function cardStepsFor(type: VisitType, oneVisit = false): (JobStep | typeof PROFILE_STEP)[] {
   const steps: (JobStep | typeof PROFILE_STEP)[] = stepsFor(type, oneVisit);
-  if (!hasClient || !takesProfile(type, oneVisit)) return steps;
+  if (!takesProfile(type, oneVisit)) return steps;
   const profileBefore = steps.includes("after_photos") ? "after_photos" : "outcome";
   const position = steps.indexOf(profileBefore);
   return [...steps.slice(0, position), PROFILE_STEP, ...steps.slice(position)];

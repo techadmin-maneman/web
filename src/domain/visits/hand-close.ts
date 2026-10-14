@@ -49,10 +49,10 @@ type HandClosed =
 
 interface ClosingVisit {
   status: AppointmentStatus;
-  person_id: string | null;
+  person_id: string;
   technician_id: string | null;
   type: VisitType;
-  window_start: string | null;
+  window_start: string;
   one_visit: string | null;
   landed: string | null;
 }
@@ -75,12 +75,12 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
     )
     .bind(close.appointmentId)
     .first<ClosingVisit>();
-  const windowStart = visit?.window_start ?? null;
-  if (visit === null || windowStart === null) return { kind: "refused", code: "not_found" };
+  if (visit === null) return { kind: "refused", code: "not_found" };
+  const windowStart = visit.window_start;
   const step = STEPS[close.outcome];
   if (!step.from.includes(visit.status) || visit.landed !== null) return { kind: "refused", code: "already_closed" };
   if (Date.parse(windowStart) > now.getTime()) return { kind: "refused", code: "too_early_to_close" };
-  if (close.outcome === "no_show") return closeAsNoShow(db, close, { ...visit, window_start: windowStart }, now);
+  if (close.outcome === "no_show") return closeAsNoShow(db, close, visit, now);
   const { startedAt, endedAt } = close;
   if (startedAt === null || endedAt === null) return { kind: "refused", code: "bad_times" };
   const times = { startedAt, endedAt };
@@ -101,7 +101,6 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
     auditStatementIfClosed(db, close.audit, now, close.appointmentId),
     ...visitUpkeep(db, { visits: [close.appointmentId] }),
   ]);
-  // The count takes in what the appointments' triggers write as well, so any change at all means the visit moved.
   if (moved === undefined || moved.meta.changes === 0) return { kind: "refused", code: "already_closed" };
   if (close.outcome === "done" && visit.one_visit !== null) {
     const job = { id: close.appointmentId, personId: visit.person_id, windowStart: new Date(windowStart) };
@@ -111,12 +110,7 @@ export async function closeByHand(db: D1Database, deps: LinkDeps, close: HandClo
 }
 
 /** A no-show closed by hand: the technician's check-in and its wait, as the phone's own close, and the case opened. */
-async function closeAsNoShow(
-  db: D1Database,
-  close: HandClose,
-  visit: ClosingVisit & { readonly window_start: string },
-  now: Date,
-): Promise<HandClosed> {
+async function closeAsNoShow(db: D1Database, close: HandClose, visit: ClosingVisit, now: Date): Promise<HandClosed> {
   const technicianId = visit.technician_id;
   const checkIn = technicianId === null ? null : await latestArrival(db, { id: close.appointmentId, technicianId });
   const job = { windowStart: new Date(visit.window_start), type: visit.type };

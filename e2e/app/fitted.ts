@@ -30,6 +30,7 @@ import { indiaDate } from "../../src/lib/india-time.ts";
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";
+import { EVERY_VISIT_UPKEEP } from "../../scripts/lib/every-visit-upkeep.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -124,6 +125,8 @@ export async function seedFitted(): Promise<void> {
        ${appointment(visits.service, "service", service, "completed", `stub-e2e-${visits.service}`)},
        ${appointment(visits.firstFit, "first_fit", firstFit, "completed", null)},
        ${appointment(visits.consultation, "consultation", consultation, "completed", null)};`,
+    // What the visits written here keep up beside them, as the domain's own writes keep it.
+    ...EVERY_VISIT_UPKEEP,
     `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at) VALUES
        ${sqlRow(id(), visits.service, service.start, service.end, 85, "done", now)},
        ${sqlRow(id(), visits.firstFit, firstFit.start, firstFit.end, 150, "done", now)};`,

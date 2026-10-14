@@ -3,7 +3,7 @@
 
 import { minutesBetween } from "../../lib/durations.ts";
 
-/** The seven statuses the schema allows. Our own steps never write "other". */
+/** The six statuses a visit may be in. */
 export const APPOINTMENT_STATUSES = [
   "scheduled",
   "dispatched",
@@ -11,7 +11,6 @@ export const APPOINTMENT_STATUSES = [
   "completed",
   "cancelled",
   "terminated",
-  "other",
 ] as const;
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
@@ -98,7 +97,7 @@ export function closeVisit({
          updated_at, closed_by, close_reason, lost_reason)
        SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11, ?12 FROM appointments
        WHERE id = ?2 AND deleted_at IS NULL AND status = ?9
-       ON CONFLICT (appointment_id) DO NOTHING`,
+         AND NOT EXISTS (SELECT 1 FROM visits WHERE appointment_id = ?2)`,
     )
     .bind(
       crypto.randomUUID(),

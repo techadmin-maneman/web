@@ -50,15 +50,15 @@ let jobs = 0;
 async function visit(options: {
   id: string;
   technicianId: string | null;
-  type: string | null;
+  type: string;
   start: string;
   status?: string;
   deleted?: boolean;
 }) {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, technician_id,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, technician_id,
        fsm_modified_at, synced_at, deleted_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, 'Completed', ?6, ?7, ?8, ?8, ?9)`,
+     VALUES (?1, ?2, ?3, ?4, ?5, 'Completed', ?6, strftime('%Y-%m-%dT%H:%M:%fZ', ?6, '+90 minutes'), ?7, ?8, ?8, ?9)`,
   )
     .bind(
       options.id,
@@ -179,16 +179,6 @@ describe("GET /api/technicians/work", () => {
     await event(id, IMRAN, "start", "2026-09-19T04:00:00.000Z");
     await event(id, IMRAN, "outcome", "2026-09-19T05:48:00.000Z", 1);
     expect(of(await work(), IMRAN)).toMatchObject({ jobs: 1, timed_jobs: 0 });
-  });
-
-  it("counts a visit of none of our four kinds as a job, and leaves it out of the average", async () => {
-    await timedJob("aaaaaaaa-0000-4000-8000-000000000001", IMRAN, "service", "2026-09-18", 108);
-    const other = "aaaaaaaa-0000-4000-8000-000000000002";
-    await visit({ id: other, technicianId: IMRAN, type: null, start: "2026-09-19T03:30:00.000Z" });
-    await event(other, IMRAN, "start", "2026-09-19T04:00:00.000Z");
-    await event(other, IMRAN, "outcome", "2026-09-19T09:00:00.000Z");
-
-    expect(of(await work(), IMRAN)).toMatchObject({ jobs: 2, timed_jobs: 1, average_minutes: 108 });
   });
 
   it("counts only a visit that was completed, and never one FSM deleted", async () => {

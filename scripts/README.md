@@ -27,19 +27,20 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 
 ## build/
 
-| Script                                          | What it does                                                       | Run as                 | Writes                                |
-| ----------------------------------------------- | ------------------------------------------------------------------ | ---------------------- | ------------------------------------- |
-| `build.ts`                                      | the site for local and staging, and each app for every environment | `npm run build`        | `dist/`                               |
-| `build-site.ts`                                 | the public site for one environment                                | `npm run build:site`   | `site/dist/`                          |
-| `build-app.ts`, `build-ops.ts`, `build-tech.ts` | one app for one environment, with its budgets                      | `npm run build:<app>`  | `apps/<app>/dist/`                    |
-| `dist-hash.ts`                                  | proves a change leaves every site build byte for byte the same     | by hand                | a hashes file                         |
-| `export-texts.ts`                               | the texts file the owner marks up                                  | `npm run texts:export` | the texts file                        |
-| `generate-adr-index.ts`                         | `docs/decisions/README.md`                                         | `npm run adr-index`    | the index                             |
-| `generate-openapi.ts`                           | each surface's OpenAPI document and its Markdown twin              | `npm run openapi`      | `docs/openapi*.json`, `docs/api-*.md` |
-| `generate-schema-doc.ts`                        | `docs/schema.md`, from the migrations                              | `npm run schema`       | `docs/schema.md`                      |
-| `make-house-card.ts`                            | the house referral card                                            | by hand                | the image                             |
-| `rules-alias.ts`                                | `@rules/`, the front ends' way into the backend's shared rules     | each bundler's config  | no                                    |
-| `subset-fonts.ts`                               | the rupee sign cut out of EB Garamond                              | `npm run fonts`        | the font file                         |
+| Script                                          | What it does                                                                | Run as                 | Writes                                |
+| ----------------------------------------------- | --------------------------------------------------------------------------- | ---------------------- | ------------------------------------- |
+| `build.ts`                                      | the site for local and staging, and each app for every environment          | `npm run build`        | `dist/`                               |
+| `build-site.ts`                                 | the public site for one environment                                         | `npm run build:site`   | `site/dist/`                          |
+| `build-app.ts`, `build-ops.ts`, `build-tech.ts` | one app for one environment, with its budgets                               | `npm run build:<app>`  | `apps/<app>/dist/`                    |
+| `dist-hash.ts`                                  | proves a change leaves every site build byte for byte the same              | by hand                | a hashes file                         |
+| `export-texts.ts`                               | the texts file the owner marks up                                           | `npm run texts:export` | the texts file                        |
+| `generate-adr-index.ts`                         | `docs/decisions/README.md`                                                  | `npm run adr-index`    | the index                             |
+| `generate-openapi.ts`                           | each surface's OpenAPI document and its Markdown twin                       | `npm run openapi`      | `docs/openapi*.json`, `docs/api-*.md` |
+| `generate-schema-doc.ts`                        | `docs/schema.md`, from the migrations                                       | `npm run schema`       | `docs/schema.md`                      |
+| `generate-upkeep-sql.ts`                        | the SQL the seeds run after the visits they write, from the domain's upkeep | `npm run upkeep-sql`   | `scripts/lib/every-visit-upkeep.ts`   |
+| `make-house-card.ts`                            | the house referral card                                                     | by hand                | the image                             |
+| `rules-alias.ts`                                | `@rules/`, the front ends' way into the backend's shared rules              | each bundler's config  | no                                    |
+| `subset-fonts.ts`                               | the rupee sign cut out of EB Garamond                                       | `npm run fonts`        | the font file                         |
 
 ## ci/
 

@@ -785,7 +785,7 @@ Request body:
 }
 ```
 
-**202**: Recorded; or, for a job with no client of ours, taken and nothing written. One taken from an older version than the latest still lands, and ops are told.
+**202**: Recorded. One taken from an older version than the latest still lands, and ops are told.
 
 ```json
 {
@@ -1752,8 +1752,7 @@ Request body:
         "in_progress",
         "completed",
         "cancelled",
-        "terminated",
-        "other"
+        "terminated"
       ]
     },
     "badge": {
@@ -1990,8 +1989,7 @@ Request body:
         "in_progress",
         "completed",
         "cancelled",
-        "terminated",
-        "other"
+        "terminated"
       ]
     },
     "badge": {

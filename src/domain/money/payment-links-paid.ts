@@ -22,7 +22,7 @@ interface PaidLink {
 interface PaidVisit {
   readonly linkId: string | null;
   readonly appointmentId: string;
-  readonly personId: string | null;
+  readonly personId: string;
   /** The link the close made, by Razorpay's ID for it, and when Razorpay made it; null where none was made. */
   readonly ownLink: {
     readonly razorpayLinkId: string;
@@ -58,7 +58,7 @@ async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidVisit | 
 
 interface VisitOfLinkRow {
   id: string;
-  person_id: string | null;
+  person_id: string;
   link_id: string | null;
   razorpay_link_id: string | null;
   sent_at: string | null;
@@ -100,7 +100,7 @@ export async function cancelLinkPaidElsewhere(
       message:
         `Visit ${visit.appointmentId} was paid by another link, and its own payment link ${own.razorpayLinkId} ` +
         `could not be cancelled: ${reason}. Cancel it in Razorpay's dashboard; if the client paid it too, refund one.`,
-      ...(visit.personId === null ? {} : { link: paymentsTab(visit.personId) }),
+      link: paymentsTab(visit.personId),
     });
   }
 }
@@ -150,10 +150,7 @@ export async function linkPaid(
 ): Promise<PaidVisit | null> {
   const ours = await visitOfLink(db, { razorpayLinkId: paid.link.id, reference: paid.link.reference_id ?? null });
   if (ours === null) return null;
-  const notes =
-    ours.personId === null
-      ? { appointment_id: ours.appointmentId }
-      : { appointment_id: ours.appointmentId, person_id: ours.personId };
+  const notes = { appointment_id: ours.appointmentId, person_id: ours.personId };
   await recordPayment({ db, payment: { ...paid.payment, notes }, status: "captured", hashSalt, now });
   if (ours.linkId === null) return ours;
   const paidAt = new Date(paid.payment.created_at * 1000).toISOString();
@@ -168,7 +165,7 @@ function linkReceipt(db: D1Database, linkId: string, now: Date): D1PreparedState
       `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
        SELECT ?2, ?3, a.person_id, 'link_paid', 'appointment', a.id, 'queued', ?3
        FROM payment_links l JOIN appointments a ON a.id = l.appointment_id
-       WHERE l.id = ?1 AND a.person_id IS NOT NULL
+       WHERE l.id = ?1
          AND NOT EXISTS (SELECT 1 FROM outbound_messages m WHERE m.subject_id = a.id AND m.kind = 'link_paid')`,
     )
     .bind(linkId, crypto.randomUUID(), now.toISOString());

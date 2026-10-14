@@ -212,7 +212,7 @@ export const dispatch = {
     carries: "Their payment carries over.",
     /** A change of technician alone leaves the client's window as it was. */
     sameTime: (job: string) => `${job} keeps the same window. No message sent.`,
-    /** A visit with no client on our records. */
+    /** A client erased: nobody is left to tell. */
     noClient: "No client to notify.",
     /**
      * The board's extra line inside the notice the visit was sold under, which the board writes as 24 hours. The

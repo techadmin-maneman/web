@@ -2990,8 +2990,7 @@ Request body:
         "in_progress",
         "completed",
         "cancelled",
-        "terminated",
-        "other"
+        "terminated"
       ]
     },
     "not_home": {
@@ -4341,8 +4340,7 @@ Request body:
         "in_progress",
         "completed",
         "cancelled",
-        "terminated",
-        "other"
+        "terminated"
       ]
     },
     "not_home": {

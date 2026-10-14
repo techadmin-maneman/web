@@ -30,8 +30,8 @@ beforeEach(async () => {
 /** A first fit starting at `start`. */
 async function firstFit(start: string) {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
-     VALUES (?1, ?1, ?2, 'first_fit', 'scheduled', ?3, ?4)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+     VALUES (?1, ?1, ?2, 'first_fit', 'scheduled', ?3, strftime('%Y-%m-%dT%H:%M:%fZ', ?3, '+90 minutes'), ?4)`,
   )
     .bind(VISIT, PERSON, start, NOW.toISOString())
     .run();

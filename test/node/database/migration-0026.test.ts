@@ -24,9 +24,10 @@ function seeded(): DatabaseSync {
     ["job2", "fsm-2"],
   ]) {
     db.exec(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, technician_id, fsm_modified_at,
-         synced_at)
-       VALUES ('${String(id)}', '${String(fsmId)}', 'p1', 'service', 'scheduled', 'Scheduled', 't1', '${AT}', '${AT}')`,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
+         technician_id, fsm_modified_at, synced_at)
+       VALUES ('${String(id)}', '${String(fsmId)}', 'p1', 'service', 'scheduled', 'Scheduled', '2026-09-22T05:00:00.000Z',
+         '2026-09-22T06:30:00.000Z', 't1', '${AT}', '${AT}')`,
     );
   }
   return db;

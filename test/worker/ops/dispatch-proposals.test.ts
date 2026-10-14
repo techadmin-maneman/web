@@ -211,12 +211,6 @@ describe("the board, with a proposal open", () => {
     expect((await move({ window: "afternoon", reason: "zone_rebalance" })).status).toBe(200);
     expect((await move({ date: WEDNESDAY, window: "morning", reason: "client_asked" })).status).toBe(200);
   });
-
-  it("moves a visit with no client to another day at once", async () => {
-    await env.DB.prepare("UPDATE appointments SET person_id = NULL WHERE id = ?1").bind(A).run();
-    const moved = await move({ technician_id: SAMEER, date: WEDNESDAY, window: "morning", reason: "zone_rebalance" });
-    expect(moved.status).toBe(200);
-  });
 });
 
 describe("a move the client has not answered, on the Tasks board", () => {

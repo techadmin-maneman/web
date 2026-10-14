@@ -11,6 +11,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { loadBlackouts } from "../../../src/domain/booking/occupancy.ts";
+import { aVisit } from "../fixtures/index.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 
 let ops: App;
@@ -74,12 +75,7 @@ describe("GET /api/blackouts", () => {
       ["visit-3", "2026-10-19T18:29:00.000Z", "scheduled"], // 11:59 pm on the 19th
       ["visit-4", "2026-10-20T06:30:00.000Z", "cancelled"],
     ]) {
-      await env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, status, fsm_status, window_start, fsm_modified_at, synced_at)
-         VALUES (?1, ?1, ?2, ?2, ?3, ?4, ?4)`,
-      )
-        .bind(id, status, start, NOW.toISOString())
-        .run();
+      await aVisit({ id, status, window_start: start, service_city: null });
     }
     expect((await listed())[0]?.booked).toBe(2);
   });
@@ -94,12 +90,7 @@ describe("GET /api/blackouts/booked", () => {
       ["visit-2", "2026-10-21T18:29:00.000Z", "Delhi"], // 11:59 pm on the 21st in India
       ["visit-3", "2026-10-21T18:30:00.000Z", "Gurgaon"], // midnight, the 22nd: past the last day
     ]) {
-      await env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, status, fsm_status, window_start, service_city, fsm_modified_at, synced_at)
-         VALUES (?1, ?1, 'scheduled', 'scheduled', ?2, ?3, ?4, ?4)`,
-      )
-        .bind(id, start, city, NOW.toISOString())
-        .run();
+      await aVisit({ id, window_start: start, service_city: city });
     }
     expect(await (await booked("from=2026-10-20&to=2026-10-21")).json()).toEqual({ booked: 2 });
     expect(await (await booked("from=2026-10-20&to=2026-10-21&city=Gurgaon")).json()).toEqual({ booked: 1 });

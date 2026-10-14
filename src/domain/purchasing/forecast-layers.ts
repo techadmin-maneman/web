@@ -34,7 +34,7 @@ const periodIn = (horizon: Horizon, day: string) =>
   periodOf(day, horizon.today, horizon.periodDays, horizon.horizonPeriods);
 
 type FitRow = {
-  person_id: string | null;
+  person_id: string;
   type: string;
   tier: string | null;
   window_start: string;
@@ -79,11 +79,11 @@ export async function bookedLayer(db: D1Database, horizon: Horizon): Promise<Lay
   const fitRows = (fits?.results ?? []) as FitRow[];
   const profiles = await latestFits(
     db,
-    fitRows.flatMap((fit) => fit.person_id ?? []),
+    fitRows.map((fit) => fit.person_id),
   );
   const specs = await hairSystemSpecs(db);
   for (const fit of fitRows) {
-    const profile = fit.person_id === null ? undefined : profiles.get(fit.person_id);
+    const profile = profiles.get(fit.person_id);
     const period = periodIn(horizon, dayOf(fit.window_start));
     if (profile === undefined || period === null) continue;
     const product = fit.type === "first_fit" ? (fit.tier ?? "standard") : profile.product;

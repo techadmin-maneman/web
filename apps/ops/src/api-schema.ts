@@ -14887,7 +14887,7 @@ export interface components {
             /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
             service: string | null;
             /** @enum {string} */
-            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description Closed because nobody was home: a no-show. */
             not_home: boolean;
             /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
@@ -14981,7 +14981,7 @@ export interface components {
             /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
             service: string | null;
             /** @enum {string} */
-            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description Closed because nobody was home: a no-show. */
             not_home: boolean;
             /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
@@ -16751,7 +16751,7 @@ export interface components {
                 /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
                 sector: string | null;
                 pincode: string | null;
-                /** @description Null for a visit with no client on our records, and for a client who has been erased. */
+                /** @description Null for a client who has been erased. */
                 person: components["schemas"]["DispatchClient"] | null;
                 /**
                  * @description Never an amount: prepaid, credit, or free.
@@ -16803,7 +16803,7 @@ export interface components {
             /** @description The area the visit's pincode is in, from the service area; else the address's locality, or the city. */
             sector: string | null;
             pincode: string | null;
-            /** @description Null for a visit with no client on our records, and for a client who has been erased. */
+            /** @description Null for a client who has been erased. */
             person: components["schemas"]["DispatchClient"] | null;
             /**
              * @description Never an amount: prepaid, credit, or free.
@@ -16819,7 +16819,7 @@ export interface components {
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
             /** @enum {string} */
-            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated" | "other";
+            status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description The notice the visit was sold under, in hours, or the one in force for a visit no hold sold: a change of the client's own inside it costs them, one ops make never does. */
             notice_hours: number;
             /** @description The latest move of this visit its client has not heard of, and why. no_consent: he has not agreed to WhatsApp about his visits; not_sent: the WhatsApp was skipped or failed. Ops call him, then POST /api/dispatch/moves/{id}/told. */
@@ -16966,10 +16966,10 @@ export interface components {
             /** Format: uuid */
             move_id: string;
             /**
-             * @description messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell; no_client: the visit has no client on our records.
+             * @description messaged: the new window was queued to go on WhatsApp; call: the client has not agreed to WhatsApp about his visits, so ops call him, and a task waits until they say they have; unchanged: only the technician changed, so there was nothing to tell.
              * @enum {string}
              */
-            client_notice: "messaged" | "call" | "unchanged" | "no_client";
+            client_notice: "messaged" | "call" | "unchanged";
         };
         DispatchAssignRequest: {
             /** Format: uuid */

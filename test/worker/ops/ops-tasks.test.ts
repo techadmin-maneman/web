@@ -88,9 +88,9 @@ describe("GET /api/tasks", () => {
     await erasureRequest("requested");
     await grievance(GRIEVANCE);
     await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, fsm_invoice_id, person_id, type, window_end, status,
+      `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, fsm_invoice_id, person_id, type, window_start, window_end, status,
          fsm_status, fsm_modified_at, synced_at)
-       VALUES ('22222222-2222-4222-8222-222222222224', 'fsm-appt-9', 'fsm-wo-9', 'books-inv-7', ?1, 'service', '2026-09-20T06:00:00.000Z',
+       VALUES ('22222222-2222-4222-8222-222222222224', 'fsm-appt-9', 'fsm-wo-9', 'books-inv-7', ?1, 'service', '2026-09-20T04:30:00.000Z', '2026-09-20T06:00:00.000Z',
          'completed', 'Completed', ?2, ?2)`,
     )
       .bind(PERSON, NOW.toISOString())
@@ -223,9 +223,9 @@ describe("GET /api/tasks", () => {
   it("leaves out a piece whose replacement is already booked, and keeps one whose visit was cancelled", async () => {
     await pieceDue("2026-09-01");
     await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, fsm_modified_at,
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end, fsm_modified_at,
          synced_at)
-       VALUES (?1, 'fsm-2', ?2, 'replacement', 'scheduled', 'Scheduled', '2026-09-25T04:30:00.000Z', ?3, ?3)`,
+       VALUES (?1, 'fsm-2', ?2, 'replacement', 'scheduled', 'Scheduled', '2026-09-25T04:30:00.000Z', '2026-09-25T06:00:00.000Z', ?3, ?3)`,
     )
       .bind(VISIT, PERSON, NOW.toISOString())
       .run();

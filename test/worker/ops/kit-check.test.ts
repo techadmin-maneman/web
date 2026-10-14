@@ -3,15 +3,15 @@
 //
 // What these hold: from the evening, each kit is checked against its visits tomorrow, a service's consumables by its
 // expected use and a fit's hair system made to its client; what it is short of is proposed as a top-up from its
-// city's stockroom, ops are told once, and an approved top-up waits for the technician's scan; a one visit whose client
-// is not yet known adds the city's one-visit range; the supply plan's own redraft leaves the evening's top-ups be.
+// city's stockroom, ops are told once, and an approved top-up waits for the technician's scan; a one visit whose client's
+// head is not yet measured adds the city's one-visit range; the supply plan's own redraft leaves the evening's top-ups be.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { checkTomorrowsKits } from "../../../src/domain/inventory/kit-check.ts";
 import { draftPlan } from "../../../src/domain/purchasing/supply-plan.ts";
 import { NOW, markDatabase, request } from "../helpers.ts";
-import { IMRAN, SAMEER, working, type Working } from "../job-fixtures.ts";
+import { IMRAN, PERSON, SAMEER, working, type Working } from "../job-fixtures.ts";
 import { KIT_CHECK } from "../../../src/policy/kit-check.ts";
 
 const CLIENT = "88888888-8888-4888-8888-888888888881";
@@ -71,7 +71,7 @@ beforeEach(async () => {
   await job.opsPost("/api/stock/counts", { consumable_code: "solvent", place_id: "gurgaon-room", counted: 50 });
   await env.DB.batch(
     [
-      ["service-tomorrow", null, "service", "standard"],
+      ["service-tomorrow", PERSON, "service", "standard"],
       ["fit-tomorrow", CLIENT, "first_fit", "essential"],
     ].map(([id, person, type, tier]) =>
       env.DB.prepare(
@@ -105,7 +105,7 @@ describe("tomorrow's kits", () => {
     expect(told[0]).not.toContain("cover solvent");
   });
 
-  it("carries the city's one-visit range for a one visit whose client is not yet known", async () => {
+  it("carries the city's one-visit range for a one visit whose client's head is not yet measured", async () => {
     const at = NOW.toISOString();
     await env.DB.batch([
       env.DB.prepare(
@@ -119,8 +119,8 @@ describe("tomorrow's kits", () => {
       env.DB.prepare(
         `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
            service_city, synced_at, one_visit)
-         VALUES ('one-visit', 'one-visit', NULL, 'first_fit', NULL, 'scheduled', ?1, ?1, ?2, 'Gurgaon', ?3, 'booked')`,
-      ).bind(TOMORROW, IMRAN, at),
+         VALUES ('one-visit', 'one-visit', ?4, 'first_fit', NULL, 'scheduled', ?1, ?1, ?2, 'Gurgaon', ?3, 'booked')`,
+      ).bind(TOMORROW, IMRAN, at, PERSON),
     ]);
     await checkTomorrowsKits(env.DB, EVENING, alertOnce, KIT_CHECK);
     const pieces = await env.DB.prepare("SELECT proposed FROM plan_lines WHERE consumable_code = ?1")
@@ -141,8 +141,8 @@ describe("tomorrow's kits", () => {
         env.DB.prepare(
           `INSERT INTO appointments (id, fsm_id, person_id, type, tier, status, window_start, window_end, technician_id,
              service_city, synced_at)
-           VALUES (?1, ?1, NULL, 'service', 'standard', 'scheduled', ?2, ?2, ?3, 'Gurgaon', ?2)`,
-        ).bind(id, at, IMRAN),
+           VALUES (?1, ?1, ?4, 'service', 'standard', 'scheduled', ?2, ?2, ?3, 'Gurgaon', ?2)`,
+        ).bind(id, at, IMRAN, PERSON),
       ),
     );
     // Monday's evening: the week's top-up day.

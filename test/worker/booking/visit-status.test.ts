@@ -11,6 +11,7 @@ import {
   type AppointmentStatus,
   type Step,
 } from "../../../src/domain/visits/visit-status.ts";
+import { aVisit } from "../fixtures/index.ts";
 import { NOW } from "../helpers.ts";
 
 const BOOKED_AT = "2026-09-20T06:30:00.000Z";
@@ -38,12 +39,14 @@ const CASES = STEP_NAMES.flatMap((step) =>
 /** A visit booked without FSM, in the status given. Its ID. */
 async function visitIn(status: AppointmentStatus, options: { deleted?: boolean } = {}): Promise<string> {
   const id = crypto.randomUUID();
-  await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, type, window_start, window_end, status, synced_at, deleted_at)
-     VALUES (?1, ?1, 'service', '2026-09-21T07:30:00.000Z', '2026-09-21T09:00:00.000Z', ?2, ?3, ?4)`,
-  )
-    .bind(id, status, BOOKED_AT, options.deleted === true ? BOOKED_AT : null)
-    .run();
+  await aVisit({
+    id,
+    window_start: "2026-09-21T07:30:00.000Z",
+    window_end: "2026-09-21T09:00:00.000Z",
+    status,
+    synced_at: BOOKED_AT,
+    deleted_at: options.deleted === true ? BOOKED_AT : null,
+  });
   return id;
 }
 
@@ -66,8 +69,7 @@ describe("moveVisit", () => {
     const result = await moveVisit(env.DB, id, step, AT).run();
 
     const moved = expected !== from;
-    // The count takes in what the appointments' triggers write as well, so it tells only none from some.
-    expect(result.meta.changes > 0).toBe(moved);
+    expect(result.meta.changes).toBe(moved ? 1 : 0);
     expect(await visitRow(id)).toEqual({ status: expected, synced_at: moved ? AT : BOOKED_AT });
   });
 

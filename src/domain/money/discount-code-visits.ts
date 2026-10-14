@@ -27,10 +27,10 @@ import { typedForVisit } from "./requested-codes.ts";
 // ---------------------------------------------------------------------------
 interface VisitRow {
   id: string;
-  person_id: string | null;
-  type: VisitType | null;
+  person_id: string;
+  type: VisitType;
   tier: string | null;
-  window_start: string | null;
+  window_start: string;
   service_city: string | null;
   one_visit: OneVisitState | null;
   status: string;
@@ -54,7 +54,7 @@ async function visitOf(db: D1Database, visitId: string): Promise<VisitRow | null
 const TAKES_A_CODE = new Set(["scheduled", "dispatched", "in_progress", "completed"]);
 /** The visit's own price in the book on its day: its service's, or a one visit's product once chosen. */
 async function priceOfVisit(db: D1Database, visit: VisitRow): Promise<Price | null> {
-  if (visit.type === null || visit.window_start === null || visit.one_visit === "booked") return null;
+  if (visit.one_visit === "booked") return null;
   return priceOf(db, visit.type, {
     on: indiaDate(new Date(visit.window_start)),
     tier: visit.tier ?? STANDARD_TIER,
@@ -76,7 +76,6 @@ export async function enterOnVisit(
   const visit = await visitOf(db, entry.visitId);
   if (visit === null) return { kind: "not_found" };
   const { person_id: personId, type } = visit;
-  if (personId === null || type === null) return { kind: "not_found" };
   if (visit.open !== 1 || !TAKES_A_CODE.has(visit.status)) return { kind: "price_settled" };
   if ((await codeOnVisit(db, visit.id)) !== null) return { kind: "already_discounted" };
 

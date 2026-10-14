@@ -15,6 +15,7 @@ import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS } from "../technicians.ts";
 import { wrangler } from "./fitted.ts";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";
+import { EVERY_VISIT_UPKEEP } from "../../scripts/lib/every-visit-upkeep.ts";
 
 export interface NextVisitClient {
   /** Ten digits, as the login's field takes it. */
@@ -63,6 +64,8 @@ export async function seedNextVisit(): Promise<void> {
       `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
          fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
          ${sqlRow(visit, `e2e-${visit}`, person, type, start, end, technician, "completed", "Completed", "Gurgaon", "122018", now, now)};`,
+      // What the visits written here keep up beside them, as the domain's own writes keep it.
+      ...EVERY_VISIT_UPKEEP,
       `INSERT INTO addresses (id, person_id, created_at, line1, locality, city, pincode) VALUES
          ${sqlRow(crypto.randomUUID(), person, now, "House 4417, Tower C", "Sector 65", "Gurgaon", "122018")};`,
       `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at) VALUES

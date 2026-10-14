@@ -63,7 +63,6 @@ describe("dispatch", () => {
     expect(clientNotice({ timeChanged: true, client: { agreedToWhatsApp: false } })).toBe("call");
     expect(clientNotice({ timeChanged: false, client: { agreedToWhatsApp: false } })).toBe("unchanged");
     expect(clientNotice({ timeChanged: false, client: { agreedToWhatsApp: true } })).toBe("unchanged");
-    expect(clientNotice({ timeChanged: true, client: null })).toBe("no_client");
   });
 
   it("takes a move's reason from the design's five, in its order", () => {

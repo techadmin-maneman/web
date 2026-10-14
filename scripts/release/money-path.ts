@@ -21,6 +21,7 @@ import { promisify } from "node:util";
 import { sqlLiteral, sqlRow } from "../lib/sql-literal.ts";
 import { toBase64Url } from "../../src/lib/base64url.ts";
 import { sha256Hex } from "../../src/lib/hash.ts";
+import { EVERY_VISIT_UPKEEP } from "../lib/every-visit-upkeep.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -63,6 +64,8 @@ async function signedIn(): Promise<{ token: string; sessionId: string }> {
     `INSERT OR IGNORE INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
        service_city, service_pincode, fsm_modified_at, synced_at)
        VALUES ${sqlRow(CLIENT.firstFit, `money-path-${CLIENT.firstFit}`, CLIENT.person, "first_fit", `${fitted}T04:30:00.000Z`, `${fitted}T07:30:00.000Z`, "completed", "Completed", "Gurgaon", "122018", now, now)};`,
+    // What the visits written here keep up beside them, as the domain's own writes keep it.
+    ...EVERY_VISIT_UPKEEP,
     `INSERT INTO sessions (id, subject_kind, subject_id, created_at, last_seen_at, expires_at, device_label)
        VALUES ${sqlRow(sessionId, "client", CLIENT.person, now, now, new Date(Date.now() + DAY_MS).toISOString(), "The nightly money-path run")};`,
   ]);

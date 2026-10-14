@@ -13,9 +13,8 @@ import { agreedToVisitMessages, moveJob, planMove, type MoveInput } from "./disp
 type Refusal = Exclude<Awaited<ReturnType<typeof planMove>>, { readonly kind: "planned" }>;
 
 /** messaged: the client was sent the proposal on WhatsApp; call: they have not agreed to it, so ops call them. */
-/** no_client: the visit has no client to ask; same_day: the move keeps the visit's day, so the board makes it. */
+/** same_day: the move keeps the visit's day, so the board makes it. */
 type ProposeOutcome =
-  | { readonly kind: "no_client" }
   | { readonly kind: "same_day" }
   | { readonly kind: "proposed"; readonly proposalId: string; readonly clientNotice: "messaged" | "call" }
   | Refusal;
@@ -39,7 +38,6 @@ export async function proposeMove(
   if (planned.kind !== "planned") return planned;
   const { move } = planned;
   const { job } = move;
-  if (job.person_id === null) return { kind: "no_client" };
   if (move.date === indiaDate(new Date(job.window_start))) return { kind: "same_day" };
   const id = crypto.randomUUID();
   const at = now.toISOString();

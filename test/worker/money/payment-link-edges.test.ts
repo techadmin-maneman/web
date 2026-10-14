@@ -119,13 +119,6 @@ describe("the cron's links the close could not make", () => {
     const row = await env.DB.prepare("SELECT sent_at FROM payment_links WHERE id = ?1").bind(LINK).first();
     expect(row).toEqual({ sent_at: null });
   });
-
-  it("passes over a link whose visit has no client", async () => {
-    await link();
-    await env.DB.prepare("UPDATE appointments SET person_id = NULL WHERE id = ?1").bind(VISIT).run();
-
-    expect(await sendUnsentLinks(env.DB, linkDeps(), NOW, createCallBudget(40))).toBe(0);
-  });
 });
 
 describe("ops sending a link again", () => {
@@ -151,18 +144,6 @@ describe("a paid link", () => {
 
     expect(await linkPaid(env.DB, paid, LOCAL_SETTINGS.ipHashSalt, NOW)).toBeNull();
     expect(await env.DB.prepare("SELECT id FROM payments").first()).toBeNull();
-  });
-
-  it("for a visit with no client is recorded against the visit alone", async () => {
-    await link({ razorpayLinkId: "plink_1", sentAt: NOW.toISOString() });
-    await env.DB.prepare("UPDATE appointments SET person_id = NULL WHERE id = ?1").bind(VISIT).run();
-    const paid = { link: { id: "plink_1", status: "paid", reference_id: null }, payment };
-
-    expect(await linkPaid(env.DB, paid, LOCAL_SETTINGS.ipHashSalt, NOW)).toMatchObject({ personId: null });
-    const row = await env.DB.prepare(
-      "SELECT appointment_id, person_id FROM payments WHERE razorpay_payment_id = 'pay_1'",
-    ).first();
-    expect(row).toEqual({ appointment_id: VISIT, person_id: null });
   });
 });
 

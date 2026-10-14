@@ -25,6 +25,7 @@ import { seedBookingArea } from "../../e2e/booking-area.ts";
 import { LOCAL_HAIR_SYSTEMS } from "../../src/config/local-hair-systems.ts";
 import { LOCAL_LOGIN_CODE, PORTS } from "../lib/local-stack.ts";
 import { sqlRow } from "../lib/sql-literal.ts";
+import { EVERY_VISIT_UPKEEP } from "../lib/every-visit-upkeep.ts";
 
 /** The technician a developer signs in as, and their client: fixed, so a second run finds the same ones. */
 const TECHNICIAN = { id: "local-technician", fsmId: "local-resource-1", mobile: "9810099001", name: "Sandeep Yadav" };
@@ -141,6 +142,8 @@ async function seedTechnician(): Promise<void> {
     `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, technician_id, status,
        service_city, service_pincode, synced_at) VALUES
        ${visit(indiaDay(0), "morning")}, ${visit(indiaDay(0), "afternoon")}, ${visit(indiaDay(1), "morning")};`,
+    // What the visits written here keep up beside them, as the domain's own writes keep it.
+    ...EVERY_VISIT_UPKEEP,
     ...consumables(now),
     ...products(now),
   ];

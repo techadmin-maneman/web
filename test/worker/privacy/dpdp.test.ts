@@ -39,8 +39,8 @@ beforeEach(async () => {
 /** A visit with a photograph in the client-photos bucket, an address, and a grievance. */
 async function appData() {
   await env.DB.prepare(
-    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, synced_at)
-     VALUES (?1, ?1, ?2, 'service', 'completed', '2026-09-01T06:30:00.000Z', ?3)`,
+    `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+     VALUES (?1, ?1, ?2, 'service', 'completed', '2026-09-01T06:30:00.000Z', '2026-09-01T08:00:00.000Z', ?3)`,
   )
     .bind(VISIT, PERSON, NOW.toISOString())
     .run();

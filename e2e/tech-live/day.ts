@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";
 import { wrangler } from "../app/fitted.ts";
 import { randomMobile } from "../support.ts";
+import { EVERY_VISIT_UPKEEP } from "../../scripts/lib/every-visit-upkeep.ts";
 
 const MINUTE = 60 * 1000;
 const INDIA_OFFSET = 330 * MINUTE;
@@ -91,6 +92,8 @@ export async function seedTechLive(): Promise<void> {
        fsm_status, service_city, service_pincode, fsm_modified_at, synced_at) VALUES
        ${appointment(worked, person)},
        ${appointment(moved, otherPerson)};`,
+    // What the visits written here keep up beside them, as the domain's own writes keep it.
+    ...EVERY_VISIT_UPKEEP,
   ];
   const folder = await mkdtemp(join(tmpdir(), "mm-e2e-live-"));
   try {

@@ -5,10 +5,10 @@ import type { AppointmentStatus } from "../visits/visit-status.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import { rulesFrom, type CityRules } from "../cities/city-rules.ts";
 
-/** The job the technician may write to now: their own, live, and of a type we know. */
+/** The job the technician may write to now: their own and live. */
 export interface WorkableJob {
   readonly id: string;
-  readonly personId: string | null;
+  readonly personId: string;
   readonly type: VisitType;
   /** Where a consultation and fit in one visit stands; null for any other visit. */
   readonly oneVisit: OneVisitState | null;
@@ -29,12 +29,12 @@ export async function workableJob(db: D1Database, jobId: string): Promise<Workab
          (SELECT json_group_object(s.key, json(s.value)) FROM city_settings s WHERE s.city = appointments.service_city)
            AS city_rules
        FROM appointments
-       WHERE id = ?1 AND deleted_at IS NULL AND type IS NOT NULL AND window_start IS NOT NULL`,
+       WHERE id = ?1 AND deleted_at IS NULL`,
     )
     .bind(jobId)
     .first<{
       id: string;
-      person_id: string | null;
+      person_id: string;
       type: VisitType;
       one_visit: OneVisitState | null;
       fsm_id: string;

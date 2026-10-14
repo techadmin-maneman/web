@@ -88,8 +88,6 @@ describe("a client's hair profile", () => {
       "outcome",
     ]);
     expect(cardStepsFor("service", false)).toEqual(stepsFor("service"));
-    // A job with no client of ours has nobody to keep a profile for.
-    expect(cardStepsFor("consultation", false, false)).toEqual(stepsFor("consultation"));
   });
 
   it("asks no consent of its own for the history", () => {

@@ -231,9 +231,7 @@ export const profileRoute = techRoute({
   request: { params: jobId, headers: EventIdSchema, body: { required: true, ...json(ProfileRequestSchema) } },
   responses: {
     202: {
-      description:
-        "Recorded; or, for a job with no client of ours, taken and nothing written. One taken from an older version " +
-        "than the latest still lands, and ops are told.",
+      description: "Recorded. One taken from an older version than the latest still lands, and ops are told.",
       ...json(ProfileRecordedSchema),
     },
     ...STEP_REFUSALS,

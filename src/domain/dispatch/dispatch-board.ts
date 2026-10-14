@@ -28,7 +28,7 @@ import { openProposalJson, openProposalOf, type ProposedMove } from "../visits/o
 export const BOARD_DAYS = 7;
 /**
  * The client of a visit, as ops need them to reach them (the job card's WhatsApp
- * and Open client). None for a visit with no client on our records, or one erased.
+ * and Open client). None for one erased.
  */
 interface BoardClient {
   readonly id: string;
@@ -306,11 +306,11 @@ interface BoardJobRow {
   service_city: string | null;
   service_pincode: string | null;
   asked_window: BookingWindow | null;
-  person_id: string | null;
+  person_id: string;
   locality: string | null;
   area: string | null;
-  client_name: string | null;
-  client_mobile: string | null;
+  client_name: string;
+  client_mobile: string;
   client_erased_at: string | null;
   whatsapp_visits: number | null;
   referred_by: string | null;
@@ -348,9 +348,8 @@ function visitOf(job: BoardJobRow): Visit {
   };
 }
 
-/** The client, unless there is none on our records or they have been erased: nothing is left to reach them by. */
+/** The client, unless they have been erased: nothing is left to reach them by. */
 function clientOf(job: BoardJobRow): BoardClient | null {
-  if (job.person_id === null || job.client_name === null || job.client_mobile === null) return null;
   if (job.client_erased_at !== null) return null;
   return {
     id: job.person_id,

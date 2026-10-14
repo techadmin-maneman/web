@@ -126,7 +126,6 @@ async function visitsToInvoice(pass: Pass): Promise<Visit[]> {
        FROM appointments a
        WHERE a.status = 'completed' AND a.invoice_issued_at IS NULL AND a.deleted_at IS NULL
          AND a.type IN ('first_fit', 'service', 'replacement') AND a.one_visit IS NOT 'declined'
-         AND a.person_id IS NOT NULL AND a.window_start IS NOT NULL
          AND (a.invoice_checked_at IS NULL OR a.invoice_checked_at < ?1)
          AND NOT EXISTS (SELECT 1 FROM people pe WHERE pe.id = a.person_id AND pe.erased_at IS NOT NULL)
        ORDER BY a.window_start LIMIT ?2`,

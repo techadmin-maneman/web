@@ -110,10 +110,9 @@ export async function changeableVisitFor(db: D1Database, visitId: string, now: D
   const owner = await db
     .prepare("SELECT person_id FROM appointments WHERE id = ?1")
     .bind(visitId)
-    .first<{ person_id: string | null }>();
-  const personId = owner?.person_id ?? null;
-  if (personId === null) return null;
-  return changeableVisit(db, personId, visitId, now);
+    .first<{ person_id: string }>();
+  if (owner === null) return null;
+  return changeableVisit(db, owner.person_id, visitId, now);
 }
 
 /** When the visit's window starts, by the times in force on its day, which the 24 hours count back from. */

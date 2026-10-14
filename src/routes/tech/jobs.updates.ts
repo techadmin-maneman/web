@@ -49,7 +49,6 @@ export function registerTechUpdates(app: App): void {
     if ((preset === "at_gate") !== (minutes === null)) return refuse(c, "invalid_request", ["minutes"]);
     const job = await namedJob(c, c.req.valid("param").id);
     if (job === null) return refuse(c, "not_found");
-    if (job.personId === null) return refuse(c, "not_found");
     const eventId = c.req.valid("header")["x-client-event-id"];
     const now = c.var.deps.now();
     const messageId = await recordTechnicianUpdate(c.env.DB, {

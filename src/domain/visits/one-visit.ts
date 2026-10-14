@@ -34,7 +34,7 @@ export async function decisionAtVisit(db: D1Database, appointmentId: string): Pr
 /** The job being closed: which visit, whose, and when. */
 interface ClosingJob {
   readonly id: string;
-  readonly personId: string | null;
+  readonly personId: string;
   readonly windowStart: Date;
 }
 
@@ -50,7 +50,7 @@ export async function closeOneVisit(
   now: Date,
 ): Promise<LinkSent | null> {
   const decision = await decisionAtVisit(db, job.id);
-  if (decision === null || job.personId === null) return null;
+  if (decision === null) return null;
 
   if ("declined" in decision) {
     await db.batch([

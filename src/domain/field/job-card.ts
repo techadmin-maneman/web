@@ -143,7 +143,7 @@ export async function jobDetail(
     loadSlotSchedule(db),
   ]);
   if (row === null) return null;
-  const type = row.type ?? "service";
+  const type = row.type;
   const oneVisit = row.one_visit !== null;
   const windowStart = new Date(row.window_start);
   const job = { id: row.id, type, windowStart, technicianId: options.technicianId };
@@ -172,7 +172,7 @@ export async function jobDetail(
     discount_code: discountCode,
     client_choice: clientChoice,
     profile: null,
-    steps: cardStepsFor(type, oneVisit, row.person_id !== null),
+    steps: cardStepsFor(type, oneVisit),
   };
   if (unlockedParts === null) return locked;
   return {
@@ -197,12 +197,11 @@ async function unlockedPartsOf(
   db: D1Database,
   row: JobRow,
 ): Promise<Pick<JobDetail, "pieces" | "last_visit" | "reminder" | "profile">> {
-  const personId = row.person_id;
   const [pieces, lastVisit, reminder, profile] = await Promise.all([
-    personId === null ? [] : piecesOf(db, personId),
+    piecesOf(db, row.person_id),
     lastVisitOf(db, row),
     reminderOf(db, row.id),
-    personId === null ? null : latestProfile(db, personId),
+    latestProfile(db, row.person_id),
   ]);
   return { pieces: pieces.map(cardPiece), last_visit: lastVisit, reminder, profile };
 }
@@ -250,7 +249,6 @@ interface EarlierVisit {
 
 /** The client's latest visit before this one that has an after set, and who did it. */
 async function lastVisit(db: D1Database, job: JobRow): Promise<EarlierVisit | null> {
-  if (job.person_id === null) return null;
   return db
     .prepare(
       `SELECT a.id, a.window_start, t.name AS technician FROM appointments a

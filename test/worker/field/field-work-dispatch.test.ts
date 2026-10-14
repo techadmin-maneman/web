@@ -34,6 +34,7 @@ import {
   uuidv7At,
   booked,
 } from "./field-work-fixtures.ts";
+import { aPerson } from "../fixtures/index.ts";
 
 let messageQueue: ReturnType<typeof fakeQueue>;
 
@@ -158,7 +159,8 @@ describe("dispatch", () => {
 
   it("refuses a move that would give one technician two jobs in one window, and writes nothing", async () => {
     // Another client's job: a technician never takes two of Rohit's in a row (docs/decisions/0111).
-    await booked(OTHER_JOB, { start: TODAY_START.toISOString(), technician: SAMEER, person: null });
+    await aPerson({ id: "p-other", name: "Kabir Sood" });
+    await booked(OTHER_JOB, { start: TODAY_START.toISOString(), technician: SAMEER, person: "p-other" });
 
     const answer = await opsPost("/api/dispatch/move", {
       appointment_id: TODAY_JOB,
