@@ -135,9 +135,9 @@ const closeRoute = opsRoute({
     404: errorResponse("not_found: no such visit in the caller's cities"),
     409: errorResponse(
       "already_closed: the visit is closed or cancelled, or the technician's phone closed it; " +
-        "no_check_in: a no-show stands on the technician's check-in, and there is none",
+        "no_check_in: a no-show stands on the technician's check-in, and there is none; " +
+        "too_early_to_close: the visit's time, or a no-show's wait, has not come",
     ),
-    425: errorResponse("too_early_to_close: the visit's time, or a no-show's wait, has not come"),
   },
 });
 
@@ -305,6 +305,5 @@ async function closeForTechnician(c: Context<AppEnv>, visitId: string, asked: z.
   if (closed.code === "bad_times") {
     return refuse(c, "invalid_request", ["started_at", "ended_at"]);
   }
-  if (closed.code === "too_early_to_close") return c.json(errorBody(closed.code, requestId), 425);
   return c.json(errorBody(closed.code, requestId), 409);
 }

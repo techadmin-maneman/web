@@ -602,15 +602,7 @@ Request body:
 }
 ```
 
-**409**: already_closed: the visit is closed or cancelled, or the technician's phone closed it; no_check_in: a no-show stands on the technician's check-in, and there is none
-
-```json
-{
-  "$ref": "#/components/schemas/ErrorResponse"
-}
-```
-
-**425**: too_early_to_close: the visit's time, or a no-show's wait, has not come
+**409**: already_closed: the visit is closed or cancelled, or the technician's phone closed it; no_check_in: a no-show stands on the technician's check-in, and there is none; too_early_to_close: the visit's time, or a no-show's wait, has not come
 
 ```json
 {
@@ -1161,7 +1153,7 @@ How right the forecast was in one city: its last measured periods, and each item
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -1181,7 +1173,7 @@ The latest demand forecast, for one city or every city
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -2454,7 +2446,7 @@ Each partner's month, and what each is owed
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -2526,7 +2518,7 @@ Take off a payment recorded by mistake; the month is owed again
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -2606,7 +2598,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -2642,7 +2634,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -2818,7 +2810,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -2912,7 +2904,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -3037,7 +3029,7 @@ Leave taken back
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -3274,7 +3266,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -3832,7 +3824,7 @@ Every partner, with what has come through each
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -3956,7 +3948,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -4889,7 +4881,7 @@ No-show cases in the caller's cities: undecided first, each with its three facts
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -5906,7 +5898,7 @@ The grades, each technician's grade, and the rates per visit
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -7052,7 +7044,7 @@ Every day from today on that no visit is offered, with the visits still booked o
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -7180,7 +7172,7 @@ Every service, offered or retired, with every price it has had and is to have, a
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -7556,7 +7548,7 @@ Every consumable, and what each service is expected to use
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -7592,7 +7584,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -7845,7 +7837,7 @@ Each kind of visit's checklist and the partial reasons, as the technician app re
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -7881,7 +7873,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -7917,7 +7909,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -7953,7 +7945,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -7973,7 +7965,7 @@ Every place, what each holds of each consumable, what is low, and the latest mov
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -8009,7 +8001,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -8053,6 +8045,14 @@ Request body:
 }
 ```
 
+**404**: not_found: a place outside the caller's cities
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
 ### POST /api/stock/counts
 
 What ops counted at a place. The ledger takes the difference from what it held
@@ -8081,7 +8081,15 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: a place outside the caller's cities
 
 ```json
 {
@@ -8117,7 +8125,15 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "$ref": "#/components/schemas/ErrorResponse"
+}
+```
+
+**404**: not_found: a place outside the caller's cities
 
 ```json
 {
@@ -8341,7 +8357,7 @@ The units a place holds of a hair system, and how many pieces it holds unlabelle
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -8377,7 +8393,7 @@ Request body:
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {
@@ -9394,7 +9410,7 @@ The latest discount codes made, each with its uses and what it has taken off
 }
 ```
 
-**403**: access_required
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
 
 ```json
 {

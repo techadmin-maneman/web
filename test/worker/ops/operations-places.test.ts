@@ -178,8 +178,8 @@ describe("the dispatch board, for a grant of Operations in one city", () => {
       "/api/dispatch/move",
       toWednesday(DELHI_VISIT, DELHI_TECH, { technician_id: GURGAON_TECH }),
     );
-    expect(away.status).toBe(400);
-    expect((await errorOf(away)).fields).toEqual(["technician_id"]);
+    // A technician elsewhere is not found, as anything outside the caller's cities is.
+    expect(away.status).toBe(404);
 
     const kept = await post(
       delhi,
@@ -278,8 +278,8 @@ describe("booking a visit, for a grant of Operations in one city", () => {
     expect((await post(delhi, "/api/visits", { ...visit, client: ROHIT })).status).toBe(404);
 
     const elsewhere = await post(delhi, "/api/visits", { ...visit, client: ARJUN, technician: GURGAON_TECH });
-    expect(elsewhere.status).toBe(409);
-    expect((await errorOf(elsewhere)).code).toBe("taken");
+    expect(elsewhere.status).toBe(404);
+    expect((await errorOf(elsewhere)).code).toBe("not_found");
 
     expect((await post(delhi, "/api/visits", { ...visit, client: ARJUN, technician: DELHI_TECH })).status).toBe(201);
     const holds = await env.DB.prepare("SELECT person_id FROM slot_holds").all();
@@ -307,7 +307,7 @@ describe("booking a visit, for a grant of Operations in one city", () => {
     };
     expect((await post(delhi, `/api/visits/${GURGAON_VISIT}/close`, close)).status).toBe(404);
     // Its own visit gets past its city to the visit's own answer: its time has not come.
-    expect((await post(delhi, `/api/visits/${DELHI_VISIT}/close`, close)).status).toBe(425);
+    expect((await post(delhi, `/api/visits/${DELHI_VISIT}/close`, close)).status).toBe(409);
   });
 });
 
@@ -390,15 +390,13 @@ describe("stock, for a grant of Operations in one city", () => {
   it("counts and moves stock only in its city's kits", async () => {
     for (const place of [GURGAON_TECH, "central"]) {
       const refused = await count(delhi, place);
-      expect(refused.status).toBe(400);
-      expect((await errorOf(refused)).fields).toEqual(["place_id"]);
+      expect(refused.status).toBe(404);
     }
     expect((await count(delhi, DELHI_TECH)).status).toBe(200);
 
     const transfer = { consumable_code: "tape_strips", quantity: 2, from: DELHI_TECH, to: GURGAON_TECH };
     const across = await post(delhi, "/api/stock/transfers", transfer);
-    expect(across.status).toBe(400);
-    expect((await errorOf(across)).fields).toEqual(["to"]);
+    expect(across.status).toBe(404);
 
     const rows = await env.DB.prepare("SELECT technician_id FROM stock_movements").all();
     expect(rows.results).toEqual([{ technician_id: DELHI_TECH }]);
@@ -424,7 +422,7 @@ describe("stock, for a grant of Operations in one city", () => {
       DELHI_TECH,
       GURGAON_TECH,
     ]);
-    expect((await count(delhi, "gurgaon-room")).status).toBe(400);
+    expect((await count(delhi, "gurgaon-room")).status).toBe(404);
     expect((await count(delhi, "delhi-room")).status).toBe(200);
   });
 

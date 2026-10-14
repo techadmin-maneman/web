@@ -150,7 +150,7 @@ const noteRoute = opsRoute({
   path: "/api/conversations/{id}/notes",
   summary: "A note on the thread for staff alone, never sent",
   request: { params: Id, body: { required: true, ...json(TextBody.openapi("ChatNote")) } },
-  responses: { 200: answered, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
+  responses: { 200: answered, 404: errorResponse("not_found") },
 });
 
 const closeRoute = opsRoute({
@@ -169,7 +169,7 @@ const closeRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: answered, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
+  responses: { 200: answered, 404: errorResponse("not_found") },
 });
 
 /** The Care hours ops set, and who covers whom today. */

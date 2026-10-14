@@ -28,7 +28,7 @@ describe("the no-show", () => {
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
 
     const early = await post(`/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-noshow-01");
-    expect(early.status).toBe(425);
+    expect(early.status).toBe(409);
     expect(await early.json()).toMatchObject({ error: { code: "too_early_to_close" } });
 
     // The day-before WhatsApp, delivered: the third fact ops rule on.
@@ -47,7 +47,7 @@ describe("the no-show", () => {
       undefined,
       "event-noshow-01",
     );
-    expect(beforeTheStart.status).toBe(425);
+    expect(beforeTheStart.status).toBe(409);
 
     // Sixteen minutes after the booked start the wait has run.
     const later = minutesAfterStart(16);

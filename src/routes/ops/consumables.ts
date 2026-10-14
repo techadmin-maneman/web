@@ -125,7 +125,7 @@ const consumablesRoute = opsRoute({
   method: "get",
   path: "/api/consumables",
   summary: "Every consumable, and what each service is expected to use",
-  responses: { 200: CONSUMABLES, 403: errorResponse("access_required") },
+  responses: { 200: CONSUMABLES },
 });
 
 const addRoute = opsRoute({
@@ -151,7 +151,7 @@ const addRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: CONSUMABLES, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: CONSUMABLES, 400: REFUSED },
 });
 
 const code = z.object({ code: z.string().min(1).max(64) });

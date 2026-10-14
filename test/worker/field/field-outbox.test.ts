@@ -44,7 +44,7 @@ describe("the phone's clock", () => {
     expect(body.wait_ends_at).toBe(minutesAfterStart(25).toISOString());
 
     const early = await postAt(minutesAfterStart(11), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
-    expect(early.status).toBe(425);
+    expect(early.status).toBe(409);
     const closed = await postAt(minutesAfterStart(25), `/api/tech/jobs/${TODAY_JOB}/no-show`, undefined, "event-ns-01");
     expect(closed.status).toBe(200);
 

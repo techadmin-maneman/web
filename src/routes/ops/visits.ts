@@ -272,11 +272,12 @@ const owedOf = (owed: readonly Remake[], kind: VisitType) =>
 const isClientInReach = async (c: Context<AppEnv>, client: string): Promise<boolean> =>
   (await clientInReach(c, client)) !== null;
 
-/** A booking outside the caller's cities: a client elsewhere is not found, and a technician elsewhere is not free. */
+/** A booking outside the caller's cities: a client or a technician elsewhere is not found, as anything elsewhere is. */
 async function refusedElsewhere(c: Context<AppEnv>, asked: VisitAsked) {
   if (!(await withinRouteReach(c, "client", asked.personId))) return { code: "not_found", status: 404 } as const;
   if (asked.technicianId === undefined) return null;
-  if (!(await withinRouteReach(c, "technician", asked.technicianId))) return { code: "taken", status: 409 } as const;
+  if (!(await withinRouteReach(c, "technician", asked.technicianId)))
+    return { code: "not_found", status: 404 } as const;
   return null;
 }
 

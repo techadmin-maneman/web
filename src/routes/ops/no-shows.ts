@@ -120,7 +120,7 @@ const noShowsRoute = opsRoute({
   path: "/api/no-shows",
   summary: "No-show cases in the caller's cities: undecided first, each with its three facts",
   request: { query: z.object({ decision: z.enum([...NO_SHOW_DECISIONS, "all"]).default("undecided") }) },
-  responses: { 200: { description: "The cases", ...json(NoShowsSchema) }, 403: errorResponse("access_required") },
+  responses: { 200: { description: "The cases", ...json(NoShowsSchema) } },
 });
 
 const decisionRoute = opsRoute({

@@ -81,7 +81,7 @@ const listRoute = opsRoute({
       month: Month.optional().openapi({ description: "Last month, the one to pay, when left out." }),
     }),
   },
-  responses: { 200: ok, 400: errorResponse("invalid_request"), 403: errorResponse("access_required") },
+  responses: { 200: ok, 400: errorResponse("invalid_request") },
 });
 
 const recordRoute = opsRoute({
@@ -118,7 +118,7 @@ const deleteRoute = opsRoute({
   path: "/api/partner-statements/{id}/payouts/{month}/delete",
   summary: "Take off a payment recorded by mistake; the month is owed again",
   request: { params: Id.extend({ month: Month }) },
-  responses: { 200: ok, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
+  responses: { 200: ok, 404: errorResponse("not_found") },
 });
 
 export function registerOpsPartnerStatements(app: App): void {

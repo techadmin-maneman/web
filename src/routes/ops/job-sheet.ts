@@ -98,7 +98,7 @@ const sheetRoute = opsRoute({
   method: "get",
   path: "/api/job-sheet",
   summary: "Each kind of visit's checklist and the partial reasons, as the technician app reads them",
-  responses: { 200: SHEET, 403: errorResponse("access_required") },
+  responses: { 200: SHEET },
 });
 
 const checklistRoute = opsRoute({
@@ -109,7 +109,7 @@ const checklistRoute = opsRoute({
     params: z.object({ visit_type: z.enum(VISIT_TYPES) }),
     body: { required: true, ...json(ListChangeSchema) },
   },
-  responses: { 200: SHEET, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: SHEET, 400: REFUSED },
 });
 
 const reasonsRoute = opsRoute({
@@ -117,7 +117,7 @@ const reasonsRoute = opsRoute({
   path: "/api/job-sheet/partial-reasons",
   summary: "The reasons a job may be left partly done, the whole list in its order",
   request: { body: { required: true, ...json(ListChangeSchema) } },
-  responses: { 200: SHEET, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: SHEET, 400: REFUSED },
 });
 
 const lostReasonsRoute = opsRoute({
@@ -125,7 +125,7 @@ const lostReasonsRoute = opsRoute({
   path: "/api/job-sheet/lost-reasons",
   summary: "Why a client is not going ahead with a fit after their consultation, the whole list in its order",
   request: { body: { required: true, ...json(ListChangeSchema) } },
-  responses: { 200: SHEET, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: SHEET, 400: REFUSED },
 });
 
 const listBody = (list: JobSheetList) => ({

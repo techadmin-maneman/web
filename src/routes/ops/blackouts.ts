@@ -68,7 +68,7 @@ const listRoute = opsRoute({
   method: "get",
   path: "/api/blackouts",
   summary: "Every day from today on that no visit is offered, with the visits still booked on each",
-  responses: { 200: { description: "The days", ...json(ListSchema) }, 403: errorResponse("access_required") },
+  responses: { 200: { description: "The days", ...json(ListSchema) } },
 });
 
 const bookedRoute = opsRoute({

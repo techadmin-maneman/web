@@ -79,7 +79,7 @@ const listRoute = opsRoute({
   method: "get",
   path: "/api/referral-channels",
   summary: "Every partner, with what has come through each",
-  responses: { 200: ok, 403: errorResponse("access_required") },
+  responses: { 200: ok },
 });
 
 const addRoute = opsRoute({
@@ -118,7 +118,7 @@ const pauseRoute = opsRoute({
       ...json(z.object({ paused: z.boolean() }).strict().openapi("ReferralChannelPause")),
     },
   },
-  responses: { 200: ok, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
+  responses: { 200: ok, 404: errorResponse("not_found") },
 });
 
 export function registerOpsReferralChannels(app: App): void {

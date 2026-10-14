@@ -167,7 +167,7 @@ const listRoute = opsRoute({
         .openapi({ description: "The codes that begin with this text, however old." }),
     }),
   },
-  responses: { 200: { description: "The codes", ...json(CodesSchema) }, 403: errorResponse("access_required") },
+  responses: { 200: { description: "The codes", ...json(CodesSchema) } },
 });
 
 const makeRoute = opsRoute({

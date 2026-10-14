@@ -439,7 +439,7 @@ describe("POST /api/visits/:id/close", () => {
       {},
       { outcome: "done", started_at: today("09:20"), ended_at: today("10:50"), reason: "Phone lost" },
     );
-    expect(answer.status).toBe(425);
+    expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "too_early_to_close" } });
   });
 

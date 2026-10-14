@@ -284,7 +284,7 @@ export const ERROR_STATUS = {
   other_city: 409,
   not_trained: 409,
   in_progress: 409,
-  too_early_to_close: 425,
+  too_early_to_close: 409,
   no_check_in: 409,
   too_early_to_arrive: 409,
   already_closed: 409,

@@ -126,7 +126,7 @@ const listRoute = opsRoute({
   method: "get",
   path: "/api/technician-pay",
   summary: "The grades, each technician's grade, and the rates per visit",
-  responses: { 200: ok, 403: errorResponse("access_required") },
+  responses: { 200: ok },
 });
 
 const addGradeRoute = opsRoute({

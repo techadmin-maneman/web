@@ -260,8 +260,7 @@ export const noShowRoute = techRoute({
     ...STEP_REFUSALS,
     409: errorResponse(
       `superseded: the job changed under the phone; out_of_order: send the step before this one first; ${CLOSED}; ` +
-        "already_started: the job was started, so the client was home",
+        "already_started: the job was started, so the client was home; too_early_to_close: the wait has not run out",
     ),
-    425: errorResponse("too_early_to_close: the wait has not run out"),
   },
 });

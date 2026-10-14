@@ -58,7 +58,7 @@ const unitsRoute = opsRoute({
   path: "/api/stock/units",
   summary: "The units a place holds of a hair system, and how many pieces it holds unlabelled",
   request: { query: z.object({ consumable_code: Code, place_id: PlaceId }) },
-  responses: { 200: UNITS, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: UNITS, 400: REFUSED },
 });
 
 const labelRoute = opsRoute({
@@ -80,7 +80,7 @@ const labelRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: UNITS, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: UNITS, 400: REFUSED },
 });
 
 const lotLabelRoute = opsRoute({

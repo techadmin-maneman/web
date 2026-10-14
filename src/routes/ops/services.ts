@@ -105,7 +105,7 @@ const servicesRoute = opsRoute({
   method: "get",
   path: "/api/services",
   summary: "Every service, offered or retired, with every price it has had and is to have, and the late fees",
-  responses: { 200: answered, 403: errorResponse("access_required") },
+  responses: { 200: answered },
 });
 
 const addRoute = opsRoute({

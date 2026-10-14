@@ -37,11 +37,14 @@ const REFUSED = errorResponse(
   "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, or units for a label the place does not hold or a count other than the quantity",
 );
 
+/** A place outside the caller's cities, as anything elsewhere is. */
+const ELSEWHERE = errorResponse("not_found: a place outside the caller's cities");
+
 const stockRoute = opsRoute({
   method: "get",
   path: "/api/stock",
   summary: "Every place, what each holds of each consumable, what is low, and the latest movements",
-  responses: { 200: STOCK, 403: errorResponse("access_required") },
+  responses: { 200: STOCK },
 });
 
 const deliveryRoute = opsRoute({
@@ -67,7 +70,7 @@ const deliveryRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: STOCK, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: { 200: STOCK, 400: REFUSED },
 });
 
 const transferRoute = opsRoute({
@@ -95,6 +98,7 @@ const transferRoute = opsRoute({
     },
   },
   responses: {
+    404: ELSEWHERE,
     200: STOCK,
     400: errorResponse(
       "invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, or units for a label the place does not hold or a count other than the quantity",
@@ -126,7 +130,11 @@ const countRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: STOCK, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: {
+    404: ELSEWHERE,
+    200: STOCK,
+    400: REFUSED,
+  },
 });
 
 const writeOffRoute = opsRoute({
@@ -153,7 +161,11 @@ const writeOffRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: STOCK, 400: REFUSED, 403: errorResponse("access_required") },
+  responses: {
+    404: ELSEWHERE,
+    200: STOCK,
+    400: REFUSED,
+  },
 });
 
 /** GET's answer, which every write here and on the places answers too. */
@@ -241,7 +253,8 @@ async function placesOutOfReach(c: Context<AppEnv>, places: Readonly<Record<stri
     .map(([field]) => field);
 }
 
-const outOfReach = (c: Context<AppEnv>, fields: string[]) => refuse(c, "invalid_request", fields);
+/** A place outside the caller's cities is not found, as anything elsewhere is. */
+const outOfReach = (c: Context<AppEnv>, _fields: string[]) => refuse(c, "not_found");
 
 /** Pieces named by their labels number the quantity moved. */
 const countsAsScanned = (body: { readonly quantity: number; readonly units?: readonly string[] }) =>

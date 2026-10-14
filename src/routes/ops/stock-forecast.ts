@@ -7,7 +7,6 @@ import { z } from "@hono/zod-openapi";
 import { latestForecast } from "../../domain/purchasing/forecast.ts";
 import { forecastAccuracy } from "../../domain/purchasing/forecast-accuracy.ts";
 import type { App } from "../../http/context.ts";
-import { errorResponse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 
 const Figure = z.number();
@@ -46,7 +45,7 @@ const forecastRoute = opsRoute({
   path: "/api/stock/forecast",
   summary: "The latest demand forecast, for one city or every city",
   request: { query: z.object({ city: z.string().min(1).max(80).optional() }) },
-  responses: { 200: { description: "The forecast", ...json(ForecastSchema) }, 403: errorResponse("access_required") },
+  responses: { 200: { description: "The forecast", ...json(ForecastSchema) } },
 });
 
 const Percent = z.number().int().nullable().openapi({ description: "Null where nothing was used." });
@@ -84,7 +83,7 @@ const accuracyRoute = opsRoute({
   path: "/api/stock/forecast-accuracy",
   summary: "How right the forecast was in one city: its last measured periods, and each item across them",
   request: { query: z.object({ city: z.string().max(80) }) },
-  responses: { 200: { description: "The accuracy", ...json(AccuracySchema) }, 403: errorResponse("access_required") },
+  responses: { 200: { description: "The accuracy", ...json(AccuracySchema) } },
 });
 
 export function registerOpsForecast(app: App): void {

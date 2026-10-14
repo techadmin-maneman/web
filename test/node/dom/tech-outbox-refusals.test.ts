@@ -228,7 +228,7 @@ describe("a step the API says is early", () => {
   // The card's warning was held in memory, and went with a reload.
   it("is kept, so the card can tell a no-show was refused rather than sent, until one lands", async () => {
     await queue("no_show", "a", null);
-    api(() => ({ status: 425, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
+    api(() => ({ status: 409, json: { error: { code: "too_early_to_close", request_id: "t" } } }));
     await replay();
     expect(refusedAsEarly(await events(), "a")).toBe(true);
 

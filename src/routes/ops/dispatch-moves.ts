@@ -261,7 +261,7 @@ function refusedMove(c: Context<AppEnv>, outcome: Refused) {
 /** A move to another day, asked of the client rather than made. */
 async function propose(c: Context<AppEnv>, request: MoveRequest) {
   if (!(await withinRouteReach(c, "visit", request.appointment_id))) return refuse(c, "not_found");
-  if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
+  if (!(await mayGoTo(c, request))) return refuse(c, "not_found");
   const input = inputOf(c, request);
   const now = c.var.deps.now();
   const audit = (proposalId: string) => ({
@@ -286,7 +286,7 @@ async function write(c: Context<AppEnv>, request: MoveRequest) {
   if (!(await withinRouteReach(c, "visit", request.appointment_id))) {
     return refuse(c, "not_found");
   }
-  if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
+  if (!(await mayGoTo(c, request))) return refuse(c, "not_found");
 
   const input = inputOf(c, request);
   const notify = (messageId: string) => queueMessage(c, messageId);

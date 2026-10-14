@@ -44,7 +44,7 @@ const addRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: { description: "Added", ...json(QuickReplySchema) }, 403: errorResponse("access_required") },
+  responses: { 200: { description: "Added", ...json(QuickReplySchema) } },
 });
 
 const retireRoute = opsRoute({

@@ -19517,17 +19517,7 @@
             }
           },
           "409": {
-            "description": "already_closed: the visit is closed or cancelled, or the technician's phone closed it; no_check_in: a no-show stands on the technician's check-in, and there is none",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "425": {
-            "description": "too_early_to_close: the visit's time, or a no-show's wait, has not come",
+            "description": "already_closed: the visit is closed or cancelled, or the technician's phone closed it; no_check_in: a no-show stands on the technician's check-in, and there is none; too_early_to_close: the visit's time, or a no-show's wait, has not come",
             "content": {
               "application/json": {
                 "schema": {
@@ -20381,7 +20371,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -20420,7 +20410,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -22192,7 +22182,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -22317,7 +22307,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -22443,7 +22433,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -22501,7 +22491,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -22790,7 +22780,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -22906,7 +22896,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -23071,7 +23061,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -23398,7 +23388,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -24191,7 +24181,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -24372,7 +24362,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -25963,7 +25953,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -27588,7 +27578,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -29242,7 +29232,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -29444,7 +29434,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -30069,7 +30059,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -30114,7 +30104,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -30490,7 +30480,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -30553,7 +30543,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -30600,7 +30590,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -30647,7 +30637,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -30674,7 +30664,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -30721,7 +30711,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -30776,6 +30766,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "not_found: a place outside the caller's cities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -30815,7 +30815,17 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: a place outside the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -30862,7 +30872,17 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: a place outside the caller's cities",
             "content": {
               "application/json": {
                 "schema": {
@@ -31216,7 +31236,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -31261,7 +31281,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {
@@ -32830,7 +32850,7 @@
             }
           },
           "403": {
-            "description": "access_required",
+            "description": "access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token",
             "content": {
               "application/json": {
                 "schema": {

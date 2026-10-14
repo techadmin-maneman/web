@@ -31,7 +31,7 @@ const daysOffRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: done, 400: notCare, 403: errorResponse("access_required") },
+  responses: { 200: done, 400: notCare },
 });
 
 const leaveRoute = opsRoute({
@@ -57,7 +57,7 @@ const deleteRoute = opsRoute({
   path: "/api/care-team/leave/{id}/delete",
   summary: "Leave taken back",
   request: { params: z.object({ id: z.uuid() }) },
-  responses: { 200: done, 403: errorResponse("access_required"), 404: errorResponse("not_found") },
+  responses: { 200: done, 404: errorResponse("not_found") },
 });
 
 const nameRoute = opsRoute({
@@ -75,7 +75,7 @@ const nameRoute = opsRoute({
       ),
     },
   },
-  responses: { 200: done, 400: notCare, 403: errorResponse("access_required") },
+  responses: { 200: done, 400: notCare },
 });
 
 const shiftRoute = opsRoute({

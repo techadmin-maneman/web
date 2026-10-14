@@ -31,7 +31,7 @@ describe("what a refusal means for the round", () => {
 
   it("holds a check-in or no-show sent too early, which stops nothing", () => {
     expect(classify(refused(425, "too_early_to_arrive"))).toEqual({ kind: "too_early", code: "too_early_to_arrive" });
-    expect(classify(refused(425, "too_early_to_close"))).toEqual({ kind: "too_early", code: "too_early_to_close" });
+    expect(classify(refused(409, "too_early_to_close"))).toEqual({ kind: "too_early", code: "too_early_to_close" });
   });
 
   // An out_of_order on a photograph's upload link was reported as a rejected photograph.
