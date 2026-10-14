@@ -1,17 +1,18 @@
 ---
-// Every page's frame: the head, the fixed header and, on the home page only,
-// the footer and the sticky bottom bar. The head carries
+// Every page's frame: the head, a link past the header, the fixed header, and the footer: the full one and the sticky
+// bottom bar on the home page, the slim one on every other. The head carries
 // what search engines and shared links read: the canonical address on
 // production's host, Open Graph and X cards, and any structured data.
 import "../styles/global.css";
 import Footer from "../components/Footer.astro";
-import LegalFooter from "../components/LegalFooter.astro";
+import SlimFooter from "../components/SlimFooter.astro";
 import ConsentBar from "../components/ConsentBar.astro";
 import { CONSENT_BAR_SHOWN } from "../lib/flags.ts";
 import Header from "../components/Header.astro";
 import Sprite from "../components/Sprite.astro";
 import StickyBar from "../components/StickyBar.astro";
-import { business } from "../content/site.ts";
+import { business, header } from "../content/site.ts";
+import { skipLinkLook } from "@maneman/ui/SkipLink";
 import { ENVIRONMENT, IS_PRODUCTION } from "../lib/build.ts";
 import { FAVICON_SIZES, OG_IMAGE, token } from "../lib/brand-images.ts";
 import { SITE_ORIGIN } from "../lib/site-origin.ts";
@@ -94,12 +95,15 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     <slot name="head" />
   </head>
   <body>
+    <a class={skipLinkLook()} href="#content">
+      {header.skip}
+    </a>
     <Sprite />
     <Header />
-    <main>
+    <main id="content" tabindex="-1">
       <slot />
     </main>
-    {home ? <Footer /> : <LegalFooter />}
+    {home ? <Footer /> : <SlimFooter />}
     {CONSENT_BAR_SHOWN && <ConsentBar />}
     {home && <StickyBar />}
     <script>

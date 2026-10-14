@@ -1,0 +1,52 @@
+---
+// The foot of every page but the home page, which has the full footer: where to go from here, then the company and its
+// privacy notice and terms, so every page that takes a person's details links both.
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { footer } from "../content/site.ts";
+import { MORE_PAGES } from "../lib/more-pages.ts";
+
+const { legal } = footer.columns;
+---
+
+<footer class="slim">
+  <nav class="pages" aria-label={footer.pagesLabel}>
+    {[...footer.pages, ...MORE_PAGES].map((link) => (
+      <a class={textLinkLook({ tone: "brass", quiet: true })} href={link.href}>
+        {link.label}
+      </a>
+    ))}
+  </nav>
+  <div class="legal">
+    <span>{footer.entity}</span>
+    {legal.links.map((link) => (
+      <a class={textLinkLook({ tone: "brass", quiet: true })} href={link.href}>
+        {link.label}
+      </a>
+    ))}
+  </div>
+</footer>
+
+<style>
+  .slim {
+    max-width: var(--page-max);
+    margin: var(--section-gap) auto 0;
+    padding: var(--sp-24) var(--gutter) var(--sp-32);
+    border-top: var(--hairline) solid var(--paper-line);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-16);
+  }
+  .pages,
+  .legal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8) var(--sp-24);
+  }
+  .pages {
+    font-size: var(--fs-15);
+  }
+  .legal {
+    font-size: var(--fs-14);
+    color: var(--text-muted);
+  }
+</style>

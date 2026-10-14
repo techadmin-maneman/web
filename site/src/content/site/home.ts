@@ -5,6 +5,8 @@ import { capitalised, serviceArea, visitLength } from "../service.ts";
 import { basePhotos, type Picture } from "./media.ts";
 
 export const header = {
+  /** The first thing a keyboard reaches, past the header to the page. */
+  skip: "Skip to content",
   homeLabel: "Mane Man, home",
   /** What a screen reader calls the header's links. */
   navLabel: "Sections",
@@ -45,6 +47,12 @@ export const footer = {
       ],
     },
   },
+  /** The slim footer on every other page: where to go from there, before the notices. */
+  pagesLabel: "Pages",
+  pages: [
+    { label: "Home", href: "/" },
+    { label: "Try-on", href: "/try" },
+  ],
   area: `${serviceArea} · home service only`,
   entity: "Mane Man Grooming Services Private Limited",
 };

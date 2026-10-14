@@ -7,7 +7,7 @@
     position: absolute;
     top: var(--sp-8);
     left: var(--sp-8);
-    z-index: 4;
+    z-index: 100; /* above any bar a page fixes in place */
     padding: var(--sp-8) var(--sp-16);
     background: var(--paper);
     color: var(--text);

@@ -79,9 +79,9 @@ test.describe("sticky bar and footer: the home page only", () => {
     await expect(page.locator('footer a[href="/book"]')).toHaveCount(1);
   });
 
-  // Elsewhere the foot is the company, its privacy notice and its terms alone.
+  // Elsewhere the foot is slim: the pages, then the company, its privacy notice and its terms.
   for (const path of ["/try", "/book", "/privacy"]) {
-    test(`are absent from ${path}, which keeps the legal foot`, async ({ page }) => {
+    test(`are absent from ${path}, which keeps the slim foot`, async ({ page }) => {
       await page.goto(path);
       await expect(page.getByRole("link", { name: siteCopy.stickyBar.whatsappLabel })).toHaveCount(0);
       await expect(page.locator("footer")).toHaveCount(1);
@@ -90,6 +90,31 @@ test.describe("sticky bar and footer: the home page only", () => {
       await expect(page.locator('footer a[href="/terms"]')).toHaveCount(1);
     });
   }
+
+  // On a phone the header's links hide, and away from the home page nothing led anywhere but the home page and /book.
+  test("the slim foot leads to the other pages, from a phone too", async ({ page }) => {
+    await page.goto("/privacy");
+    const pages = page.getByRole("navigation", { name: siteCopy.footer.pagesLabel });
+    for (const link of siteCopy.footer.pages) {
+      await expect(pages.getByRole("link", { name: link.label, exact: true })).toHaveAttribute("href", link.href);
+    }
+    await pages.getByRole("link", { name: "Try-on", exact: true }).click();
+    await expect(page).toHaveURL(/\/try$/);
+  });
+});
+
+test.describe("skip link", () => {
+  test("is the first stop, out of sight until focused, and moves the focus past the header", async ({ page }) => {
+    await page.goto("/privacy");
+    await page.keyboard.press("Tab");
+    const skip = page.getByRole("link", { name: siteCopy.header.skip });
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeInViewport();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("main")).toBeFocused();
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => document.querySelector("main")?.contains(document.activeElement))).toBe(true);
+  });
 
   test("the hero keeps 72 px for the bar", async ({ page }) => {
     await page.goto("/");

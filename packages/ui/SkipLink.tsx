@@ -4,10 +4,13 @@
 import type { ReactNode } from "react";
 import styles from "./skip-link.module.css";
 
+/** The link's look, for a page that draws its own anchor: the site's. */
+export const skipLinkLook = (): string => styles.skip;
+
 export function SkipLink({ onSkip, children }: { readonly onSkip: () => void; readonly children: ReactNode }) {
   return (
     <a
-      className={styles.skip}
+      className={skipLinkLook()}
       href="#content"
       onClick={(event) => {
         event.preventDefault();
