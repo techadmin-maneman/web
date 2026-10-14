@@ -24,6 +24,7 @@ import {
   type Moving,
   type Written,
 } from "./stock.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 /** A transfer still on its way, as the Stock page lists it. */
 export interface InTransit {
@@ -94,13 +95,13 @@ export async function sendStock(db: D1Database, input: Moving, written: Written)
   const to = await placeById(db, input.to);
   const atOnce = to?.kind === "kit" && input.waitForScan !== true;
   if (to === null || atOnce || input.from === input.to) return transferStock(db, input, written);
-  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  if (!(await consumableExists(db, input.code))) return refusal("invalid_request", ["consumable_code"]);
   const fromKind = await kindOf(db, input.from);
-  if (fromKind === null) return { ok: false, fields: ["from"] };
+  if (fromKind === null) return refusal("invalid_request", ["from"]);
   const transferId = crypto.randomUUID();
   const out = crypto.randomUUID();
   const taken = await takenFrom(db, { ...input, place: input.from, named: input.units ?? null });
-  if (taken === null) return { ok: false, fields: ["units"] };
+  if (taken === null) return refusal("invalid_request", ["units"]);
   const takes = taken.takes;
   const detail = { quantity: input.quantity, from: input.from, to: input.to, transfer: transferId };
   const movement = { code: input.code, reason: "transferred", transferId, note: null } as const;
@@ -142,7 +143,7 @@ export async function sendStock(db: D1Database, input: Moving, written: Written)
     }),
   ]);
   // More than the place holds, or a unit that left it since it was read.
-  if (left?.meta.changes === 0) return { ok: false, fields: ["quantity"] };
+  if (left?.meta.changes === 0) return refusal("invalid_request", ["quantity"]);
   return { ok: true, lowered: [input.from] };
 }
 
@@ -204,9 +205,9 @@ async function arrivingAt(
 /** A transfer received, or sent back; refused, or settled already by someone else. */
 export type Settled =
   | { readonly ok: true; readonly touched: readonly Place[] }
-  | { readonly ok: false; readonly fields: string[] }
-  | { readonly ok: false; readonly missing: true }
-  | { readonly ok: false; readonly settled: true };
+  | Refusal<"invalid_request">
+  | Refusal<"not_found">
+  | Refusal<"transfer_settled">;
 
 /**
  * A transfer settled: received at the place it was sent to, `arrived` of it, the rest lost on the way; or sent back,
@@ -227,13 +228,13 @@ async function settle(
     .prepare(`SELECT ${TRANSFER_COLUMNS} FROM stock_transfers WHERE id = ?1`)
     .bind(input.id)
     .first<TransferRow>();
-  if (transfer === null) return { ok: false, missing: true };
-  if (transfer.state !== "in_transit") return { ok: false, settled: true };
+  if (transfer === null) return refusal("not_found");
+  if (transfer.state !== "in_transit") return refusal("transfer_settled");
   const arrived = input.back ? transfer.quantity : (input.units?.length ?? input.arrived ?? transfer.quantity);
-  if (arrived > transfer.quantity) return { ok: false, fields: ["received"] };
+  if (arrived > transfer.quantity) return refusal("invalid_request", ["received"]);
   const place = input.back ? transfer.from_place : transfer.to_place;
   const kind = await kindOf(db, place);
-  if (kind === null) return { ok: false, fields: ["id"] };
+  if (kind === null) return refusal("invalid_request", ["id"]);
   const at = written.now.toISOString();
   const into = crypto.randomUUID();
   const settlement = crypto.randomUUID();
@@ -245,7 +246,7 @@ async function settle(
   const movementId = arrived > 0 ? into : null;
   const arrival = { transfer, arrived, named: input.units ?? null };
   const arriving = await arrivingAt(db, arrival, { place, movementId, settlement, written });
-  if (arriving === null) return { ok: false, fields: ["units"] };
+  if (arriving === null) return refusal("invalid_request", ["units"]);
   const movement = movementStatementWhen(
     db,
     {
@@ -291,7 +292,7 @@ async function settle(
     ...arriving.units,
   ]);
   // Another request settled it between the read and this batch, which then wrote nothing.
-  if (settled?.meta.changes !== 1) return { ok: false, settled: true };
+  if (settled?.meta.changes !== 1) return refusal("transfer_settled");
   return { ok: true, touched: [place] };
 }
 
@@ -313,9 +314,9 @@ async function receivePart(
   if (transfer?.state !== "in_transit" || units.length >= transfer.quantity) return null;
   const place = transfer.to_place;
   const kind = await kindOf(db, place);
-  if (kind === null) return { ok: false, fields: ["id"] };
+  if (kind === null) return refusal("invalid_request", ["id"]);
   const arriving = await piecesArriving(db, transfer, units.length, units);
-  if (arriving === null) return { ok: false, fields: ["units"] };
+  if (arriving === null) return refusal("invalid_request", ["units"]);
   const into = crypto.randomUUID();
   const code = transfer.consumable_code;
   const movement = {
@@ -355,7 +356,7 @@ async function receivePart(
     }),
   ]);
   // Another receipt, or a settlement, changed what it carries between the read and this batch.
-  if (carried?.meta.changes !== 1) return { ok: false, settled: true };
+  if (carried?.meta.changes !== 1) return refusal("transfer_settled");
   return { ok: true, touched: [place] };
 }
 

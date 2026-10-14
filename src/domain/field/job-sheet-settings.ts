@@ -20,6 +20,7 @@ import {
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { freshCode } from "../../lib/slug.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 /** One list as it stands. */
 export interface JobSheetList {
@@ -150,7 +151,7 @@ const listIn = (sheet: JobSheet, which: ListName): JobSheetList => {
   return which.list === "partial_reason" ? sheet.partialReasons : sheet.lostReasons;
 };
 
-type ListSaved = { readonly ok: true; readonly list: JobSheetList } | { readonly ok: false; readonly fields: string[] };
+type ListSaved = { readonly ok: true; readonly list: JobSheetList } | Refusal<"invalid_request">;
 
 /**
  * A new item's code, from its words: "Scalp checked" is scalp_checked, and a
@@ -199,7 +200,7 @@ export async function saveList(
   const was = listIn(sheet, which);
   const known = knownCodes(was);
   const fields = refusalsOf(which, items, known);
-  if (fields.length > 0) return { ok: false, fields };
+  if (fields.length > 0) return refusal("invalid_request", fields);
 
   const at = now.toISOString();
   const taken = new Set(known);

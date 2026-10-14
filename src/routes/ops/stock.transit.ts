@@ -86,11 +86,7 @@ async function endWithin(c: Context<AppEnv>, id: string, end: "to_place" | "from
 }
 
 async function after(c: Context<AppEnv>, settled: Settled) {
-  if (!settled.ok) {
-    if ("missing" in settled) return refuse(c, "not_found");
-    if ("settled" in settled) return refuse(c, "transfer_settled");
-    return refuse(c, "invalid_request", settled.fields);
-  }
+  if (!settled.ok) return refuse(c, settled.code, settled.fields);
   await tellOfLowStock(c.env.DB, c.var.deps, { touched: settled.touched, lowered: [] });
   return c.json(await stockAnswer(c), 200);
 }

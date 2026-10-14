@@ -202,11 +202,7 @@ export function registerTechKit(app: App): void {
       { received: null, note: null, units: body.units ?? null, restOnItsWay: body.rest === "on_its_way" },
       written(c, technicianId),
     );
-    if (!settled.ok) {
-      if ("missing" in settled) return refuse(c, "not_found");
-      if ("settled" in settled) return refuse(c, "transfer_settled");
-      return refuse(c, "invalid_request", settled.fields);
-    }
+    if (!settled.ok) return refuse(c, settled.code, settled.fields);
     await tellOfLowStock(c.env.DB, c.var.deps, { touched: [technicianId], lowered: [] });
     return c.json(await kitAnswer(c, technicianId), 200);
   });

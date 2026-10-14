@@ -9,6 +9,7 @@
 import { reachBinding } from "../clients/places.ts";
 import type { PlacesReached } from "../../policy/access.ts";
 import { auditStatement, type AuditEntry, type Written, opsEntry } from "../platform/audit.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 /** A place, by its ID: the warehouse is WAREHOUSE and a kit its technician's ID. */
 export type Place = string;
@@ -114,9 +115,9 @@ export async function placeAreas(db: D1Database): Promise<{ zones: string[]; cit
 export const isPlaceWithin = (within: ReadonlySet<Place> | null, place: Place): boolean =>
   within === null || within.has(place);
 
-type PlaceAdded = { readonly ok: true; readonly id: Place } | { readonly ok: false; readonly fields: string[] };
+type PlaceAdded = { readonly ok: true; readonly id: Place } | Refusal<"invalid_request">;
 
-export type PlaceChanged = PlaceAdded | { readonly ok: false; readonly missing: true };
+export type PlaceChanged = PlaceAdded | Refusal<"not_found">;
 
 /** A place another may hang from: open, and higher up the tree than `kind`. */
 async function parentFor(db: D1Database, parentId: Place, kind: PlaceKind): Promise<StockPlace | null> {
@@ -160,7 +161,7 @@ export async function addPlace(
       ? db.prepare("SELECT 1 FROM zones WHERE name = ?1")
       : db.prepare("SELECT 1 FROM cities WHERE name = ?1 AND active = 1");
   if ((await area.bind(input.area).first()) === null) fields.push(input.kind === "hub" ? "zone" : "city");
-  if (fields.length > 0) return { ok: false, fields };
+  if (fields.length > 0) return refusal("invalid_request", fields);
   const id = crypto.randomUUID();
   const at = written.now.toISOString();
   await db.batch([
@@ -234,9 +235,9 @@ export async function changePlace(
   written: Written,
 ): Promise<PlaceChanged> {
   const place = await placeById(db, id);
-  if (place === null) return { ok: false, missing: true };
+  if (place === null) return refusal("not_found");
   const fields = await refusedFields(db, place, change);
-  if (fields.length > 0) return { ok: false, fields };
+  if (fields.length > 0) return refusal("invalid_request", fields);
   const name = change.name ?? (place.kind === "kit" ? null : place.name);
   const parentId = change.parentId ?? place.parentId;
   const active = place.kind === "kit" ? 1 : Number(change.active ?? place.active);

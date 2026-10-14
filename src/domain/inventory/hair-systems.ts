@@ -8,6 +8,7 @@ import { serviceOf } from "../booking/services.ts";
 import { freshCode } from "../../lib/slug.ts";
 import { insertRow } from "../../lib/sql.ts";
 import { auditStatement, type Written } from "../platform/audit.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 /** What a stock code is made to, matched exactly against a client's hair profile. */
 export interface HairSystemSpec {
@@ -105,9 +106,9 @@ export async function addHairSystem(
   db: D1Database,
   added: NewHairSystem,
   written: Written,
-): Promise<{ readonly ok: true; readonly code: string } | { readonly ok: false; readonly fields: string[] }> {
+): Promise<{ readonly ok: true; readonly code: string } | Refusal<"invalid_request">> {
   const service = await serviceOf(db, "first_fit", added.product);
-  if (service === null) return { ok: false, fields: ["product"] };
+  if (service === null) return refusal("invalid_request", ["product"]);
   const name = hairSystemName(service.name, added);
   const taken = await db
     .prepare(
@@ -125,7 +126,7 @@ export async function addHairSystem(
       added.densityPercent,
     )
     .first();
-  if (taken !== null) return { ok: false, fields: ["hair_system"] };
+  if (taken !== null) return refusal("invalid_request", ["hair_system"]);
 
   const { results } = await db.prepare("SELECT code FROM consumables").all<{ code: string }>();
   const words = `hs ${added.product} ${inches(added.baseWidthIn)}x${inches(added.baseLengthIn)} ${added.colour}`;

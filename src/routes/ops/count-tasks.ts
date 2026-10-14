@@ -306,11 +306,7 @@ async function taskAnswer(c: Context<AppEnv>, task: CountTask) {
 const COUNT_DIFFERS = "count_differs:";
 
 async function after(c: Context<AppEnv>, stepped: Stepped) {
-  if (!stepped.ok) {
-    if ("missing" in stepped) return refuse(c, "not_found");
-    if ("state" in stepped) return refuse(c, "order_state");
-    return refuse(c, "invalid_request", stepped.fields);
-  }
+  if (!stepped.ok) return refuse(c, stepped.code, stepped.fields);
   const { task } = stepped;
   if (task.state === "sign_off") {
     await c.var.deps.alertOnce({

@@ -8,6 +8,7 @@ import { landedUnitCosts } from "../../policy/purchasing.ts";
 import { auditStatement, type Written } from "../platform/audit.ts";
 import { deliveryStatements } from "../inventory/stock.ts";
 import { receiptClaimStatements } from "./supplier-claims.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 export interface ReceiptLine {
   readonly poLineId: string;
@@ -27,10 +28,7 @@ export interface Receipt {
   readonly lines: readonly (ReceiptLine & { readonly landedUnitPaise: number })[];
 }
 
-type Refused =
-  | { readonly ok: false; readonly fields: string[] }
-  | { readonly ok: false; readonly state: true }
-  | { readonly ok: false; readonly missing: true };
+type Refused = Refusal<"invalid_request"> | Refusal<"order_state"> | Refusal<"not_found">;
 
 type OrderLineRow = {
   id: string;
@@ -89,23 +87,23 @@ async function checkedReceipt(
     .bind(receipt.poId)
     .all<OrderLineRow>();
   const order = orderLines[0];
-  if (order === undefined) return { ok: false, missing: true };
-  if (order.state !== "sent" && order.state !== "part_received") return { ok: false, state: true };
+  if (order === undefined) return refusal("not_found");
+  if (order.state !== "sent" && order.state !== "part_received") return refusal("order_state");
   const rate = order.currency === "INR" ? 100 : receipt.rupeeRate;
-  if (rate === null || rate <= 0) return { ok: false, fields: ["rupee_rate"] };
+  if (rate === null || rate <= 0) return refusal("invalid_request", ["rupee_rate"]);
   const matched = receipt.lines.map((line) => ({ line, of: orderLines.find((each) => each.id === line.poLineId) }));
   const stray = matched.findIndex(({ of }) => of === undefined);
-  if (stray >= 0) return { ok: false, fields: [`lines.${String(stray)}`] };
+  if (stray >= 0) return refusal("invalid_request", [`lines.${String(stray)}`]);
   if (receipt.lines.every((line) => line.received + line.damaged + line.qcFailed === 0)) {
-    return { ok: false, fields: ["lines"] };
+    return refusal("invalid_request", ["lines"]);
   }
   // No line takes more than it still owes, however it arrived.
   const over = matched.findIndex(
     ({ line, of }) => line.received + line.damaged + line.qcFailed > (of?.outstanding ?? 0),
   );
-  if (over >= 0) return { ok: false, fields: [`lines.${String(over)}`] };
+  if (over >= 0) return refusal("invalid_request", [`lines.${String(over)}`]);
   if (receipt.supplierInvoice !== null && (await invoiceReceived(db, receipt.poId, receipt.supplierInvoice))) {
-    return { ok: false, fields: ["supplier_invoice"] };
+    return refusal("invalid_request", ["supplier_invoice"]);
   }
   return { ok: true, order, rate, matched };
 }
@@ -149,7 +147,7 @@ export async function receiveOrder(
         written,
         movementId,
       );
-      if (!delivered.ok) return { ok: false, fields: [`lines.${String(index)}`] };
+      if (!delivered.ok) return refusal("invalid_request", [`lines.${String(index)}`]);
       lines.push(...delivered.statements);
     }
     lines.push(
@@ -193,7 +191,7 @@ export async function receiveOrder(
     // A second receipt that landed beside this one took what was owed first.
     const field = refusedField(error);
     if (field === null) throw error;
-    return { ok: false, fields: [field] };
+    return refusal("invalid_request", [field]);
   }
   return { ok: true, id };
 }

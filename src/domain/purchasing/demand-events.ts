@@ -4,6 +4,7 @@
 
 import { auditStatement } from "../platform/audit.ts";
 import type { Written } from "../platform/audit.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 export interface DemandEvent {
   readonly id: string;
@@ -47,11 +48,11 @@ export async function addEvent(
   db: D1Database,
   event: Omit<DemandEvent, "id">,
   written: Written,
-): Promise<{ readonly ok: true } | { readonly ok: false; readonly fields: string[] }> {
-  if (event.endsOn < event.startsOn) return { ok: false, fields: ["ends_on"] };
+): Promise<{ readonly ok: true } | Refusal<"invalid_request">> {
+  if (event.endsOn < event.startsOn) return refusal("invalid_request", ["ends_on"]);
   if (event.city !== null) {
     const known = await db.prepare("SELECT 1 FROM cities WHERE name = ?1 AND active = 1").bind(event.city).first();
-    if (known === null) return { ok: false, fields: ["city"] };
+    if (known === null) return refusal("invalid_request", ["city"]);
   }
   const id = crypto.randomUUID();
   await db.batch([

@@ -67,6 +67,7 @@ import { saveBookingLead, type LeadAttribution } from "../leads/leads.ts";
 import { type Pincode } from "../clients/service-area.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
 import type { AddressPin } from "../clients/profile.ts";
+import type { Refusal as DomainRefusal } from "../../lib/refusal.ts";
 
 /** The codes a submission is refused with; each carries its own status (src/http/errors.ts, ERROR_STATUS). */
 type RefusalCode =
@@ -87,12 +88,7 @@ export type FormRefusalCode = "invalid_request" | "turnstile_failed" | "rate_lim
  * Why a submission was refused, in the codes the routes answer with. Each route declares the statuses those codes
  * carry, so the type says which ones its caller may see: only a booking can be too late for a window.
  */
-export interface Refusal<Code extends RefusalCode = RefusalCode> {
-  readonly ok: false;
-  readonly code: Code;
-  /** For invalid_request: the field refused, where the request was well formed and did not add up. */
-  readonly fields?: readonly string[];
-}
+export type Refusal<Code extends RefusalCode = RefusalCode> = DomainRefusal<Code>;
 
 /** The person a form is from, checked: their number as E.164 and their address's salted hash; or why not. */
 export type Checked =

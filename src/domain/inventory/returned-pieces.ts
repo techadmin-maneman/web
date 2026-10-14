@@ -9,6 +9,7 @@ import { auditStatementWhen, type AuditAction } from "../platform/audit.ts";
 import { unitChanges } from "./stock-units.ts";
 import type { Written } from "./stock.ts";
 import { drawnNumbers, freshNumber } from "../../lib/references.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 export interface ReturnedPiece {
   readonly id: string;
@@ -88,8 +89,8 @@ export async function returnedPieces(db: D1Database): Promise<ReturnedPiece[]> {
 
 export type Settled =
   | { readonly ok: true }
-  | { readonly ok: false; readonly missing: true }
-  | { readonly ok: false; readonly state: true }
+  | Refusal<"not_found">
+  | Refusal<"claim_state">
   | { readonly ok: false; readonly outOfWarranty: true };
 
 /**
@@ -152,8 +153,8 @@ async function outcome(db: D1Database, id: string, token: string): Promise<Settl
     .prepare("SELECT settlement_id FROM piece_returns WHERE id = ?1")
     .bind(id)
     .first<{ settlement_id: string | null }>();
-  if (row === null) return { ok: false, missing: true };
-  return row.settlement_id === token ? { ok: true } : { ok: false, state: true };
+  if (row === null) return refusal("not_found");
+  return row.settlement_id === token ? { ok: true } : refusal("claim_state");
 }
 
 function pieceRow(db: D1Database, id: string): Promise<PieceRow | null> {
@@ -169,8 +170,8 @@ function pieceRow(db: D1Database, id: string): Promise<PieceRow | null> {
  */
 export async function claimReturn(db: D1Database, id: string, written: Written): Promise<Settled> {
   const row = await pieceRow(db, id);
-  if (row === null) return { ok: false, missing: true };
-  if (row.settled_at !== null || row.handed_in_at === null) return { ok: false, state: true };
+  if (row === null) return refusal("not_found");
+  if (row.settled_at !== null || row.handed_in_at === null) return refusal("claim_state");
   if (!pieceOf(row).inWarranty || row.receipt_line_id === null || row.unit_id === null) {
     return { ok: false, outOfWarranty: true };
   }
@@ -201,7 +202,7 @@ export async function writeOffReturn(
   written: Written,
 ): Promise<Settled> {
   const row = await pieceRow(db, id);
-  if (row === null) return { ok: false, missing: true };
+  if (row === null) return refusal("not_found");
   const token = crypto.randomUUID();
   const piece = { row, claimId: null, reason: writeOff.reason, photoId: writeOff.photoId };
   await db.batch(settlement(db, piece, { action: "piece_return.write_off", token }, written));

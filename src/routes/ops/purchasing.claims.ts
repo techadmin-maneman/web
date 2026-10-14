@@ -215,7 +215,7 @@ async function claimsAnswer(c: Context<AppEnv>) {
 }
 
 async function afterClaim(c: Context<AppEnv>, changed: ClaimChanged) {
-  if (!changed.ok) return "missing" in changed ? refuse(c, "not_found") : refuse(c, "claim_state");
+  if (!changed.ok) return refuse(c, changed.code);
   return c.json(await claimsAnswer(c), 200);
 }
 

@@ -9,6 +9,7 @@ import type { Place } from "./stock-places.ts";
 import type { Written } from "./stock.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
 import { read, readAll } from "../../lib/read-all.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 export interface Recall {
   readonly id: string;
@@ -141,14 +142,13 @@ export async function raiseRecall(
   input: { readonly lotId: string; readonly reason: string; readonly today: string },
   written: Written,
 ): Promise<
-  | { readonly ok: true; readonly id: string; readonly messageIds: readonly string[] }
-  | { readonly ok: false; readonly fields: string[] }
+  { readonly ok: true; readonly id: string; readonly messageIds: readonly string[] } | Refusal<"invalid_request">
 > {
   const lot = await db
     .prepare("SELECT recalled_at FROM stock_lots WHERE id = ?1")
     .bind(input.lotId)
     .first<{ recalled_at: string | null }>();
-  if (lot?.recalled_at !== null) return { ok: false, fields: ["lot_id"] };
+  if (lot?.recalled_at !== null) return refusal("invalid_request", ["lot_id"]);
   const id = crypto.randomUUID();
   const at = written.now.toISOString();
   await db.batch([

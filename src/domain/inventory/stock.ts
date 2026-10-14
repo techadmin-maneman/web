@@ -29,6 +29,7 @@ import { auditStatement, auditStatementIfWritten, type Written, opsEntry } from 
 import { lotMoves, receivedLotMoves, type ReceivedLot } from "./stock-lots.ts";
 import { placeById, WAREHOUSE, type Place, type PlaceKind } from "./stock-places.ts";
 import { hairSystemProduct, MAX_LABELLED, newUnits, takenFrom, unitChanges } from "./stock-units.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 /** Why a row moved stock: a delivery, a transfer, a job's use, a count's difference, or a loss. */
 export const MOVEMENT_REASONS = ["received", "transferred", "used", "counted", "written_off"] as const;
@@ -38,8 +39,7 @@ export type Reason = (typeof MOVEMENT_REASONS)[number];
 export type { Written };
 
 /** A movement written, or the fields refused. `lowered` names the places whose stock went down. */
-export type Moved =
-  { readonly ok: true; readonly lowered: readonly Place[] } | { readonly ok: false; readonly fields: string[] };
+export type Moved = { readonly ok: true; readonly lowered: readonly Place[] } | Refusal<"invalid_request">;
 
 /** One row of the ledger, ready to write. */
 export interface Movement {
@@ -197,12 +197,10 @@ export async function deliveryStatements(
   input: Delivered,
   written: Written,
   id: string,
-): Promise<
-  { readonly ok: true; readonly statements: D1PreparedStatement[] } | { readonly ok: false; readonly fields: string[] }
-> {
-  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+): Promise<{ readonly ok: true; readonly statements: D1PreparedStatement[] } | Refusal<"invalid_request">> {
+  if (!(await consumableExists(db, input.code))) return refusal("invalid_request", ["consumable_code"]);
   const product = await hairSystemProduct(db, input.code);
-  if (product !== null && input.quantity > MAX_LABELLED) return { ok: false, fields: ["quantity"] };
+  if (product !== null && input.quantity > MAX_LABELLED) return refusal("invalid_request", ["quantity"]);
   const lot = input.lot ?? { lotCode: null, expiresOn: null };
   const movement = { code: input.code, quantity: input.quantity, note: input.note };
   const received = await receivedLotMoves(
@@ -254,16 +252,16 @@ export interface Moving {
 
 /** Stock moved from one place to another: two rows, out of the one and into the other. */
 export async function transferStock(db: D1Database, input: Moving, written: Written): Promise<Moved> {
-  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  if (!(await consumableExists(db, input.code))) return refusal("invalid_request", ["consumable_code"]);
   const fromKind = await kindOf(db, input.from);
-  if (fromKind === null) return { ok: false, fields: ["from"] };
+  if (fromKind === null) return refusal("invalid_request", ["from"]);
   const toKind = input.from === input.to ? null : await kindOf(db, input.to);
-  if (toKind === null) return { ok: false, fields: ["to"] };
+  if (toKind === null) return refusal("invalid_request", ["to"]);
   const transferId = crypto.randomUUID();
   const [out, into] = [crypto.randomUUID(), crypto.randomUUID()];
   const moved = { code: input.code, reason: "transferred", transferId, note: null } as const;
   const taken = await takenFrom(db, { ...input, place: input.from, named: input.units ?? null });
-  if (taken === null) return { ok: false, fields: ["units"] };
+  if (taken === null) return refusal("invalid_request", ["units"]);
   const takes = taken.takes;
   const leaving = leavingCondition({ ...input, place: input.from, units: taken.units });
   const [left] = await db.batch([
@@ -297,7 +295,7 @@ export async function transferStock(db: D1Database, input: Moving, written: Writ
     }),
   ]);
   // More than the place holds, or a unit that left it since it was read.
-  if (left?.meta.changes === 0) return { ok: false, fields: ["quantity"] };
+  if (left?.meta.changes === 0) return refusal("invalid_request", ["quantity"]);
   return { ok: true, lowered: [input.from] };
 }
 
@@ -330,9 +328,9 @@ const COUNT_TRIES = 3;
  * The place is then read again, and the count worked out afresh.
  */
 export async function count(db: D1Database, input: Counted, written: Written): Promise<Moved> {
-  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  if (!(await consumableExists(db, input.code))) return refusal("invalid_request", ["consumable_code"]);
   const kind = await kindOf(db, input.place);
-  if (kind === null) return { ok: false, fields: ["place_id"] };
+  if (kind === null) return refusal("invalid_request", ["place_id"]);
   // The units not scanned go first, by name, so the count of the rest takes none of those that are there.
   const missing = input.missing ?? [];
   let lowered = false;
@@ -435,14 +433,15 @@ export async function writeOff(
   },
   written: Written,
 ): Promise<Moved> {
-  if (!(await consumableExists(db, input.code))) return { ok: false, fields: ["consumable_code"] };
+  if (!(await consumableExists(db, input.code))) return refusal("invalid_request", ["consumable_code"]);
   const kind = await kindOf(db, input.place);
-  if (kind === null) return { ok: false, fields: ["place_id"] };
+  if (kind === null) return refusal("invalid_request", ["place_id"]);
   const id = crypto.randomUUID();
   const taken = await takenFrom(db, { ...input, lotId: input.lotId ?? null, named: input.units ?? null });
-  if (taken === null) return { ok: false, fields: ["units"] };
+  if (taken === null) return refusal("invalid_request", ["units"]);
   const takes = taken.takes;
-  if (input.lotId !== undefined && input.lotId !== null && takes.length === 0) return { ok: false, fields: ["lot_id"] };
+  if (input.lotId !== undefined && input.lotId !== null && takes.length === 0)
+    return refusal("invalid_request", ["lot_id"]);
   const movement = {
     code: input.code,
     place: input.place,
@@ -469,7 +468,7 @@ export async function writeOff(
       ...unitWritten(written),
     }),
   ]);
-  if (left?.meta.changes === 0) return { ok: false, fields: ["quantity"] };
+  if (left?.meta.changes === 0) return refusal("invalid_request", ["quantity"]);
   return { ok: true, lowered: [input.place] };
 }
 
