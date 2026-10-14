@@ -22,6 +22,7 @@ import { RemediesPanel } from "./Remedies.tsx";
 import { Thread, whenOf, whoOf } from "./Thread.tsx";
 import styles from "../components/forms.module.css";
 import own from "./care.module.css";
+import { phoneWords } from "../lib/phone.ts";
 
 const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed", "all"];
 const COLUMNS = 7;
@@ -128,7 +129,7 @@ function ConversationRows(props: {
             ? (conversation.person?.name ?? copy.unknown)
             : copy.technicianName(conversation.technician.name)}
         </th>
-        <td className={own.number}>{conversation.mobile}</td>
+        <td className={own.number}>{phoneWords(conversation.mobile)}</td>
         <td>{carePersonOf(conversation)}</td>
         <td className={own.line}>{conversation.last_line ?? copy.noLine}</td>
         <td className={own.figure}>

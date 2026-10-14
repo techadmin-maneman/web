@@ -8,7 +8,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
-import { rupees } from "@maneman/web-kit/money";
+import { rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { api } from "../api.ts";
 import type { components } from "../api-schema.ts";
@@ -43,8 +43,8 @@ function statementCsv(lines: readonly Line[]): string {
       line.city ?? copy.noCity,
       technicianPay.kinds[line.kind],
       String(line.visits),
-      line.rate === null ? "" : String(line.rate / 100),
-      line.amount === null ? "" : String(line.amount / 100),
+      line.rate === null ? "" : rupeesTyped(line.rate),
+      line.amount === null ? "" : rupeesTyped(line.amount),
     ]),
   ]);
 }

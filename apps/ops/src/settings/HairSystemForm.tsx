@@ -4,7 +4,7 @@
 
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
-import { rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, client, type Consumables as Book } from "../api.ts";
 import { settings } from "../content/settings.ts";
@@ -147,7 +147,7 @@ const bodyOf = (draft: Draft) => ({
   colour: COLOURS.find((each) => each === draft.colour) ?? "1B",
   grey_percent: Number(draft.grey),
   density_percent: DENSITIES.find((each) => String(each) === draft.density) ?? 100,
-  unit_cost: Math.round(Number(draft.cost) * 100),
+  unit_cost: paiseFromRupees(draft.cost),
   reorder_kit: level(draft.kit),
   reorder_store: level(draft.store),
   reorder_central: level(draft.central),
@@ -159,7 +159,7 @@ function checkLines(draft: Draft, productName: string): string[] {
   return [
     copy.adding(
       `${productName} ${draft.width}x${draft.length} ${draft.colour}, ${draft.grey}% grey, ${draft.density}%`,
-      rupees(Math.round(Number(draft.cost) * 100)),
+      rupees(paiseFromRupees(draft.cost)),
     ),
     settings.consumables.levels({ kit: level(draft.kit), store: level(draft.store), central: level(draft.central) }),
   ];

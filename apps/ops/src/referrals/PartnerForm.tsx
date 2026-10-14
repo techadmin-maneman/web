@@ -3,7 +3,7 @@
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
-import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Partner, type Partners, type PartnerTerms } from "../api.ts";
 import { partners as copy } from "../content/partners.ts";
@@ -24,7 +24,7 @@ const draftOf = (partner: Partner | null): Draft => ({
   name: partner?.name ?? "",
   friendVisits: String(partner?.friend_visits ?? 2),
   validDays: String(partner?.valid_days ?? 365),
-  commission: partner === null ? "" : String(partner.commission / 100),
+  commission: partner === null ? "" : rupeesTyped(partner.commission),
   discountCode: partner?.discount_code ?? "",
 });
 

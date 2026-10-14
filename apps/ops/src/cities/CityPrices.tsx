@@ -5,7 +5,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { client } from "../api.ts";
 import { cities } from "../content.ts";
@@ -214,7 +214,7 @@ function PriceForm({ book, onSaved }: { book: CitiesBook; onSaved: () => void })
     steps.edit();
   };
   const ready = /^\d{1,7}$/.test(draft.amount.trim()) && /^\d{1,2}$/.test(draft.gst.trim()) && draft.from !== "";
-  const line = copy.adding(draft.city, copy.items[draft.item], rupees(Number(draft.amount) * 100), draft.from);
+  const line = copy.adding(draft.city, copy.items[draft.item], rupees(paiseFromRupees(draft.amount)), draft.from);
   return (
     <SettingForm
       title={copy.add}

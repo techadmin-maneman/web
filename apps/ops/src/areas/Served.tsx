@@ -19,7 +19,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { indiaDate } from "@maneman/web-kit/dates";
+import { todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
@@ -61,7 +61,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   const access = useAccess();
   const mayChange = access.mayCall("POST /api/service-area");
   const mayAdd = access.mayCall("POST /api/pincodes");
-  const today = indiaDate(new Date().toISOString());
+  const today = todayInIndia(Date.now());
 
   const inCity = pincodes.filter((each) => each.city === city);
   // Sorted and narrowed by what is saved, so a row stays put while its boxes are typed in.

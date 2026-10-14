@@ -10,6 +10,7 @@ import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { StockPhoto } from "./StockPhoto.tsx";
 import type { Claim } from "./types.ts";
+import { paiseFromRupees } from "@maneman/web-kit/money";
 
 export type ClaimAnswer = Awaited<ReturnType<typeof client.post<"/api/supplier-claims/{id}/send">>>;
 
@@ -130,7 +131,7 @@ function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAn
 function Sent({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAnswer, said: string) => void }) {
   const [credit, setCredit] = useState(wholeValue(claim));
   const [note, setNote] = useState("");
-  const amount = Math.round(Number(credit) * 100);
+  const amount = paiseFromRupees(credit);
   const decide = async (outcome: "credit" | "replacement" | "rejected") => {
     const said = note.trim();
     const body = { outcome, credit_amount: outcome === "credit" ? amount : null, note: said === "" ? null : said };

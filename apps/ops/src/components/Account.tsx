@@ -6,13 +6,12 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { shell } from "../content.ts";
 import { whoami } from "../lib/access.ts";
 import { forgetClients } from "../lib/client-search.ts";
-import { whoWords } from "../lib/who.ts";
+import { nameParts, whoWords } from "../lib/who.ts";
 import styles from "./shell.module.css";
 
 /** "aditya.kumar@maneman.in" reads "AK", and "ops@maneman.in" "OP", as the board's box holds two letters. */
 function initialsOf(who: string): string {
-  const name = who.split("@")[0] ?? who;
-  const [first = "", second = ""] = name.split(/[._-]+/).filter((part) => part !== "");
+  const [first = "", second = ""] = nameParts(who);
   const letters = second === "" ? first.slice(0, 2) : `${first.slice(0, 1)}${second.slice(0, 1)}`;
   return letters.toUpperCase();
 }

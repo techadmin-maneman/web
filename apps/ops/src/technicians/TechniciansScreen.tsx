@@ -16,7 +16,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { addDays, fullDate, indiaDate, listDate } from "@maneman/web-kit/dates";
+import { addDays, fullDate, listDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import {
   api,
@@ -106,7 +106,7 @@ function RosterTable({
   active: readonly Technician[];
   figures: ReadonlyMap<string, TechnicianWork>;
 }) {
-  const today = indiaDate(new Date().toISOString());
+  const today = todayInIndia(Date.now());
   const city = (row: Technician) => row.city ?? "";
   const [name, cityLabel, jobs, service, leave] = technicians.columns;
   const columns: readonly Column<Technician>[] = [

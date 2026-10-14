@@ -25,7 +25,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { type Loaded, useLoad } from "@maneman/ui/useLoad";
-import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, indiaDate, minutesBetween, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { api, type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
@@ -44,7 +44,7 @@ import styles from "./no-shows.module.css";
 type Choice = "charged" | "waived";
 
 /** India's date today, by this computer's clock. */
-const indiaToday = () => indiaDate(new Date().toISOString());
+const indiaToday = () => todayInIndia(Date.now());
 
 /** The card's heading, which names the day its figures are for, and the field that asks for another day. */
 function DayHead({ date, shown, onDay }: { date: string; shown: string; onDay: (date: string) => void }) {

@@ -15,7 +15,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Table } from "@maneman/ui/Table";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { indiaDate, listDate, yearInIndia } from "@maneman/web-kit/dates";
+import { indiaDate, listDate, todayInIndia, yearInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { api, type Area, type Launch, type ServedPincode } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
@@ -232,7 +232,7 @@ export function Waiting() {
   /** An error code from asking what a launch would send, before there is a panel to hold it. */
   const [refused, setRefused] = useState<string | null>(null);
   const thisYear = yearInIndia(Date.now());
-  const today = indiaDate(new Date().toISOString());
+  const today = todayInIndia(Date.now());
   const [launchOn, setLaunchOn] = useState(today);
   const access = useAccess();
   const mayLaunch = access.mayCall("POST /api/pincodes/{pin}/launch");

@@ -57,6 +57,7 @@ import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./secti
 import { subOf } from "./task-subs.ts";
 import { TaskActions } from "./TaskActions.tsx";
 import styles from "./tasks.module.css";
+import { nameParts } from "../lib/who.ts";
 
 type Group = TaskGroup["group"];
 
@@ -73,7 +74,7 @@ function unnamedSubject(group: Group, task: Task): string {
 
 /** "priya.sharma@maneman.in" reads "Priya", as the board names an owner in ops by their first name. */
 function ownerName(email: string): string {
-  const [first = email] = (email.split("@")[0] ?? email).split(/[._-]+/);
+  const [first = email] = nameParts(email);
   return first.charAt(0).toUpperCase() + first.slice(1);
 }
 

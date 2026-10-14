@@ -11,6 +11,7 @@ import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { clients } from "../content.ts";
 import { customOrders as copy } from "../content/custom-orders.ts";
+import { paiseFromRupees } from "@maneman/web-kit/money";
 
 export type CustomOrdersBook =
   paths["/api/clients/{id}/custom-orders"]["get"]["responses"][200]["content"]["application/json"];
@@ -18,7 +19,7 @@ export type CustomOrdersBook =
 const WAVES = ["straight", "slight_wave", "wavy", "curly"] as const;
 
 /** A figure typed in a currency's main unit, in its smallest: "150.50" is 15050. */
-const smallest = (typed: string) => Math.round(Number(typed) * 100);
+const smallest = paiseFromRupees;
 
 interface Draft {
   supplierId: string;

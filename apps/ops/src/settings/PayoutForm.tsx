@@ -4,7 +4,7 @@
 
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { shortDate } from "@maneman/web-kit/dates";
-import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type PartnerStatement, type PartnerStatements } from "../api.ts";
 import { partnerCommission } from "../content/partner-commission.ts";
@@ -79,7 +79,7 @@ export function PayoutForm(props: {
 }) {
   const { statement, month } = props;
   const [draft, setDraft] = useState<Draft>({
-    amount: String(Math.max(statement.due, 0) / 100),
+    amount: rupeesTyped(Math.max(statement.due, 0)),
     paidOn: props.today,
     reference: "",
   });

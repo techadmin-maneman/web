@@ -8,7 +8,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { addDays, longDate } from "@maneman/web-kit/dates";
-import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceBook } from "../api.ts";
 import { settings } from "../content/settings.ts";
@@ -59,7 +59,7 @@ export function PriceForm(props: {
   const { target, correcting, today } = props;
   const inForce = target.prices.find((price) => price.in_force);
   const start = correcting ?? inForce;
-  const [rupeesTyped, setRupees] = useState(start === undefined ? "" : String(start.amount_ex_gst / 100));
+  const [typedRupees, setRupees] = useState(start === undefined ? "" : rupeesTyped(start.amount_ex_gst));
   const [gst, setGst] = useState(start === undefined ? "" : String(start.gst_percent));
   const firstDay = addDays(today, 1);
   const [from, setFrom] = useState(correcting?.valid_from ?? firstDay);
@@ -67,7 +67,7 @@ export function PriceForm(props: {
   const change = {
     item: target.item,
     tier: target.tier,
-    amount_ex_gst: paiseFromRupees(rupeesTyped),
+    amount_ex_gst: paiseFromRupees(typedRupees),
     gst_percent: Number(gst),
     valid_from: from,
   };
@@ -80,7 +80,7 @@ export function PriceForm(props: {
   }, props.onDone);
   // A day typed before tomorrow, which the date picker's min alone does not stop.
   const tooSoon = from !== "" && from < firstDay;
-  const ready = rupeesTyped.trim() !== "" && gst.trim() !== "" && from !== "" && !tooSoon;
+  const ready = typedRupees.trim() !== "" && gst.trim() !== "" && from !== "" && !tooSoon;
   const was = correcting ?? inForce;
   const sameDay = target.prices.some(
     (price) => price.valid_from === change.valid_from && price.valid_from !== correcting?.valid_from,
@@ -135,7 +135,7 @@ export function PriceForm(props: {
               step={1}
               min={0}
               max={props.maxAmount / 100}
-              value={rupeesTyped}
+              value={typedRupees}
               onChange={(event) => {
                 setRupees(event.target.value);
                 steps.edit();

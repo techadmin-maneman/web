@@ -8,7 +8,7 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import type { Sent as Body, Success } from "@maneman/web-kit/api";
 import { shortDate } from "@maneman/web-kit/dates";
-import { paiseFromRupees, rupeeFigure } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupeeFigure, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
@@ -29,7 +29,7 @@ const loadCosts = () => client.get("/api/standard-costs");
 
 function CostRow(props: { product: Product; mayChange: boolean; onSaved: (products: Product[]) => void }) {
   const { product } = props;
-  const [typed, setTyped] = useState(product.cost === null ? "" : String(product.cost / 100));
+  const [typed, setTyped] = useState(product.cost === null ? "" : rupeesTyped(product.cost));
   const label = `${copy.kinds[product.item]} · ${product.name}`;
   const standing = product.cost === null ? copy.notSet : rupeeFigure(product.cost);
   const steps = useSteps(

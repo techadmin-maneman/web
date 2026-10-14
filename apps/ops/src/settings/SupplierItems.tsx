@@ -6,7 +6,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
-import { inCurrency } from "@maneman/web-kit/money";
+import { inCurrency, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { client } from "../api.ts";
 import { settings } from "../content/settings.ts";
@@ -131,7 +131,7 @@ function ItemForm({
   const body = {
     consumable_code: draft.code,
     their_code: draft.theirCode.trim() === "" ? null : draft.theirCode.trim(),
-    unit_price: Math.round(Number(draft.price) * 100),
+    unit_price: paiseFromRupees(draft.price),
     pack_size: Number(draft.pack),
     minimum_order: Number(draft.minimum),
     lead_time_days: Number(draft.lead),
