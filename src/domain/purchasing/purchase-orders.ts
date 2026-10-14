@@ -118,7 +118,7 @@ export async function purchaseOrders(db: D1Database): Promise<PurchaseOrder[]> {
 }
 
 /** One order with its lines; null for none. */
-export async function purchaseOrder(db: D1Database, id: string): Promise<PurchaseOrder | null> {
+async function purchaseOrder(db: D1Database, id: string): Promise<PurchaseOrder | null> {
   const row = await db.prepare(`SELECT ${ORDER_COLUMNS} FROM purchase_orders WHERE id = ?1`).bind(id).first<OrderRow>();
   return row === null ? null : ((await withLines(db, [row]))[0] ?? null);
 }
