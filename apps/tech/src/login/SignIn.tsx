@@ -5,6 +5,7 @@
 
 import { useOtpChallenge } from "@maneman/ui/useOtpChallenge";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Field } from "@maneman/ui/Field";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { CodeField } from "@maneman/ui/CodeField";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
@@ -12,7 +13,7 @@ import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { fieldDigits, mobileDigits } from "@maneman/web-kit/mobile";
 import { apiNow } from "@maneman/web-kit/clock";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import { flushSync } from "react-dom";
 import { api, type Challenge } from "../api.ts";
 import { session, signIn as copy } from "../content.ts";
@@ -69,6 +70,30 @@ function Again(props: { resendIn: number; busy: boolean; onChangeNumber: () => v
       >
         {props.resendIn > 0 ? copy.resendIn(props.resendIn) : copy.resend}
       </Button>
+    </div>
+  );
+}
+
+/** The code's six boxes, open once a code is out; the sixth digit sends it. */
+function CodeStep(props: {
+  boxes: Ref<HTMLInputElement>;
+  code: string;
+  open: boolean;
+  onCode: (code: string) => void;
+  onComplete: (code: string) => void;
+}) {
+  return (
+    <div className={styles.codeBlock}>
+      <div className={styles.label}>{copy.codeLabel}</div>
+      <CodeField
+        ref={props.boxes}
+        className={styles.code}
+        value={props.code}
+        label={copy.codeLabel}
+        disabled={!props.open}
+        onChange={props.onCode}
+        onComplete={props.onComplete}
+      />
     </div>
   );
 }
@@ -157,39 +182,38 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       <Mark className={styles.mark} />
       <h1 className={styles.title}>{copy.title}</h1>
 
-      <MobileInput
-        onInk
-        ref={number}
-        className={styles.mobile}
-        prefix={copy.prefix}
-        value={mobile}
-        onChange={(event) => {
-          setMobile(fieldDigits(event.target.value));
-          setError(null);
-          setLeft(false);
-        }}
-        onBlur={() => {
-          setLeft(true);
-        }}
-        placeholder={copy.mobilePlaceholder}
-        aria-label={copy.mobileLabel}
-        disabled={challenge !== null}
-      />
+      <Field onInk labelHidden label={copy.mobileLabel}>
+        {(control) => (
+          <MobileInput
+            {...control}
+            onInk
+            ref={number}
+            className={styles.mobile}
+            prefix={copy.prefix}
+            value={mobile}
+            onChange={(event) => {
+              setMobile(fieldDigits(event.target.value));
+              setError(null);
+              setLeft(false);
+            }}
+            onBlur={() => {
+              setLeft(true);
+            }}
+            placeholder={copy.mobilePlaceholder}
+            disabled={challenge !== null}
+          />
+        )}
+      </Field>
 
-      <div className={styles.codeBlock}>
-        <div className={styles.label}>{copy.codeLabel}</div>
-        <CodeField
-          ref={codeBoxes}
-          className={styles.code}
-          value={code}
-          label={copy.codeLabel}
-          disabled={challenge === null}
-          onChange={setCode}
-          onComplete={(typed) => {
-            if (!working) void verify(typed);
-          }}
-        />
-      </div>
+      <CodeStep
+        boxes={codeBoxes}
+        code={code}
+        open={challenge !== null}
+        onCode={setCode}
+        onComplete={(typed) => {
+          if (!working) void verify(typed);
+        }}
+      />
 
       {challenge !== null && (
         <Again

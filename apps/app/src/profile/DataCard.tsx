@@ -2,7 +2,6 @@
 // (docs/decisions/0049-dpdp.md).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Field, TextArea } from "@maneman/ui/Field";
 import { capsLook } from "@maneman/ui/Caps";
 import { GRIEVANCE_MAX_CHARS } from "@rules/policy/grievances.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
@@ -12,6 +11,7 @@ import { useState, type ReactNode } from "react";
 import { api, EXPORT_URL, type Profile } from "../api.ts";
 import { profile } from "../content.ts";
 import styles from "./profile.module.css";
+import { WordsField } from "../components/WordsField.tsx";
 
 type Grievance = Profile["grievances"][number];
 
@@ -42,20 +42,13 @@ function sendProblem(code: string): "limited" | "failed" {
 /** What the client writes to us: a grievance, up to the most it may be. */
 function GrievanceField({ text, onText }: { text: string; onText: (text: string) => void }) {
   return (
-    <Field className={styles.formField} label={profile.data.field}>
-      {(control) => (
-        <TextArea
-          {...control}
-          rows={4}
-          maxLength={GRIEVANCE_MAX_CHARS}
-          required
-          value={text}
-          onChange={(event) => {
-            onText(event.target.value);
-          }}
-        />
-      )}
-    </Field>
+    <WordsField
+      className={styles.formField}
+      label={profile.data.field}
+      text={text}
+      max={GRIEVANCE_MAX_CHARS}
+      onText={onText}
+    />
   );
 }
 

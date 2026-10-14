@@ -86,6 +86,8 @@ export const profile = {
     body: "We’ll send a code to both numbers, then confirm with you.",
     prefix: "+91",
     placeholder: "New number",
+    /** The box's name to a screen reader, which the board draws without a label. */
+    newNumber: "New mobile number",
     start: "Start the change",
     // Our words from here: the design draws the start only.
     invalid: "Enter a ten-digit mobile number, not the one you use now.",

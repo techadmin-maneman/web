@@ -1,7 +1,8 @@
 // The account's change of mobile number: both numbers proved by a code each, then ops decide. The design
 // draws the card's first state; the ones after it are written in the same card, with placeholder words.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { InlineMessage, messageLook } from "@maneman/ui/InlineMessage";
+import { Field } from "@maneman/ui/Field";
 import { TextButton } from "@maneman/ui/TextLink";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { capsLook } from "@maneman/ui/Caps";
@@ -154,23 +155,26 @@ function StartChange({
     >
       {decided !== null && <Decided decided={decided} />}
       <p className={styles.cardBody}>{copy.body}</p>
-      <MobileInput
-        className={styles.numberField}
-        prefix={copy.prefix}
-        placeholder={copy.placeholder}
-        aria-label={copy.placeholder}
-        aria-invalid={problem !== null}
-        aria-describedby={problem === null ? undefined : "new-number-error"}
-        value={typed}
-        onChange={(event) => {
-          onTyped(event.target.value);
-        }}
-      />
-      {problem !== null && (
-        <InlineMessage tone="error" className={styles.error} id="new-number-error">
-          {problem}
-        </InlineMessage>
-      )}
+      <Field
+        labelHidden
+        announce
+        label={copy.newNumber}
+        error={problem}
+        look={{ error: messageLook({ tone: "error", className: styles.error }) }}
+      >
+        {(control) => (
+          <MobileInput
+            {...control}
+            className={styles.numberField}
+            prefix={copy.prefix}
+            placeholder={copy.placeholder}
+            value={typed}
+            onChange={(event) => {
+              onTyped(event.target.value);
+            }}
+          />
+        )}
+      </Field>
       <Button variant="primary" size="control" className={styles.primary} type="submit" disabled={busy}>
         {copy.start}
       </Button>

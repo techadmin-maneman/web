@@ -159,6 +159,11 @@ export const states = {
   },
 } as const;
 
+/** A box with a limit, said beneath it: how much is left. */
+export const fields = {
+  left: (count: number) => (count === 1 ? "1 character left" : `${String(count)} characters left`),
+} as const;
+
 export const errors = {
   // The design draws no error for the profile.
   load: "We couldn’t load this. Try again.",

@@ -43,11 +43,21 @@ function describedBy(hint: string | null, error: string | null): string | undefi
   return ids.length === 0 ? undefined : ids.join(" ");
 }
 
+/** A screen's own classes for a field's words, added to its own: the apps' boards draw their labels their way. */
+export interface FieldLook {
+  readonly label?: string | undefined;
+  readonly hint?: string | undefined;
+  readonly error?: string | undefined;
+}
+
 export function Field({
   label,
   hint,
   error,
   onInk = false,
+  labelHidden = false,
+  announce = false,
+  look,
   className,
   children,
 }: {
@@ -57,6 +67,11 @@ export function Field({
   readonly error?: ReactNode;
   /** On the ink, as every technician app screen is: its words in the ink's own muted tone. */
   readonly onInk?: boolean;
+  /** Read to a screen reader and not shown, where the board draws the box alone. */
+  readonly labelHidden?: boolean;
+  /** The error said the moment it comes, for one that answers a tap rather than what is typed. */
+  readonly announce?: boolean;
+  readonly look?: FieldLook;
   /** The field's place on its screen. */
   readonly className?: string | undefined;
   readonly children: (control: FieldControl) => ReactNode;
@@ -64,23 +79,26 @@ export function Field({
   const id = useId();
   const hintId = hint === undefined ? null : `${id}-hint`;
   const errorId = error === undefined || error === null ? null : `${id}-error`;
+  const words = (
+    <label className={classes(styles.label, look?.label)} htmlFor={id}>
+      {label}
+    </label>
+  );
   return (
     <div className={classes(onInk && styles.inkWords, className)}>
-      <label className={styles.label} htmlFor={id}>
-        {label}
-      </label>
+      {labelHidden ? <VisuallyHidden>{words}</VisuallyHidden> : words}
       {children({
         id,
         "aria-describedby": describedBy(hintId, errorId),
         "aria-invalid": errorId === null ? undefined : true,
       })}
       {hintId !== null && (
-        <p className={styles.hint} id={hintId}>
+        <p className={classes(styles.hint, look?.hint)} id={hintId}>
           {hint}
         </p>
       )}
       {errorId !== null && (
-        <p className={styles.error} id={errorId}>
+        <p className={classes(styles.error, look?.error)} id={errorId} role={announce ? "alert" : undefined}>
           {error}
         </p>
       )}

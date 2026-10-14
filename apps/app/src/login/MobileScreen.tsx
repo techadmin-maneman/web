@@ -1,6 +1,7 @@
 // The mobile number (design/phase2/Client App).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { messageLook } from "@maneman/ui/InlineMessage";
+import { Field } from "@maneman/ui/Field";
 import { MobileInput } from "@maneman/ui/MobileInput";
 import { classes } from "@maneman/ui/classes";
 import { Button } from "@maneman/ui/Button";
@@ -52,24 +53,28 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
             if (digits !== null) onSubmit(digits);
           }}
         >
-          <MobileInput
+          <Field
             onInk
-            className={styles.field}
-            prefix={copy.prefix}
-            name="mobile"
-            aria-label={copy.label}
-            aria-invalid={shown !== null}
-            aria-describedby={shown === null ? undefined : "mobile-error"}
-            value={typed}
-            onChange={(event) => {
-              setTyped(event.target.value);
-            }}
-          />
-          {shown !== null && (
-            <InlineMessage tone="error" ground="ink" className={styles.error} id="mobile-error">
-              {shown}
-            </InlineMessage>
-          )}
+            labelHidden
+            announce
+            label={copy.label}
+            error={shown}
+            look={{ error: messageLook({ tone: "error", ground: "ink", className: styles.error }) }}
+          >
+            {(control) => (
+              <MobileInput
+                {...control}
+                onInk
+                className={styles.field}
+                prefix={copy.prefix}
+                name="mobile"
+                value={typed}
+                onChange={(event) => {
+                  setTyped(event.target.value);
+                }}
+              />
+            )}
+          </Field>
           {!invalid && error === "rate_limited" && <MessageUs />}
           <div ref={turnstileBox} className={styles.turnstile} />
           <div className={styles.foot}>

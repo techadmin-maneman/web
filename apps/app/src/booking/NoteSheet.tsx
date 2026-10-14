@@ -4,7 +4,6 @@
 // Should the app be told booking is with ops after all, the note goes to them on WhatsApp, as it did before.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { Field, TextArea } from "@maneman/ui/Field";
 import { CLIENT_NOTE_MAX_CHARS } from "@rules/policy/client-notes.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
@@ -15,6 +14,7 @@ import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import styles from "./booking.module.css";
+import { WordsField } from "../components/WordsField.tsx";
 
 type Step =
   | { readonly kind: "writing" }
@@ -70,20 +70,13 @@ export function NoteSheet(props: {
             <h2 className={styles.changeTitle} id="note-title">
               {props.initial === null ? copy.title(props.technician) : copy.yours(props.technician)}
             </h2>
-            <Field className={styles.noteField} label={copy.label}>
-              {(control) => (
-                <TextArea
-                  {...control}
-                  rows={4}
-                  maxLength={CLIENT_NOTE_MAX_CHARS}
-                  required
-                  value={text}
-                  onChange={(event) => {
-                    setText(event.target.value);
-                  }}
-                />
-              )}
-            </Field>
+            <WordsField
+              className={styles.noteField}
+              label={copy.label}
+              text={text}
+              max={CLIENT_NOTE_MAX_CHARS}
+              onText={setText}
+            />
             {offline && (
               <p className={styles.offlineLine} role="status">
                 {copy.offline}

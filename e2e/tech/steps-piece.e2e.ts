@@ -197,8 +197,8 @@ test.describe("the piece (board B3, step 4)", () => {
     await expect(page.getByRole("alert").filter({ hasText: techCopy.steps.piece.notThisClient })).toBeVisible();
     await expect(page.getByRole("button", { name: techCopy.steps.piece.notThisClientAction })).toBeDisabled();
     // The other piece's base and lot stay off this job.
-    await expect(page.locator("#piece-base")).toHaveValue("");
-    await expect(page.locator("#piece-lot")).toHaveValue("");
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.base, exact: true })).toHaveValue("");
+    await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot, exact: true })).toHaveValue("");
   });
 
   test("picks the piece from the client's list, and sends its base, its lot and the piece that came off", async ({

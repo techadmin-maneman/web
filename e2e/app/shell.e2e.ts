@@ -222,7 +222,7 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
   const off = page.getByRole("switch", { checked: false }).first();
   await expect(off).toBeVisible();
   expect(contrast(rgbOf(await style(off, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
-  const field = page.getByRole("textbox", { name: appCopy.profile.change.placeholder }).locator("..");
+  const field = page.getByRole("textbox", { name: appCopy.profile.change.newNumber }).locator("..");
   expect(contrast(rgbOf(await style(field, "border-top-color")), paper)).toBeGreaterThanOrEqual(3);
   expect(contrast(rgbOf(await style(field, "border-top-color")), rgbOf("rgb(255, 255, 255)"))).toBeGreaterThanOrEqual(
     3,

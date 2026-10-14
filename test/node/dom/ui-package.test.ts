@@ -180,3 +180,20 @@ function filesUnder(directory: string): string[] {
     return entry.isDirectory() ? filesUnder(path) : [path];
   });
 }
+
+// The client and technician apps draw every box inside the shared Field, which ties its label, hint and error to it;
+// a box named or described by hand is how the two apps' boxes came to read differently to a screen reader. The console
+// labels a box in a table row by its column instead (packages/ui/Field.tsx, Label).
+describe.each(["apps/app", "apps/tech"] as const)("%s's boxes", (app) => {
+  const screens = filesUnder(`${app}/src`).filter((path) => path.endsWith(".tsx"));
+
+  it("are each drawn inside the shared Field", () => {
+    const bare = screens.flatMap((path) => {
+      const text = read(path);
+      return [...text.matchAll(/<(TextInput|TextArea|MobileInput|NumberInput|DateInput|Select)\b/g)]
+        .filter((match) => !text.slice(match.index, match.index + 160).includes("{...control}"))
+        .map((match) => `${path}:${String(text.slice(0, match.index).split("\n").length)}`);
+    });
+    expect(bare).toEqual([]);
+  });
+});

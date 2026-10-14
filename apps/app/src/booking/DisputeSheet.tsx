@@ -3,7 +3,6 @@
 // ours, in the note sheet's frame, with placeholder words (docs/fidelity-method.md).
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { Field, TextArea } from "@maneman/ui/Field";
 import { DISPUTE_REASON_MAX_CHARS } from "@rules/policy/no-show.ts";
 import { Button } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
@@ -12,6 +11,7 @@ import { api } from "../api.ts";
 import { booking, dispute as copy } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import styles from "./booking.module.css";
+import { WordsField } from "../components/WordsField.tsx";
 
 type Step = "writing" | "sent" | "already" | "closed" | "failed";
 
@@ -59,20 +59,13 @@ export function DisputeSheet(props: { visitId: string; onClose: (disputed: boole
             <h2 className={styles.changeTitle} id="dispute-title">
               {copy.title}
             </h2>
-            <Field className={styles.noteField} label={copy.label}>
-              {(control) => (
-                <TextArea
-                  {...control}
-                  rows={4}
-                  maxLength={DISPUTE_REASON_MAX_CHARS}
-                  required
-                  value={text}
-                  onChange={(event) => {
-                    setText(event.target.value);
-                  }}
-                />
-              )}
-            </Field>
+            <WordsField
+              className={styles.noteField}
+              label={copy.label}
+              text={text}
+              max={DISPUTE_REASON_MAX_CHARS}
+              onText={setText}
+            />
             <Button
               variant="primary"
               size="action"

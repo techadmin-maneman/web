@@ -2,7 +2,6 @@
 // WhatsApp, where the client's photographs go too. No board draws it, so the sheet is ours, in the note sheet's frame.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { Field, TextArea } from "@maneman/ui/Field";
 import { PROBLEM_MAX_CHARS } from "@rules/policy/problems.ts";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Sheet, SheetClose, SheetPanel } from "@maneman/ui/Sheet";
@@ -13,6 +12,7 @@ import { api } from "../api.ts";
 import { booking, problem as copy } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import styles from "./booking.module.css";
+import { WordsField } from "../components/WordsField.tsx";
 
 type Step = "writing" | "sent" | "limited" | "failed";
 
@@ -79,20 +79,13 @@ function ProblemSheet({ about, onClose }: { about: About; onClose: () => void })
             <h2 className={styles.changeTitle} id="problem-title">
               {copy.title[about.about]}
             </h2>
-            <Field className={styles.noteField} label={copy.label}>
-              {(control) => (
-                <TextArea
-                  {...control}
-                  rows={4}
-                  maxLength={PROBLEM_MAX_CHARS}
-                  required
-                  value={text}
-                  onChange={(event) => {
-                    setText(event.target.value);
-                  }}
-                />
-              )}
-            </Field>
+            <WordsField
+              className={styles.noteField}
+              label={copy.label}
+              text={text}
+              max={PROBLEM_MAX_CHARS}
+              onText={setText}
+            />
             <Button
               variant="primary"
               size="action"

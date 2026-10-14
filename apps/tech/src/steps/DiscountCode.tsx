@@ -3,7 +3,7 @@
 // board draws it. It is asked of the API at once, not queued in the outbox: the technician must hear whether it
 // applies while the client is there. No amount is shown: none reaches the phone, and the link carries it.
 
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api } from "../api.ts";
@@ -44,22 +44,23 @@ export function DiscountCode({ jobId, onChecking }: { jobId: string; onChecking:
 
   return (
     <div className={styles.field}>
-      <Label onInk className={styles.fieldLabel} htmlFor="discount-code">
-        {copy.label}
-      </Label>
-      <TextInput
-        onInk
-        className={styles.box64}
-        id="discount-code"
-        value={typed}
-        autoCapitalize="characters"
-        autoComplete="off"
-        spellCheck={false}
-        onChange={(event) => {
-          setTyped(event.target.value);
-          setProblem(null);
-        }}
-      />
+      <Field onInk announce label={copy.label} error={problem} look={{ label: styles.fieldLabel, error: styles.hint }}>
+        {(control) => (
+          <TextInput
+            {...control}
+            onInk
+            className={styles.box64}
+            value={typed}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => {
+              setTyped(event.target.value);
+              setProblem(null);
+            }}
+          />
+        )}
+      </Field>
       <Button
         variant="outlineOnInk"
         size="control"
@@ -70,11 +71,6 @@ export function DiscountCode({ jobId, onChecking }: { jobId: string; onChecking:
       >
         {checking ? copy.applying : copy.apply}
       </Button>
-      {problem !== null && (
-        <p className={styles.hint} role="alert">
-          {problem}
-        </p>
-      )}
     </div>
   );
 }
