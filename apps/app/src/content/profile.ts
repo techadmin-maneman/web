@@ -125,9 +125,16 @@ export const profile = {
   support: {
     label: "Support",
     message: "Message us on WhatsApp",
-    hint: "Replies the same day. Everything in writing.",
-    /** Their named Care person and Care's hours: "Asha, your Care person · 9 am–9 pm daily". */
-    carePerson: (name: string, hours: string) => `${name}, your Care person · ${hours} daily`,
+    /** "We reply within an hour, 9 am–9 pm daily." */
+    hint: (within: string, hours: string) => `We reply within ${within}, ${hours} daily.`,
+    /** How soon Care answer, as the card says it: "an hour", "2 hours", "30 minutes". */
+    within: (minutes: number) => {
+      if (minutes === 60) return "an hour";
+      if (minutes % 60 === 0) return `${String(minutes / 60)} hours`;
+      return `${String(minutes)} minutes`;
+    },
+    /** Their named Care person: "Asha, your Care person". */
+    carePerson: (name: string) => `${name}, your Care person`,
     /** "9 am–9 pm" */
     hours: (opens: string, closes: string) => `${opens}–${closes}`,
     /** An hour of the day as the card says it: "9 am", "noon", "9 pm". */

@@ -3508,11 +3508,16 @@ Request body:
         },
         "closes": {
           "type": "integer"
+        },
+        "first_reply": {
+          "type": "integer",
+          "description": "Minutes a message in those hours is answered within."
         }
       },
       "required": [
         "opens",
-        "closes"
+        "closes",
+        "first_reply"
       ],
       "additionalProperties": false,
       "description": "The hours Customer Care are on every day, India's clock, as ops set them (ADR 0132)."

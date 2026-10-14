@@ -5415,6 +5415,6 @@
     "surface": "message",
     "group": "Messages",
     "where": "care_after_hours_v1",
-    "text": "Thank you for your message.\nOur team is back at {{1}} and will reply by {{2}}."
+    "text": "Thank you for your message.\nWe're back at {{1}} and will reply by {{2}}."
   }
 ]

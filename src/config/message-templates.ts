@@ -172,7 +172,8 @@ export const TEMPLATES = {
   messages_stopped_v1: "Done, {{1}}. We won't message you here about your visits, or when we come to a new area.",
   // The answer to a message sent outside Customer Care's hours (src/domain/care/after-hours.ts): {{1}} when Care open,
   // {{2}} when the message is answered by.
-  care_after_hours_v1: "Thank you for your message.\nOur team is back at {{1}} and will reply by {{2}}.",
+  // {{1}} when Care are back: "9 am tomorrow", or "9 am" to a message written after midnight.
+  care_after_hours_v1: "Thank you for your message.\nWe're back at {{1}} and will reply by {{2}}.",
 } as const satisfies Readonly<Record<string, string>>;
 
 /** A template's name: a misspelt one is a type error, never a message that does not go. */

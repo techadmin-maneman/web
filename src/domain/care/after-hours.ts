@@ -4,6 +4,7 @@
 
 import { renderMessage } from "../../config/message-templates.ts";
 import type { MessagingSettings } from "../../config/settings.ts";
+import { indiaHour } from "../../lib/india-time.ts";
 import { careIsOn, lastClosed, type CareHours } from "../../policy/care-hours.ts";
 import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
 import type { MessagingProvider } from "../../providers/messaging/index.ts";
@@ -19,6 +20,12 @@ function hourWords(hour: number): string {
   if (hour === 0) return "midnight";
   if (hour === 12) return "noon";
   return hour < 12 ? `${String(hour)} am` : `${String(hour - 12)} pm`;
+}
+
+/** When Care are back, as the message says it: "9 am tomorrow", or "9 am" before they open on the same day. */
+function backWords(at: Date, hours: CareHours): string {
+  const sameDay = Number(indiaHour(at).slice(11, 13)) < hours.opens;
+  return sameDay ? hourWords(hours.opens) : `${hourWords(hours.opens)} tomorrow`;
 }
 
 /**
@@ -45,7 +52,7 @@ export async function answerAfterHours(
   if (thread === null || (thread.last_answered ?? "") >= lastClosed(at, hours).toISOString()) return "none";
   if (isMessageHeldBack(settings, { automatic: true, testRecord: thread.test_record === 1, mobileE164 })) return "none";
   const wording = await messageWording(db, TEMPLATE, false);
-  const text = renderMessage(TEMPLATE, [hourWords(hours.opens), hourWords(hours.answered_by)], wording?.text) ?? "";
+  const text = renderMessage(TEMPLATE, [backWords(at, hours), hourWords(hours.answered_by)], wording?.text) ?? "";
   const result = await messaging.reply(mobileE164, text);
   const sentAt = at.toISOString();
   await db.batch([

@@ -34,7 +34,11 @@ const ProfileSchema = z
       description: "The first name of the client's Care person (ADR 0136); null until they have one with a name.",
     }),
     care_hours: z
-      .object({ opens: z.number().int(), closes: z.number().int() })
+      .object({
+        opens: z.number().int(),
+        closes: z.number().int(),
+        first_reply: z.number().int().openapi({ description: "Minutes a message in those hours is answered within." }),
+      })
       .strict()
       .openapi({ description: "The hours Customer Care are on every day, India's clock, as ops set them (ADR 0132)." }),
     // A union, not .nullable(): that would make the Address component itself nullable, request bodies and all.
@@ -166,7 +170,11 @@ export function registerClientProfile(app: App): void {
         name: person.name,
         mobile: maskedMobile(person.mobileE164),
         care_person: carePerson,
-        care_hours: { opens: inputs.careHours.opens, closes: inputs.careHours.closes },
+        care_hours: {
+          opens: inputs.careHours.opens,
+          closes: inputs.careHours.closes,
+          first_reply: inputs.careHours.first_reply,
+        },
         address:
           address === null
             ? null

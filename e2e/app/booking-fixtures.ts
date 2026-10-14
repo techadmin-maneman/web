@@ -105,7 +105,7 @@ export function profileOf({ reminders = false, undecided = [], address = true }:
   const answer = { name: "Rohit Malhotra", mobile: "+91 98xxx x4417", consents };
   const rest = {
     care_person: null,
-    care_hours: { opens: 9, closes: 21 },
+    care_hours: { opens: 9, closes: 21, first_reply: 60 },
     address_given_to_ops: null,
     number_change: null,
     number_change_decided: null,

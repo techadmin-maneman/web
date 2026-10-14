@@ -3481,6 +3481,8 @@ export interface components {
             care_hours: {
                 opens: number;
                 closes: number;
+                /** @description Minutes a message in those hours is answered within. */
+                first_reply: number;
             };
             address: components["schemas"]["Address"] | null;
             /** @description When the client gave this address to ops on the phone, who saved it for them; null for one they saved themselves. */
