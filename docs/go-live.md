@@ -63,6 +63,8 @@ The owner's ruling of 13 October 2026: from Phase 3 of the fourth audit on, main
 3. **The release** through `deploy-production.yml`, then `npm run apply-triggers -- --env production`, which attaches the cron and creates the Workflows, and `check-triggers.ts production --strict`.
 4. **The smoke suite** against production, and the placeholder still at `https://maneman.in/`.
 
+The release is refused while the API's copy holds a mark on a surface production shows (`scripts/release/check-copy.ts`): the job sheet's placeholders, which ops' own lists in Settings › Job sheet replace (open point 28), hold it back from the release that switches the client or technician app on.
+
 ## 2. Proofs on staging
 
 Each is written up in `docs/verification.md` when it passes. The payment run is what item 8 waits on before self-serve booking goes on in production.
