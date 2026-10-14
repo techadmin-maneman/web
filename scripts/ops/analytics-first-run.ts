@@ -46,7 +46,7 @@ INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, win
          ('f1', 'f1', 'p1', 'first_fit', 'completed', '${days(-45)}', '${days(-45)}', 't1', 'Gurgaon', '122018', '${at}'),
          ('s1', 's1', 'p1', 'service', 'scheduled', '${days(3)}', '${days(3)}', 't1', 'Gurgaon', '122018', '${at}'),
          ('c2', 'c2', 'p2', 'consultation', 'completed', '${days(-35)}', '${days(-35)}', 't1', 'Gurgaon', '122018', '${at}');
-INSERT INTO visits (id, appointment_id, outcome, duration_minutes, updated_at, lost_reason)
+INSERT INTO visit_outcomes (id, appointment_id, outcome, duration_minutes, updated_at, lost_reason)
   VALUES ('v1', 'c1', 'done', 45, '${at}', NULL), ('v2', 'f1', 'done', 150, '${at}', NULL),
          ('v3', 'c2', 'done', 40, '${at}', 'price');
 INSERT INTO payments (id, person_id, appointment_id, razorpay_payment_id, amount, amount_ex_gst, gst_percent, currency,

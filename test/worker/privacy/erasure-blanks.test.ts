@@ -64,7 +64,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       ).bind(at),
       // The visit ops closed by hand when Imran's phone was lost, and another they cancelled for them.
       env.DB.prepare(
-        `INSERT INTO visits (id, appointment_id, outcome, updated_at, closed_by, close_reason)
+        `INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at, closed_by, close_reason)
          VALUES ('visit-row-9', 'visit-9', 'partial', ?1, 'ops@localhost', 'He had to leave for the hospital')`,
       ).bind(at),
       env.DB.prepare(
@@ -93,7 +93,7 @@ describe("erasure blanks what ops wrote about the client", () => {
          (SELECT attach_reason FROM referral_attributions) AS attach,
          (SELECT decision_reason FROM no_show_cases) AS no_show,
          (SELECT reason FROM task_closures) AS closed,
-         (SELECT close_reason FROM visits) AS closed_by_hand,
+         (SELECT close_reason FROM visit_outcomes) AS closed_by_hand,
          (SELECT cancel_reason FROM visit_changes) AS cancelled,
          (SELECT blackout_reason FROM dispatch_moves) AS moved_onto_blackout`,
     ).first();

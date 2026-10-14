@@ -127,7 +127,7 @@ export async function seedFitted(): Promise<void> {
        ${appointment(visits.consultation, "consultation", consultation, "completed", null)};`,
     // What the visits written here keep up beside them, as the domain's own writes keep it.
     ...EVERY_VISIT_UPKEEP,
-    `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at) VALUES
+    `INSERT INTO visit_outcomes (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at) VALUES
        ${sqlRow(id(), visits.service, service.start, service.end, 85, "done", now)},
        ${sqlRow(id(), visits.firstFit, firstFit.start, firstFit.end, 150, "done", now)};`,
     `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,

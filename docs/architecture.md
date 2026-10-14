@@ -35,7 +35,7 @@ Each folder of `domain/` is a module: the work it holds, and the core tables it 
 | Folder        | What it holds                                                                         | Writes                                      |
 | ------------- | ------------------------------------------------------------------------------------- | ------------------------------------------- |
 | `booking/`    | Holds and slots, booking a visit, the site's booking and its notices                  | `slot_holds`, `slot_claims`                 |
-| `visits/`     | A visit's life: its status, times, changes, check-ins, close and follow-ups           | `appointments`, `visits`                    |
+| `visits/`     | A visit's life: its status, times, changes, check-ins, close and follow-ups           | `appointments`, `visit_outcomes`            |
 | `money/`      | Payments, refunds, payment links, discount codes, the price book, credits             | `payments`; `credit_ledger` by `credits.ts` |
 | `messages/`   | Every message we send, and what comes back                                            | `outbound_messages`                         |
 | `clients/`    | People, their addresses and profiles, the places a member of staff reaches            | `people`                                    |

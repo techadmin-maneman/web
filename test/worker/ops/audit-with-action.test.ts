@@ -168,7 +168,7 @@ describe("ops, when the audit entry cannot be written", () => {
          VALUES (?1, ?1, ?2, 'first_fit', 'completed', ?3, strftime('%Y-%m-%dT%H:%M:%fZ', ?3, '+90 minutes'), ?3)`,
       ).bind(VISIT, FRIEND, AT),
       env.DB.prepare(
-        "INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES ('v-1', ?1, 'done', ?2)",
+        "INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) VALUES ('v-1', ?1, 'done', ?2)",
       ).bind(VISIT, AT),
       env.DB.prepare(
         `INSERT INTO referral_attributions (id, code, referred_person_id, first_touch_at, via, grant_state,

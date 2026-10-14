@@ -209,7 +209,7 @@ export const ROWS_AT_T: readonly string[] = [
   `INSERT INTO consultation_requests (id, person_id, pincode, requested_date, requested_window, created_at)
      VALUES ('cr1', 'p2', '122002', '2026-10-05', 'morning', '${AT}')`,
   `INSERT INTO first_fit_requests (id, person_id, preferred_window, created_at) VALUES ('ff1', 'p2', 'morning', '${AT}')`,
-  `INSERT INTO visits (id, appointment_id, outcome, partial_reason, updated_at)
+  `INSERT INTO visit_outcomes (id, appointment_id, outcome, partial_reason, updated_at)
      VALUES ('v1', 'ap1', 'partial', 'client_left', '${AT}')`,
   // A setting changed in the console: ops_settings_snapshot follows it.
   `INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('grace_minutes', '15', 'ops@example.com', '${AT}')`,
@@ -294,7 +294,7 @@ export const WRITTEN_SINCE_T: readonly string[] = [
      VALUES ('du2', 'dc1', 'p3', 'ap4', 'ops', 'ops@example.com', '${SINCE}')`,
   // The friend's consultation done, with its outcome: last_visits follows.
   `UPDATE appointments SET status = 'completed' WHERE id = 'ap2'`,
-  `INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES ('v2', 'ap2', 'done', '${SINCE}')`,
+  `INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) VALUES ('v2', 'ap2', 'done', '${SINCE}')`,
   // Their erasure's blanking of their hair profile, and their discount priced and then taken off.
   `UPDATE hair_profiles SET norwood_stage = NULL, head_circumference_cm = NULL, colour = NULL, skin_and_allergies = NULL
      WHERE id = 'hp1'`,

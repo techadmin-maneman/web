@@ -81,7 +81,7 @@ const HISTORY = [
      fsm_status, fsm_modified_at, synced_at, reconciled_at, invoice_issued_at, fsm_invoice_id, asked_checked_at)
    SELECT 'a-' || i, 'fsm-' || i, 'wo-' || i, 'p-' || i, 'service', '${AGO}', '${AGO_PLUS_HOUR}', 'completed',
      'Completed', '${AGO}', '${AGO}', '${AGO}', '${AGO}', 'inv-' || i, '${AGO}' FROM n`,
-  `INSERT INTO visits (id, appointment_id, outcome, updated_at) SELECT 'v-' || i, 'a-' || i, 'done', '${AGO}' FROM n`,
+  `INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) SELECT 'v-' || i, 'a-' || i, 'done', '${AGO}' FROM n`,
   // Each client's last visit, as a visit's write keeps it (src/domain/visits/visit-upkeep.ts).
   `INSERT OR REPLACE INTO last_visits (person_id, visit_id, visit_start, consulted_start)
    SELECT 'p-' || i, 'a-' || i, '${AGO}', NULL FROM n`,

@@ -417,7 +417,7 @@ export function auditStatementIfClosed(
     .prepare(
       `INSERT INTO audit_log (${COLUMNS})
        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
-       WHERE EXISTS (SELECT 1 FROM visits WHERE appointment_id = ?10 AND closed_by = ?4 AND updated_at = ?1)`,
+       WHERE EXISTS (SELECT 1 FROM visit_outcomes WHERE appointment_id = ?10 AND closed_by = ?4 AND updated_at = ?1)`,
     )
     .bind(...valuesOf(entry, now), appointmentId);
 }

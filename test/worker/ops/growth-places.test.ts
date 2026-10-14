@@ -99,7 +99,7 @@ function heldStatements(held: HeldReferral): D1PreparedStatement[] {
       )
       .bind(fit, held.friend.id, held.friend.pincode, AT),
     db
-      .prepare("INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES (?1, ?1, 'done', ?2)")
+      .prepare("INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) VALUES (?1, ?1, 'done', ?2)")
       .bind(fit, AT),
     db
       .prepare(

@@ -57,7 +57,7 @@ const visitRow = (id: string) =>
 
 const closedRow = (id: string) =>
   env.DB.prepare(
-    "SELECT started_at, ended_at, duration_minutes, outcome, partial_reason, updated_at FROM visits WHERE appointment_id = ?1",
+    "SELECT started_at, ended_at, duration_minutes, outcome, partial_reason, updated_at FROM visit_outcomes WHERE appointment_id = ?1",
   )
     .bind(id)
     .first();

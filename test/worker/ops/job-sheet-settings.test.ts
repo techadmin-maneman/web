@@ -189,7 +189,7 @@ describe("the lost reasons ops keep", () => {
       "event-outcome-02",
     );
     expect(closed.status).toBe(202);
-    expect(await env.DB.prepare("SELECT lost_reason FROM visits WHERE appointment_id = ?1").bind(JOB).first()).toEqual({
+    expect(await env.DB.prepare("SELECT lost_reason FROM visit_outcomes WHERE appointment_id = ?1").bind(JOB).first()).toEqual({
       lost_reason: "moving_abroad",
     });
   });
@@ -264,7 +264,7 @@ describe("the partial reasons ops save", () => {
           JOB,
         ),
         env.DB.prepare(
-          `INSERT INTO visits (id, appointment_id, ended_at, outcome, partial_reason, updated_at)
+          `INSERT INTO visit_outcomes (id, appointment_id, ended_at, outcome, partial_reason, updated_at)
            VALUES ('visit-1', ?1, '2026-09-21T08:40:00.000Z', 'partial', ?2, '2026-09-21T08:40:00.000Z')
            ON CONFLICT (appointment_id) DO UPDATE SET partial_reason = excluded.partial_reason`,
         ).bind(JOB, reason),

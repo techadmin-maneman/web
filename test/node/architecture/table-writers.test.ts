@@ -9,7 +9,7 @@ import { WRITTEN_ELSEWHERE } from "./table-writers-baseline.ts";
 /** Who writes each core table: a folder, ending in "/", or one module. */
 const OWNERS = {
   appointments: "src/domain/visits/",
-  visits: "src/domain/visits/",
+  visit_outcomes: "src/domain/visits/",
   slot_holds: "src/domain/booking/",
   slot_claims: "src/domain/booking/",
   credit_ledger: "src/domain/money/credits.ts",

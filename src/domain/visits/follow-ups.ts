@@ -27,7 +27,7 @@ const CARE_GUIDE = "/guides/looking-after-a-hair-system";
 
 const DONE = (types: string) =>
   `a.status = 'completed' AND a.type IN (${types}) AND a.deleted_at IS NULL AND p.erased_at IS NULL
-   AND COALESCE((SELECT v.outcome FROM visits v WHERE v.appointment_id = a.id), 'done') = 'done'`;
+   AND COALESCE((SELECT v.outcome FROM visit_outcomes v WHERE v.appointment_id = a.id), 'done') = 'done'`;
 
 const NOT_SENT = (kind: FollowUpKind) =>
   `NOT EXISTS (SELECT 1 FROM outbound_messages m WHERE m.subject_id = a.id AND m.kind = '${kind}')`;
@@ -39,7 +39,7 @@ const NOT_SENT = (kind: FollowUpKind) =>
  */
 const DUE: Readonly<Record<FollowUpKind, string>> = {
   consultation_follow_up: `${DONE("'consultation'")}
-    AND (SELECT v.lost_reason FROM visits v WHERE v.appointment_id = a.id) IS NULL
+    AND (SELECT v.lost_reason FROM visit_outcomes v WHERE v.appointment_id = a.id) IS NULL
     AND NOT EXISTS (SELECT 1 FROM appointments f WHERE f.person_id = a.person_id AND f.type = 'first_fit'
                      AND f.deleted_at IS NULL AND f.window_start > a.window_start)`,
   fit_aftercare: DONE("'first_fit', 'replacement'"),

@@ -27,7 +27,7 @@ const close = (environment: EnvironmentName, body: object, devRoutes = true) =>
 const closed = () =>
   env.DB.prepare(
     `SELECT a.status, v.outcome, v.started_at, v.ended_at, v.duration_minutes
-     FROM appointments a LEFT JOIN visits v ON v.appointment_id = a.id WHERE a.id = ?1`,
+     FROM appointments a LEFT JOIN visit_outcomes v ON v.appointment_id = a.id WHERE a.id = ?1`,
   )
     .bind(VISIT)
     .first();

@@ -26,7 +26,7 @@ async function visit(type: string, start: string, lostReason: string | null = nu
        VALUES (?1, ?1, ?2, ?3, 'completed', ?4, ?5, 't1', ?6)`,
     ).bind(id, PERSON, type, start, end, NOW.toISOString()),
     env.DB.prepare(
-      `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, lost_reason, updated_at)
+      `INSERT INTO visit_outcomes (id, appointment_id, started_at, ended_at, duration_minutes, outcome, lost_reason, updated_at)
        VALUES (?1, ?1, ?2, ?3, 90, 'done', ?4, ?3)`,
     ).bind(id, start, end, lostReason),
   ]);
@@ -107,7 +107,7 @@ describe("what follows a visit", () => {
     await visit("consultation", "2026-09-21T04:30:00.000Z", "price");
     await queueFollowUps(env.DB, EVENING, CHECK_IN_DAYS, HOUR);
     expect(await queued()).toEqual([]);
-    await env.DB.prepare("DELETE FROM visits").run();
+    await env.DB.prepare("DELETE FROM visit_outcomes").run();
     await env.DB.prepare("DELETE FROM appointments").run();
     await visit("consultation", "2026-09-21T04:30:00.000Z");
     await env.DB.prepare(

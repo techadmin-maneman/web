@@ -133,7 +133,7 @@ describe("the migrations, against a database that is in use", () => {
     for (const [table, rows] of seededTables()) {
       expect(db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get(), table).toEqual({ n: rows });
     }
-    const visit = db.prepare("SELECT outcome FROM visits WHERE appointment_id = 'ap1'").get();
+    const visit = db.prepare("SELECT outcome FROM visit_outcomes WHERE appointment_id = 'ap1'").get();
     expect(visit).toEqual({ outcome: "done" });
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
     db.close();

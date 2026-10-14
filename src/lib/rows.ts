@@ -43,10 +43,10 @@ export interface Rows {
     readonly id: string;
     readonly fsm_id: string;
     readonly fsm_work_order_id: string | null;
-    readonly person_id: string | null;
-    readonly type: string | null;
-    readonly window_start: string | null;
-    readonly window_end: string | null;
+    readonly person_id: string;
+    readonly type: string;
+    readonly window_start: string;
+    readonly window_end: string;
     readonly technician_id: string | null;
     readonly status: string;
     readonly service_city: string | null;
@@ -1588,17 +1588,7 @@ export interface Rows {
     readonly ops_terms: string | null;
     readonly refund_settled_at: string | null;
   };
-  readonly visit_pay_rates: {
-    readonly id: string;
-    readonly grade_id: string;
-    readonly city: string | null;
-    readonly visit_kind: string;
-    readonly amount: number | null;
-    readonly effective_from: string;
-    readonly set_by: string;
-    readonly set_at: string;
-  };
-  readonly visits: {
+  readonly visit_outcomes: {
     readonly id: string;
     readonly appointment_id: string;
     readonly started_at: string | null;
@@ -1611,6 +1601,16 @@ export interface Rows {
     readonly closed_by: string | null;
     readonly close_reason: string | null;
     readonly lost_reason: string | null;
+  };
+  readonly visit_pay_rates: {
+    readonly id: string;
+    readonly grade_id: string;
+    readonly city: string | null;
+    readonly visit_kind: string;
+    readonly amount: number | null;
+    readonly effective_from: string;
+    readonly set_by: string;
+    readonly set_at: string;
   };
   readonly waitlist_entries: {
     readonly id: string;

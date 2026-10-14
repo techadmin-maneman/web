@@ -254,7 +254,7 @@ export async function closedAt(db: D1Database, appointmentId: string): Promise<D
       `SELECT MIN(at) AS closed_at FROM (
          SELECT received_at AS at FROM job_events WHERE appointment_id = ?1 AND kind = 'outcome' AND superseded = 0
          UNION ALL
-         SELECT updated_at AS at FROM visits WHERE appointment_id = ?1 AND closed_by IS NOT NULL
+         SELECT updated_at AS at FROM visit_outcomes WHERE appointment_id = ?1 AND closed_by IS NOT NULL
        )`,
     )
     .bind(appointmentId)

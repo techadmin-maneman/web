@@ -105,7 +105,7 @@ describe("GET /api/tasks", () => {
            '2026-09-20T06:00:00.000Z', 'terminated', 'Terminated', ?2, ?2)`,
       ).bind(PERSON, NOW.toISOString()),
       env.DB.prepare(
-        `INSERT INTO visits (id, appointment_id, outcome, partial_reason, updated_at)
+        `INSERT INTO visit_outcomes (id, appointment_id, outcome, partial_reason, updated_at)
          VALUES ('visit-row-10', 'partial-visit', 'partial', 'client_unwell', ?1)`,
       ).bind(NOW.toISOString()),
       env.DB.prepare(

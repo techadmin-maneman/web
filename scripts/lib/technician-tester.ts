@@ -32,7 +32,7 @@ export function clearTester(technicianIds: readonly string[], personIds: readonl
     // Written if ops move one of the jobs on the dispatch board while the fixture stands.
     `DELETE FROM dispatch_moves WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     `DELETE FROM visit_changes WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
-    `DELETE FROM visits WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
+    `DELETE FROM visit_outcomes WHERE appointment_id IN (SELECT id FROM appointments WHERE technician_id IN (${ids}));`,
     // A hair profile is never deleted (migration 0064), so a job one was taken at, the invented client it is of and
     // the technician who took it stay, the technician made inactive so nothing books or dispatches them; the rest of
     // what they left goes.
