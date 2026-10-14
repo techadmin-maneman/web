@@ -230,13 +230,11 @@ function Spend() {
 
 export function SpendScreen() {
   return (
-    <>
-      <div className={styles.screen}>
-        <Panel titleId="spend" title={copy.title} className={styles.panel}>
-          <p className={styles.note}>{copy.intro}</p>
-          <Spend />
-        </Panel>
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Panel titleId="spend" title={copy.title} className={styles.panel}>
+        <p className={styles.note}>{copy.intro}</p>
+        <Spend />
+      </Panel>
+    </div>
   );
 }

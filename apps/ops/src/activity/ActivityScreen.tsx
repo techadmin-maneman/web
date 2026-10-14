@@ -192,12 +192,10 @@ export function ActivityScreen() {
     setFilters(next);
   };
   return (
-    <>
-      <div className={styles.column}>
-        <Linked filters={filters} onApply={apply} />
-        <Narrow filters={filters} onApply={apply} />
-        <Log key={activityPath(filters)} filters={filters} />
-      </div>
-    </>
+    <div className={styles.column}>
+      <Linked filters={filters} onApply={apply} />
+      <Narrow filters={filters} onApply={apply} />
+      <Log key={activityPath(filters)} filters={filters} />
+    </div>
   );
 }

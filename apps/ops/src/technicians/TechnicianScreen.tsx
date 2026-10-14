@@ -45,16 +45,14 @@ type Switched = { readonly to: "off"; readonly visits: readonly ReturnedVisit[] 
 
 function Week({ technician }: { technician: TechnicianSummary }) {
   return (
-    <>
-      <div className={styles.actions}>
-        <OpsLink
-          className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })}
-          to={dispatchPath({ find: technician.name })}
-        >
-          {technicians.week.open}
-        </OpsLink>
-      </div>
-    </>
+    <div className={styles.actions}>
+      <OpsLink
+        className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })}
+        to={dispatchPath({ find: technician.name })}
+      >
+        {technicians.week.open}
+      </OpsLink>
+    </div>
   );
 }
 

@@ -27,17 +27,15 @@ export function AreasScreen({ tab }: { tab: AreaTab }) {
   const access = useAccess();
   const open = AREA_TABS.filter((each) => access.mayCall(TAB_READS[each]));
   return (
-    <>
-      <div className={styles.screen}>
-        <Tabs label={areas.title}>
-          {open.map((each) => (
-            <OpsLink key={each} className={TAB} to={areasPath(each)} current={each === tab}>
-              {AREA_TAB_NAMES[each]}
-            </OpsLink>
-          ))}
-        </Tabs>
-        <Panel tab={tab} mayOpen={open.includes(tab)} />
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Tabs label={areas.title}>
+        {open.map((each) => (
+          <OpsLink key={each} className={TAB} to={areasPath(each)} current={each === tab}>
+            {AREA_TAB_NAMES[each]}
+          </OpsLink>
+        ))}
+      </Tabs>
+      <Panel tab={tab} mayOpen={open.includes(tab)} />
+    </div>
   );
 }

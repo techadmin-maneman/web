@@ -135,32 +135,30 @@ function Numbers({ period }: { period: CarePeriod }) {
 export function CareNumbersScreen() {
   const [period, setPeriod] = useState<CarePeriod>("7");
   return (
-    <>
-      <div className={styles.screen}>
-        <Panel titleId="care-numbers" title={copy.title} className={styles.panel}>
-          <div className={own.tools}>
-            <Field label={copy.period}>
-              {(control) => (
-                <Select
-                  {...control}
-                  className={styles.choiceBox}
-                  value={period}
-                  onChange={(event) => {
-                    if (isPeriod(event.target.value)) setPeriod(event.target.value);
-                  }}
-                >
-                  {PERIODS.map((each) => (
-                    <option key={each} value={each}>
-                      {copy.periods[each]}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </Field>
-          </div>
-          <Numbers key={period} period={period} />
-        </Panel>
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Panel titleId="care-numbers" title={copy.title} className={styles.panel}>
+        <div className={own.tools}>
+          <Field label={copy.period}>
+            {(control) => (
+              <Select
+                {...control}
+                className={styles.choiceBox}
+                value={period}
+                onChange={(event) => {
+                  if (isPeriod(event.target.value)) setPeriod(event.target.value);
+                }}
+              >
+                {PERIODS.map((each) => (
+                  <option key={each} value={each}>
+                    {copy.periods[each]}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+        </div>
+        <Numbers key={period} period={period} />
+      </Panel>
+    </div>
   );
 }

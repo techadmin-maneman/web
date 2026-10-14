@@ -229,9 +229,5 @@ function Roster() {
 }
 
 export function TechniciansScreen() {
-  return (
-    <>
-      <Roster />
-    </>
-  );
+  return <Roster />;
 }

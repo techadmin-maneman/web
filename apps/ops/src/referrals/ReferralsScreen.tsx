@@ -332,18 +332,16 @@ export function ReferralsScreen() {
   // A decision can change the referrers' figures beneath, so each one reads them again.
   const [version, setVersion] = useState(0);
   return (
-    <>
-      <div className={styles.column}>
-        <ReviewQueue
-          onDecided={() => {
-            setVersion((count) => count + 1);
-          }}
-        />
-        <ReferrersTable version={version} />
-        <Suspense fallback={<Loading />}>
-          <Partners />
-        </Suspense>
-      </div>
-    </>
+    <div className={styles.column}>
+      <ReviewQueue
+        onDecided={() => {
+          setVersion((count) => count + 1);
+        }}
+      />
+      <ReferrersTable version={version} />
+      <Suspense fallback={<Loading />}>
+        <Partners />
+      </Suspense>
+    </div>
   );
 }

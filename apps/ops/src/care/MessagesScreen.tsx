@@ -257,35 +257,31 @@ export function MessagesScreen() {
   const [view, setView] = useState<ConversationView>("open");
   const [search, setSearch] = useState("");
   return (
-    <>
-      <div className={styles.screen}>
-        <Panel titleId="messages" title={copy.title} className={styles.panel}>
-          <div className={own.tools}>
-            <ViewChoice view={view} onView={setView} />
-            <Search search={search} onSearch={setSearch} />
-          </div>
-          <Conversations key={`${view}:${search}`} view={view} search={search} />
-        </Panel>
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Panel titleId="messages" title={copy.title} className={styles.panel}>
+        <div className={own.tools}>
+          <ViewChoice view={view} onView={setView} />
+          <Search search={search} onSearch={setSearch} />
+        </div>
+        <Conversations key={`${view}:${search}`} view={view} search={search} />
+      </Panel>
+    </div>
   );
 }
 
 /** Care's own settings, a tab beside the inbox: the team's rota, the remedies Care may offer, and the quick replies. */
 export function CareSettingsScreen() {
   return (
-    <>
-      <div className={styles.screen}>
-        <Panel titleId="care-team" title={copy.team.title} className={styles.panel}>
-          <CareTeam />
-        </Panel>
-        <Panel titleId="remedies" title={copy.remedy.panel} className={styles.panel}>
-          <RemediesPanel />
-        </Panel>
-        <Panel titleId="quick-replies" title={copy.quick.panel} className={styles.panel}>
-          <QuickRepliesPanel />
-        </Panel>
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Panel titleId="care-team" title={copy.team.title} className={styles.panel}>
+        <CareTeam />
+      </Panel>
+      <Panel titleId="remedies" title={copy.remedy.panel} className={styles.panel}>
+        <RemediesPanel />
+      </Panel>
+      <Panel titleId="quick-replies" title={copy.quick.panel} className={styles.panel}>
+        <QuickRepliesPanel />
+      </Panel>
+    </div>
   );
 }

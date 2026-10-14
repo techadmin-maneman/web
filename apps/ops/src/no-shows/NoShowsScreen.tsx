@@ -440,13 +440,11 @@ export function NoShowsScreen() {
     setRulings((count) => count + 1);
   }, []);
   return (
-    <>
-      <div className={styles.column}>
-        <Money key={`money-${String(rulings)}`} />
-        <Disputes onRuled={ruled} />
-        <NoShowQueue onDecided={ruled} />
-        <DecidedToday key={`decided-${String(rulings)}`} />
-      </div>
-    </>
+    <div className={styles.column}>
+      <Money key={`money-${String(rulings)}`} />
+      <Disputes onRuled={ruled} />
+      <NoShowQueue onDecided={ruled} />
+      <DecidedToday key={`decided-${String(rulings)}`} />
+    </div>
   );
 }

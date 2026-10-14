@@ -19,19 +19,17 @@ const EVERY_MS = 10 * 60_000;
 export function CitiesScreen() {
   const { loaded, refresh, retry } = useLiveLoad(loadCities, EVERY_MS);
   return (
-    <>
-      <div className={styles.screen}>
-        {loaded.state === "loading" && <Loading />}
-        {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
-        {loaded.state === "loaded" && (
-          <>
-            <CityList cities={loaded.value} onSaved={refresh} />
-            <CityRules cities={loaded.value} onSaved={refresh} />
-            <CityPrices cities={loaded.value} onSaved={refresh} />
-            <Registrations cities={loaded.value} onSaved={refresh} />
-          </>
-        )}
-      </div>
-    </>
+    <div className={styles.screen}>
+      {loaded.state === "loading" && <Loading />}
+      {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
+      {loaded.state === "loaded" && (
+        <>
+          <CityList cities={loaded.value} onSaved={refresh} />
+          <CityRules cities={loaded.value} onSaved={refresh} />
+          <CityPrices cities={loaded.value} onSaved={refresh} />
+          <Registrations cities={loaded.value} onSaved={refresh} />
+        </>
+      )}
+    </div>
   );
 }

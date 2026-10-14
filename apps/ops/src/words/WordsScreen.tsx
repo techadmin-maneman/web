@@ -226,10 +226,8 @@ function Words() {
 
 export function WordsScreen() {
   return (
-    <>
-      <div className={styles.screen}>
-        <Words />
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Words />
+    </div>
   );
 }

@@ -118,10 +118,8 @@ function GrievanceQueue() {
 
 export function GrievancesScreen() {
   return (
-    <>
-      <div className={styles.column}>
-        <GrievanceQueue />
-      </div>
-    </>
+    <div className={styles.column}>
+      <GrievanceQueue />
+    </div>
   );
 }

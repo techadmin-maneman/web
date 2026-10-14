@@ -310,11 +310,9 @@ function TaskQueue() {
 
 export function TasksScreen() {
   return (
-    <>
-      <div className={styles.board}>
-        <NeedsAHand />
-        <TaskQueue />
-      </div>
-    </>
+    <div className={styles.board}>
+      <NeedsAHand />
+      <TaskQueue />
+    </div>
   );
 }

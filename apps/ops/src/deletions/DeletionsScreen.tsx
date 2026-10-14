@@ -257,10 +257,8 @@ function DeletionQueue() {
 
 export function DeletionsScreen() {
   return (
-    <>
-      <div className={styles.column}>
-        <DeletionQueue />
-      </div>
-    </>
+    <div className={styles.column}>
+      <DeletionQueue />
+    </div>
   );
 }

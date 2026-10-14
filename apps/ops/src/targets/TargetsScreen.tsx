@@ -190,13 +190,11 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
 export function TargetsScreen() {
   const [month, setMonth] = useState<string | null>(null);
   return (
-    <>
-      <div className={styles.screen}>
-        <Panel titleId="targets" title={copy.title} className={styles.panel}>
-          <p className={styles.note}>{copy.intro}</p>
-          <MonthTargets key={month ?? "now"} month={month} onMonth={setMonth} />
-        </Panel>
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Panel titleId="targets" title={copy.title} className={styles.panel}>
+        <p className={styles.note}>{copy.intro}</p>
+        <MonthTargets key={month ?? "now"} month={month} onMonth={setMonth} />
+      </Panel>
+    </div>
   );
 }

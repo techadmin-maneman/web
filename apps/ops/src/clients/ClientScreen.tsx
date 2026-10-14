@@ -189,11 +189,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   }, [clientId, opened]);
 
   if (erasedId === clientId) {
-    return (
-      <>
-        <Erased />
-      </>
-    );
+    return <Erased />;
   }
 
   return (

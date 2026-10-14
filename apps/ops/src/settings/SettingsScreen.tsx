@@ -22,38 +22,32 @@ function Panel({ tab }: { tab: SettingsTab }) {
 /** The items we stock, each service's expected use, and the hair systems: a tab of Inventory. */
 export function ItemsScreen() {
   return (
-    <>
-      <div className={styles.screen}>
-        <Consumables />
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Consumables />
+    </div>
   );
 }
 
 /** The suppliers we buy from, and what each supplies: a tab of Inventory. */
 export function SuppliersScreen() {
   return (
-    <>
-      <div className={styles.screen}>
-        <Suppliers />
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Suppliers />
+    </div>
   );
 }
 
 export function SettingsScreen({ tab }: { tab: SettingsTab }) {
   return (
-    <>
-      <div className={styles.screen}>
-        <Tabs label={settings.title}>
-          {SETTINGS_TABS.map((each) => (
-            <OpsLink key={each} className={TAB} to={settingsPath(each)} current={each === tab}>
-              {SETTINGS_TAB_NAMES[each]}
-            </OpsLink>
-          ))}
-        </Tabs>
-        <Panel tab={tab} />
-      </div>
-    </>
+    <div className={styles.screen}>
+      <Tabs label={settings.title}>
+        {SETTINGS_TABS.map((each) => (
+          <OpsLink key={each} className={TAB} to={settingsPath(each)} current={each === tab}>
+            {SETTINGS_TAB_NAMES[each]}
+          </OpsLink>
+        ))}
+      </Tabs>
+      <Panel tab={tab} />
+    </div>
   );
 }

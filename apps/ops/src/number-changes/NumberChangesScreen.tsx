@@ -164,10 +164,8 @@ function NumberChangeQueue() {
 
 export function NumberChangesScreen() {
   return (
-    <>
-      <div className={styles.column}>
-        <NumberChangeQueue />
-      </div>
-    </>
+    <div className={styles.column}>
+      <NumberChangeQueue />
+    </div>
   );
 }
