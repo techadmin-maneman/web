@@ -1,25 +1,26 @@
-// The image provider, behind an interface. Callers use ImageProvider; only
-// this file knows which implementation runs, and only ailabtools.ts knows
-// AILabTools. The render consumer is the only caller.
+// The image provider, behind an interface. Callers use ImageProvider; only this file knows which implementation runs,
+// and only youcam.ts knows YouCam (docs/decisions/0201-the-try-on-on-youcam.md). The render consumer is the only caller.
 
-import type { Endpoint, Preset } from "../../config/presets.ts";
-import type { FailureCode, HairColor } from "../../config/tryon.ts";
+import type { FailureCode, FailureReason } from "../../config/tryon.ts";
 import type { ImageType } from "../../lib/image-bytes.ts";
 import type { Logger } from "../../log.ts";
-import { createAilabtoolsProvider } from "./ailabtools.ts";
-import { createStubAilabtoolsFetch, STUB_API_KEY } from "./stub.ts";
-
-/** The colour sent to the provider: a natural shade, or Premium's "keep the original". */
-export type ProviderColor = Exclude<HairColor, "unknown"> | "original";
+import { createStubYoucamFetch, STUB_API_KEY } from "./stub.ts";
+import { createYoucamProvider } from "./youcam.ts";
 
 export interface RenderFailure {
   /** What the customer's page is told. */
   readonly code: Exclude<FailureCode, "busy">;
+  /** What the page says beyond the code: the fault YouCam found in the photograph, or the try-on paused. */
+  readonly reason?: FailureReason;
   /** Worth trying again: a timeout, a 5xx or a 429. A refused photo is not. */
   readonly transient: boolean;
-  /** Ops must act: the key was refused, the credits ran out, or the endpoint is gone. */
+  /** Worth one more render from the start: YouCam's own model failed on a photograph it took. */
+  readonly retryOnce?: boolean;
+  /** Ops must act: the key was refused, the units ran out, or a request of ours was wrong. */
   readonly alert: boolean;
-  /** For D1 and the logs, with the API key scrubbed out. Never shown to the customer. */
+  /** Pages ops too, under this alert key, until resolved: no try-on can run until someone acts. */
+  readonly urgentKey?: string;
+  /** For D1 and the logs, with YouCam's code verbatim and the API key scrubbed out. Never shown to the customer. */
   readonly detail: string;
 }
 
@@ -41,19 +42,20 @@ export type DownloadResult =
     };
 
 export interface ImageProvider {
-  submit(image: Uint8Array, preset: Preset, color: ProviderColor, endpoint: Endpoint): Promise<SubmitResult>;
-  poll(taskId: string, endpoint: Endpoint): Promise<PollResult>;
-  /** Fetches a result, without the API key, retrying a stalled CDN. */
+  /** Starts a render of the photograph with the hair of the look's reference photograph, at its public URL. */
+  submit(image: Uint8Array, referenceUrl: string): Promise<SubmitResult>;
+  poll(taskId: string): Promise<PollResult>;
+  /** Fetches a result, without the API key, retrying a stalled host. */
   download(url: string): Promise<DownloadResult>;
-  /** The balance summed across every credit pool, or null if it could not be read. */
+  /** The units left, summed across every pool, or null if they could not be read. */
   credits(): Promise<number | null>;
 }
 
-/** The real provider when there is an API key; otherwise the stub, which fakes AILabTools' HTTP API. */
+/** YouCam with its key; with none, the stub, which fakes YouCam's HTTP API. */
 export function createImageProvider(
   apiKey: string | null,
   deps: { fetch: typeof fetch; now: () => Date; log: Logger },
 ): ImageProvider {
-  if (apiKey !== null) return createAilabtoolsProvider({ apiKey, fetch: deps.fetch, log: deps.log });
-  return createAilabtoolsProvider({ apiKey: STUB_API_KEY, fetch: createStubAilabtoolsFetch(deps.now), log: deps.log });
+  if (apiKey !== null) return createYoucamProvider({ apiKey, fetch: deps.fetch, log: deps.log });
+  return createYoucamProvider({ apiKey: STUB_API_KEY, fetch: createStubYoucamFetch(deps.now), log: deps.log });
 }

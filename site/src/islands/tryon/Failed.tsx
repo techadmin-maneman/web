@@ -22,7 +22,7 @@ export function Failed(props: { kind: ErrorKind; heading: HeadingRef; onAgain: (
       <p class={styles.noticeBody}>{copy.body}</p>
       <div class={styles.noticeActions}>
         {/* While the try-on cannot run, another photograph would be refused too. */}
-        {props.kind !== "unavailable" && (
+        {props.kind !== "unavailable" && props.kind !== "paused" && (
           <Button variant="light" size="action" onClick={props.onAgain}>
             {tryOn.error.another}
           </Button>

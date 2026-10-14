@@ -44,16 +44,24 @@ if (stageOptions.map((stage) => stage.id).join() !== LOSS_EXTENTS.join()) {
 }
 
 /**
- * Each look's picture for the look picker, by look id: a file in site/src/assets. The picker draws pictures only
- * once all six looks have one, and until then shows each look's words alone.
+ * Each look's picture for the look picker, by look id: a file in site/src/assets, the reference photograph's 512 px
+ * head-and-shoulders crop, which stops above the generator's mark on the full photograph. The picker draws pictures
+ * only once all six looks have one, and until then shows each look's words alone.
  */
-const LOOK_PICTURES: Partial<Record<PresetId, string>> = {};
+const LOOK_PICTURES: Partial<Record<PresetId, string>> = {
+  "side-part": "look-side-part.jpg",
+  "slick-back": "look-slick-back.jpg",
+  "textured-crop": "look-textured-crop.jpg",
+  "french-crop": "look-french-crop.jpg",
+  quiff: "look-quiff.jpg",
+  "crew-cut": "look-crew-cut.jpg",
+};
 
-/** The six looks: the backend's presets, in its order. The design splits each label at its first " · ". */
+/** The six looks: the backend's presets, in its order. The picker splits each label at its first " · ". */
 export const looks = PRESETS.map((preset) => {
-  const [density = preset.label, ...rest] = preset.label.split(" · ");
+  const [name = preset.label, ...rest] = preset.label.split(" · ");
   const picture = LOOK_PICTURES[preset.id];
-  return { id: preset.id, label: preset.label, density, detail: rest.join(" · "), picture };
+  return { id: preset.id, label: preset.label, name, detail: rest.join(" · "), picture };
 });
 
 /** Every look's picture, in the looks' order, or null while any look has none. */
@@ -183,6 +191,42 @@ export const tryOn = {
         title: "We cannot use this photograph.",
         body: "Your face may be turned, your hairline covered, or the light too low. Face a window and shoot straight on.",
       },
+      noFace: {
+        step: "Cannot see your face",
+        frame: "Face not clear",
+        title: "We couldn't see your face clearly.",
+        body: "Try a well-lit photograph, taken straight on.",
+      },
+      shoulders: {
+        step: "Show your shoulders",
+        frame: "Shoulders out of frame",
+        title: "We need to see your shoulders.",
+        body: "Use a photograph that shows your head and shoulders.",
+      },
+      facing: {
+        step: "Face the camera",
+        frame: "Face turned away",
+        title: "Face the camera straight on.",
+        body: "Then take the photograph again.",
+      },
+      onePerson: {
+        step: "Just you, please",
+        frame: "More than one person",
+        title: "Only you in the photograph, please.",
+        body: "Use a photograph with no one else in it.",
+      },
+      notStyleable: {
+        step: "Try another photograph",
+        frame: "Cannot style this one",
+        title: "We couldn't style this photograph.",
+        body: "Please try another one.",
+      },
+      refused: {
+        step: "Try another photograph",
+        frame: "Photograph not accepted",
+        title: "Please try another photograph.",
+        body: "We can't use this one.",
+      },
       renderFailed: {
         step: "Something went wrong",
         frame: "The simulation failed",
@@ -201,6 +245,13 @@ export const tryOn = {
         frame: "Paused",
         title: "The try-on is paused.",
         body: "We send every look on WhatsApp, and that isn't switched on yet. Book a free consultation and see the real thing.",
+      },
+      /** While the simulation itself cannot run. It has no Choose another either. */
+      paused: {
+        step: "Not available right now",
+        frame: "Paused",
+        title: "Try-on is temporarily unavailable.",
+        body: "Book a free consultation and see the real thing.",
       },
     } satisfies Record<ErrorKind, { step: string; frame: string; title: string; body: string }>,
   },

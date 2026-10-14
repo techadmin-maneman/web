@@ -19,11 +19,9 @@ describe("redact", () => {
     });
   });
 
-  it("redacts credentials, including the AILabTools key header", () => {
-    expect(
-      redact({ "ailabapi-api-key": "k", authorization: "Bearer x", refresh_token: "r", Cookie: "mm_tryon=1" }),
-    ).toEqual({
-      "ailabapi-api-key": REDACTED,
+  it("redacts credentials, including YouCam's bearer key", () => {
+    expect(redact({ api_key: "k", authorization: "Bearer x", refresh_token: "r", Cookie: "mm_tryon=1" })).toEqual({
+      api_key: REDACTED,
       authorization: REDACTED,
       refresh_token: REDACTED,
       Cookie: REDACTED,

@@ -153,15 +153,12 @@ test.describe("stage and looks", () => {
   test("six looks; the button changes once one is picked, and goes on to the gate", async ({ page }) => {
     await open(page, "looks");
     await expect(page.getByRole("radio")).toHaveCount(6);
-    // Until all six looks have a picture, no empty box stands in for one.
+    // Each of the six looks shows its reference photograph's crop.
     await expect(page.getByText("Preview", { exact: true })).toHaveCount(0);
-    await expect(page.locator("[data-screen] fieldset img")).toHaveCount(0);
+    await expect(page.locator("[data-screen] fieldset img")).toHaveCount(6);
     const next = page.getByRole("button", { name: siteCopy.tryOn.looks.choose });
     await expect(next).toHaveAttribute("aria-disabled", "true");
-    await page
-      .getByRole("radio", { name: /Light density/ })
-      .first()
-      .check();
+    await page.getByRole("radio", { name: /Quiff/ }).check();
     const onward = page.getByRole("button", { name: "Continue" });
     await expect(onward).toHaveAttribute("aria-disabled", "false");
     await onward.click();

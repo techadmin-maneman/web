@@ -1556,6 +1556,9 @@ export interface Rows {
     readonly kept_at: string | null;
     readonly kept_look_key: string | null;
     readonly number_proved_at: string | null;
+    readonly failure_reason: string | null;
+    readonly render_key: string | null;
+    readonly renders: number;
   };
   readonly tryon_sessions: {
     readonly id: string;

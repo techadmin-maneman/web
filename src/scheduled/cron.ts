@@ -53,7 +53,7 @@ import { referralPass } from "./referrals.ts";
 import { retentionJob } from "./retention.ts";
 import { taskSpansJob } from "./task-spans.ts";
 import {
-  checkAilabCredits,
+  checkYoucamUnits,
   deletePhotos,
   expireTryOns,
   deleteExpiredRecords,
@@ -347,7 +347,7 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
   if (written > 0) log.info("books_synced", done);
 }
 
-const ailabCreditsJob = (context: CronContext) => checkAilabCredits(context, context.config.settings.tryon.creditFloor);
+const youcamUnitsJob = (context: CronContext) => checkYoucamUnits(context, context.config.settings.tryon.unitFloor);
 
 /**
  * Every job, and when it runs (src/scheduled/schedule.ts). Minutes by their place in the five: 1 the WhatsApp bridge, 2 the try-ons and the heartbeat, 3 the holds and Books, 4 the hourly jobs. A run's jobs
@@ -382,7 +382,7 @@ export const CRON_JOBS: readonly CronJob[] = [
   // nothing after the hour's first five minutes (src/domain/books/books-items.ts), so it runs in one of them.
   { name: "books_items", needs: "books", every: 60, at: 4, run: booksItemsJob },
   { name: "expire_tryons", needs: "nothing", every: 60, at: 9, run: expireTryOns },
-  { name: "ailab_credits", needs: "nothing", every: 60, at: 14, run: ailabCreditsJob },
+  { name: "youcam_units", needs: "nothing", every: 60, at: 14, run: youcamUnitsJob },
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
   // The stock, a step a job, so one that throws stops none of the others; the morning's from 9 am in India.

@@ -281,7 +281,7 @@
   display: block;
   padding: var(--sp-12) var(--sp-16) var(--sp-16);
 }
-.lookDensity {
+.lookName {
   display: block;
   font-size: var(--fs-15);
 }

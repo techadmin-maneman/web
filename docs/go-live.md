@@ -47,7 +47,7 @@ Nothing here needs a release. The first two have dates.
   W queues list
   ```
 
-- [ ] **Production's AILabTools key** (item 153): `W secret put AILAB_API_KEY --env production`, with a key of production's own.
+- [ ] **Production's YouCam key** (item 153): production holds the harness's key, as staging does, by the owner's ruling of 14 October 2026; a key of production's own replaces it with `W secret put YOUCAM_API_KEY --env production`.
 - [ ] **Staging's refund account:** the owner's "Razorpay – staging test" ID as `BOOKS_REFUND_ACCOUNT_ID` in `env.staging.vars`, released through CI (item 10).
 - [ ] **The weekly backup** (RB, "Restoring D1", "From a weekly backup"): the key pair made and its public key set as staging's and production's `BACKUP_PUBLIC_KEY`, and `mm-prod-backups` made, on 13 October 2026. Left: the private key in the owner's password manager, and its file deleted. Production's first backup is one by hand with `backup-now.ts` just before its first release.
 - [ ] **Old photographs to Infrequent Access, once production's pass the free 10 GB** (ADR 0194): R2's Infrequent Access class has no free allowance, so not before. Then a lifecycle rule on `mm-prod-client-photos` moving objects older than 90 days, and `scripts/lib/buckets.ts` taught to expect it.
@@ -97,7 +97,7 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
 - [ ] The Grievance Officer on the privacy page (item 51).
 - [ ] The analytics IDs, and the consent banner they need (item 84).
 - [ ] The dedicated WhatsApp number (item 38) and `MESSAGING_ENABLED` `"true"` in production's vars (item 164): the try-on's look goes to WhatsApp only, so while it is off the try-on does not run (ADR 0104).
-- [ ] Production's AILabTools key and resources (section 1).
+- [ ] Production's YouCam key and resources (section 1).
 - [ ] The outside watchers (RB, "The outside watchers"): production's healthchecks.io check as its `HEARTBEAT_URL`, and an uptime monitor on `https://maneman.in/api/health`. After the release and `apply-triggers`, the check shows a ping every five minutes and `GET /api/health` a `cron_completed_at` a minute old.
 - [ ] The zone's table in "The dashboards" (section 4) walked and recorded: this release is the first to need it.
 - [ ] **`www.maneman.in` sent to `maneman.in`.** On 2 October 2026 `www` still reached GoDaddy's parked page through an old proxied record: 200 over http, 525 over https. In the Cloudflare dashboard, on `maneman.in`:

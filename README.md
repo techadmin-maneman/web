@@ -21,7 +21,7 @@ a request to maneman.in, app.maneman.in, ops.maneman.in or tech.maneman.in
   /api/*          ──►  mm-api  ──►  D1 (the database), R2 (files), three queues, the cron
   anything else   ──►  the host's own front end: mm-site, mm-app, mm-ops or mm-tech
 
-mm-api  ──►  Zoho CRM and Books, Razorpay, Evolution (WhatsApp), Google Maps, AILabTools
+mm-api  ──►  Zoho CRM and Books, Razorpay, Evolution (WhatsApp), Google Maps, YouCam
 ```
 
 Staging's hosts are `staging.maneman.in`, `app-staging.maneman.in`, `ops-staging.maneman.in` and `tech-staging.maneman.in`, all behind Cloudflare Access.
@@ -29,7 +29,7 @@ Staging's hosts are `staging.maneman.in`, `app-staging.maneman.in`, `ops-staging
 What to know before changing anything:
 
 - **Each app calls the API on its own host.** mm-api tells the four surfaces apart by the host a request comes on, and answers each with its own routes (ADR 0026). So the client app's routes answer only on the client app's host.
-- **D1 first, the vendors after.** A request writes D1 and answers; the queues and the cron carry the work to Zoho, WhatsApp and AILabTools; and the cron's sweeper puts back on a queue whatever went quiet. D1 is where every retry starts from.
+- **D1 first, the vendors after.** A request writes D1 and answers; the queues and the cron carry the work to Zoho, WhatsApp and YouCam; and the cron's sweeper puts back on a queue whatever went quiet. D1 is where every retry starts from.
 - **D1 is the record of bookings, visits, technicians and pieces; Razorpay is the record of money.** D1 keeps a mirror of Razorpay's payments, read afresh from Razorpay and never written as the truth (ADR 0044). Zoho Books is written from D1: a customer by the five-minute Books pass, and an invoice from our own figures (ADR 0110).
 - **Every vendor is behind an adapter** in `src/providers/`, with a stub. Locally every one is a stub, and nothing leaves the machine. Production refuses to start with a stub.
 - **Spending has ceilings** (ADR 0009, ADR 0112). The account is on Workers Paid, which bills past its allowances rather than refusing work; daily ceilings still keep R2 and the paid vendors from billing past what the business expects, a test proves them, and a budget alert emails the owner.
@@ -118,7 +118,7 @@ test/node/            everything else: the scripts, the policies, the front ends
 e2e/                  the browser tests: the site at its root, then app/, ops/ and tech/
 scripts/              build, dev, seed, checks, release, smoke, Zoho set-up, imports
 design/               the owner's designs: the site, the Phase 2 boards, the brand kit
-data/                 the AILabTools style catalogue, the pincodes, a sample referral log
+data/                 the try-on's reference photographs' manifest, the pincodes, a sample referral log
 ops/runner/           the self-hosted CI runner's image, retired: CI runs on GitHub's runners (docs/runbook.md)
 docs/                 indexed by docs/README.md
 ```

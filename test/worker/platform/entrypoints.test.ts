@@ -56,11 +56,7 @@ describe("queue handler", () => {
       id: jobId,
       state: "queued",
       stage: "crown",
-      preset: "full-natural-short",
-      hair_color: "black",
-      endpoint: "pro",
-      provider_color: "black",
-      color_route: "as_detected",
+      preset: "side-part",
       uploaded_at: "2026-09-21T00:00:00Z",
     });
     await env.UPLOADS.put(`uploads/${jobId}`, syntheticJpeg(800, 800));
@@ -68,7 +64,7 @@ describe("queue handler", () => {
 
     await worker.queue(batch, env);
 
-    expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 5 });
+    expect(batch.messages[0]?.retry).toHaveBeenCalledWith({ delaySeconds: 2 });
     expect(await env.DB.prepare("SELECT state FROM tryon_jobs").first()).toEqual({ state: "rendering" });
   });
 

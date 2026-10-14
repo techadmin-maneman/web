@@ -117,7 +117,11 @@
     // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
     "GEOCODE_DAILY_CEILING": "200",
     "RESULT_RETENTION_DAYS": "3",
-    "AILAB_CREDIT_FLOOR": "200",
+    // YouCam units left below which ops are told (docs/reference/youcam-api-notes.md).
+    "YOUCAM_UNIT_FLOOR": "500",
+    // Where YouCam fetches each look's reference photograph: public, so production's host for staging too, whose
+    // own sits behind Access. The path ends in the references' version (src/config/presets.ts).
+    "TRYON_REFS_URL": "http://localhost:4321/refs/v1",
     "MESSAGING_ENABLED": "true"
   },
   "env": {
@@ -200,7 +204,7 @@
       "vars": {
         "ENVIRONMENT": "staging",
         "TURNSTILE_ACCEPT_TEST_TOKEN": "true",
-        "IMAGE_PROVIDER": "ailabtools",
+        "IMAGE_PROVIDER": "youcam",
         "CRM_PROVIDER": "zoho",
         "MESSAGING_PROVIDER": "evolution",
         "ACCESS_PROVIDER": "cloudflare",
@@ -238,7 +242,11 @@
         // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
         "GEOCODE_DAILY_CEILING": "200",
         "RESULT_RETENTION_DAYS": "3",
-        "AILAB_CREDIT_FLOOR": "200",
+        // YouCam units left below which ops are told (docs/reference/youcam-api-notes.md).
+        "YOUCAM_UNIT_FLOOR": "500",
+        // Where YouCam fetches each look's reference photograph: public, so production's host for staging too, whose
+        // own sits behind Access. The path ends in the references' version (src/config/presets.ts).
+        "TRYON_REFS_URL": "https://maneman.in/refs/v1",
         "MESSAGING_ENABLED": "true"
       }
     },
@@ -318,7 +326,7 @@
       "vars": {
         "ENVIRONMENT": "production",
         "TURNSTILE_ACCEPT_TEST_TOKEN": "false",
-        "IMAGE_PROVIDER": "ailabtools",
+        "IMAGE_PROVIDER": "youcam",
         "CRM_PROVIDER": "zoho",
         "MESSAGING_PROVIDER": "evolution",
         "ACCESS_PROVIDER": "cloudflare",
@@ -356,7 +364,11 @@
         "GEOCODE_DAILY_CEILING": "200",
         // Fourteen days, not thirty, to leave R2 room for Phase 2's photographs (docs/decisions/0039-phase-2-budget.md).
         "RESULT_RETENTION_DAYS": "14",
-        "AILAB_CREDIT_FLOOR": "200",
+        // YouCam units left below which ops are told (docs/reference/youcam-api-notes.md).
+        "YOUCAM_UNIT_FLOOR": "500",
+        // Where YouCam fetches each look's reference photograph: public, so production's host for staging too, whose
+        // own sits behind Access. The path ends in the references' version (src/config/presets.ts).
+        "TRYON_REFS_URL": "https://maneman.in/refs/v1",
         "MESSAGING_ENABLED": "false"
       }
     }

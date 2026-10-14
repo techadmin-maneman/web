@@ -13,7 +13,7 @@ const VENDOR_NAMES = {
   razorpay: "Razorpay",
   evolution: "WhatsApp bridge",
   msg91: "MSG91",
-  ailabtools: "AILabTools",
+  youcam: "YouCam",
   google: "Google",
   turnstile: "Turnstile",
   "cloudflare-access": "Cloudflare Access",

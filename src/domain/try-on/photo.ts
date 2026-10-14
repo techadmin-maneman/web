@@ -1,5 +1,5 @@
-// Whether a photo is one AILabTools will take: JPEG or PNG by its bytes, at
-// most 5 MB, 200 to 4090 px a side (API notes, sections 3 and 4). The browser
+// Whether a photo is one YouCam will take: a JPEG by its bytes, at most 5 MB,
+// 200 to 1024 px a side (docs/reference/youcam-api-notes.md). The browser
 // scales and re-encodes before uploading, so a refusal here is rare. The same
 // check holds the small copy a client keeps as their before photo to a JPEG of
 // about 250 KB and at most 1600 px a side (docs/decisions/0084-a-clients-try-on-is-kept.md).
@@ -19,7 +19,7 @@ interface Limits {
 const PHOTO: Limits = {
   name: "photo",
   maxBytes: MAX_UPLOAD_BYTES,
-  types: ["image/jpeg", "image/png"],
+  types: ["image/jpeg"],
   maxSide: MAX_SIDE_PX,
 };
 const COPY: Limits = { name: "copy", maxBytes: MAX_COPY_BYTES, types: ["image/jpeg"], maxSide: COPY_LONG_EDGE_PX };

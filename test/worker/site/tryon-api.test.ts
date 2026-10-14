@@ -37,7 +37,7 @@ describe("POST /api/tryon/upload-url", () => {
     expect(await jobRow(body.job_id)).toMatchObject({
       state: "awaiting_upload",
       upload_key: `uploads/${body.job_id}`,
-      photo_consent_version: "photo-v4",
+      photo_consent_version: "photo-v5",
       photo_consent_at: NOW.toISOString(),
       session_id: null,
       person_id: null,
@@ -92,15 +92,16 @@ describe("POST /api/tryon/upload-url", () => {
 });
 
 describe("PUT /api/tryon/upload/:job_id", () => {
-  it("stores the photo once, labelled by its bytes", async () => {
+  it("stores the photo once, labelled by its bytes, and only a JPEG, which is all YouCam takes", async () => {
     const browser = visitor();
     const link = await (await browser.uploadLink()).json<{ job_id: string; upload_url: string }>();
 
-    expect((await browser.put(link.upload_url, syntheticPng(600, 800), "application/octet-stream")).status).toBe(204);
-    expect((await env.UPLOADS.head(`uploads/${link.job_id}`))?.httpMetadata?.contentType).toBe("image/png");
+    expect((await browser.put(link.upload_url, syntheticPng(600, 800))).status).toBe(422);
+    expect((await browser.put(link.upload_url, syntheticJpeg(600, 800), "application/octet-stream")).status).toBe(204);
+    expect((await env.UPLOADS.head(`uploads/${link.job_id}`))?.httpMetadata?.contentType).toBe("image/jpeg");
     expect((await jobRow(link.job_id))?.uploaded_at).toBe(NOW.toISOString());
 
-    const again = await browser.put(link.upload_url, syntheticPng(600, 800));
+    const again = await browser.put(link.upload_url, syntheticJpeg(600, 800));
     expect(again.status).toBe(409);
     expect(await again.json()).toMatchObject({ error: { code: "upload_already_received" } });
   });

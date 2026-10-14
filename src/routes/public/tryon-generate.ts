@@ -13,10 +13,9 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { PRESET_IDS, findPreset } from "../../config/presets.ts";
-import { FAILURE_CODES, HAIR_COLORS, JOB_STATES, UNKNOWN_COLOR_ROUTE } from "../../config/tryon.ts";
+import { FAILURE_CODES, FAILURE_REASONS, HAIR_COLORS, JOB_STATES } from "../../config/tryon.ts";
 import { alertCeilingReached, takeFromCeiling } from "../../domain/platform/ceilings.ts";
 import { takeOne } from "../../domain/sign-in/rate-limit.ts";
-import { chooseRender } from "../../domain/try-on/render-choice.ts";
 import { failJob, loadJob, type JobRow, type RenderChoice } from "../../domain/try-on/tryon.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { setLookCookie } from "../../http/look-cookie.ts";
@@ -31,9 +30,10 @@ const GenerateRequestSchema = z
   .object({
     job_id: z.uuid(),
     preset: z.enum(PRESET_IDS),
-    hair_color: z
-      .enum(HAIR_COLORS)
-      .openapi({ description: "From the browser's detector; unknown if it could not tell." }),
+    hair_color: z.enum(HAIR_COLORS).optional().openapi({
+      deprecated: true,
+      description: "Ignored: the look keeps the visitor's own colour. Taken from the site of the release before.",
+    }),
   })
   .strict()
   .openapi("GenerateRequest", { description: "The look, for the stage the gate's claim gave the try-on." });
@@ -43,6 +43,9 @@ const JobStatusSchema = z
     job_id: z.uuid(),
     state: z.enum(JOB_STATES),
     failure_code: z.enum(FAILURE_CODES).optional().openapi({ description: "Only when state is failed." }),
+    failure_reason: z.enum(FAILURE_REASONS).optional().openapi({
+      description: "Only when state is failed, and only where YouCam named the fault, or the try-on is paused.",
+    }),
   })
   .strict()
   .openapi("JobStatus");
@@ -104,7 +107,7 @@ export function registerTryonGenerate(app: App): void {
     if (job.lead_id === null || job.stage === null) return refuse(c, "claim_required");
     if (!tryOnRuns(settings.messaging)) return refuse(c, "whatsapp_unavailable");
 
-    const choice = chooseRender(job.stage, preset, request.hair_color, UNKNOWN_COLOR_ROUTE);
+    const choice = { stage: job.stage, preset: preset.id };
     const outcome = job.state === "awaiting_upload" ? await startFirstLook(c, job, choice) : sameLookAgain(job, choice);
 
     if ("error" in outcome) return c.json(errorBody(outcome.error, requestId), outcome.status);
@@ -118,10 +121,10 @@ export function registerTryonGenerate(app: App): void {
   });
 }
 
-export function statusOf(job: Pick<JobRow, "id" | "state" | "failure_code">): JobStatus {
-  return job.state === "failed" && job.failure_code !== null
-    ? { job_id: job.id, state: job.state, failure_code: job.failure_code }
-    : { job_id: job.id, state: job.state };
+export function statusOf(job: Pick<JobRow, "id" | "state" | "failure_code" | "failure_reason">): JobStatus {
+  if (job.state !== "failed" || job.failure_code === null) return { job_id: job.id, state: job.state };
+  const failed = { job_id: job.id, state: job.state, failure_code: job.failure_code };
+  return job.failure_reason === null ? failed : { ...failed, failure_reason: job.failure_reason };
 }
 
 type Outcome =
@@ -137,14 +140,13 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
   const since = new Date(now.getTime() - (await opsInputs(c)).tryonLookDays * DAY_MS).toISOString();
   const queued = await db
     .prepare(
-      `UPDATE tryon_jobs SET stage = ?2, preset = ?3, hair_color = ?4, endpoint = ?5, provider_color = ?6,
-         color_route = ?7, state = 'queued'
+      `UPDATE tryon_jobs SET stage = ?2, preset = ?3, state = 'queued'
        WHERE id = ?1 AND state = 'awaiting_upload' AND uploaded_at IS NOT NULL
          AND NOT EXISTS (SELECT 1 FROM tryon_jobs other WHERE other.person_id = tryon_jobs.person_id
-           AND other.id <> ?1 AND other.claimed_at >= ?8 AND other.state NOT IN ('awaiting_upload', 'failed'))
+           AND other.id <> ?1 AND other.claimed_at >= ?4 AND other.state NOT IN ('awaiting_upload', 'failed'))
        RETURNING id`,
     )
-    .bind(job.id, ...choiceValues(choice), since)
+    .bind(job.id, choice.stage, choice.preset, since)
     .first();
   if (queued === null) {
     // A second request queued it first, or another of the number's jobs has its look.
@@ -162,18 +164,13 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
 
   await enqueueRender(c, job.id);
   await setLookCookie(c, job.id);
-  c.var.log.info("tryon_render_queued", { job_id: job.id, endpoint: choice.endpoint, color_route: choice.colorRoute });
+  c.var.log.info("tryon_render_queued", { job_id: job.id, preset: choice.preset });
   return { job_id: job.id, state: "queued" };
 }
 
 /** A job already asked for: the same look returns it; any other is refused. */
 function sameLookAgain(job: JobRow, choice: RenderChoice): Outcome {
-  const sameLook = job.preset === choice.preset && job.hair_color === choice.hairColor;
-  return sameLook ? statusOf(job) : { error: "look_limit_reached", status: 403 };
-}
-
-function choiceValues(choice: RenderChoice): string[] {
-  return [choice.stage, choice.preset, choice.hairColor, choice.endpoint, choice.providerColor, choice.colorRoute];
+  return job.preset === choice.preset ? statusOf(job) : { error: "look_limit_reached", status: 403 };
 }
 
 async function enqueueRender(c: Context<AppEnv>, jobId: string): Promise<void> {

@@ -10,6 +10,9 @@
 //
 // e2e/global-setup.ts seeds them once, after the fitted client, whose technician their visits name.
 
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { indiaDate } from "../../src/lib/india-time.ts";
 import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS } from "../technicians.ts";
@@ -97,7 +100,14 @@ export async function seedNextVisit(): Promise<void> {
        ${sqlRow(crypto.randomUUID(), firstFit.person, firstFit.visit, "e2e-profile", technician, now, "essential")};`,
   );
 
-  await wrangler("d1", "execute", "DB", "--local", "--command", sql.join("\n"));
+  // Too long for a command line on Windows, so it goes in a file.
+  const folder = await mkdtemp(join(tmpdir(), "mm-e2e-"));
+  try {
+    await writeFile(join(folder, "next-visit.sql"), sql.join("\n"));
+    await wrangler("d1", "execute", "DB", "--local", "--file", join(folder, "next-visit.sql"));
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
   process.env[HANDOVER] = JSON.stringify({
     due: { mobile: due.mobile, date: indiaDay(5) },
     replacement: { mobile: replacement.mobile, date: indiaDay(3) },

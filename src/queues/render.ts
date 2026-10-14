@@ -1,34 +1,35 @@
-// The render consumer: the only caller of AILabTools. Each delivery moves a
-// job one step and, if the job is still running, asks the queue to deliver it
-// again later. Nothing waits inside the Worker for a render to finish.
+// The render consumer: the only caller of YouCam. Each delivery moves a job one step and, if the job is still
+// running, asks the queue to deliver it again later. Nothing waits inside the Worker for a render to finish.
 //
-//   queued       read the photo, submit it              -> rendering
-//   rendering    poll once; not done: retry in 5-60 s   -> downloading
-//   downloading  keep the result URL, then download it  -> ready
+//   queued       read the photo; the same photograph in the same look made before? copy its image -> ready
+//                otherwise submit it with the look's reference                                -> rendering
+//   rendering    poll once; not done: retry in 2-5 s                                          -> downloading
+//   downloading  keep the result URL, then download it                                       -> ready
 //
-// The API bills on generation, not delivery (API notes, 7.10). So a job is
-// submitted at most once, and a result that fails to download is retried from
-// its stored URL, never rendered again. See docs/decisions/0015-render-pipeline.md.
+// YouCam bills a render it makes, never one it refuses. So a job is submitted once, made once more only when YouCam's
+// own model fails or runs out of time (RENDER_ATTEMPTS), and a result that fails to download is retried from its
+// stored URL, never rendered again. See docs/decisions/0015-render-pipeline.md and 0201-the-try-on-on-youcam.md.
 
 import { z } from "zod";
 import {
   DOWNLOAD_QUEUE_RETRIES,
   POLL_DELAY_SECONDS,
   POLL_SLOWDOWN_AFTER_MS,
-  POLL_SLOW_AFTER_MS,
+  RENDER_ATTEMPTS,
   RENDER_GIVE_UP_MS,
   RESULT_URL_LIFETIME_MS,
   SUBMIT_ATTEMPTS,
 } from "../config/pipeline.ts";
-import { findPreset } from "../config/presets.ts";
+import { findPreset, referenceUrlOf, REFERENCE_VERSION, type Preset } from "../config/presets.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { checkPhoto } from "../domain/try-on/photo.ts";
 import { failJob, loadJob, type JobRow } from "../domain/try-on/tryon.ts";
-import { fileExtension } from "../lib/image-bytes.ts";
+import { fileExtension, inspectImage } from "../lib/image-bytes.ts";
 import type { Logger } from "../log.ts";
 import type { DownloadResult, RenderFailure } from "../providers/image/index.ts";
 import { enqueue } from "../domain/platform/enqueue.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
+import { TRYON_PAUSED_KEYS } from "../policy/alerts.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 import { DONE, runConsumer, type Settle } from "./consumer.ts";
 
@@ -36,6 +37,7 @@ const RenderMessageSchema = z.object({ job_id: z.uuid(), request_id: z.string() 
 export type RenderMessage = z.infer<typeof RenderMessageSchema>;
 
 const SUBMIT_RETRY_DELAY_SECONDS = 10;
+
 const DOWNLOAD_RETRY_DELAY_SECONDS = 60;
 
 export type RenderEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "MESSAGE_QUEUE">;
@@ -43,6 +45,8 @@ export type RenderEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "MESSAGE_QUEUE"
 interface RenderOptions {
   /** Days a result is kept once ready (RESULT_RETENTION_DAYS). */
   readonly resultRetentionDays: number;
+  /** Where YouCam fetches the looks' reference photographs (TRYON_REFS_URL). */
+  readonly refsUrl: string;
 }
 
 type Next = Settle;
@@ -88,13 +92,14 @@ export async function advanceJob({
     log.error("render_unknown_job");
     return DONE;
   }
+  const step = { env, deps, log, job, options };
   switch (job.state) {
     case "queued":
-      return submit(env, deps, log, job);
+      return submit(step);
     case "rendering":
-      return poll({ env, deps, log, job, options });
+      return poll(step);
     case "downloading":
-      return download({ env, deps, log, job, options });
+      return download(step);
     case "awaiting_upload":
     case "ready":
     case "failed":
@@ -103,7 +108,25 @@ export async function advanceJob({
   }
 }
 
-async function submit(env: RenderEnv, deps: Dependencies, log: Logger, job: JobRow): Promise<Next> {
+interface Step {
+  readonly env: RenderEnv;
+  readonly deps: Dependencies;
+  readonly log: Logger;
+  readonly job: JobRow;
+  readonly options: RenderOptions;
+}
+
+/** The render a look is: the photograph's own bytes, the look, the references' version, and who makes it. */
+async function renderKeyOf(image: Uint8Array, preset: Preset): Promise<string> {
+  const hex = (bytes: ArrayBuffer) =>
+    [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const photo = hex(await crypto.subtle.digest("SHA-256", image));
+  const key = new TextEncoder().encode([photo, preset.id, REFERENCE_VERSION, "youcam"].join(":"));
+  return hex(await crypto.subtle.digest("SHA-256", key));
+}
+
+async function submit(step: Step): Promise<Next> {
+  const { env, deps, log, job, options } = step;
   const db = env.DB;
   const now = deps.now();
 
@@ -119,105 +142,78 @@ async function submit(env: RenderEnv, deps: Dependencies, log: Logger, job: JobR
   if (claim === null) return DONE;
 
   const preset = findPreset(job.preset ?? "");
-  if (preset === undefined || job.endpoint === null || job.provider_color === null) {
-    return fail({
-      env,
-      deps,
-      log,
-      job,
-      failure: {
-        code: "render_failed",
-        transient: false,
-        alert: true,
-        detail: "job has no render choice",
-      },
-    });
+  if (preset === undefined) {
+    return fail(step, { code: "render_failed", transient: false, alert: true, detail: "job has no look" });
   }
 
   const upload = await env.UPLOADS.get(job.upload_key);
   if (upload === null) {
-    return fail({
-      env,
-      deps,
-      log,
-      job,
-      failure: {
-        code: "render_failed",
-        transient: false,
-        alert: false,
-        detail: "photo no longer stored",
-      },
-    });
+    return fail(step, { code: "render_failed", transient: false, alert: false, detail: "photo no longer stored" });
   }
   // The upload route checked the photo; this guards against anything that slipped past.
   const image = new Uint8Array(await upload.arrayBuffer());
   const photo = checkPhoto(image);
   if (!photo.ok) {
-    return fail({
-      env,
-      deps,
-      log,
-      job,
-      failure: {
-        code: "photo_invalid_file",
-        transient: false,
-        alert: false,
-        detail: photo.problem,
-      },
-    });
+    return fail(step, { code: "photo_invalid_file", transient: false, alert: false, detail: photo.problem });
   }
 
-  const result = await deps.image.submit(image, preset, job.provider_color, job.endpoint);
+  const renderKey = await renderKeyOf(image, preset);
+  await db.prepare("UPDATE tryon_jobs SET render_key = ?2 WHERE id = ?1").bind(job.id, renderKey).run();
+  const made = await copyOfMadeBefore(step, renderKey);
+  if (made !== null) return made;
+
+  const result = await deps.image.submit(image, referenceUrlOf(options.refsUrl, preset));
   if (result.ok) {
     await db
       .prepare(
-        `UPDATE tryon_jobs SET state = 'rendering', provider_task_id = ?2, submitted_at = ?3
+        `UPDATE tryon_jobs SET state = 'rendering', provider_task_id = ?2, submitted_at = ?3, renders = renders + 1
          WHERE id = ?1 AND state = 'queued'`,
       )
       .bind(job.id, result.taskId, deps.now().toISOString())
       .run();
-    log.info("render_submitted", { endpoint: job.endpoint, attempt: claim.submit_attempts });
+    log.info("render_submitted", { attempt: claim.submit_attempts, render: job.renders + 1 });
     return { retryAfterSeconds: POLL_DELAY_SECONDS.early };
   }
 
   if (result.failure.transient && claim.submit_attempts < SUBMIT_ATTEMPTS) {
-    // Failed calls bill nothing (API notes, 7.6), so a network error or a 5xx is worth another go.
+    // A refused call bills nothing, so a network error, a 5xx or a 429 is worth another go.
     await db.prepare("UPDATE tryon_jobs SET submit_started_at = NULL WHERE id = ?1").bind(job.id).run();
     log.warn("render_submit_retry", { attempt: claim.submit_attempts, detail: result.failure.detail });
-    return { retryAfterSeconds: SUBMIT_RETRY_DELAY_SECONDS };
+    return { retryAfterSeconds: SUBMIT_RETRY_DELAY_SECONDS * claim.submit_attempts };
   }
-  return fail({ env, deps, log, job, failure: result.failure });
+  return fail(step, result.failure);
 }
 
-async function poll({
-  env,
-  deps,
-  log,
-  job,
-  options,
-}: {
-  env: RenderEnv;
-  deps: Dependencies;
-  log: Logger;
-  job: JobRow;
-  options: RenderOptions;
-}): Promise<Next> {
-  if (job.provider_task_id === null || job.endpoint === null) {
-    return fail({
-      env,
-      deps,
-      log,
-      job,
-      failure: {
-        code: "render_failed",
-        transient: false,
-        alert: true,
-        detail: "rendering without a task",
-      },
-    });
+/**
+ * The same photograph in the same look, made before and still held: its image is copied to this job, which is ready
+ * at once, and YouCam is not asked again. Null when there is none to copy.
+ */
+async function copyOfMadeBefore(step: Step, renderKey: string): Promise<Next | null> {
+  const { env, job } = step;
+  const earlier = await env.DB.prepare(
+    `SELECT result_key FROM tryon_jobs
+     WHERE render_key = ?1 AND state = 'ready' AND result_key IS NOT NULL AND id <> ?2
+     ORDER BY created_at DESC LIMIT 1`,
+  )
+    .bind(renderKey, job.id)
+    .first<{ result_key: string }>();
+  if (earlier === null) return null;
+  const stored = await env.RESULTS.get(earlier.result_key);
+  if (stored === null) return null;
+  const bytes = new Uint8Array(await stored.arrayBuffer());
+  const info = inspectImage(bytes);
+  if (info === null) return null;
+  step.log.info("render_copied", { bytes: bytes.byteLength });
+  return storeResult(step, { result: { ok: true, bytes, contentType: info.type }, attempts: 0, from: "queued" });
+}
+
+async function poll(step: Step): Promise<Next> {
+  const { env, deps, job } = step;
+  if (job.provider_task_id === null) {
+    return fail(step, { code: "render_failed", transient: false, alert: true, detail: "rendering without a task" });
   }
   const elapsed = deps.now().getTime() - Date.parse(job.submitted_at ?? job.created_at);
-  const result = await deps.image.poll(job.provider_task_id, job.endpoint);
+  const result = await deps.image.poll(job.provider_task_id);
 
   if (result.state === "done") {
     const now = deps.now();
@@ -229,69 +225,45 @@ async function poll({
     )
       .bind(job.id, result.resultUrl, expiresAt)
       .run();
-    return download({
-      env,
-      deps,
-      log,
-      job: {
-        ...job,
-        state: "downloading",
-        provider_result_url: result.resultUrl,
-        provider_result_expires_at: expiresAt,
-      },
-      options,
-    });
+    const downloading = { ...job, state: "downloading", provider_result_url: result.resultUrl } as const;
+    return download({ ...step, job: { ...downloading, provider_result_expires_at: expiresAt } });
   }
 
   const withinDeadline = elapsed <= RENDER_GIVE_UP_MS;
-  if (result.state === "failed" && !(result.failure.transient && withinDeadline)) {
-    return fail({ env, deps, log, job, failure: result.failure });
-  }
+  if (result.state === "failed" && result.failure.retryOnce === true) return renderAgain(step, result.failure);
+  if (result.state === "failed" && !(result.failure.transient && withinDeadline)) return fail(step, result.failure);
   if (!withinDeadline) {
-    // Probably billed already: Premium bills while it renders. The task can still be polled by hand.
     const detail = `no result ${String(Math.round(elapsed / MINUTE_MS))} min after submitting; task ${job.provider_task_id}`;
-    return fail({ env, deps, log, job, failure: { code: "render_failed", transient: false, alert: true, detail } });
+    return renderAgain(step, { code: "render_failed", transient: false, alert: true, detail });
   }
-  return { retryAfterSeconds: pollDelay(elapsed) };
+  return { retryAfterSeconds: elapsed < POLL_SLOWDOWN_AFTER_MS ? POLL_DELAY_SECONDS.early : POLL_DELAY_SECONDS.late };
 }
 
-/** 5 s at first, 10 s after 30 s, once a minute after 3 minutes. */
-function pollDelay(elapsed: number): number {
-  if (elapsed < POLL_SLOWDOWN_AFTER_MS) return POLL_DELAY_SECONDS.early;
-  if (elapsed < POLL_SLOW_AFTER_MS) return POLL_DELAY_SECONDS.late;
-  return POLL_DELAY_SECONDS.slow;
+/** A render YouCam's model failed, or that ran out of time, is made once more from the start; after that it fails. */
+async function renderAgain(step: Step, failure: RenderFailure): Promise<Next> {
+  const { env, log, job } = step;
+  if (job.renders >= RENDER_ATTEMPTS) return fail(step, failure);
+  const requeued = await env.DB.prepare(
+    `UPDATE tryon_jobs SET state = 'queued', submit_started_at = NULL, submit_attempts = 0, provider_task_id = NULL,
+       submitted_at = NULL
+     WHERE id = ?1 AND state = 'rendering'`,
+  )
+    .bind(job.id)
+    .run();
+  if (requeued.meta.changes === 0) return DONE;
+  log.warn("render_again", { render: job.renders, detail: failure.detail });
+  return { retryAfterSeconds: SUBMIT_RETRY_DELAY_SECONDS };
 }
 
-async function download({
-  env,
-  deps,
-  log,
-  job,
-  options,
-}: {
-  env: RenderEnv;
-  deps: Dependencies;
-  log: Logger;
-  job: JobRow;
-  options: RenderOptions;
-}): Promise<Next> {
+async function download(step: Step): Promise<Next> {
+  const { env, deps, log, job } = step;
   const db = env.DB;
   const now = deps.now();
   const url = job.provider_result_url;
   const expiresAt = Date.parse(job.provider_result_expires_at ?? "");
   if (url === null || !(expiresAt > now.getTime())) {
-    return fail({
-      env,
-      deps,
-      log,
-      job,
-      failure: {
-        code: "render_failed",
-        transient: false,
-        alert: true,
-        detail: "result URL expired before the image was downloaded: a billed image is lost",
-      },
-    });
+    const detail = "result URL expired before the image was downloaded: a billed image is lost";
+    return fail(step, { code: "render_failed", transient: false, alert: true, detail });
   }
 
   const attempt = await db
@@ -306,13 +278,7 @@ async function download({
   const result = await deps.image.download(url);
   if (!result.ok && !result.transient) {
     // Billed, and never usable: downloading it again would only fetch the same bytes.
-    return fail({
-      env,
-      deps,
-      log,
-      job,
-      failure: { code: "render_failed", transient: false, alert: true, detail: result.detail },
-    });
+    return fail(step, { code: "render_failed", transient: false, alert: true, detail: result.detail });
   }
   if (!result.ok) {
     log.warn("render_download_failed", { attempts, detail: result.detail });
@@ -320,30 +286,26 @@ async function download({
     return attempts < DOWNLOAD_QUEUE_RETRIES ? { retryAfterSeconds: DOWNLOAD_RETRY_DELAY_SECONDS } : DONE;
   }
 
-  return storeResult({ env, deps, log, job, options, result, attempts });
+  return storeResult(step, { result, attempts, from: "downloading" });
 }
 
 /**
- * Stores a downloaded look and releases the message a gate left waiting for it; a job that moved on while this ran
- * keeps no result.
+ * Stores a look and releases the message a gate left waiting for it; a job that moved on while this ran keeps no
+ * result. `from` is the state the job is stored from: downloading a render, or queued for a copy of one made before.
  */
-async function storeResult({
-  env,
-  deps,
-  log,
-  job,
-  options,
-  result,
-  attempts,
-}: {
-  env: RenderEnv;
-  deps: Dependencies;
-  log: Logger;
-  job: JobRow;
-  options: RenderOptions;
-  result: Extract<DownloadResult, { ok: true }>;
-  attempts: number;
-}): Promise<Next> {
+async function storeResult(
+  step: Step,
+  {
+    result,
+    attempts,
+    from,
+  }: {
+    result: Extract<DownloadResult, { ok: true }>;
+    attempts: number;
+    from: "downloading" | "queued";
+  },
+): Promise<Next> {
+  const { env, deps, log, job, options } = step;
   const db = env.DB;
   const resultKey = `results/${job.id}.${fileExtension(result.contentType)}`;
   await env.RESULTS.put(resultKey, result.bytes, { httpMetadata: { contentType: result.contentType } });
@@ -354,13 +316,14 @@ async function storeResult({
     db
       .prepare(
         `UPDATE tryon_jobs SET state = 'ready', result_key = ?2, expires_at = ?3, latency_ms = ?4
-         WHERE id = ?1 AND state = 'downloading'`,
+         WHERE id = ?1 AND state = ?5`,
       )
       .bind(
         job.id,
         resultKey,
         new Date(readyAt.getTime() + options.resultRetentionDays * DAY_MS).toISOString(),
         latencyMs,
+        from,
       ),
     // A gate submitted before the result was ready left its message waiting for this.
     db
@@ -380,7 +343,9 @@ async function storeResult({
     log.info("render_result_discarded", { attempts });
     return DONE;
   }
-  log.info("render_ready", { endpoint: job.endpoint, latency_ms: latencyMs, bytes: result.bytes.byteLength, attempts });
+  log.info("render_ready", { latency_ms: latencyMs, bytes: result.bytes.byteLength, attempts });
+  // A render made is the key and the units working again.
+  if (from === "downloading") await Promise.all(Object.values(TRYON_PAUSED_KEYS).map((key) => deps.resolveAlert(key)));
 
   for (const row of (queued?.results ?? []) as { id: string }[]) {
     const body = { message_id: row.id, request_id: job.request_id } satisfies MessagingMessage;
@@ -389,29 +354,21 @@ async function storeResult({
   return DONE;
 }
 
-async function fail({
-  env,
-  deps,
-  log,
-  job,
-  failure,
-}: {
-  env: RenderEnv;
-  deps: Dependencies;
-  log: Logger;
-  job: JobRow;
-  failure: RenderFailure;
-}): Promise<Next> {
+async function fail(step: Step, failure: RenderFailure): Promise<Next> {
+  const { env, deps, log, job } = step;
   const changed = await failJob({
     db: env.DB,
     jobId: job.id,
     code: failure.code,
+    reason: failure.reason ?? null,
     detail: failure.detail,
     now: deps.now(),
   });
   if (changed) {
-    log.warn("render_failed", { code: failure.code, detail: failure.detail, endpoint: job.endpoint });
-    if (failure.alert) await deps.alert(`Try-on job ${job.id} failed (${failure.code}): ${failure.detail}`);
+    log.warn("render_failed", { code: failure.code, reason: failure.reason ?? null, detail: failure.detail });
+    const message = `Try-on job ${job.id} failed (${failure.reason ?? failure.code}): ${failure.detail}`;
+    if (failure.urgentKey !== undefined) await deps.alertOnce({ key: failure.urgentKey, message });
+    else if (failure.alert) await deps.alert(message);
   }
   return DONE;
 }

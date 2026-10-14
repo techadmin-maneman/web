@@ -1,7 +1,6 @@
 // What an image really is, read from its bytes rather than from its name or
-// the Content-Type it arrived with. AILabTools' results are PNG whatever their
-// URL says, and Premium rejects a part whose name does not match its bytes
-// (docs/reference/ailabtools-api-notes.md, 7.2).
+// the Content-Type it arrived with: a provider's result URL need not say what
+// its bytes are.
 
 export type ImageType = "image/jpeg" | "image/png";
 

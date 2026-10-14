@@ -46,7 +46,7 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 | [api.md](api.md), [api-client.md](api-client.md), [api-ops.md](api-ops.md), [api-tech.md](api-tech.md) | Every route, one page per surface, generated with `openapi*.json` by `npm run openapi` |
 | [schema.md](schema.md)                                                                                 | Every table in D1, written from the migrations by `npm run schema`                     |
 | [verification.md](verification.md)                                                                     | Each milestone's definition of done, with its evidence                                 |
-| [reference/](reference/README.md)                                                                      | The AILabTools API notes, verbatim                                                     |
+| [reference/](reference/README.md)                                                                      | The try-on providers' API notes, and the references' manifest                          |
 
 ## Archive
 

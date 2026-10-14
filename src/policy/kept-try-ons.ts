@@ -14,7 +14,7 @@
 // - Stored in a new bucket per environment, mm-{env}-client-photos, with no lifecycle rule.
 
 /** The photo notices that tell the visitor a client's try-on is kept. */
-export const KEEPING_NOTICES: readonly string[] = ["photo-v2", "photo-v3", "photo-v4"];
+export const KEEPING_NOTICES: readonly string[] = ["photo-v2", "photo-v3", "photo-v4", "photo-v5"];
 
 export interface HeldTryOn {
   readonly id: string;

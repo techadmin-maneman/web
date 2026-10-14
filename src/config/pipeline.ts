@@ -4,25 +4,24 @@
 // without reaching into its consumer.
 
 import { z } from "zod";
-import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
+import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 
 /**
- * Polls every 5 s for the first 30 s after submitting, every 10 s to 3
- * minutes, then once a minute. Pro took 17-49 s and Premium 80-91 s when the
- * harness measured them (API notes, 7.6), but a Premium render on staging took
- * 6 minutes and was billed all the same (docs/decisions/0015-render-pipeline.md).
+ * Polls every 2 s for the first 20 s after submitting, then every 5 s. Every YouCam render had finished by the first
+ * 10 s poll when the harness measured them, about 15 s end to end (docs/reference/youcam-api-notes.md).
  */
-export const POLL_DELAY_SECONDS = { early: 5, late: 10, slow: 60 } as const;
-export const POLL_SLOWDOWN_AFTER_MS = 30_000;
-export const POLL_SLOW_AFTER_MS = 180_000;
-/** A render still running this long after submitting is given up. */
-export const RENDER_GIVE_UP_MS = 15 * MINUTE_MS;
+export const POLL_DELAY_SECONDS = { early: 2, late: 5 } as const;
+export const POLL_SLOWDOWN_AFTER_MS = 20_000;
+/** A render still running this long after submitting is given up, or made once more (RENDER_ATTEMPTS). */
+export const RENDER_GIVE_UP_MS = 2 * MINUTE_MS;
+/** A render YouCam's own model failed, or that ran out of time, is made once more: this many renders in all. */
+export const RENDER_ATTEMPTS = 2;
 /** A submit that failed on the network or a 5xx is tried again, this many times in all. */
 export const SUBMIT_ATTEMPTS = 3;
 /** A stalled download is tried again soon by the queue, this many times, then by the sweeper. */
 export const DOWNLOAD_QUEUE_RETRIES = 3;
-/** AILabTools deletes results after 24 hours (API notes, section 1). */
-export const RESULT_URL_LIFETIME_MS = DAY_MS;
+/** YouCam's result URL works for two hours. */
+export const RESULT_URL_LIFETIME_MS = 2 * HOUR_MS;
 
 /** A result message: the first try plus three retries. */
 export const MAX_SEND_ATTEMPTS = 4;

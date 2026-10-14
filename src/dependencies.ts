@@ -102,7 +102,7 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
       createLeadNotice({ webhookUrl: settings.leadWebhookUrl, environment, fetch: httpFetch, log }),
     );
     const crm = lazily(() => createCrmProvider(settings.zohoCrm, zoho));
-    const image = lazily(() => createImageProvider(settings.tryon.ailabApiKey, { fetch: httpFetch, now, log }));
+    const image = lazily(() => createImageProvider(settings.tryon.youcamApiKey, { fetch: httpFetch, now, log }));
     const codes = lazily(() =>
       createCodeSender(providers.SMS_PROVIDER, settings.login.sms, { messaging: messaging(), fetch: httpFetch, log }),
     );

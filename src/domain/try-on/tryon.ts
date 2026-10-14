@@ -2,10 +2,8 @@
 // consumer and the sweeper share these; single-use SQL stays where it is used.
 // See docs/decisions/0014-try-on-api.md.
 
-import type { Endpoint } from "../../config/presets.ts";
-import type { FailureCode, HairColor, JobState, UnknownColorRoute } from "../../config/tryon.ts";
+import type { FailureCode, FailureReason, JobState } from "../../config/tryon.ts";
 import type { LossExtent } from "../../config/booking.ts";
-import type { ProviderColor } from "../../providers/image/index.ts";
 
 export interface JobRow {
   id: string;
@@ -16,13 +14,11 @@ export interface JobRow {
   parent_job_id: string | null;
   stage: LossExtent | null;
   preset: string | null;
-  hair_color: HairColor | null;
-  endpoint: Endpoint | null;
-  provider_color: ProviderColor | null;
-  color_route: ColorRoute | null;
   state: JobState;
   submit_started_at: string | null;
   submit_attempts: number;
+  /** The renders YouCam took for the job; one more is made when its model fails or runs out of time. */
+  renders: number;
   submitted_at: string | null;
   provider_task_id: string | null;
   provider_result_url: string | null;
@@ -31,7 +27,11 @@ export interface JobRow {
   download_attempted_at: string | null;
   result_key: string | null;
   failure_code: FailureCode | null;
+  /** What the page says beyond the code (FAILURE_REASONS); null where the code says it all. */
+  failure_reason: FailureReason | null;
   provider_error_detail: string | null;
+  /** The render this look is: the photograph's bytes, the look, the references' version (src/queues/render.ts). */
+  render_key: string | null;
   latency_ms: number | null;
   person_id: string | null;
   lead_id: string | null;
@@ -48,16 +48,10 @@ export interface JobRow {
   kept_look_key: string | null;
 }
 
-type ColorRoute = "as_detected" | UnknownColorRoute;
-
-/** What a render asks the provider for. */
+/** What a render is asked for: the look, for the stage the gate's claim gave. */
 export interface RenderChoice {
   readonly stage: LossExtent;
   readonly preset: string;
-  readonly hairColor: HairColor;
-  readonly endpoint: Endpoint;
-  readonly providerColor: ProviderColor;
-  readonly colorRoute: ColorRoute;
 }
 
 export function loadJob(db: D1Database, jobId: string): Promise<JobRow | null> {
@@ -72,24 +66,26 @@ export async function failJob({
   db,
   jobId,
   code,
+  reason = null,
   detail,
   now,
 }: {
   db: D1Database;
   jobId: string;
   code: FailureCode;
+  reason?: FailureReason | null;
   detail: string | null;
   now: Date;
 }): Promise<boolean> {
   const [changed] = await db.batch([
     db
       .prepare(
-        `UPDATE tryon_jobs SET state = 'failed', failure_code = ?2, provider_error_detail = ?3,
+        `UPDATE tryon_jobs SET state = 'failed', failure_code = ?2, failure_reason = ?5, provider_error_detail = ?3,
            latency_ms = CAST((julianday(?4) - julianday(created_at)) * 86400000 AS INTEGER)
          WHERE id = ?1 AND state NOT IN ('ready', 'failed', 'expired')
          RETURNING id`,
       )
-      .bind(jobId, code, detail, now.toISOString()),
+      .bind(jobId, code, detail, now.toISOString(), reason),
     db
       .prepare(
         "UPDATE outbound_messages SET state = 'skipped', last_error = ?2 WHERE subject_id = ?1 AND state = 'waiting'",

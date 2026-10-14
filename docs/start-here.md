@@ -196,7 +196,7 @@ this map, or when the map names something that no longer exists.
 
 ### The try-on
 
-- **Database work** (`src/domain/try-on/`): `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`, `render-choice`,
+- **Database work** (`src/domain/try-on/`): `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`,
   `photo`
 - **Rules** (`src/policy/`): `tryon-delivery`, `kept-try-ons`
 - **Data** (`src/config/`): `tryon`

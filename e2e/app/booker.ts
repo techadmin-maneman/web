@@ -9,6 +9,9 @@
 //
 // e2e/global-setup.ts seeds the clients once, after the fitted client, whose technician their fit names.
 
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "@playwright/test";
 import { indiaDate } from "../../src/lib/india-time.ts";
 import { randomMobile } from "../support.ts";
@@ -63,6 +66,13 @@ export async function seedBooker(): Promise<void> {
   const fitted = indiaDate(new Date(Date.now() - 60 * DAY));
   const bookers = Array.from({ length: BOOKERS }, () => ({ mobile: randomMobile() }) satisfies Booker);
   const sql = bookers.flatMap((booker) => bookerRows(booker.mobile, fitted, now));
-  await wrangler("d1", "execute", "DB", "--local", "--command", sql.join("\n"));
+  // Too long for a command line on Windows, so it goes in a file.
+  const folder = await mkdtemp(join(tmpdir(), "mm-e2e-"));
+  try {
+    await writeFile(join(folder, "booker.sql"), sql.join("\n"));
+    await wrangler("d1", "execute", "DB", "--local", "--file", join(folder, "booker.sql"));
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
   process.env[HANDOVER] = JSON.stringify(bookers);
 }

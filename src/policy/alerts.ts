@@ -18,10 +18,12 @@ export const crmLeadKey = (leadId: string): string => `crm_lead:${leadId}`;
 export const crmErasureKey = (personId: string): string => `crm_erasure:${personId}`;
 /** A deletion request near the end of the days it must be decided in. */
 export const deletionWaitingKey = (requestId: string): string => `deletion_waiting:${requestId}`;
+/** No try-on can run: YouCam refuses the key, or is out of units. */
+export const TRYON_PAUSED_KEYS = { key: "tryon_paused:key", credits: "tryon_paused:credits" } as const;
 
 /**
  * The alerts a person must act on within the hour, which go to the urgent space as well: money taken that nothing
- * books or gives back, and a stop to every sign-in or every job.
+ * books or gives back, and a stop to every sign-in, every job or every try-on.
  */
 const URGENT_KINDS = [
   "razorpay_payment_unheard",
@@ -37,6 +39,7 @@ const URGENT_KINDS = [
   "login_codes_failing",
   "whatsapp_bridge",
   "cron_run_cut_short",
+  "tryon_paused",
 ];
 
 /** Whether an alert goes to the urgent space too. */

@@ -41,8 +41,8 @@ export function Looks(props: {
                 </span>
               )}
               <span class={styles.lookText}>
-                <span class={styles.lookDensity}>{option.density}</span>
-                <span class={styles.lookDetail}>{option.detail}</span>
+                <span class={styles.lookName}>{option.name}</span>
+                {option.detail !== "" && <span class={styles.lookDetail}>{option.detail}</span>}
               </span>
             </>
           </ChoiceCard>

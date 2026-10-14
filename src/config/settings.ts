@@ -31,7 +31,7 @@ export interface TryonSettings {
   readonly claimMobileDailyLimit: number;
   readonly resultMessageMobileDailyLimit: number;
   /**
-   * Global ceilings per India day. The render ceiling caps AILabTools spend;
+   * Global ceilings per India day. The render ceiling caps YouCam spend;
    * all three cap R2 use, and so what it costs (docs/decisions/0194-the-build-on-workers-paid.md).
    */
   readonly renderDailyCeiling: number;
@@ -39,12 +39,14 @@ export interface TryonSettings {
   readonly resultReadDailyCeiling: number;
   /** Days a result is kept once ready: 14 in production, the photo notice's limit; less on staging. */
   readonly resultRetentionDays: number;
-  /** Alert when the AILabTools balance falls below this many credits. */
-  readonly creditFloor: number;
+  /** Alert when YouCam's balance falls below this many units. */
+  readonly unitFloor: number;
   /** Signs upload and result links. */
   readonly linkSigningKey: string;
-  /** Present when IMAGE_PROVIDER is "ailabtools". */
-  readonly ailabApiKey: string | null;
+  /** Present when IMAGE_PROVIDER is "youcam". */
+  readonly youcamApiKey: string | null;
+  /** Where YouCam fetches the looks' reference photographs: https, ending in their version. */
+  readonly refsUrl: string;
 }
 
 export interface MessagingSettings {

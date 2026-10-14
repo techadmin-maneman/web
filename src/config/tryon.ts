@@ -8,17 +8,10 @@ import { HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 export const TRYON_STAGES = LOSS_EXTENTS;
 
 /**
- * What the browser's colour detector reports. Only natural shades; `unknown`
- * when it cannot read the hair, which is routed by UNKNOWN_COLOR_ROUTE below.
+ * The colours the site used to send. The look keeps the visitor's own colour now, so none is chosen; the site of the
+ * release before still sends one, which is taken and ignored until the next release.
  */
 export const HAIR_COLORS = ["black", "brown", "lightBrown", "grey", "silver", "white", "unknown"] as const;
-export type HairColor = (typeof HAIR_COLORS)[number];
-
-/** How a job with hair_color `unknown` is rendered. */
-export type UnknownColorRoute = "premium_original" | "pro_black";
-
-/** Pro only, in every environment (docs/decisions/0018-one-look-pro-only-lead-notices.md). */
-export const UNKNOWN_COLOR_ROUTE: UnknownColorRoute = "pro_black";
 
 export const JOB_STATES = [
   "awaiting_upload",
@@ -35,7 +28,22 @@ export type JobState = (typeof JOB_STATES)[number];
 export const FAILURE_CODES = ["photo_unreadable", "photo_invalid_file", "render_failed", "busy"] as const;
 export type FailureCode = (typeof FAILURE_CODES)[number];
 
-/** The upload limit: AILabTools' own (docs/reference/ailabtools-api-notes.md, sections 3 and 4). */
+/**
+ * What the page says beyond the failure code: the fault YouCam found in the photograph, or the try-on paused for want
+ * of units or a working key (docs/reference/youcam-api-notes.md, section 4).
+ */
+export const FAILURE_REASONS = [
+  "no_face",
+  "no_shoulders",
+  "face_angle",
+  "several_people",
+  "not_styleable",
+  "refused",
+  "unavailable",
+] as const;
+export type FailureReason = (typeof FAILURE_REASONS)[number];
+
+/** The upload limit: under YouCam's 10 MB, and far above what the browser's 1024 px JPEG comes to. */
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 /**
  * The largest result stored: WhatsApp takes images of 5 MB at most, and the cap
@@ -48,8 +56,8 @@ export const PHOTO_RETENTION_MS = HOUR_MS;
 /** The longest a look may be kept (RESULT_RETENTION_DAYS): the photo notice says fourteen days at most. */
 export const MAX_RESULT_RETENTION_DAYS = 14;
 export const MIN_SIDE_PX = 200;
-/** Premium's documented maximum; Pro's is 4095. */
-export const MAX_SIDE_PX = 4090;
+/** YouCam takes a photograph 1024 px on its long side at most; the browser makes it so. */
+export const MAX_SIDE_PX = 1024;
 /**
  * The small copy of the photograph a client keeps as their before photo (docs/decisions/0084-a-clients-try-on-is-kept.md),
  * re-encoded in the browser as a visit photograph is on the technician's phone: a JPEG of about 250 KB, at most

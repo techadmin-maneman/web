@@ -108,6 +108,7 @@ const QUEUE_CONSUMERS: readonly {
         log,
         options: {
           resultRetentionDays: config.settings.tryon.resultRetentionDays,
+          refsUrl: config.settings.tryon.refsUrl,
         },
       }),
   },

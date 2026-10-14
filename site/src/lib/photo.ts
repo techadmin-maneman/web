@@ -1,13 +1,13 @@
-// The visitor's photograph, made ready in the browser before it is uploaded,
-// as the AILabTools harness does it: fit within 4090 px, re-encode as JPEG at
-// 0.92, and shrink further until it is under 5 MB. Drawing it through a canvas
-// drops its EXIF, the GPS location included. It is kept in memory only. Under a
+// The visitor's photograph, made ready in the browser before it is uploaded, as
+// YouCam takes it: turned upright by its EXIF orientation, fit within 1024 px with
+// high-quality smoothing, re-encoded as JPEG at 0.92, and shrunk further until it is
+// under 5 MB. Drawing it through a canvas drops its EXIF, the GPS location included,
+// and makes a JPEG of a PNG, HEIC, WebP or AVIF. It is kept in memory only. Under a
 // notice that keeps a client's try-on, a small copy of about 250 KB is made
 // too, as the technician's camera makes a visit photograph (ADR 0084).
 
 import { smallJpeg } from "@maneman/web-kit/small-jpeg";
-import { MAX_COPY_BYTES, MAX_SIDE_PX, MAX_UPLOAD_BYTES, MIN_SIDE_PX, type HairColor } from "@rules/config/tryon.ts";
-import { DETECTOR_SIDE, detectHairColour } from "./hair-colour.ts";
+import { MAX_COPY_BYTES, MAX_SIDE_PX, MAX_UPLOAD_BYTES, MIN_SIDE_PX } from "@rules/config/tryon.ts";
 
 const QUALITY = 0.92;
 /** Each retry over 5 MB shrinks the photo by this much, and stops at this size. */
@@ -19,7 +19,6 @@ class PhotoRejected extends Error {}
 
 export interface PreparedPhoto {
   readonly blob: Blob;
-  readonly hairColor: HairColor;
   /** The small copy a client keeps as their before photo; null when none is asked for, or none came small enough. */
   readonly copy: Blob | null;
 }
@@ -34,7 +33,12 @@ function canvasOf(image: ImageBitmap, width: number, height: number): HTMLCanvas
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  canvas.getContext("2d")?.drawImage(image, 0, 0, width, height);
+  const context = canvas.getContext("2d");
+  if (context !== null) {
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(image, 0, 0, width, height);
+  }
   return canvas;
 }
 
@@ -57,9 +61,9 @@ async function smallCopy(image: ImageBitmap): Promise<Blob | null> {
   return copy.blob.size <= MAX_COPY_BYTES ? copy.blob : null;
 }
 
-/** Resizes, re-encodes and reads the hair colour, and makes the small copy when asked. Throws PhotoRejected if the API could not use it. */
+/** Resizes and re-encodes, and makes the small copy when asked. Throws PhotoRejected if the API could not use it. */
 export async function preparePhoto(file: Blob, withCopy: boolean): Promise<PreparedPhoto> {
-  const image = await createImageBitmap(file).catch(() => {
+  const image = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() => {
     throw new PhotoRejected("the file is not an image this browser can read");
   });
   try {
@@ -71,14 +75,8 @@ export async function preparePhoto(file: Blob, withCopy: boolean): Promise<Prepa
       blob = await jpeg(canvasOf(image, size.width, size.height));
     }
 
-    const small = fitWithin(image.width, image.height, DETECTOR_SIDE);
-    const pixels = canvasOf(image, small.width, small.height)
-      .getContext("2d")
-      ?.getImageData(0, 0, small.width, small.height).data;
-    const hairColor = pixels === undefined ? "unknown" : detectHairColour(pixels, small.width, small.height);
-
     const copy = withCopy ? await smallCopy(image) : null;
-    return { blob, hairColor, copy };
+    return { blob, copy };
   } finally {
     image.close();
   }

@@ -42,7 +42,7 @@ describe("consent notices", () => {
   it("shows the try-on's notices that send the look to WhatsApp, which keep a client's try-on", () => {
     const photo = findNotice(CURRENT_NOTICE.tryon_photo);
     const gate = findNotice(CURRENT_NOTICE.result_delivery);
-    expect([photo?.version, gate?.version]).toEqual(["photo-v4", "gate-v5"]);
+    expect([photo?.version, gate?.version]).toEqual(["photo-v5", "gate-v5"]);
     expect(photo?.text.join(" ")).toContain("sent to your WhatsApp and never shown on this site");
     expect(gate?.text.join(" ")).toContain("never shown on this site");
     expect(gate?.text.join(" ")).not.toContain("next screen");
@@ -50,16 +50,19 @@ describe("consent notices", () => {
     expect(Object.keys(PUBLISHED)).not.toContain(CURRENT_NOTICE.tryon_photo);
   });
 
-  // V3 said the photograph reached nobody outside Mane Man and was kept thirty days.
+  // V3 said the photograph reached nobody outside Mane Man and was kept thirty days; only YouCam's own copy is now.
   it("names who the try-on's photograph reaches, says it goes within the hour, and what stays for 14 days", () => {
     const photo = findNotice(CURRENT_NOTICE.tryon_photo)?.text ?? [];
     const gate = findNotice(CURRENT_NOTICE.result_delivery)?.text ?? [];
-    expect(photo).toContain("Shared with: AILabTools, which makes the look, and WhatsApp, which delivers it.");
+    expect(photo).toContain(
+      "Shared with: YouCam (Perfect Corp), which makes the look and keeps its copy of your photograph for thirty days, and WhatsApp, which delivers it.",
+    );
     expect(photo.find((line) => line.startsWith("Kept for: "))).toMatch(/^Kept for: An hour, then deleted/);
     expect(gate.at(-1)).toContain(
       "Your photograph is deleted within the hour; a small copy stays with your look for up to 14 days.",
     );
-    expect([...photo, ...gate].join(" ")).not.toMatch(/thirty days|Nobody outside Mane Man/);
+    expect(photo.find((line) => line.startsWith("Kept for: "))).not.toMatch(/thirty days/);
+    expect([...photo, ...gate].join(" ")).not.toMatch(/Nobody outside Mane Man/);
   });
 
   it("records a consent given by booking on its own purpose's notice, and names a referrer on each card notice that says so", () => {

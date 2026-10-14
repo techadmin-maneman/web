@@ -76,7 +76,6 @@ const SECRET_FIELDS = [
   "cookie",
   "set_cookie",
   "api_key",
-  "ailabapi_api_key",
   "token",
   "access_token",
   "refresh_token",

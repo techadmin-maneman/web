@@ -133,7 +133,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   await expect.poll(() => named(seen, "upload").length).toBe(1);
   expect(named(seen, "uploadUrl")[0]?.postDataJSON()).toEqual({
     photo_consent: true,
-    notice_version: "photo-v4",
+    notice_version: "photo-v5",
     turnstile_token: DUMMY_TOKEN,
   });
   expect(await named(seen, "upload")[0]?.headerValue("content-type")).toBe("image/jpeg");
@@ -176,8 +176,7 @@ test("the whole try-on: uploaded during the choices, the number given before the
   // The stage is the claim's, so the look is made for the stage the lead records.
   expect(named(seen, "generate")[0]?.postDataJSON()).toEqual({
     job_id: JOB,
-    preset: "light-natural-short",
-    hair_color: "brown",
+    preset: "quiff",
   });
 
   // The page watches the render until it is ready, and never asks for the look.
@@ -439,12 +438,9 @@ test("Back from the gate offers every look again, and nothing has been made", as
   await page.getByRole("button", { name: siteCopy.tryOn.back, exact: true }).click();
 
   await screenIs(page, "looks");
-  await expect(page.getByRole("radio", { name: /^Light density Natural/ })).toBeChecked();
-  await page
-    .getByRole("radio", { name: /^Full density/ })
-    .first()
-    .check();
-  await expect(page.getByRole("radio", { name: /^Full density Natural/ })).toBeChecked();
+  await expect(page.getByRole("radio", { name: /^Quiff/ })).toBeChecked();
+  await page.getByRole("radio", { name: /^Side part/ }).check();
+  await expect(page.getByRole("radio", { name: /^Side part/ })).toBeChecked();
   await page.getByRole("button", { name: "Continue" }).click();
   await screenIs(page, "gate");
   expect(named(seen, "generate")).toHaveLength(0);

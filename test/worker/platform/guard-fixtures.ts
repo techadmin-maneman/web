@@ -4,7 +4,7 @@
 import { ConfigError, validateStaticConfig } from "../../../src/guard.ts";
 
 export const REAL = {
-  IMAGE_PROVIDER: "ailabtools",
+  IMAGE_PROVIDER: "youcam",
   CRM_PROVIDER: "zoho",
   MESSAGING_PROVIDER: "evolution",
   ACCESS_PROVIDER: "cloudflare",
@@ -41,7 +41,8 @@ export const SETTINGS = {
   RESULT_READ_DAILY_CEILING: "400",
   GEOCODE_DAILY_CEILING: "200",
   RESULT_RETENTION_DAYS: "14",
-  AILAB_CREDIT_FLOOR: "200",
+  YOUCAM_UNIT_FLOOR: "500",
+  TRYON_REFS_URL: "https://maneman.in/refs/v1",
   RESULT_SIGNING_KEY: "a-signing-key-of-at-least-thirty-two-characters",
   MESSAGING_ENABLED: "false",
   ACCESS_TEAM_DOMAIN: "summer-math-0275.cloudflareaccess.com",
@@ -49,7 +50,7 @@ export const SETTINGS = {
   OTP_PEPPER: "a-login-code-pepper-of-at-least-thirty-two-chars",
 };
 
-export const IMAGE = { AILAB_API_KEY: "ailab-key" };
+export const IMAGE = { YOUCAM_API_KEY: "youcam-key" };
 
 export const EVOLUTION = {
   EVOLUTION_API_URL: "https://bridge.example/",

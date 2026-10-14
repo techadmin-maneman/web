@@ -5,11 +5,19 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { pollsPerRender } from "../../../scripts/lib/usage-budget.ts";
 import { readJsonc } from "../../../scripts/lib/jsonc.ts";
-import { DOWNLOAD_QUEUE_RETRIES, MAX_SEND_ATTEMPTS, SUBMIT_ATTEMPTS } from "../../../src/config/pipeline.ts";
+import {
+  DOWNLOAD_QUEUE_RETRIES,
+  MAX_SEND_ATTEMPTS,
+  RENDER_ATTEMPTS,
+  SUBMIT_ATTEMPTS,
+} from "../../../src/config/pipeline.ts";
 import { MAX_CONTACT_UPDATE_ATTEMPTS } from "../../../src/queues/crm-sync.ts";
 
-/** The most deliveries one render takes: its submits, its polls to the give-up time and one past it, its downloads. */
-const RENDER_DELIVERIES = SUBMIT_ATTEMPTS + pollsPerRender() + 1 + DOWNLOAD_QUEUE_RETRIES;
+/**
+ * The most deliveries one job takes: each render's submits, its polls to the give-up time and one past it, and its
+ * downloads.
+ */
+const RENDER_DELIVERIES = (SUBMIT_ATTEMPTS + 1) * RENDER_ATTEMPTS + pollsPerRender() + DOWNLOAD_QUEUE_RETRIES;
 
 /** The delivery each consumer gives up on, by the queue's name without "mm-" and the environment. */
 const LAST_DELIVERY: Readonly<Record<string, number>> = {

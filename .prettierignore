@@ -30,8 +30,8 @@ docs/fidelity/
 test-results/
 playwright-report/
 
-# Verbatim copies from the AILabTools harness; see docs/reference/README.md.
+# Verbatim copies from the try-on harness; see docs/reference/README.md.
 docs/reference/ailabtools-api-notes.md
-data/ailabtools-catalog.json
+data/tryon-refs-v1.json
 # The QR decoder, copied as published with its licence notices (docs/decisions/0162-scanning-labels.md).
 packages/ui/qr-decoder.worker.js

@@ -52,7 +52,7 @@ async function deleteTryOnFiles(env: ErasureEnv, personId: string, now: Date): P
   await deleteCounted(env.DB, env.CLIENT_PHOTOS, kept);
   await env.DB.prepare(
     `UPDATE tryon_jobs SET result_key = NULL, upload_deleted_at = COALESCE(upload_deleted_at, ?2), copy_key = NULL,
-       kept_look_key = NULL
+       kept_look_key = NULL, render_key = NULL
      WHERE person_id = ?1`,
   )
     .bind(personId, now.toISOString())
