@@ -94,7 +94,9 @@ test("says how long the case had been with us when the check-in reached us late"
   await open(page);
   await expect(fact(page, SECOND, "Check-in")).toHaveText("10 am · 1 h after the booked start");
   await expect(fact(page, SECOND, "Reached us")).toHaveText("Mon 20 Sep, 10:20 am");
-  await expect(fact(page, SECOND, "Waited")).toHaveText("36 min by phone, 16 min after it reached us · closed 10:36 am");
+  await expect(fact(page, SECOND, "Waited")).toHaveText(
+    "36 min by phone, 16 min after it reached us · closed 10:36 am",
+  );
 });
 
 test("shows what the phone said when the bounds would not take its time", async ({ page }) => {
