@@ -39,6 +39,7 @@ export function Failed({
   messageClassName,
   retryClassName,
   reference = null,
+  also = null,
 }: {
   message: string;
   retry: string;
@@ -52,6 +53,8 @@ export function Failed({
   retryClassName?: string;
   /** The failed call's reference (./ErrorRef.tsx), under the line. */
   reference?: ReactNode;
+  /** A second way on, beside the retry: a link to reach us. */
+  also?: ReactNode;
 }) {
   return (
     <div className={classes(styles.failed, className)} role={polite ? "status" : "alert"}>
@@ -60,6 +63,7 @@ export function Failed({
       <Button variant={button} size="small" className={retryClassName} onClick={onRetry}>
         {retry}
       </Button>
+      {also}
     </div>
   );
 }

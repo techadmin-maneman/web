@@ -4841,7 +4841,21 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "That’s too many tries for today. Try again tomorrow."
+    "text": "That’s too many tries for today."
+  },
+  {
+    "key": "site:referral/referral.errors.reachUs",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Message us on WhatsApp and we’ll book you in."
+  },
+  {
+    "key": "site:referral/referral.errors.network",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We couldn’t reach Mane Man. Check your connection and try again."
   },
   {
     "key": "site:referral/referral.errors.turnstile",

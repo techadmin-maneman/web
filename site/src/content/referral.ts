@@ -410,7 +410,11 @@ export const referral = {
     back: "Back to the site",
   },
   errors: {
-    rateLimited: "That’s too many tries for today. Try again tomorrow.",
+    rateLimited: "That’s too many tries for today.",
+    /** Beside the rate limit: a visit is still booked with us, on WhatsApp. */
+    reachUs: "Message us on WhatsApp and we’ll book you in.",
+    // The visitor's connection, not our side.
+    network: "We couldn’t reach Mane Man. Check your connection and try again.",
     turnstile: "We couldn’t confirm you’re a person. Try again.",
     taken: "That time isn’t available. Pick another.",
     notBookable: "That day’s no longer open. Pick another.",

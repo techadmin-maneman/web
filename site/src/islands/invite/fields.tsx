@@ -8,10 +8,11 @@ import { ChoiceCard } from "@maneman/ui/ChoiceCard";
 import { Checkbox, Fieldset } from "@maneman/ui/Field";
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { useEffect, useRef } from "preact/hooks";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { ICONS } from "@maneman/brand/icons";
 import type { LossExtent } from "@rules/config/booking.ts";
 import { referral } from "../../content/referral.ts";
-import { booking, stageOptions } from "../../content/site.ts";
+import { booking, stageOptions, whatsapp } from "../../content/site.ts";
 import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
 import { fill } from "../../lib/text.ts";
 import { StageDrawing } from "../Drawings.tsx";
@@ -254,7 +255,19 @@ export function Send(props: {
   return (
     <>
       <div aria-live="polite">
-        {line !== null && <div class={messageLook({ tone: "error", className: styles.failure })}>{line}</div>}
+        {line !== null && (
+          <div class={messageLook({ tone: "error", className: styles.failure })}>
+            {line}
+            {line === referral.errors.rateLimited && (
+              <>
+                {" "}
+                <TextLink inline href={whatsappChat(whatsapp.number)}>
+                  {referral.errors.reachUs}
+                </TextLink>
+              </>
+            )}
+          </div>
+        )}
       </div>
       <Button
         variant="primary"

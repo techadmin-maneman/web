@@ -547,7 +547,7 @@ test("pressing again after a lost answer sends the same request key", async ({ p
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
-  await expect(page.getByText(referralCopy.referral.errors.other)).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.errors.network)).toBeVisible();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
 
@@ -585,7 +585,7 @@ test("gives up on a request that never answers, says so, and sends it again unde
   await expect.poll(() => keys.length).toBe(1);
 
   await page.clock.runFor(21_000);
-  await expect(page.getByText(referralCopy.referral.errors.other)).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.errors.network)).toBeVisible();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   expect(keys).toHaveLength(2);

@@ -1,10 +1,12 @@
-// A page whose data did not come: one line and "Try again". The design draws
-// this for Home only; the other pages say it more plainly. Offline,
-// the line says the page loads once the connection is back, and it then does.
+// A page whose data did not come: one line, "Try again", and a way to message us. The design draws this for Home
+// only; the other pages say it more plainly. Offline, the line says the page loads once the connection is back, and it
+// then does.
 
+import { ButtonLink } from "@maneman/ui/Button";
 import { Failed } from "@maneman/ui/States";
+import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useEffect, useRef } from "react";
-import { errors, states } from "../content.ts";
+import { errors, states, whatsapp } from "../content.ts";
 import { useSession } from "../session.ts";
 import styles from "./states.module.css";
 
@@ -29,6 +31,13 @@ export function PageFailed({ onRetry, offlineLine = states.waiting }: { onRetry:
       polite={offline}
       className={styles.pageFailed}
       retryClassName={styles.retry}
+      also={
+        offline ? null : (
+          <ButtonLink variant="outline" size="small" href={whatsappChat(whatsapp.number)} rel="noopener">
+            {errors.message}
+          </ButtonLink>
+        )
+      }
     />
   );
 }

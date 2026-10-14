@@ -78,8 +78,8 @@ test("reaches mm-api as the client surface, on its own host", async ({ page }) =
 test("says the error when the API cannot be reached, with a way to try again", async ({ page }) => {
   await page.route("**/api/me", (route) => route.abort());
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your visit." })).toBeVisible();
-  await expect(page).toHaveTitle("We couldn’t load your visit. · Mane Man");
+  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your account." })).toBeVisible();
+  await expect(page).toHaveTitle("We couldn’t load your account. · Mane Man");
   await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute("href", "https://wa.me/919007973247");
   expect(await axeViolations(page)).toEqual([]);
 

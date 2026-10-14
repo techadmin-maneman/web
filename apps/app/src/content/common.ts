@@ -151,7 +151,7 @@ export const states = {
   offlineOnly: "No connection.",
   waiting: "This page loads when you’re back online.",
   error: {
-    title: "We couldn’t load your visit.",
+    title: "We couldn’t load your account.",
     /** Said only when the phone has kept a Home with a visit on it. */
     booked: "Your visit is still booked.",
     retry: "Try again",
@@ -166,8 +166,9 @@ export const fields = {
 
 export const errors = {
   // The design draws no error for the profile.
-  load: "We couldn’t load this. Try again.",
+  load: "This page didn’t load.",
   retry: "Try again",
+  message: "Message us",
 } as const;
 
 /** A new version of the app, waiting to be taken (packages/web-kit/sw-update.ts). */
