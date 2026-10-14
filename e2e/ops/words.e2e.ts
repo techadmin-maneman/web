@@ -14,6 +14,7 @@ const REMINDER: Word = {
   group: "Messages",
   where: "visit_reminder_v1",
   text: "Hi {{1}}, see you tomorrow.\nYour {{2}} is {{3}}, {{4}}, with {{5}}.",
+  reviewed: true,
   now: "Hi {{1}}, see you tomorrow.\nYour {{2}} is {{3}}, {{4}}, with {{5}}.",
   changed: null,
   longest: 94,
@@ -25,6 +26,7 @@ const HERO: Word = {
   group: "Home",
   where: "hero",
   text: "A hair system, fitted at home.",
+  reviewed: false,
   now: "Hair, fitted at home.",
   changed: { by: "growth@maneman.test", at: "2026-10-05T06:30:00.000Z" },
   longest: 50,
@@ -56,7 +58,7 @@ const row = (page: Page, place: string) =>
 test("lists every line with the wording in force, who changed it, and whether the site has it", async ({ page }) => {
   await open(page);
   await expect(row(page, "Top of the page · Title").getByRole("cell").nth(1)).toHaveText(
-    `Hair, fitted at home.Changed by growth@maneman.test, Mon 5 Oct${copy.notOnSite}`,
+    `Hair, fitted at home.Changed by growth@maneman.test, Mon 5 Oct${copy.notOnSite}${copy.review.notReviewed}`,
   );
   await expect(page.getByText(copy.publish.never)).toBeVisible();
   await expect(row(page, "Visit reminder")).toBeVisible();

@@ -39,7 +39,7 @@ export const home = {
   profile: (initials: string) => `${initials}, your profile`,
   reschedule: "Reschedule",
   /**
-   * Not drawn: a move to another day ops asked the client to confirm (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
+   * A move to another day ops asked the client to confirm (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
    * The card's Reschedule reads "Pick another time" beside it.
    */
   proposal: {
@@ -72,9 +72,8 @@ export const home = {
     arrived: "Your hair system has arrived. We’ll message you to book your first fit.",
   },
   /**
-   * Home's one prompt, and the invoice line beneath it (src/domain/clients/home-prompt.ts). The replacement's line and
-   * "See what that involves" are the board's own, and Visits' record words the line the same way. Our words:
-   * everything else here.
+   * Home's one prompt, and the invoice line beneath it (src/domain/clients/home-prompt.ts). Visits' record words the
+   * replacement's line the same way.
    */
   prompt: {
     address: "Add your address, so your technician can find the door.",
@@ -96,13 +95,12 @@ export const home = {
     invoice: (what: string, date: string) => `The invoice for your ${what.toLowerCase()} on ${date} is ready.`,
     openInvoice: "Open the invoice",
   },
-  /** A visit not yet closed, once it has begun. Our words: the design draws neither. */
+  /** A visit not yet closed, once it has begun. */
   stages: { in_progress: "Today · in progress", done: "Done · record on its way", closing: "Wrapping up" },
   next: {
     label: "Your next visit",
     /** "Service visit · 1 hour 30 minutes". */
     length: (what: string, minutes: number) => `${what} · ${visitLength(minutes)}`,
-    // The design draws no Home for a fitted client with nothing booked.
     none: "Nothing booked yet.",
     /** Visits' button, which Home's card and Visits both show. */
     book: "Book your next visit",
@@ -123,7 +121,7 @@ export const home = {
     ],
   },
   /**
-   * Our words, all of them: a consultation and fit in one visit, on its card and beneath it. No board draws it. Its
+   * A consultation and fit in one visit, on its card and beneath it. Its
    * price is GST included, after any discount code.
    */
   oneVisit: {
@@ -141,7 +139,7 @@ export const home = {
       "Decide before it’s fitted: go ahead and pay by the link we text you, or decide against it and pay nothing.",
     ],
   },
-  /** No board draws it. A one visit the client was fitted at and has not paid for yet. */
+  /** A one visit the client was fitted at and has not paid for yet. */
   owed: {
     label: "To pay",
     line: (product: string, amount: string) => `${product} · ${amount}`,
@@ -151,15 +149,14 @@ export const home = {
   },
   /**
    * A visit paid for, or booked free, that is not booked yet (docs/decisions/0068-a-paid-hold-is-kept.md): the booking
-   * sheet's own words for a booking being written. Our words: the free line, and the design draws none.
+   * sheet's own words for a booking being written.
    */
   beingBooked: {
     paid: PAID_IN,
     free: "We’re booking your visit.",
     told: TOLD_WHEN_BOOKED,
   },
-  // The design draws no Home for a client with nothing booked.
-  /** Not drawn: the consultation done and the first fit not yet booked. */
+  /** The consultation done and the first fit not yet booked. */
   consulted: {
     label: "Your consultation",
     /** "Thu 8 Oct · Imran". */
@@ -168,7 +165,7 @@ export const home = {
       `${technician ?? "Your technician"} recommends ${product}.`,
   },
   /**
-   * Not drawn: a first fit or replacement we owe the client again, free, which we call to book
+   * A first fit or replacement we owe the client again, free, which we call to book
    * (docs/decisions/0192-free-remakes.md).
    */
   remake: {
@@ -183,8 +180,8 @@ export const home = {
 } as const;
 
 /**
- * Our words, all of them: the page on what a replacement involves, which Home's prompt opens in place of a WhatsApp
- * message to us (docs/open-points.md, item 46; ADR 0086). No board draws it.
+ * The page on what a replacement involves, which Home's prompt opens in place of a WhatsApp
+ * message to us (docs/open-points.md, item 46; ADR 0086).
  */
 export const replacement = {
   title: "What a replacement involves",

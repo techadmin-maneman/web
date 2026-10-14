@@ -17,7 +17,7 @@ export const booking = {
   introWaitlist: "Join the list and we’ll WhatsApp you the week we start coming to you.",
   extent: "Extent of hair loss (optional)",
   /**
-   * Not drawn: the page's steps, the name and number first, kept before anything else
+   * The page's steps, the name and number first, kept before anything else
    * (docs/decisions/0116-book-asks-for-the-name-and-number-first.md).
    */
   step: "Step {at} of {of} · {name}",
@@ -53,7 +53,8 @@ export const stopMessages = {
   },
   done: {
     title: "Done.",
-    whatsapp_visits: "We’ll only message you on WhatsApp about payments and refunds, and call you about any change to a visit.",
+    whatsapp_visits:
+      "We’ll only message you on WhatsApp about payments and refunds, and call you about any change to a visit.",
     whatsapp_launches: "We won’t message you when we come to a new area any more.",
     again: "Changed your mind? Switch them back on in the Mane Man app, or message us at {whatsapp}.",
   },

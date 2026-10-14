@@ -18957,6 +18957,10 @@ Request body:
       "type": "string",
       "description": "The wording in the code."
     },
+    "reviewed": {
+      "type": "boolean",
+      "description": "Whether a copy review has read the line in the code's wording; false for one written or changed since."
+    },
     "now": {
       "type": "string",
       "description": "The wording in force: the one set here, else the code's."
@@ -19007,6 +19011,7 @@ Request body:
     "group",
     "where",
     "text",
+    "reviewed",
     "now",
     "changed",
     "longest",

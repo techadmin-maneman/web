@@ -11,9 +11,7 @@ export const login = {
     label: "Mobile number",
     send: "Send code on WhatsApp",
     hint: "A 6-digit code, no password.",
-    // The design draws no session that ended while the app was open.
     ended: "You’ve been signed out. Sign in to continue.",
-    // The design draws no error on the sign-in.
     errors: {
       invalid: "Enter the 10-digit mobile number you booked with.",
       rate_limited: "Too many codes for this number today. Try again tomorrow, or message us.",
@@ -28,8 +26,7 @@ export const login = {
     title: "Enter the code",
     /**
      * Neutral on purpose (ADR 0030): the screen never says whether
-     * the number has a booking. Our wording; the design's is "Sent on
-     * WhatsApp to {number}."
+     * the number has a booking.
      */
     sentWhatsapp: (number: string) => `If ${number} has a booking with us, a code is on its way on WhatsApp.`,
     sentSms: (number: string) => `If ${number} has a booking with us, a code is on its way by SMS.`,
@@ -45,11 +42,9 @@ export const login = {
     noBooking: "No booking on this number?",
     /** "That code didn’t match. 2 tries left.", as the site says it. */
     mismatch: codeMismatch,
-    // The design draws the void code, but not these words or the ones below.
     expired: "This code no longer works.",
     fresh: "Send a new code",
     failed: "That didn’t go through. Try again.",
-    // The design draws no resend that is refused.
     limited: "We can’t send another code right now. Use the last one we sent, or message us.",
   },
   help: {

@@ -5,6 +5,7 @@
 // figure in it is a template whose holes the page fills, and is listed with them. src/config/words.json is this, kept
 // current by `npm run words`.
 
+import REVIEWED from "../../../src/config/words-reviewed.json" with { type: "json" };
 import { TEMPLATES } from "../../../src/config/message-templates.ts";
 import * as guides from "../../../site/src/content/guides.ts";
 import * as referral from "../../../site/src/content/referral.ts";
@@ -24,7 +25,12 @@ export interface WordLine {
   readonly where: string;
   /** The wording in the code. */
   readonly text: string;
+  /** Whether a copy review has read the line in this wording (`npm run words:reviewed`). */
+  readonly reviewed: boolean;
 }
+
+/** Whether a copy review read a line in its wording now. */
+const isReviewed = (key: string, text: string): boolean => (REVIEWED as Readonly<Record<string, string>>)[key] === text;
 
 /** Each module of the site's copy, by the page it is read on; one with an export of its own pages is split below. */
 const MODULES: readonly (readonly [string, string, Readonly<Record<string, unknown>>])[] = [
@@ -65,7 +71,8 @@ function isCopy(text: string): boolean {
 function linesOf(prefix: string, group: string, where: string, value: unknown): WordLine[] {
   if (typeof value === "string") {
     if (NOT_COPY.test(prefix) || !isCopy(value)) return [];
-    return [{ key: `site:${prefix}`, surface: "site", group, where, text: value }];
+    const key = `site:${prefix}`;
+    return [{ key, surface: "site", group, where, text: value, reviewed: isReviewed(key, value) }];
   }
   if (Array.isArray(value))
     return value.flatMap((each, index) => linesOf(`${prefix}.${String(index)}`, group, where, each));
@@ -92,7 +99,10 @@ const LOCKED_MESSAGES: ReadonlySet<string> = new Set(["login_code_v1"]);
 function messageLines(): WordLine[] {
   return Object.entries(TEMPLATES)
     .filter(([name]) => !LOCKED_MESSAGES.has(name))
-    .map(([name, text]) => ({ key: `message:${name}`, surface: "message", group: "Messages", where: name, text }));
+    .map(([name, text]) => {
+      const key = `message:${name}`;
+      return { key, surface: "message", group: "Messages", where: name, text, reviewed: isReviewed(key, text) };
+    });
 }
 
 export const wordsCatalogue = (): WordLine[] => [...siteLines(), ...messageLines()];

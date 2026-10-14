@@ -17021,6 +17021,8 @@ export interface components {
             where: string;
             /** @description The wording in the code. */
             text: string;
+            /** @description Whether a copy review has read the line in the code's wording; false for one written or changed since. */
+            reviewed: boolean;
             /** @description The wording in force: the one set here, else the code's. */
             now: string;
             changed: {

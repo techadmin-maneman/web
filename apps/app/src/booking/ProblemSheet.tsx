@@ -1,5 +1,5 @@
 // Something wrong with the hair system, or with a visit, told to Care in the client's words; Care answer on
-// WhatsApp, where the client's photographs go too. No board draws it, so the sheet is ours, in the note sheet's frame.
+// WhatsApp, where the client's photos go too. It takes the note sheet's frame.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { PROBLEM_MAX_CHARS } from "@rules/policy/problems.ts";

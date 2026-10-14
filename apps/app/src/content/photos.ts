@@ -8,7 +8,7 @@ export const photos = {
   angles: { front: "Front", top: "Top", left: "Left", right: "Right", hair: "Hair" },
   /** The compare's three angles, as the compare names them. */
   compareAngles: { front: "Front", top: "Top", hair: "Hairline" },
-  // A photograph's description for a screen reader; the design draws no captions.
+  // A photo's description for a screen reader.
   alt: (angle: string, phase: "before" | "after", date: string) => `${angle}, ${phase} the visit, ${date}`,
   back: "Back to photos",
   from: "From",
@@ -29,7 +29,7 @@ export const photos = {
   /** The large photograph that would not load. */
   largeFailed: "This photo didn’t load.",
   reloadPhotos: "Reload photos",
-  // No board draws the try-on the client made on the site (ADR 0025, items 63 and 65; ADR 0082 and 0084).
+  // The try-on the client made on the site (ADR 0025, items 63 and 65; ADR 0082 and 0084).
   tryOn: {
     title: "Your try-on",
     images: { photo: "Your photo", look: "Your look" },

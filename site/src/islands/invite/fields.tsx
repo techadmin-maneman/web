@@ -34,7 +34,7 @@ export interface FormProps {
   onChangePincode: () => void;
 }
 
-/** "For 122018 · Change": the pincode the form is for, and the way back to the field (not drawn). */
+/** "For 122018 · Change": the pincode the form is for, and the way back to the field. */
 export function ForPincode(props: { text: string; onChange: () => void }) {
   return (
     <p class={styles.forPincode}>
@@ -205,7 +205,7 @@ function LegalLinks() {
 }
 
 /**
- * /book's progress, "Step 2 of 4 · Your area" (not drawn). The address, once Continue opens it, and the name and
+ * /book's progress, "Step 2 of 4 · Your area". The address, once Continue opens it, and the name and
  * number, once the visitor comes back to them, bring the line to the top and give it focus, so a screen reader hears
  * where it is. Elsewhere the pincode's field or its answer takes focus instead.
  */

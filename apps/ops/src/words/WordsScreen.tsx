@@ -110,6 +110,7 @@ function WordRows({ word, ...row }: { word: Word } & RowProps) {
             </span>
           )}
           {word.on_site === false && <span className={styles.changed}>{copy.notOnSite}</span>}
+          {!word.reviewed && <span className={styles.changed}>{copy.review.notReviewed}</span>}
         </td>
         <WordActions word={word} {...row} />
       </tr>
@@ -117,6 +118,10 @@ function WordRows({ word, ...row }: { word: Word } & RowProps) {
     </>
   );
 }
+
+/** What Find words looks in: a line's place and wordings, and "Not reviewed" for a line no copy review has read. */
+const searchedFor = (word: Word): string =>
+  `${placeOf(word)} ${word.now} ${word.text}${word.reviewed ? "" : ` ${copy.review.notReviewed}`}`;
 
 const TABLE_COLUMNS: readonly Column<Word>[] = [
   { label: copy.columns.page, choice: (word) => word.group, sort: (word) => word.group },
@@ -160,7 +165,7 @@ function Words() {
   const [said, setSaid] = useState<string | null>(null);
   const access = useAccess();
   const rows = loaded.state === "loaded" ? loaded.value.words.map((word) => changed.get(word.key) ?? word) : [];
-  const view = useTableView(rows, TABLE_COLUMNS, { search: (word) => `${placeOf(word)} ${word.now} ${word.text}` });
+  const view = useTableView(rows, TABLE_COLUMNS, { search: searchedFor });
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const row: RowProps = {

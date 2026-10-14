@@ -13,7 +13,6 @@ export const app = {
 
 /**
  * Each page's name in the browser's title (WCAG 2.4.2), by the route it is at (apps/app/src/route.ts).
- * Our words where no board names the page.
  */
 export const titles = {
   home: "Home",
@@ -65,7 +64,7 @@ type WindowLabel = keyof typeof WINDOW_NAMES;
 /** "Afternoon, 12–4 pm", as a visit's card gives its window. */
 export const windowText = (label: WindowLabel, hours: Hours) => `${WINDOW_NAMES[label]}, ${windowHours(hours)}`;
 
-/** Not drawn: a visit to come, offered to the client's own calendar. */
+/** A visit to come, offered to the client's own calendar. */
 export const calendar = {
   label: "Add to your calendar",
   google: "Google Calendar",
@@ -103,7 +102,7 @@ export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
 
 /**
  * While self-serve booking is off, booking, rescheduling and notes open WhatsApp to ops with a message ready
- * (docs/prompts/phase2-backend.md, "Booking"). Our wording, all of it.
+ * (docs/prompts/phase2-backend.md, "Booking").
  */
 export const messages = {
   reschedule: (what: string, date: string) => `I’d like to move my ${what.toLowerCase()} on ${date}.`,
@@ -124,7 +123,7 @@ export const empty = {
   photos: {
     title: "Photos",
     lines: ["Your photos begin at your first visit.", "Five angles at every visit, for your record."],
-    // Not drawn: a way on while there is nothing to show.
+    // A way on while there is nothing to show.
     tryOn: "Try on a look",
   },
   payments: {
@@ -136,7 +135,6 @@ export const empty = {
     title: "Payments",
     lines: ["Nothing to pay yet.", "You pay once fitted, by a link we text you."],
   },
-  // The design draws the empty list for a lead only.
   paymentsFitted: {
     title: "Payments",
     lines: ["No payments yet.", "Payments and invoices will appear here."],
@@ -170,7 +168,6 @@ export const fields = {
 } as const;
 
 export const errors = {
-  // The design draws no error for the profile.
   load: "This page didn’t load.",
   retry: "Try again",
   message: "Message us",
@@ -178,14 +175,12 @@ export const errors = {
 
 /** A new version of the app, waiting to be taken (packages/web-kit/sw-update.ts). */
 export const update = {
-  // The design draws no new version.
   line: "A new version is ready.",
   action: "Update",
 } as const;
 
 /** A page that failed to draw, which React would otherwise leave blank. */
 export const broken = {
-  // The design draws no page that failed.
   message: "This page didn’t open.",
   reload: "Reload",
   home: "Home",

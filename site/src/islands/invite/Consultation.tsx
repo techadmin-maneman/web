@@ -212,8 +212,8 @@ function AddressPart(
 
 /**
  * The pincode is served, so the page books a free consultation. The form also takes the address the
- * consultation is at, which no board draws, so nothing is booked without one (ADR 0081). It may book the
- * consultation and fit in one visit instead, which no board draws either: three hours, in the morning or the
+ * consultation is at, so nothing is booked without one (ADR 0081). It may book the
+ * consultation and fit in one visit instead: three hours, in the morning or the
  * afternoon, paid for once the client is fitted (ADR 0105), and, on the site's own page, with a discount code that
  * comes off the hair system's price when they pay (ADR 0108). That one is booked only once the WhatsApp code sent to
  * the number has been entered.

@@ -198,7 +198,11 @@ export const comparison = {
     { label: "Reversible", cells: [false, true, true] },
     {
       label: "Upkeep",
-      cells: ["Loss carries on; often a second transplant in a few years", "Daily, for life", "One service visit a month"],
+      cells: [
+        "Loss carries on; often a second transplant in a few years",
+        "Daily, for life",
+        "One service visit a month",
+      ],
     },
   ] satisfies { label: string; cells: [ComparisonCell, ComparisonCell, ComparisonCell] }[],
 };

@@ -19,7 +19,7 @@ export const visits = {
   partial: "Partly done",
   /*
    * The client's own record, derived from their visits and
-   * payments (src/domain/visits/client-history.ts). No board draws it. Home writes
+   * payments (src/domain/visits/client-history.ts). Home writes
    * one sentence about a replacement, "Your replacement is due in
    * March.", and that sentence is kept word for word.
    *
@@ -64,8 +64,7 @@ export const visits = {
       credit: "Covered by a free service visit.",
       checking: "We’re checking this invoice before sending it. Message us if you need it sooner.",
     },
-    // The design draws no visit the client missed, nor the dispute of its charge (ADR 0096).
-    // The reason ops gave stays with them.
+    // A visit the client missed, and the dispute of its charge (ADR 0096). The reason ops gave stays with them.
     noShow: {
       label: "Missed visit",
       line: (minutes: number) => `We came and waited ${String(minutes)} minutes, but no one was home.`,

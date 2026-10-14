@@ -85,8 +85,7 @@ export function gateCopy(gate: Notice) {
 
 /**
  * The try-on's screens. The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so
- * the gate asks for the number before the look is made, and the sent and unavailable screens, which the design does
- * not draw, are ADR 0104's words.
+ * the gate asks for the number before the look is made, and the sent and unavailable screens are ADR 0104's words.
  */
 export const tryOn = {
   back: "Back",
@@ -146,7 +145,7 @@ export const tryOn = {
     mobilePlaceholder: CLIENT_WORDS.mobilePlaceholder,
     mobileError: "Enter a valid 10-digit mobile number.",
     submit: "Send my look",
-    // Not drawn: once the WhatsApp code is on its way, the button confirms it and sends the look.
+    // Once the WhatsApp code is on its way, the button confirms it and sends the look.
     confirm: "Confirm and send my look",
     sending: "Sending…",
     /** Said while the look waits on the photograph's upload. */
@@ -155,7 +154,7 @@ export const tryOn = {
       rateLimited: "This number is out of tries for today. Try again tomorrow.",
       taken: "This look is already on its way to another number.",
       other: "That didn’t go through. Try again in a minute.",
-      // Not drawn: refusals of the WhatsApp code.
+      // Refusals of the WhatsApp code.
       codes: "That’s too many codes for this number today. Try again tomorrow.",
       turnstile: "We couldn’t confirm you’re a person. Try again.",
       notProved: "Your WhatsApp code has expired. Press Send my look for a new one.",
@@ -182,7 +181,7 @@ export const tryOn = {
   error: {
     another: "Choose another",
     book: "Book a consultation instead",
-    /** By ErrorKind (lib/tryon-errors.ts). The design's labels, heading and body are the photograph's. */
+    /** By ErrorKind (lib/tryon-errors.ts). */
     kinds: {
       photo: {
         step: "Can’t use this photo",

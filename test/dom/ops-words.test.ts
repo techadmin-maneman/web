@@ -15,6 +15,7 @@ const REMINDER: Word = {
   group: "Messages",
   where: "visit_reminder_v1",
   text: "Hi {{1}}, see you tomorrow.\nYour {{2}} is {{3}}, {{4}}, with {{5}}.",
+  reviewed: true,
   now: "Hi {{1}}, see you tomorrow.\nYour {{2}} is {{3}}, {{4}}, with {{5}}.",
   changed: null,
   longest: 94,
@@ -26,6 +27,7 @@ const HERO: Word = {
   group: "Home",
   where: "hero",
   text: "A hair system, fitted at home.",
+  reviewed: false,
   now: "Hair, fitted at home.",
   changed: { by: "growth@maneman.test", at: "2026-10-05T06:30:00.000Z" },
   longest: 50,
@@ -102,6 +104,25 @@ describe("the Words page", () => {
     expect(page.textContent).toContain(copy.changed("growth@maneman.test", "Mon 5 Oct"));
     expect(page.textContent).toContain("Visit reminder");
     expect(page.textContent).not.toContain("visit_reminder_v1");
+  });
+
+  // Half the client's copy was written in code and never read in a copy review, with nothing to say which.
+  it("marks a line whose wording in the code no copy review has read", async () => {
+    await show();
+    const rows = [...page.querySelectorAll("tbody tr")].map((row) => row.textContent);
+    expect(rows.find((row) => row.includes("Hair, fitted at home."))).toContain(copy.review.notReviewed);
+    expect(rows.find((row) => row.includes("Visit reminder"))).not.toContain(copy.review.notReviewed);
+    // Find words lists those lines alone.
+    const find = page.querySelector<HTMLInputElement>(`input[aria-label="${copy.narrow}"], input[type="search"]`);
+    if (find === null) throw new Error("no Find words box");
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(find, copy.review.notReviewed);
+      find.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await settle();
+    const found = [...page.querySelectorAll("tbody tr")].map((row) => row.textContent);
+    expect(found.some((row) => row.includes("Hair, fitted at home."))).toBe(true);
+    expect(found.some((row) => row.includes("Visit reminder"))).toBe(false);
   });
 
   it("saves a line once its change is reviewed", async () => {

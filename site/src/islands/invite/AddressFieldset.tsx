@@ -1,5 +1,5 @@
 // Where the consultation is: the full address, asked in the form that books it, so nothing is booked without one
-// (docs/decisions/0081-the-site-takes-the-address.md). No board draws it. Its fields are the ones every form asks
+// (docs/decisions/0081-the-site-takes-the-address.md). Its fields are the ones every form asks
 // for (@maneman/ui/AddressFields); the pincode is the one the page checked, shown and not asked again. A field left
 // out says so beneath it, as the name and the number do. The floor, the tower and the landmark are folded away
 // until asked for, beneath the flat.

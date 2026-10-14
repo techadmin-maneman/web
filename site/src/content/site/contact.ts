@@ -12,8 +12,8 @@ export const whatsapp = {
 };
 
 /**
- * The bar that asks for consent to the ad and measurement tags (site/src/components/ConsentBar.astro): our words,
- * which counsel has still to see, so the bar is switched off until they approve (CONSENT_BAR_SHOWN).
+ * The bar that asks for consent to the ad and measurement tags (site/src/components/ConsentBar.astro). Counsel has
+ * still to see its words, so the bar is switched off until they approve (CONSENT_BAR_SHOWN).
  */
 export const consentBar = {
   publish: true,

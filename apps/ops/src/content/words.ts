@@ -63,6 +63,8 @@ export const words = {
   },
   done: "Saved.",
   notOnSite: "Not on the site yet",
+  /** The code's wording a copy review has not read: a line written or changed since the last one. */
+  review: { notReviewed: "Not reviewed" },
   publish: {
     open: "Publish the site",
     title: "Publish the site’s words?",

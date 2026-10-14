@@ -1,6 +1,5 @@
 // Add a note: while self-serve booking is on, the client's note goes on the visit itself, and the
-// technician reads it on the client's card (POST /api/appointments/:id/note). The design draws the button and no
-// sheet, so the sheet is ours, in the change sheet's frame, with placeholder words (docs/fidelity-method.md).
+// technician reads it on the client's card (POST /api/appointments/:id/note). It takes the change sheet's frame.
 // Should the app be told booking is with ops after all, the note goes to them on WhatsApp, as it did before.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";

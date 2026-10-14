@@ -1,5 +1,5 @@
-// The account's change of mobile number: both numbers proved by a code each, then ops decide. The design
-// draws the card's first state; the ones after it are written in the same card, with placeholder words.
+// The account's change of mobile number: both numbers proved by a code each, then ops decide, each state in the
+// same card.
 
 import { InlineMessage, messageLook } from "@maneman/ui/InlineMessage";
 import { Field } from "@maneman/ui/Field";

@@ -11,26 +11,26 @@ export const payments = {
   /** A refund's figure: money coming back, never another charge. */
   moneyBack: (amount: string) => `+ ${amount}`,
   backTo: (method: string) => `back to your ${method}`,
-  // A late fee's name, and a charge's row; the evidence is the design's ("cancelled 9:14 am, visit
-  // was 10 am"), with the dates when the two fall on different days.
+  // A late fee's name, and a charge's row: its evidence, "cancelled 9:14 am, visit was 10 am", with the dates when
+  // the two fall on different days.
   lateFeeOf: (what: string) => `${what} · late fee`,
   charge: "Charge",
   charged: "Charged",
   evidence: (change: "cancelled" | "moved", at: string, visit: string) => `${change} ${at}, visit was ${visit}`,
-  // The design draws no visit the client was not home for.
+  // A visit the client missed.
   noShow: {
     meta: (note: { waited_minutes: number }) => `missed visit, we waited ${String(note.waited_minutes)} min`,
     label: "Missed visit",
     decision: { undecided: "under review", charged: "charged", waived: "not charged" },
     fact: (minutes: number, decision: string) => `We waited ${String(minutes)} minutes · ${decision}`,
   },
-  // The design draws no discount code on a payment (docs/decisions/0108-discount-codes.md).
+  // A discount code on a payment (docs/decisions/0108-discount-codes.md).
   discount: {
     label: "Discount code",
     /** "AUDTEST: Rs. 100 off", before GST; the code alone where what it took off is not known. */
     fact: (code: string, off: string | null) => (off === null ? code : `${code}: ${off} off`),
   },
-  /** No board draws it. A one visit's payment still owed, above the payments made. */
+  /** A one visit's payment still owed, above the payments made. */
   owed: {
     label: "To pay",
     meta: (date: string) => `Fitted ${date}`,
@@ -39,9 +39,8 @@ export const payments = {
     onItsWay: "Your payment link is on its way by text.",
   },
   /**
-   * The free service visits among the payments. Payments draws a visit one covered: "Service visit ·
-   * 25 Jul · visit credit · Covered by credit · Rs. 0 · 1 credit used". Our words: all of it, in the reward's
-   * one name, which the row's name or meta says, so its status and count need not.
+   * The free service visits among the payments, in the reward's one name, which the row's name or meta says, so its
+   * status and count need not.
    */
   credits: {
     title: "Free service visits",
@@ -82,7 +81,6 @@ export const payments = {
   /** A payment's status, and a refund's. */
   status: {
     captured: "Paid",
-    // Our words from here to the refund's "created", and its "processed" and "failed".
     authorized: "Processing",
     refunded: "Refunded",
     partially_refunded: "Partly refunded",
@@ -118,7 +116,6 @@ export const payments = {
     emi: "card",
     paylater: "pay-later account",
   } as Readonly<Record<string, string>>,
-  // The design draws a payment's rows; a refund's "Refunded to" and "For" are ours.
   rows: {
     date: "Date",
     method: "Method",
@@ -136,7 +133,7 @@ export const payments = {
   notOpened: "That didn’t open. Try again.",
   /**
    * The documents' line for a document not yet raised. An invoice is raised once the visit is done, so what it says
-   * depends on when that was (ADR 0056). Our words: every line but the invoice's first.
+   * depends on when that was (ADR 0056).
    */
   unavailable: {
     invoice: "Your invoice will be ready within the hour.",

@@ -13,8 +13,8 @@ interface Reward {
 const serviceVisits = (count: number): string => (count === 1 ? "1 service visit" : `${String(count)} service visits`);
 
 /**
- * Refer's promise, from the referrer's side, in the reward's one name. Our words: the words for unequal sides,
- * for 0 and for a reward not known, which gives no count (docs/decisions/0107-referral-rewards-in-the-console.md).
+ * Refer's promise, from the referrer's side, in the reward's one name: the sides equal or not, 0, or a reward not
+ * known, which gives no count (docs/decisions/0107-referral-rewards-in-the-console.md).
  */
 function promiseOf(reward: Reward | null): string {
   const fitted = "When a friend you refer is fitted,";
@@ -33,7 +33,7 @@ interface PendingInvite {
 }
 
 /**
- * Refer for a client not yet fitted, which the board draws empty. Their own invite opens at their first
+ * Refer for a client not yet fitted. Their own invite opens at their first
  * fit; an invite they came with comes first, with the visits it gives them.
  */
 export function notYetFittedLines(reward: Reward | null, invite: PendingInvite | null): readonly [string, string] {
@@ -53,7 +53,7 @@ export const refer = {
   promise: promiseOf,
   /** Refer's credit tile, as Home's. */
   credit: freeVisitsTile,
-  // The board draws no line for the credits of the invite a client came with while ops review them.
+  // The credits of the invite a client came with, while ops review them.
   inviteCredits: {
     checking: "Your invite’s free service visits are being checked. We’ll message you.",
     refused: "We couldn’t add your invite’s free service visits. Message us to find out why.",
@@ -62,10 +62,9 @@ export const refer = {
   tracker: "See who has been fitted",
   card: {
     title: "Which card?",
-    // In place of the board's line, which said the card carries no name.
     what: "Pick the picture your friend sees. Your name and message go with it, never on it.",
     mine: { name: "My before and after", note: "Your own photos" },
-    // The board always offers their own card; it needs a before and an after from the first fit.
+    // Their own card needs a before and an after from the first fit.
     mineNotYet: "Your own before and after appears once your first-fit photos are in.",
     house: { name: "The Mane Man example card", note: "Our own before and after" },
     next: "Continue to share",
@@ -91,7 +90,6 @@ export const refer = {
       return `Home-fitted hair systems across ${SERVICE_AREA}. ${serviceVisits(friend)} free when you’re fitted.`;
     },
     domain: "maneman.in",
-    // In place of the board's message.
     // A first line that says nothing of the sender's own hair: the landing page says what Mane Man does.
     message: (link: string) => `Thought you’d like this: Mane Man, at home. ${link}`,
     via: "Share via",
@@ -128,7 +126,7 @@ export const refer = {
     // A revoke the API did not answer leaves the card as it was.
     failed: "Couldn’t switch your photos off. Try again.",
   },
-  // The card is composed on the phone; the design does not draw its waiting or its failures.
+  // The card is composed on the phone, so it can keep the client waiting, or fail.
   composing: "Making your card…",
   cardFailed: "We couldn’t make your card, so we’ve used the Mane Man example card instead.",
   /** Consent or the example did not go through: nothing changed, and nothing was shared. */

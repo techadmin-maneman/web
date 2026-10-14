@@ -11,17 +11,14 @@ export const profile = {
   back: "Back",
   where: "Where we come",
   editAddress: "Edit address and access notes",
-  // The design draws the profile with an address already given, and no form.
   noAddress: "No address yet. Add it before you book.",
   addAddress: "Add your address and access notes",
-  // The design draws no landmark; the client types it as they like, so it shows as typed.
+  // The client types the landmark as they like, so it shows as typed.
   landmark: "Landmark",
   // An address the client gave ops on the phone, which ops saved for them (ADR 0092).
   givenToOps: (date: string) => `You gave us this address by phone on ${date}. Change it if anything’s wrong.`,
   form: {
-    // The design draws no address form at all, so none of the
-    // building search's words are drawn either (ADR 0054). The search is an
-    // addition to the form and never a gate: every field below still works
+    // The building search (ADR 0054) is an addition to the form and never a gate: every field below still works
     // typed, and an address with no building chosen saves without a pin.
     building: {
       label: "Search for your building",
@@ -58,7 +55,7 @@ export const profile = {
     photos_referral_cards: "Photographs on referral cards",
     photos_marketing: "Photographs in our marketing",
     whatsapp_visits: "WhatsApp about your visits",
-    // The design's profile lists four; the fifth is the waitlist's launch alert.
+    // The waitlist's launch alert, beside the four consents.
     whatsapp_launches: "WhatsApp about launches",
   },
   given: (date: string) => `Given ${date}`,
@@ -70,7 +67,7 @@ export const profile = {
   // A switch the API did not answer stays as it was.
   switchFailed: "Couldn’t save that. Try again.",
   /**
-   * The four lines the design shows before a card is turned on, and the line beside them that names the referrer; the consent's notice carries them all.
+   * The four lines shown before a card is turned on, and the line beside them that names the referrer; the consent's notice carries them all.
    */
   referralCards: {
     lines: [
@@ -89,10 +86,9 @@ export const profile = {
     body: "We’ll send a code to both numbers, then confirm with you.",
     prefix: "+91",
     placeholder: "New number",
-    /** The box's name to a screen reader, which the board draws without a label. */
+    /** The box's name to a screen reader, which shows none. */
     newNumber: "New mobile number",
     start: "Start the change",
-    // Our words from here: the design draws the start only.
     invalid: "Enter a 10-digit mobile number, not the one you use now.",
     codes: "Enter the code sent to each number.",
     oldCode: "Code sent to your current number",
@@ -108,7 +104,7 @@ export const profile = {
     rejected: (number: string, date: string) => `On ${date} we didn’t change your number to ${number}.`,
     why: (reason: string) => `Our reason: ${reason}`,
   },
-  // The design has no card for where the client is signed in (docs/decisions/0029-sessions.md).
+  // Where the client is signed in (docs/decisions/0029-sessions.md).
   sessions: {
     label: "Signed in on",
     thisDevice: "This device",
@@ -143,7 +139,7 @@ export const profile = {
     /** An hour of the day as the card says it: "9 am", "12 noon", "9 pm". */
     hour: (hour: number) => timeOfDay(`${String(hour).padStart(2, "0")}:00`, UNBROKEN),
   },
-  // The design has no card for the client's rights over their data (docs/decisions/0049-dpdp.md).
+  // The client's rights over their data (docs/decisions/0049-dpdp.md).
   data: {
     label: "Your data",
     body: "Download your data, or raise a concern about how we use it.",
@@ -167,7 +163,6 @@ export const profile = {
     label: "Delete your account",
     body: "We act on your request within 30 days. Bookings and payments are settled first, and invoices are kept for 8 years, as the law requires.",
     request: "Request deletion",
-    // The design draws the button only.
     confirm: "Ask us to delete your account? We’ll confirm on WhatsApp before anything is deleted.",
     yes: "Yes, request deletion",
     no: "Keep my account",
@@ -178,7 +173,7 @@ export const profile = {
     why: (reason: string) => `Our reason: ${reason}`,
     disagree: "Message us if you disagree, or ask again.",
   },
-  // The design has no logout; it ends the session on this device.
+  // Signing out ends the session on this device.
   logout: "Sign out",
   // Only the API can end the session, so a logout it did not answer leaves the client logged in.
   logoutFailed: "Couldn’t sign you out. Try again.",
