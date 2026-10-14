@@ -101,6 +101,29 @@ function Another(props: {
   );
 }
 
+/** The other ways on from the code: by SMS once it is offered, another code, and help for a number with no booking. */
+function Links(props: Props & { offerSms: boolean; closed: boolean; resendIn: number }) {
+  return (
+    <div className={styles.links}>
+      {props.offerSms && (
+        <TextButton tone="ink" className={styles.link} onClick={props.onSms} disabled={props.busy}>
+          <span>{login.code.sms}</span>
+        </TextButton>
+      )}
+      <Another
+        closed={props.closed}
+        resendIn={props.resendIn}
+        busy={props.busy}
+        onFresh={props.onFresh}
+        onResend={props.onResend}
+      />
+      <TextButton tone="ink" className={styles.link} onClick={props.onHelp}>
+        <span>{login.code.noBooking}</span>
+      </TextButton>
+    </div>
+  );
+}
+
 /** A problem with the code, on the ink the screen stands on. */
 const ERROR_LOOK = messageLook({ tone: "error", ground: "ink", className: styles.error });
 
@@ -157,9 +180,10 @@ export function CodeScreen(props: Props) {
           onChange={(typed) => {
             setCode(typed);
             setTypedSince(problem);
-            // The sixth digit sends the code: Continue is there for a code pasted while the screen was busy.
-            if (typed.length === ONE_TIME_CODE.digits && typed !== code && !closed && !props.busy)
-              props.onVerify(typed);
+          }}
+          // The sixth digit sends the code: Continue is there for a code pasted while the screen was busy.
+          onComplete={(typed) => {
+            if (!closed && !props.busy) props.onVerify(typed);
           }}
         />
         {message !== null && (
@@ -176,23 +200,7 @@ export function CodeScreen(props: Props) {
             {copy.automatic}
           </div>
         )}
-        <div className={styles.links}>
-          {offerSms && (
-            <TextButton tone="ink" className={styles.link} onClick={props.onSms} disabled={props.busy}>
-              <span>{copy.sms}</span>
-            </TextButton>
-          )}
-          <Another
-            closed={closed}
-            resendIn={resendIn}
-            busy={props.busy}
-            onFresh={props.onFresh}
-            onResend={props.onResend}
-          />
-          <TextButton tone="ink" className={styles.link} onClick={props.onHelp}>
-            <span>{copy.noBooking}</span>
-          </TextButton>
-        </div>
+        <Links offerSms={offerSms} closed={closed} resendIn={resendIn} {...props} />
         {closed && <div ref={props.turnstileBox} className={styles.turnstile} />}
         {/* Said once, as the countdown runs out; the count itself is shown and not spoken. */}
         <VisuallyHidden as="p" role="status">

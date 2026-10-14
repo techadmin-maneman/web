@@ -23,16 +23,16 @@
 // installed app has its own cookie jar, so this is a second sign-in on a phone
 // already signed in, and saying nothing would read as a lost account.
 
-import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { useOtpChallenge } from "@maneman/ui/useOtpChallenge";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { MobileInput } from "@maneman/ui/MobileInput";
-import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import { CodeField } from "@maneman/ui/CodeField";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { Button } from "@maneman/ui/Button";
 import { Mark } from "@maneman/ui/Mark";
 import { fieldDigits, mobileDigits } from "@maneman/web-kit/mobile";
-import { useRef, useState } from "react";
+import { apiNow } from "@maneman/web-kit/clock";
+import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { api, type Challenge } from "../api.ts";
 import { session, signIn as copy } from "../content.ts";
@@ -54,22 +54,42 @@ function noteFor(why: Out): string | null {
 const MESSAGES: Readonly<Record<string, string>> = copy.errors;
 const messageFor = (code: string, fallback: string) => MESSAGES[code] ?? fallback;
 
-/** How long after a code goes out a new one is offered: time enough for WhatsApp to deliver the first. */
-const RESEND_AFTER_S = 30;
+/** Once a code is out, the ways on: a number typed wrong, or a code that never came, once WhatsApp has had time. */
+function Again(props: { resendIn: number; busy: boolean; onChangeNumber: () => void; onResend: () => void }) {
+  return (
+    <div className={styles.again}>
+      <Button variant="outlineOnInk" size="small" className={styles.againButton} onClick={props.onChangeNumber}>
+        {copy.changeNumber}
+      </Button>
+      <Button
+        variant="outlineOnInk"
+        size="small"
+        className={styles.againButton}
+        disabled={props.resendIn > 0 || props.busy}
+        onClick={props.onResend}
+      >
+        {props.resendIn > 0 ? copy.resendIn(props.resendIn) : copy.resend}
+      </Button>
+    </div>
+  );
+}
 
 export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }) {
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [working, once] = useOneAtATime();
+  // The code sent, and when a new one may be asked for: time enough after the last for WhatsApp to deliver it.
+  const otp = useOtpChallenge<Challenge>(apiNow);
+  const { challenge, resendIn, busy: working, once } = otp;
   // Left with digits that are not a mobile number: the hint says why Send stays off.
   const [left, setLeft] = useState(false);
-  // Counted afresh from each code sent, since each one is a new challenge.
-  // When a new code may be asked for: time enough after the last for WhatsApp to deliver it.
-  const [resendAt, setResendAt] = useState(0);
-  const resendIn = useSecondsLeft(resendAt);
   const number = useRef<HTMLInputElement | null>(null);
+  const codeBoxes = useRef<HTMLInputElement | null>(null);
+
+  // Once a code is out, the keyboard opens on its boxes: a gloved technician need not tap into them.
+  useEffect(() => {
+    if (challenge !== null) codeBoxes.current?.focus();
+  }, [challenge]);
 
   const digits = mobileDigits(mobile);
 
@@ -81,8 +101,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
     try {
       const answer = await api.sendCode(digits, await deviceId());
       if (answer.ok) {
-        setChallenge(answer.body);
-        setResendAt(Date.now() + RESEND_AFTER_S * 1000);
+        otp.sent(answer.body);
         setCode("");
         setError(null);
       } else setError(messageFor(answer.code, copy.errors.unknown));
@@ -95,11 +114,11 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
 
   /** Back to the number, as it was before any code was asked for. */
   function startAgain(): void {
-    setChallenge(null);
+    otp.forget();
     setCode("");
   }
 
-  async function verifyOnce(): Promise<void> {
+  async function verifyOnce(code: string): Promise<void> {
     if (challenge === null) return;
     // A phone store that will not give the device ID is a failure to try again, never a button left busy.
     const answer = await deviceId()
@@ -130,7 +149,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
     await enrolled().catch(() => undefined);
     onSignedIn();
   }
-  const verify = () => once(verifyOnce);
+  const verify = (typed: string = code) => once(() => verifyOnce(typed));
 
   const ready = challenge === null ? digits !== null : code.length === ONE_TIME_CODE.digits;
   // Only worth saying before the code has been asked for, and only in the app
@@ -141,7 +160,14 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   const shown = error ?? hint;
 
   return (
-    <main className={styles.screen}>
+    <form
+      className={styles.screen}
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (ready && !working) void (challenge === null ? send() : verify());
+      }}
+    >
       <Mark className={styles.mark} />
       <h1 className={styles.title}>{copy.title}</h1>
 
@@ -167,41 +193,32 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       <div className={styles.codeBlock}>
         <div className={styles.label}>{copy.codeLabel}</div>
         <CodeField
+          ref={codeBoxes}
           className={styles.code}
           value={code}
           label={copy.codeLabel}
           disabled={challenge === null}
           onChange={setCode}
+          onComplete={(typed) => {
+            if (!working) void verify(typed);
+          }}
         />
       </div>
 
       {challenge !== null && (
-        <div className={styles.again}>
-          <Button
-            variant="outlineOnInk"
-            size="small"
-            className={styles.againButton}
-            onClick={() => {
-              // Drawn at once, so the number is editable before it is focused.
-              flushSync(() => {
-                startAgain();
-                setError(null);
-              });
-              number.current?.focus();
-            }}
-          >
-            {copy.changeNumber}
-          </Button>
-          <Button
-            variant="outlineOnInk"
-            size="small"
-            className={styles.againButton}
-            disabled={resendIn > 0 || working}
-            onClick={() => void send()}
-          >
-            {resendIn > 0 ? copy.resendIn(resendIn) : copy.resend}
-          </Button>
-        </div>
+        <Again
+          resendIn={resendIn}
+          busy={working}
+          onChangeNumber={() => {
+            // Drawn at once, so the number is editable before it is focused.
+            flushSync(() => {
+              startAgain();
+              setError(null);
+            });
+            number.current?.focus();
+          }}
+          onResend={() => void send()}
+        />
       )}
 
       {challenge !== null && error === null && <p className={styles.note}>{copy.codeSent}</p>}
@@ -216,14 +233,14 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
         <Button
           variant="gold"
           size="action"
+          type="submit"
           className={frame.action}
           disabled={!ready || working}
           busy={working}
-          onClick={() => void (challenge === null ? send() : verify())}
         >
           {challenge === null ? copy.sendCode : copy.submit}
         </Button>
       </div>
-    </main>
+    </form>
   );
 }

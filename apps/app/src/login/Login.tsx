@@ -8,7 +8,7 @@
 // rather than leaving the app. Signing in goes back past them, so Back
 // from Home leaves the app as before.
 
-import { useOneAtATime } from "@maneman/ui/useOneAtATime";
+import { useOtpChallenge } from "@maneman/ui/useOtpChallenge";
 import { useEffect, useRef, useState } from "react";
 import { api, type LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
@@ -72,8 +72,10 @@ export function Login({
   const [step, setStep] = useState<Step>({ kind: "mobile" });
   // The last code sent, which a step back and then forward again returns to.
   const lastChallenge = useRef<LoginChallenge | null>(null);
-  // When it was sent, by the API's clock: its countdowns run from then, however often the code screen is left.
-  const [sentAt, setSentAt] = useState(0);
+  // The code sent, when, by the API's clock, and one request at a time: a second send bills a second code, voids the
+  // first, and takes another from this number's daily ceiling, which can leave a client unable to log in at all.
+  const otp = useOtpChallenge<LoginChallenge>(apiNow);
+  const { busy, once } = otp;
 
   /** A step forward, with its own entry in the history. */
   const forward = (next: Step) => {
@@ -104,9 +106,6 @@ export function Login({
   // The API's reason no code was sent.
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [problem, setProblem] = useState<CodeProblem | null>(null);
-  // One code at a time: a second send bills a second code, voids the first, and takes another
-  // from this number's daily ceiling, which can leave a client unable to log in at all.
-  const [busy, once] = useOneAtATime();
   const turnstile = useTurnstile();
 
   /** Back to the number, saying why no code was sent. */
@@ -132,7 +131,7 @@ export function Login({
       setMobileError(null);
       setProblem(null);
       lastChallenge.current = answer.body;
-      setSentAt(apiNow());
+      otp.sent(answer.body);
       // A fresh code from the code screen stays on it; from the number, the code is a step forward.
       if (stepInHistory() === "mobile") forward({ kind: "code", challenge: answer.body });
       else setStep({ kind: "code", challenge: answer.body });
@@ -146,7 +145,7 @@ export function Login({
       if (answer.ok) {
         setProblem(null);
         lastChallenge.current = answer.body;
-        setSentAt(apiNow());
+        otp.sent(answer.body);
         setStep({ kind: "code", challenge: answer.body });
       } else {
         setProblem(sendAgainProblem(answer.status, answer.code));
@@ -194,7 +193,7 @@ export function Login({
     <CodeScreen
       mobile={mobile}
       challenge={challenge}
-      sentAt={sentAt}
+      sentAt={otp.sentAt}
       busy={busy}
       problem={problem}
       turnstileBox={turnstile.box}

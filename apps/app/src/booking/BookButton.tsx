@@ -18,7 +18,8 @@ import type { BookableType, Me } from "../api.ts";
 import { booking } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
-import { BookingSheet, type Offered } from "./BookingSheet.tsx";
+import type { Offered } from "./BookingSheet.tsx";
+import { BookingSheet } from "./lazy-sheet.tsx";
 import type { Recommended } from "./steps/ServiceStep.tsx";
 import { firstNameOf } from "@rules/lib/names.ts";
 

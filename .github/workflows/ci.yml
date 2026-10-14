@@ -358,7 +358,7 @@ jobs:
 
       # After the browser tests, and in their job: Lighthouse measures a page
       # load, so nothing this run starts should be competing for the machine.
-      - name: Lighthouse on /, /try, /book, an invite's landing and the client app, mobile profile, against the budgets
+      - name: Lighthouse on /, /try, /book, an invite's landing and the client and technician apps, mobile profile, against the budgets
         if: matrix.shard == 1
         run: npm run lighthouse
 

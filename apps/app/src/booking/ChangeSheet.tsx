@@ -18,7 +18,7 @@ import { booking, change, states } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
-import { BookingSheet } from "./BookingSheet.tsx";
+import { BookingSheet } from "./lazy-sheet.tsx";
 import { moveButton } from "./late-change.ts";
 import { LateFee } from "./steps/shared.tsx";
 import styles from "./booking.module.css";

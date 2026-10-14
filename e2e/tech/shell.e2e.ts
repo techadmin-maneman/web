@@ -207,16 +207,16 @@ test("a code the API has closed takes the sign-in back to sending one, not to a 
   await expect(page.getByRole("button", { name: techCopy.signIn.changeNumber })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
+  // The sixth digit sends the code.
   await page.getByRole("textbox", { name: techCopy.signIn.codeLabel }).fill(LOCAL_LOGIN_CODE);
-  await page.getByRole("button", { name: techCopy.signIn.submit }).click();
 
   await expect(page.getByRole("alert")).toHaveText(techCopy.signIn.errors.code_expired);
   await expect(page.getByRole("textbox", { name: techCopy.signIn.mobileLabel })).toBeEnabled();
 
   fake.codeClosed = false;
   await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  // The sixth digit sends the code.
   await page.getByRole("textbox", { name: techCopy.signIn.codeLabel }).fill(LOCAL_LOGIN_CODE);
-  await page.getByRole("button", { name: techCopy.signIn.submit }).click();
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
 });
 

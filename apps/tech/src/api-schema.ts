@@ -1951,6 +1951,8 @@ export interface components {
             /** Format: uuid */
             challenge_id: string;
             expires_in_s: number;
+            /** @description Seconds until a new code may be asked for. */
+            resend_in_s: number;
         };
         TechnicianLoginRequest: {
             mobile: string;

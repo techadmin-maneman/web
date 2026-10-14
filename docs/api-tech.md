@@ -1446,11 +1446,16 @@ Request body:
     },
     "expires_in_s": {
       "type": "integer"
+    },
+    "resend_in_s": {
+      "type": "integer",
+      "description": "Seconds until a new code may be asked for."
     }
   },
   "required": [
     "challenge_id",
-    "expires_in_s"
+    "expires_in_s",
+    "resend_in_s"
   ],
   "additionalProperties": false
 }

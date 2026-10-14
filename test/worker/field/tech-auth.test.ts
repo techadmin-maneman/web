@@ -65,6 +65,12 @@ describe("POST /api/tech/auth/otp", () => {
     expect(code).toMatch(/^\d{6}$/);
   });
 
+  it("says how long until a new code may be asked for, as the client's sign-in does", async () => {
+    const answer = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+    expect(answer.status).toBe(202);
+    expect(await answer.json()).toMatchObject({ expires_in_s: 600, resend_in_s: 30 });
+  });
+
   it("answers the same for a number the roster does not hold, and sends nothing", async () => {
     const known = await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
     const unknown = await post("/api/tech/auth/otp", { mobile: "98100 00004", device_id: DEVICE });

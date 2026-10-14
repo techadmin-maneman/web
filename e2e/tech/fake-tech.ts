@@ -245,7 +245,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
     if (method === "POST" && path === "/api/tech/auth/otp") {
       const body = route.request().postDataJSON() as { mobile: string };
       fake.codesSent.push(body.mobile);
-      return reply(route, 202, { challenge_id: CHALLENGE_ID, expires_in_s: 600 });
+      return reply(route, 202, { challenge_id: CHALLENGE_ID, expires_in_s: 600, resend_in_s: 30 });
     }
     if (method === "POST" && path === "/api/tech/auth/verify") {
       if (fake.codeClosed) return refuse(route, 410, "code_expired");

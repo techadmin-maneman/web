@@ -14,8 +14,6 @@ import { TextLink, textLinkLook } from "@maneman/ui/TextLink";
 import { BookButton, BookNext, ProblemLink, type ChangingVisit } from "../booking/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
-import { lazyScreen } from "@maneman/ui/lazyScreen";
-import { Suspense } from "react";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -37,11 +35,10 @@ import {
   type NotingVisit,
 } from "./VisitCard.tsx";
 import { ProposedMove } from "./ProposedMove.tsx";
+import { CustomOrderCard } from "./CustomOrderCard.tsx";
 import { RemakeCard } from "./RemakeCard.tsx";
 import styles from "./home.module.css";
 
-/** A custom order on its way, read apart from Home and loaded apart from it (./CustomOrderCard.tsx). */
-const CustomOrderCard = lazyScreen(() => import("./CustomOrderCard.tsx").then((module) => module.CustomOrderCard));
 import { firstNameOf } from "@rules/lib/names.ts";
 
 export function HomeScreen() {
@@ -59,9 +56,7 @@ export function HomeScreen() {
         {owed !== null && <PaymentOwed owed={owed} />}
         {me.credits !== null && <CreditTile credits={me.credits} />}
         {me.prompt !== null && <Prompt prompt={me.prompt} />}
-        <Suspense fallback={null}>
-          <CustomOrderCard />
-        </Suspense>
+        <CustomOrderCard />
         {invoice !== null && <InvoiceLine invoice={invoice} />}
         {me.state === "fitted" && <ProblemLink about={{ about: "hair_system" }} className={styles.problem} />}
       </div>

@@ -9,32 +9,36 @@
 // Home kept, a phone that signed out opens on the login; any other client
 // sees the error state, since their visit may still be booked.
 
-import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { Suspense, useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { api, forgetHome, keptHome, onSessionEnded, type Me } from "./api.ts";
 import { titles, update } from "./content.ts";
 import { HomeScreen } from "./home/HomeScreen.tsx";
-import { ReplacementScreen } from "./home/ReplacementScreen.tsx";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { UpdateReady } from "@maneman/ui/UpdateReady";
+import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { titled } from "./lib/arrival.ts";
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { forgetSignedOut, rememberSignedOut, signedOutHere } from "./lib/signed-out.ts";
-import { ReferScreen } from "./refer/ReferScreen.tsx";
+import { ReplacementScreen } from "./home/ReplacementScreen.tsx";
 import { TrackerScreen } from "./refer/TrackerScreen.tsx";
-import { Login } from "./login/Login.tsx";
 import { EntryScreen } from "./payments/EntryScreen.tsx";
 import { PaymentsScreen } from "./payments/PaymentsScreen.tsx";
-import { CompareScreen } from "./photos/CompareScreen.tsx";
 import { PhotosScreen } from "./photos/PhotosScreen.tsx";
-import { ProfileScreen } from "./profile/ProfileScreen.tsx";
+import { VisitScreen } from "./visits/VisitScreen.tsx";
+import { VisitsScreen } from "./visits/VisitsScreen.tsx";
+import { Login } from "./login/Login.tsx";
 import { go, routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext } from "./session.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
 import { LoadFailed } from "./states/LoadFailed.tsx";
 import { Loading } from "./states/Loading.tsx";
-import { VisitScreen } from "./visits/VisitScreen.tsx";
-import { VisitsScreen } from "./visits/VisitsScreen.tsx";
 import styles from "./app.module.css";
+
+// The pages opened least, and the heaviest, load when first opened; the service worker keeps them, so they open
+// offline too. Every other page comes with Home: split, they would cost more to fetch than they save.
+const ReferScreen = lazyScreen(() => import("./refer/ReferScreen.tsx").then((module) => module.ReferScreen));
+const CompareScreen = lazyScreen(() => import("./photos/CompareScreen.tsx").then((module) => module.CompareScreen));
+const ProfileScreen = lazyScreen(() => import("./profile/ProfileScreen.tsx").then((module) => module.ProfileScreen));
 
 type Session =
   | { readonly kind: "checking" }
@@ -196,7 +200,9 @@ export function App({ linkedMobile }: { linkedMobile: string }) {
         <SessionContext value={{ me: session.me, offline: session.offline, refresh: () => void refresh(), logOut }}>
           <UpdateReady copy={update} resting={routeOf(path).page === "home"} />
           {/* Keyed by the path, so each page opens at its top with its own data, and one that failed stays behind. */}
-          <ErrorBoundary key={path}>{pageFor(routeOf(path), () => void refresh())}</ErrorBoundary>
+          <ErrorBoundary key={path}>
+            <Suspense fallback={<Loading />}>{pageFor(routeOf(path), () => void refresh())}</Suspense>
+          </ErrorBoundary>
         </SessionContext>
       );
   }
