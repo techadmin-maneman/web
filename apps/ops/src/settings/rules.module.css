@@ -11,3 +11,66 @@
 .manyBody {
   margin-top: var(--sp-12);
 }
+
+/* ---- The rules, a section per subject ------------------------------------- */
+.jump {
+  margin: var(--sp-16) var(--sp-20) 0;
+}
+
+.jumpList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8) var(--sp-20);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+}
+
+/* Each section is a link's target, not a control, so it takes focus without a ring. */
+.ruleGroup {
+  margin-top: var(--sp-24);
+  border-top: var(--hairline) solid var(--text);
+}
+
+.ruleGroup:focus {
+  outline: none;
+}
+
+.ruleGroupTitle {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20) 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-22);
+}
+
+.addKey {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-12);
+  margin-top: var(--sp-16);
+  padding-top: var(--sp-16);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.checkList {
+  margin: var(--sp-8) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+}
+
+/* What storage and the database hold, two plain lines under The console's heading; no board draws them. */
+.storage {
+  margin: var(--sp-8) var(--sp-20) var(--sp-4);
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}
+
+.storage p {
+  margin: 0;
+}

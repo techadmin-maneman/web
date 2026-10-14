@@ -1,10 +1,7 @@
-// The client's hair profile, on their Pieces tab (docs/decisions/0106-a-clients-hair-profile.md): the profile as it
-// stands, the fit spec a replacement is ordered to and the client's history; then every version, who recorded it and
-// at which visit; and the form ops correct it with. The design draws no hair profile: its Pieces tab draws the pieces alone.
-//
-// A correction is the whole profile as it now stands, sent as a new version, so the form starts from the latest.
+// The client's hair profile, on their Pieces tab (docs/decisions/0106-a-clients-hair-profile.md): the profile, the fit
+// spec a replacement is ordered to, every version with who recorded it at which visit, and the form ops correct it
+// with. A correction is the whole profile sent as a new version, so the form starts from the latest.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -27,13 +24,15 @@ import {
   type FitForm,
   type HistoryForm,
 } from "@maneman/web-kit/hair-profile";
-import { useCallback, useId, useState } from "react";
-import { api, type ClientHairProfile, type HairProfileVersion, type HairProfileView } from "../api.ts";
+import { useCallback, useId, useState, type Dispatch, type SetStateAction } from "react";
+import { type ClientHairProfile, type HairProfileVersion, type HairProfileView } from "../api.ts";
 import { clients, dispatch, NOT_PERMITTED } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./profile.module.css";
 import { isOneOf } from "@rules/lib/one-of.ts";
+import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.profile;
 
@@ -124,7 +123,7 @@ function byWhom(version: HairProfileVersion): string {
   if (version.recorded_by.kind === "ops") return copy.byOps(version.recorded_by.staff);
   const name = version.recorded_by.name ?? copy.unnamed;
   const type = version.visit?.type ?? null;
-  return copy.atVisit(name, type === null ? copy.aVisit : (dispatch.typeNames[type] ?? copy.aVisit));
+  return copy.atVisit(name, type === null ? copy.aVisit : dispatch.typeNames[type]);
 }
 
 function Versions({ versions }: { versions: readonly HairProfileVersion[] }) {
@@ -165,9 +164,125 @@ function wronglyTyped(draft: Draft, thisYear: number): string[] {
   return yearOf(draft.history, thisYear) === "invalid" ? [...figures, "transplant_year"] : figures;
 }
 
+/** The options a select offers. */
+type SelectOptions = readonly { value: string; label: string }[];
+
 /** The fields the API refused, by the name the form gives them. */
 const refusedFields = (fields: readonly string[]): string[] =>
   fields.map((field) => field.replace(/^(fit|history)\./, ""));
+
+interface SectionProps {
+  readonly draft: Draft;
+  readonly onDraft: Dispatch<SetStateAction<Draft>>;
+  /** The boxes the API, or the form itself, refused. */
+  readonly refused: readonly string[];
+  readonly busy: boolean;
+}
+
+/** The fit a replacement is ordered to: each choice from its list, and each figure. */
+function FitFields({ draft, onDraft, refused, busy, products }: SectionProps & { readonly products: SelectOptions }) {
+  const select = (field: Code, options: SelectOptions) => (
+    <Field label={copy.rows[field]} error={refused.includes(field) ? copy.invalid : null} key={field}>
+      {(control) => (
+        <Select
+          {...control}
+          className={styles.select}
+          value={String(draft.fit.choices[field] ?? "")}
+          disabled={busy}
+          onChange={(event) => {
+            const value = event.currentTarget.value;
+            onDraft((was) => ({ ...was, fit: { ...was.fit, choices: choicesWith(was.fit.choices, field, value) } }));
+          }}
+        >
+          <option value="">{copy.notRecorded}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
+  );
+
+  const figure = (field: Figure) => (
+    <Field label={copy.rows[field]} error={refused.includes(field) ? copy.invalid : null} key={field}>
+      {(control) => (
+        <TextInput
+          {...control}
+          className={styles.input}
+          inputMode="decimal"
+          value={draft.fit.figures[field]}
+          disabled={busy}
+          onChange={(event) => {
+            const value = event.target.value;
+            onDraft((was) => ({ ...was, fit: { ...was.fit, figures: { ...was.fit.figures, [field]: value } } }));
+          }}
+        />
+      )}
+    </Field>
+  );
+  return (
+    <div className={styles.fields}>
+      {FIT_ROWS.map((field) => {
+        if (!isCode(field)) return figure(field);
+        return select(field, field === "product" ? products : listOf(field));
+      })}
+    </div>
+  );
+}
+
+/** What the client has tried before, the year of a transplant, and their skin and allergies. */
+function HistoryFields({ draft, onDraft, refused, busy }: SectionProps) {
+  return (
+    <ChoiceGroup className={styles.history} legend={copy.history} legendLook="caps">
+      {REMEDIES.map((remedy) => (
+        <Checkbox
+          key={remedy}
+          label={copy.remedies[remedy]}
+          checked={draft.history.remedies.includes(remedy)}
+          disabled={busy}
+          onChange={() => {
+            const remedies = toggleRemedy(draft.history.remedies, remedy);
+            onDraft((was) => ({ ...was, history: { ...was.history, remedies } }));
+          }}
+        />
+      ))}
+      {draft.history.remedies.includes("transplant") && (
+        <Field label={copy.rows.transplant_year} error={refused.includes("transplant_year") ? copy.invalid : null}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.input}
+              inputMode="numeric"
+              value={draft.history.year}
+              disabled={busy}
+              onChange={(event) => {
+                const year = event.target.value;
+                onDraft((was) => ({ ...was, history: { ...was.history, year } }));
+              }}
+            />
+          )}
+        </Field>
+      )}
+      <Field label={copy.rows.skin_and_allergies} error={refused.includes("skin_and_allergies") ? copy.invalid : null}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={styles.input}
+            maxLength={200}
+            value={draft.history.skin}
+            disabled={busy}
+            onChange={(event) => {
+              const skin = event.target.value;
+              onDraft((was) => ({ ...was, history: { ...was.history, skin } }));
+            }}
+          />
+        )}
+      </Field>
+    </ChoiceGroup>
+  );
+}
 
 function CorrectionForm({
   clientId,
@@ -199,7 +314,7 @@ function CorrectionForm({
         setProblem(copy.refused);
         return;
       }
-      const answer = await api.correctHairProfile(clientId, bodyOf(fit, history, page.latest?.id ?? null));
+      const answer = await clientsApi.correctHairProfile(clientId, bodyOf(fit, history, page.latest?.id ?? null));
       if (answer.ok) {
         onSaved(answer.body);
         return;
@@ -213,48 +328,6 @@ function CorrectionForm({
       if (answer.code === "not_permitted") setProblem(NOT_PERMITTED);
       else setProblem(fields.length > 0 ? copy.refused : copy.failed);
     });
-
-  const select = (field: Code, options: readonly { value: string; label: string }[]) => (
-    <Field label={copy.rows[field]} error={refused.includes(field) ? copy.invalid : null} key={field}>
-      {(control) => (
-        <Select
-          {...control}
-          className={styles.select}
-          value={String(draft.fit.choices[field] ?? "")}
-          disabled={busy}
-          onChange={(event) => {
-            const value = event.currentTarget.value;
-            setDraft((was) => ({ ...was, fit: { ...was.fit, choices: choicesWith(was.fit.choices, field, value) } }));
-          }}
-        >
-          <option value="">{copy.notRecorded}</option>
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
-  );
-
-  const figure = (field: Figure) => (
-    <Field label={copy.rows[field]} error={refused.includes(field) ? copy.invalid : null} key={field}>
-      {(control) => (
-        <TextInput
-          {...control}
-          className={styles.input}
-          inputMode="decimal"
-          value={draft.fit.figures[field]}
-          disabled={busy}
-          onChange={(event) => {
-            const value = event.target.value;
-            setDraft((was) => ({ ...was, fit: { ...was.fit, figures: { ...was.fit.figures, [field]: value } } }));
-          }}
-        />
-      )}
-    </Field>
-  );
 
   const products = productOptions(page.products, page.latest);
 
@@ -272,66 +345,9 @@ function CorrectionForm({
       <h4 className={capsLook(styles.subtitle)} id={`${formId}-title`}>
         {copy.formTitle}
       </h4>
-      <div className={styles.fields}>
-        {FIT_ROWS.map((field) => {
-          if (!isCode(field)) return figure(field);
-          return select(field, field === "product" ? products : listOf(field));
-        })}
-      </div>
-      <ChoiceGroup className={styles.history} legend={copy.history} legendLook="caps">
-        {REMEDIES.map((remedy) => (
-          <Checkbox
-            key={remedy}
-            label={copy.remedies[remedy]}
-            checked={draft.history.remedies.includes(remedy)}
-            disabled={busy}
-            onChange={() => {
-              const remedies = toggleRemedy(draft.history.remedies, remedy);
-              setDraft((was) => ({ ...was, history: { ...was.history, remedies } }));
-            }}
-          />
-        ))}
-        {draft.history.remedies.includes("transplant") && (
-          <Field label={copy.rows.transplant_year} error={refused.includes("transplant_year") ? copy.invalid : null}>
-            {(control) => (
-              <TextInput
-                {...control}
-                className={styles.input}
-                inputMode="numeric"
-                value={draft.history.year}
-                disabled={busy}
-                onChange={(event) => {
-                  const year = event.target.value;
-                  setDraft((was) => ({ ...was, history: { ...was.history, year } }));
-                }}
-              />
-            )}
-          </Field>
-        )}
-        <Field
-          label={copy.rows.skin_and_allergies}
-          error={refused.includes("skin_and_allergies") ? copy.invalid : null}
-        >
-          {(control) => (
-            <TextInput
-              {...control}
-              className={styles.input}
-              maxLength={200}
-              value={draft.history.skin}
-              disabled={busy}
-              onChange={(event) => {
-                const skin = event.target.value;
-                setDraft((was) => ({ ...was, history: { ...was.history, skin } }));
-              }}
-            />
-          )}
-        </Field>
-      </ChoiceGroup>
-      {problem !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {problem}
-        </InlineMessage>
-      )}
+      <FitFields draft={draft} onDraft={setDraft} refused={refused} busy={busy} products={products} />
+      <HistoryFields draft={draft} onDraft={setDraft} refused={refused} busy={busy} />
+      {problem !== null && <Refusal className={styles.error} said={problem} />}
       <div className={styles.actions}>
         <Button variant="primary" size="small" type="submit" busy={busy}>
           {busy ? copy.saving : copy.save}
@@ -353,7 +369,7 @@ function productOptions(products: Products, latest: HairProfileView | null): { v
 }
 
 export function HairProfile({ clientId }: { clientId: string }) {
-  const load = useCallback(() => api.clientHairProfile(clientId), [clientId]);
+  const load = useCallback(() => clientsApi.clientHairProfile(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
   // What the correction answered, which stands over what was read when the tab opened.
   const [saved, setSaved] = useState<ClientHairProfile | null>(null);
@@ -371,11 +387,7 @@ export function HairProfile({ clientId }: { clientId: string }) {
       <h3 className={capsLook(styles.title)} id="hair-profile-title">
         {copy.title}
       </h3>
-      {moved && (
-        <InlineMessage tone="error" className={styles.error}>
-          {copy.moved}
-        </InlineMessage>
-      )}
+      {moved && <Refusal className={styles.error} said={copy.moved} />}
       {page.latest === null ? <p className={styles.hint}>{copy.none}</p> : <ProfileRows profile={page.latest} />}
       {correcting && (
         <CorrectionForm

@@ -1,7 +1,7 @@
 // The Words page's words (Growth; docs/decisions/0126-the-words-page.md). The page imports them itself, so they stay
 // out of the console's first load.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const words = {
   title: "Words",
@@ -26,7 +26,7 @@ export const words = {
     numberCode: "Number check",
     consentBar: "Cookie bar",
     islandFailed: "When a part fails to load",
-  } as Readonly<Record<string, string>>,
+  } as Readonly<Record<string, string | undefined>>,
   changed: (by: string, day: string) => `Changed by ${by}, ${day}`,
   edit: "Edit",
   editLabel: (where: string) => `Edit ${where}`,
@@ -83,7 +83,7 @@ export const words = {
     length: "Too long for where it sits.",
     first_line: "The first line shows on a locked phone: no hair system, fitting or visit, and only its own details.",
     ends_on_detail: "End on words, not a detail.",
-    not_found: "Not found. Reload.",
+    not_found: changed("Not found."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

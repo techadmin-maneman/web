@@ -1,6 +1,7 @@
 // Growth · Spend (docs/decisions/0150-spend.md): a month's offline spend, for a city or national, by channel, which the
 // nightly reporting copy counts beside the ad accounts' own. An entry is added whole, and taken off rather than changed.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -12,14 +13,12 @@ import { fullMonth } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import type { Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { Shell } from "../components/Shell.tsx";
 import { spend as copy } from "../content/spend.ts";
 import { useAccess } from "../lib/access.ts";
-import { SECTION_NAMES } from "../route.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { spendApi, type SpendChannel, type SpendEntry, type SpendList } from "./spend-api.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 
 /** Each month from the first the page takes to this one, the latest first. */
 function monthsOf(list: SpendList): string[] {
@@ -35,7 +34,7 @@ function monthsOf(list: SpendList): string[] {
 /** Whole rupees, one or more, as typed. */
 const isRupees = (typed: string): boolean => /^\d+$/.test(typed.trim()) && Number(typed) >= 1;
 
-function Choice(props: {
+function SpendChoice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
@@ -46,7 +45,7 @@ function Choice(props: {
       {(control) => (
         <Select
           {...control}
-          className={styles.choiceBox}
+          className={form.choiceBox}
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -87,45 +86,44 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
   const [campaign, setCampaign] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
-  const add = async () => {
-    setBusy(true);
-    setFailure(null);
-    const answer = await spendApi.add({
-      month,
-      city: city === "" ? null : city,
-      channel,
-      amount: paiseFromRupees(amount),
-      ...(campaign.trim() === "" ? {} : { campaign: campaign.trim() }),
-      ...(note.trim() === "" ? {} : { note: note.trim() }),
+  const add = () =>
+    once(async () => {
+      setFailure(null);
+      const answer = await spendApi.add({
+        month,
+        city: city === "" ? null : city,
+        channel,
+        amount: paiseFromRupees(amount),
+        ...(campaign.trim() === "" ? {} : { campaign: campaign.trim() }),
+        ...(note.trim() === "" ? {} : { note: note.trim() }),
+      });
+      if (!answer.ok) {
+        setFailure({ code: answer.code, fields: answer.fields });
+        return;
+      }
+      setAmount("");
+      setCampaign("");
+      setNote("");
+      onAdded(answer.body);
     });
-    setBusy(false);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setAmount("");
-    setCampaign("");
-    setNote("");
-    onAdded(answer.body);
-  };
   const channelOf = (value: string) => list.channels.find((each) => each === value);
   return (
-    <div className={styles.group}>
-      <Choice
+    <div className={form.group}>
+      <SpendChoice
         label={copy.month}
         value={month}
         options={monthsOf(list).map((each) => [each, fullMonth(each)])}
         onChange={setMonth}
       />
-      <Choice
+      <SpendChoice
         label={copy.city}
         value={city}
         options={[["", copy.national], ...list.cities.map((each) => [each, each] as const)]}
         onChange={setCity}
       />
-      <Choice
+      <SpendChoice
         label={copy.channel}
         value={channel}
         options={list.channels.map((each) => [each, copy.channels[each]])}
@@ -134,7 +132,7 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
         }}
       />
       <Typed label={copy.campaign} value={campaign} maxLength={120} onChange={setCampaign} />
-      <p className={styles.note}>{copy.campaignNote}</p>
+      <p className={form.note}>{copy.campaignNote}</p>
       <Typed label={copy.amount} value={amount} maxLength={12} onChange={setAmount} />
       <Typed label={copy.note} value={note} maxLength={200} onChange={setNote} />
       <Button variant="outline" size="small" disabled={busy || !isRupees(amount)} onClick={() => void add()}>
@@ -146,9 +144,9 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
 }
 
 function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean; onRemove: (id: string) => void }) {
-  if (props.entries.length === 0) return <p className={styles.note}>{copy.none}</p>;
+  if (props.entries.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
-    <Table className={classes(styles.table)}>
+    <Table className={classes(form.table)}>
       <thead>
         <tr>
           {Object.values(copy.columns).map((column) => (
@@ -175,7 +173,7 @@ function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean;
             {props.mayRemove && (
               <td>
                 <RowButton
-                  className={styles.inline}
+                  className={form.inline}
                   aria-label={copy.removeLabel(
                     fullMonth(entry.month),
                     entry.city ?? copy.national,
@@ -232,13 +230,11 @@ function Spend() {
 
 export function SpendScreen() {
   return (
-    <Shell section="/spend" title={SECTION_NAMES.spend}>
-      <div className={styles.screen}>
-        <Panel titleId="spend" title={copy.title} className={styles.panel}>
-          <p className={styles.note}>{copy.intro}</p>
-          <Spend />
-        </Panel>
-      </div>
-    </Shell>
+    <div className={form.screen}>
+      <Panel titleId="spend" title={copy.title} className={form.panel}>
+        <p className={form.note}>{copy.intro}</p>
+        <Spend />
+      </Panel>
+    </div>
   );
 }

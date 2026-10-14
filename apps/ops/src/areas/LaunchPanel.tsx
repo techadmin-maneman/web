@@ -2,13 +2,13 @@
 // the press that sends it. Nothing is sent before that press
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { type ReactNode } from "react";
 import { areas, BOOKING_URL } from "../content.ts";
 import styles from "./areas.module.css";
+import { Refusal } from "../components/Refusal.tsx";
 
 const copy = areas.launch;
 const bookingUrl = BOOKING_URL[import.meta.env.MM_ENV];
@@ -73,11 +73,7 @@ export function LaunchPanel(props: Props) {
           </Button>
         </div>
       )}
-      {error !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {error}
-        </InlineMessage>
-      )}
+      {error !== null && <Refusal className={styles.error} said={error} />}
       {note !== null && <p className={styles.note}>{note}</p>}
     </section>
   );

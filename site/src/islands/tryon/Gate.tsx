@@ -44,10 +44,6 @@ function FieldError(props: { id: string; text: string | null }) {
   );
 }
 
-/**
- * Step four: where to send the look on WhatsApp, before it is made. Both fields are needed (ADR 0104), and the number
- * is proved with the WhatsApp code sent to it before the look is made.
- */
 /** What the gate says as it sends: that the photograph is still on its way, or why the look did not go. */
 function GateSaid({ photoOnItsWay, failure }: { photoOnItsWay: boolean; failure: string | null }) {
   return (
@@ -60,6 +56,10 @@ function GateSaid({ photoOnItsWay, failure }: { photoOnItsWay: boolean; failure:
   );
 }
 
+/**
+ * Step four: where to send the look on WhatsApp, before it is made. Both fields are needed (ADR 0104), and the number
+ * is proved with the WhatsApp code sent to it before the look is made.
+ */
 export function Gate(props: {
   notice: Notice;
   name: string;

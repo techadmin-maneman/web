@@ -2,9 +2,9 @@
 // which it opens on the words typed. They go in the history entry, never the
 // address (lib/client-search.ts).
 
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+
 import { useState } from "react";
 import { shell } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -25,20 +25,21 @@ export function ClientFinder() {
         if (typed !== "") findFrom(typed);
       }}
     >
-      <Label htmlFor="find-anywhere">
-        <VisuallyHidden>{shell.find.label}</VisuallyHidden>
-      </Label>
-      <TextInput
-        id="find-anywhere"
-        className={styles.finderField}
-        type="search"
-        autoComplete="off"
-        placeholder={shell.find.placeholder}
-        value={text}
-        onChange={(event) => {
-          setText(event.target.value);
-        }}
-      />
+      <Field label={shell.find.label} labelHidden className={styles.finderBox}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={styles.finderField}
+            type="search"
+            autoComplete="off"
+            placeholder={shell.find.placeholder}
+            value={text}
+            onChange={(event) => {
+              setText(event.target.value);
+            }}
+          />
+        )}
+      </Field>
       <Button variant="outline" size="small" type="submit" disabled={typed === ""}>
         {shell.find.submit}
       </Button>

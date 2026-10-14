@@ -14,8 +14,8 @@ import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type RemedyReason } from "./care-api.ts";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
 
 const copy = care.remedy;
 
@@ -36,7 +36,7 @@ function Choices(props: {
         {(control) => (
           <Select
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             value={String(props.visits)}
             onChange={(event) => {
               props.onVisits(Number(event.target.value));
@@ -54,7 +54,7 @@ function Choices(props: {
         {(control) => (
           <Select
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             value={props.reason}
             onChange={(event) => {
               if (isReason(event.target.value)) props.onReason(event.target.value);
@@ -93,16 +93,16 @@ export function RemedyForm({ personId }: { readonly personId: string }) {
   };
   if (!open) {
     return (
-      <div className={own.closing}>
+      <div className={styles.closing}>
         {said !== null && (
-          <InlineMessage tone="saved" className={styles.saved}>
+          <InlineMessage tone="saved" className={form.saved}>
             {said}
           </InlineMessage>
         )}
         <Button
           variant="outline"
           size="small"
-          className={styles.quiet}
+          className={form.quiet}
           onClick={() => {
             setOpen(true);
           }}
@@ -113,13 +113,13 @@ export function RemedyForm({ personId }: { readonly personId: string }) {
     );
   }
   return (
-    <div className={own.closing}>
+    <div className={styles.closing}>
       <Choices visits={visits} reason={reason} onVisits={setVisits} onReason={setReason} />
-      <Field label={copy.note} className={own.reply}>
+      <Field label={copy.note} className={styles.reply}>
         {(control) => (
           <TextArea
             {...control}
-            className={own.box}
+            className={styles.box}
             rows={2}
             maxLength={REASON_MAX_CHARS}
             value={note}
@@ -145,26 +145,26 @@ export function RemediesPanel() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { remedies } = loaded.value;
-  if (remedies.length === 0) return <p className={own.quick}>{copy.none}</p>;
+  if (remedies.length === 0) return <p className={styles.quick}>{copy.none}</p>;
   return (
-    <ul className={`${own.leave} ${own.quick}`}>
+    <ul className={`${styles.leave} ${styles.quick}`}>
       {remedies.map((remedy) => (
         <li key={remedy.id}>
-          <span className={own.who}>{remedy.person.name}</span> ·{" "}
+          <span className={styles.who}>{remedy.person.name}</span> ·{" "}
           {copy.line(remedy.visits, copy.reasons[remedy.reason], shortDate(indiaDate(remedy.given_at)))} ·{" "}
           {copy.states[remedy.state]}
           {remedy.note === null ? "" : ` · ${remedy.note}`}{" "}
           {mayDecide && remedy.state === "awaiting" && (
             <>
               <RowButton
-                className={styles.inline}
+                className={form.inline}
                 aria-label={copy.approveLabel(remedy.person.name)}
                 onClick={() => void careApi.decideRemedy(remedy.id, true).then(retry)}
               >
                 {copy.approve}
               </RowButton>{" "}
               <RowButton
-                className={styles.inline}
+                className={form.inline}
                 aria-label={copy.declineLabel(remedy.person.name)}
                 onClick={() => void careApi.decideRemedy(remedy.id, false).then(retry)}
               >

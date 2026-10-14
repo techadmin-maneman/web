@@ -1,6 +1,6 @@
 // Admin › Cities: our cities, their GST registrations, and the rules and prices a city sets apart.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 const common = {
   not_permitted: NOT_PERMITTED,
@@ -48,7 +48,7 @@ export const cities = {
       state: "Name the state.",
       zone: "Pick one of our zones.",
       taken: "Another city has that name.",
-      not_found: "That city has gone. Reload.",
+      not_found: changed("That city has gone."),
     },
   },
   rules: {
@@ -66,7 +66,7 @@ export const cities = {
     back: "Use the national rule",
     backQuestion: (rule: string, city: string) => `Use the national ${rule.toLowerCase()} in ${city}?`,
     saved: "Saved.",
-    errors: { ...common, value: "Outside what the national rule takes.", not_found: "That city has gone. Reload." },
+    errors: { ...common, value: "Outside what the national rule takes.", not_found: changed("That city has gone.") },
   },
   prices: {
     panel: "City prices",
@@ -102,7 +102,7 @@ export const cities = {
       amount_ex_gst: "Whole rupees, within the price book's bounds.",
       gst_percent: "0–28.",
       service_retired: "That service is retired by then.",
-      not_found: "Gone already. Reload.",
+      not_found: changed("Gone already."),
     },
   },
   registrations: {
@@ -127,7 +127,7 @@ export const cities = {
       gstin: "15 characters, as on the certificate.",
       books_branch_id: "The branch's ID in Books.",
       taken: "Another state has that GSTIN.",
-      not_found: "Gone already. Reload.",
+      not_found: changed("Gone already."),
     },
   },
 } as const;

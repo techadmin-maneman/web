@@ -13,7 +13,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { api, type Partner, type Partners as PartnerList } from "../api.ts";
+import { type Partner, type Partners as PartnerList } from "../api.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { BOOKING_URL } from "../content/common.ts";
 import { partners as copy } from "../content/partners.ts";
@@ -22,13 +22,14 @@ import { saveFile } from "../lib/save-file.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PartnerForm } from "./PartnerForm.tsx";
 import { partnerQr } from "./partner-qr.ts";
-import styles from "../components/forms.module.css";
-import own from "./partners.module.css";
+import form from "../components/forms.module.css";
+import styles from "./partners.module.css";
+import { ActionRow } from "../components/ActionRow.tsx";
+import { Refusal } from "../components/Refusal.tsx";
+import { referralsApi } from "./referrals-api.ts";
 
 /** The site the partner's link opens: the environment's own. */
 const SITE = new URL(BOOKING_URL[import.meta.env.MM_ENV]);
-
-const COLUMNS = 10;
 
 /** What is open beneath a partner's row. */
 type Acting = { readonly id: string; readonly kind: "edit" | "pause" } | null;
@@ -47,7 +48,7 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
   const paused = partner.paused_at !== null;
   const send = async () => {
     setStep("sending");
-    const answer = await api.pausePartner(partner.id, !paused);
+    const answer = await referralsApi.pausePartner(partner.id, !paused);
     if (!answer.ok) {
       setStep({ code: answer.code, fields: answer.fields });
       return;
@@ -63,11 +64,7 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
         onSend={() => void send()}
         onBack={onBack}
       />
-      {typeof step === "object" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, step)}
-        </InlineMessage>
-      )}
+      {typeof step === "object" && <Refusal className={form.error} said={errorText(copy.errors, step)} />}
     </>
   );
 }
@@ -76,7 +73,7 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
 function QrButton({ partner }: { partner: Partner }) {
   return (
     <RowButton
-      className={styles.inline}
+      className={form.inline}
       aria-label={copy.qrLabel(partner.name)}
       onClick={() => {
         saveFile(copy.qrName(partner.code), partnerQr(`${SITE.origin}/r/${partner.code}`), "image/svg+xml");
@@ -87,7 +84,7 @@ function QrButton({ partner }: { partner: Partner }) {
   );
 }
 
-function RowActions({ partner, acting, onAct }: { partner: Partner } & Pick<RowProps, "acting" | "onAct">) {
+function PartnerActions({ partner, acting, onAct }: { partner: Partner } & Pick<RowProps, "acting" | "onAct">) {
   const paused = partner.paused_at !== null;
   const actions: readonly (readonly [NonNullable<Acting>["kind"], string, string])[] = [
     ["edit", copy.edit, copy.editLabel(partner.name)],
@@ -98,7 +95,7 @@ function RowActions({ partner, acting, onAct }: { partner: Partner } & Pick<RowP
   return actions.map(([kind, words, label]) => (
     <RowButton
       key={kind}
-      className={styles.inline}
+      className={form.inline}
       aria-label={label}
       disabled={acting !== null}
       onClick={() => {
@@ -111,28 +108,26 @@ function RowActions({ partner, acting, onAct }: { partner: Partner } & Pick<RowP
 }
 
 /** Beneath a partner's row, what its action opened. */
-function ActingRow({ partner, list, acting, onAct, onDone }: { partner: Partner } & RowProps) {
+function PartnerActingRow({ partner, list, acting, onAct, onDone }: { partner: Partner } & RowProps) {
   if (acting?.id !== partner.id) return null;
   const cancel = () => {
     onAct(null);
   };
   return (
-    <tr className={own.acting}>
-      <td colSpan={COLUMNS}>
-        {acting.kind === "edit" ? (
-          <PartnerForm
-            partner={partner}
-            limits={list.limits}
-            onDone={(next) => {
-              onDone(next, copy.done.saved);
-            }}
-            onCancel={cancel}
-          />
-        ) : (
-          <PauseCheck partner={partner} onDone={onDone} onBack={cancel} />
-        )}
-      </td>
-    </tr>
+    <ActionRow className={styles.acting}>
+      {acting.kind === "edit" ? (
+        <PartnerForm
+          partner={partner}
+          limits={list.limits}
+          onDone={(next) => {
+            onDone(next, copy.done.saved);
+          }}
+          onCancel={cancel}
+        />
+      ) : (
+        <PauseCheck partner={partner} onDone={onDone} onBack={cancel} />
+      )}
+    </ActionRow>
   );
 }
 
@@ -140,9 +135,9 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
   return (
     <>
       <tr>
-        <th scope="row" className={own.name}>
+        <th scope="row" className={styles.name}>
           {partner.name}
-          {partner.paused_at !== null && <span className={own.paused}> · {copy.paused}</span>}
+          {partner.paused_at !== null && <span className={styles.paused}> · {copy.paused}</span>}
         </th>
         <td>
           <TextLink href={`${SITE.origin}/r/${partner.code}`} newTab>
@@ -151,20 +146,20 @@ function PartnerRows({ partner, ...row }: { partner: Partner } & RowProps) {
         </td>
         <td>
           {copy.friendGets(partner.friend_visits, partner.valid_days)}
-          {partner.discount_code !== null && <span className={own.code}>{partner.discount_code}</span>}
+          {partner.discount_code !== null && <span className={styles.code}>{partner.discount_code}</span>}
         </td>
-        <td className={own.figure}>{rupees(partner.commission)}</td>
-        <td className={own.figure}>{partner.opens}</td>
-        <td className={own.figure}>{partner.referred}</td>
-        <td className={own.figure}>{partner.fitted}</td>
-        <td className={own.figure}>{rupees(partner.earned)}</td>
-        <td className={own.figure}>{rupees(partner.owed)}</td>
-        <td className={own.actions}>
+        <td className={styles.figure}>{rupees(partner.commission)}</td>
+        <td className={styles.figure}>{partner.opens}</td>
+        <td className={styles.figure}>{partner.referred}</td>
+        <td className={styles.figure}>{partner.fitted}</td>
+        <td className={styles.figure}>{rupees(partner.earned)}</td>
+        <td className={styles.figure}>{rupees(partner.owed)}</td>
+        <td className={styles.actions}>
           <QrButton partner={partner} />
-          {row.mayChange && <RowActions partner={partner} {...row} />}
+          {row.mayChange && <PartnerActions partner={partner} {...row} />}
         </td>
       </tr>
-      <ActingRow partner={partner} {...row} />
+      <PartnerActingRow partner={partner} {...row} />
     </>
   );
 }
@@ -173,15 +168,15 @@ function PartnerTable(row: RowProps) {
   const heads = copy.columns;
   const figures = [heads.commission, heads.opens, heads.referred, heads.fitted, heads.earned, heads.owed];
   return (
-    <div className={own.scroll}>
-      <Table className={classes(styles.table, own.table)}>
+    <div className={styles.scroll}>
+      <Table className={classes(form.table, styles.table)}>
         <thead>
           <tr>
             <th scope="col">{heads.name}</th>
             <th scope="col">{heads.link}</th>
             <th scope="col">{heads.friend}</th>
             {figures.map((label) => (
-              <th key={label} scope="col" className={own.figure}>
+              <th key={label} scope="col" className={styles.figure}>
                 {label}
               </th>
             ))}
@@ -201,7 +196,7 @@ function PartnerTable(row: RowProps) {
 }
 
 export function Partners() {
-  const [loaded, retry] = useLoad(api.partners);
+  const [loaded, retry] = useLoad(referralsApi.partners);
   /** The list as the last change left it, so the panel follows a change without reading it again. */
   const [changed, setChanged] = useState<PartnerList | null>(null);
   const [adding, setAdding] = useState(false);
@@ -225,14 +220,14 @@ export function Partners() {
     <Panel
       titleId="partners"
       title={copy.title}
-      className={styles.panel}
+      className={form.panel}
       actions={
         mayChange &&
         !adding && (
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={form.quiet}
             onClick={() => {
               act(null);
               setAdding(true);
@@ -256,12 +251,12 @@ export function Partners() {
         />
       )}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
       {list.channels.length === 0 ? (
-        <p className={styles.note}>{copy.none}</p>
+        <p className={form.note}>{copy.none}</p>
       ) : (
         <PartnerTable list={list} mayChange={mayChange} acting={acting} onAct={act} onDone={done} />
       )}

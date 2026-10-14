@@ -150,12 +150,19 @@ test("rejects a request with a reason, which it will not send without", async ({
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
 });
 
-test("says so when someone has decided it already, and the client is not erased", async ({ page }) => {
+// Ops were told to reload; the page now reads itself again in place and says why.
+test("says so when someone has decided it already, reads the queue again, and the client is not erased", async ({
+  page,
+}) => {
   await open(page, fails(404, "not_found"));
   await ask(page);
   await page.getByRole("checkbox", { name: CHECKED }).check();
+  const reread = page.waitForRequest(
+    (request) => request.url().endsWith("/api/deletion-requests") && request.method() === "GET",
+  );
   await page.getByRole("button", { name: "Delete permanently" }).click();
-  await expect(page.getByRole("alert")).toContainText("Already decided. Reload.");
+  await reread;
+  await expect(page.getByText("Already decided. Here's the latest.")).toBeVisible();
   await expect(row(page, "Rohit Malhotra")).toBeVisible();
 });
 

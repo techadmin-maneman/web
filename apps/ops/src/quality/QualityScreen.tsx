@@ -7,22 +7,24 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
+import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
 import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ExpiryRiskPanel } from "./ExpiryRisk.tsx";
 import { FailuresPanel } from "./Failures.tsx";
-import { RaiseRecall, RecallDetail, type Answer, type Book, type Detail } from "./Recall.tsx";
+import { RaiseRecall, RecallDetail, type Answer, type Quality, type Detail } from "./Recall.tsx";
+import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { qualityApi } from "./quality-api.ts";
 
-const loadRecalls = () => client.get("/api/recalls");
+const loadRecalls = () => qualityApi.recalls();
 
-function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void }) {
-  if (book.recalls.length === 0) return <p className={form.note}>{copy.none}</p>;
+function Recalls({ quality, opener, onOpen }: { quality: Quality; opener: RowOpener; onOpen: (id: string) => void }) {
+  if (quality.recalls.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
       <thead>
@@ -35,11 +37,9 @@ function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void })
         </tr>
       </thead>
       <tbody>
-        {book.recalls.map((recall) => (
+        {quality.recalls.map((recall) => (
           <tr key={recall.id}>
-            <th scope="row" className={form.rowHead}>
-              {copy.number(recall.number)}
-            </th>
+            <RowHead>{copy.number(recall.number)}</RowHead>
             <td>{recall.name}</td>
             <td>{recall.lot_code}</td>
             <td>{longDate(recall.raised_at)}</td>
@@ -49,9 +49,9 @@ function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void })
                 variant="outline"
                 size="small"
                 aria-label={copy.view(copy.number(recall.number))}
-                onClick={() => {
+                {...opener(recall.id, () => {
                   onOpen(recall.id);
-                }}
+                })}
               >
                 {copy.viewShort}
               </Button>
@@ -65,15 +65,16 @@ function Recalls({ book, onOpen }: { book: Book; onOpen: (id: string) => void })
 
 export function QualityScreen() {
   const [loaded, retry] = useLoad(loadRecalls);
-  const [book, setBook] = useState<Book | null>(null);
+  const [quality, setQuality] = useState<Quality | null>(null);
   const [opened, setOpened] = useState<Detail | null>(null);
+  const { open: openId, setOpen, panelId, opener } = useRowPanel();
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const access = useAccess();
-  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
+  const current = quality ?? (loaded.state === "loaded" ? loaded.value : null);
   const reload = () => {
     void loadRecalls().then((answer) => {
-      if (answer.ok) setBook(answer.body);
+      if (answer.ok) setQuality(answer.body);
     });
   };
   const answered = (answer: Answer, words: string) => {
@@ -82,40 +83,39 @@ export function QualityScreen() {
       return;
     }
     setOpened(answer.body);
+    setOpen(answer.body.id);
     setSaid(words);
     setFailure(null);
     reload();
   };
   const open = (id: string) => {
-    void client.get("/api/recalls/{id}", { path: { id } }).then((answer) => {
+    void qualityApi.recall(id).then((answer) => {
       if (answer.ok) setOpened(answer.body);
     });
   };
   return (
-    <Shell section="/quality" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
           <Panel titleId="quality-recalls" title={copy.recalls}>
-            <Recalls book={current} onOpen={open} />
-            {access.mayCall("POST /api/recalls") && <RaiseRecall book={current} onAnswer={answered} />}
+            <Recalls quality={current} opener={opener} onOpen={open} />
+            {access.mayCall("POST /api/recalls") && <RaiseRecall quality={current} onAnswer={answered} />}
             {said !== null && (
               <InlineMessage tone="saved" className={form.saved}>
                 {said}
               </InlineMessage>
             )}
-            {failure !== null && (
-              <InlineMessage tone="error" className={form.error}>
-                {errorText(copy.errors, failure)}
-              </InlineMessage>
-            )}
+            {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
           </Panel>
-          {opened !== null && <RecallDetail key={opened.id} recall={opened} onAnswer={answered} />}
+          {opened !== null && opened.id === openId && (
+            <RecallDetail key={opened.id} id={panelId} recall={opened} onAnswer={answered} />
+          )}
           <FailuresPanel />
           {access.mayCall("GET /api/stock/expiry-risk") && <ExpiryRiskPanel />}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

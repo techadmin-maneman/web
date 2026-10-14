@@ -1,28 +1,24 @@
-// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md):
-// what the technician ticks on each kind of visit, the reasons they may pick
-// when a job is left partly done, and why a client is not going ahead after a
-// consultation (docs/decisions/0149-lost-reasons.md). All are set here, and the technician app reads them with each job; a phone
-// keeps the list it was given with the job, and an item taken off is kept, so
-// what a phone recorded before the change is still understood.
-//
-// Until ops save a list, the committed one stands (src/config/job-sheet.ts),
-// and the panel says so.
+// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): what the technician ticks on each kind of visit,
+// the reasons a job is left partly done, and why a client does not go ahead (docs/decisions/0149-lost-reasons.md). A
+// phone keeps the list it got with the job and an item taken off is kept, so older records still read. Until ops save a
+// list, src/config/job-sheet.ts's stands.
 
-import { Label, Select } from "@maneman/ui/Field";
+import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
-import { api, type JobSheet as Sheet, type VisitType } from "../api.ts";
+import { type JobSheet as Sheet, type VisitType } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ListEditor, ListRead } from "./ListEditor.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.jobSheet;
 
-const typeName = (type: string) => dispatch.typeNames[type] ?? type;
+const typeName = (type: keyof typeof dispatch.typeNames) => dispatch.typeNames[type];
 
 type EditorProps = Parameters<typeof ListEditor>[0];
 
@@ -38,7 +34,7 @@ function Reasons(
 }
 
 export function JobSheet() {
-  const [loaded, retry] = useLoad(api.jobSheet);
+  const [loaded, retry] = useLoad(settingsApi.jobSheet);
   /** The sheet after a save, so "Set by" follows without reading it again. */
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [kind, setKind] = useState<VisitType>("service");
@@ -53,26 +49,27 @@ export function JobSheet() {
   const checklist = current.checklists.find((each) => each.visit_type === kind);
 
   return (
-    <Panel titleId="job-sheet" title={copy.title} className={styles.panel}>
-      <div className={styles.group}>
-        <div className={styles.field}>
-          <Label htmlFor="job-sheet-kind">{copy.kind}</Label>
-          <Select
-            className={styles.select}
-            id="job-sheet-kind"
-            value={kind}
-            onChange={(event) => {
-              const chosen = current.checklists.find((each) => each.visit_type === event.target.value);
-              if (chosen !== undefined) setKind(chosen.visit_type);
-            }}
-          >
-            {current.checklists.map((each) => (
-              <option key={each.visit_type} value={each.visit_type}>
-                {typeName(each.visit_type)}
-              </option>
-            ))}
-          </Select>
-        </div>
+    <Panel titleId="job-sheet" title={copy.title} className={form.panel}>
+      <div className={form.group}>
+        <Field label={copy.kind} className={form.field}>
+          {(control) => (
+            <Select
+              {...control}
+              className={form.select}
+              value={kind}
+              onChange={(event) => {
+                const chosen = current.checklists.find((each) => each.visit_type === event.target.value);
+                if (chosen !== undefined) setKind(chosen.visit_type);
+              }}
+            >
+              {current.checklists.map((each) => (
+                <option key={each.visit_type} value={each.visit_type}>
+                  {typeName(each.visit_type)}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
       </div>
       {checklist !== undefined && !mayChangeChecklists && (
         <ListRead title={copy.checklist(typeName(kind))} list={checklist} />
@@ -87,7 +84,7 @@ export function JobSheet() {
           longest={current.max_label}
           itemLabel={copy.item}
           addLabel={copy.add}
-          send={(items) => api.setChecklist(kind, items)}
+          send={(items) => settingsApi.setChecklist(kind, items)}
           pick={(saved) => saved.checklists.find((each) => each.visit_type === kind) ?? checklist}
           onSaved={setSheet}
         />
@@ -98,7 +95,7 @@ export function JobSheet() {
         list={current.partial_reasons}
         most={current.max_partial_reasons}
         mayChange={mayChangeReasons}
-        send={(items) => api.setPartialReasons(items)}
+        send={(items) => settingsApi.setPartialReasons(items)}
         pick={(saved) => saved.partial_reasons}
         onSaved={setSheet}
         longest={current.max_label}
@@ -109,7 +106,7 @@ export function JobSheet() {
         list={current.lost_reasons}
         most={current.max_lost_reasons}
         mayChange={mayChangeLost}
-        send={(items) => api.setLostReasons(items)}
+        send={(items) => settingsApi.setLostReasons(items)}
         pick={(saved) => saved.lost_reasons}
         onSaved={setSheet}
         longest={current.max_label}

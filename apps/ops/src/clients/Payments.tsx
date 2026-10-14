@@ -1,16 +1,9 @@
-// The client's Payments tab: what they have paid and had back, the payment
-// links they were sent and the invoice of each finished visit, all from the
-// record the page already holds; and their service-visit credits, which ops can
-// put right by hand (docs/decisions/0068-a-paid-hold-is-kept.md). The board
-// draws the tab and nothing in it (docs/fidelity-method.md).
-//
-// A credit given or taken in error once needed SQL to correct. The form sends
-// the visits and the reason, and the server writes the ledger's entry and its
-// audit entry together; the balance it answers is shown, and heads the page.
+// The client's Payments tab: payments and refunds, payment links and each finished visit's invoice, from the record the
+// page holds; and their service-visit credits, which ops correct by hand, the server writing the ledger and audit
+// entries together (docs/decisions/0068-a-paid-hold-is-kept.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { ChoiceGroup, Label, Radio, TextInput } from "@maneman/ui/Field";
+import { Field, ChoiceGroup, Radio, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -20,7 +13,6 @@ import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import {
-  api,
   type ClientInvoice,
   type ClientPayment,
   type ClientPaymentLink,
@@ -31,6 +23,8 @@ import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { RefundPayment } from "./RefundPayment.tsx";
+import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 type Credits = ClientRecord["credits"];
 type Reason = CreditAdjustment["reason"];
@@ -72,7 +66,7 @@ function keptOf(entry: ClientPayment): string | null {
 function stateOf(entry: ClientPayment): string {
   const state = entry.kind === "refund" ? copy.refundStates[entry.status] : copy.paymentStates[entry.status];
   const reference = entry.kind === "payment" && entry.reference !== null ? copy.reference(entry.reference) : null;
-  return [state ?? clients.unknown, keptOf(entry), reference].filter((part) => part !== null).join(" · ");
+  return [state, keptOf(entry), reference].filter((part) => part !== null).join(" · ");
 }
 
 function CodeLine({ entry }: { entry: ClientPayment }) {
@@ -221,6 +215,22 @@ function visitsOf(typed: string): number | null {
   return visits === 0 || Math.abs(visits) > MOST_VISITS ? null : visits;
 }
 
+/** The service visits the client holds, and the day the first of them runs out. */
+function Balance({ credits }: { credits: Credits }) {
+  const expiry = credits?.earliest_expiry ?? null;
+  return (
+    <dl className={styles.address}>
+      <div className={styles.addressRow}>
+        <dt className={styles.metaKey}>{creditCopy.balance}</dt>
+        <dd className={styles.addressValue}>
+          {credits === null ? creditCopy.none : creditCopy.visits(credits.visits)}
+          {expiry !== null && ` · ${creditCopy.useBy(longDate(expiry))}`}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 function CreditForm({
   clientId,
   credits,
@@ -236,11 +246,10 @@ function CreditForm({
   const mayAdjust = useAccess().mayCall("POST /api/clients/{id}/credits");
   const visits = visitsOf(typed);
   const sending = adjusting.step === "sending";
-  const expiry = credits?.earliest_expiry ?? null;
 
   const send = async (change: { visits: number; reason: Reason }) => {
     setAdjusting({ step: "sending" });
-    const answer = await api.adjustCredits(clientId, change);
+    const answer = await clientsApi.adjustCredits(clientId, change);
     if (!answer.ok) {
       setAdjusting({ step: "failed", code: answer.code });
       return;
@@ -256,15 +265,7 @@ function CreditForm({
       <h3 className={capsLook(styles.sectionTitle)} id="credits">
         {creditCopy.title}
       </h3>
-      <dl className={styles.address}>
-        <div className={styles.addressRow}>
-          <dt className={styles.metaKey}>{creditCopy.balance}</dt>
-          <dd className={styles.addressValue}>
-            {credits === null ? creditCopy.none : creditCopy.visits(credits.visits)}
-            {expiry !== null && ` · ${creditCopy.useBy(longDate(expiry))}`}
-          </dd>
-        </div>
-      </dl>
+      <Balance credits={credits} />
       {mayAdjust && (
         <form
           className={styles.creditForm}
@@ -273,18 +274,21 @@ function CreditForm({
             if (visits !== null && reason !== "") void send({ visits, reason });
           }}
         >
-          <Label htmlFor="credit-visits">{creditCopy.change}</Label>
-          <TextInput
-            id="credit-visits"
-            className={styles.numberField}
-            inputMode="numeric"
-            autoComplete="off"
-            value={typed}
-            disabled={sending}
-            onChange={(event) => {
-              setTyped(event.target.value);
-            }}
-          />
+          <Field label={creditCopy.change}>
+            {(control) => (
+              <TextInput
+                {...control}
+                className={styles.numberField}
+                inputMode="numeric"
+                autoComplete="off"
+                value={typed}
+                disabled={sending}
+                onChange={(event) => {
+                  setTyped(event.target.value);
+                }}
+              />
+            )}
+          </Field>
           <ChoiceGroup className={styles.reasons} legend={creditCopy.reason} disabled={sending} ruled>
             {creditCopy.reasons.map((each) => (
               <Radio
@@ -314,9 +318,7 @@ function CreditForm({
             </p>
           )}
           {adjusting.step === "failed" && (
-            <InlineMessage tone="error" className={styles.error}>
-              {errorText(creditCopy.errors, { code: adjusting.code })}
-            </InlineMessage>
+            <Refusal className={styles.error} said={errorText(creditCopy.errors, { code: adjusting.code })} />
           )}
         </form>
       )}

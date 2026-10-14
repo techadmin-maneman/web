@@ -42,7 +42,6 @@ function NotDone({ problem }: { problem: Problem | null }) {
   );
 }
 
-/** One top-up on its way: received whole, or of a hair system the pieces scanned, the rest lost on the way. */
 /** Whether the pieces of a top-up not scanned are still to come, as they are unless the technician says otherwise. */
 function RestOf({
   count,
@@ -76,6 +75,7 @@ function RestOf({
   );
 }
 
+/** One top-up on its way: received whole, or of a hair system the pieces scanned, the rest lost on the way. */
 function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onKit: (kit: Kit) => void }) {
   const [scanned, setScanned] = useState<readonly string[]>([]);
   const [rest, setRest] = useState<"on_its_way" | "missing">("on_its_way");

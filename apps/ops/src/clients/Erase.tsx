@@ -1,12 +1,9 @@
-// Erasing a client from their page, when they ask outside the app: on WhatsApp or the phone. A request they made in
-// the app is decided in Deletion requests instead, which tells them when it is done, so it is not offered here then.
-//
-// As in Deletion requests, erasing takes two deliberate steps: the second says what is destroyed and what is kept,
-// and waits for ops to confirm the request came from the client's own number. The API refuses while a visit is booked,
-// a payment held or a payment link unpaid; ops may then erase all the same, saying they will settle it by hand today.
-// From then on the client's page shows only what is kept of them.
+// Erasing a client who asks outside the app, on WhatsApp or the phone; a request made in the app is decided in Deletion
+// requests. It takes two steps, the second saying what is destroyed and what is kept once ops confirm the request came
+// from the client's own number. Where the API refuses for a booked visit or money held, ops may erase anyway and settle
+// it by hand today.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -15,7 +12,7 @@ import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
-import { api, type ErasedClientRecord } from "../api.ts";
+import { type ErasedClientRecord } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { ErasureLists } from "../components/ErasureLists.tsx";
@@ -24,6 +21,8 @@ import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { MoneyRecords } from "./Payments.tsx";
 import { VisitRecords } from "./Visits.tsx";
+import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.erasure;
 
@@ -100,21 +99,20 @@ interface EraseProps {
 export function Erase({ clientId, name, requested, onErased }: EraseProps) {
   const mayErase = useAccess().mayCall("POST /api/clients/{id}/erasure");
   const [erasing, setErasing] = useState<Erasing>({ step: "closed" });
-  const [sending, setSending] = useState(false);
+  const [sending, once] = useOneAtATime();
   const opener = useRef<HTMLButtonElement>(null);
 
   if (!mayErase || requested) return null;
 
-  const erase = async (settledByHand: boolean) => {
-    setSending(true);
-    const answer = await api.eraseClient(clientId, settledByHand);
-    setSending(false);
-    if (answer.ok) {
-      onErased();
-      return;
-    }
-    setErasing(isOwed(answer.code) ? { step: "owed", code: answer.code } : { step: "failed", code: answer.code });
-  };
+  const erase = (settledByHand: boolean) =>
+    once(async () => {
+      const answer = await clientsApi.eraseClient(clientId, settledByHand);
+      if (answer.ok) {
+        onErased();
+        return;
+      }
+      setErasing(isOwed(answer.code) ? { step: "owed", code: answer.code } : { step: "failed", code: answer.code });
+    });
 
   /** Back to the button, and the keyboard with it, rather than to the top of the page. */
   const close = () => {
@@ -166,9 +164,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
         </div>
       )}
       {erasing.step === "failed" && (
-        <InlineMessage tone="error" className={deletionStyles.error}>
-          {errorText(copy.errors, { code: erasing.code })}
-        </InlineMessage>
+        <Refusal className={deletionStyles.error} said={errorText(copy.errors, { code: erasing.code })} />
       )}
     </section>
   );

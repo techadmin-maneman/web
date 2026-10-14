@@ -93,7 +93,7 @@ test("lists each claim with its reason and value, and marks a drafted one sent",
   const claims = page.getByRole("region", { name: copy.claims.title });
   const row = claims.getByRole("row").filter({ hasText: "CL-0001" });
   await expect(row).toContainText("Lumina Hair Co");
-  await expect(row).toContainText(copy.claims.reasons.damaged ?? "");
+  await expect(row).toContainText(copy.claims.reasons.damaged);
   await expect(row).toContainText("USD 5.00");
 
   await claims.getByRole("button", { name: copy.claims.open("CL-0001") }).click();
@@ -102,7 +102,7 @@ test("lists each claim with its reason and value, and marks a drafted one sent",
   const request = posted(page, "/api/supplier-claims/cl-1/send");
   await claims.getByRole("button", { name: copy.claims.send }).click();
   expect((await request).postDataJSON()).toEqual({ note: "Photos emailed.", photo_id: null });
-  await expect(row).toContainText(copy.claims.states.sent ?? "");
+  await expect(row).toContainText(copy.claims.states.sent);
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -124,7 +124,7 @@ test("settles a sent claim as the credit the supplier gave", async ({ page }) =>
   const request = posted(page, "/api/supplier-claims/cl-1/decide");
   await claims.getByRole("button", { name: copy.claims.credited }).click();
   expect((await request).postDataJSON()).toEqual({ outcome: "credit", credit_amount: 400, note: null });
-  await expect(claims.getByRole("row").filter({ hasText: "CL-0001" })).toContainText(copy.claims.outcomes.credit ?? "");
+  await expect(claims.getByRole("row").filter({ hasText: "CL-0001" })).toContainText(copy.claims.outcomes.credit);
 });
 
 test("claims a returned piece inside its warranty, and writes off another with why", async ({ page }) => {

@@ -10,14 +10,14 @@ import { OpsLink } from "../components/Shell.tsx";
 import { care } from "../content/care.ts";
 import { dispatch } from "../content/dispatch.ts";
 import { clientPath, type ClientTab } from "../route.ts";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
 
 const copy = care.panel;
 
 /** "Thu 24 Sep, 12 pm · Service visit" */
 function visitLine(visit: ClientVisit): string {
-  const kind = visit.service ?? (visit.type === null ? "" : (dispatch.typeNames[visit.type] ?? visit.type));
+  const kind = visit.service ?? (visit.type === null ? "" : dispatch.typeNames[visit.type]);
   return copy.visit(`${shortDate(visit.date)}, ${indiaClock(visit.starts_at)}`, kind);
 }
 
@@ -36,8 +36,8 @@ export function ClientPanel({ personId }: { readonly personId: string }) {
   const [next] = record.visits.upcoming;
   const [last] = record.visits.past;
   return (
-    <section className={own.panel} aria-label={copy.title}>
-      <dl className={own.facts}>
+    <section className={styles.panel} aria-label={copy.title}>
+      <dl className={styles.facts}>
         <dt>{copy.next}</dt>
         <dd>{next === undefined ? copy.none : visitLine(next)}</dd>
         <dt>{copy.last}</dt>
@@ -47,9 +47,9 @@ export function ClientPanel({ personId }: { readonly personId: string }) {
         <dt>{copy.city}</dt>
         <dd>{record.address?.city ?? copy.noAddress}</dd>
       </dl>
-      <p className={styles.note}>
+      <p className={form.note}>
         {LINKS.map(([tab, label]) => (
-          <OpsLink key={tab} className={textLinkLook({ className: own.link })} to={clientPath(personId, tab)}>
+          <OpsLink key={tab} className={textLinkLook({ className: styles.link })} to={clientPath(personId, tab)}>
             {label}
           </OpsLink>
         ))}

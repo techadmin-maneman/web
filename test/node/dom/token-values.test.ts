@@ -2,6 +2,7 @@
 // palette, each redefined on the ink. A value written under several names drifts one name at a time; a role holding
 // a colour of its own could not be re-themed.
 
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -33,6 +34,26 @@ describe.each(Object.entries(LOADED_TOGETHER))("%s's tokens", (_surface, files) 
       byValue.set(value, [...(byValue.get(value) ?? []), name]);
     }
     expect([...byValue].filter(([, names]) => names.length > 1)).toEqual([]);
+  });
+});
+
+// A screen's own width, as --local-*, is written once across the console and is no token's: a width two screens share
+// is a console token (apps/ops/src/styles/tokens.css), which each names for what its column holds.
+describe("the console's own widths", () => {
+  const sheets = execFileSync("git", ["ls-files", "apps/ops/src"], { encoding: "utf8" })
+    .split("\n")
+    .filter((path) => path.endsWith(".module.css"));
+  const local = sheets.flatMap((path) =>
+    [...readFileSync(path, "utf8").matchAll(/(--local-[a-z0-9-]+)\s*:\s*([\d.]+px)\s*;/g)].map((match) => ({
+      name: match[1] ?? "",
+      value: match[2] ?? "",
+    })),
+  );
+  const tokenValues = new Set(LOADED_TOGETHER["the ops console"].flatMap(declarations).map(({ value }) => value));
+
+  it("are each written once, and are no token's value", () => {
+    const values = local.map(({ value }) => value);
+    expect(local.filter(({ value }, index) => values.indexOf(value) !== index || tokenValues.has(value))).toEqual([]);
   });
 });
 

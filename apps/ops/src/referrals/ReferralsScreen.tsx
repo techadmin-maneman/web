@@ -1,12 +1,7 @@
-// Referrals: the grants the fraud rules held, each approved or rejected here, over every referrer's figures, and the
-// partners who refer on their own code (./Partners.tsx). Approving a grant releases its credits. The board asks for a
-// reason on either decision, the server refuses one without it, and it is kept with the decision under whoever Access
-// says is signed in (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts).
-//
-// Each name in a held pair is a way to that client's page, and each grant says
-// how long it has been held, as the board writes it.
+// Referrals: the grants the fraud rules held, approved or rejected with a reason here
+// (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts), over every referrer's figures, and the partners
+// who refer on their own code (./Partners.tsx). Approving a grant releases its credits.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
@@ -18,9 +13,9 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { api, type Held, type Referrer } from "../api.ts";
+import { type Held, type Referrer } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { referrals } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
@@ -29,6 +24,8 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import styles from "./referrals.module.css";
+import { Refusal } from "../components/Refusal.tsx";
+import { referralsApi } from "./referrals-api.ts";
 
 /** The partners' panel, fetched as the page draws it: it stays out of the console's first load. */
 const Partners = lazyScreen(() => import("./Partners.tsx").then((module) => module.Partners));
@@ -66,7 +63,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
 
   const decide = async (choice: Choice) => {
     setDecision({ step: "sending", choice });
-    const answer = await api.decideReferral(grant.id, choice, reason.trim());
+    const answer = await referralsApi.decideReferral(grant.id, choice, reason.trim());
     if (answer.ok) onDecided();
     else setDecision({ step: "failed", code: answer.code });
   };
@@ -166,9 +163,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
         </div>
       )}
       {decision.step === "failed" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: decision.code })}
-        </InlineMessage>
+        <Refusal className={styles.error} said={errorText(copy.errors, { code: decision.code })} />
       )}
     </>
   );
@@ -176,7 +171,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
 
 /** The held queue. A decision can change the referrers' figures beneath, so each one tells the page. */
 function ReviewQueue({ onDecided }: { onDecided: () => void }) {
-  const [loaded, retry] = useLoad(api.held);
+  const [loaded, retry] = useLoad(referralsApi.held);
   const mayDecide = useAccess().mayCall("POST /api/referrals/{id}/decision");
   const copy = referrals.queue;
   if (loaded.state === "loading") return <Loading />;
@@ -222,7 +217,7 @@ function useReferrers(version: number) {
 
   useEffect(() => {
     let current = true;
-    void api.referrers().then((answer) => {
+    void referralsApi.referrers().then((answer) => {
       if (!current) return;
       setPages(
         answer.ok
@@ -237,7 +232,7 @@ function useReferrers(version: number) {
 
   const more = async (shown: Extract<Pages, { state: "loaded" }>) => {
     setPages({ ...shown, fetching: true });
-    const answer = await api.referrers(shown.next ?? undefined);
+    const answer = await referralsApi.referrers(shown.next ?? undefined);
     if (!answer.ok) {
       setPages({ ...shown, fetching: false });
       return;
@@ -285,7 +280,7 @@ function ReferrersTable({ version }: { version: number }) {
   return (
     <section className={styles.panel} aria-labelledby="referrers">
       <div className={styles.panelBody}>
-        {/* The board's frame opens on the column heads; the caption above it is the board's own furniture. */}
+        {/* The design draws no heading here, so the section's name is said, not shown. */}
         <VisuallyHidden as="h2" id="referrers">
           {copy.title}
         </VisuallyHidden>
@@ -336,18 +331,16 @@ export function ReferralsScreen() {
   // A decision can change the referrers' figures beneath, so each one reads them again.
   const [version, setVersion] = useState(0);
   return (
-    <Shell section="/referrals" title={referrals.title}>
-      <div className={styles.column}>
-        <ReviewQueue
-          onDecided={() => {
-            setVersion((count) => count + 1);
-          }}
-        />
-        <ReferrersTable version={version} />
-        <Suspense fallback={<Loading />}>
-          <Partners />
-        </Suspense>
-      </div>
-    </Shell>
+    <div className={styles.column}>
+      <ReviewQueue
+        onDecided={() => {
+          setVersion((count) => count + 1);
+        }}
+      />
+      <ReferrersTable version={version} />
+      <Suspense fallback={<Loading />}>
+        <Partners />
+      </Suspense>
+    </div>
   );
 }

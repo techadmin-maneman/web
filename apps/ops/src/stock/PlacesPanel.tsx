@@ -3,18 +3,21 @@
 // another, or closed once it is empty and nothing open is under it. A technician's kit comes with them, and is only
 // moved.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { useWrite } from "../lib/write.ts";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { api, type Stock, type StockPlaceChange } from "../api.ts";
+import { type Stock, type StockPlaceChange } from "../api.ts";
 import { stockPlaces as copy } from "../content/stock-places.ts";
 import form from "../components/forms.module.css";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
+import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { stockApi } from "./stock-api.ts";
 
 type Place = Stock["places"][number];
 type Kind = Place["kind"];
@@ -38,12 +41,12 @@ function treeOf(places: readonly Place[]): { place: Place; depth: number }[] {
 }
 
 /** The open places a place of `kind` may hang from, by name. */
-const parentsFor = (book: Stock, kind: Kind, except?: string) =>
-  book.places
+const parentsFor = (stock: Stock, kind: Kind, except?: string) =>
+  stock.places
     .filter((place) => place.active && DEPTH[place.kind] < DEPTH[kind] && place.id !== except)
-    .map((place) => [place.id, placeName(book, place.id)] as const);
+    .map((place) => [place.id, placeName(stock, place.id)] as const);
 
-function Choice(props: {
+function PlaceChoice(props: {
   label: string;
   value: string;
   options: readonly (readonly [string, string])[];
@@ -88,44 +91,22 @@ function NameBox({ value, onChange }: { value: string; onChange: (value: string)
   );
 }
 
-function Refusal({ failure }: { failure: Failure | null }) {
+function Refused({ failure }: { failure: Failure | null }) {
   if (failure === null) return null;
-  return (
-    <InlineMessage tone="error" className={form.error}>
-      {errorText(copy.errors, failure)}
-    </InlineMessage>
-  );
+  return <Refusal className={form.error} said={errorText(copy.errors, failure)} />;
 }
-
-type Answer = Awaited<ReturnType<typeof api.addStockPlace>>;
 
 /** Sends a change, then hands the stock it answers on, or keeps the refusal to show. */
-function useSending(onChanged: (book: Stock) => void) {
-  const [failure, setFailure] = useState<Failure | null>(null);
-  const [busy, setBusy] = useState(false);
-  const send = async (call: () => Promise<Answer>): Promise<boolean> => {
-    setBusy(true);
-    setFailure(null);
-    const answer = await call();
-    setBusy(false);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return false;
-    }
-    onChanged(answer.body);
-    return true;
-  };
-  return { failure, busy, send };
-}
+const useSending = (onChanged: (stock: Stock) => void) => useWrite<Stock>(onChanged);
 
-function AddPlace({ book, onChanged }: { book: Stock; onChanged: (book: Stock) => void }) {
+function AddPlace({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock) => void }) {
   const [kind, setKind] = useState<"hub" | "stockroom">("stockroom");
   const [name, setName] = useState("");
   const [under, setUnder] = useState("");
   const [area, setArea] = useState("");
   const { failure, busy, send } = useSending(onChanged);
-  const parents = parentsFor(book, kind);
-  const areas = kind === "hub" ? book.zones : book.cities;
+  const parents = parentsFor(stock, kind);
+  const areas = kind === "hub" ? stock.zones : stock.cities;
   const parentId = parents.some(([id]) => id === under) ? under : (parents[0]?.[0] ?? "");
   const where = areas.includes(area) ? area : (areas[0] ?? "");
   const add = async () => {
@@ -133,13 +114,13 @@ function AddPlace({ book, onChanged }: { book: Stock; onChanged: (book: Stock) =
       kind === "hub"
         ? { kind, name: name.trim(), parent_id: parentId, zone: where }
         : { kind, name: name.trim(), parent_id: parentId, city: where };
-    if (await send(() => api.addStockPlace(place))) setName("");
+    if (await send(() => stockApi.addStockPlace(place))) setName("");
   };
   return (
     <div className={form.group}>
       <h3 className={form.ruleTitle}>{copy.add.title}</h3>
       <div className={form.fields}>
-        <Choice
+        <PlaceChoice
           label={copy.add.kind}
           value={kind}
           options={[
@@ -151,15 +132,15 @@ function AddPlace({ book, onChanged }: { book: Stock; onChanged: (book: Stock) =
           }}
         />
         <NameBox value={name} onChange={setName} />
-        <Choice label={copy.add.under} value={parentId} options={parents} onChange={setUnder} />
-        <Choice
+        <PlaceChoice label={copy.add.under} value={parentId} options={parents} onChange={setUnder} />
+        <PlaceChoice
           label={kind === "hub" ? copy.add.zone : copy.add.city}
           value={where}
           options={areas.map((each) => [each, each] as const)}
           onChange={setArea}
         />
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -168,20 +149,20 @@ function AddPlace({ book, onChanged }: { book: Stock; onChanged: (book: Stock) =
         >
           {copy.add.send}
         </Button>
-      </div>
-      <Refusal failure={failure} />
+      </FormActions>
+      <Refused failure={failure} />
     </div>
   );
 }
 
-function ChangePlace(props: { book: Stock; place: Place; onChanged: (book: Stock) => void; onDone: () => void }) {
-  const { book, place } = props;
+function ChangePlace(props: { stock: Stock; place: Place; onChanged: (stock: Stock) => void; onDone: () => void }) {
+  const { stock, place } = props;
   const [name, setName] = useState(place.name);
   const [under, setUnder] = useState(place.parent_id ?? "");
   const { failure, busy, send } = useSending(props.onChanged);
-  const parents = parentsFor(book, place.kind, place.id);
+  const parents = parentsFor(stock, place.kind, place.id);
   const save = async (change: StockPlaceChange) => {
-    if (await send(() => api.changeStockPlace(place.id, change))) props.onDone();
+    if (await send(() => stockApi.changeStockPlace(place.id, change))) props.onDone();
   };
   const edited: StockPlaceChange = {
     ...(place.kind !== "kit" && name.trim() !== place.name ? { name: name.trim() } : {}),
@@ -190,14 +171,14 @@ function ChangePlace(props: { book: Stock; place: Place; onChanged: (book: Stock
   const closable = place.kind === "hub" || place.kind === "stockroom";
   return (
     <div className={form.group}>
-      <h3 className={form.ruleTitle}>{copy.editLabel(placeName(book, place.id))}</h3>
+      <h3 className={form.ruleTitle}>{copy.editLabel(placeName(stock, place.id))}</h3>
       <div className={form.fields}>
         {place.kind !== "kit" && <NameBox value={name} onChange={setName} />}
         {place.kind !== "warehouse" && (
-          <Choice label={copy.change.under} value={under} options={parents} onChange={setUnder} />
+          <PlaceChoice label={copy.change.under} value={under} options={parents} onChange={setUnder} />
         )}
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -214,13 +195,13 @@ function ChangePlace(props: { book: Stock; place: Place; onChanged: (book: Stock
         <Button variant="outline" size="small" onClick={props.onDone}>
           {copy.change.cancel}
         </Button>
-      </div>
-      <Refusal failure={failure} />
+      </FormActions>
+      <Refused failure={failure} />
     </div>
   );
 }
 
-function PlaceRows({ book, onEdit }: { book: Stock; onEdit: (id: string) => void }) {
+function PlaceRows({ stock, onEdit }: { stock: Stock; onEdit: (id: string) => void }) {
   return (
     <Table className={form.table}>
       <thead>
@@ -233,10 +214,10 @@ function PlaceRows({ book, onEdit }: { book: Stock; onEdit: (id: string) => void
         </tr>
       </thead>
       <tbody>
-        {treeOf(book.places).map(({ place, depth }) => (
+        {treeOf(stock.places).map(({ place, depth }) => (
           <tr key={place.id}>
             <th scope="row" className={`${form.rowHead} ${INDENT[Math.min(depth, 3)] ?? ""}`}>
-              {placeName(book, place.id)}
+              {placeName(stock, place.id)}
             </th>
             <td>
               {copy.kinds[place.kind]}
@@ -246,7 +227,7 @@ function PlaceRows({ book, onEdit }: { book: Stock; onEdit: (id: string) => void
             <td>
               <RowButton
                 className={form.inline}
-                aria-label={copy.editLabel(placeName(book, place.id))}
+                aria-label={copy.editLabel(placeName(stock, place.id))}
                 onClick={() => {
                   onEdit(place.id);
                 }}
@@ -261,21 +242,21 @@ function PlaceRows({ book, onEdit }: { book: Stock; onEdit: (id: string) => void
   );
 }
 
-export function PlacesPanel({ book, onChanged }: { book: Stock; onChanged: (book: Stock) => void }) {
+export function PlacesPanel({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock) => void }) {
   const [editing, setEditing] = useState<string | null>(null);
-  const place = book.places.find((each) => each.id === editing);
+  const place = stock.places.find((each) => each.id === editing);
   return (
     <Panel titleId="stock-places" title={copy.title}>
       <p className={form.note}>{copy.intro}</p>
       <div className={styles.scroll}>
-        <PlaceRows book={book} onEdit={setEditing} />
+        <PlaceRows stock={stock} onEdit={setEditing} />
       </div>
       {place === undefined ? (
-        <AddPlace book={book} onChanged={onChanged} />
+        <AddPlace stock={stock} onChanged={onChanged} />
       ) : (
         <ChangePlace
           key={place.id}
-          book={book}
+          stock={stock}
           place={place}
           onChanged={onChanged}
           onDone={() => {

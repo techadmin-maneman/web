@@ -115,7 +115,7 @@ test("says so when another client already holds the new number", async ({ page }
 test("says so when someone has decided it already", async ({ page }) => {
   await open(page, fails(404, "not_found"));
   await page.getByRole("button", { name: "Confirm" }).click();
-  await expect(page.getByRole("alert")).toContainText("Already decided. Reload.");
+  await expect(page.getByText("Already decided. Here's the latest.")).toBeVisible();
 });
 
 test("says so when nothing is waiting", async ({ page }) => {

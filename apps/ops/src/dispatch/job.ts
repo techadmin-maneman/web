@@ -11,7 +11,7 @@ import { dispatch } from "../content.ts";
 export const WINDOWS: readonly BookingWindow[] = ["morning", "afternoon", "evening"];
 
 /** A window as the board names it. */
-export const windowWord = (window: BookingWindow): string => dispatch.windows[window] ?? window;
+export const windowWord = (window: BookingWindow): string => dispatch.windows[window];
 
 export interface BlockJob {
   readonly kind: "block";
@@ -119,7 +119,7 @@ export const movesIfCheckInCleared = (block: Block): boolean =>
 /** How far the technician has got on a visit not yet done, in the board's word; null before they arrive. */
 export function begunWord(block: Block): string | null {
   if (block.begun === null || block.status === "completed") return null;
-  return dispatch.board.begun[block.begun] ?? null;
+  return dispatch.board.begun[block.begun];
 }
 
 /** What ops may do to a visit for its client from the board, besides moving it. */
@@ -147,5 +147,3 @@ export const mayLetIn = (block: Block, now: number): boolean =>
   block.status === "scheduled" &&
   block.begun === null &&
   indiaDate(block.starts_at) === indiaDate(new Date(now).toISOString());
-
-/** "Rohit", as the drawer's WhatsApp button names them. */

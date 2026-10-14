@@ -8,7 +8,7 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { api, type ClientList as Listed, type ClientListQuery } from "../api.ts";
+import { type ClientList as Listed, type ClientListQuery } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -16,6 +16,8 @@ import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import styles from "./clients.module.css";
+import { RowHead } from "../components/RowHead.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.list;
 const STATES = ["lead", "fitted", "nothing_booked"] as const;
@@ -122,11 +124,11 @@ function Rows({ listed }: { listed: Listed }) {
         <tbody>
           {listed.clients.map((client) => (
             <tr key={client.id}>
-              <th scope="row" className={form.rowHead}>
+              <RowHead>
                 <OpsLink className={form.link} to={clientPath(client.id, "visits")}>
                   {client.name}
                 </OpsLink>
-              </th>
+              </RowHead>
               <td>{phoneWords(client.mobile)}</td>
               <td>{clients.states[client.state]}</td>
               <td>{client.city ?? copy.noCity}</td>
@@ -144,7 +146,7 @@ export function ClientList() {
   // The pages before this one, by their cursors, for Previous: the first page's is undefined. A list opened at a page
   // from its address has none, and its Previous goes to the first.
   const [trail, setTrail] = useState<readonly (string | undefined)[]>([]);
-  const [loaded, retry] = useLoad(useCallback(() => api.clientList(query), [query]));
+  const [loaded, retry] = useLoad(useCallback(() => clientsApi.clientList(query), [query]));
   const change = (next: ClientListQuery, earlier: readonly (string | undefined)[] = []) => {
     keep(next);
     setQuery(next);

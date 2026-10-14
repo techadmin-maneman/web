@@ -213,12 +213,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.fieldHint {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
 .actions {
   display: flex;
   gap: var(--sp-8);
@@ -278,4 +272,30 @@
 /* The table's search, flush with the table beneath. */
 .narrow {
   margin-inline: 0;
+}
+
+/* ---- The service area ---------------------------------------------------- */
+.cities {
+  margin: var(--sp-16) var(--sp-20) 0;
+}
+
+/* A row's own boxes, as tall as the row allows. */
+.cellText {
+  width: 100%;
+  min-width: var(--ops-area);
+}
+
+.cellDate {
+  width: var(--ops-date);
+  font-variant-numeric: tabular-nums;
+}
+
+.uploaded {
+  margin-top: var(--sp-12);
+}
+
+/* The file's rows start at the panel's edge, as the table above them does. */
+.uploaded table th:first-child,
+.uploaded table td:first-child {
+  padding-left: 0;
 }

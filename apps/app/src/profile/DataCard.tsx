@@ -38,7 +38,6 @@ function sendProblem(code: string): "limited" | "failed" {
   return code === "rate_limited" ? "limited" : "failed";
 }
 
-/** The client's rights over their data: a copy of it, and a way to raise a concern (docs/decisions/0049-dpdp.md). */
 /** What the client writes to us: a grievance, up to the most it may be. */
 function GrievanceField({ text, onText }: { text: string; onText: (text: string) => void }) {
   return (
@@ -52,6 +51,7 @@ function GrievanceField({ text, onText }: { text: string; onText: (text: string)
   );
 }
 
+/** The client's rights over their data: a copy of it, and a way to raise a concern (docs/decisions/0049-dpdp.md). */
 export function DataCard({ grievances, onRaised }: { grievances: Profile["grievances"]; onRaised: () => void }) {
   const copy = profile.data;
   const [writing, setWriting] = useState(false);

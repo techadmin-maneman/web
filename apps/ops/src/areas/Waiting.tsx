@@ -1,23 +1,19 @@
-// Areas' Waiting tab: who waits in each pincode, the longest wait first. Choosing a pincode asks the API
-// what marking it live would send, before anything is sent; only the panel's press launches it, which serves the
-// pincode and queues a WhatsApp to everyone on its list who asked to be told (docs/decisions/0048-referrals.md).
-//
-// A pincode already live can be chosen too: one served before a launch from Settings told its waitlist left them
-// untold, and this is how they are told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A pincode
-// the service area does not hold is added first, with its area's name and its city.
+// Areas' Waiting tab: who waits in each pincode, longest first. Choosing one shows what launching it would send, and
+// only the panel's press serves it and messages its waitlist (docs/decisions/0048-referrals.md). A pincode already live
+// can be chosen too, for a waitlist a launch from Settings left untold
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { TextButton } from "@maneman/ui/TextLink";
-import { DateInput, Label } from "@maneman/ui/Field";
+import { Field, DateInput } from "@maneman/ui/Field";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Table } from "@maneman/ui/Table";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
-import { indiaDate, listDate, yearInIndia } from "@maneman/web-kit/dates";
+import { indiaDate, listDate, todayInIndia, yearInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { api, type Area, type Launch, type ServedPincode } from "../api.ts";
+import { type Area, type Launch, type ServedPincode } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { areas, waitlist } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -28,6 +24,8 @@ import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
 import styles from "./areas.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
+import { Refusal } from "../components/Refusal.tsx";
+import { areasApi } from "./areas-api.ts";
 
 const copy = areas.launch;
 
@@ -108,18 +106,19 @@ function LaunchOne({ launching, today, launchOn, mayRename, onLaunchOn, onCancel
         </p>
       )}
       {!area.served && step !== "done" && (
-        <div className={styles.field}>
-          <Label htmlFor="launch-on">{waitlist.date}</Label>
-          <DateInput
-            className={styles.launchDate}
-            id="launch-on"
-            max={today}
-            value={launchOn}
-            onChange={(event) => {
-              onLaunchOn(event.target.value);
-            }}
-          />
-        </div>
+        <Field label={waitlist.date} className={styles.field}>
+          {(control) => (
+            <DateInput
+              {...control}
+              className={styles.launchDate}
+              max={today}
+              value={launchOn}
+              onChange={(event) => {
+                onLaunchOn(event.target.value);
+              }}
+            />
+          )}
+        </Field>
       )}
     </LaunchPanel>
   );
@@ -226,13 +225,13 @@ function Pincodes({
 }
 
 export function Waiting() {
-  const [loaded, retry] = useLoad(api.waitlist);
+  const [loaded, retry] = useLoad(areasApi.waitlist);
   const [launching, setLaunching] = useState<Launching | null>(null);
   const [adding, setAdding] = useState<Area | null>(null);
   /** An error code from asking what a launch would send, before there is a panel to hold it. */
   const [refused, setRefused] = useState<string | null>(null);
   const thisYear = yearInIndia(Date.now());
-  const today = indiaDate(new Date().toISOString());
+  const today = todayInIndia(Date.now());
   const [launchOn, setLaunchOn] = useState(today);
   const access = useAccess();
   const mayLaunch = access.mayCall("POST /api/pincodes/{pin}/launch");
@@ -244,7 +243,7 @@ export function Waiting() {
     async (area: Area) => {
       setRefused(null);
       setLaunchOn(openingLaunchDay(area, today));
-      const answer = await api.launch(area.pincode, false);
+      const answer = await areasApi.launch(area.pincode, false);
       if (answer.ok) setLaunching({ area, preview: answer.body, step: "asking" });
       else setRefused(answer.code);
     },
@@ -280,7 +279,7 @@ export function Waiting() {
     if (launching === null) return;
     setLaunching({ ...launching, step: "sending", code: undefined });
     // Today is left to the API, whose day it is; only a day ops chose is sent.
-    const answer = await api.launch(launching.area.pincode, true, launchOn === today ? null : launchOn);
+    const answer = await areasApi.launch(launching.area.pincode, true, launchOn === today ? null : launchOn);
     if (!answer.ok) {
       setLaunching({ ...launching, step: "asking", code: answer.code });
       return;
@@ -292,11 +291,7 @@ export function Waiting() {
 
   return (
     <div className={styles.column}>
-      {refused !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, { code: refused })}
-        </InlineMessage>
-      )}
+      {refused !== null && <Refusal className={styles.error} said={errorText(copy.errors, { code: refused })} />}
       {whenLoaded(loaded, {
         loading: <Loading />,
         failed: <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />,

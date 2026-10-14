@@ -5,14 +5,15 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { rupees } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import styles from "../components/forms.module.css";
-import type { CitiesBook, CityPrice } from "./book.ts";
+import form from "../components/forms.module.css";
+import type { Cities, CityPrice } from "./types.ts";
+import { RowHead } from "../components/RowHead.tsx";
+import { citiesApi } from "./cities-api.ts";
 
 const copy = cities.prices;
 type Item = CityPrice["item"];
@@ -26,12 +27,7 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => void }) {
       ariaLabel={copy.withdrawLabel(item, price.city)}
       question={copy.withdrawQuestion(item, price.city, price.valid_from)}
       send={async () =>
-        sentOf(
-          await client.delete("/api/cities/{name}/prices/{item}/{tier}/{valid_from}", {
-            path: { name: price.city, item: price.item, tier: price.tier, valid_from: price.valid_from },
-          }),
-          () => ({}),
-        )
+        sentOf(await citiesApi.removePrice(price.city, price.item, price.tier, price.valid_from), () => ({}))
       }
       onDone={onDone}
       errors={copy.errors}
@@ -39,11 +35,11 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => void }) {
   );
 }
 
-function PriceTable({ book, onDone }: { book: CitiesBook; onDone: () => void }) {
+function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => void }) {
   const mayWithdraw = useAccess().mayCall("DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}");
-  if (book.prices.length === 0) return <p className={styles.note}>{copy.none}</p>;
+  if (cities.prices.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
-    <Table className={styles.table}>
+    <Table className={form.table}>
       <thead>
         <tr>
           {copy.columns.map((column) => (
@@ -54,18 +50,16 @@ function PriceTable({ book, onDone }: { book: CitiesBook; onDone: () => void }) 
         </tr>
       </thead>
       <tbody>
-        {book.prices.map((price) => (
+        {cities.prices.map((price) => (
           <tr key={`${price.city}/${price.item}/${price.tier}/${price.valid_from}`}>
-            <th scope="row" className={styles.rowHead}>
-              {price.city}
-            </th>
+            <RowHead>{price.city}</RowHead>
             <td>
               {copy.items[price.item]} · {price.tier}
             </td>
             <td>{rupees(price.amount_ex_gst)}</td>
             <td>{price.gst_percent}%</td>
             <td>{price.in_force ? copy.inForce : price.valid_from}</td>
-            <td>{mayWithdraw && price.valid_from > book.today && <Withdraw price={price} onDone={onDone} />}</td>
+            <td>{mayWithdraw && price.valid_from > cities.today && <Withdraw price={price} onDone={onDone} />}</td>
           </tr>
         ))}
       </tbody>
@@ -82,10 +76,10 @@ interface Draft {
   readonly from: string;
 }
 
-function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edit: (change: Partial<Draft>) => void }) {
+function PriceBoxes({ cities, draft, edit }: { cities: Cities; draft: Draft; edit: (change: Partial<Draft>) => void }) {
   return (
-    <div className={styles.fields}>
-      <Field label={copy.city} className={styles.field}>
+    <div className={form.fields}>
+      <Field label={copy.city} className={form.field}>
         {(control) => (
           <Select
             {...control}
@@ -94,7 +88,7 @@ function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edi
               edit({ city: event.target.value });
             }}
           >
-            {book.cities.map((city) => (
+            {cities.cities.map((city) => (
               <option key={city.name} value={city.name}>
                 {city.name}
               </option>
@@ -102,7 +96,7 @@ function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edi
           </Select>
         )}
       </Field>
-      <Field label={copy.item} className={styles.field}>
+      <Field label={copy.item} className={form.field}>
         {(control) => (
           <Select
             {...control}
@@ -128,11 +122,11 @@ function PriceBoxes({ book, draft, edit }: { book: CitiesBook; draft: Draft; edi
 function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Draft>) => void }) {
   return (
     <>
-      <Field label={copy.tier} className={styles.field}>
+      <Field label={copy.tier} className={form.field}>
         {(control) => (
           <TextInput
             {...control}
-            className={styles.figureBox}
+            className={form.figureBox}
             value={draft.tier}
             onChange={(event) => {
               edit({ tier: event.target.value });
@@ -140,11 +134,11 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.amount} className={styles.field}>
+      <Field label={copy.amount} className={form.field}>
         {(control) => (
           <NumberInput
             {...control}
-            className={styles.amountBox}
+            className={form.amountBox}
             value={draft.amount}
             onChange={(event) => {
               edit({ amount: event.target.value });
@@ -152,11 +146,11 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.gst} className={styles.field}>
+      <Field label={copy.gst} className={form.field}>
         {(control) => (
           <NumberInput
             {...control}
-            className={styles.figureBox}
+            className={form.figureBox}
             value={draft.gst}
             onChange={(event) => {
               edit({ gst: event.target.value });
@@ -164,7 +158,7 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.from} className={styles.field}>
+      <Field label={copy.from} className={form.field}>
         {(control) => (
           <DateInput
             {...control}
@@ -179,9 +173,9 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
   );
 }
 
-function PriceForm({ book, onSaved }: { book: CitiesBook; onSaved: () => void }) {
+function PriceForm({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
   const first: Draft = {
-    city: book.cities[0]?.name ?? "",
+    city: cities.cities[0]?.name ?? "",
     item: "service",
     tier: "standard",
     amount: "",
@@ -192,15 +186,12 @@ function PriceForm({ book, onSaved }: { book: CitiesBook; onSaved: () => void })
   const steps = useSteps(
     async () =>
       sentOf(
-        await client.post("/api/cities/{name}/prices", {
-          path: { name: draft.city },
-          body: {
-            item: draft.item,
-            tier: draft.tier.trim(),
-            amount_ex_gst: Number(draft.amount) * 100,
-            gst_percent: Number(draft.gst),
-            valid_from: draft.from,
-          },
+        await citiesApi.addPrice(draft.city, {
+          item: draft.item,
+          tier: draft.tier.trim(),
+          amount_ex_gst: Number(draft.amount) * 100,
+          gst_percent: Number(draft.gst),
+          valid_from: draft.from,
         }),
         () => ({}),
       ),
@@ -214,7 +205,7 @@ function PriceForm({ book, onSaved }: { book: CitiesBook; onSaved: () => void })
     steps.edit();
   };
   const ready = /^\d{1,7}$/.test(draft.amount.trim()) && /^\d{1,2}$/.test(draft.gst.trim()) && draft.from !== "";
-  const line = copy.adding(draft.city, copy.items[draft.item], rupees(Number(draft.amount) * 100), draft.from);
+  const line = copy.adding(draft.city, copy.items[draft.item], rupees(paiseFromRupees(draft.amount)), draft.from);
   return (
     <SettingForm
       title={copy.add}
@@ -222,14 +213,14 @@ function PriceForm({ book, onSaved }: { book: CitiesBook; onSaved: () => void })
       ready={ready}
       errors={copy.errors}
       onCancel={null}
-      checking={<p className={styles.checkLine}>{line}</p>}
+      checking={<p className={form.checkLine}>{line}</p>}
     >
-      <PriceBoxes book={book} draft={draft} edit={edit} />
+      <PriceBoxes cities={cities} draft={draft} edit={edit} />
     </SettingForm>
   );
 }
 
-export function CityPrices({ book, onSaved }: { book: CitiesBook; onSaved: () => void }) {
+export function CityPrices({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
   const mayAdd = useAccess().mayCall("POST /api/cities/{name}/prices");
   const [said, setSaid] = useState<string | null>(null);
   const saved = (words: string) => () => {
@@ -237,15 +228,15 @@ export function CityPrices({ book, onSaved }: { book: CitiesBook; onSaved: () =>
     onSaved();
   };
   return (
-    <Panel titleId="city-prices" title={copy.panel} count={book.prices.length}>
-      <p className={styles.note}>{copy.note}</p>
-      <PriceTable book={book} onDone={saved(copy.withdrawn)} />
+    <Panel titleId="city-prices" title={copy.panel} count={cities.prices.length}>
+      <p className={form.note}>{copy.note}</p>
+      <PriceTable cities={cities} onDone={saved(copy.withdrawn)} />
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
-      {mayAdd && <PriceForm book={book} onSaved={saved(copy.added)} />}
+      {mayAdd && <PriceForm cities={cities} onSaved={saved(copy.added)} />}
     </Panel>
   );
 }

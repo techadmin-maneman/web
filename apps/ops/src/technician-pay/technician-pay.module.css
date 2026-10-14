@@ -1,0 +1,75 @@
+/* Technician pay: the rates as a table of grades by kind of visit, and the technicians with their grades. */
+
+/* This page's own sizes, which nothing else draws (ADR 0077, as amended). */
+:root {
+  --local-pay-table: 1040px; /* the narrowest the rates go before they scroll */
+  --local-pay-people: var(--ops-measure); /* the narrowest the technicians go before they scroll */
+}
+
+/* The city the rates are shown for, on a line above the table. */
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--sp-12) var(--sp-24);
+  margin: var(--sp-16) var(--sp-20) var(--sp-8);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table .acting > td {
+  padding: 0 0 var(--sp-16);
+  background: var(--paper-light);
+}
+
+.rates {
+  min-width: var(--local-pay-table);
+}
+
+.people {
+  min-width: var(--local-pay-people);
+}
+
+.grade {
+  font-weight: var(--weight-medium);
+}
+
+.figure {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Room above and below for a rate set to start later. */
+.table .figure {
+  padding-block: var(--sp-4);
+}
+
+/* A rate set to start later, beneath the one in force. */
+.later {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actions button:first-child {
+  margin-left: 0;
+}
+
+.ask {
+  padding: var(--sp-12) var(--sp-20) 0;
+}
+
+/* A technician's total beneath their month's lines. */
+.total > th,
+.total > td {
+  font-weight: var(--weight-medium);
+  border-top: var(--hairline) solid var(--paper-line);
+}

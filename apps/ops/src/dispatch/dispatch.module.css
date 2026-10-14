@@ -16,8 +16,8 @@
 :root {
   --local-tech: 104px; /* the column the technician and their zone stand in */
   --local-tray: 236px; /* the unassigned tray down the right */
-  --local-cell: 88px; /* one technician's day */
-  --local-day: 96px; /* the narrowest a day's column goes before the grid scrolls sideways */
+  --local-cell: var(--ops-cell); /* one technician's day */
+  --local-day: var(--ops-column); /* the narrowest a day's column goes before the grid scrolls sideways */
 }
 
 .area {
@@ -386,16 +386,6 @@
 
 .refusal {
   color: var(--error-on-paper);
-}
-
-/* Where leave is recorded, and where the tray's asked window comes from. */
-.note {
-  margin: 0;
-  padding: var(--sp-12) var(--sp-16);
-  border-top: var(--hairline) solid var(--paper-line);
-  font-size: var(--fs-13);
-  line-height: var(--lh-145);
-  color: var(--text-muted);
 }
 
 /* ---- The unassigned tray ------------------------------------------------- */

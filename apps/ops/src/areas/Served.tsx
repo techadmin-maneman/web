@@ -1,17 +1,7 @@
-// Areas' Served tab: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md).
-//
-// 198 pincodes is more than any web form should ask anybody to work through,
-// and they are already marked in a spreadsheet (data/pincodes/README.md).
-// So this screen is built for the two things they actually do: launch one
-// area, which is one row and a date, and hand over the whole file, which is an
-// upload. A city at a time keeps the table short; the bulk pair fills a city in
-// one press; and only the pincodes that changed are ever sent.
-//
-// Everything goes through the table: a file read is shown pincode by pincode,
-// then put into the table, and the one Save sends it. Serving a pincode is a
-// launch, so a save that would message people waiting there opens the launch
-// panel Waiting uses first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
-// A pincode the file does not hold is added beneath the table.
+// Areas' Served tab: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md). The pincodes live in a
+// spreadsheet (data/pincodes/README.md), so the tab does two things: launch one area, and take the whole file back,
+// shown pincode by pincode before the one Save. A save that would message people waiting opens the launch panel first
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Fieldset } from "@maneman/ui/Field";
@@ -19,18 +9,18 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import { indiaDate } from "@maneman/web-kit/dates";
+import { todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type ServedPincode } from "../api.ts";
+import { type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { saveFile } from "../lib/save-file.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
-import areaStyles from "./areas.module.css";
+import styles from "./areas.module.css";
 import { readServiceAreaCsv, serviceAreaCsv } from "./csv.ts";
 import { AREA_NAME } from "./rules.ts";
 import {
@@ -48,8 +38,76 @@ import {
   type FileChange,
 } from "./served-draft.ts";
 import { CityTabs, LaunchCheck, PincodeRow, SaveNotes, UploadFile, type Saving, type Upload } from "./ServedParts.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { areasApi } from "./areas-api.ts";
 
 const copy = areas.served;
+
+// Sorted and narrowed by what is saved, so a row stays put while its boxes are typed in.
+const servedWord = (row: ServedPincode) => (row.served ? copy.yes : copy.no);
+const [PIN, NAME, SERVED, LAUNCH, WAITING] = copy.columns;
+const COLUMNS: readonly Column<ServedPincode>[] = [
+  { label: PIN, sort: (row) => row.pincode },
+  { label: NAME, sort: (row) => row.area },
+  { label: SERVED, sort: servedWord, choice: servedWord },
+  { label: LAUNCH, sort: (row) => row.launch_on ?? "" },
+  { label: WAITING, sort: (row) => row.waiting },
+];
+
+/** A city's pincodes, narrowed and sorted as ops ask, each row's boxes holding the draft. */
+function PincodeTable(props: {
+  view: ReturnType<typeof useTableView<ServedPincode>>;
+  draft: Draft;
+  mayChange: boolean;
+  onEdit: (next: Draft) => void;
+}) {
+  const { view, draft, mayChange, onEdit } = props;
+  return (
+    <>
+      <Narrowing view={view} label={copy.narrow} />
+      <Table className={form.table}>
+        <thead>
+          <tr>
+            <SortHeads view={view} />
+          </tr>
+        </thead>
+        <tbody>
+          {view.shown.map((each) => (
+            <PincodeRow
+              key={each.pincode}
+              pincode={each}
+              row={draft[each.pincode] ?? rowOf(each)}
+              mayChange={mayChange}
+              onChange={(next) => {
+                onEdit({ ...draft, [each.pincode]: next });
+              }}
+            />
+          ))}
+        </tbody>
+      </Table>
+      <TableEnd view={view} />
+    </>
+  );
+}
+
+/** A pincode the file does not hold, added beneath the table, and what was added last. */
+function AddBeneath(props: {
+  cities: readonly string[];
+  added: ServedPincode | null;
+  onAdded: (held: ServedPincode) => void;
+}) {
+  const { added } = props;
+  return (
+    <Fieldset className={form.group} legend={areas.add.title} legendLook="title">
+      <AddPincode pincode={null} cities={props.cities} onAdded={props.onAdded} />
+      {added !== null && (
+        <InlineMessage tone="saved" className={form.saved}>
+          {areas.add.added(added.pincode, added.city)}
+        </InlineMessage>
+      )}
+    </Fieldset>
+  );
+}
 
 function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedPincode[]; cities: readonly string[] }) {
   const [pincodes, setPincodes] = useState(loadedPincodes);
@@ -61,20 +119,10 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
   const access = useAccess();
   const mayChange = access.mayCall("POST /api/service-area");
   const mayAdd = access.mayCall("POST /api/pincodes");
-  const today = indiaDate(new Date().toISOString());
+  const today = todayInIndia(Date.now());
 
   const inCity = pincodes.filter((each) => each.city === city);
-  // Sorted and narrowed by what is saved, so a row stays put while its boxes are typed in.
-  const servedWord = (row: ServedPincode) => (row.served ? copy.yes : copy.no);
-  const [pin, name, served, launch, waiting] = copy.columns;
-  const columns: readonly Column<ServedPincode>[] = [
-    { label: pin, sort: (row) => row.pincode },
-    { label: name, sort: (row) => row.area },
-    { label: served, sort: servedWord, choice: servedWord },
-    { label: launch, sort: (row) => row.launch_on ?? "" },
-    { label: waiting, sort: (row) => row.waiting },
-  ];
-  const view = useTableView(inCity, columns, { search: (row) => `${row.pincode} ${row.area}` });
+  const view = useTableView(inCity, COLUMNS, { search: (row) => `${row.pincode} ${row.area}` });
   const changes = changesIn(pincodes, draft);
   const badName = changes.find((change) => change.area !== undefined && !AREA_NAME.test(change.area));
   const later = changes.find((change) => servesLater(pincodes, change, today));
@@ -96,7 +144,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
 
   const send = async () => {
     setSaving({ step: "saving" });
-    const answer = await api.setServiceArea(changes);
+    const answer = await areasApi.setServiceArea(changes);
     if (!answer.ok) {
       setSaving({ step: "failed", code: answer.code });
       return;
@@ -132,9 +180,9 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     <Panel
       titleId="area"
       title={copy.title}
-      className={styles.panel}
+      className={form.panel}
       actions={
-        <Button variant="outline" size="small" className={styles.quiet} onClick={download}>
+        <Button variant="outline" size="small" className={form.quiet} onClick={download}>
           {copy.download}
         </Button>
       }
@@ -150,31 +198,10 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         }}
       />
 
-      <Narrowing view={view} label={copy.narrow} />
-      <Table className={styles.table}>
-        <thead>
-          <tr>
-            <SortHeads view={view} />
-          </tr>
-        </thead>
-        <tbody>
-          {view.shown.map((each) => (
-            <PincodeRow
-              key={each.pincode}
-              pincode={each}
-              row={draft[each.pincode] ?? rowOf(each)}
-              mayChange={mayChange}
-              onChange={(next) => {
-                edit({ ...draft, [each.pincode]: next });
-              }}
-            />
-          ))}
-        </tbody>
-      </Table>
-      <TableEnd view={view} />
+      <PincodeTable view={view} draft={draft} mayChange={mayChange} onEdit={edit} />
 
       {checking && (
-        <div className={areaStyles.inPanel}>
+        <div className={styles.inPanel}>
           <LaunchCheck
             launching={launching}
             busy={busy}
@@ -186,7 +213,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         </div>
       )}
       {!checking && mayChange && (
-        <div className={styles.actions}>
+        <FormActions>
           <Button
             variant="primary"
             size="small"
@@ -195,7 +222,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           >
             {busy ? copy.saving : copy.save}
           </Button>
-        </div>
+        </FormActions>
       )}
       <SaveNotes saving={saving} changes={changes} badName={badName} later={later} mayChange={mayChange} />
 
@@ -210,22 +237,13 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         />
       )}
 
-      {mayAdd && (
-        <Fieldset className={styles.group} legend={areas.add.title} legendLook="title">
-          <AddPincode pincode={null} cities={cities} onAdded={addedHere} />
-          {added !== null && (
-            <InlineMessage tone="saved" className={styles.saved}>
-              {areas.add.added(added.pincode, added.city)}
-            </InlineMessage>
-          )}
-        </Fieldset>
-      )}
+      {mayAdd && <AddBeneath cities={cities} added={added} onAdded={addedHere} />}
     </Panel>
   );
 }
 
 export function Served() {
-  const [loaded, retry] = useLoad(api.serviceArea);
+  const [loaded, retry] = useLoad(areasApi.serviceArea);
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   return <Area pincodes={loaded.value.pincodes} cities={loaded.value.cities} />;

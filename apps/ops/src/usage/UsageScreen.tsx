@@ -1,23 +1,24 @@
 // Operations · Usage (docs/decisions/0186-usage-and-shrinkage.md): over the last weeks, each technician's consumables
 // against what their visits were expected to use, each opened to its items; and each place's losses, the flagged first.
 
+import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
-import { Shell } from "../components/Shell.tsx";
 import form from "../components/forms.module.css";
 import { usage as copy } from "../content/usage.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { usageApi } from "./usage-api.ts";
 
-type Usage = paths["/api/stock/usage"]["get"]["responses"][200]["content"]["application/json"];
+type Usage = Success<paths["/api/stock/usage"]["get"]>;
 type Technician = Usage["technicians"][number];
 
-const loadUsage = () => client.get("/api/stock/usage");
+const loadUsage = () => usageApi.usage();
 
 const quantity = (value: number) => value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
 
@@ -42,9 +43,7 @@ function Items({ technician }: { technician: Technician }) {
       <tbody>
         {technician.items.map((item) => (
           <tr key={item.consumable_code}>
-            <th scope="row" className={form.rowHead}>
-              {item.name}
-            </th>
+            <RowHead>{item.name}</RowHead>
             <td className={form.figure}>{quantity(item.expected)}</td>
             <td className={form.figure}>{quantity(item.used)}</td>
             <td className={form.figure}>{copy.over(item.over_percent)}</td>
@@ -69,10 +68,10 @@ function Technicians({ usage }: { usage: Usage }) {
           <tbody>
             {usage.technicians.map((technician) => (
               <tr key={technician.technician_id}>
-                <th scope="row" className={form.rowHead}>
+                <RowHead>
                   {technician.name}
                   {technician.flagged && <p className={form.note}>{copy.flagged}</p>}
-                </th>
+                </RowHead>
                 <td className={form.figure}>{technician.visits}</td>
                 <td className={form.figure}>{rupees(technician.expected_value)}</td>
                 <td className={form.figure}>{rupees(technician.used_value)}</td>
@@ -116,10 +115,10 @@ function Places({ usage }: { usage: Usage }) {
           <tbody>
             {usage.places.map((place) => (
               <tr key={place.place_id}>
-                <th scope="row" className={form.rowHead}>
+                <RowHead>
                   {place.place}
                   {place.flagged && <p className={form.note}>{copy.flagged}</p>}
-                </th>
+                </RowHead>
                 <td className={form.figure}>{rupees(place.left_value)}</td>
                 <td className={form.figure}>{rupees(place.lost_value)}</td>
                 <td className={form.figure}>{copy.percent(place.shrinkage_percent)}</td>
@@ -137,7 +136,7 @@ function Places({ usage }: { usage: Usage }) {
 export function UsageScreen() {
   const [loaded, retry] = useLoad(loadUsage);
   return (
-    <Shell section="/usage" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
@@ -147,6 +146,6 @@ export function UsageScreen() {
           <Places usage={loaded.value} />
         </div>
       )}
-    </Shell>
+    </>
   );
 }

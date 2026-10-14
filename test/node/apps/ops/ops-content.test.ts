@@ -2,6 +2,8 @@
 // the message the queue will actually send, and sends people to the public
 // site's booking page.
 
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { profile } from "../../../../apps/app/src/content.ts";
 import * as ops from "../../../../apps/ops/src/content.ts";
@@ -46,7 +48,7 @@ describe("the dispatch board's words", () => {
   const hour = (time: string) => String(Number(time.slice(0, 2)) % 12 === 0 ? 12 : Number(time.slice(0, 2)) % 12);
 
   it.each(BOOKING_WINDOWS)("%s's hours are WINDOW_TIMES'", (window) => {
-    const hours = dispatch.windowHours[window] ?? "";
+    const hours = dispatch.windowHours[window];
     const times = WINDOW_TIMES[window];
     expect(hours, "the start").toMatch(new RegExp(`\\b${hour(times.start)}\\b`));
     expect(hours, "the end").toMatch(new RegExp(`\\b${hour(times.end)}\\b`));
@@ -101,7 +103,23 @@ describe("what the console shows ops", () => {
     ["an environment variable", /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/],
     ["a path in the repository", /\b(?:src|apps|docs|packages|scripts|migrations)\/\w/],
     ["a design board's own words", /\bthe board's\b/i],
+    ["he, his or him for a person", /\b(he|his|him)\b/i],
+    ["a tail saying what did not happen", /[.!?]\s+(Nothing was \w+|Not (saved|sent))\.?$/],
   ])("carries no %s", (_, pattern) => {
     expect(strings.filter((each) => pattern.test(each))).toEqual([]);
+  });
+});
+
+// A map widened to every string compiles a lookup by a state the API adds, and the page shows its raw code. A map
+// keyed by a list that is not the API's says a lookup may miss, so each lookup says what it shows then.
+describe("the console's label maps", () => {
+  it("keep their keys, or say a lookup may miss", () => {
+    const files = execFileSync("git", ["ls-files", "apps/ops/src/content"], { encoding: "utf8" })
+      .split("\n")
+      .filter((path) => path.endsWith(".ts"));
+    const widened = files.filter((path) =>
+      /as\s+Readonly<\s*Record<string,\s*string>\s*>/.test(readFileSync(path, "utf8")),
+    );
+    expect(widened).toEqual([]);
   });
 });

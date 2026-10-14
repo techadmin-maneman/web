@@ -1,7 +1,7 @@
 {
   // The browser tests (e2e/) and the fidelity harness: Node code whose callbacks
   // run in a page, so they need the DOM's types, which clash with the Workers
-  // types in tsconfig.node.json. Every test in test/node/dom/ is here for the
+  // types in tsconfig.node.json. Every test in test/node/dom/ and test/node/apps/*/dom/ is here for the
   // same reason: it runs in Node against the apps' code, written against the
   // DOM; and so are the tests of the apps' components on a page (test/dom).
   "extends": "./tsconfig.base.json",
@@ -14,6 +14,7 @@
     "e2e/**/*.ts",
     "test/dom/**/*.ts",
     "test/node/dom/**/*.ts",
+    "test/node/apps/*/dom/**/*.ts",
     // What each app is built for, which the apps' code these tests import reads.
     "apps/*/src/env.d.ts",
     "packages/web-kit/access.ts",

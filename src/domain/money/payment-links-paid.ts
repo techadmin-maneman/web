@@ -37,7 +37,6 @@ interface PaidVisit {
  * its reference names, as a link ops made by hand in Razorpay's dashboard does. Null for a link that names no visit
  * of ours.
  */
-
 async function visitOfLink(db: D1Database, link: PaidLink): Promise<PaidVisit | null> {
   const made = await db
     .prepare("SELECT appointment_id FROM payment_links WHERE razorpay_link_id = ?1 OR reference = ?2")
@@ -80,7 +79,6 @@ const linkClosed = (link: { readonly sentAt: string; readonly closesAt: string |
  * takes a second payment nor reminds the client. One closed by its time is left alone; one Razorpay will not cancel
  * is left to ops, who check whether the client paid it too. Never throws.
  */
-
 export async function cancelLinkPaidElsewhere(
   deps: Pick<LinkDeps, "payments" | "alertOnce" | "log">,
   paid: { readonly visit: PaidVisit; readonly razorpayLinkId: string },
@@ -109,7 +107,6 @@ export async function cancelLinkPaidElsewhere(
  * takes the link's split before GST, as a payment made ahead takes its hold's, where the amounts agree. The client's
  * receipt is queued in the same batch, once, and the sweeper sends it within minutes.
  */
-
 async function markLinkPaid(
   db: D1Database,
   linkId: string,
@@ -140,7 +137,6 @@ async function markLinkPaid(
  * carries, and the link marked paid where the close made one; a link ops made by hand has no row of ours. Answers the
  * visit, or null for a link that names no visit of ours.
  */
-
 export async function linkPaid(
   db: D1Database,
   paid: { readonly link: RazorpayPaymentLink; readonly payment: RazorpayPayment },

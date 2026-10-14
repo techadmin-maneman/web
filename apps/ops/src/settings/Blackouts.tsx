@@ -1,28 +1,24 @@
-// Blackout days: the days no visit is offered, in the app or from the site
-// (docs/decisions/0088-every-policy-in-the-console.md). The runbook's SQL set
-// them before; no board draws them, so the panel is laid out as Rules is.
-//
-// The API keeps one row a day. The list shows the days run together where they
-// follow one another for the same reason, added by the same press, so each run
-// names who added all of it; offering them again sends that run of days back. Closing a day moves nothing already
-// booked on it, so the check before it says how many visits the days strand, and each run says how many are still
-// booked on it and opens the dispatch board on its first day to move them.
+// Blackout days: the days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). The API keeps a row
+// a day; the list runs together the days one press added, each run naming who added it. Closing a day moves nothing
+// booked on it, so the check counts the visits it strands, and each run links to the board to move them.
 
-import { DateInput, Label, Select, TextInput } from "@maneman/ui/Field";
+import { Field, DateInput, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Blackout } from "../api.ts";
+import { type Blackout } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { dispatchPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.blackouts;
 
@@ -88,6 +84,78 @@ const periodOf = (period: { from: string; to: string; city: string | null }) => 
   ...(period.city === null || period.city === "" ? {} : { city: period.city }),
 });
 
+/** The days, the city and the reason, as ops type them. */
+function DraftBoxes(props: {
+  draft: Draft;
+  today: string;
+  cities: readonly string[];
+  onEdit: (field: keyof Draft, value: string) => void;
+}) {
+  const { draft, today, cities, onEdit } = props;
+  return (
+    <div className={form.fields}>
+      <Field label={copy.from} className={form.field}>
+        {(control) => (
+          <DateInput
+            {...control}
+            className={form.date}
+            min={today}
+            value={draft.from}
+            onChange={(event) => {
+              onEdit("from", event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={copy.to} className={form.field}>
+        {(control) => (
+          <DateInput
+            {...control}
+            className={form.date}
+            min={draft.from === "" ? today : draft.from}
+            value={draft.to}
+            onChange={(event) => {
+              onEdit("to", event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={copy.city} className={form.field}>
+        {(control) => (
+          <Select
+            {...control}
+            className={form.date}
+            value={draft.city}
+            onChange={(event) => {
+              onEdit("city", event.target.value);
+            }}
+          >
+            <option value="">{copy.everyCity}</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <Field label={copy.reason} className={form.field}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={form.text}
+            maxLength={60}
+            value={draft.reason}
+            onChange={(event) => {
+              onEdit("reason", event.target.value);
+            }}
+          />
+        )}
+      </Field>
+    </div>
+  );
+}
+
 function AddForm(props: { today: string; cities: readonly string[]; onAdded: (days: readonly Blackout[]) => void }) {
   const { today, onAdded } = props;
   const [draft, setDraft] = useState<Draft>(EMPTY);
@@ -97,7 +165,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
   const ready = draft.from !== "" && draft.to !== "" && draft.reason.trim() !== "";
   const steps = useSteps(
     async () =>
-      sentOf(await api.addBlackouts({ ...periodOf(draft), reason: draft.reason.trim() }), (body) => ({
+      sentOf(await settingsApi.addBlackouts({ ...periodOf(draft), reason: draft.reason.trim() }), (body) => ({
         days: body.blackouts,
       })),
     (sent) => {
@@ -110,7 +178,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
   const review = {
     ...steps,
     check: () => {
-      void api.blackoutsBooked(periodOf(draft)).then((answer) => {
+      void settingsApi.blackoutsBooked(periodOf(draft)).then((answer) => {
         setBooked(answer.ok ? answer.body.booked : null);
         steps.check();
       });
@@ -132,7 +200,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
       onCancel={null}
       checking={
         <>
-          <p className={styles.checkLine}>
+          <p className={form.checkLine}>
             {copy.closing(
               ready ? periodWords(draft) : "",
               draft.city === "" ? copy.everyCity : draft.city,
@@ -140,67 +208,12 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
             )}
           </p>
           {booked !== 0 && (
-            <p className={styles.checkWarning}>{booked === null ? copy.uncounted : copy.stranded(booked)}</p>
+            <p className={form.checkWarning}>{booked === null ? copy.uncounted : copy.stranded(booked)}</p>
           )}
         </>
       }
     >
-      <div className={styles.fields}>
-        <div className={styles.field}>
-          <Label htmlFor="blackout-from">{copy.from}</Label>
-          <DateInput
-            className={styles.date}
-            id="blackout-from"
-            min={today}
-            value={draft.from}
-            onChange={(event) => {
-              edit("from", event.target.value);
-            }}
-          />
-        </div>
-        <div className={styles.field}>
-          <Label htmlFor="blackout-to">{copy.to}</Label>
-          <DateInput
-            className={styles.date}
-            id="blackout-to"
-            min={draft.from === "" ? today : draft.from}
-            value={draft.to}
-            onChange={(event) => {
-              edit("to", event.target.value);
-            }}
-          />
-        </div>
-        <div className={styles.field}>
-          <Label htmlFor="blackout-city">{copy.city}</Label>
-          <Select
-            className={styles.date}
-            id="blackout-city"
-            value={draft.city}
-            onChange={(event) => {
-              edit("city", event.target.value);
-            }}
-          >
-            <option value="">{copy.everyCity}</option>
-            {props.cities.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className={styles.field}>
-          <Label htmlFor="blackout-reason">{copy.reason}</Label>
-          <TextInput
-            className={styles.text}
-            id="blackout-reason"
-            maxLength={60}
-            value={draft.reason}
-            onChange={(event) => {
-              edit("reason", event.target.value);
-            }}
-          />
-        </div>
-      </div>
+      <DraftBoxes draft={draft} today={today} cities={props.cities} onEdit={edit} />
     </SettingForm>
   );
 }
@@ -217,29 +230,31 @@ interface PeriodRowProps {
 function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
   const words = periodWords(period);
   return (
-    <li className={styles.rule}>
-      <p className={styles.period}>
+    <li className={form.rule}>
+      <p className={form.period}>
         {words} · {period.city ?? copy.everyCity} · {period.reason}
       </p>
-      <p className={styles.set}>{setLine(period)}</p>
-      {period.booked > 0 && <p className={styles.checkWarning}>{copy.booked(period.booked)}</p>}
+      <p className={form.set}>{setLine(period)}</p>
+      {period.booked > 0 && <p className={form.checkWarning}>{copy.booked(period.booked)}</p>}
       {period.booked > 0 && mayShow && (
-        <div className={styles.actions}>
+        <FormActions>
           <OpsLink
-            className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })}
+            className={buttonLook({ variant: "outline", size: "small", className: form.quiet })}
             to={dispatchPath({ from: period.from })}
             label={copy.showLabel(words)}
           >
             {copy.show}
           </OpsLink>
-        </div>
+        </FormActions>
       )}
       {mayRemove && (
         <ActionCheck
           label={copy.remove}
           ariaLabel={copy.removeLabel(words)}
           question={copy.reopen(words)}
-          send={async () => sentOf(await api.removeBlackouts(periodOf(period)), (body) => ({ days: body.blackouts }))}
+          send={async () =>
+            sentOf(await settingsApi.removeBlackouts(periodOf(period)), (body) => ({ days: body.blackouts }))
+          }
           onDone={(sent) => {
             onRemoved(sent.days);
           }}
@@ -251,7 +266,7 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
 }
 
 export function Blackouts() {
-  const [loaded, retry] = useLoad(api.blackouts);
+  const [loaded, retry] = useLoad(settingsApi.blackouts);
   /** The days as the last change left them, so the list follows a change without reading it again. */
   const [changed, setChanged] = useState<readonly Blackout[] | null>(null);
   const access = useAccess();
@@ -264,12 +279,12 @@ export function Blackouts() {
   const periods = periodsOf(changed ?? loaded.value.blackouts);
 
   return (
-    <Panel titleId="blackouts" title={copy.title} className={styles.panel}>
+    <Panel titleId="blackouts" title={copy.title} className={form.panel}>
       {mayAdd && <AddForm today={loaded.value.today} cities={loaded.value.cities} onAdded={setChanged} />}
       {periods.length === 0 ? (
-        <p className={styles.note}>{copy.none}</p>
+        <p className={form.note}>{copy.none}</p>
       ) : (
-        <ul className={styles.rules}>
+        <ul className={form.rules}>
           {periods.map((period) => (
             <PeriodRow
               key={`${period.city ?? ""}/${period.from}`}

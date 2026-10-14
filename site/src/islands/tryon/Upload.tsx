@@ -6,7 +6,6 @@ import { tryOn } from "../../content/site.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
-/** Step one: the guidelines, and a photograph from the files or the camera. */
 /** The guide a photo is framed to: a dashed oval with gilt corners, and its line beneath. */
 function Oval() {
   return (
@@ -40,6 +39,7 @@ function Oval() {
   );
 }
 
+/** Step one: the guidelines, and a photograph from the files or the camera. */
 export function Upload(props: { photo: string | null; heading: HeadingRef; onChoose: (file: File) => void }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);

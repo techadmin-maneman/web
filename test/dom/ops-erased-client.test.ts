@@ -7,7 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientVisit, DeletionRequest, ErasedClientRecord } from "../../apps/ops/src/api.ts";
 import { ErasedRecord } from "../../apps/ops/src/clients/Erase.tsx";
-import { DeletionsScreen } from "../../apps/ops/src/deletions/DeletionsScreen.tsx";
+import { DeletionsScreen } from "../../apps/ops/src/deletion-requests/DeletionsScreen.tsx";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 

@@ -1,6 +1,7 @@
 // A client's Care person in their chat (docs/decisions/0131-care-people.md): who looks after them, and for a Customer
 // Care manager, moving them to another of the team.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
@@ -11,8 +12,8 @@ import { useAccess } from "../lib/access.ts";
 import { care as copy } from "../content/care.ts";
 import { Refused } from "../settings/index.ts";
 import { careApi, type CareMember } from "./care-api.ts";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
 
 const { carePerson: words } = copy;
 
@@ -23,23 +24,22 @@ function MoveTo(props: {
   readonly onMoved: (email: string) => void;
 }) {
   const [email, setEmail] = useState(props.now ?? props.team[0]?.email ?? "");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
-  const move = async () => {
-    setBusy(true);
-    setFailure(null);
-    const answer = await careApi.moveCarePerson(props.personId, email);
-    setBusy(false);
-    if (answer.ok) props.onMoved(answer.body.care_person);
-    else setFailure({ code: answer.code, fields: answer.fields });
-  };
+  const move = () =>
+    once(async () => {
+      setFailure(null);
+      const answer = await careApi.moveCarePerson(props.personId, email);
+      if (answer.ok) props.onMoved(answer.body.care_person);
+      else setFailure({ code: answer.code, fields: answer.fields });
+    });
   return (
-    <div className={own.closing}>
+    <div className={styles.closing}>
       <Field label={words.moveTo}>
         {(control) => (
           <Select
             {...control}
-            className={styles.choiceBox}
+            className={form.choiceBox}
             value={email}
             onChange={(event) => {
               setEmail(event.target.value);
@@ -56,7 +56,7 @@ function MoveTo(props: {
       <Button
         variant="outline"
         size="small"
-        className={styles.quiet}
+        className={form.quiet}
         disabled={busy || email === "" || email === props.now}
         onClick={() => void move()}
       >
@@ -75,7 +75,7 @@ function Team(props: {
   const load = useCallback(() => careApi.careTeam(), []);
   const [loaded] = useLoad(load);
   if (loaded.state !== "loaded") return null;
-  if (loaded.value.team.length === 0) return <p className={styles.note}>{words.noTeam}</p>;
+  if (loaded.value.team.length === 0) return <p className={form.note}>{words.noTeam}</p>;
   return <MoveTo personId={props.personId} team={loaded.value.team} now={props.now} onMoved={props.onMoved} />;
 }
 
@@ -93,12 +93,12 @@ export function CarePerson(props: {
   const [said, setSaid] = useState<string | null>(null);
   const mayMove = useAccess().mayCall("POST /api/clients/{id}/care-person");
   return (
-    <div className={own.carePerson}>
-      <p className={styles.note}>
+    <div className={styles.carePerson}>
+      <p className={form.note}>
         {words.label}: {now === null ? words.none : coveredOf(now, props.email, props.coveredBy)}
       </p>
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}

@@ -144,9 +144,6 @@ Cloudflare dashboard → Manage Account → Account API Tokens → Create Token 
 - Name `mm-ci-<env>`.
 - Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>`, `mm-ops-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
 - Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
-- Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
-- Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
-- Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also read and write production's database, and production's staging's; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - Optional, production's token: Account → **Account Analytics → Read**. With it, the canary's soak judges the new version on real visitors' errors as well as the smoke's (`docs/decisions/0006-deployment-pipeline.md`); without it the soak says so and the smoke checks stand alone.
 - Optional, production's token: Account → **Workers Observability → Edit** (Cloudflare asks for Edit to run a query, which changes nothing). With it, the soak also fails a release whose busy routes read more rows from D1 a request than their ceilings in `scripts/lib/usage-budget.ts`, or whose Home or job card is slower at p95 than its budget in `scripts/lib/soak.ts`; without it the soak says it could not read them.
@@ -592,11 +589,11 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 
 4. **Cap each API's quota, so the card cannot be charged.** This is the step that makes the rest safe. **APIs & Services** → each API in turn → **Quotas & System Limits**. Filter the list for the per-day quotas and set each with the pencil icon → **Edit quota**:
 
-   | API              | Quota to edit                 | Set it to |
-   | ---------------- | ----------------------------- | --------- |
-   | Geocoding API    | Requests per day              | **300**   |
-   | Places API (New) | Autocomplete requests per day | **2000**  |
-   | Places API (New) | Autocomplete requests per day | **2000**  |
+   | API              | Quota to edit                  | Set it to |
+   | ---------------- | ------------------------------ | --------- |
+   | Geocoding API    | Requests per day               | **300**   |
+   | Places API (New) | Autocomplete requests per day  | **2000**  |
+   | Places API (New) | Place Details requests per day | **500**   |
 
    These sit just above our own daily ceiling (`GEOCODE_DAILY_CEILING`, 200) so our code refuses first and Google's quota is the backstop. Both are far under the free allowance — Geocoding gets 70,000 free requests a month on the India price list, and 300 a day cannot reach it. A quota change can take a few minutes to apply, and some quotas need a one-line reason.
 

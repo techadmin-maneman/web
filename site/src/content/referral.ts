@@ -309,13 +309,13 @@ export const referral = {
     // Not drawn: by the button once three or more fields are marked.
     marked: "Check the {count} fields marked above.",
   },
+  // Not drawn, beyond the label and the WhatsApp line: the day and window picked, what the visit asks of the client,
+  // and the calendar. They restate what was typed, so they tell whoever typed it nothing about the number.
   /**
    * What a booking answers, the same for every number, since whoever typed it may not be its owner: the details
    * go to the number on WhatsApp, and the app shows them once its owner signs in with a code. Not drawn as worded
    * here.
    */
-  // Not drawn, beyond the label and the WhatsApp line: the day and window picked, what the visit asks of the client,
-  // and the calendar. They restate what was typed, so they tell whoever typed it nothing about the number.
   booked: {
     label: "Booked",
     when: (day: string, hours: string) => `${day}, ${hours}`,

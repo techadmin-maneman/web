@@ -1,21 +1,24 @@
 // One recall (docs/decisions/0187-recalls.md): where its lot's stock is, who wears its pieces, and its close once dealt
 // with; and a lot recalled, with why.
 
+import type { Success } from "@maneman/web-kit/api";
 import { fullDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { BookVisit } from "../clients/index.ts";
 import { quality as copy } from "../content/quality.ts";
 import { useAccess } from "../lib/access.ts";
+import { FormActions } from "../components/FormActions.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { qualityApi } from "./quality-api.ts";
 
-export type Book = paths["/api/recalls"]["get"]["responses"][200]["content"]["application/json"];
-export type Detail = paths["/api/recalls/{id}"]["get"]["responses"][200]["content"]["application/json"];
+export type Quality = Success<paths["/api/recalls"]["get"]>;
+export type Detail = Success<paths["/api/recalls/{id}"]["get"]>;
 
 /** What a step answered: the recall, or the refusal. */
 export type Answer =
@@ -37,9 +40,7 @@ function Rows({ columns, rows }: { columns: readonly string[]; rows: readonly (r
       <tbody>
         {rows.map(([head, ...cells]) => (
           <tr key={`${head}-${cells.join("-")}`}>
-            <th scope="row" className={form.rowHead}>
-              {head}
-            </th>
+            <RowHead>{head}</RowHead>
             {cells.map((cell, index) => (
               <td key={index}>{cell}</td>
             ))}
@@ -96,9 +97,7 @@ function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }
       <tbody>
         {worn.map((each) => (
           <tr key={each.piece_id}>
-            <th scope="row" className={form.rowHead}>
-              {each.person}
-            </th>
+            <RowHead>{each.person}</RowHead>
             <td>{each.piece_code}</td>
             <td>{each.due_on === null ? "" : fullDate(each.due_on)}</td>
             <td>{mayBook && <BookFree worn={each} />}</td>
@@ -110,16 +109,18 @@ function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }
 }
 
 export function RecallDetail({
+  id,
   recall,
   onAnswer,
 }: {
+  id: string;
   recall: Detail;
   onAnswer: (answer: Answer, said: string) => void;
 }) {
   const access = useAccess();
   const title = `${copy.number(recall.number)} · ${copy.lotLabel(recall.name, recall.lot_code)}`;
   return (
-    <Panel titleId="recall-detail" title={title}>
+    <Panel id={id} opened titleId="recall-detail" title={title}>
       <p className={form.note}>{recall.reason}</p>
       <h3 className={form.ruleTitle}>{copy.held}</h3>
       {recall.held.length === 0 ? (
@@ -137,28 +138,34 @@ export function RecallDetail({
         <WornRows worn={recall.worn} mayBook={recall.closed_at === null && access.mayCall("POST /api/visits")} />
       )}
       {recall.closed_at === null && access.mayCall("POST /api/recalls/{id}/close") && (
-        <div className={form.actions}>
+        <FormActions>
           <Button
             variant="outline"
             size="small"
             onClick={() =>
-              void client.post("/api/recalls/{id}/close", { path: { id: recall.id } }).then((answer) => {
+              void qualityApi.closeRecall(recall.id).then((answer) => {
                 onAnswer(answer, copy.closedSaid);
               })
             }
           >
             {copy.close}
           </Button>
-        </div>
+        </FormActions>
       )}
     </Panel>
   );
 }
 
-export function RaiseRecall({ book, onAnswer }: { book: Book; onAnswer: (answer: Answer, said: string) => void }) {
-  const [lot, setLot] = useState(book.lots[0]?.id ?? "");
+export function RaiseRecall({
+  quality,
+  onAnswer,
+}: {
+  quality: Quality;
+  onAnswer: (answer: Answer, said: string) => void;
+}) {
+  const [lot, setLot] = useState(quality.lots[0]?.id ?? "");
   const [reason, setReason] = useState("");
-  if (book.lots.length === 0) return null;
+  if (quality.lots.length === 0) return null;
   return (
     <div className={form.group}>
       <h3 className={form.ruleTitle}>{copy.raise}</h3>
@@ -172,7 +179,7 @@ export function RaiseRecall({ book, onAnswer }: { book: Book; onAnswer: (answer:
               setLot(event.target.value);
             }}
           >
-            {book.lots.map((each) => (
+            {quality.lots.map((each) => (
               <option key={each.id} value={each.id}>
                 {copy.lotLabel(each.name, each.lot_code)}
               </option>
@@ -192,13 +199,13 @@ export function RaiseRecall({ book, onAnswer }: { book: Book; onAnswer: (answer:
           />
         )}
       </Field>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="destructive"
           size="small"
           disabled={lot === "" || reason.trim() === ""}
           onClick={() =>
-            void client.post("/api/recalls", { body: { lot_id: lot, reason: reason.trim() } }).then((answer) => {
+            void qualityApi.raiseRecall({ lot_id: lot, reason: reason.trim() }).then((answer) => {
               onAnswer(answer, copy.raisedSaid);
               if (answer.ok) setReason("");
             })
@@ -206,7 +213,7 @@ export function RaiseRecall({ book, onAnswer }: { book: Book; onAnswer: (answer:
         >
           {copy.confirmRaise}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }

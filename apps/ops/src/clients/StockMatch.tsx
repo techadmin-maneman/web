@@ -2,16 +2,17 @@
 // stock.md): the stock code made exactly to their profile and where its pieces are, their city first; what the profile
 // lacks; or that theirs is a custom order.
 
+import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { stockMatch as copy } from "../content/stock-match.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { clientsApi } from "./clients-api.ts";
 
-type Match = paths["/api/clients/{id}/stock-match"]["get"]["responses"][200]["content"]["application/json"];
+type Match = Success<paths["/api/clients/{id}/stock-match"]["get"]>;
 
 function Lines({ match }: { match: Match }) {
   if (match.kind === "no_profile") return <p className={form.note}>{copy.noProfile}</p>;
@@ -32,7 +33,7 @@ function Lines({ match }: { match: Match }) {
 }
 
 export function StockMatch({ clientId }: { clientId: string }) {
-  const load = useCallback(() => client.get("/api/clients/{id}/stock-match", { path: { id: clientId } }), [clientId]);
+  const load = useCallback(() => clientsApi.stockMatch(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
   return (
     <Panel titleId="stock-match" title={copy.title}>

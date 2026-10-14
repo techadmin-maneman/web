@@ -1,19 +1,7 @@
-// Reading and writing the service-area CSV in the browser
-// (data/pincodes/README.md, docs/decisions/0061-ops-editable-inputs.md).
-//
-// The served pincodes are marked in a spreadsheet, which is a far better
-// tool for 198 rows than any web form, so the console takes that file back
-// rather than asking for the rows again. It reads only the three columns that
-// are theirs -- pincode, served and launch_on -- and ignores every other one,
-// so a file that still carries the post offices and the coordinates is fine
-// and nothing in it can overwrite the reference data.
-//
-// All three must be there. A file saved without the served column would
-// otherwise read as every pincode switched off, and one without launch_on as
-// every launch date cleared.
-//
-// The splitter is scripts/lib/pincodes.ts's, kept here because the console
-// cannot import a node script.
+// The service-area CSV, read and written in the browser (data/pincodes/README.md,
+// docs/decisions/0061-ops-editable-inputs.md). Only pincode, served and launch_on are read, and all three must be
+// there: a file without served would switch every pincode off. The splitter is scripts/lib/pincodes.ts's, copied
+// because the console cannot import a node script.
 
 import { csvCell } from "../lib/csv.ts";
 

@@ -19,7 +19,6 @@ interface Paying {
   readonly dispatch: Dispatch<BookingEvent>;
   /** The visit being moved; undefined for a new one. */
   readonly movingId: string | undefined;
-  /** The photograph purposes booking a new visit also agrees to. */
   /** What the client asked for on the pay step before the booking starts: their reminders switched on. */
   readonly beforeStarting: () => Promise<void>;
   /** The sheet's one-tap guard (packages/ui/useOneAtATime.ts), which holding a window shares. */

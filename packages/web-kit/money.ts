@@ -21,6 +21,9 @@ export function rupees(paise: number): string {
 /** "499.50", as a form takes rupees, → 49950: the paise the API counts in, to the nearest paisa. */
 export const paiseFromRupees = (typed: string): number => Math.round(Number(typed) * 100);
 
+/** Paise as a form's box holds them, in rupees as typed: 1234500 is "12345", 12345 is "123.45". */
+export const rupeesTyped = (paise: number): string => String(paise / 100);
+
 /**
  * An amount in a supplier's currency, from its smallest unit (docs/decisions/0165-suppliers.md): rupees as every
  * surface writes them, any other currency by its code. 1250 USD → "USD 12.50"; 125000 INR → "Rs. 1,234".

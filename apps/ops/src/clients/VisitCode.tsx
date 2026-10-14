@@ -1,20 +1,20 @@
-// A discount code on one of the client's visits, in the Visits tab's last column (docs/decisions/0108-discount-codes.md).
-// No board draws it. Ops enter a code on a visit, or take it off, only while the visit is not paid for, linked or
-// invoiced (`price_open`), and a consultation, which costs nothing, takes none. A one visit's code the client typed
-// when booking on the site is shown under "None" and starts the box. The cell keeps what its last answer said, so the
-// tab is not read again for it.
+// A discount code on one of the client's visits, in the Visits tab's last column
+// (docs/decisions/0108-discount-codes.md). A code goes on or comes off only while the visit's price is open
+// (`price_open`), and a consultation takes none. A code the client typed on the site shows under None and starts the
+// box.
 
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+
 import { fullDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type ClientVisit, type VisitDiscountCode } from "../api.ts";
+import { type ClientVisit, type VisitDiscountCode } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.code;
 
@@ -47,7 +47,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
 
   const apply = async () => {
     setStep("applying");
-    const answer = await api.enterVisitCode(visit.id, typed.trim());
+    const answer = await clientsApi.enterVisitCode(visit.id, typed.trim());
     if (!answer.ok) {
       setFailure(said(answer.code));
       setStep("entering");
@@ -60,7 +60,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
 
   const remove = async () => {
     setStep("removing");
-    const answer = await api.removeVisitCode(visit.id);
+    const answer = await clientsApi.removeVisitCode(visit.id);
     setStep("showing");
     if (!answer.ok) {
       setFailure(said(answer.code));
@@ -84,19 +84,20 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
           void apply();
         }}
       >
-        <Label htmlFor={`code-${visit.id}`}>
-          <VisuallyHidden>{copy.label}</VisuallyHidden>
-        </Label>
-        <TextInput
-          id={`code-${visit.id}`}
-          className={styles.codeInput}
-          autoCapitalize="characters"
-          value={typed}
-          onChange={(event) => {
-            setTyped(event.target.value);
-            setFailure(null);
-          }}
-        />
+        <Field label={copy.label} labelHidden error={failure} announce look={{ error: styles.codeError }}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.codeInput}
+              autoCapitalize="characters"
+              value={typed}
+              onChange={(event) => {
+                setTyped(event.target.value);
+                setFailure(null);
+              }}
+            />
+          )}
+        </Field>
         <Button type="submit" variant="primary" size="small" disabled={typed.trim() === "" || step === "applying"}>
           {step === "applying" ? copy.applying : copy.apply}
         </Button>
@@ -111,7 +112,6 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
         >
           {copy.cancel}
         </Button>
-        {problem}
       </form>
     );
   }

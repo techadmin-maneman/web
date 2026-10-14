@@ -62,10 +62,51 @@ function missingIn(program: ts.Program, file: string): string[] {
   return [...missing];
 }
 
+/**
+ * What each stylesheet's importers read of it: its classes by name, or `any` where one reads it by a computed name. A
+ * rule left behind when its class moved to another sheet matches nothing, and reads as nothing here.
+ */
+function readsOf(files: readonly string[]): Map<string, { keys: Set<string>; any: boolean }> {
+  const reads = new Map<string, { keys: Set<string>; any: boolean }>();
+  for (const file of files) {
+    const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
+    const names = new Map<string, string>();
+    for (const statement of source.statements) {
+      if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+      const binding = statement.importClause?.name;
+      if (statement.moduleSpecifier.text.endsWith(".module.css") && binding !== undefined)
+        names.set(binding.text, stylesheetOf(file, statement.moduleSpecifier.text));
+    }
+    const visit = (node: ts.Node): void => {
+      const object = ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node) ? node.expression : null;
+      const path = object !== null && ts.isIdentifier(object) ? names.get(object.text) : undefined;
+      if (path !== undefined) {
+        const read = reads.get(path) ?? { keys: new Set<string>(), any: false };
+        if (ts.isPropertyAccessExpression(node)) read.keys.add(node.name.text);
+        else if (ts.isElementAccessExpression(node) && ts.isStringLiteral(node.argumentExpression))
+          read.keys.add(node.argumentExpression.text);
+        else read.any = true;
+        reads.set(path, read);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+  }
+  return reads;
+}
+
 describe("the CSS modules", () => {
   it.each(ROOTS)("define every class %s reads from them", (root) => {
     const files = filesUnder(root);
     const program = ts.createProgram(files, { noResolve: true, noLib: true, jsx: ts.JsxEmit.Preserve, types: [] });
     expect(files.flatMap((file) => missingIn(program, file))).toEqual([]);
+  });
+
+  it("define, in the console, no class that nothing reads", () => {
+    const reads = readsOf(filesUnder("apps/ops/src"));
+    const unread = [...reads].flatMap(([path, read]) =>
+      read.any ? [] : [...classesOf(path)].filter((name) => !read.keys.has(name)).map((name) => `${path}: .${name}`),
+    );
+    expect(unread).toEqual([]);
   });
 });

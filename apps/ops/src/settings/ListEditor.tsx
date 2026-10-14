@@ -1,10 +1,7 @@
-// One list of the job sheet as ops edit it: a kind of visit's checklist, or
-// the partial reasons (docs/decisions/0087-consumables-and-stock.md). Its items
-// in their order, each renamed in its box, moved, or taken off; one added at
-// the foot; one taken off put back. An item keeps its code through all of it,
-// so a phone that holds the list as it was still sends what the API
-// understands. The check shows what is added, renamed and taken off before
-// anything is sent (ADR 0071).
+// One list of the job sheet as ops edit it: a checklist or the partial reasons
+// (docs/decisions/0087-consumables-and-stock.md). Items are renamed, moved, taken off or put back, each keeping its
+// code, so a phone holding the old list still sends what the API understands. The check shows what changes first (ADR
+// 0071).
 
 import { TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -14,9 +11,10 @@ import type { Answer, JobSheet, JobSheetItemSent, JobSheetList } from "../api.ts
 import { settings } from "../content/settings.ts";
 import { whoWords } from "../lib/who.ts";
 import { review } from "../content/common.ts";
-import own from "./consumables.module.css";
-import styles from "../components/forms.module.css";
+import styles from "./list-editor.module.css";
+import form from "../components/forms.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 const copy = settings.jobSheet;
 
@@ -85,9 +83,9 @@ function Item({
 }) {
   const name = line.label.trim() === "" ? copy.unnamed : line.label.trim();
   return (
-    <li className={own.item}>
+    <li className={styles.item}>
       <TextInput
-        className={own.label}
+        className={styles.label}
         id={`${id}-${line.key}`}
         maxLength={props.longest}
         aria-label={props.itemLabel(index + 1)}
@@ -133,12 +131,12 @@ const setLineOf = (list: JobSheetList): string =>
 /** The list as a person whose access does not let them change it reads it: its items, in their order. */
 export function ListRead({ title, list }: { title: string; list: JobSheetList }) {
   return (
-    <div className={styles.group}>
-      <h3 className={styles.ruleTitle}>{title}</h3>
-      <p className={styles.set}>{setLineOf(list)}</p>
-      <ol className={own.items}>
+    <div className={form.group}>
+      <h3 className={form.ruleTitle}>{title}</h3>
+      <p className={form.set}>{setLineOf(list)}</p>
+      <ol className={styles.items}>
         {list.items.map((item) => (
-          <li className={own.item} key={item.code}>
+          <li className={styles.item} key={item.code}>
             {item.label}
           </li>
         ))}
@@ -193,14 +191,14 @@ export function ListEditor(props: Props) {
       errors={copy.errors}
       onCancel={null}
       sendable={changes.length > 0}
-      above={<p className={styles.set}>{setLineOf(list)}</p>}
+      above={<p className={form.set}>{setLineOf(list)}</p>}
       checking={(changes.length === 0 ? [review.nothing] : changes).map((line) => (
-        <p className={styles.checkLine} key={line}>
+        <p className={form.checkLine} key={line}>
           {line}
         </p>
       ))}
     >
-      <ol className={own.items}>
+      <ol className={styles.items}>
         {lines.map((line, index) => (
           <Item
             key={line.key}
@@ -223,11 +221,11 @@ export function ListEditor(props: Props) {
           />
         ))}
       </ol>
-      <div className={styles.actions}>
+      <FormActions>
         <Button
           variant="outline"
           size="small"
-          className={styles.quiet}
+          className={form.quiet}
           disabled={lines.length >= most}
           onClick={() => {
             added.current += 1;
@@ -236,13 +234,13 @@ export function ListEditor(props: Props) {
         >
           {props.addLabel}
         </Button>
-      </div>
+      </FormActions>
       {off.length > 0 && (
-        <div className={own.retired}>
-          <p className={own.retiredTitle}>{copy.retired}</p>
-          <ul className={own.retiredList}>
+        <div className={styles.retired}>
+          <p className={styles.retiredTitle}>{copy.retired}</p>
+          <ul className={styles.retiredList}>
             {off.map((item) => (
-              <li className={own.retiredItem} key={item.code}>
+              <li className={styles.retiredItem} key={item.code}>
                 <span>{item.label}</span>
                 <Button
                   variant="outline"

@@ -1,13 +1,6 @@
-// Technicians: who works, their city, the jobs they
-// have finished and how those ran, one 34 px row each, as the board draws them,
-// however many there are. The board's fifth column is Skill, and nothing records
-// what a technician is trained for, so Leave stands there instead and a line
-// beneath the table says why (docs/open-points.md, item 59).
-//
-// A technician's name opens their own page (./TechnicianScreen.tsx): their details,
-// week, leave, phones and kit, which the board's rows have no room for. Ops add
-// technicians here (./TechnicianForms.tsx); those switched off are listed
-// beneath the table.
+// Technicians: who works, their city, and the jobs they have finished and how those ran, one row each. Nothing records
+// a technician's skills, so Leave stands in the design's Skill column (docs/open-points.md, item 59). A name opens
+// their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -16,17 +9,16 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { addDays, fullDate, indiaDate, listDate } from "@maneman/web-kit/dates";
+import { addDays, fullDate, listDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import {
-  api,
   type Leave,
   type Roster as RosterBook,
   type Technician,
   type TechnicianSummary,
   type TechnicianWork,
 } from "../api.ts";
-import { OpsLink, Shell } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { technicianPath } from "../route.ts";
@@ -35,6 +27,7 @@ import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddTechnician } from "./TechnicianForms.tsx";
 import styles from "./technicians.module.css";
+import { techniciansApi } from "./technicians-api.ts";
 
 /** The route's period ends the day after the last one counted; the note names that last day. */
 const lastDay = (exclusiveEnd: string) => addDays(exclusiveEnd, -1);
@@ -106,7 +99,7 @@ function RosterTable({
   active: readonly Technician[];
   figures: ReadonlyMap<string, TechnicianWork>;
 }) {
-  const today = indiaDate(new Date().toISOString());
+  const today = todayInIndia(Date.now());
   const city = (row: Technician) => row.city ?? "";
   const [name, cityLabel, jobs, service, leave] = technicians.columns;
   const columns: readonly Column<Technician>[] = [
@@ -154,10 +147,10 @@ function RosterTable({
 }
 
 function Roster() {
-  const [loaded, retry] = useLoad(api.technicians);
+  const [loaded, retry] = useLoad(techniciansApi.technicians);
   // The roster carries no period, so the figures are a read of their own; the
   // table is one table either way, and waits for both.
-  const [work, retryWork] = useLoad(api.technicianWork);
+  const [work, retryWork] = useLoad(techniciansApi.technicianWork);
   // The roster as read again after a technician is added.
   const [fresh, setFresh] = useState<RosterBook | null>(null);
   const [adding, setAdding] = useState(false);
@@ -177,10 +170,10 @@ function Roster() {
     );
   }
 
-  const book = fresh ?? loaded.value;
+  const roster = fresh ?? loaded.value;
   const figures = new Map(work.value.technicians.map((each) => [each.technician_id, each]));
   const readAgain = async () => {
-    const answer = await api.technicians();
+    const answer = await techniciansApi.technicians();
     if (answer.ok) setFresh(answer.body);
   };
 
@@ -209,18 +202,18 @@ function Roster() {
           {technicians.add.added(added)}
         </p>
       )}
-      {book.technicians.length === 0 ? (
+      {roster.technicians.length === 0 ? (
         <EmptyState look="panel" line={technicians.empty} />
       ) : (
-        <RosterTable active={book.technicians} figures={figures} />
+        <RosterTable active={roster.technicians} figures={figures} />
       )}
       <p className={styles.note}>
         {technicians.work.period(fullDate(work.value.from), fullDate(lastDay(work.value.to)))}
       </p>
-      {book.switched_off.length > 0 && <SwitchedOff list={book.switched_off} />}
+      {roster.switched_off.length > 0 && <SwitchedOff list={roster.switched_off} />}
       {adding && (
         <AddTechnician
-          cities={book.cities}
+          cities={roster.cities}
           onAdded={async (name) => {
             await readAgain();
             setAdding(false);
@@ -236,9 +229,5 @@ function Roster() {
 }
 
 export function TechniciansScreen() {
-  return (
-    <Shell section="/technicians" title={technicians.title}>
-      <Roster />
-    </Shell>
-  );
+  return <Roster />;
 }

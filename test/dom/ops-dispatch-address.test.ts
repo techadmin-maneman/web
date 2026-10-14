@@ -6,6 +6,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DispatchScreen } from "../../apps/ops/src/dispatch/DispatchScreen.tsx";
+import * as opsCopy from "../../apps/ops/src/content.ts";
 import { BOARD } from "../../e2e/ops/fixtures/dispatch.ts";
 
 const ROHIT = BOARD.technicians[0]?.days[0]?.blocks[0]?.appointment_id ?? "";
@@ -97,8 +98,13 @@ describe("the dispatch board's place in the address", () => {
   it("keeps the week, the city, the search and the open visit as ops change them", async () => {
     await openAt("/dispatch?from=2025-09-19");
 
-    const city = page.querySelector<HTMLSelectElement>("#dispatch-city");
-    const find = page.querySelector<HTMLInputElement>("#dispatch-find");
+    // Each box by its label, as a person finds it: the ids are the field's own.
+    const boxFor = (words: string) => {
+      const label = [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === words);
+      return label === undefined ? null : document.getElementById(label.htmlFor);
+    };
+    const city = boxFor(opsCopy.dispatch.tools.city) as HTMLSelectElement | null;
+    const find = boxFor(opsCopy.dispatch.tools.find) as HTMLInputElement | null;
     if (city === null || find === null) throw new Error(`No city or search in: ${page.textContent}`);
     choose(city, "Delhi");
     choose(find, "Rohit");

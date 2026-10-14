@@ -5,12 +5,12 @@ import { Panel } from "@maneman/ui/Panel";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import styles from "../components/forms.module.css";
-import type { CitiesBook, CityRuleName } from "./book.ts";
+import form from "../components/forms.module.css";
+import type { Cities, CityRuleName } from "./types.ts";
+import { citiesApi } from "./cities-api.ts";
 
 const copy = cities.rules;
 
@@ -18,14 +18,7 @@ function RuleForm(props: { city: string; rule: CityRuleName; now: number | null;
   const [figure, setFigure] = useState(props.now === null ? "" : String(props.now));
   const name = copy.names[props.rule];
   const steps = useSteps(
-    async () =>
-      sentOf(
-        await client.patch("/api/cities/{name}/rules/{rule}", {
-          path: { name: props.city, rule: props.rule },
-          body: { value: Number(figure) },
-        }),
-        () => ({}),
-      ),
+    async () => sentOf(await citiesApi.setRule(props.city, props.rule, { value: Number(figure) }), () => ({})),
     props.onSaved,
   );
   const was = props.now === null ? copy.national : String(props.now);
@@ -36,13 +29,13 @@ function RuleForm(props: { city: string; rule: CityRuleName; now: number | null;
       ready={/^\d{1,4}$/.test(figure.trim())}
       errors={copy.errors}
       onCancel={null}
-      checking={<p className={styles.checkLine}>{copy.line(name, was, figure.trim())}</p>}
+      checking={<p className={form.checkLine}>{copy.line(name, was, figure.trim())}</p>}
     >
-      <Field label={`${copy.figure} (${copy.units[props.rule]})`} className={styles.field}>
+      <Field label={`${copy.figure} (${copy.units[props.rule]})`} className={form.field}>
         {(control) => (
           <NumberInput
             {...control}
-            className={styles.figureBox}
+            className={form.figureBox}
             value={figure}
             onChange={(event) => {
               setFigure(event.target.value);
@@ -59,8 +52,8 @@ function RuleRow(props: { city: string; rule: CityRuleName; own: number | null; 
   const access = useAccess();
   const name = copy.names[props.rule];
   return (
-    <div className={styles.rule}>
-      <p className={styles.ruleTitle}>
+    <div className={form.rule}>
+      <p className={form.ruleTitle}>
         {name}: {props.own === null ? copy.national : copy.own(`${String(props.own)} ${copy.units[props.rule]}`)}
       </p>
       {access.mayCall("PATCH /api/cities/{name}/rules/{rule}") && (
@@ -76,12 +69,7 @@ function RuleRow(props: { city: string; rule: CityRuleName; own: number | null; 
         <ActionCheck
           label={copy.back}
           question={copy.backQuestion(name, props.city)}
-          send={async () =>
-            sentOf(
-              await client.delete("/api/cities/{name}/rules/{rule}", { path: { name: props.city, rule: props.rule } }),
-              () => ({}),
-            )
-          }
+          send={async () => sentOf(await citiesApi.removeRule(props.city, props.rule), () => ({}))}
           onDone={props.onSaved}
           errors={copy.errors}
         />
@@ -90,11 +78,11 @@ function RuleRow(props: { city: string; rule: CityRuleName; own: number | null; 
   );
 }
 
-export function CityRules({ book, onSaved }: { book: CitiesBook; onSaved: () => void }) {
-  const [city, setCity] = useState(book.cities[0]?.name ?? "");
+export function CityRules({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
+  const [city, setCity] = useState(cities.cities[0]?.name ?? "");
   const [said, setSaid] = useState<string | null>(null);
   const ownOf = (rule: CityRuleName): number | null => {
-    const set = book.rules.find((each) => each.city === city && each.rule === rule)?.value;
+    const set = cities.rules.find((each) => each.city === city && each.rule === rule)?.value;
     return typeof set === "number" ? set : null;
   };
   const saved = () => {
@@ -103,8 +91,8 @@ export function CityRules({ book, onSaved }: { book: CitiesBook; onSaved: () => 
   };
   return (
     <Panel titleId="city-rules" title={copy.panel}>
-      <p className={styles.note}>{copy.note}</p>
-      <Field label={copy.city} className={styles.field}>
+      <p className={form.note}>{copy.note}</p>
+      <Field label={copy.city} className={form.field}>
         {(control) => (
           <Select
             {...control}
@@ -114,7 +102,7 @@ export function CityRules({ book, onSaved }: { book: CitiesBook; onSaved: () => 
               setSaid(null);
             }}
           >
-            {book.cities.map((each) => (
+            {cities.cities.map((each) => (
               <option key={each.name} value={each.name}>
                 {each.name}
               </option>
@@ -122,11 +110,11 @@ export function CityRules({ book, onSaved }: { book: CitiesBook; onSaved: () => 
           </Select>
         )}
       </Field>
-      {book.rule_names.map((rule) => (
+      {cities.rule_names.map((rule) => (
         <RuleRow key={`${city}:${rule}`} city={city} rule={rule} own={ownOf(rule)} onSaved={saved} />
       ))}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}

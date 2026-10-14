@@ -2,7 +2,6 @@
 // reached us. Ops say how it went, when the work began and ended on the visit's own day, and how they know
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -10,9 +9,11 @@ import { Drawer } from "@maneman/ui/Drawer";
 import { ChoiceGroup, Field, Radio, TextArea, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useId, useState } from "react";
-import { api, type HandClose } from "../api.ts";
+import { type HandClose } from "../api.ts";
 import { clients } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
+import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.handClose;
 
@@ -25,8 +26,8 @@ const instantOf = (date: string, time: string): string => new Date(`${date}T${ti
 
 /** A refusal in the console's words: a field the API named, else its code. */
 function closeRefusal(code: string, fields: readonly string[]): string {
-  if (code === "invalid_request" && fields.includes("reason")) return copy.errors.reason ?? "";
-  if (code === "invalid_request") return copy.errors.times ?? "";
+  if (code === "invalid_request" && fields.includes("reason")) return copy.errors.reason;
+  if (code === "invalid_request") return copy.errors.times;
   return errorText(copy.errors, { code });
 }
 
@@ -49,7 +50,13 @@ function OutcomeChoice({ outcome, onChoose }: { outcome: Outcome; onChoose: (out
   );
 }
 
-function Form({ visitId, date, onClosed }: { visitId: string; date: string; onClosed: (outcome: Outcome) => void }) {
+interface ClosingProps {
+  visitId: string;
+  date: string;
+  onClosed: (outcome: Outcome) => void;
+}
+
+function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
   const [outcome, setOutcome] = useState<Outcome>("done");
   const [started, setStarted] = useState("");
   const [ended, setEnded] = useState("");
@@ -63,7 +70,7 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
   const close = () =>
     once(async () => {
       setFailed(null);
-      const answer = await api.closeVisit(visitId, {
+      const answer = await clientsApi.closeVisit(visitId, {
         outcome,
         ...(timed ? { started_at: instantOf(date, started), ended_at: instantOf(date, ended) } : {}),
         reason: reason.trim(),
@@ -128,11 +135,7 @@ function Form({ visitId, date, onClosed }: { visitId: string; date: string; onCl
           {busy ? copy.closing : copy.confirm}
         </Button>
       </div>
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </form>
   );
 }
@@ -167,7 +170,7 @@ export function CloseVisit({
       onDismiss={dismiss}
     >
       {closed === null ? (
-        <Form visitId={visitId} date={date} onClosed={setClosed} />
+        <ClosingForm visitId={visitId} date={date} onClosed={setClosed} />
       ) : (
         <p className={styles.done} role="status">
           {copy.done[closed]}

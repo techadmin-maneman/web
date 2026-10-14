@@ -1,10 +1,10 @@
 // The privacy and terms pages.
 
+// PLACEHOLDER: the try-on's sentences await counsel with the notices.
 /**
  * The privacy page's sentences on the try-on: its look goes to WhatsApp only, and a client's try-on is kept
  * (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md, 0084-a-clients-try-on-is-kept.md).
  */
-// PLACEHOLDER: the try-on's sentences await counsel with the notices.
 const TRY_ON_PRIVACY =
   "If you use the try-on, your photograph is used to make your simulation. It is sent to YouCam (Perfect Corp), the service that generates it, which keeps its copy for thirty days; we never use it to train any model, and ours is deleted within the hour; a small copy stays with your simulation for fourteen days at most. Before the simulation is made, you give us your name and mobile number: we send the simulation to that number on WhatsApp, and it is never shown on this site; the simulation itself is kept for fourteen days. If you then book a visit while the simulation is kept, we keep a small copy of your photograph in your Mane Man account as your before photo, until you ask us to delete it, and the simulation until the photographs of your first fit are taken; you see both when you sign in.";
 

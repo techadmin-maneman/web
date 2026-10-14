@@ -17668,19 +17668,22 @@ export interface components {
             group: "move_unanswered";
             /** Format: date */
             date: string;
-            window: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
             ran_out: boolean;
         } | {
             /** @enum {string} */
             group: "consultation_request";
             /** Format: date */
             date: string;
-            window: string;
+            /** @enum {string} */
+            window: "morning" | "afternoon" | "evening";
             one_visit: boolean;
             discount_code: string | null;
             /** @description A first fit asked for with it, and the window wanted, null for either; null for none. */
             first_fit: {
-                window: string | null;
+                /** @enum {string|null} */
+                window: "morning" | "afternoon" | "evening" | null;
             } | null;
         } | {
             /** @enum {string} */
@@ -17721,7 +17724,8 @@ export interface components {
         } | {
             /** @enum {string} */
             group: "unassigned_visit";
-            kind: string;
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
             /** Format: date-time */
             starts_at: string;
         } | {
@@ -17744,7 +17748,8 @@ export interface components {
         } | {
             /** @enum {string} */
             group: "partial_visit";
-            kind: string;
+            /** @enum {string} */
+            kind: "consultation" | "first_fit" | "service" | "replacement";
             reason_code: string | null;
             /** @description In the words ops gave it, or the job sheet's. */
             reason: string | null;
@@ -17760,8 +17765,11 @@ export interface components {
             group: "first_fit_to_book";
             /** Format: date-time */
             consulted_at: string;
-            /** @description The consultation's; null where a fit cannot start in it. */
-            fit_window: string | null;
+            /**
+             * @description The consultation's; null where a fit cannot start in it.
+             * @enum {string|null}
+             */
+            fit_window: "morning" | "afternoon" | "evening" | null;
         } | {
             /** @enum {string} */
             group: "payment_owed";

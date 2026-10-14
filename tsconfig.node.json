@@ -29,12 +29,14 @@
     "eslint.front-pinned.ts"
   ],
   // Browser-side tooling has its own config, tsconfig.browser.json, and so does
-  // every test in test/node/dom/: they run in Node but import the apps' code,
-  // written against the DOM. A new test of an app's code goes in that folder.
+  // every test in test/node/dom/ and test/node/apps/*/dom/: they run in Node but
+  // import the apps' code, written against the DOM. A new test of an app's code
+  // goes in its app's dom/ folder.
   "exclude": [
     // A service worker's own code, checked with its WebWorker types by apps/*/sw/tsconfig.json.
     "packages/web-kit/sw-shell.ts",
     "test/node/dom/**",
+    "test/node/apps/*/dom/**",
     "packages/web-kit/access.ts",
     "packages/web-kit/api.ts",
     "packages/web-kit/build.ts",

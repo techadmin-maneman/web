@@ -3,7 +3,6 @@
 // left can send it back before it arrives. A hair system's pieces that arrived are scanned, and those not scanned
 // went missing on the way (docs/decisions/0162-scanning-labels.md).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
@@ -11,24 +10,29 @@ import { Table } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client, type Stock } from "../api.ts";
+import { type Stock } from "../api.ts";
 import { stockTransit as copy } from "../content/stock-transit.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { PieceScans } from "./PieceScans.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
+import { unitOf } from "./holdings.ts";
+import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { stockApi } from "./stock-api.ts";
 
 type Transfer = Stock["in_transit"][number];
 
 /** What arrived of one transfer, and a word on it, before it is recorded. */
-function Receiving(props: { book: Stock; transfer: Transfer; onDone: (book: Stock | null) => void }) {
-  const { book, transfer } = props;
+function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: Stock | null) => void }) {
+  const { stock, transfer } = props;
   const [typed, setArrived] = useState(String(transfer.quantity));
   const [units, setUnits] = useState<readonly string[]>([]);
   const [note, setNote] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
-  const consumable = book.consumables.find((each) => each.code === transfer.consumable_code);
+  const consumable = stock.consumables.find((each) => each.code === transfer.consumable_code);
   const unit = consumable?.unit ?? "";
   const arrived = units.length > 0 ? String(units.length) : typed;
   const figure = Number(arrived);
@@ -39,7 +43,7 @@ function Receiving(props: { book: Stock; transfer: Transfer; onDone: (book: Stoc
       ...(units.length === 0 ? {} : { units: [...units] }),
       ...(note.trim() === "" ? {} : { note: note.trim() }),
     };
-    const answer = await client.post("/api/stock/transfers/{id}/receive", { path: { id: transfer.id }, body });
+    const answer = await stockApi.receiveTransfer(transfer.id, body);
     if (answer.ok) props.onDone(answer.body);
     else setFailure({ code: answer.code, fields: answer.fields });
   };
@@ -79,7 +83,7 @@ function Receiving(props: { book: Stock; transfer: Transfer; onDone: (book: Stoc
       {ready && figure < transfer.quantity && (
         <p className={form.note}>{copy.short(transfer.quantity - figure, unit)}</p>
       )}
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void record()}>
           {copy.confirm}
         </Button>
@@ -92,29 +96,23 @@ function Receiving(props: { book: Stock; transfer: Transfer; onDone: (book: Stoc
         >
           {copy.cancel}
         </Button>
-      </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      </FormActions>
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </div>
   );
 }
 
-function Row(props: { book: Stock; transfer: Transfer; onReceive: () => void; onSendBack: () => void }) {
-  const { book, transfer } = props;
+function TransferRow(props: { stock: Stock; transfer: Transfer; onReceive: () => void; onSendBack: () => void }) {
+  const { stock, transfer } = props;
   const access = useAccess();
   const what =
-    book.consumables.find((each) => each.code === transfer.consumable_code)?.name ?? transfer.consumable_code;
-  const unit = book.consumables.find((each) => each.code === transfer.consumable_code)?.unit ?? "";
-  const from = placeName(book, transfer.from);
-  const to = placeName(book, transfer.to);
+    stock.consumables.find((each) => each.code === transfer.consumable_code)?.name ?? transfer.consumable_code;
+  const unit = unitOf(stock, transfer.consumable_code);
+  const from = placeName(stock, transfer.from);
+  const to = placeName(stock, transfer.to);
   return (
     <tr>
-      <th scope="row" className={form.rowHead}>
-        {what}
-      </th>
+      <RowHead>{what}</RowHead>
       <td className={form.figure}>
         {transfer.quantity} {unit}
       </td>
@@ -137,13 +135,13 @@ function Row(props: { book: Stock; transfer: Transfer; onReceive: () => void; on
   );
 }
 
-export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: Stock) => void }) {
+export function InTransit({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock) => void }) {
   const [receiving, setReceiving] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
-  const transfer = book.in_transit.find((each) => each.id === receiving);
+  const transfer = stock.in_transit.find((each) => each.id === receiving);
   const sendBack = async (id: string) => {
     setFailure(null);
-    const answer = await client.post("/api/stock/transfers/{id}/send-back", { path: { id } });
+    const answer = await stockApi.sendBack(id);
     if (answer.ok) onChanged(answer.body);
     else setFailure({ code: answer.code, fields: answer.fields });
   };
@@ -161,10 +159,10 @@ export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: 
             </tr>
           </thead>
           <tbody>
-            {book.in_transit.map((each) => (
-              <Row
+            {stock.in_transit.map((each) => (
+              <TransferRow
                 key={each.id}
-                book={book}
+                stock={stock}
                 transfer={each}
                 onReceive={() => {
                   setReceiving(each.id);
@@ -178,7 +176,7 @@ export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: 
       {transfer !== undefined && (
         <Receiving
           key={transfer.id}
-          book={book}
+          stock={stock}
           transfer={transfer}
           onDone={(next) => {
             setReceiving(null);
@@ -186,11 +184,7 @@ export function InTransit({ book, onChanged }: { book: Stock; onChanged: (book: 
           }}
         />
       )}
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

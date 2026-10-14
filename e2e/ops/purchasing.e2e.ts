@@ -61,11 +61,16 @@ test("lists each order, opens one, and approves it, awaiting a second approver",
   await open(page, { "POST /api/purchase-orders/{id}/approve": json(FIRST_APPROVED) });
   const row = page.getByRole("row").filter({ hasText: "PO-0007" });
   await expect(row).toContainText("Kesh Supplies");
-  await expect(row).toContainText(copy.states.drafted ?? "");
+  await expect(row).toContainText(copy.states.drafted);
   await expect(row).toContainText("Rs. 2,160");
-  await page.getByRole("button", { name: copy.open("PO-0007") }).click();
+  const opener = page.getByRole("button", { name: copy.open("PO-0007") });
+  await expect(opener).toHaveAttribute("aria-expanded", "false");
+  await opener.click();
 
   const panel = page.getByRole("region", { name: "PO-0007 · Kesh Supplies" });
+  // The press says what it opened, and the keyboard goes there.
+  await expect(opener).toHaveAttribute("aria-expanded", "true");
+  await expect(panel.getByRole("heading", { level: 2 })).toBeFocused();
   await expect(panel.getByRole("row").filter({ hasText: "Solvent" })).toContainText("Rs. 45");
   const approved = posted(page, "/api/purchase-orders/po-1/approve");
   await panel.getByRole("button", { name: copy.order.approve }).click();
@@ -73,6 +78,10 @@ test("lists each order, opens one, and approves it, awaiting a second approver",
   await expect(panel).toContainText(copy.awaitingSecond);
   await expect(panel.getByRole("button", { name: copy.order.secondApprove })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
+
+  await opener.click();
+  await expect(panel).toHaveCount(0);
+  await expect(opener).toHaveAttribute("aria-expanded", "false");
 });
 
 test("does not offer the second approval to the manager who gave the first", async ({ page }) => {

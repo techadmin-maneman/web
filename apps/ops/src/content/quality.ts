@@ -1,7 +1,7 @@
 // Operations · Quality (docs/decisions/0187-recalls.md). No design draws it; every word here is ours. Only the Quality
 // page reads it, loaded when it opens.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const quality = {
   title: "Quality",
@@ -36,9 +36,7 @@ export const quality = {
   failuresNote: "Pieces fitted from labelled stock in the last year, and how many failed.",
   noFailures: "No pieces fitted from labelled stock yet.",
   failuresBy: "Group by",
-  ways: { code: "Stock code", lot: "Lot", supplier: "Supplier", technician: "Technician" } as Readonly<
-    Record<string, string>
-  >,
+  ways: { code: "Stock code", lot: "Lot", supplier: "Supplier", technician: "Technician" },
   failureColumns: ["", "Fitted", "Failed", "Rate"],
   /** "12.5%", or a dash */
   rate: (percent: number | null) => (percent === null ? "—" : `${String(percent)}%`),
@@ -50,15 +48,17 @@ export const quality = {
   suggestions: {
     write_off: "Write off",
     use_first: "Use first",
-  } as Readonly<Record<string, string>>,
+    /** A move with nowhere named to take it. */
+    move: "Move elsewhere",
+  },
   /** "Move to Imran Qureshi" */
   moveTo: (place: string) => `Move to ${place}`,
   errors: {
-    lot_id: "That lot is recalled already, or gone. Reload.",
-    not_found: "That recall is gone or closed. Reload.",
+    lot_id: changed("That lot is recalled already, or gone."),
+    not_found: changed("That recall is gone or closed."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 };

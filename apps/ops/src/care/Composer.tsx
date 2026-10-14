@@ -1,6 +1,7 @@
 // What Care write in a chat (docs/decisions/0130-replies-from-the-care-inbox.md): a reply sent from our number, a note
 // only staff see, or the chat closed with what it was about. Each answers with the chat as it then stands.
 
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import type { Failure } from "@maneman/web-kit/refusal";
@@ -10,8 +11,9 @@ import { careApi, type ChatThread, type CloseReason } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
 import { Refused } from "../settings/index.ts";
 import { QuickReplyPick } from "./QuickReplies.tsx";
-import styles from "../components/forms.module.css";
-import own from "./care.module.css";
+import form from "../components/forms.module.css";
+import styles from "./care.module.css";
+import { FormActions } from "../components/FormActions.tsx";
 
 const { compose } = copy;
 
@@ -38,11 +40,11 @@ function lastFailed(thread: ChatThread): boolean {
 /** The reply's box, which a note uses too. */
 function ReplyBox({ text, onText }: { text: string; onText: (text: string) => void }) {
   return (
-    <Field label={compose.label} className={own.reply}>
+    <Field label={compose.label} className={styles.reply}>
       {(control) => (
         <TextArea
           {...control}
-          className={own.box}
+          className={styles.box}
           rows={3}
           maxLength={4096}
           value={text}
@@ -62,7 +64,7 @@ function ReasonChoice({ reason, onReason }: { reason: CloseReason; onReason: (re
       {(control) => (
         <Select
           {...control}
-          className={styles.choiceBox}
+          className={form.choiceBox}
           value={reason}
           onChange={(event) => {
             if (isReason(event.target.value)) onReason(event.target.value);
@@ -88,28 +90,27 @@ export function Composer(props: {
   const { conversationId } = props;
   const [text, setText] = useState("");
   const [reason, setReason] = useState<CloseReason>("other");
-  const [busy, setBusy] = useState(false);
+  const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
-  const act = async (call: () => Promise<Answer<ChatThread>>, said: (thread: ChatThread) => string) => {
-    setBusy(true);
-    setFailure(null);
-    const answer = await call();
-    setBusy(false);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setText("");
-    props.onThread(answer.body, said(answer.body));
-  };
+  const act = (call: () => Promise<Answer<ChatThread>>, said: (thread: ChatThread) => string) =>
+    once(async () => {
+      setFailure(null);
+      const answer = await call();
+      if (!answer.ok) {
+        setFailure({ code: answer.code, fields: answer.fields });
+        return;
+      }
+      setText("");
+      props.onThread(answer.body, said(answer.body));
+    });
   const empty = text.trim() === "";
   return (
-    <div className={own.compose}>
-      <div className={styles.fields}>
+    <div className={styles.compose}>
+      <div className={form.fields}>
         <QuickReplyPick name={props.client.name} personId={props.client.personId} onPick={setText} />
         <ReplyBox text={text} onText={setText} />
       </div>
-      <div className={styles.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -126,7 +127,7 @@ export function Composer(props: {
         <Button
           variant="outline"
           size="small"
-          className={styles.quiet}
+          className={form.quiet}
           disabled={busy || empty}
           onClick={() =>
             void act(
@@ -137,13 +138,13 @@ export function Composer(props: {
         >
           {compose.note}
         </Button>
-      </div>
-      <div className={own.closing}>
+      </FormActions>
+      <div className={styles.closing}>
         <ReasonChoice reason={reason} onReason={setReason} />
         <Button
           variant="outline"
           size="small"
-          className={styles.quiet}
+          className={form.quiet}
           disabled={busy}
           onClick={() =>
             void act(

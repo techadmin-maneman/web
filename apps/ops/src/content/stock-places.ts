@@ -1,7 +1,7 @@
 // The Stock page's Places panel (docs/decisions/0155-the-stock-place-tree.md). No design draws it; every word here is
 // ours. Only the panel reads it, and it loads only for national managers.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const stockPlaces = {
   title: "Places",
@@ -34,11 +34,11 @@ export const stockPlaces = {
     zone: "Pick a zone from the list.",
     city: "Pick a city from the list.",
     active: "Empty it, and move what's under it, first.",
-    not_found: "That place is gone. Reload.",
+    not_found: changed("That place is gone."),
     invalid_request: "Check the details.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
     unknown: FAILED,
-  } as Readonly<Record<string, string>>,
+  },
 };

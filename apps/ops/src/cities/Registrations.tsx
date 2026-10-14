@@ -6,12 +6,13 @@ import { Table } from "@maneman/ui/Table";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
-import styles from "../components/forms.module.css";
-import type { CitiesBook } from "./book.ts";
+import form from "../components/forms.module.css";
+import type { Cities } from "./types.ts";
+import { RowHead } from "../components/RowHead.tsx";
+import { citiesApi } from "./cities-api.ts";
 
 const copy = cities.registrations;
 
@@ -23,13 +24,13 @@ interface Draft {
 
 const EMPTY: Draft = { stateCode: "", gstin: "", branch: "" };
 
-function Entry(props: { label: string; value: string; max: number; onChange: (text: string) => void }) {
+function RegistrationEntry(props: { label: string; value: string; max: number; onChange: (text: string) => void }) {
   return (
-    <Field label={props.label} className={styles.field}>
+    <Field label={props.label} className={form.field}>
       {(control) => (
         <TextInput
           {...control}
-          className={styles.areaBox}
+          className={form.areaBox}
           maxLength={props.max}
           value={props.value}
           onChange={(event) => {
@@ -49,7 +50,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
     books_branch_id: draft.branch.trim() === "" ? null : draft.branch.trim(),
   };
   const steps = useSteps(
-    async () => sentOf(await client.post("/api/gst-registrations", { body }), () => ({})),
+    async () => sentOf(await citiesApi.addGstRegistration(body), () => ({})),
     () => {
       setDraft(EMPTY);
       onSaved();
@@ -66,10 +67,10 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
       ready={/^[A-Za-z]{2}$/.test(body.state_code) && body.gstin.length === 15}
       errors={copy.errors}
       onCancel={null}
-      checking={<p className={styles.checkLine}>{copy.adding(body.state_code, body.gstin)}</p>}
+      checking={<p className={form.checkLine}>{copy.adding(body.state_code, body.gstin)}</p>}
     >
-      <div className={styles.fields}>
-        <Entry
+      <div className={form.fields}>
+        <RegistrationEntry
           label={copy.stateCode}
           value={draft.stateCode}
           max={2}
@@ -77,7 +78,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
             edit({ stateCode });
           }}
         />
-        <Entry
+        <RegistrationEntry
           label={copy.gstin}
           value={draft.gstin}
           max={15}
@@ -85,7 +86,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
             edit({ gstin });
           }}
         />
-        <Entry
+        <RegistrationEntry
           label={copy.branch}
           value={draft.branch}
           max={40}
@@ -98,7 +99,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
   );
 }
 
-export function Registrations({ book, onSaved }: { book: CitiesBook; onSaved: () => void }) {
+export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
   const access = useAccess();
   const [said, setSaid] = useState<string | null>(null);
   const saved = (words: string) => () => {
@@ -106,12 +107,12 @@ export function Registrations({ book, onSaved }: { book: CitiesBook; onSaved: ()
     onSaved();
   };
   return (
-    <Panel titleId="gst-registrations" title={copy.panel} count={book.registrations.length}>
-      <p className={styles.note}>{copy.note}</p>
-      {book.registrations.length === 0 ? (
-        <p className={styles.note}>{copy.none}</p>
+    <Panel titleId="gst-registrations" title={copy.panel} count={cities.registrations.length}>
+      <p className={form.note}>{copy.note}</p>
+      {cities.registrations.length === 0 ? (
+        <p className={form.note}>{copy.none}</p>
       ) : (
-        <Table className={styles.table}>
+        <Table className={form.table}>
           <thead>
             <tr>
               {copy.columns.map((column) => (
@@ -122,11 +123,9 @@ export function Registrations({ book, onSaved }: { book: CitiesBook; onSaved: ()
             </tr>
           </thead>
           <tbody>
-            {book.registrations.map((registration) => (
+            {cities.registrations.map((registration) => (
               <tr key={registration.state_code}>
-                <th scope="row" className={styles.rowHead}>
-                  {registration.state_code}
-                </th>
+                <RowHead>{registration.state_code}</RowHead>
                 <td>{registration.gstin}</td>
                 <td>{registration.books_branch_id ?? copy.noBranch}</td>
                 <td>
@@ -136,12 +135,7 @@ export function Registrations({ book, onSaved }: { book: CitiesBook; onSaved: ()
                       ariaLabel={copy.removeLabel(registration.state_code)}
                       question={copy.removeQuestion(registration.state_code)}
                       send={async () =>
-                        sentOf(
-                          await client.delete("/api/gst-registrations/{state_code}", {
-                            path: { state_code: registration.state_code },
-                          }),
-                          () => ({}),
-                        )
+                        sentOf(await citiesApi.removeGstRegistration(registration.state_code), () => ({}))
                       }
                       onDone={saved(copy.removed)}
                       errors={copy.errors}
@@ -154,7 +148,7 @@ export function Registrations({ book, onSaved }: { book: CitiesBook; onSaved: ()
         </Table>
       )}
       {said !== null && (
-        <InlineMessage tone="saved" className={styles.saved}>
+        <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}

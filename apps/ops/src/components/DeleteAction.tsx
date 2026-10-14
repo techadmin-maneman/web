@@ -1,11 +1,12 @@
 // A Delete button for something added by mistake: pressed, it asks once, and only the second press deletes. A refusal
 // is said in the caller's words, as why it stays and what to do instead (an in_use is the usual one).
 
-import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { deleting } from "../content.ts";
 import styles from "./delete-action.module.css";
+import { Refusal } from "./Refusal.tsx";
 
 /** What the button, its question and its confirmation say. */
 interface DeleteWords {
@@ -39,22 +40,21 @@ export function DeleteAction<Body>({
   readonly onCancel?: () => void;
 }) {
   const [asking, setAsking] = useState(onCancel !== undefined);
-  const [sending, setSending] = useState(false);
+  const [sending, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
 
-  const remove = async () => {
-    setSending(true);
-    setFailed(null);
-    const answer = await send();
-    setSending(false);
-    if (!answer.ok) {
-      // A row's own Delete keeps its panel, with the reason and its Cancel; the page's goes back to its button.
-      if (onCancel === undefined) setAsking(false);
-      setFailed(refusal(answer.code));
-      return;
-    }
-    await onDeleted(answer.body);
-  };
+  const remove = () =>
+    once(async () => {
+      setFailed(null);
+      const answer = await send();
+      if (!answer.ok) {
+        // A row's own Delete keeps its panel, with the reason and its Cancel; the page's goes back to its button.
+        if (onCancel === undefined) setAsking(false);
+        setFailed(refusal(answer.code));
+        return;
+      }
+      await onDeleted(answer.body);
+    });
 
   return (
     <>
@@ -101,11 +101,7 @@ export function DeleteAction<Body>({
           </Button>
         </div>
       )}
-      {failed !== null && (
-        <InlineMessage tone="error" className={styles.error}>
-          {failed}
-        </InlineMessage>
-      )}
+      {failed !== null && <Refusal className={styles.error} said={failed} />}
     </>
   );
 }

@@ -55,10 +55,6 @@ function Expired(props: { reward: ReferralReward | null }) {
   );
 }
 
-/**
- * Opens the app's sign-in with the number filled in. The number is added only as the link is followed, so no
- * analytics tag that reads the page's links ever sees it. A click asking for a new tab opens the plain sign-in.
- */
 /** A click as both Preact and the shared link hand it over. */
 interface Click {
   readonly button: number;
@@ -69,6 +65,10 @@ interface Click {
   preventDefault(): void;
 }
 
+/**
+ * Opens the app's sign-in with the number filled in. The number is added only as the link is followed, so no
+ * analytics tag that reads the page's links ever sees it. A click asking for a new tab opens the plain sign-in.
+ */
 function openApp(event: Click, appOrigin: string, mobile: string): void {
   const plainClick = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
   if (!plainClick) return;

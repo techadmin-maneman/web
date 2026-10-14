@@ -3,21 +3,22 @@
 // shows them. Only its second press publishes.
 
 import { whoWords } from "../lib/who.ts";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { api, type WordsPublish } from "../api.ts";
+import { type WordsPublish } from "../api.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { words as copy } from "../content/words.ts";
-import styles from "../components/forms.module.css";
+import form from "../components/forms.module.css";
+import { Refusal } from "../components/Refusal.tsx";
+import { wordsApi } from "./words-api.ts";
 
 const { publish } = copy;
 
 /** When the site's words were last published, and by whom. */
 export function LastPublished({ published }: { published: WordsPublish | null }) {
   return (
-    <p className={styles.note}>
+    <p className={form.note}>
       {published === null ? publish.never : publish.last(shortDate(indiaDate(published.at)), whoWords(published.by))}
     </p>
   );
@@ -32,7 +33,7 @@ export function PublishCheck(props: {
   const [step, setStep] = useState<"checking" | "sending" | Failure>("checking");
   const send = async () => {
     setStep("sending");
-    const answer = await api.publishWords();
+    const answer = await wordsApi.publishWords();
     if (!answer.ok) {
       setStep({ code: answer.code, fields: answer.fields });
       return;
@@ -50,11 +51,7 @@ export function PublishCheck(props: {
         onSend={() => void send()}
         onBack={props.onBack}
       />
-      {typeof step === "object" && (
-        <InlineMessage tone="error" className={styles.error}>
-          {errorText(copy.errors, step)}
-        </InlineMessage>
-      )}
+      {typeof step === "object" && <Refusal className={form.error} said={errorText(copy.errors, step)} />}
     </>
   );
 }

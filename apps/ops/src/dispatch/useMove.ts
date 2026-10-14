@@ -4,10 +4,11 @@
 // (docs/decisions/0069-dispatch-under-concurrency.md).
 
 import { useCallback, useEffect, useRef, type Dispatch, type RefObject, type SetStateAction } from "react";
-import { api, type Board, type Landing, type MoveReason } from "../api.ts";
+import { type Board, type Landing, type MoveReason } from "../api.ts";
 import { idOf, shownOf, type Job, type Target } from "./job.ts";
 import { askedNotice, doneNotice, moveRefusal, STALE, staleWords, type Notice } from "./landing.ts";
 import { useRooms } from "./rooms.ts";
+import { dispatchApi } from "./dispatch-api.ts";
 
 /**
  * A move in hand: the job, the window chosen for it, whether it is being sent, and whether ops chose, after the
@@ -68,9 +69,9 @@ async function sendMove(
   // A client's visit to another day, for a reason not theirs, is asked of them; anything else is moved.
   const moved = () =>
     job.kind === "block"
-      ? api.move(idOf(job), landing, shown, held.clearingCheckIn)
-      : api.assign(idOf(job), landing, shown);
-  const answer = sent.asking ? await api.propose(idOf(job), landing, shown) : await moved();
+      ? dispatchApi.move(idOf(job), landing, shown, held.clearingCheckIn)
+      : dispatchApi.assign(idOf(job), landing, shown);
+  const answer = sent.asking ? await dispatchApi.propose(idOf(job), landing, shown) : await moved();
 
   if (answer.ok) {
     on.setMove(null);

@@ -78,8 +78,8 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/field/`): `technician-pay`, `pay-statement` (the month's pay at those rates, and its CSV)
 - **Routes** (`src/routes/`): `ops/technician-pay`
-- **Screens:** `apps/ops/src/settings/TechnicianPay.tsx`, `apps/ops/src/settings/PayRates.tsx`,
-  `apps/ops/src/settings/PayForms.tsx`
+- **Screens:** `apps/ops/src/technician-pay/TechnicianPay.tsx`, `apps/ops/src/technician-pay/PayRates.tsx`,
+  `apps/ops/src/technician-pay/PayForms.tsx`
 - **Tests:** `test/worker/ops/technician-pay.test.ts`, `e2e/ops/technician-pay.e2e.ts`
 
 ### The technician's work in the field
@@ -134,7 +134,7 @@ this map, or when the map names something that no longer exists.
   `ruling-claims`, `after-a-ruling`
 - **Rules** (`src/policy/`): `no-show`
 - **Routes** (`src/routes/`): `client/disputes`, `ops/disputes`, `ops/no-shows`, `ops/no-show-rulings`
-- **Screens:** `apps/ops/src/no-shows/`
+- **Screens:** `apps/ops/src/payments/`
 - **Tests:** `test/worker/field/field-no-show.test.ts`, `test/worker/money/no-show-disputes.test.ts`,
   `e2e/app/no-show-dispute.e2e.ts`, `e2e/ops/no-shows.e2e.ts`
 
@@ -215,7 +215,7 @@ this map, or when the map names something that no longer exists.
 - **Data** (`src/config/`): `notices`, `my-data`
 - **Routes** (`src/routes/`): `client/data`, `ops/erasure`
 - **Jobs** (`src/scheduled/`): `retention`
-- **Screens:** `apps/app/src/profile/`, `apps/ops/src/deletions/`
+- **Screens:** `apps/app/src/profile/`, `apps/ops/src/deletion-requests/`
 - **Tests:** `test/worker/privacy/`, `e2e/ops/deletions.e2e.ts`
 
 ### Messages

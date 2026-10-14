@@ -4,18 +4,19 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { IconButton } from "@maneman/ui/IconButton";
-import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import type { Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
+import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
 interface Line {
   readonly code: string;
@@ -87,14 +88,15 @@ function LineBoxes(props: {
       </Field>
       <IconButton d={ICONS.cross} size={16} label={copy.draft.removeLine(named(line.code))} onClick={props.onRemove} />
       {questioned && (
-        <InlineMessage tone="error" className={form.error}>
-          {copy.draft.farAbove(
+        <Refusal
+          className={form.error}
+          said={copy.draft.farAbove(
             inCurrency(item.unit_price, currency),
             unit,
             Math.round(times),
             inCurrency(listed.unit_cost, "INR"),
           )}
-        </InlineMessage>
+        />
       )}
     </div>
   );
@@ -156,7 +158,7 @@ function LinesEditor(props: {
           />
         ))}
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="outline"
           size="small"
@@ -168,7 +170,7 @@ function LinesEditor(props: {
         >
           {copy.draft.addLine}
         </Button>
-      </div>
+      </FormActions>
     </>
   );
 }
@@ -211,8 +213,14 @@ function WhenAndNote(props: {
   );
 }
 
-export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book: Orders, said: string) => void }) {
-  const stocked = book.suppliers.filter((each) => each.items.length > 0);
+export function DraftOrder({
+  orders,
+  onDrafted,
+}: {
+  orders: Orders;
+  onDrafted: (orders: Orders, said: string) => void;
+}) {
+  const stocked = orders.suppliers.filter((each) => each.items.length > 0);
   const [supplierId, setSupplierId] = useState(stocked[0]?.id ?? "");
   const supplier = stocked.find((each) => each.id === supplierId);
   const firstItem = supplier?.items[0];
@@ -229,7 +237,7 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
     setSupplierId(id);
     setLines(item === undefined ? [] : [{ code: item.consumable_code, quantity: String(item.minimum_order) }]);
   };
-  const consumable = (code: string) => book.consumables.find((each) => each.code === code);
+  const consumable = (code: string) => orders.consumables.find((each) => each.code === code);
   const priceOf = (code: string) => supplier.items.find((each) => each.consumable_code === code)?.unit_price ?? 0;
   const total = lines.reduce((sum, line) => sum + priceOf(line.code) * Number(line.quantity), 0);
   const ready =
@@ -241,7 +249,7 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
       expected_on: expected === "" ? null : expected,
       note: note.trim() === "" ? null : note.trim(),
     };
-    const answer = await client.post("/api/purchase-orders", { body });
+    const answer = await purchasingApi.draftOrder(body);
     if (!answer.ok) {
       setFailure({ code: answer.code, fields: answer.fields });
       return;
@@ -258,16 +266,12 @@ export function DraftOrder({ book, onDrafted }: { book: Orders; onDrafted: (book
       <LinesEditor supplier={supplier} lines={lines} consumable={consumable} onLines={setLines} />
       <WhenAndNote expected={expected} note={note} onExpected={setExpected} onNote={setNote} />
       <p className={form.note}>{copy.draft.total(inCurrency(total, supplier.currency))}</p>
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void draft()}>
           {copy.draft.send}
         </Button>
-      </div>
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      </FormActions>
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

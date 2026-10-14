@@ -86,7 +86,6 @@ const pause = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
-/** `linkedMobile`: the number the site's booking confirmation opened the app with, for the login; or "". */
 /** Offline, the session says so; back online, Home is asked for again. */
 function useConnection(setSession: Dispatch<SetStateAction<Session>>, refreshSoon: () => Promise<void>) {
   useEffect(() => {

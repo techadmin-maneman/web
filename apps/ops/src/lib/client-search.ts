@@ -1,10 +1,6 @@
-// A client search, from any page, kept in the history entry rather than the
-// address: Back to the Clients page finds its results again, and a number never
-// reaches an address bar, a referrer or a log.
-//
-// The clients opened this session, the latest first, are kept for the Clients
-// page to offer again: ids and names alone, in sessionStorage, so they go when
-// the tab closes. Signing out clears them too, for whoever signs in next.
+// A client search, kept in the history entry rather than the address, so Back finds its results and a number never
+// reaches an address bar or a log. The clients opened this session, ids and names alone, are kept in sessionStorage for
+// the Clients page, and cleared on sign-out.
 
 import type { ClientsFound } from "../api.ts";
 

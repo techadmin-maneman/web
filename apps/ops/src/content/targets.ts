@@ -1,7 +1,7 @@
 // The Targets page's words (docs/decisions/0154-targets-and-reporting-access.md). No design draws it; every word here is
 // ours.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const targets = {
   title: "Targets",
@@ -31,7 +31,7 @@ export const targets = {
     city: "Pick a city from the list.",
     target: "That is more than this measure takes.",
     invalid_request: "Type a whole number.",
-    not_found: "Already taken off. Reload.",
+    not_found: changed("Already taken off."),
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,

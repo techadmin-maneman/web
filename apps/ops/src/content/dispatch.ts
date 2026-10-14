@@ -1,6 +1,6 @@
 // The dispatch board's words: the week, a move and its reason, a block's drawer.
 
-import { FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
+import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const dispatch = {
   title: "Dispatch",
@@ -17,21 +17,23 @@ export const dispatch = {
    * is where we have drawn it.
    */
   peak: 80,
+  /** What the brass says, for a screen reader. */
+  peakDay: "peak day",
   /** A block's second line, as the board writes it: "Sec 65 · service". */
   types: {
     consultation: "consult",
     first_fit: "first fit",
     service: "service",
     replacement: "replace",
-  } as Readonly<Record<string, string>>,
+  },
   /** The same four, named in full, as the drawer and the tray head a job. */
   typeNames: {
     consultation: "Consultation",
     first_fit: "First fit",
     service: "Service visit",
     replacement: "Replacement",
-  } as Readonly<Record<string, string>>,
-  windows: { morning: "morning", afternoon: "afternoon", evening: "evening" } as Readonly<Record<string, string>>,
+  },
+  windows: { morning: "morning", afternoon: "afternoon", evening: "evening" },
   /**
    * Each window's hours, which the drawer writes as the board does
    * ("12 to 4 pm"). They are src/config/scheduling.ts's WINDOW_TIMES, still the
@@ -42,7 +44,7 @@ export const dispatch = {
     morning: "9 am to 12 pm",
     afternoon: "12 to 4 pm",
     evening: "4 to 8 pm",
-  } as Readonly<Record<string, string>>,
+  },
   /**
    * The week and the city the board shows, and a way to find a row among many.
    * The board letters the city in the header ("Gurgaon") and draws no control;
@@ -64,10 +66,12 @@ export const dispatch = {
   board: {
     /** A block, for whoever is reading with a screen reader or moving by keyboard. */
     block: (job: string, date: string, window: string) => `${job}, ${date}, ${window}`,
+    /** What a block's outline says while the search finds it. */
+    found: (block: string) => `${block}, matches the search`,
     /** A block for a visit already done, which stays where it was worked and cannot be moved. */
     doneBlock: (job: string, date: string, window: string) => `${job}, ${date}, ${window}, done`,
     /** How far the technician has got, from their phone. A visit they have begun stays where it is. */
-    begun: { arrived: "Arrived", started: "Started", closed: "Closed" } as Readonly<Record<string, string>>,
+    begun: { arrived: "Arrived", started: "Started", closed: "Closed" },
     begunBlock: (job: string, date: string, window: string, begun: string) =>
       `${job}, ${date}, ${window}, ${begun.toLowerCase()}`,
     /** The board draws no board without technicians. */
@@ -98,7 +102,6 @@ export const dispatch = {
     // The board draws four waiting and no empty tray.
     empty: "Nothing unassigned.",
   },
-  /** The drawer a block opens. */
   /** Our words, all of them: letting a technician check in past the geofence, which no board draws. */
   letIn: {
     title: (technician: string) => `Allow ${technician} to check in`,
@@ -109,14 +112,15 @@ export const dispatch = {
     done: (technician: string) => `${technician} can check in now. Ask them to tap I have arrived again.`,
     errors: {
       invalid_request: "Give a reason.",
-      not_changeable: "Already checked in, or the visit is closed or cancelled. Reload.",
-      not_found: "No longer on the board. Reload.",
+      not_changeable: changed("Already checked in, or the visit is closed or cancelled."),
+      not_found: changed("No longer on the board."),
       not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
-    } as Readonly<Record<string, string>>,
+    },
   },
+  /** The drawer a block opens. */
   drawer: {
     /** The way past the geofence, for a visit today they have not checked in to. */
     letIn: "Allow check-in",
@@ -125,11 +129,9 @@ export const dispatch = {
     withdraw: "Withdraw",
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
-    /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
     // at_visit: a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
-    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" } as Readonly<
-      Record<string, string>
-    >,
+    /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
+    badges: { prepaid: "Prepaid", credit: "Credit", free: "Free", at_visit: "Pays once fitted" },
     // The board draws no Service row; it names a first fit's hair system, say.
     rows: {
       type: "Type",
@@ -153,13 +155,13 @@ export const dispatch = {
       cancelled: "Cancelled",
       terminated: "Not done",
       other: "Other",
-    } as Readonly<Record<string, string>>,
+    },
     /** The State row once the technician's phone says they have begun. */
     begun: {
       arrived: "Technician arrived",
       started: "Technician started",
       closed: "Closed by technician",
-    } as Readonly<Record<string, string>>,
+    },
     /** A visit the technician has started or closed has no move. */
     stays: "In progress. Can't be moved.",
     /** The warning before ops move a visit the technician has checked in at. */
@@ -292,7 +294,14 @@ export const dispatch = {
       call: (name: string, mobile: string, when: string) => `Call ${name} on ${mobile} to ask about ${when}.`,
     },
     withdrawn: (job: string) => `Withdrawn. ${job} stays as booked.`,
-    withdrawFailed: "Couldn't withdraw. Reload and try again.",
+    /** Why a move could not be taken back; the board is read again either way. */
+    withdrawErrors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "Already answered or taken back.",
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: "Couldn't withdraw. Try again.",
+    },
     /** The button that closes the call's task, beside the line that asks for the call. */
     told: "Told by phone",
     toldDone: (name: string) => `Recorded: ${name} told by phone.`,
@@ -343,8 +352,14 @@ export const dispatch = {
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,
     },
-    /** The call's record did not go through. */
-    toldFailed: FAILED,
+    /** Why the call's record did not go through. */
+    toldErrors: {
+      not_permitted: NOT_PERMITTED,
+      not_found: "Already marked as told.",
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
     /** A link asked for a visit this board does not hold. */
     notOnBoard: "That visit isn't on this board.",
   },

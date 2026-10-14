@@ -40,19 +40,19 @@ Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` se
 
 The three apps are laid out alike:
 
-| Where                             | What                                                                                                              |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `index.html`, `src/main.tsx`      | The page and its entry                                                                                            |
-| `src/App.tsx`                     | What shows, by session and by path                                                                                |
-| `src/route.ts`                    | Every page by path; the router itself is `@maneman/ui/router`                                                     |
-| `src/api.ts`, `src/api-schema.ts` | The calls, and the types `npm run openapi` writes                                                                 |
-| `src/content.ts`                  | Every word the app shows. A line the owner has not given yet is marked `PLACEHOLDER`                              |
-| `src/<screen>/`                   | A folder per screen or tab: its components and its CSS module                                                     |
-| `src/states/`, `src/styles/`      | Loading, failure and not-found; the app's own global styles                                                       |
-| `headers.ts`                      | The app's content security policy and permissions, which the build writes into `_headers`                         |
-| `vite.config.ts`                  | The build, one per environment into `dist/<env>`, and the dev server's `/api` proxy                               |
-| `wrangler.jsonc`                  | The Worker: static assets, every path that is not a file answered with the app, and its route in each environment |
-| `sw/`, with `pwa.ts`              | The service worker, and the app's identity on a home screen (client and technician apps)                          |
+| Where                             | What                                                                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `index.html`, `src/main.tsx`      | The page and its entry                                                                                              |
+| `src/App.tsx`                     | What shows, by session and by path                                                                                  |
+| `src/route.ts`                    | Every page by path; the router itself is `@maneman/ui/router`                                                       |
+| `src/api.ts`, `src/api-schema.ts` | The calls, and the types `npm run openapi` writes; a console section's own calls are its folder's `<folder>-api.ts` |
+| `src/content.ts`                  | Every word the app shows. A line the owner has not given yet is marked `PLACEHOLDER`                                |
+| `src/<screen>/`                   | A folder per screen or section, named as its path is: its components and its CSS modules (apps/ops/README.md)       |
+| `src/states/`, `src/styles/`      | Loading, failure and not-found; the app's own global styles                                                         |
+| `headers.ts`                      | The app's content security policy and permissions, which the build writes into `_headers`                           |
+| `vite.config.ts`                  | The build, one per environment into `dist/<env>`, and the dev server's `/api` proxy                                 |
+| `wrangler.jsonc`                  | The Worker: static assets, every path that is not a file answered with the app, and its route in each environment   |
+| `sw/`, with `pwa.ts`              | The service worker, and the app's identity on a home screen (client and technician apps)                            |
 
 A screen that chooses between several things says so in a function that returns early, not in nested ternaries; ESLint holds `apps/`, `packages/` and `site/src/` to it.
 
@@ -66,7 +66,7 @@ What a client does after booking: Home, Visits, Photos, Payments, Refer and Prof
 
 ## The ops console
 
-Ops' desk tool, drawn at 1440 px: dispatch, clients, no-shows, referrals, the waitlist, tasks, technicians, grievances, deletion requests, number changes and settings (`apps/ops/src/route.ts`). Every call is audited under the Access identity behind it (ADR 0031). Prices, rules and the service area are set in Settings, not in a release (ADR 0061), and a setting says what it will change before it is saved (ADR 0071). The console registers no service worker.
+Ops' desk tool, drawn at 1440 px: 32 sections under five departments, each a folder of its own, which `apps/ops/README.md` maps to its path and its calls (`apps/ops/src/route.ts`). Every call is audited under the Access identity behind it (ADR 0031). Prices are set in Finance › Prices, the rules in Admin › Settings and the service area in Growth › Areas, not in a release (ADR 0061), and a setting says what it will change before it is saved (ADR 0071). The console registers no service worker.
 
 ## The technician app
 

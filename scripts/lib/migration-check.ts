@@ -20,6 +20,7 @@ export interface MigrationCheckOptions {
 const FILE_NAME = /^(\d{4})_[a-z0-9_]+\.sql$/; // 0001_create_leads.sql
 const CONTRACT_ANNOTATION = /^--\s*contract:\s*(docs\/decisions\/\d{4}-[a-z0-9-]+\.md)\s*$/m;
 
+// Horizontal space only: \s would cross the newline and read the next line as the reason.
 /**
  * A migration that reached no environment can be withdrawn, and only withdrawn:
  * the deploy refused it and rolled it back, so there is nothing for a later
@@ -29,7 +30,6 @@ const CONTRACT_ANNOTATION = /^--\s*contract:\s*(docs\/decisions\/\d{4}-[a-z0-9-]
  *
  *   -- withdrawn: deploy-staging run 35816407888 refused it, and it has been applied nowhere.
  */
-// Horizontal space only: \s would cross the newline and read the next line as the reason.
 const WITHDRAWN_ANNOTATION = /^--[ \t]*withdrawn:[ \t]*\S.*$/m;
 
 /** Comments, blank lines and the no-op a migration file needs to hold a statement. */

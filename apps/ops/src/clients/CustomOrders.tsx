@@ -12,17 +12,20 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
-import { client } from "../api.ts";
 import form from "../components/forms.module.css";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { RaiseCustomOrder, type CustomOrdersBook } from "./RaiseCustomOrder.tsx";
+import { RaiseCustomOrder, type CustomOrders } from "./RaiseCustomOrder.tsx";
+import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { clientsApi } from "./clients-api.ts";
 
-type Order = CustomOrdersBook["orders"][number];
+type Order = CustomOrders["orders"][number];
 /** What a step answered: the client's whole list, or the refusal. */
 type Answer =
-  | { readonly ok: true; readonly body: CustomOrdersBook }
+  | { readonly ok: true; readonly body: CustomOrders }
   | { readonly ok: false; readonly code: string; readonly fields: readonly string[] };
 
 const REFUND_REASONS = ["not_ordered", "late", "failed_check"] as const;
@@ -36,7 +39,7 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
   if (order.status !== "paid" && order.status !== "ordered") return null;
   if (!access.mayCall("POST /api/custom-orders/{id}/refund")) return null;
   return (
-    <div className={form.actions}>
+    <FormActions>
       <Field label={copy.refundWhy} className={form.field}>
         {(control) => (
           <Select
@@ -48,7 +51,7 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
           >
             {REFUND_REASONS.map((each) => (
               <option key={each} value={each}>
-                {copy.reasons[each] ?? each}
+                {copy.reasons[each]}
               </option>
             ))}
           </Select>
@@ -58,31 +61,28 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
         variant="destructive"
         size="small"
         onClick={() =>
-          void client
-            .post("/api/custom-orders/{id}/refund", { path: { id: order.id }, body: { reason } })
-            .then((answer) => {
-              onAnswer(answer, copy.refunded);
-            })
+          void clientsApi.refundCustomOrder(order.id, reason).then((answer) => {
+            onAnswer(answer, copy.refunded);
+          })
         }
       >
         {copy.refund}
       </Button>
-    </div>
+    </FormActions>
   );
 }
 
 function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
   const access = useAccess();
   if (order.status !== "awaiting_payment") return <Refund order={order} onAnswer={onAnswer} />;
-  const path = { path: { id: order.id } };
   return (
-    <div className={form.actions}>
+    <FormActions>
       {order.link_sent_at === null && access.mayCall("POST /api/custom-orders/{id}/send-link") && (
         <Button
           variant="outline"
           size="small"
           onClick={() =>
-            void client.post("/api/custom-orders/{id}/send-link", path).then((answer) => {
+            void clientsApi.sendCustomOrderLink(order.id).then((answer) => {
               onAnswer(answer, copy.sent);
             })
           }
@@ -95,7 +95,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
           variant="outline"
           size="small"
           onClick={() =>
-            void client.post("/api/custom-orders/{id}/cancel", path).then((answer) => {
+            void clientsApi.cancelCustomOrder(order.id).then((answer) => {
               onAnswer(answer, copy.cancelled);
             })
           }
@@ -103,12 +103,18 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
           {copy.cancel}
         </Button>
       )}
-    </div>
+    </FormActions>
   );
 }
 
-function OrdersTable({ book, onAnswer }: { book: CustomOrdersBook; onAnswer: (answer: Answer, said: string) => void }) {
-  if (book.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
+function OrdersTable({
+  customOrders,
+  onAnswer,
+}: {
+  customOrders: CustomOrders;
+  onAnswer: (answer: Answer, said: string) => void;
+}) {
+  if (customOrders.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
     <Table className={form.table}>
       <thead>
@@ -121,15 +127,13 @@ function OrdersTable({ book, onAnswer }: { book: CustomOrdersBook; onAnswer: (an
         </tr>
       </thead>
       <tbody>
-        {book.orders.map((order) => (
+        {customOrders.orders.map((order) => (
           <tr key={order.id}>
-            <th scope="row" className={form.rowHead}>
-              {copy.number(order.number)}
-            </th>
+            <RowHead>{copy.number(order.number)}</RowHead>
             <td>{copy.spec(order)}</td>
             <td className={form.figure}>{rupees(order.amount)}</td>
             <td>
-              {copy.statuses[order.status] ?? order.status}
+              {copy.statuses[order.status]}
               {order.status === "awaiting_payment" && order.short_url !== null && (
                 <>
                   {" · "}
@@ -150,16 +154,16 @@ function OrdersTable({ book, onAnswer }: { book: CustomOrdersBook; onAnswer: (an
 }
 
 export function CustomOrders({ clientId }: { clientId: string }) {
-  const load = useCallback(() => client.get("/api/clients/{id}/custom-orders", { path: { id: clientId } }), [clientId]);
+  const load = useCallback(() => clientsApi.customOrders(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
-  const [book, setBook] = useState<CustomOrdersBook | null>(null);
+  const [customOrders, setCustomOrders] = useState<CustomOrders | null>(null);
   const [raising, setRaising] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const access = useAccess();
-  const current = book ?? (loaded.state === "loaded" ? loaded.value : null);
-  const changed = (next: CustomOrdersBook, words: string) => {
-    setBook(next);
+  const current = customOrders ?? (loaded.state === "loaded" ? loaded.value : null);
+  const changed = (next: CustomOrders, words: string) => {
+    setCustomOrders(next);
     setSaid(words);
     setFailure(null);
     setRaising(false);
@@ -172,11 +176,11 @@ export function CustomOrders({ clientId }: { clientId: string }) {
     <Panel titleId="custom-orders" title={copy.title}>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
-      {current !== null && <OrdersTable book={current} onAnswer={answered} />}
+      {current !== null && <OrdersTable customOrders={current} onAnswer={answered} />}
       {current !== null && raising && (
         <RaiseCustomOrder
           clientId={clientId}
-          book={current}
+          customOrders={current}
           onRaised={changed}
           onClose={() => {
             setRaising(false);
@@ -184,7 +188,7 @@ export function CustomOrders({ clientId }: { clientId: string }) {
         />
       )}
       {current !== null && !raising && access.mayCall("POST /api/clients/{id}/custom-orders") && (
-        <div className={form.actions}>
+        <FormActions>
           <Button
             variant="outline"
             size="small"
@@ -194,18 +198,14 @@ export function CustomOrders({ clientId }: { clientId: string }) {
           >
             {copy.raise.open}
           </Button>
-        </div>
+        </FormActions>
       )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
-      {failure !== null && (
-        <InlineMessage tone="error" className={form.error}>
-          {errorText(copy.errors, failure)}
-        </InlineMessage>
-      )}
+      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );
 }

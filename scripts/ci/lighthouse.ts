@@ -7,8 +7,9 @@
 //   npm run build:site -- --env local && npm run build:app -- --env local && npm run build:tech -- --env local
 //   node scripts/ci/lighthouse.ts
 //
-// Reports go to lighthouse/ (git-ignored). Every score and metric is printed;
-// the run fails on any the page's budget names.
+// Each page is audited three times and judged by the median of each score and metric, since one run on a shared
+// machine varies by half a second. Reports go to lighthouse/ (git-ignored), the median run's; every figure is
+// printed, and the run fails on any the page's budget names.
 //
 // Lighthouse measures a page load, so it cannot measure INP, which needs real
 // interactions; Total Blocking Time is its stand-in, held to the same 200 ms.
@@ -67,6 +68,12 @@ const PAGES: readonly { name: string; url: string; budget: Budget }[] = [
   { name: "app", url: `${APP}/`, budget: APP_BUDGET },
   { name: "tech", url: `${TECH}/`, budget: APP_BUDGET },
 ];
+
+/** How many times each page is audited; the median of them is what is judged. */
+const RUNS = 3;
+
+const median = (values: readonly number[]): number =>
+  [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)] ?? Infinity;
 
 const answers = (url: string) =>
   fetch(url).then(
@@ -128,20 +135,28 @@ try {
   await waitForLocalApi(`http://127.0.0.1:${String(API_PORT)}/api/health`);
   mkdirSync("lighthouse", { recursive: true });
   for (const page of PAGES) {
-    const result = await lighthouse(page.url, {
-      port: DEBUG_PORT,
-      output: "html",
-      logLevel: "error",
-      onlyCategories: [...CATEGORIES],
-      skipAudits: ["is-crawlable"],
-    });
-    if (result === undefined) throw new Error(`Lighthouse returned nothing for ${page.url}`);
-    const { lhr, report } = result;
-    writeFileSync(`lighthouse/${page.name}.html`, Array.isArray(report) ? report.join("") : report);
+    const runs: NonNullable<Awaited<ReturnType<typeof lighthouse>>>[] = [];
+    for (let run = 0; run < RUNS; run += 1) {
+      const result = await lighthouse(page.url, {
+        port: DEBUG_PORT,
+        output: "html",
+        logLevel: "error",
+        onlyCategories: [...CATEGORIES],
+        skipAudits: ["is-crawlable"],
+      });
+      if (result === undefined) throw new Error(`Lighthouse returned nothing for ${page.url}`);
+      runs.push(result);
+    }
+    const lcpOf = (run: (typeof runs)[number]) => run.lhr.audits["largest-contentful-paint"]?.numericValue ?? Infinity;
+    // The report kept is the run whose largest paint is the median.
+    const kept = [...runs].sort((a, b) => lcpOf(a) - lcpOf(b))[Math.floor(RUNS / 2)];
+    if (kept !== undefined) {
+      writeFileSync(`lighthouse/${page.name}.html`, Array.isArray(kept.report) ? kept.report.join("") : kept.report);
+    }
 
     const line: string[] = [];
     for (const category of CATEGORIES) {
-      const score = lhr.categories[category]?.score ?? 0;
+      const score = median(runs.map((run) => run.lhr.categories[category]?.score ?? 0));
       const minimum = page.budget.scores[category];
       line.push(`${category} ${String(Math.round(score * 100))}`);
       if (minimum !== undefined && score < minimum) {
@@ -149,7 +164,7 @@ try {
       }
     }
     for (const audit of METRICS) {
-      const value = lhr.audits[audit]?.numericValue ?? Infinity;
+      const value = median(runs.map((run) => run.lhr.audits[audit]?.numericValue ?? Infinity));
       const maximum = page.budget.metrics[audit];
       line.push(`${audit} ${value.toFixed(audit === "cumulative-layout-shift" ? 3 : 0)}`);
       if (maximum !== undefined && value >= maximum) {

@@ -9,16 +9,18 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client } from "../api.ts";
-import { Shell } from "../components/Shell.tsx";
 import form from "../components/forms.module.css";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PlanLineSteps, type Answer, type Line, type Plan } from "./PlanLine.tsx";
 import { Planning } from "./Planning.tsx";
+import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { supplyPlanApi } from "./supply-plan-api.ts";
 
-const loadPlan = () => client.get("/api/supply-plan");
+const loadPlan = () => supplyPlanApi.plan();
 
 function Lines({
   lines,
@@ -47,10 +49,10 @@ function Lines({
         <tbody>
           {shown.map((line) => (
             <tr key={line.id}>
-              <th scope="row" className={form.rowHead}>
+              <RowHead>
                 {line.name}
                 <p className={form.note}>{copy.why(line)}</p>
-              </th>
+              </RowHead>
               {kind === "transfer" ? (
                 <>
                   <td>{line.from ?? ""}</td>
@@ -87,7 +89,7 @@ export function SupplyPlanScreen() {
     } else setFailure({ code: answer.code, fields: answer.fields });
   };
   return (
-    <Shell section="/supply-plan" title={copy.title}>
+    <>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
@@ -100,29 +102,25 @@ export function SupplyPlanScreen() {
               {said}
             </InlineMessage>
           )}
-          {failure !== null && (
-            <InlineMessage tone="error" className={form.error}>
-              {errorText(copy.errors, failure)}
-            </InlineMessage>
-          )}
+          {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
           {access.mayCall("POST /api/supply-plan/draft") && (
-            <div className={form.actions}>
+            <FormActions>
               <Button
                 variant="outline"
                 size="small"
                 onClick={() =>
-                  void client.post("/api/supply-plan/draft").then((answer) => {
+                  void supplyPlanApi.draftPlan().then((answer) => {
                     answered(answer, copy.drafted);
                   })
                 }
               >
                 {copy.draft}
               </Button>
-            </div>
+            </FormActions>
           )}
           <Planning />
         </div>
       )}
-    </Shell>
+    </>
   );
 }

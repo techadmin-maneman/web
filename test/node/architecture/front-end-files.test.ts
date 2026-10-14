@@ -1,5 +1,5 @@
 // How the front ends' files read to someone opening one for the first time: every import at the top, before any code,
-// and a hook's file named as the hook is, `useDays.ts` and never `use-days.ts`.
+// a hook's file named as the hook is, `useDays.ts` and never `use-days.ts`, and the console's headers short.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -44,5 +44,15 @@ describe("the front ends' files", () => {
 
   it("name a hook's file as the hook is named", () => {
     expect(files.filter((file) => /\/use-[a-z-]+\.tsx?$/.test(file))).toEqual([]);
+  });
+
+  // A header says what the file is for and why, with its decision's link; the rest belongs beside the code it explains.
+  it("open, in the console, with a header of four lines at most", () => {
+    const header = (file: string) => {
+      const lines = readFileSync(file, "utf8").split("\n");
+      const end = lines.findIndex((line) => !line.startsWith("//"));
+      return end === -1 ? lines.length : end;
+    };
+    expect(files.filter((file) => file.startsWith("apps/ops/src/") && header(file) > 4)).toEqual([]);
   });
 });
