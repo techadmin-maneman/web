@@ -4,7 +4,7 @@
 
 import type { PincodeAnswer } from "../../lib/api.ts";
 import { stepOf, type Step, type StepEntry } from "./step.ts";
-import type { PersonFields } from "./useTurnstileForm.ts";
+import type { PersonFields } from "./person.ts";
 
 /** The tab's note of the name and number, which ends with the tab and goes once the visit is booked. */
 const PERSON = "mm_book_person";

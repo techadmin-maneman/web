@@ -1,4 +1,4 @@
-// What the booking page (./Invite.tsx) shows before anyone types: the invite and what a referral earns.
+// What the booking pages (./Landing.tsx, ./Book.tsx) show before anyone types: the invite and what a referral earns.
 // Each comes from the page where the mm-site Worker wrote it (./page.ts), otherwise from the API.
 
 import { useEffect, useState } from "preact/hooks";

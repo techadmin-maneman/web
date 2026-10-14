@@ -6,14 +6,9 @@ import { referral } from "../../content/referral.ts";
 import type { Answer, Code } from "../../lib/api.ts";
 import { useSubmission } from "../useSubmission.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
+import type { PersonFields } from "./person.ts";
 
-/** What both forms hold: the name, the number and the agreement. */
-export interface PersonFields {
-  name: string;
-  /** As the field shows it, "98100 00000"; mobileToSend reads it. */
-  mobile: string;
-  consent: boolean;
-}
+export type { PersonFields };
 
 /** The person's fields, by the names the API gives them when it refuses one. */
 export const PERSON_FIELDS = ["name", "mobile", "consent"] as const;

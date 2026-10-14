@@ -28,7 +28,7 @@ import { useNumberCode } from "../useNumberCode.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
 import { BOOK_STEPS } from "./AboutYou.tsx";
 import { DayStrip, DayWindows, DiscountCode, PlanChoice } from "./ConsultationFields.tsx";
-import type { Booking } from "./Done.tsx";
+import type { Booking } from "./outcomes.ts";
 import {
   ExtentFieldset,
   ForPincode,
@@ -45,9 +45,9 @@ import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
 import { BOOKING_DAYS } from "@rules/config/scheduling.ts";
+import type { Plan } from "./flow.ts";
 
 type BookingWindow = ReferralConsultation["window"];
-export type Plan = "consultation" | "one_visit";
 
 interface ConsultationProps extends FormProps {
   /** What the form books, which the page's heading follows. */

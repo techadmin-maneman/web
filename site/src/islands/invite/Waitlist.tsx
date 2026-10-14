@@ -6,7 +6,7 @@ import { track } from "../../lib/analytics.ts";
 import { joinPublicWaitlist, joinWaitlist } from "../../lib/api.ts";
 import { forgetInvite, rememberedInvite } from "../../lib/remembered-invite.ts";
 import { fill } from "../../lib/text.ts";
-import type { Listing } from "./Done.tsx";
+import type { Listing } from "./outcomes.ts";
 import {
   AgreementBox,
   ConsentBox,

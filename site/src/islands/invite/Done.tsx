@@ -11,37 +11,18 @@ import { rupees } from "@maneman/web-kit/money";
 import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
 import { windowSpan } from "@rules/config/scheduling.ts";
 import { referral } from "../../content/referral.ts";
-import type { Consultation, ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
+import type { Consultation, ReferralReward } from "../../lib/api.ts";
 import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
 import { longDay } from "../../lib/dates.ts";
 import { fill } from "../../lib/text.ts";
 import { Icon } from "@maneman/ui/Icon";
 import styles from "./Invite.module.css";
+import type { Booking, Listing } from "./outcomes.ts";
 
 type HeadingRef = { current: HTMLHeadingElement | null };
 
-/**
- * A booking's answer, with the number the visitor typed and the discount code they sent: the answer carries neither.
- * Only the site's own page sends a code, and only its answer says whether it stands.
- */
-export interface Booking {
-  readonly result: ReferralConsultation | Consultation;
-  readonly mobile: string;
-  /** As it was sent; null for none. */
-  readonly code: string | null;
-}
-
 type StandingCode = NonNullable<Consultation["discount_code"]>;
-
-/**
- * The waitlist's answer, the landing's or /book's: /book's carries the invite this browser remembered, if any. With it,
- * the pincode the person gave and whether they asked to be told when we come, which alone earns a promise of a message.
- */
-export type Listing = Pick<ReferralWaitlist, "area" | "credits" | "invite"> & {
-  readonly pincode: string;
-  readonly alerted: boolean;
-};
 
 /** C4's "Code expired" frame, without "Book anyway": it shows once the booking has been made. */
 function Expired(props: { reward: ReferralReward | null }) {
