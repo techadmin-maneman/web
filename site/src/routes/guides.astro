@@ -5,8 +5,13 @@ import { textLinkLook } from "@maneman/ui/TextLink";
 import { guides, guidesPage } from "../content/guides.ts";
 import TextPage from "../layouts/TextPage.astro";
 import { isShown } from "../lib/build.ts";
+import { breadcrumbs } from "../lib/structured-data.ts";
 
 const shown = guides.filter(isShown);
+const trail = [
+  { name: guidesPage.home, path: "/" },
+  { name: guidesPage.title, path: "/guides" },
+];
 ---
 
 <TextPage
@@ -15,6 +20,7 @@ const shown = guides.filter(isShown);
   title={guidesPage.title}
   lead={guidesPage.lead}
   publish
+  structuredData={[breadcrumbs(trail)]}
 >
   <ul class="list">
     {shown.map((guide) => (

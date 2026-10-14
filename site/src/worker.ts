@@ -17,7 +17,8 @@
 // server that can.
 //
 // The home page and /areas name the cities ops serve (GET /api/served-cities), kept a minute as the reward is, so a
-// launch reaches the site without a rebuild; each sentence that names them is built naming none.
+// launch reaches the site without a rebuild; each sentence that names them is built naming none. A city's page,
+// /areas/<city>, lists the areas served there, which it is built without.
 //
 // Every answer of mm-api's that cannot be used is one line in the Worker's log, and a failure is remembered for ten
 // seconds, so a down mm-api is not asked again by every view.
@@ -43,6 +44,9 @@ const FILM = /^\/_astro\/[^/]+\.mp4$/;
 
 /** The pages that name the cities we come to. */
 const CITY_PAGES = new Set(["/", "/areas"]);
+
+/** A city's own page. */
+const CITY_PAGE = /^\/areas\/[a-z0-9-]+$/;
 
 /** The page besides the landing that says what a referral earns. */
 const REWARD_PAGE = "/book";
@@ -215,6 +219,38 @@ class CitiesNamed {
   }
 }
 
+/** Text written into a page as HTML, which no area's name can break out of. */
+const escaped = (text: string): string =>
+  text.replace(/[&<>"']/g, (character) => `&#${String(character.charCodeAt(0))};`);
+
+/**
+ * A city's areas, on its page: the list its data-areas-of names filled, and its section, built hidden, shown. A city
+ * with none served keeps both as built.
+ */
+class AreasListed {
+  private readonly areas: Readonly<Record<string, readonly string[]>>;
+
+  constructor(areas: Readonly<Record<string, readonly string[]>>) {
+    this.areas = areas;
+  }
+
+  private of(city: string | null): readonly string[] {
+    return city === null ? [] : (this.areas[city] ?? []);
+  }
+
+  element(element: Element): void {
+    const section = element.getAttribute("data-city-areas");
+    if (section !== null) {
+      if (this.of(section).length > 0) element.removeAttribute("hidden");
+      return;
+    }
+    const areas = this.of(element.getAttribute("data-areas-of"));
+    if (areas.length > 0) {
+      element.setInnerContent(areas.map((area) => `<li>${escaped(area)}</li>`).join(""), { html: true });
+    }
+  }
+}
+
 export interface SiteWorkerOptions {
   /** What the reward and the cities are kept a minute on: a test gives it its own. */
   readonly clock?: () => number;
@@ -231,7 +267,8 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
       if (NO_CODE.test(url.pathname)) return Response.redirect(`${url.origin}/book${url.search}`, 301);
 
       const code = INVITE_PATH.exec(url.pathname)?.[1]?.toUpperCase();
-      const namesCities = CITY_PAGES.has(url.pathname);
+      const cityPage = CITY_PAGE.test(url.pathname);
+      const namesCities = CITY_PAGES.has(url.pathname) || cityPage;
       const saysReward = code !== undefined || url.pathname === REWARD_PAGE;
       if (!saysReward && !namesCities) return env.ASSETS.fetch(request);
 
@@ -247,6 +284,9 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
       ]);
       const rewriter = new HTMLRewriter();
       if (cities !== null && cities.cities.length > 0) rewriter.on("[data-cities]", new CitiesNamed(cities.cities));
+      if (cityPage && cities?.areas !== undefined) {
+        rewriter.on("[data-city-areas], [data-areas-of]", new AreasListed(cities.areas));
+      }
       if (reward !== null) rewriter.on("body", new Written("data-reward", JSON.stringify(reward)));
       if (code !== undefined) {
         rewriter.on("head > title", new Retitled(invitePageTitle(invite)));

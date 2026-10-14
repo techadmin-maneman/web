@@ -3140,7 +3140,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guidesPage",
-    "text": "Hair system guides · Mane Man"
+    "text": "Hair system guides — Mane Man"
   },
   {
     "key": "site:guides/guidesPage.description",
@@ -3162,6 +3162,34 @@
     "group": "Guides",
     "where": "guidesPage",
     "text": "Book a free consultation"
+  },
+  {
+    "key": "site:guides/guidesPage.related",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "More guides"
+  },
+  {
+    "key": "site:guides/guidesPage.tryOn",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Try a new look"
+  },
+  {
+    "key": "site:guides/guidesPage.questions",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Common questions"
+  },
+  {
+    "key": "site:guides/guidesPage.home",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Home"
   },
   {
     "key": "site:guides/guides.0.title",
@@ -3602,7 +3630,7 @@
     "surface": "site",
     "group": "Areas",
     "where": "areasPage",
-    "text": "Where we come · Mane Man"
+    "text": "Where we come — Mane Man"
   },
   {
     "key": "site:guides/areasPage.description",
@@ -3645,6 +3673,69 @@
     "group": "Areas",
     "where": "areasPage",
     "text": "Check your pincode"
+  },
+  {
+    "key": "site:guides/areasPage.cityPages",
+    "surface": "site",
+    "group": "Areas",
+    "where": "areasPage",
+    "text": "City by city"
+  },
+  {
+    "key": "site:guides/cityPage.pageTitle",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Hair systems in {city} — Mane Man"
+  },
+  {
+    "key": "site:guides/cityPage.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Hair systems in {city}"
+  },
+  {
+    "key": "site:guides/cityPage.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Hair systems in 100% real human hair, fitted at your home in {city}. The consultation is free."
+  },
+  {
+    "key": "site:guides/cityPage.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Your technician comes to your home in {city}, matches a hair system to your own hair and fits it there."
+  },
+  {
+    "key": "site:guides/cityPage.areas",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Where we come in {city}"
+  },
+  {
+    "key": "site:guides/cityPage.streets",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Within the city, we serve by pincode. Check yours to see the days we can come."
+  },
+  {
+    "key": "site:guides/cityPage.check",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Check your pincode"
+  },
+  {
+    "key": "site:guides/cityPage.others",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Other cities"
   },
   {
     "key": "site:referral/rewardWords.serviceVisit",

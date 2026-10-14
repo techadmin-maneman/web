@@ -15,9 +15,9 @@ import TryOnTeaser from "../components/home/TryOnTeaser.astro";
 import WhatItIs from "../components/home/WhatItIs.astro";
 import { pageDescriptions, pageTitles } from "../content/site.ts";
 import Site from "../layouts/Site.astro";
-import { faqPage, localBusiness } from "../lib/structured-data.ts";
+import { faqPage, localBusiness, organization, webSite } from "../lib/structured-data.ts";
 
-const structuredData = [localBusiness(), faqPage()];
+const structuredData = [organization(), webSite(), localBusiness(), faqPage()];
 ---
 
 <Site title={pageTitles.home} description={pageDescriptions.home} structuredData={structuredData} home>

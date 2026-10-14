@@ -31,6 +31,8 @@ interface Props {
   noindex?: boolean;
   /** Schema.org objects, written as JSON-LD. */
   structuredData?: readonly object[];
+  /** What a shared link says the page is: the site, or an article, as a guide is. */
+  ogType?: "website" | "article";
   /**
    * The card a shared link shows, at OG_IMAGE's size: the site's own unless a page has another. Its type and its
    * HTTPS address go beside it, which a chat's crawler may look for before it fetches the card.
@@ -44,6 +46,7 @@ const {
   home = false,
   noindex = false,
   structuredData = [],
+  ogType = "website",
   image = { path: "/og.png", type: "image/png" },
 } = Astro.props;
 const path = pagePath(Astro.url.pathname);
@@ -63,7 +66,7 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     {description !== undefined && <meta name="description" content={description} />}
     {!noindex && <link rel="canonical" href={canonical} />}
     <meta name="theme-color" content={token("--ink")} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={business.name} />
     <meta property="og:locale" content="en_IN" />
     <meta property="og:title" content={title} />
@@ -74,7 +77,7 @@ const ogImage = new URL(image.path, SITE_ORIGIN).href;
     <meta property="og:image:type" content={image.type} />
     <meta property="og:image:width" content={String(OG_IMAGE.width)} />
     <meta property="og:image:height" content={String(OG_IMAGE.height)} />
-    <meta property="og:image:alt" content={business.name} />
+    <meta property="og:image:alt" content={title} />
     <meta name="twitter:card" content="summary_large_image" />
     {FAVICON_SIZES.map((size) => (
       <link

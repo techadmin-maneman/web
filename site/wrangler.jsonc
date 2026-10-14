@@ -22,7 +22,7 @@
     "directory": "./dist/local",
     "not_found_handling": "404-page",
     "binding": "ASSETS",
-    "run_worker_first": ["/", "/areas", "/book", "/r", "/r/*", "/_astro/*.mp4"]
+    "run_worker_first": ["/", "/areas", "/areas/*", "/book", "/r", "/r/*", "/_astro/*.mp4"]
   },
   "services": [{ "binding": "API", "service": "mm-api" }],
   "env": {
@@ -38,7 +38,7 @@
         "directory": "./dist/staging",
         "not_found_handling": "404-page",
         "binding": "ASSETS",
-        "run_worker_first": ["/", "/areas", "/book", "/r", "/r/*", "/_astro/*.mp4"]
+        "run_worker_first": ["/", "/areas", "/areas/*", "/book", "/r", "/r/*", "/_astro/*.mp4"]
       },
       "services": [{ "binding": "API", "service": "mm-api-staging" }]
     },
@@ -54,7 +54,7 @@
         "directory": "./dist/production",
         "not_found_handling": "404-page",
         "binding": "ASSETS",
-        "run_worker_first": ["/", "/areas", "/book", "/r", "/r/*", "/_astro/*.mp4"]
+        "run_worker_first": ["/", "/areas", "/areas/*", "/book", "/r", "/r/*", "/_astro/*.mp4"]
       },
       "services": [{ "binding": "API", "service": "mm-api-production" }]
     }

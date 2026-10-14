@@ -14,12 +14,15 @@ interface Props {
   lead?: string;
   /** Its wording is approved; until then, outside production, the page is tagged. */
   publish: boolean;
+  /** Schema.org objects for the page, as the site layout writes them. */
+  structuredData?: readonly object[];
+  ogType?: "website" | "article";
 }
 
-const { pageTitle, description, title, lead, publish } = Astro.props;
+const { pageTitle, description, title, lead, publish, structuredData = [], ogType = "website" } = Astro.props;
 ---
 
-<Site title={pageTitle} description={description}>
+<Site title={pageTitle} description={description} structuredData={structuredData} ogType={ogType}>
   <article class="page">
     {SHOW_PLACEHOLDER_TAGS && !publish && <div class={capsLook("label tag")}>{placeholderTag}</div>}
     <h1 class="section-title">{title}</h1>

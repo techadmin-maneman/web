@@ -21,7 +21,6 @@ export const ROUTE_SQL: Readonly<Record<string, number>> = {
   "src/routes/ops/supply-plan.ts": 1,
   "src/routes/ops/targets.ts": 1,
   "src/routes/ops/waitlist.ts": 1,
-  "src/routes/public/served-cities.ts": 1,
   "src/routes/public/tryon-generate.ts": 1,
   "src/routes/tech/auth.ts": 1,
   "src/routes/tech/kit.ts": 1,

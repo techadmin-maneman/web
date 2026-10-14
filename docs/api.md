@@ -1901,10 +1901,21 @@ Razorpay's webhook: payments and refunds
         "type": "string"
       },
       "description": "Each city with a pincode ops serve, in the console's order."
+    },
+    "areas": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "description": "Each of those cities' areas, as a client would recognise them, from its served pincodes, A to Z."
     }
   },
   "required": [
-    "cities"
+    "cities",
+    "areas"
   ],
   "additionalProperties": false
 }

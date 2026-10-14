@@ -83,6 +83,7 @@ test("the sitemap lists the pages, a folder down too, and robots.txt keeps this 
     "/guides",
     "/guides/what-is-a-hair-system",
     "/areas",
+    "/areas/gurgaon",
   ]) {
     expect(sitemap).toContain(`<loc>https://maneman.in${path}</loc>`);
   }

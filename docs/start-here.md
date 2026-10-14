@@ -122,7 +122,8 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/cities/`): `cities` (each city, its state and zone, where a visit, a pincode or a
   client is), `city-changes` (a city added, changed or renamed), `city-rules` (the rules a city sets for itself),
-  `gst-registrations` (a state's registration, and what supplies a visit)
+  `gst-registrations` (a state's registration, and what supplies a visit), `served-cities` (the cities and areas the
+  public site says it comes to)
 - **Rules** (`src/policy/`): `city-settings`
 - **Data** (`src/config/`): `gst`
 - **Routes** (`src/routes/`): `ops/cities`
