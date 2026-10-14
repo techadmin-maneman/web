@@ -385,14 +385,15 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "youcam_units", needs: "nothing", every: 60, at: 14, run: youcamUnitsJob },
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
-  // The stock, a step a job, so one that throws stops none of the others; the morning's from 9 am in India.
+  // The stock, a step a job, so one that throws stops none of the others, each in a minute no other job of five or
+  // fifteen minutes runs in, the forecast, the heaviest, alone in its own; the morning's from 9 am in India.
   { name: "stock_risks", needs: "nothing", every: 60, at: 44, run: stockRisksJob },
-  { name: "forecast_accuracy", needs: "nothing", every: 60, at: 44, run: forecastAccuracyJob },
-  { name: "forecast", needs: "nothing", every: 60, at: 44, run: forecastJob },
-  { name: "kit_check", needs: "nothing", every: 60, at: 44, run: kitCheckJob },
-  { name: "cycle_counts", needs: "nothing", every: 60, at: 44, slot: { hour: 9 }, run: cycleCountsJob },
-  { name: "expiring_stock", needs: "nothing", every: 60, at: 44, slot: { hour: 9 }, run: expiringStockJob },
-  { name: "overdue_transfers", needs: "nothing", every: 60, at: 44, slot: { hour: 9 }, run: overdueTransfersJob },
+  { name: "forecast_accuracy", needs: "nothing", every: 60, at: 30, run: forecastAccuracyJob },
+  { name: "forecast", needs: "nothing", every: 60, at: 40, run: forecastJob },
+  { name: "kit_check", needs: "nothing", every: 60, at: 35, run: kitCheckJob },
+  { name: "cycle_counts", needs: "nothing", every: 60, at: 45, slot: { hour: 9 }, run: cycleCountsJob },
+  { name: "expiring_stock", needs: "nothing", every: 60, at: 55, slot: { hour: 9 }, run: expiringStockJob },
+  { name: "overdue_transfers", needs: "nothing", every: 60, at: 25, slot: { hour: 9 }, run: overdueTransfersJob },
   { name: "missed_jobs", needs: "nothing", every: 60, at: 34, run: missedJobsJob },
   // The grievances raised in the hour, in one message, so one client cannot flood the chat.
   { name: "grievance_alerts", needs: "nothing", every: 60, at: 24, run: grievanceAlertsJob },

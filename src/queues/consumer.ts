@@ -14,9 +14,12 @@ export const DONE: Settle = {};
 /** The first wait after a message's work throws, doubled for each try it has had: 30 s, 60 s, 120 s and so on. */
 const ERROR_RETRY_SECONDS = 30;
 
-/** A wait doubled for each try a message has had already: the first delay, 2×, 4× and so on. */
+/** The longest wait between tries: an hour, well inside the twelve hours a queue lets a message wait. */
+const LONGEST_RETRY_SECONDS = 3600;
+
+/** A wait doubled for each try a message has had already: the first delay, 2×, 4× and so on, up to an hour. */
 export const backoffSeconds = (attempts: number, firstDelaySeconds: number): number =>
-  firstDelaySeconds * 2 ** Math.max(0, attempts - 1);
+  Math.min(firstDelaySeconds * 2 ** Math.max(0, attempts - 1), LONGEST_RETRY_SECONDS);
 
 export interface Consumer<T> {
   /** Names its log events: "<name>_bad_message" for one it cannot read, "<name>_step_error" for work that threw. */
