@@ -14,7 +14,7 @@ import { catchUpWithRazorpay } from "../../../src/domain/money/razorpay-catch-up
 import { createCallBudget } from "../../../src/lib/call-budget.ts";
 import { createLogger } from "../../../src/log.ts";
 import { asClient, signedIn } from "../clients.ts";
-import { captureLogs, deliverRazorpay, markDatabase, NOW, request } from "../helpers.ts";
+import { A_NUMBER, captureLogs, deliverRazorpay, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 
 interface Orders {
@@ -103,7 +103,7 @@ describe("a custom order", () => {
     const raised = await raise();
     expect(raised.status).toBe(200);
     const [order] = (await raised.json<Orders>()).orders;
-    expect(order).toMatchObject({ number: 1, status: "awaiting_payment" });
+    expect(order).toMatchObject({ number: A_NUMBER, status: "awaiting_payment" });
     expect(order?.short_url).toMatch(/^https:\/\/rzp\.io\//);
     expect(payments.made.links).toEqual([
       expect.objectContaining({
@@ -125,7 +125,7 @@ describe("a custom order", () => {
       expect(delivered.status).toBe(200);
     }
 
-    expect((await orders()).orders[0]).toMatchObject({ status: "paid", po_number: 1 });
+    expect((await orders()).orders[0]).toMatchObject({ status: "paid", po_number: A_NUMBER });
     const payment = await env.DB.prepare("SELECT person_id, amount, status FROM payments").all();
     expect(payment.results).toEqual([{ person_id: PERSON, amount: 4_500_000, status: "captured" }]);
     const lines = await env.DB.prepare(
@@ -224,7 +224,7 @@ describe("a custom order's money, wherever it goes", () => {
       new Date(NOW.getTime() + 2 * 3_600_000),
     );
     expect(found).toBe(1);
-    expect((await orders()).orders[0]).toMatchObject({ status: "paid", po_number: 1 });
+    expect((await orders()).orders[0]).toMatchObject({ status: "paid", po_number: A_NUMBER });
     expect(told).toHaveLength(1);
   });
 });
@@ -371,7 +371,7 @@ describe("a client's custom orders, on their Home", () => {
     const mine = await (await asClient(cookie, "/api/me/custom-orders")).json<{ orders: Record<string, unknown>[] }>();
     expect(mine.orders).toEqual([
       {
-        number: 1,
+        number: order?.number,
         status: "awaiting_payment",
         promised_on: "2026-10-20",
         amount: 4_500_000,

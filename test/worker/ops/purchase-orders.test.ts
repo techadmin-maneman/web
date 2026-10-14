@@ -8,7 +8,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { needsSecondApproval } from "../../../src/policy/purchasing.ts";
-import { markDatabase } from "../helpers.ts";
+import { A_NUMBER, markDatabase } from "../helpers.ts";
 import { working, type Working } from "../job-fixtures.ts";
 
 let job: Working;
@@ -66,7 +66,7 @@ describe("drafting an order", () => {
     const drafted = await draft([{ consumable_code: "solvent", quantity: 48 }]);
     expect(drafted.status).toBe(200);
     expect(await firstOrder(drafted)).toMatchObject({
-      number: 1,
+      number: A_NUMBER,
       state: "drafted",
       currency: "INR",
       total: 216_000,

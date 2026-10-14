@@ -9,6 +9,15 @@ import { clientStateOf, UPCOMING_STATUSES, type ClientState } from "../visits/cl
 /** How many clients a page lists. */
 export const CLIENTS_PER_PAGE = 50;
 
+/** The visits of the client `alias` names that are not yet closed, as a subquery's FROM and WHERE. */
+const UPCOMING_OF = (alias: string) => `FROM appointments a
+  WHERE a.person_id = ${alias}.id AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL
+    AND a.status IN ${UPCOMING_STATUSES}`;
+
+/** When the client's next visit not yet closed starts, and whether one has begun, as two columns. */
+export const NEXT_VISIT_COLUMNS = (alias: string) => `(SELECT MIN(a.window_start) ${UPCOMING_OF(alias)}) AS next_visit,
+  EXISTS (SELECT 1 ${UPCOMING_OF(alias)} AND a.status = 'in_progress') AS under_way`;
+
 interface ListedClient {
   readonly id: string;
   readonly name: string;
@@ -18,6 +27,8 @@ interface ListedClient {
   readonly city: string | null;
   /** When their next visit not yet closed starts; null for none. */
   readonly nextVisit: string | null;
+  /** Whether a visit of theirs has begun and is not yet closed. */
+  readonly underWay: boolean;
 }
 
 interface ClientListing {
@@ -33,9 +44,7 @@ interface ClientListing {
 const LISTED = `
   SELECT * FROM (
     SELECT client.id, client.name, client.mobile_e164, client.created_at, ${fittedSql("client.id")} AS fitted,
-      (SELECT MIN(a.window_start) FROM appointments a
-        WHERE a.person_id = client.id AND a.deleted_at IS NULL AND a.window_start IS NOT NULL
-          AND a.window_end IS NOT NULL AND a.status IN ${UPCOMING_STATUSES}) AS next_visit,
+      ${NEXT_VISIT_COLUMNS("client")},
       ${clientCityOf("client")} AS city
     FROM people client
     WHERE client.erased_at IS NULL AND ${withinReach("client", "client", "?1")}
@@ -54,6 +63,7 @@ interface Row {
   mobile_e164: string;
   fitted: number;
   next_visit: string | null;
+  under_way: number;
   city: string | null;
 }
 
@@ -80,6 +90,7 @@ export async function listClients(
       state: clientStateOf(row.fitted === 1, row.next_visit !== null),
       city: row.city,
       nextVisit: row.next_visit,
+      underWay: row.under_way === 1,
     })),
     more: results.length > CLIENTS_PER_PAGE,
   };

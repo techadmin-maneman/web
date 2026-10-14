@@ -1,4 +1,4 @@
-// Technicians: who works, their zone, the jobs they
+// Technicians: who works, their city, the jobs they
 // have finished and how those ran, one 34 px row each, as the board draws them,
 // however many there are. The board's fifth column is Skill, and nothing records
 // what a technician is trained for, so Leave stands there instead and a line
@@ -9,6 +9,7 @@
 // technicians here (./TechnicianForms.tsx); those switched off are listed
 // beneath the table.
 
+import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Table } from "@maneman/ui/Table";
 import { capsLook } from "@maneman/ui/Caps";
@@ -89,7 +90,7 @@ function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
             <OpsLink className={styles.choose} to={technicianPath(technician.id)}>
               {technician.name}
             </OpsLink>
-            <span className={styles.offZone}>{technician.zone ?? technicians.unknown}</span>
+            <span className={styles.offZone}>{technician.city ?? technicians.unknown}</span>
           </li>
         ))}
       </ul>
@@ -106,16 +107,16 @@ function RosterTable({
   figures: ReadonlyMap<string, TechnicianWork>;
 }) {
   const today = indiaDate(new Date().toISOString());
-  const zone = (row: Technician) => row.zone ?? "";
-  const [name, zoneLabel, jobs, service, leave] = technicians.columns;
+  const city = (row: Technician) => row.city ?? "";
+  const [name, cityLabel, jobs, service, leave] = technicians.columns;
   const columns: readonly Column<Technician>[] = [
     { label: name, sort: (row) => row.name },
-    { label: zoneLabel, sort: zone, choice: zone },
+    { label: cityLabel, sort: city, choice: city },
     { label: jobs, sort: (row) => figures.get(row.id)?.jobs ?? -1 },
     { label: service, sort: (row) => figures.get(row.id)?.average_minutes ?? -1 },
     { label: leave, sort: (row) => row.leave[0]?.from ?? "" },
   ];
-  const view = useTableView(active, columns, { search: (row) => `${row.name} ${zone(row)}` });
+  const view = useTableView(active, columns, { search: (row) => `${row.name} ${city(row)}` });
   return (
     <>
       <Narrowing view={view} label={technicians.narrow} className={styles.narrow} />
@@ -132,9 +133,10 @@ function RosterTable({
                 <OpsLink className={styles.choose} to={technicianPath(technician.id)}>
                   {technician.name}
                 </OpsLink>
-                {technician.city === null && <span className={styles.noCity}>{technicians.noCity}</span>}
               </th>
-              <td className={styles.zone}>{technician.zone ?? technicians.unknown}</td>
+              <td className={classes(styles.city, technician.city === null && styles.noCity)}>
+                {technician.city ?? technicians.noCity}
+              </td>
               <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
               <td className={styles.service}>
                 <Service figures={figures.get(technician.id)} />

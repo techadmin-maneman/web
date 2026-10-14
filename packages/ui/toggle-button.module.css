@@ -18,11 +18,12 @@
     color: var(--ink-muted);
   }
 
+  /* Filled, not only edged: a chosen option reads at a glance on ink. */
   .onInk[aria-pressed="true"],
   .onInk[aria-checked="true"] {
     border: var(--rule-strong) solid var(--paper);
-    background: var(--ink-raised);
-    color: var(--paper);
+    background: var(--paper);
+    color: var(--ink);
     font-weight: var(--weight-medium);
   }
 

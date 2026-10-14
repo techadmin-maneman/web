@@ -614,7 +614,7 @@ export interface paths {
                 query: {
                     client: string;
                     kind: "consultation" | "first_fit" | "service" | "replacement";
-                    /** @description The service; left out, the first offered. */
+                    /** @description The service; left out, the one the client's profile recommends for a first fit, else the standard one. */
                     tier?: string;
                     /** @description The first day; tomorrow if left out, or if earlier. */
                     from?: string;
@@ -7283,7 +7283,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description number_in_use: another active technician signs in with that number */
+                /** @description number_in_use: another active technician signs in with that number; name_taken: another goes by that name */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -8512,7 +8512,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description number_in_use: another active technician signs in with that number */
+                /** @description number_in_use: another active technician signs in with that number; name_taken: another goes by that name */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -8732,6 +8732,62 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["TechnicianPay"];
+                    };
+                };
+                /** @description access_required */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/technician-pay/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What each technician earned in a month at their rates per visit */
+        get: {
+            parameters: {
+                query: {
+                    month: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The month's statement */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PayStatement"];
+                    };
+                };
+                /** @description invalid_request: month is YYYY-MM */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description access_required */
@@ -14706,7 +14762,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -14776,6 +14832,8 @@ export interface components {
                 /** @description Their address's city, else where they last booked or asked to be told. */
                 city: string | null;
                 next_visit: string | null;
+                /** @description Whether a visit of theirs has begun and is not yet closed. */
+                under_way: boolean;
             }[];
             /** @description The next page of 50; null on the last. */
             next_cursor: string | null;
@@ -14795,6 +14853,8 @@ export interface components {
                 state: "fitted" | "lead" | "nothing_booked";
                 /** @description When the client's next visit not yet closed starts; null for none. */
                 next_visit: string | null;
+                /** @description Whether a visit of theirs has begun and is not yet closed. */
+                under_way: boolean;
             }[];
             /** @description More than 20 match: narrow the search. */
             more: boolean;
@@ -15041,7 +15101,7 @@ export interface components {
             status: "authorized" | "captured" | "refunded" | "partially_refunded";
             /** @description upi, card, netbanking and so on. */
             method: string | null;
-            /** @description Ours, e.g. MM-2026-0841, once captured. */
+            /** @description Ours, e.g. MM-7KQ3-9F2D, once captured. */
             reference: string | null;
             /** @description In paise: refunds Razorpay has processed. */
             refunded_amount: number;
@@ -15355,6 +15415,8 @@ export interface components {
             /** @description The kind's services offered on the first day. */
             services: components["schemas"]["ServiceOffer"][];
             service: components["schemas"]["VisitService"];
+            /** @description A first fit's hair system as the client's latest profile recommends it, by tier; null for none. */
+            recommended: string | null;
             /**
              * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
              * @enum {string}
@@ -15391,7 +15453,7 @@ export interface components {
             amount: number;
             gst_percent: number;
         };
-        /** @description The service the windows are for: the one asked, else the first. */
+        /** @description The service the windows are for: the one asked; for a first fit, else the client's recommended one; else the standard one. */
         VisitService: {
             /** @description Its code within its kind, which never changes. */
             tier: string;
@@ -15536,7 +15598,7 @@ export interface components {
         AlreadyInvited: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -17692,6 +17754,27 @@ export interface components {
                 set_by: string;
                 /** Format: date-time */
                 set_at: string;
+            }[];
+        };
+        /** @description Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day. */
+        PayStatement: {
+            /** @example 2026-11 */
+            month: string;
+            lines: {
+                technician_id: string;
+                technician: string;
+                /** @description The visit's city. */
+                city: string | null;
+                /**
+                 * @description consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show.
+                 * @enum {string}
+                 */
+                kind: "consultation" | "one_visit" | "first_fit" | "service" | "replacement" | "no_show";
+                visits: number;
+                /** @description Paise a visit; null where none was in force. */
+                rate: number | null;
+                /** @description Paise in all; null where no rate was in force. */
+                amount: number | null;
             }[];
         };
         PayGradeAdd: {

@@ -66,7 +66,10 @@ test("opens from today, shows each lot's expiry, and receives a top-up by the pi
 
   await coming.getByRole("button", { name: copy.coming.receiveScanned(1) }).click();
   await expect.poll(() => writesTo(fake, "transfers/tr-1/receive").length).toBe(1);
-  expect(writesTo(fake, "transfers/tr-1/receive")[0]?.body).toEqual({ units: ["MM-ESS-0000007-H"] });
+  expect(writesTo(fake, "transfers/tr-1/receive")[0]?.body).toEqual({
+    units: ["MM-ESS-0000007-H"],
+    rest: "on_its_way",
+  });
 });
 
 test("hands back the pieces that came off, and the expired stock", async ({ page }) => {

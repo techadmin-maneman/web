@@ -71,7 +71,7 @@ const PaymentEntrySchema = z
     ...money,
     status: z.enum(["authorized", "captured", "refunded", "partially_refunded"]),
     method: z.union([z.string(), z.null()]).openapi({ description: "upi, card, netbanking and so on." }),
-    reference: z.union([z.string(), z.null()]).openapi({ description: "Ours, e.g. MM-2026-0841, once captured." }),
+    reference: z.union([z.string(), z.null()]).openapi({ description: "Ours, e.g. MM-7KQ3-9F2D, once captured." }),
     refunded_amount: z.number().int().openapi({ description: "In paise: refunds Razorpay has processed." }),
     purpose: z.enum(["visit", "late_fee"]).openapi({ description: "What it paid for: the visit, or a late fee." }),
     charge: z

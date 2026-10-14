@@ -122,8 +122,7 @@ test("changes a technician's details, sending only what changed", async ({ page 
 
   expect((await sent).postDataJSON()).toEqual({ zone: "Sec 1–39" });
   await expect(main.getByRole("button", { name: "Save" })).toBeHidden();
-  await backToRoster(page);
-  await expect(page.getByRole("row").filter({ hasText: "Imran Qureshi" })).toContainText("Sec 1–39");
+  await expect(main).toContainText("Sec 1–39");
 });
 
 test("moves a technician to another city, or to none", async ({ page }) => {

@@ -10,8 +10,10 @@ import { JOB, working, type Working } from "../job-fixtures.ts";
 /** Mane Man Natural, at Rs. 45,000 with no GST, as staging's book has no GST. */
 export const NATURAL = { tier: "natural", name: "Mane Man Natural", amount: 4_500_000 };
 
-/** The first reference of NOW's year, which the visit's link takes before any payment. */
-export const LINK_REFERENCE = "MM-2026-0001";
+/** The reference the visit's link took before any payment, which its payment then takes. */
+export async function linkReference(): Promise<string> {
+  return (await env.DB.prepare("SELECT reference FROM payment_links").first<string>("reference")) ?? "";
+}
 
 /** Fourteen days after NOW, when a link made at NOW stops taking payment. */
 export const TWO_WEEKS_ON = new Date("2026-10-05T06:30:00.000Z");

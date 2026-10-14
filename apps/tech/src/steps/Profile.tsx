@@ -17,9 +17,8 @@ import type { FitSpec, HairProfile, History, Job, ProfileRequest } from "../api.
 import { job as jobCopy, profile as copy, steps as stepsCopy } from "../content.ts";
 import { todayInIndia } from "../lib/when.ts";
 import { Failed, Loading } from "../states/States.tsx";
-import { deviceRecord, put, remove } from "../store/db.ts";
+import { put, remove } from "../store/db.ts";
 import type { Queued } from "../store/outbox.ts";
-import type { DeviceRecord } from "../store/records.ts";
 import {
   bodyOf,
   COLOURS,
@@ -40,31 +39,14 @@ import {
   type Measurement,
 } from "@maneman/web-kit/hair-profile";
 import { BaseInCentimetres, Chips, Figure, type Option } from "./ProfileFields.tsx";
+import { useDraft, type Draft as DraftOf } from "./drafts.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import styles from "./steps.module.css";
 
 type Page = "fit" | "history";
 
-type Draft = Extract<DeviceRecord, { readonly key: "profile_draft" }>;
-
-/** The profile half filled in for this job, kept on the phone; null for none, and while it is still being read. */
-function useDraft(jobId: string): { readonly read: boolean; readonly draft: Draft | null } {
-  const [kept, setKept] = useState<{ read: boolean; draft: Draft | null }>({ read: false, draft: null });
-  useEffect(() => {
-    let current = true;
-    const settle = (draft: Draft | null) => {
-      if (current) setKept({ read: true, draft: draft?.job_id === jobId ? draft : null });
-    };
-    deviceRecord("profile_draft").then(settle, () => {
-      settle(null);
-    });
-    return () => {
-      current = false;
-    };
-  }, [jobId]);
-  return kept;
-}
+type Draft = DraftOf<"profile_draft">;
 
 const HEAD: readonly Measurement[] = [
   "head_circumference_cm",
@@ -73,6 +55,14 @@ const HEAD: readonly Measurement[] = [
   "temple_to_temple_cm",
 ];
 const BASE: readonly Measurement[] = ["base_width_in", "base_length_in"];
+
+/** The name of the first figure typed outside its range: the head's, then the base's, then the grey's; null if none. */
+function firstOutOfRange(form: FitForm): string | null {
+  const typed = typedFigures(form.figures);
+  const measured = [...HEAD, ...BASE].find((key) => typed[key] === "invalid");
+  if (measured !== undefined) return copy.measurements[measured];
+  return typed.grey_percent === "invalid" ? copy.sections.grey : null;
+}
 
 /** A list's choices in the order its words are written, each code with its words. */
 function optionsOf<K extends string>(labels: Readonly<Record<K, string>>): Option<K>[] {
@@ -295,6 +285,7 @@ function ProfileForm({
 
   const spec = fitOf(fit);
   const said = historyOf(history, thisYear);
+  const outOfRange = firstOutOfRange(fit);
   const notice = refused === null ? null : stepsCopy.corrected.other;
 
   if (page === "fit") {
@@ -304,7 +295,7 @@ function ProfileForm({
         title={stepsCopy.titles.profile}
         action={stepsCopy.next}
         ready={spec !== null}
-        unfinished={copy.checkFigures}
+        unfinished={outOfRange === null ? copy.checkFigures : copy.checkFigure(outOfRange)}
         notice={notice}
         onBack={onBack}
         onAction={() => {
@@ -339,7 +330,7 @@ function ProfileForm({
 
 export function Profile({ id }: { id: string }) {
   const { loaded, retry, refused, finish, back } = useStep(id, "profile");
-  const kept = useDraft(id);
+  const kept = useDraft("profile_draft", id);
 
   if (loaded.state === "loading" || !kept.read) return <Loading />;
   if (loaded.state === "failed") {

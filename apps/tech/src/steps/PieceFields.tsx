@@ -212,7 +212,7 @@ export function LabelField(props: {
   onTogglePicking: () => void;
   onPick: (piece: ClientPiece) => void;
 }) {
-  const { code, looked } = props;
+  const { code } = props;
   const malformed = given(code) && !isLabel(code);
   return (
     <>
@@ -259,22 +259,34 @@ export function LabelField(props: {
           {copy.piece.expired}
         </p>
       )}
-      {looked.state === "unknown" && (
-        <p className={styles.note} role="status">
-          {copy.piece.unknown}
-        </p>
-      )}
-      {looked.state === "offline" && (
-        <p className={styles.note} role="status">
-          {copy.piece.offline}
-        </p>
-      )}
-      {looked.state === "found" && !looked.found.belongs_to_this_job && (
-        <p className={styles.warn} role="alert">
-          {copy.piece.notThisClient}
-        </p>
-      )}
+      <LookedNote looked={props.looked} />
     </>
+  );
+}
+
+/** What the label's lookup found, beneath the box: nothing, a unit from the kit, another client's piece, or no answer. */
+function LookedNote({ looked }: { looked: Looked }) {
+  if (looked.state === "unknown" || looked.state === "offline") {
+    return (
+      <p className={styles.note} role="status">
+        {looked.state === "unknown" ? copy.piece.unknown : copy.piece.offline}
+      </p>
+    );
+  }
+  if (looked.state !== "found") return null;
+  const { found } = looked;
+  if (found.in_kit) {
+    return (
+      <p className={styles.note} role="status">
+        {copy.piece.inKit(found.piece.base ?? found.piece.piece_code, found.piece.supplier_lot)}
+      </p>
+    );
+  }
+  if (found.belongs_to_this_job) return null;
+  return (
+    <p className={styles.warn} role="alert">
+      {copy.piece.notThisClient}
+    </p>
   );
 }
 

@@ -98,6 +98,13 @@ function Narrow({
   );
 }
 
+/** Their next visit, "Thu 24 Sep, 10:30 am"; under way, once one has begun; or none booked. */
+function nextVisitOf(client: Listed["clients"][number]): string {
+  if (client.under_way) return copy.underWay;
+  if (client.next_visit === null) return copy.noVisit;
+  return `${shortDate(indiaDate(client.next_visit))}, ${indiaClock(client.next_visit)}`;
+}
+
 function Rows({ listed }: { listed: Listed }) {
   if (listed.clients.length === 0) return <p className={form.note}>{copy.none}</p>;
   return (
@@ -123,11 +130,7 @@ function Rows({ listed }: { listed: Listed }) {
               <td>{phoneWords(client.mobile)}</td>
               <td>{clients.states[client.state]}</td>
               <td>{client.city ?? copy.noCity}</td>
-              <td>
-                {client.next_visit === null
-                  ? copy.noVisit
-                  : `${shortDate(indiaDate(client.next_visit))}, ${indiaClock(client.next_visit)}`}
-              </td>
+              <td>{nextVisitOf(client)}</td>
             </tr>
           ))}
         </tbody>

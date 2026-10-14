@@ -7,6 +7,7 @@
 // Both keep to the caller's cities: a client elsewhere is not found, and only the technicians there are offered. The
 // booking is audited in the batch that holds its slot (ADR 0031).
 
+import { recommendedProduct } from "../../domain/clients/hair-profiles.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
@@ -23,7 +24,6 @@ import {
   codeStillApplies,
   holdForSale,
   linkClosesAt,
-  PAYS,
   paysByCredit,
   paysFor,
   saleFor,
@@ -48,80 +48,7 @@ import { windowTimesOf } from "../../policy/slot-times.ts";
 import { ServiceSchema } from "../schemas/booking.ts";
 import { fittingOf } from "../../domain/booking/occupancy.ts";
 import { cityOfPerson } from "../../domain/cities/cities.ts";
-
-/** A visit's price, as the client's app gives it; the console's own "Price" is a row of the price book. */
-const PriceSchema = z
-  .object({
-    amount_ex_gst: z.number().int().openapi({ description: "In paise, before GST." }),
-    amount: z.number().int().openapi({ description: "In paise, GST included: what the client pays." }),
-    gst_percent: z.number(),
-  })
-  .strict()
-  .openapi("VisitPrice");
-
-const TechnicianSchema = z.object({ id: z.string(), name: z.string() }).strict().openapi("FreeTechnician");
-
-const ServiceOfferSchema = z
-  .object({ tier: z.string(), name: z.string(), minutes: z.number().int(), price: PriceSchema })
-  .strict()
-  .openapi("ServiceOffer");
-
-const PaysSchema = z.enum(PAYS).openapi({
-  description:
-    "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link " +
-    "once fitted), a service-visit credit, or a payment link Razorpay texts the client.",
-});
-
-const OwedSchema = z
-  .object({
-    id: z
-      .string()
-      .openapi({ description: "The visit left partly done, or the piece to replace: what `covers` names." }),
-    why: z.enum(["partial", "recall", "failed"]).openapi({
-      description: "Left partly done, a piece of a recalled lot, or a piece that failed with none fitted since.",
-    }),
-    piece_code: z.union([z.string(), z.null()]),
-    since: z.string().openapi({ description: "When it became owed: the visit's start, the recall, or the failure." }),
-  })
-  .strict()
-  .openapi("OwedRemake");
-
-const OpsAvailabilitySchema = z
-  .object({
-    kind: z.enum(VISIT_TYPES),
-    services: z.array(ServiceOfferSchema).openapi({ description: "The kind's services offered on the first day." }),
-    service: ServiceSchema.openapi({ description: "The service the windows are for: the one asked, else the first." }),
-    pays: PaysSchema,
-    credits: z.number().int().openapi({ description: "The service-visit credits the client has to spend." }),
-    owed: z.array(OwedSchema).openapi({
-      description:
-        "What a visit of this kind may make good for the client, free and with no late fee, oldest first " +
-        "(docs/decisions/0192-free-remakes.md).",
-    }),
-    days: z.array(
-      z
-        .object({
-          date: z.iso.date(),
-          windows: z.array(
-            z
-              .object({
-                window: z.enum(BOOKING_WINDOWS),
-                start: z.string().openapi({ description: "When the window starts that day, in India's time." }),
-                end: z.string(),
-                technicians: z.array(TechnicianSchema).openapi({
-                  description:
-                    "Who in the caller's cities is free for the visit: never the technician who took the client's visit " +
-                    "just before or just after it.",
-                }),
-              })
-              .strict(),
-          ),
-        })
-        .strict(),
-    ),
-  })
-  .strict()
-  .openapi("OpsAvailability");
+import { OpsAvailabilitySchema, PaysSchema, PriceSchema, TechnicianSchema } from "./visits.schemas.ts";
 
 const OUTCOMES = ["booked", "being_booked", "awaiting_payment"] as const;
 
@@ -147,22 +74,22 @@ const OpsBookingSchema = z
   .strict()
   .openapi("OpsBooking");
 
+const AvailabilityQuerySchema = z.object({
+  client: z.uuid(),
+  kind: z.enum(VISIT_TYPES),
+  tier: z.string().regex(PRICE_TIER).optional().openapi({
+    description:
+      "The service; left out, the one the client's profile recommends for a first fit, else the standard one.",
+  }),
+  from: z.iso.date().optional().openapi({ description: "The first day; tomorrow if left out, or if earlier." }),
+});
+type AvailabilityQuery = z.infer<typeof AvailabilityQuerySchema>;
+
 const availabilityRoute = createRoute({
   method: "get",
   path: "/api/visits/availability",
   summary: "A client's windows for a kind of visit over 14 days, and who is free in each",
-  request: {
-    query: z.object({
-      client: z.uuid(),
-      kind: z.enum(VISIT_TYPES),
-      tier: z
-        .string()
-        .regex(PRICE_TIER)
-        .optional()
-        .openapi({ description: "The service; left out, the first offered." }),
-      from: z.iso.date().optional().openapi({ description: "The first day; tomorrow if left out, or if earlier." }),
-    }),
-  },
+  request: { query: AvailabilityQuerySchema },
   responses: {
     200: { description: "Each day's windows", ...json(OpsAvailabilitySchema) },
     403: errorResponse("access_required"),
@@ -230,10 +157,17 @@ const bookRoute = createRoute({
   },
 });
 
-/** The service the windows are for: the one asked, else the kind's standard one, else the first offered. */
-function serviceAsked(services: readonly PricedService[], tier: string | undefined): PricedService | undefined {
+/**
+ * The service the windows are for: the one asked; else the one the client's profile recommends, which only a first fit
+ * has; else the kind's standard one; else the first offered.
+ */
+function serviceAsked(
+  services: readonly PricedService[],
+  { tier, recommended }: { tier: string | undefined; recommended: string | null },
+): PricedService | undefined {
   if (tier !== undefined) return services.find((service) => service.tier === tier);
-  return services.find((service) => service.tier === "standard") ?? services[0];
+  const named = (wanted: string | null) => services.find((service) => service.tier === wanted);
+  return named(recommended) ?? named("standard") ?? services[0];
 }
 
 const serviceBody = (service: { readonly tier: string; readonly name: string; readonly minutes: number }) => ({
@@ -355,41 +289,48 @@ async function refusedElsewhere(c: Context<AppEnv>, asked: VisitAsked) {
   return null;
 }
 
-export function registerOpsVisits(app: App): void {
-  app.openapi(availabilityRoute, async (c) => {
-    const { client, kind, tier, from } = c.req.valid("query");
-    const db = c.env.DB;
-    const now = c.var.deps.now();
-    if (!(await isClientInReach(c, client))) return refuse(c, "not_found");
+/** A client's fortnight of windows for a kind of visit, who is free in each and how it would be paid. */
+async function availability(c: Context<AppEnv>, query: AvailabilityQuery) {
+  const { client, kind, tier, from } = query;
+  const db = c.env.DB;
+  const now = c.var.deps.now();
+  if (!(await isClientInReach(c, client))) return refuse(c, "not_found");
 
-    const range = bookableRange(now, await opsInputs(c));
-    const start = stripStart(from, range, BOOKING_DAYS);
-    const services = await offeredServices(db, start, [kind], await cityOfPerson(db, client));
-    const service = serviceAsked(services, tier);
-    if (service === undefined) {
-      const refusal = kind === "first_fit" && services.length === 0 ? "no_product" : "not_bookable";
-      return c.json(errorBody(refusal, c.var.requestId), 422);
-    }
-    const reached = await techniciansWithin(db, await routeReach(c));
-    const [strip, credits, onCredit, owed] = await Promise.all([
-      windowsOffered({ db, clientId: client, service, days: { start, range }, reached, now }),
-      spendableCredits(db, client, now),
-      paysByCredit(db, client, kind, now),
-      remakesOwed(db, client),
-    ]);
-    return c.json(
-      {
-        kind,
-        services: services.map((each) => ({ ...serviceBody(each), price: each.price })),
-        service: serviceBody(service),
-        pays: paysFor(false, onCredit, service.price),
-        credits: credits.visits,
-        owed: owedOf(owed, kind),
-        days: strip,
-      },
-      200,
-    );
-  });
+  const range = bookableRange(now, await opsInputs(c));
+  const start = stripStart(from, range, BOOKING_DAYS);
+  const [services, recommended] = await Promise.all([
+    offeredServices(db, start, [kind], await cityOfPerson(db, client)),
+    kind === "first_fit" ? recommendedProduct(db, client) : Promise.resolve(null),
+  ]);
+  const service = serviceAsked(services, { tier, recommended });
+  if (service === undefined) {
+    const refusal = kind === "first_fit" && services.length === 0 ? "no_product" : "not_bookable";
+    return c.json(errorBody(refusal, c.var.requestId), 422);
+  }
+  const reached = await techniciansWithin(db, await routeReach(c));
+  const [strip, credits, onCredit, owed] = await Promise.all([
+    windowsOffered({ db, clientId: client, service, days: { start, range }, reached, now }),
+    spendableCredits(db, client, now),
+    paysByCredit(db, client, kind, now),
+    remakesOwed(db, client),
+  ]);
+  return c.json(
+    {
+      kind,
+      services: services.map((each) => ({ ...serviceBody(each), price: each.price })),
+      service: serviceBody(service),
+      recommended,
+      pays: paysFor(false, onCredit, service.price),
+      credits: credits.visits,
+      owed: owedOf(owed, kind),
+      days: strip,
+    },
+    200,
+  );
+}
+
+export function registerOpsVisits(app: App): void {
+  app.openapi(availabilityRoute, (c) => availability(c, c.req.valid("query")));
 
   app.openapi(bookRoute, async (c) => {
     const asked = askedOf(c.req.valid("json"));

@@ -18,7 +18,7 @@ export interface RefundAsked {
 /** A payment link to make: what it asks for, our reference for it, whom it is for, and until when. */
 export interface PaymentLinkRequest {
   readonly amount: number;
-  /** Ours, unique to the link and shown on Razorpay's page: the reference its payment will have, "MM-2026-0841". */
+  /** Ours, unique to the link and shown on Razorpay's page: the reference its payment will have, "MM-7KQ3-9F2D". */
   readonly reference: string;
   /** What the client reads on Razorpay's page. */
   readonly description: string;

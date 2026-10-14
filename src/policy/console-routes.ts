@@ -154,6 +154,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/discount-codes/{id}/off": need("finance", "manage"),
   "POST /api/discount-codes/{id}/delete": need("finance", "manage"),
   "GET /api/technician-pay": inOwnPlaces("finance", "view"),
+  "GET /api/technician-pay/statement": inOwnPlaces("finance", "view"),
   "POST /api/technician-pay/grades": need("finance", "manage"),
   "PATCH /api/technician-pay/grades/{id}": need("finance", "manage"),
   "POST /api/technician-pay/grades/{id}/delete": need("finance", "manage"),

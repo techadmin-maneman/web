@@ -54,6 +54,7 @@
                   "code_expired",
                   "too_early",
                   "number_in_use",
+                  "name_taken",
                   "not_ready",
                   "ops_assisted",
                   "taken",
@@ -362,6 +363,10 @@
                       "type": "null"
                     }
                   ]
+                },
+                "under_way": {
+                  "type": "boolean",
+                  "description": "Whether a visit of theirs has begun and is not yet closed."
                 }
               },
               "required": [
@@ -370,7 +375,8 @@
                 "mobile",
                 "state",
                 "city",
-                "next_visit"
+                "next_visit",
+                "under_way"
               ],
               "additionalProperties": false
             }
@@ -451,6 +457,10 @@
                     }
                   ],
                   "description": "When the client's next visit not yet closed starts; null for none."
+                },
+                "under_way": {
+                  "type": "boolean",
+                  "description": "Whether a visit of theirs has begun and is not yet closed."
                 }
               },
               "required": [
@@ -458,7 +468,8 @@
                 "name",
                 "mobile",
                 "state",
-                "next_visit"
+                "next_visit",
+                "under_way"
               ],
               "additionalProperties": false
             }
@@ -1521,7 +1532,7 @@
                 "type": "null"
               }
             ],
-            "description": "Ours, e.g. MM-2026-0841, once captured."
+            "description": "Ours, e.g. MM-7KQ3-9F2D, once captured."
           },
           "refunded_amount": {
             "type": "integer",
@@ -2744,6 +2755,17 @@
           "service": {
             "$ref": "#/components/schemas/VisitService"
           },
+          "recommended": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A first fit's hair system as the client's latest profile recommends it, by tier; null for none."
+          },
           "pays": {
             "type": "string",
             "enum": [
@@ -2823,6 +2845,7 @@
           "kind",
           "services",
           "service",
+          "recommended",
           "pays",
           "credits",
           "owed",
@@ -2897,7 +2920,7 @@
           "minutes"
         ],
         "additionalProperties": false,
-        "description": "The service the windows are for: the one asked, else the first."
+        "description": "The service the windows are for: the one asked; for a first fit, else the client's recommended one; else the standard one."
       },
       "OwedRemake": {
         "type": "object",
@@ -3377,6 +3400,7 @@
                   "code_expired",
                   "too_early",
                   "number_in_use",
+                  "name_taken",
                   "not_ready",
                   "ops_assisted",
                   "taken",
@@ -12721,6 +12745,93 @@
         ],
         "additionalProperties": false
       },
+      "PayStatement": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "example": "2026-11"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "technician_id": {
+                  "type": "string"
+                },
+                "technician": {
+                  "type": "string"
+                },
+                "city": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The visit's city."
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "consultation",
+                    "one_visit",
+                    "first_fit",
+                    "service",
+                    "replacement",
+                    "no_show"
+                  ],
+                  "description": "consultation, one_visit (a consultation and fit in one visit), first_fit, service, replacement, no_show."
+                },
+                "visits": {
+                  "type": "integer"
+                },
+                "rate": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Paise a visit; null where none was in force."
+                },
+                "amount": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Paise in all; null where no rate was in force."
+                }
+              },
+              "required": [
+                "technician_id",
+                "technician",
+                "city",
+                "kind",
+                "visits",
+                "rate",
+                "amount"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "month",
+          "lines"
+        ],
+        "additionalProperties": false,
+        "description": "Each technician's visits closed in the month, by kind and city, at the rate in force on each one's day."
+      },
       "PayGradeAdd": {
         "type": "object",
         "properties": {
@@ -19033,10 +19144,10 @@
             "schema": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]{0,31}$",
-              "description": "The service; left out, the first offered."
+              "description": "The service; left out, the one the client's profile recommends for a first fit, else the standard one."
             },
             "required": false,
-            "description": "The service; left out, the first offered.",
+            "description": "The service; left out, the one the client's profile recommends for a first fit, else the standard one.",
             "name": "tier",
             "in": "query"
           },
@@ -25874,7 +25985,7 @@
             }
           },
           "409": {
-            "description": "number_in_use: another active technician signs in with that number",
+            "description": "number_in_use: another active technician signs in with that number; name_taken: another goes by that name",
             "content": {
               "application/json": {
                 "schema": {
@@ -27086,7 +27197,7 @@
             }
           },
           "409": {
-            "description": "number_in_use: another active technician signs in with that number",
+            "description": "number_in_use: another active technician signs in with that number; name_taken: another goes by that name",
             "content": {
               "application/json": {
                 "schema": {
@@ -27287,6 +27398,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TechnicianPay"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "access_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/technician-pay/statement": {
+      "get": {
+        "summary": "What each technician earned in a month at their rates per visit",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "required": true,
+            "name": "month",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The month's statement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayStatement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: month is YYYY-MM",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

@@ -380,6 +380,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return reply(route, 200, {
         piece: { ...ROHITS_PIECE, piece_code: code },
         belongs_to_this_job: code === ROHITS_PIECE.piece_code,
+        in_kit: false,
       });
     }
     if (path === `/api/tech/jobs/${JOB_ID}/last-visit-photo`) {

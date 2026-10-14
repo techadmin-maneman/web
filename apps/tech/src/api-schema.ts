@@ -1763,7 +1763,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** A top-up received: all of it, or of a hair system the pieces scanned, the rest lost on the way */
+        /** A top-up received: all of it, or of a hair system the pieces scanned, the rest still to come or missing */
         post: {
             parameters: {
                 query?: never;
@@ -1897,7 +1897,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -2136,8 +2136,10 @@ export interface components {
                 /** @description Its after photograph, never to be kept on the phone. */
                 photo_url: string;
             } | null;
-            /** @description The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed. */
+            /** @description The day-before or arrival WhatsApp to the client: on its way, sent, or delivered and when; null when none went, as when one was skipped or failed. */
             reminder: {
+                /** @enum {string} */
+                state: "on_its_way" | "sent" | "delivered";
                 delivered_at: string | null;
             } | null;
             /** @description The steps this visit type runs, in order; a consultation's and a one visit's take the profile. */
@@ -2471,10 +2473,13 @@ export interface components {
             preset: "on_the_way" | "at_gate" | "running_late";
             minutes: number | null;
         };
-        /** @description Whether the label is one of the job's client's pieces. */
+        /** @description What the label names, and whether it is this job's. */
         PieceLookup: {
             piece: components["schemas"]["Piece"];
+            /** @description The label is one of the job's client's pieces, or a unit in the technician's kit, about to be one. */
             belongs_to_this_job: boolean;
+            /** @description A unit in the technician's own kit, not yet fitted: base is its name. */
+            in_kit: boolean;
         };
         TechnicianDiscountCodeApplied: {
             /** @description The code, as it is kept: in capitals. */
@@ -2530,6 +2535,12 @@ export interface components {
         };
         TechnicianKitReceipt: {
             units?: string[];
+            /**
+             * @description Of a part received, whether the pieces not scanned are still to come or were lost on the way.
+             * @default on_its_way
+             * @enum {string}
+             */
+            rest: "on_its_way" | "missing";
         };
         TechnicianKitHandBack: {
             /** @default [] */

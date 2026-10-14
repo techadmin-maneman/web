@@ -356,7 +356,10 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
       options.lastVisit === true
         ? { date: "2030-08-22", technician: "Imran", photo_url: `/api/tech/jobs/${JOB_ID}/last-visit-photo` }
         : null,
-    reminder: options.reminderDelivered === undefined ? null : { delivered_at: options.reminderDelivered },
+    reminder:
+      options.reminderDelivered === undefined
+        ? null
+        : { state: options.reminderDelivered === null ? "sent" : "delivered", delivered_at: options.reminderDelivered },
     steps: cardStepsFor(oneVisit ? "first_fit" : type, oneVisit),
     checklist: options.checklist ?? CHECKLIST,
     checklist_if_declined: oneVisit ? CONSULTATION_CHECKLIST : [],

@@ -176,7 +176,7 @@ function Fitting({
     setCode(piece.piece_code);
     setBase(piece.base ?? "");
     setLot(piece.supplier_lot ?? "");
-    setLooked({ state: "found", found: { piece, belongs_to_this_job: true } });
+    setLooked({ state: "found", found: { piece, belongs_to_this_job: true, in_kit: false } });
     setPicking(null);
   };
   const toggle = (list: "new" | "old") => () => {

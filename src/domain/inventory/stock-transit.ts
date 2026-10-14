@@ -5,7 +5,9 @@
 // waits for the technician to scan it in (docs/decisions/0164-the-kit-screen.md).
 //
 // Receiving and sending back each settle the transfer in the first statement of their batch, and every row after it
-// is written only where that statement settled it, so two people settling one transfer at once settle it once.
+// is written only where that statement settled it, so two people settling one transfer at once settle it once. A
+// technician receiving part of a hair system's top-up may keep the rest on its way: the transfer then carries less and
+// stays in transit.
 
 import { auditStatement, auditStatementWhen, type AuditEntry } from "../platform/audit.ts";
 import { lotMoves, type LotTake } from "./stock-lots.ts";
@@ -121,13 +123,16 @@ export async function sendStock(db: D1Database, input: Moving, written: Written)
   return { ok: true, lowered: [input.from] };
 }
 
-/** What a transfer took of each lot as it left, soonest to expire first, up to `quantity` of it. */
+/**
+ * What a transfer still carries of each lot, what it took as it left less any part already received, soonest to
+ * expire first, up to `quantity` of it.
+ */
 async function lotsSent(db: D1Database, transferId: string, quantity: number): Promise<LotTake[]> {
   const { results } = await db
     .prepare(
-      `SELECT lm.lot_id, -lm.quantity AS sent FROM stock_movements m
+      `SELECT lm.lot_id, -SUM(lm.quantity) AS sent FROM stock_movements m
        JOIN stock_lot_moves lm ON lm.movement_id = m.id JOIN stock_lots l ON l.id = lm.lot_id
-       WHERE m.transfer_id = ?1 AND m.quantity < 0
+       WHERE m.transfer_id = ?1 GROUP BY lm.lot_id HAVING SUM(lm.quantity) < 0
        ORDER BY l.recalled_at IS NOT NULL, l.expires_on IS NULL, l.expires_on, l.received_at`,
     )
     .bind(transferId)
@@ -268,20 +273,80 @@ async function settle(
 }
 
 /**
- * The transfer received at the place it was sent to: `received` of it, all of it by default, or of a hair system the
- * units named.
+ * Of a hair system's transfer, the units named received and the rest kept on its way, the transfer carrying that much
+ * less; written only while it still carries what was read, so two receipts at once land once. Null where every unit
+ * it carries is named, for the transfer to be settled.
  */
-export function receiveTransfer(
+async function receivePart(
   db: D1Database,
   id: string,
-  input: { readonly received: number | null; readonly note: string | null; readonly units?: readonly string[] | null },
+  units: readonly string[],
+  written: Written,
+): Promise<Settled | null> {
+  const transfer = await db
+    .prepare(`SELECT ${TRANSFER_COLUMNS} FROM stock_transfers WHERE id = ?1`)
+    .bind(id)
+    .first<TransferRow>();
+  if (transfer?.state !== "in_transit" || units.length >= transfer.quantity) return null;
+  const place = transfer.to_place;
+  const kind = await kindOf(db, place);
+  if (kind === null) return { ok: false, fields: ["id"] };
+  const arriving = await piecesArriving(db, transfer, units.length, units);
+  if (arriving === null) return { ok: false, fields: ["units"] };
+  const into = crypto.randomUUID();
+  const code = transfer.consumable_code;
+  const movement = {
+    code,
+    place,
+    kind,
+    quantity: units.length,
+    reason: "transferred",
+    transferId: id,
+    note: null,
+  } as const;
+  const stillCarries = {
+    sql: "EXISTS (SELECT 1 FROM stock_transfers WHERE id = ?13 AND state = 'in_transit' AND quantity = ?14)",
+    binds: [id, transfer.quantity],
+  };
+  const rest = transfer.quantity - units.length;
+  const detail = { transfer: id, quantity: transfer.quantity, arrived: units.length, place, on_its_way: rest };
+  const [, carried] = await db.batch([
+    movementStatementWhen(db, { id: into, movement }, written, stillCarries),
+    db
+      .prepare(
+        "UPDATE stock_transfers SET quantity = ?2 WHERE id = ?1 AND EXISTS (SELECT 1 FROM stock_movements WHERE id = ?3)",
+      )
+      .bind(id, rest, into),
+    auditStatementWhen(db, entry("stock.receive_transfer", code, written, detail), written.now, {
+      sql: "EXISTS (SELECT 1 FROM stock_movements WHERE id = ?10)",
+      binds: [into],
+    }),
+    ...lotMoves(db, { movementId: into, place, takes: arriving.takes, sign: 1 }),
+    ...unitChanges(db, { units: arriving.units, state: "held", place, movementId: into, ...unitWritten(written) }),
+  ]);
+  // Another receipt, or a settlement, changed what it carries between the read and this batch.
+  if (carried?.meta.changes !== 1) return { ok: false, settled: true };
+  return { ok: true, touched: [place] };
+}
+
+/**
+ * The transfer received at the place it was sent to: `received` of it, all of it by default, or of a hair system the
+ * units named, the rest lost on the way, or with `restOnItsWay` still to come.
+ */
+export async function receiveTransfer(
+  db: D1Database,
+  id: string,
+  input: {
+    readonly received: number | null;
+    readonly note: string | null;
+    readonly units?: readonly string[] | null;
+    readonly restOnItsWay?: boolean;
+  },
   written: Written,
 ): Promise<Settled> {
-  return settle(
-    db,
-    { id, back: false, arrived: input.received, note: input.note, units: input.units ?? null },
-    written,
-  );
+  const units = input.units ?? null;
+  const part = input.restOnItsWay === true && units !== null ? await receivePart(db, id, units, written) : null;
+  return part ?? settle(db, { id, back: false, arrived: input.received, note: input.note, units }, written);
 }
 
 /** The transfer sent back to where it left, before it arrived. */

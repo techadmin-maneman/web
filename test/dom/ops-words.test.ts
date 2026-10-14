@@ -100,7 +100,8 @@ describe("the Words page", () => {
     await show();
     expect(page.textContent).toContain("Hair, fitted at home.");
     expect(page.textContent).toContain(copy.changed("growth@maneman.test", "Mon 5 Oct"));
-    expect(page.textContent).toContain("visit_reminder_v1");
+    expect(page.textContent).toContain("Visit reminder");
+    expect(page.textContent).not.toContain("visit_reminder_v1");
   });
 
   it("saves a line once its change is reviewed", async () => {
@@ -111,7 +112,7 @@ describe("the Words page", () => {
       }),
     );
     await show();
-    await press(copy.editLabel("visit_reminder_v1"));
+    await press(copy.editLabel("Visit reminder"));
     expect(page.textContent).toContain(copy.form.inCode(REMINDER.text));
     expect(page.textContent).toContain(copy.form.atOnce);
     type(reworded);
@@ -128,7 +129,7 @@ describe("the Words page", () => {
       Response.json({ error: { code: "invalid_request", fields: ["text.holes"], request_id: "r-1" } }, { status: 400 }),
     );
     await show();
-    await press(copy.editLabel("visit_reminder_v1"));
+    await press(copy.editLabel("Visit reminder"));
     type("Hi {{1}}, see you tomorrow.");
     await press(copy.form.next);
     await press(copy.check.send);
@@ -152,7 +153,7 @@ describe("the Words page", () => {
       Response.json({ word: { ...HERO, now: HERO.text, changed: null, on_site: false } }),
     );
     await show();
-    await press(copy.historyLabel("hero.title"));
+    await press(copy.historyLabel("Top of the page · Title"));
     expect(page.textContent).toContain(copy.versions.by("growth@maneman.test", "Mon 5 Oct"));
     await press(copy.form.toCode);
     expect(page.querySelector("textarea")?.value).toBe(HERO.text);

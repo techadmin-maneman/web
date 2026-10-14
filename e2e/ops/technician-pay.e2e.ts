@@ -41,8 +41,37 @@ function rate(set: {
   return { city: null, set_by: "finance@maneman.test", set_at: "2026-09-01T06:30:00.000Z", ...set };
 }
 
+/** August's pay: Test technician One's service visits at a rate, and a replacement no rate covered. */
+const STATEMENT = {
+  month: "2026-08",
+  lines: [
+    {
+      technician_id: "t1",
+      technician: "Test technician One",
+      city: "Delhi",
+      kind: "service",
+      visits: 12,
+      rate: 40_000,
+      amount: 480_000,
+    },
+    {
+      technician_id: "t1",
+      technician: "Test technician One",
+      city: "Delhi",
+      kind: "replacement",
+      visits: 1,
+      rate: null,
+      amount: null,
+    },
+  ],
+} satisfies OpsReply<"/api/technician-pay/statement">;
+
 async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
-  await answer(page, { "GET /api/technician-pay": json(PAY), ...extra });
+  await answer(page, {
+    "GET /api/technician-pay": json(PAY),
+    "GET /api/technician-pay/statement": json(STATEMENT),
+    ...extra,
+  });
   await page.goto("/technician-pay");
   await expect(page.getByRole("heading", { level: 1, name: "Technician pay" })).toBeVisible();
 }
@@ -88,6 +117,21 @@ test("sets a rate from a date, in rupees, for every city, once it is reviewed", 
   await page.getByRole("button", { name: review.send }).click();
   await expect(page.getByRole("status")).toHaveText(copy.done.saved);
   expect(sent).toEqual({ grade_id: TRAINEE, city: null, kind: "replacement", amount: 45000, from: "2026-10-01" });
+});
+
+test("shows last month's pay at the rates per visit, says what no rate covered, and gives it as a CSV", async ({
+  page,
+}) => {
+  await open(page);
+  const panel = page.getByRole("region", { name: copy.statement.title });
+  await expect(panel.getByRole("combobox", { name: copy.statement.month })).toHaveValue("2026-08");
+  await expect(panel.getByRole("row").filter({ hasText: copy.kinds.service })).toContainText("Rs. 4,800");
+  await expect(panel.getByRole("row").filter({ hasText: copy.kinds.replacement })).toContainText(copy.statement.noRate);
+  await expect(panel).toContainText(copy.statement.totalUnpriced("Test technician One"));
+
+  const download = page.waitForEvent("download");
+  await panel.getByRole("button", { name: copy.statement.download }).click();
+  expect((await download).suggestedFilename()).toBe("technician-pay-2026-08.csv");
 });
 
 test("adds a grade, and gives a technician one", async ({ page }) => {

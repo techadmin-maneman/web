@@ -183,7 +183,11 @@ function RateFields({ pay, draft, edit }: DraftProps) {
             />
           )}
         </Field>
-        <Field label={form.from} className={styles.field}>
+        <Field
+          label={form.from}
+          className={styles.field}
+          error={draft.from !== "" && draft.from < pay.today ? technicianPay.errors.from : undefined}
+        >
           {(control) => (
             <DateInput
               {...control}

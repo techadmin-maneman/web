@@ -142,7 +142,6 @@ Cloudflare dashboard → Manage Account → Account API Tokens → Create Token 
 - Name `mm-ci-<env>`.
 - Workers: role **Editor**, scope **Specified Workers**: every Worker in `scripts/lib/workers.ts`, for that environment: `mm-api-<env>`, `mm-site-<env>`, `mm-app-<env>`, `mm-ops-<env>` and `mm-tech-<env>`. A token can only name a Worker that exists, so a new Worker is added to its token after its bootstrap (step 11); until then its deploy step skips it, or fails with "No access to the specified service".
 - Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
-- Account → **Workers Scripts → Read**. The upload checks that each Workflow the API binds is its own (`GET /workflows/<name>`), and that call takes an account-wide Workers permission; Read is the least that does. It lets the token read the other environment's Workers' settings and code, never change them; their secrets stay unreadable. The Workflows themselves are made by `npm run apply-triggers`, from a login of your own.
 - Account → **D1 → Edit**. This is account-wide, so the staging token can also read and write production's database, and production's staging's; that is accepted in `docs/decisions/0008-owner-decisions-on-platform-constraints.md`.
 - Optional, production's token: Account → **Account Analytics → Read**. With it, the canary's soak judges the new version on real visitors' errors as well as the smoke's (`docs/decisions/0006-deployment-pipeline.md`); without it the soak says so and the smoke checks stand alone.
 - Optional, production's token: Account → **Workers Observability → Edit** (Cloudflare asks for Edit to run a query, which changes nothing). With it, the soak also fails a release whose busy routes read more rows from D1 a request than their ceilings in `scripts/lib/usage-budget.ts`, or whose Home or job card is slower at p95 than its budget in `scripts/lib/soak.ts`; without it the soak says it could not read them.
@@ -498,6 +497,8 @@ Payments and refunds are mirrored from Razorpay's webhook (docs/decisions/0044-p
    - Events: `order.paid`, `payment.authorized`, `payment.captured`, `payment.failed`, `refund.created`, `refund.processed`, `refund.failed`, `refund.speed_changed`, and `payment_link.paid`, which names the payment link a consultation and fit in one visit was paid by (ADR 0105).
    - Payment links on: the one visit's link is made through the API (`POST /v1/payment_links`), which the account must allow (open point 166).
    - On staging, the hooks path already has its Access bypass (step 12, point 3).
+
+4. **The logo on a link's page,** in Razorpay's dashboard, in each mode: Account & Settings → Branding → upload the site's `icon-512.png` (`https://maneman.in/icon-512.png`). The API cannot set it, and without it a link's page shows a blank square. Every link already carries the client's name and number.
 
 ## 12. WhatsApp delivery receipts and STOP replies (Evolution)
 

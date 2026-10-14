@@ -3,6 +3,7 @@
 // the client pays and the date the supplier promised; the client pays it in full by a payment link
 // (src/domain/money/custom-order-links.ts); only then is it ordered, on a purchase order of its own (./custom-order-po.ts).
 
+import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { latestFits } from "../clients/hair-profiles.ts";
 import { auditStatement, auditStatementWhen } from "../platform/audit.ts";
 import { MATCHED_FIELDS } from "../inventory/stock-match.ts";
@@ -107,7 +108,7 @@ const orderOf = (row: OrderRow): CustomOrder => ({
 /** The client's custom orders, newest first. */
 export async function customOrdersOf(db: D1Database, personId: string): Promise<CustomOrder[]> {
   const { results } = await db
-    .prepare(`${ORDER_SQL} WHERE k.person_id = ?1 ORDER BY k.number DESC`)
+    .prepare(`${ORDER_SQL} WHERE k.person_id = ?1 ORDER BY k.raised_at DESC, k.rowid DESC`)
     .bind(personId)
     .all<OrderRow>();
   return results.map(orderOf);
@@ -154,9 +155,8 @@ export async function raiseCustomOrder(
         `INSERT INTO custom_orders (id, number, person_id, product, base_width_in, base_length_in, colour, grey_percent,
            density_percent, wave, note, supplier_id, supplier_price, amount, promised_on, state, raised_by, raised_at,
            updated_at)
-         SELECT ?1, COALESCE(MAX(number), 0) + 1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14,
-           'awaiting_payment', ?15, ?16, ?16
-         FROM custom_orders`,
+         SELECT ?1, ${freshNumber("custom_orders", "?17")}, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14,
+           'awaiting_payment', ?15, ?16, ?16`,
       )
       .bind(
         id,
@@ -175,6 +175,7 @@ export async function raiseCustomOrder(
         raised.promisedOn,
         written.actor.id,
         at,
+        drawnNumbers(),
       ),
     auditStatement(
       db,

@@ -25,10 +25,10 @@
 
 import { createRoute, z } from "@hono/zod-openapi";
 import { typedDigits } from "@maneman/web-kit/mobile";
-import { CLIENTS_PER_PAGE, listClients } from "../../domain/clients/client-list.ts";
+import { CLIENTS_PER_PAGE, listClients, NEXT_VISIT_COLUMNS } from "../../domain/clients/client-list.ts";
 import { fittedSql } from "../../domain/clients/fitted.ts";
 import { reachBinding, withinReach } from "../../domain/clients/places.ts";
-import { CLIENT_STATES, clientStateOf, UPCOMING_STATUSES } from "../../domain/visits/client-visits.ts";
+import { CLIENT_STATES, clientStateOf } from "../../domain/visits/client-visits.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -37,6 +37,7 @@ import { routeReach, withinRouteReach, type PersonRow } from "../../http/staff-a
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { unknownClient } from "../schemas/clients.ts";
 
+const UnderWay = z.boolean().openapi({ description: "Whether a visit of theirs has begun and is not yet closed." });
 const searchRoute = createRoute({
   method: "post",
   path: "/api/clients/search",
@@ -107,6 +108,7 @@ const findRoute = createRoute({
                   next_visit: z.union([z.iso.datetime(), z.null()]).openapi({
                     description: "When the client's next visit not yet closed starts; null for none.",
                   }),
+                  under_way: UnderWay,
                 })
                 .strict(),
             ),
@@ -148,6 +150,7 @@ const listRoute = createRoute({
                     description: "Their address's city, else where they last booked or asked to be told.",
                   }),
                   next_visit: z.union([z.iso.datetime(), z.null()]),
+                  under_way: UnderWay,
                 })
                 .strict(),
             ),
@@ -199,6 +202,7 @@ export function registerOpsClients(app: App): void {
           state: client.state,
           city: client.city,
           next_visit: client.nextVisit,
+          under_way: client.underWay,
         })),
         next_cursor: listed.more ? cursorOf(String(page + 1)) : null,
         cities: served.results.map((row) => row.name),
@@ -226,16 +230,21 @@ export function registerOpsClients(app: App): void {
     const reached = await routeReach(c);
     const { results } = await c.env.DB.prepare(
       `SELECT client.id, client.name, client.mobile_e164, ${fittedSql("client.id")} AS fitted,
-         (SELECT MIN(a.window_start) FROM appointments a
-          WHERE a.person_id = client.id AND a.deleted_at IS NULL AND a.window_start IS NOT NULL
-            AND a.window_end IS NOT NULL AND a.status IN ${UPCOMING_STATUSES}) AS next_visit
+         ${NEXT_VISIT_COLUMNS("client")}
        FROM people client
        WHERE client.erased_at IS NULL AND client.${column} LIKE ?1 ESCAPE '\\'
          AND ${withinReach("client", "client", "?3")}
        ORDER BY client.name, client.id LIMIT ?2`,
     )
       .bind(containing(search.text), CLIENTS_FOUND + 1, reachBinding(reached))
-      .all<{ id: string; name: string; mobile_e164: string; fitted: number; next_visit: string | null }>();
+      .all<{
+        id: string;
+        name: string;
+        mobile_e164: string;
+        fitted: number;
+        next_visit: string | null;
+        under_way: number;
+      }>();
     // Each with where it stands and its next visit, so two clients of one name can be told apart.
     return c.json(
       {
@@ -245,6 +254,7 @@ export function registerOpsClients(app: App): void {
           mobile: row.mobile_e164,
           state: clientStateOf(row.fitted === 1, row.next_visit !== null),
           next_visit: row.next_visit,
+          under_way: row.under_way === 1,
         })),
         more: results.length > CLIENTS_FOUND,
       },

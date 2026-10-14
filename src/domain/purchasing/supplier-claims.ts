@@ -2,6 +2,7 @@
 // its receipt, and a returned piece inside its supplier's warranty (./returned-pieces.ts). Ops send each to the
 // supplier, then record what came of it: a credit, a replacement, or a refusal. A claim not worth sending is withdrawn.
 
+import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { auditStatementWhen, type AuditAction } from "../platform/audit.ts";
 import type { Written } from "../inventory/stock.ts";
 
@@ -35,12 +36,9 @@ export interface SupplierClaim {
 /** How many settled claims the list shows after every open one. */
 const SETTLED_SHOWN = 50;
 
-/** The next claim's number, inside a statement that writes one. */
-export const NEXT_CLAIM_NUMBER = "(SELECT COALESCE(MAX(number), 0) + 1 FROM supplier_claims)";
-
 /**
  * A receipt line's claims: one for what arrived damaged, one for what failed its check, each at the order line's
- * price. Written in the receipt's batch, so each takes the next number in turn.
+ * price. Written in the receipt's batch, so each takes a number the one before did not.
  */
 export function receiptClaimStatements(
   db: D1Database,
@@ -56,8 +54,8 @@ export function receiptClaimStatements(
       .prepare(
         `INSERT INTO supplier_claims (id, number, supplier_id, consumable_code, quantity, reason, receipt_line_id,
            unit_price, currency, state, drafted_by, drafted_at)
-         SELECT ?1, ${NEXT_CLAIM_NUMBER}, o.supplier_id, p.consumable_code, ?2, ?3, ?4, p.unit_price, o.currency,
-           'drafted', ?5, ?6
+         SELECT ?1, ${freshNumber("supplier_claims", "?8")}, o.supplier_id, p.consumable_code, ?2, ?3, ?4, p.unit_price,
+           o.currency, 'drafted', ?5, ?6
          FROM po_lines p JOIN purchase_orders o ON o.id = p.po_id WHERE p.id = ?7`,
       )
       .bind(
@@ -68,6 +66,7 @@ export function receiptClaimStatements(
         written.actor.id,
         written.now.toISOString(),
         line.poLineId,
+        drawnNumbers(),
       ),
   );
 }
@@ -105,12 +104,12 @@ export async function supplierClaims(db: D1Database): Promise<SupplierClaim[]> {
   const [open, settled] = await db.batch<ClaimRow>([
     db.prepare(
       `SELECT ${columns} FROM supplier_claims k INDEXED BY supplier_claims_open ${joins}
-       WHERE k.state IN ('drafted', 'sent') ORDER BY k.number DESC`,
+       WHERE k.state IN ('drafted', 'sent') ORDER BY k.drafted_at DESC, k.rowid DESC`,
     ),
     db
       .prepare(
         `SELECT ${columns} FROM supplier_claims k ${joins}
-         WHERE k.state NOT IN ('drafted', 'sent') ORDER BY k.number DESC LIMIT ?1`,
+         WHERE k.state NOT IN ('drafted', 'sent') ORDER BY k.drafted_at DESC, k.rowid DESC LIMIT ?1`,
       )
       .bind(SETTLED_SHOWN),
   ]);

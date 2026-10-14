@@ -508,6 +508,7 @@ export const api = {
   setWord: (key: string, text: string | null) => client.post("/api/words", { body: { key, text } }),
   publishWords: () => client.post("/api/words/publish"),
   technicianPay: () => client.get("/api/technician-pay"),
+  payStatement: (month: string) => client.get("/api/technician-pay/statement", { query: { month } }),
   addPayGrade: (name: string) => client.post("/api/technician-pay/grades", { body: { name } }),
   renamePayGrade: (id: string, name: string) =>
     client.patch("/api/technician-pay/grades/{id}", { path: { id }, body: { name } }),

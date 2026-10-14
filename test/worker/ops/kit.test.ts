@@ -2,7 +2,7 @@
 // Monday 21 September 2026, 12 noon in India.
 //
 // What these hold: a top-up sent to wait for the technician's scan arrives only when they receive it, of the pieces
-// they scanned, once; the kit shows what it holds by lot and label, what is coming, and its pieces to hand back, never a
+// they scanned, once, the rest lost only where they say so and otherwise still on its way; the kit shows what it holds by lot and label, what is coming, and its pieces to hand back, never a
 // cost; and handing back marks each returned piece handed in at the kit's place and sends the expired stock there.
 
 import { env } from "cloudflare:workers";
@@ -55,7 +55,7 @@ describe("a top-up that waits for the technician's scan", () => {
 
     const received = await job.post(
       `/api/tech/kit/transfers/${coming?.id ?? ""}/receive`,
-      { units: [first] },
+      { units: [first], rest: "missing" },
       "event-kit-01",
     );
     expect(received.status).toBe(200);
@@ -68,6 +68,32 @@ describe("a top-up that waits for the technician's scan", () => {
 
     const again = await job.post(`/api/tech/kit/transfers/${coming?.id ?? ""}/receive`, {}, "event-kit-02");
     expect(again.status).toBe(409);
+  });
+
+  it("keeps the pieces not scanned on their way unless the technician says they're missing", async () => {
+    const sent = { consumable_code: code, quantity: 2, from: "central", to: IMRAN, wait_for_scan: true };
+    await job.opsPost("/api/stock/transfers", sent);
+    const [coming] = (await kit()).coming;
+    const [first = "", second = ""] = coming?.units ?? [];
+    const receipt = `/api/tech/kit/transfers/${coming?.id ?? ""}/receive`;
+
+    const part = await (await job.post(receipt, { units: [first] }, "event-kit-01")).json<Kit>();
+    expect(part.held.find((item) => item.code === code)).toMatchObject({ quantity: 1, units: [{ code: first }] });
+    expect(part.coming).toMatchObject([{ id: coming?.id, quantity: 1, units: [second] }]);
+    expect(
+      await env.DB.prepare("SELECT state FROM stock_units WHERE code = ?1").bind(second).first<string>("state"),
+    ).toBe("in_transit");
+
+    const rest = await job.post(receipt, { units: [second] }, "event-kit-02");
+    expect(rest.status).toBe(200);
+    const after = await rest.json<Kit>();
+    expect(after.held.find((item) => item.code === code)).toMatchObject({ quantity: 2, lots: [{ lot_code: "HS-1" }] });
+    expect(after.coming).toEqual([]);
+    expect(
+      await env.DB.prepare("SELECT state FROM stock_transfers WHERE id = ?1")
+        .bind(coming?.id ?? "")
+        .first<string>("state"),
+    ).toBe("received");
   });
 
   it("is no other technician's to receive, and a plain hand-over still arrives at once", async () => {

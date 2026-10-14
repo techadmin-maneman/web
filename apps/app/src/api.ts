@@ -192,6 +192,9 @@ export const api = {
   /** The client's dispute of the no-show's charge on a visit, once a charge (ADR 0096). */
   dispute: (visitId: string, reason: string) =>
     client.post("/api/visits/{id}/dispute", { path: { id: visitId }, body: { reason } }),
+  /** Something wrong with the hair system or a visit, told to Care. */
+  reportProblem: (body: { about: "hair_system" | "visit"; visit_id: string | null; text: string }) =>
+    client.post("/api/me/problems", { body }),
 };
 
 /** A visit's tax invoice, as a PDF the browser opens itself. */

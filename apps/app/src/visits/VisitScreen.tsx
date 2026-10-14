@@ -7,7 +7,7 @@
 // visit that is not the client's says so, rather than offering to try again.
 
 import { DocumentLink } from "@maneman/ui/DocumentLink";
-import { DisputeSheet } from "../booking/index.ts";
+import { DisputeSheet, ProblemLink } from "../booking/index.ts";
 import { VisitCard } from "../home/index.ts";
 import { PhotoRow, type OpenPhoto, PhotoSheet } from "../photos/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
@@ -183,6 +183,9 @@ function PastVisit({ visit, onChanged }: { visit: VisitDetail; onChanged: () => 
         )}
       </dl>
       <Invoice visit={visit} />
+      {visit.status === "completed" && (
+        <ProblemLink about={{ about: "visit", visitId: visit.id }} className={styles.dispute} />
+      )}
       {open !== null && (
         <PhotoSheet
           photo={open}

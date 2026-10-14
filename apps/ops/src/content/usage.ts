@@ -1,10 +1,12 @@
 // Operations · Usage (docs/decisions/0186-usage-and-shrinkage.md). No design draws it; every word here is ours. Only
 // the Usage page reads it, loaded when it opens.
 
+import { fullDate } from "@maneman/web-kit/dates";
+
 export const usage = {
   title: "Usage",
-  /** "Since 24 Aug 2026" */
-  since: (day: string) => `Since ${day}`,
+  /** "Since 24 Aug 2026", of the day as YYYY-MM-DD. */
+  since: (day: string) => `Since ${fullDate(day)}`,
   technicians: "Against expected",
   techniciansNote: "Each technician's consumables, valued at cost, against what their visits were expected to use.",
   noTechnicians: "No visits done in these weeks.",

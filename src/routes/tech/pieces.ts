@@ -1,5 +1,6 @@
 // The label the technician types on the piece step: GET /api/tech/pieces/lookup?code=MM-STD-4417-B. It reads our
-// own pieces; a code not among them is unknown, and the technician types the piece's details instead.
+// own pieces, then the units in the technician's own kit, one of which is the piece about to go on; a code that is
+// neither is unknown, and the technician types the piece's details instead.
 //
 // No client's name or number here: a label says which piece, not whose.
 
@@ -7,6 +8,7 @@ import { techRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { pieceWithOwner } from "../../domain/inventory/pieces.ts";
+import { kitUnit } from "../../domain/inventory/stock-units.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 
@@ -27,9 +29,17 @@ export const PieceSchema = z
   .openapi("Piece");
 
 const LookupSchema = z
-  .object({ piece: PieceSchema, belongs_to_this_job: z.boolean() })
+  .object({
+    piece: PieceSchema,
+    belongs_to_this_job: z.boolean().openapi({
+      description: "The label is one of the job's client's pieces, or a unit in the technician's kit, about to be one.",
+    }),
+    in_kit: z
+      .boolean()
+      .openapi({ description: "A unit in the technician's own kit, not yet fitted: base is its name." }),
+  })
   .strict()
-  .openapi("PieceLookup", { description: "Whether the label is one of the job's client's pieces." });
+  .openapi("PieceLookup", { description: "What the label names, and whether it is this job's." });
 
 const lookupRoute = techRoute({
   method: "get",
@@ -46,8 +56,14 @@ const lookupRoute = techRoute({
 export function registerTechPieces(app: App): void {
   app.openapi(lookupRoute, async (c) => {
     const { code, job } = c.req.valid("query");
-    const found = await pieceWithOwner(c.env.DB, code.trim().toUpperCase());
-    if (found === null) return refuse(c, "not_found");
+    const label = code.trim().toUpperCase();
+    const found = await pieceWithOwner(c.env.DB, label);
+    if (found === null) {
+      const unit = await unitInKit(c.env.DB, technicianOf(c).technicianId, label);
+      return unit === null
+        ? refuse(c, "not_found")
+        : c.json({ piece: unit, belongs_to_this_job: true, in_kit: true }, 200);
+    }
 
     // Only a job of their own says whose the piece is: any other reads as none.
     const client =
@@ -60,10 +76,31 @@ export function registerTechPieces(app: App): void {
       {
         piece: normalise(found.piece),
         belongs_to_this_job: (client?.person_id ?? null) !== null && client?.person_id === found.personId,
+        in_kit: false,
       },
       200,
     );
   });
+}
+
+/** A unit the technician's kit holds under the label, as a piece not yet fitted: its hair system's name and its lot. */
+async function unitInKit(db: D1Database, technicianId: string, label: string) {
+  const unit = await kitUnit(db, technicianId, label);
+  if (unit === null) return null;
+  const name = await db
+    .prepare("SELECT name FROM consumables WHERE code = ?1")
+    .bind(unit.consumableCode)
+    .first<string>("name");
+  return {
+    piece_code: unit.code,
+    base: name,
+    supplier_lot: unit.lotCode,
+    fitted_at: null,
+    replacement_due_at: null,
+    failed_at: null,
+    failure_reason: null,
+    replaced_at: null,
+  };
 }
 
 /** Dates as the schema names them: the fitted and due dates are days, the failure an instant. */

@@ -13,7 +13,7 @@ export const technicians = {
    * Four of the design's five columns, and Leave where it draws Skill: nothing
    * records a skill, and a day off is what ops need to see down the roster.
    */
-  columns: ["Technician", "Zone", "Jobs", "Avg service", "Leave"],
+  columns: ["Technician", "City", "Jobs", "Avg service", "Leave"],
   narrow: "Filter technicians",
   /** The Leave column: away today until when, the first day of leave to come, or nothing. */
   away: (until: string) => `Away to ${until}`,
@@ -202,7 +202,8 @@ export const technicians = {
     number_in_use: "Another active technician signs in with that number.",
     number_in_use_now: "Another active technician now uses this number. Change one of them first.",
     unreadable_mobile: "Enter a 10-digit Indian mobile.",
-    invalid_request: "Enter his name and a 10-digit Indian mobile.",
+    name_taken: "Another technician goes by that name. Add a surname or an initial.",
+    invalid_request: "Enter their name and a 10-digit Indian mobile.",
     not_found: "No longer on the roster. Reload.",
     not_permitted: NOT_PERMITTED,
     offline: OFFLINE,

@@ -1040,7 +1040,7 @@ What the kit holds, what is on its way to it, and the pieces to hand back
 
 ### POST /api/tech/kit/transfers/{id}/receive
 
-A top-up received: all of it, or of a hair system the pieces scanned, the rest lost on the way
+A top-up received: all of it, or of a hair system the pieces scanned, the rest still to come or missing
 
 Request body:
 
@@ -1168,6 +1168,7 @@ Request body:
             "code_expired",
             "too_early",
             "number_in_use",
+            "name_taken",
             "not_ready",
             "ops_assisted",
             "taken",
@@ -2285,6 +2286,14 @@ Request body:
         {
           "type": "object",
           "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "on_its_way",
+                "sent",
+                "delivered"
+              ]
+            },
             "delivered_at": {
               "anyOf": [
                 {
@@ -2298,6 +2307,7 @@ Request body:
             }
           },
           "required": [
+            "state",
             "delivered_at"
           ],
           "additionalProperties": false
@@ -2306,7 +2316,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "The day-before or arrival WhatsApp that went to the client, and when it was delivered; null when none went, as when one was skipped or failed."
+      "description": "The day-before or arrival WhatsApp to the client: on its way, sent, or delivered and when; null when none went, as when one was skipped or failed."
     },
     "steps": {
       "type": "array",
@@ -4059,15 +4069,21 @@ Request body:
       "$ref": "#/components/schemas/Piece"
     },
     "belongs_to_this_job": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "The label is one of the job's client's pieces, or a unit in the technician's kit, about to be one."
+    },
+    "in_kit": {
+      "type": "boolean",
+      "description": "A unit in the technician's own kit, not yet fitted: base is its name."
     }
   },
   "required": [
     "piece",
-    "belongs_to_this_job"
+    "belongs_to_this_job",
+    "in_kit"
   ],
   "additionalProperties": false,
-  "description": "Whether the label is one of the job's client's pieces."
+  "description": "What the label names, and whether it is this job's."
 }
 ```
 
@@ -4330,6 +4346,15 @@ Request body:
       },
       "minItems": 1,
       "maxItems": 500
+    },
+    "rest": {
+      "type": "string",
+      "enum": [
+        "on_its_way",
+        "missing"
+      ],
+      "default": "on_its_way",
+      "description": "Of a part received, whether the pieces not scanned are still to come or were lost on the way."
     }
   },
   "additionalProperties": false

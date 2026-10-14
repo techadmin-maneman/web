@@ -66,3 +66,10 @@
 .ask {
   padding: var(--sp-12) var(--sp-20) 0;
 }
+
+/* A technician's total beneath their month's lines. */
+.total > th,
+.total > td {
+  font-weight: var(--weight-medium);
+  border-top: var(--hairline) solid var(--paper-line);
+}

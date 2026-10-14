@@ -60,7 +60,9 @@ export type DeviceRecord =
       readonly page: "fit" | "history";
       readonly fit: FitForm;
       readonly history: HistoryForm;
-    };
+    }
+  /** The checklist's ticks as made, so closing the app loses none; gone once sent (../steps/Checklist.tsx). */
+  | { readonly key: "checklist_draft"; readonly job_id: string; readonly done: readonly string[] };
 
 export interface Records {
   readonly device: DeviceRecord;

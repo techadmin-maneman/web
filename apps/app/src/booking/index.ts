@@ -5,3 +5,4 @@ export { BookNext } from "./BookNext.tsx";
 export { ChangeSheet, type ChangingVisit } from "./ChangeSheet.tsx";
 export { DisputeSheet } from "./DisputeSheet.tsx";
 export { NoteSheet } from "./NoteSheet.tsx";
+export { ProblemLink } from "./ProblemSheet.tsx";

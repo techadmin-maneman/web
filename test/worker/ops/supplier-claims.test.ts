@@ -10,7 +10,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { jpegOf } from "../cards.ts";
-import { markDatabase, NOW, request } from "../helpers.ts";
+import { A_NUMBER, markDatabase, NOW, request } from "../helpers.ts";
 import { working, type Working } from "../job-fixtures.ts";
 
 interface Claims {
@@ -164,8 +164,14 @@ beforeEach(async () => {
 describe("a claim on a supplier", () => {
   it("is drafted with its receipt for what arrived damaged and what failed its check, at the order's price", async () => {
     expect((await claims()).claims).toEqual([
-      expect.objectContaining({ number: 2, reason: "qc_failed", quantity: 1, unit_price: 250, currency: "USD" }),
-      expect.objectContaining({ number: 1, reason: "damaged", quantity: 1, order_number: 1, state: "drafted" }),
+      expect.objectContaining({ number: A_NUMBER, reason: "qc_failed", quantity: 1, unit_price: 250, currency: "USD" }),
+      expect.objectContaining({
+        number: A_NUMBER,
+        reason: "damaged",
+        quantity: 1,
+        order_number: A_NUMBER,
+        state: "drafted",
+      }),
     ]);
   });
 
@@ -227,7 +233,7 @@ describe("a returned piece", () => {
     const answer = await claimed.json<Claims>();
     expect(answer.returns).toEqual([]);
     expect(answer.claims[0]).toMatchObject({
-      number: 3,
+      number: A_NUMBER,
       reason: "warranty",
       piece_code: piece.label,
       quantity: 1,

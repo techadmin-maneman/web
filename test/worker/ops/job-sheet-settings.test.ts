@@ -214,6 +214,8 @@ describe("the partial reasons ops save", () => {
     expect((await saved.json<Sheet>()).partial_reasons.retired.map((reason) => reason.code)).toEqual([
       "client_unwell",
       "more_time_needed",
+      "scalp_not_suitable",
+      "skin_reaction",
     ]);
 
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ partial_reasons: unknown }>();

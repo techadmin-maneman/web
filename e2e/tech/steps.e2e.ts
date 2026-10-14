@@ -7,7 +7,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
-import { atTheDoor, heldOnPhone, pageScrolls, queuedOnPhone } from "./on-phone.ts";
+import { atTheDoor, deviceRecordOnPhone, heldOnPhone, pageScrolls, queuedOnPhone } from "./on-phone.ts";
 import { startedThrough, writesTo, checklistItems, gilded } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
@@ -110,6 +110,27 @@ test("draws nothing in gold but the one primary action", async ({ page }) => {
   await page.getByRole("button", { name: "Client stopped it partway" }).click();
   expect(await gilded(page)).toEqual(["Next"]);
   expect(await axeViolations(page)).toEqual([]);
+});
+
+test("keeps the checklist's ticks when the app closes part-way, and lets them go once sent", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos");
+  await page.goto(`/jobs/${JOB_ID}/checklist`);
+  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await checklistItems(page).nth(0).click();
+  await checklistItems(page).nth(1).click();
+  await expect.poll(() => deviceRecordOnPhone(page, "checklist_draft")).toContain(fake.checklist[1]?.id ?? "");
+
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await expect(checklistItems(page).nth(0)).toHaveAttribute("aria-pressed", "true");
+  await expect(checklistItems(page).nth(1)).toHaveAttribute("aria-pressed", "true");
+  await expect(checklistItems(page).nth(2)).toHaveAttribute("aria-pressed", "false");
+
+  await checklistItems(page).nth(2).click();
+  await footAction(page).click();
+  await expect.poll(() => writesTo(fake, "checklist").length).toBe(1);
+  await expect.poll(() => deviceRecordOnPhone(page, "checklist_draft")).toBeNull();
 });
 
 test("names the checklist for the visit it is on", async ({ page }) => {

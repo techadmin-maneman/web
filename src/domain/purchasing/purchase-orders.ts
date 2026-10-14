@@ -5,6 +5,7 @@
 //
 // Each change is a conditional write with its audit entry, so two managers approving at once approve once.
 
+import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { needsSecondApproval, CANCELLABLE, type PoState } from "../../policy/purchasing.ts";
 import { auditStatement, auditStatementWhen, type AuditActor, type AuditAction } from "../platform/audit.ts";
 
@@ -74,7 +75,7 @@ export async function purchaseOrders(db: D1Database): Promise<PurchaseOrder[]> {
     .prepare(
       `SELECT id, number, supplier_id, currency, state, expected_on, note, drafted_by, drafted_at, approved_by,
          second_approved_by, sent_at, cancel_reason
-       FROM purchase_orders ORDER BY state IN ('received', 'closed', 'cancelled'), number DESC LIMIT ?1`,
+       FROM purchase_orders ORDER BY state IN ('received', 'closed', 'cancelled'), drafted_at DESC, rowid DESC LIMIT ?1`,
     )
     .bind(SETTLED_SHOWN)
     .all<OrderRow>();
@@ -163,9 +164,18 @@ export async function draftOrder(
       .prepare(
         `INSERT INTO purchase_orders (id, number, supplier_id, currency, state, expected_on, note, drafted_by, drafted_at,
            updated_at)
-         SELECT ?1, COALESCE(MAX(number), 0) + 1, ?2, ?3, 'drafted', ?4, ?5, ?6, ?7, ?7 FROM purchase_orders`,
+         SELECT ?1, ${freshNumber("purchase_orders", "?8")}, ?2, ?3, 'drafted', ?4, ?5, ?6, ?7, ?7`,
       )
-      .bind(id, draft.supplierId, supplier.currency, draft.expectedOn, draft.note, written.actor.id, at),
+      .bind(
+        id,
+        draft.supplierId,
+        supplier.currency,
+        draft.expectedOn,
+        draft.note,
+        written.actor.id,
+        at,
+        drawnNumbers(),
+      ),
     ...priced.map(({ line, item }) =>
       db
         .prepare("INSERT INTO po_lines (id, po_id, consumable_code, quantity, unit_price) VALUES (?1, ?2, ?3, ?4, ?5)")

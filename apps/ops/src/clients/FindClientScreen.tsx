@@ -42,7 +42,8 @@ function findingOf(kept: KeptSearch | null): Finding {
 /** "Fitted · Next visit Sat 20 Sep, 10:30 am". */
 function standing(client: ClientsFound["clients"][number]): string {
   const next = client.next_visit;
-  const visit = next === null ? copy.noVisit : copy.nextVisit(`${shortDate(indiaDate(next))}, ${indiaClock(next)}`);
+  const when = next === null ? copy.noVisit : copy.nextVisit(`${shortDate(indiaDate(next))}, ${indiaClock(next)}`);
+  const visit = client.under_way ? copy.underWay : when;
   return `${clients.states[client.state]} · ${visit}`;
 }
 

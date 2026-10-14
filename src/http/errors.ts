@@ -46,6 +46,8 @@ export const ERROR_CODES = [
   "too_early",
   // A number change ops cannot confirm: another person holds the new number (docs/decisions/0042-client-profile.md).
   "number_in_use",
+  // A technician added, or renamed, to the name another active technician goes by: the two could not be told apart.
+  "name_taken",
   // A Razorpay refund for a payment not yet recorded: Razorpay retries it (docs/decisions/0044-payments-mirror.md).
   "not_ready",
   // Booking (docs/decisions/0045-self-serve-booking.md): self-serve is off and ops book instead; the time was taken;
@@ -250,6 +252,7 @@ export const ERROR_STATUS = {
   code_expired: 410,
   too_early: 429,
   number_in_use: 409,
+  name_taken: 409,
   not_ready: 409,
   ops_assisted: 409,
   taken: 409,

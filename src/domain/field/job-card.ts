@@ -80,6 +80,10 @@ interface JobProgress extends JobState {
   readonly steps_done: CardStep[];
 }
 
+/** Where the client's WhatsApp stands: still going, sent, or on their phone. */
+export const REMINDER_STATES = ["on_its_way", "sent", "delivered"] as const;
+type ReminderState = (typeof REMINDER_STATES)[number];
+
 interface JobDetail extends JobSummary {
   /** Null while the job is locked. */
   readonly address: JobAddress | null;
@@ -93,8 +97,8 @@ interface JobDetail extends JobSummary {
   /** The client's pieces, newest fit first; null while the job is locked. */
   readonly pieces: CardPiece[] | null;
   readonly last_visit: LastVisit | null;
-  /** The day-before WhatsApp, or the arrival one, that went to the client, and when it reached their phone. */
-  readonly reminder: { readonly delivered_at: string | null } | null;
+  /** The day-before WhatsApp, or the arrival one, that went or is going to the client, and when it reached their phone. */
+  readonly reminder: { readonly state: ReminderState; readonly delivered_at: string | null } | null;
   /**
    * On a one visit and a consultation, the products by name: the first fit's services offered that day, which the
    * one visit's client chooses from and the profile step names.
@@ -297,15 +301,16 @@ export async function lastVisitPhoto(
 }
 
 /**
- * The WhatsApp ops read the receipt of on a no-show (src/domain/no-shows/no-shows.ts), where it went to the client; null where
- * none did, since one queued, skipped or failed never reached their phone.
+ * The WhatsApp ops read the receipt of on a no-show (src/domain/no-shows/no-shows.ts): delivered, sent, or still on its
+ * way, as an arrival notice is the moment the technician checks in; null where none went, or one was skipped or failed.
  */
-async function reminderOf(db: D1Database, appointmentId: string): Promise<{ delivered_at: string | null } | null> {
+async function reminderOf(db: D1Database, appointmentId: string): Promise<JobDetail["reminder"]> {
   const message = await evidenceMessage(db, appointmentId);
   if (message === null) return null;
   const state = messageStateOf(message);
-  if (state !== "delivered" && state !== "sent") return null;
-  return { delivered_at: message.delivered_at };
+  if (state === "delivered" || state === "sent") return { state, delivered_at: message.delivered_at };
+  if (message.state === "queued" || message.state === "waiting") return { state: "on_its_way", delivered_at: null };
+  return null;
 }
 
 function addressOf(row: JobRow): JobAddress | null {

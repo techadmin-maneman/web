@@ -9,13 +9,15 @@
 // the piece step before it.
 
 import { CheckRow } from "@maneman/ui/CheckRow";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { BOX_TICK_STROKE } from "../icons.ts";
 import { declinedTheFit } from "../lib/progress.ts";
 import { Failed, Loading } from "../states/States.tsx";
+import { put, remove } from "../store/db.ts";
 import type { Queued } from "../store/outbox.ts";
+import { useDraft, type Draft } from "./drafts.ts";
 import { checklistSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
@@ -28,24 +30,35 @@ function titleOf(job: Job, declined: boolean): string {
   return job.type === null ? copy.titles.checklist : copy.checklistTitles[job.type];
 }
 
-/** The list once the job is in hand: a refused list starts as it was ticked. */
+/** The list once the job is in hand: a refused list starts as it was ticked, else as the phone kept it. */
 function Ticking({
   job,
   declined,
   refused,
+  draft,
   onFinish,
   onBack,
 }: {
   job: Job;
   declined: boolean;
   refused: Queued | null;
+  draft: Draft<"checklist_draft"> | null;
   onFinish: (body: EventBody<"checklist">) => void;
   onBack: () => void;
 }) {
   const items = declined ? job.checklist_if_declined : job.checklist;
   const listed = items.map((item) => item.id);
-  const [done, setDone] = useState<readonly string[]>(() => checklistSent(refused, listed));
+  const [done, setDone] = useState<readonly string[]>(() =>
+    refused === null && draft !== null
+      ? draft.done.filter((id) => listed.includes(id))
+      : checklistSent(refused, listed),
+  );
   const all = items.length > 0 && done.length === items.length;
+
+  // Kept as ticked: a full phone loses the ticks, never the step.
+  useEffect(() => {
+    put("device", { key: "checklist_draft", job_id: job.id, done }).catch(() => undefined);
+  }, [job.id, done]);
 
   return (
     <StepFrame
@@ -58,6 +71,7 @@ function Ticking({
       notice={refused === null ? null : copy.corrected.other}
       onBack={onBack}
       onAction={() => {
+        remove("device", "checklist_draft").catch(() => undefined);
         onFinish({ done: [...done] });
       }}
     >
@@ -87,8 +101,9 @@ function Ticking({
 
 export function Checklist({ id }: { id: string }) {
   const { loaded, retry, refused, queued, finish, back } = useStep(id, "checklist");
+  const kept = useDraft("checklist_draft", id);
 
-  if (loaded.state === "loading") return <Loading />;
+  if (loaded.state === "loading" || !kept.read) return <Loading />;
   if (loaded.state === "failed") {
     return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
   }
@@ -98,6 +113,7 @@ export function Checklist({ id }: { id: string }) {
       job={job}
       declined={declinedTheFit(job, queued)}
       refused={refused}
+      draft={kept.draft}
       onFinish={(body) => void finish(body)}
       onBack={back}
     />

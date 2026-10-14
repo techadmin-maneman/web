@@ -76,7 +76,7 @@ this map, or when the map names something that no longer exists.
 
 ### Technicians' pay
 
-- **Database work** (`src/domain/field/`): `technician-pay`
+- **Database work** (`src/domain/field/`): `technician-pay`, `pay-statement` (the month's pay at those rates, and its CSV)
 - **Routes** (`src/routes/`): `ops/technician-pay`
 - **Screens:** `apps/ops/src/settings/TechnicianPay.tsx`, `apps/ops/src/settings/PayRates.tsx`,
   `apps/ops/src/settings/PayForms.tsx`
@@ -232,8 +232,8 @@ this map, or when the map names something that no longer exists.
 
 ### The Care inbox
 
-- **Database work** (`src/domain/care/`): `inbox`, `replies`, `care-people` (each client's named Care person), `chat-tasks` (a chat past its reply-by time, on Tasks), `after-hours` (the answer to a message sent while Care are off), `cover` (the team's days off and who covers them), `city-matters` (what Care send to a client's city), `strangers` (a chat from a number we don't know, linked or saved), `quick-replies` (saved answers), `remedies` (free visits Care give, and their approval), `care-numbers` (whether the same-day promise holds)
-- **Routes** (`src/routes/`): `ops/conversations`, `ops/care-people`, `ops/care-rota`, `ops/city-matters`, `ops/strangers`, `ops/quick-replies`, `ops/remedies`, `ops/care-numbers`, `hooks/evolution` (files what clients write)
+- **Database work** (`src/domain/care/`): `inbox`, `replies`, `care-people` (each client's named Care person), `chat-tasks` (a chat past its reply-by time, on Tasks), `after-hours` (the answer to a message sent while Care are off), `cover` (the team's days off and who covers them), `city-matters` (what Care send to a client's city), `strangers` (a chat from a number we don't know, linked or saved), `quick-replies` (saved answers), `remedies` (free visits Care give, and their approval), `care-numbers` (whether the same-day promise holds), `app-reports` (something wrong told from the app)
+- **Routes** (`src/routes/`): `ops/conversations`, `ops/care-people`, `ops/care-rota`, `ops/city-matters`, `ops/strangers`, `ops/quick-replies`, `ops/remedies`, `ops/care-numbers`, `hooks/evolution` (files what clients write), `client/problems`
 - **Tests:** `test/worker/care/`
 
 ### Reports

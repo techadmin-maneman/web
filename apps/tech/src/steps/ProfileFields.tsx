@@ -114,16 +114,15 @@ export function Figure({
         inputMode="decimal"
         autoComplete="off"
         aria-invalid={invalid}
-        aria-describedby={invalid ? `${id}-hint` : undefined}
+        aria-describedby={`${id}-hint`}
         onChange={(event) => {
           onChange(event.target.value);
         }}
       />
-      {invalid && (
-        <p className={styles.hint} id={`${id}-hint`}>
-          {hint}
-        </p>
-      )}
+      {/* The range always shows, so a figure outside it is never refused without saying why. */}
+      <p className={invalid ? styles.hint : styles.range} id={`${id}-hint`}>
+        {hint}
+      </p>
     </div>
   );
 }

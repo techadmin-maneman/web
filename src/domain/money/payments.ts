@@ -8,6 +8,7 @@
 
 import { saltedHash } from "../../lib/hash.ts";
 import { indiaDate } from "../../lib/india-time.ts";
+import { paymentReference } from "../../lib/references.ts";
 import { toE164 } from "../../lib/mobile.ts";
 import type { RazorpayPayment, RazorpayRefund } from "../../providers/payments/razorpay.ts";
 import { confirmPaidHold } from "../booking/bookings.ts";
@@ -157,21 +158,18 @@ async function writePayment({
 }
 
 /**
- * The next number of the year ?2. Payments and payment links, a one visit's and a held visit's, number from one
- * series, so a link can carry the reference its payment will have.
+ * The next number of the year ?2, kept for our own count. Payments and payment links, a one visit's and a held
+ * visit's, number from one series, so a link can carry the reference its payment will have; the reference the client
+ * reads, ?3, is random.
  */
 const NEXT_NUMBER = `(SELECT COALESCE(MAX(number), 0) + 1 FROM (
   SELECT reference_number AS number FROM payments WHERE reference_year = ?2
   UNION ALL SELECT reference_number FROM payment_links WHERE reference_year = ?2
   UNION ALL SELECT reference_number FROM slot_holds WHERE reference_year = ?2))`;
 
-/** "MM-2026-0841": the year ?3, as text, and the next number. */
-const NEXT_REFERENCE = `'MM-' || ?3 || '-' || printf('%04d', ${NEXT_NUMBER})`;
-
-/** The year of India's date, as a number and again as text: D1 binds a number as a decimal, which prints "2026.0". */
-function referenceYear(now: Date): [number, string] {
-  const year = Number(indiaDate(now).slice(0, 4));
-  return [year, String(year)];
+/** The year of India's date, and a fresh reference. */
+function referenceOf(now: Date): [number, string] {
+  return [Number(indiaDate(now).slice(0, 4)), paymentReference()];
 }
 
 /**
@@ -206,31 +204,31 @@ async function giveReference(
       .bind(razorpayPaymentId, holdId),
     db
       .prepare(
-        `UPDATE payments SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+        `UPDATE payments SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ?3
          WHERE razorpay_payment_id = ?1 AND reference IS NULL`,
       )
-      .bind(razorpayPaymentId, ...referenceYear(now)),
+      .bind(razorpayPaymentId, ...referenceOf(now)),
   ]);
 }
 
-/** Gives a one visit's payment link just written the next reference of its India year, which its payment then takes. */
+/** Gives a one visit's payment link just written its reference, which its payment then takes. */
 export function referenceLink(db: D1Database, linkId: string, now: Date): D1PreparedStatement {
   return db
     .prepare(
-      `UPDATE payment_links SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+      `UPDATE payment_links SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ?3
        WHERE id = ?1 AND reference IS NULL`,
     )
-    .bind(linkId, ...referenceYear(now));
+    .bind(linkId, ...referenceOf(now));
 }
 
-/** Gives the hold of a visit ops booked the next reference of its India year, for the link they send the client. */
+/** Gives the hold of a visit ops booked its reference, for the link they send the client. */
 export function referenceHold(db: D1Database, holdId: string, now: Date): D1PreparedStatement {
   return db
     .prepare(
-      `UPDATE slot_holds SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ${NEXT_REFERENCE}
+      `UPDATE slot_holds SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ?3
        WHERE id = ?1 AND reference IS NULL`,
     )
-    .bind(holdId, ...referenceYear(now));
+    .bind(holdId, ...referenceOf(now));
 }
 
 /**

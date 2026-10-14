@@ -14,6 +14,7 @@ const ROHIT = {
   state: "fitted" as const,
   city: "Gurgaon",
   next_visit: "2027-09-25T05:00:00.000Z",
+  under_way: false,
 };
 const KABIR = {
   id: "11111111-1111-4111-8111-111111111113",
@@ -22,6 +23,7 @@ const KABIR = {
   state: "nothing_booked" as const,
   city: null,
   next_visit: null,
+  under_way: false,
 };
 const LISTED = {
   clients: [ROHIT, KABIR],

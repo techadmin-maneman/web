@@ -1,6 +1,6 @@
 import { createStubPayments } from "../../src/providers/payments/stub.ts";
 import { env } from "cloudflare:workers";
-import { vi, type MockInstance } from "vitest";
+import { expect, vi, type MockInstance } from "vitest";
 import { createApp } from "../../src/app.ts";
 import type { App } from "../../src/http/context.ts";
 import { NOW } from "./clock.ts";
@@ -482,3 +482,9 @@ export async function fittedAndPhotographed(personId: string): Promise<string> {
   ]);
   return id;
 }
+
+/** A payment's reference as we make it: random, "MM-7KQ3-9F2D". */
+export const A_REFERENCE = expect.stringMatching(/^MM-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$/) as string;
+
+/** An order's or a claim's number as we draw it, at random. */
+export const A_NUMBER = expect.any(Number) as number;

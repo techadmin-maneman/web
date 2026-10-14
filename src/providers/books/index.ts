@@ -41,7 +41,7 @@ export interface NewBooksPayment {
   readonly amount: number;
   /** India's calendar date it was taken. */
   readonly date: string;
-  /** Ours, e.g. MM-2026-0841: the receipt's reference. */
+  /** Ours, e.g. MM-7KQ3-9F2D: the receipt's reference. */
   readonly reference: string;
   /** For Books' own list: Razorpay's payment ID. The receipt does not print it. */
   readonly description: string;

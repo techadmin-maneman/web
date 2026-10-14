@@ -18,8 +18,28 @@ const holesOf = (text: string): string[] => [...new Set(text.match(/\{\{\d+\}\}|
 /** Whether messages send in new words at once, as the bridge does, or once WhatsApp approves them, as MSG91 does. */
 export type Messages = "at_once" | "after_approval";
 
-/** Where a line sits, as the table names it: "hero.title", "visit_reminder_v1". */
-export const placeOf = (word: Word): string => word.key.replace(/^site:[^/]+\//, "").replace(/^message:/, "");
+/** A part of a line's place in words: "howItWorks" is "How it works", "visit_reminder_v1" is "Visit reminder". */
+function partOf(name: string): string {
+  const said =
+    copy.places[name] ??
+    name
+      .replace(/_v\d+$/, "")
+      .replaceAll("_", " ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2");
+  return said.charAt(0).toUpperCase() + said.slice(1).toLowerCase();
+}
+
+/** Where a line sits, as the table names it: "Header · Menu link 1 · Label"; a message by its name. */
+export function placeOf(word: Word): string {
+  const path = word.key.replace(/^site:[^/]+\//, "").replace(/^message:/, "");
+  const parts: string[] = [];
+  for (const name of path.split(".")) {
+    const last = parts.length - 1;
+    if (/^\d+$/.test(name) && last >= 0) parts[last] = `${parts[last] ?? ""} ${String(Number(name) + 1)}`;
+    else parts.push(partOf(name));
+  }
+  return parts.join(" · ");
+}
 
 export function WordForm(props: {
   readonly word: Word;

@@ -15,11 +15,10 @@ import { ProviderError } from "../../../src/providers/provider-error.ts";
 import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import type { Settings } from "../../../src/config/settings.ts";
-import { captureLogs, LOCAL_CONFIG, LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
+import { A_REFERENCE, captureLogs, LOCAL_CONFIG, LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
 import { JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 import {
   NATURAL,
-  LINK_REFERENCE,
   TWO_WEEKS_ON,
   path,
   A_PIECE,
@@ -157,7 +156,7 @@ describe("closing a one visit the client was fitted at", () => {
     expect(payments.made.links).toEqual([
       {
         amount: NATURAL.amount,
-        reference: LINK_REFERENCE,
+        reference: A_REFERENCE,
         description: "Mane Man Natural hair system · fitted Mon 21 Sep",
         customer: { name: "Rohit Malhotra", contact: "+919810000001" },
         notes: { appointment_id: JOB, person_id: PERSON },
