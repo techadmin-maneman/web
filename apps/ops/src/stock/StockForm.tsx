@@ -257,7 +257,6 @@ const EMPTY = {
   waitForScan: true,
 };
 
-/** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 /** What moved: the kind of movement, the item, and the places it moved between or was counted or lost at. */
 function WhatMoved(props: {
   stock: Stock;
@@ -305,6 +304,7 @@ function WhatMoved(props: {
   );
 }
 
+/** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 export function StockForm({
   stock,
   kinds,

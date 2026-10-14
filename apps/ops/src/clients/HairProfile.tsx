@@ -164,10 +164,10 @@ function wronglyTyped(draft: Draft, thisYear: number): string[] {
   return yearOf(draft.history, thisYear) === "invalid" ? [...figures, "transplant_year"] : figures;
 }
 
-/** The fields the API refused, by the name the form gives them. */
 /** The options a select offers. */
 type SelectOptions = readonly { value: string; label: string }[];
 
+/** The fields the API refused, by the name the form gives them. */
 const refusedFields = (fields: readonly string[]): string[] =>
   fields.map((field) => field.replace(/^(fit|history)\./, ""));
 
