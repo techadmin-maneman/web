@@ -18,6 +18,7 @@ import type { BooksProvider } from "../../providers/books/index.ts";
 import type { CrmProvider } from "../../providers/crm/index.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 import { MAX_SYNC_ATTEMPTS } from "../../config/pipeline.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** Most customers, and most Contacts, one run erases. */
 const PER_RUN = 5;
@@ -160,10 +161,7 @@ const ERASING = {
         .bind(personId),
     event: "books_erasure_failed",
     key: "books_erasure",
-    tell: (customerId, personId, tries) =>
-      `Books would not erase customer ${customerId} of erased client ${personId} after ${tries}, and nothing will ` +
-      'ask again. In Books, delete the customer, or where an invoice names it rename it "Erased client", clear its ' +
-      "contact persons, numbers, e-mail and addresses, and mark it inactive, by hand.",
+    tell: (customer, client, tries) => ALERT_WORDS.books_customer_erasure({ customer, client, tries }),
   },
   contact: {
     countTry: (db, personId) =>
@@ -175,10 +173,7 @@ const ERASING = {
         .bind(personId),
     event: "crm_contact_erasure_failed",
     key: "crm_contact_erasure",
-    tell: (contactId, personId, tries) =>
-      `The CRM would not erase Contact ${contactId} of erased client ${personId} after ${tries}, and nothing will ` +
-      "ask again. In the CRM, open the Contact, clear its name, numbers, e-mail and addresses, then delete it and " +
-      "empty it from the recycle bin, by hand.",
+    tell: (contact, client, tries) => ALERT_WORDS.crm_contact_erasure({ contact, client, tries }),
   },
 } as const satisfies Readonly<Record<string, Erasing>>;
 

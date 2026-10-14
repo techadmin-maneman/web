@@ -26,6 +26,7 @@ import {
   type AuditEntry,
 } from "../platform/audit.ts";
 import { keepingItsTime } from "../booking/hold-stages.ts";
+import { PAYMENT_TAKEN, statusIn } from "../../config/statuses.ts";
 
 /** A code's row. */
 export interface CodeRow {
@@ -212,7 +213,7 @@ interface ListedCode {
 /** A visit's payments that a use stands on: the visit's own, or the hold's that booked it. Refunds come off. */
 export const PAID_ON_USE = `SELECT COALESCE(SUM(p.amount - p.refunded_amount), 0)
   FROM discount_code_uses u LEFT JOIN slot_holds h ON h.id = u.hold_id
-  JOIN payments p ON p.kind = 'visit' AND p.status IN ('captured', 'partially_refunded', 'refunded')
+  JOIN payments p ON p.kind = 'visit' AND ${statusIn("p.status", PAYMENT_TAKEN)}
     AND (p.appointment_id IN (u.appointment_id, h.appointment_id) OR p.razorpay_order_id = h.razorpay_order_id)`;
 
 /** How many codes the list shows: the latest made. Codes are found by how they begin, however old. */

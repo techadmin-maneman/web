@@ -144,9 +144,9 @@ describe("a hold paid at Checkout whose webhook never came", () => {
     });
     expect((await messagesOf(PERSON)).results).toEqual([{ kind: "payment_receipt" }]);
     expect(deps.alerts).toEqual([
-      `Payment pay_unheard of Rs. 2,000 for booking ${ordered.holdId} reached us only when we asked Razorpay. It is ` +
-        "recorded now, and the visit is booked, or refunded if its time has gone. Razorpay's payment messages may " +
-        `not be reaching us (runbook, "Razorpay's webhook is not arriving"). ${CLIENT_PAGE}`,
+      `Check Razorpay's webhook (runbook, "Razorpay's webhook is not arriving"): payment pay_unheard of Rs. 2,000 ` +
+        `for booking ${ordered.holdId} reached us only when we asked Razorpay. It is recorded now, and the visit is ` +
+        `booked, or refunded if its time has gone. ${CLIENT_PAGE}`,
     ]);
   });
 
@@ -203,8 +203,9 @@ describe("a hold paid at Checkout whose webhook never came", () => {
 
     expect(deps.alerts).toHaveLength(2);
     expect(deps.alerts[1]).toBe(
-      `Booking ${ordered.holdId} is paid for, but could not be booked or refunded: Razorpay refused the refund of ` +
-        `pay_stuck. Book the visit for the client, or refund the payment in Razorpay's dashboard. ${CLIENT_PAGE}`,
+      "Book the visit for the client, or refund the payment in Razorpay's dashboard: booking " +
+        `${ordered.holdId} is paid for, and could be neither booked nor refunded (Razorpay refused the refund of ` +
+        `pay_stuck). ${CLIENT_PAGE}`,
     );
   });
 
@@ -292,9 +293,9 @@ describe("a one visit's payment link, paid without its webhook", () => {
     expect(await linkRow()).toEqual({ razorpay_payment_id: "pay_visit", paid_at: at(10 * MINUTE).toISOString() });
     expect(ordersRead).toEqual(["order_visit"]);
     expect(deps.alerts).toEqual([
-      `Payment pay_visit of Rs. 45,000 for visit ${VISIT} reached us only when we asked Razorpay. It is recorded now ` +
-        `as the visit's payment. Razorpay's payment messages may not be reaching us (runbook, "Razorpay's webhook is ` +
-        `not arriving"). ${CLIENT_PAGE}`,
+      `Check Razorpay's webhook (runbook, "Razorpay's webhook is not arriving"): payment pay_visit of Rs. 45,000 ` +
+        `for visit ${VISIT} reached us only when we asked Razorpay. It is recorded now as the visit's payment. ` +
+        CLIENT_PAGE,
     ]);
   });
 

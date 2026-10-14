@@ -4,7 +4,7 @@
 // given back, which the ledger adds, shows a negative. Records marked as tests are left out; an erased client's entries
 // stay, with no key.
 
-import { indiaDate } from "../../lib/india-time.ts";
+import { indiaDate, indiaDateSql } from "../../lib/india-time.ts";
 import type { TableRows } from "../../providers/warehouse/index.ts";
 import { clientCityOf } from "../clients/places.ts";
 
@@ -35,7 +35,7 @@ export async function creditRows(db: D1Database, keys: ReadonlyMap<string, strin
       `SELECT c.id, c.person_id, p.erased_at IS NOT NULL AS erased, c.created_at, c.kind, c.visits,
          ${clientCityOf("p")} AS city,
          (SELECT b.amount_ex_gst FROM price_book b WHERE b.item = 'service' AND b.tier = 'standard'
-            AND b.valid_from <= date(c.created_at, '+330 minutes') ORDER BY b.valid_from DESC LIMIT 1) AS price
+            AND b.valid_from <= ${indiaDateSql("c.created_at")} ORDER BY b.valid_from DESC LIMIT 1) AS price
        FROM credit_ledger c JOIN people p ON p.id = c.person_id WHERE p.test_record = 0`,
     )
     .all<CreditRow>();

@@ -9,7 +9,7 @@
 
 import { failedUniqueOn } from "../../lib/d1-errors.ts";
 import { VISIT_BLOCKS } from "../../config/scheduling.ts";
-import { hasStandardService, STANDARD_TIER, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
+import { hasStandardService, STANDARD_TIER, tierOf, VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import {
   isOffered,
   isServiceDescription,
@@ -160,7 +160,7 @@ export async function serviceToOffer(
     offeredServices(db, on, [kind]),
     db
       .prepare(
-        `SELECT COALESCE(tier, 'standard') AS tier FROM appointments
+        `SELECT ${tierOf("tier")} AS tier FROM appointments
          WHERE person_id = ?1 AND type = ?2 AND status = 'completed' AND deleted_at IS NULL AND window_start IS NOT NULL
          ORDER BY window_start DESC LIMIT 1`,
       )

@@ -251,10 +251,10 @@ describe("a look at the Tasks board or the Stock page", () => {
        '${AGO}', ${ITEM_DAY}, '${AGO}' FROM n`,
     `INSERT INTO visit_outcomes (id, appointment_id, outcome, partial_reason, updated_at)
      SELECT 'part-' || i || '-' || ?4, 'done-' || i || '-' || ?4, 'partial', 'time', '${AGO}' FROM n`,
-    `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, told_at,
-       created_at, updated_at)
+    `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, write_state,
+       told_at, created_at, updated_at)
      SELECT 'move-' || i || '-' || ?4, 'done-' || i || '-' || ?4, '${AGO}', ${ITEM_DAY}, 'client_asked',
-       'ops@localhost', 'written', '${AGO}', '${AGO}', '${AGO}' FROM n`,
+       'ops@localhost', 'written', 'written', '${AGO}', '${AGO}', '${AGO}' FROM n`,
     `INSERT INTO people (id, created_at, mobile_e164, name)
      SELECT 'friend-' || i || '-' || ?4, '${AGO}', '+9176' || printf('%04d', i) || printf('%04d', ?4),
        'Friend ' || i FROM n`,

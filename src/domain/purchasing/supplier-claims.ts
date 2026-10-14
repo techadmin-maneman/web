@@ -5,6 +5,7 @@
 import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { auditStatementWhen, type AuditAction } from "../platform/audit.ts";
 import type { Written } from "../platform/audit.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 export const CLAIM_REASONS = ["damaged", "qc_failed", "warranty"] as const;
 export const CLAIM_STATES = ["drafted", "sent", "accepted", "rejected", "withdrawn"] as const;
@@ -136,8 +137,7 @@ export async function supplierClaims(db: D1Database): Promise<SupplierClaim[]> {
   }));
 }
 
-export type ClaimChanged =
-  { readonly ok: true } | { readonly ok: false; readonly missing: true } | { readonly ok: false; readonly state: true };
+export type ClaimChanged = { readonly ok: true } | Refusal<"not_found"> | Refusal<"claim_state">;
 
 /**
  * A claim's update and its audit entry, the entry written only where the update stamped this request's token, so a
@@ -168,7 +168,7 @@ async function changed(
   ]);
   if (result?.meta.changes === 1) return { ok: true };
   const exists = await db.prepare("SELECT 1 FROM supplier_claims WHERE id = ?1").bind(claim.id).first();
-  return exists === null ? { ok: false, missing: true } : { ok: false, state: true };
+  return exists === null ? refusal("not_found") : refusal("claim_state");
 }
 
 /** A drafted claim marked sent to its supplier, with what was said and the photograph shown, if any. */

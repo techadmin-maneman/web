@@ -15,6 +15,7 @@ import { auditStatement, auditStatementIfDeleted, type Written } from "../platfo
 import { allServices, serviceOf } from "../booking/services.ts";
 import { freshCode } from "../../lib/slug.ts";
 import { insertRow } from "../../lib/sql.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 export interface Consumable {
   readonly code: string;
@@ -80,7 +81,7 @@ export const isOffered = (consumable: Consumable, today: string): boolean =>
 const codeFor = (name: string, taken: ReadonlySet<string>): string => freshCode(name, 32, "consumable", taken);
 
 /** What ops write, with who and why, so every change lands with its audit entry. */
-type Saved = { readonly ok: true; readonly consumable: Consumable } | { readonly ok: false; readonly fields: string[] };
+type Saved = { readonly ok: true; readonly consumable: Consumable } | Refusal<"invalid_request">;
 
 /** The other consumable already called this, whatever the case; null when the name is free. */
 async function namedAlready(db: D1Database, name: string, except: string | null): Promise<string | null> {
@@ -103,7 +104,7 @@ interface NewConsumable {
 
 /** Adds one, with its audit entry. A name taken already, retired or not, is refused: restore that one instead. */
 export async function addConsumable(db: D1Database, added: NewConsumable, written: Written): Promise<Saved> {
-  if ((await namedAlready(db, added.name, null)) !== null) return { ok: false, fields: ["name"] };
+  if ((await namedAlready(db, added.name, null)) !== null) return refusal("invalid_request", ["name"]);
   const { results } = await db.prepare("SELECT code FROM consumables").all<{ code: string }>();
   const code = codeFor(added.name, new Set(results.map((row) => row.code)));
   const at = written.now.toISOString();
@@ -162,7 +163,7 @@ export async function changeConsumable(
   const was = await consumableCoded(db, code);
   if (was === null) return null;
   if (change.name !== undefined && (await namedAlready(db, change.name, code)) !== null) {
-    return { ok: false, fields: ["name"] };
+    return refusal("invalid_request", ["name"]);
   }
   const now: Consumable = {
     ...was,
@@ -244,7 +245,7 @@ export async function retireConsumable(
 ): Promise<Saved | null> {
   const was = await consumableCoded(db, code);
   if (was === null) return null;
-  if (from !== null && from < written.today) return { ok: false, fields: ["from"] };
+  if (from !== null && from < written.today) return refusal("invalid_request", ["from"]);
   if (from === was.retiredDate) return { ok: true, consumable: was };
   await db.batch([
     auditStatement(
@@ -381,9 +382,9 @@ export async function expectedUse(db: D1Database): Promise<Expected[]> {
 export async function setExpectedUse(
   db: D1Database,
   input: { readonly service: Service; readonly items: readonly { code: string; quantity: number }[] } & Written,
-): Promise<{ readonly ok: true } | { readonly ok: false; readonly fields: string[] }> {
+): Promise<{ readonly ok: true } | Refusal<"invalid_request">> {
   const { service, items } = input;
-  if ((await serviceOf(db, service.visitType, service.tier)) === null) return { ok: false, fields: ["tier"] };
+  if ((await serviceOf(db, service.visitType, service.tier)) === null) return refusal("invalid_request", ["tier"]);
   // A hair system is fitted to the client, not used by the service: the piece step takes it (piece-use.ts).
   const { results } = await db
     .prepare("SELECT code FROM consumables WHERE code NOT IN (SELECT code FROM hair_systems)")
@@ -395,7 +396,7 @@ export async function setExpectedUse(
     seen.add(item.code);
     return wrong ? [`items.${String(index)}.code`] : [];
   });
-  if (fields.length > 0) return { ok: false, fields };
+  if (fields.length > 0) return refusal("invalid_request", fields);
 
   const at = input.now.toISOString();
   const codes = JSON.stringify(items.map((item) => item.code));

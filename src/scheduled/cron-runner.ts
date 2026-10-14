@@ -22,6 +22,7 @@ import { scrubString } from "../log.ts";
 import { pingHeartbeat } from "../providers/heartbeat.ts";
 import { isSwitchedOn, type CronContext, type CronJob, type CronRun } from "./cron.ts";
 import { CRON_CALLS, lastSlotStart, STILL_RUNNING } from "./schedule.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 /** A run starts no outside call after this, so it ends before the next minute's run starts. */
 export const CRON_CALLS_FOR_MS = 30_000;
@@ -185,7 +186,7 @@ async function countFailure({ env, deps, log }: CronContext, job: string, error:
     if (failedRuns < ALERT_AFTER_FAILED_RUNS) return;
     await deps.alertOnce({
       key: `cron_job:${job}`,
-      message: `The cron's ${job} job has failed ${String(failedRuns)} runs in a row: ${reason}.`,
+      message: ALERT_WORDS.cron_job({ job, runs: failedRuns, reason }),
     });
   } catch (countingError) {
     log.error("cron_outcome_not_counted", { error: countingError });

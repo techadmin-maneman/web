@@ -29,11 +29,26 @@ function messages(): { where: string; text: string }[] {
   });
 }
 
+/** Each template in the alerts' own words (src/config/alert-words.ts), with the values it fills in left out. */
+function templates(): { where: string; text: string }[] {
+  const file = "src/config/alert-words.ts";
+  const source = readFileSync(file, "utf8");
+  const starts = [...source.matchAll(/^ {2}([a-z_0-9]+): /gm)];
+  return starts.map((start, index) => {
+    const end = starts[index + 1]?.index ?? source.length;
+    const text = source
+      .slice(start.index, end)
+      .replace(/^\s*\/\/.*$/gm, "")
+      .replace(/\$\{[^}]*\}/g, "");
+    return { where: `${file}: ${start[1] ?? ""}`, text };
+  });
+}
+
 describe("what an alert says", () => {
-  const found = messages();
+  const found = [...messages(), ...templates()];
 
   it("reads every alert", () => {
-    expect(found.length).toBeGreaterThan(40);
+    expect(templates().length).toBeGreaterThan(60);
   });
 
   it.each([

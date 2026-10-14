@@ -26,6 +26,9 @@ export const VISIT_TYPE_NAMES: Readonly<Record<VisitType, string>> = {
  */
 export const STANDARD_TIER = "standard";
 
+/** A visit's tier in SQL, `column`: the one it names, or the standard one. */
+export const tierOf = (column: string): string => `COALESCE(${column}, '${STANDARD_TIER}')`;
+
 /** The kinds with a standard service: every kind but the first fit. */
 const STANDARD_KINDS = ["consultation", "service", "replacement"] as const satisfies readonly VisitType[];
 type StandardKind = (typeof STANDARD_KINDS)[number];

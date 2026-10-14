@@ -103,6 +103,16 @@ export interface ZohoBooksSettings {
   readonly refundAccountId: string | null;
   /** Empty while GST is off in Books; the CA's figures once it is on. */
   readonly gst: GstRegistration;
+  /**
+   * Whether the hourly item check makes and writes Books' items from the console's services and the price book
+   * (src/domain/books/books-items.ts): on where the price book holds the prices Books is to carry.
+   */
+  readonly itemPush: boolean;
+  /**
+   * The accounts a receipt's bill posts to (src/domain/books/books-bills.ts): a hair system's lines to Cost of Goods
+   * Sold, a consumable's to Raw Materials and Consumables. Null while either is unset, and no bill is made.
+   */
+  readonly billAccounts: { readonly hairSystems: string; readonly consumables: string } | null;
 }
 
 /** Razorpay (docs/decisions/0044-payments-mirror.md). */

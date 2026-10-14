@@ -223,25 +223,10 @@ export function restoreRedeemedIf(
 }
 
 /**
- * One credit for a visit, from the grant that expires soonest; nothing is written if the person has none left. The
- * grant is chosen as the statement writes, so two redeems at once never draw on the same credit. A visit redeems
- * once: asked again, it writes nothing (credit_ledger_one_use).
- */
-export function redeemCredit(db: D1Database, personId: string, appointmentId: string, now: Date): D1PreparedStatement {
-  return db
-    .prepare(
-      `INSERT INTO credit_ledger (id, person_id, kind, visits, grant_id, source_kind, source_id, created_at)
-       SELECT ?3, ?1, 'redeem', -1, soonest.id, 'appointment', ?4, ?2
-       FROM credit_ledger soonest
-       WHERE soonest.id = (${NEXT_GRANT})
-       ON CONFLICT DO NOTHING`,
-    )
-    .bind(personId, now.toISOString(), crypto.randomUUID(), appointmentId);
-}
-
-/**
- * redeemCredit for the visit a booking is booked as, for the batch that books it, placed after the statement that
- * does: it writes nothing if that statement booked nothing. The credit is one the client held when they made the
+ * One credit for the visit a booking is booked as, from the grant that expires soonest, for the batch that books it,
+ * placed after the statement that does: it writes nothing if that statement booked nothing, or the client has none
+ * left. The grant is chosen as the statement writes, so two redeems at once never draw on the same credit, and a
+ * visit redeems once (credit_ledger_one_use). The credit is one the client held when they made the
  * booking, so a booking made before its credit expired keeps it, however much later the visit is written.
  */
 export function redeemCreditForBooking(

@@ -41,7 +41,7 @@ export function api(
 
 export const accepted = {
   status: 202,
-  json: { event_id: "e", replayed: false, fsm_write_state: "pending", progress: {} },
+  json: { event_id: "e", replayed: false, write_state: "pending", fsm_write_state: "pending", progress: {} },
 };
 
 export type Answer = ReturnType<Parameters<typeof api>[0]>;

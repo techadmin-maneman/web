@@ -229,9 +229,21 @@ interface UnitChange {
   readonly appointmentId?: string;
   readonly at: string;
   readonly actor: string;
+  /** Where each unit must still be to move: in one of these states, and at this place where one is named. */
+  readonly from?: { readonly states: readonly UnitState[]; readonly place?: Place };
 }
 
-/** The units moved into a state, with a line of each one's history, written only where `when` holds. */
+/** The test that a unit, `u`, is still where a change found it: in one of its states, and at its place if it names one. */
+function stillThere(from: UnitChange["from"]): Condition {
+  if (from === undefined) return { sql: "", binds: [] };
+  const sql = " AND u.state IN (SELECT value FROM json_each(?)) AND u.place IS COALESCE(?, u.place)";
+  return { sql, binds: [JSON.stringify(from.states), from.place ?? null] };
+}
+
+/**
+ * The units moved into a state, with a line of each one's history, written only where `when` holds and of the units
+ * still where the change found them. The history goes first, while each unit is still there to be tested.
+ */
 export function unitChanges(db: D1Database, change: UnitChange, when?: Condition): D1PreparedStatement[] {
   if (change.units.length === 0) return [];
   const condition =
@@ -242,12 +254,21 @@ export function unitChanges(db: D1Database, change: UnitChange, when?: Condition
   const ids = JSON.stringify(change.units);
   const transferId = change.transferId ?? null;
   const appointmentId = change.appointmentId ?? null;
+  const there = stillThere(change.from);
+  const event = [change.at, change.state, change.place, change.movementId, transferId, appointmentId, change.actor];
   return [
     db
       .prepare(
-        `UPDATE stock_units SET state = ?, place = ?, transfer_id = ?, appointment_id = COALESCE(?, appointment_id),
+        `INSERT INTO stock_unit_events (unit_id, at, state, place, movement_id, transfer_id, appointment_id, actor)
+         SELECT j.value, ?, ?, ?, ?, ?, ?, ? FROM json_each(?) j
+         WHERE ${condition.sql} AND EXISTS (SELECT 1 FROM stock_units u WHERE u.id = j.value${there.sql})`,
+      )
+      .bind(...event, ids, ...condition.binds, ...there.binds),
+    db
+      .prepare(
+        `UPDATE stock_units AS u SET state = ?, place = ?, transfer_id = ?, appointment_id = COALESCE(?, appointment_id),
            moved_at = ?
-         WHERE id IN (SELECT value FROM json_each(?)) AND ${condition.sql}`,
+         WHERE u.id IN (SELECT value FROM json_each(?)) AND ${condition.sql}${there.sql}`,
       )
       .bind(
         change.state,
@@ -257,22 +278,7 @@ export function unitChanges(db: D1Database, change: UnitChange, when?: Condition
         change.at,
         ids,
         ...condition.binds,
-      ),
-    db
-      .prepare(
-        `INSERT INTO stock_unit_events (unit_id, at, state, place, movement_id, transfer_id, appointment_id, actor)
-         SELECT value, ?, ?, ?, ?, ?, ?, ? FROM json_each(?) WHERE ${condition.sql}`,
-      )
-      .bind(
-        change.at,
-        change.state,
-        change.place,
-        change.movementId,
-        transferId,
-        appointmentId,
-        change.actor,
-        ids,
-        ...condition.binds,
+        ...there.binds,
       ),
   ];
 }

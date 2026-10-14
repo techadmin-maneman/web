@@ -98,7 +98,7 @@ describe("tomorrow's kits", () => {
       ].sort((a, b) => a.consumable_code.localeCompare(b.consumable_code)),
     );
     // The chat is told the kit by its technician's ID; the console names them.
-    expect(told[0]).toContain(`Short for tomorrow in technician ${IMRAN}'s kit: `);
+    expect(told[0]).toContain(`technician ${IMRAN}'s kit is short for tomorrow of `);
     expect(told[0]).not.toContain("Imran");
     // The stockroom holds solvent enough, and none of the client's hair system: that gap is told as one.
     expect(told[0]).toContain(`Gurgaon stockroom can't cover ${code}: order or move one.`);
@@ -160,7 +160,7 @@ describe("tomorrow's kits", () => {
       { to_place: IMRAN, consumable_code: "solvent", proposed: 21, usable: 4, need: 20, safety: 5 },
       { to_place: SAMEER, consumable_code: "solvent", proposed: 5, usable: 0, need: 0, safety: 5 },
     ]);
-    expect(told).toContainEqual(expect.stringContaining(`Short for the week in technician ${IMRAN}'s kit: `));
+    expect(told).toContainEqual(expect.stringContaining(`technician ${IMRAN}'s kit is short for the week of `));
   });
 
   it("sends an approved top-up to wait for the technician's scan, and outlasts the plan's own redraft", async () => {

@@ -5,7 +5,7 @@ import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import { ANGLES } from "../../domain/field/visit-photos.ts";
-import { APPOINTMENT_STATUSES } from "../../domain/visits/visit-status.ts";
+import { APPOINTMENT_STATUSES, STATUS_MEANINGS } from "../../domain/visits/visit-status.ts";
 import { DISPUTE_RULINGS, NO_SHOW_DECISIONS } from "../../policy/no-show.ts";
 
 const TechnicianSchema = z
@@ -78,7 +78,7 @@ export const VisitSummarySchema = z
         "The service's name in the console, where it names more than the visit's kind: a first fit's hair system, " +
         "say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses.",
     }),
-    status: z.enum(APPOINTMENT_STATUSES),
+    status: z.enum(APPOINTMENT_STATUSES).openapi({ description: STATUS_MEANINGS }),
     not_home: z.boolean().openapi({ description: "Closed because nobody was home: a no-show." }),
     stage: z.union([z.enum(["booked", "in_progress", "done", "closing"]), z.null()]).openapi({
       description:

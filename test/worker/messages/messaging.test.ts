@@ -324,7 +324,7 @@ describe("messaging: the queue batch", () => {
     expect(fourth.messages[0]?.ack).toHaveBeenCalledOnce();
     expect(await message(id)).toMatchObject({ state: "failed", last_error: "could not be sent: Invalid time value" });
     expect(deps.alerts).toEqual([
-      expect.stringContaining(`Message ${id} (consultation_confirmation) failed after 4 attempts`) as string,
+      expect.stringContaining(`Send message ${id} (consultation_confirmation) again from Tasks`) as string,
     ]);
   });
 });

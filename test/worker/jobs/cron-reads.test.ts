@@ -70,6 +70,9 @@ const HISTORY = [
   `INSERT INTO leads (id, person_id, created_at, source, city, loss_extent, sync_state, synced_at, request_id,
      fsm_request_id)
    SELECT 'l-' || i, 'p-' || i, '${AGO}', 'form', 'Gurgaon', 'crown', 'synced', '${AGO}', 'r', 'req-' || i FROM n`,
+  // Owed updates each tried just before the runs measured, as a run finds them: none is due.
+  `INSERT INTO crm_contact_updates (person_id, owed_at, changed_at, tried_at)
+   SELECT 'p-' || i, '${AGO}', '${AGO}', '${new Date(NOW.getTime() + DAY_MS).toISOString()}' FROM n`,
   `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at, sent_at)
    SELECT 'm-' || i, '${AGO}', 'p-' || i, 'visit_reminder', 'appointment', 'a-' || i, 'sent', '${AGO}', '${AGO}'
    FROM n`,
@@ -78,7 +81,7 @@ const HISTORY = [
    SELECT 'j-' || i, '${AGO}', 'uploads/j-' || i, '${AGO}', '${AGO}', 'expired', '${AGO}', 'p-' || i, 'photo-v2',
      '${AGO}', 'h', 'r', 'tryons/j-' || i || '/before.jpg', '${AGO}' FROM n`,
   `INSERT INTO appointments (id, fsm_id, fsm_work_order_id, person_id, type, window_start, window_end, status,
-     fsm_status, fsm_modified_at, synced_at, reconciled_at, invoice_issued_at, fsm_invoice_id, asked_checked_at)
+     fsm_status, fsm_modified_at, synced_at, reconciled_at, invoice_issued_at, books_invoice_id, asked_checked_at)
    SELECT 'a-' || i, 'fsm-' || i, 'wo-' || i, 'p-' || i, 'service', '${AGO}', '${AGO_PLUS_HOUR}', 'completed',
      'Completed', '${AGO}', '${AGO}', '${AGO}', '${AGO}', 'inv-' || i, '${AGO}' FROM n`,
   `INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) SELECT 'v-' || i, 'a-' || i, 'done', '${AGO}' FROM n`,
@@ -167,10 +170,10 @@ const HISTORY = [
    SELECT 'cu-' || i, 'a-' || i, 'je-' || i, 'Bond strip', 2, '${AGO}' FROM n`,
   `INSERT INTO hair_profiles (id, person_id, appointment_id, event_id, technician_id, created_at)
    SELECT 'hp-' || i, 'p-' || i, 'a-' || i, 'event-' || i, 't-history', '${AGO}' FROM n`,
-  `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, told_at,
-     created_at, updated_at)
-   SELECT 'mv-' || i, 'a-' || i, '${AGO}', '${AGO}', 'client_asked', 'ops@localhost', 'written', '${AGO}', '${AGO}',
-     '${AGO}' FROM n`,
+  `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, write_state,
+     told_at, created_at, updated_at)
+   SELECT 'mv-' || i, 'a-' || i, '${AGO}', '${AGO}', 'client_asked', 'ops@localhost', 'written', 'written', '${AGO}',
+     '${AGO}', '${AGO}' FROM n`,
   `INSERT INTO move_proposals (id, appointment_id, technician_id, date, window_label, reason, proposed_by,
      expected_start, created_at, expires_at, answered_at, answer, move_id)
    SELECT 'mp-' || i, 'a-' || i, 't-history', date('${AGO}'), 'morning', 'zone_rebalance', 'ops@localhost', '${AGO}',

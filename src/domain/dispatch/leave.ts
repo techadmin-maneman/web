@@ -3,7 +3,7 @@
 // Tasks board until ops move it.
 
 import type { VisitType } from "../../config/visit-types.ts";
-import { addDays } from "../../lib/india-time.ts";
+import { addDays, indiaDateSql } from "../../lib/india-time.ts";
 import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { statusIn, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
 
@@ -42,7 +42,7 @@ interface JobOnLeave {
  * board reads, as the clash check reads it (ADR 0062).
  */
 export const LEAVE_ON_THE_DAY = `l.technician_id = a.technician_id AND l.cancelled_at IS NULL
-  AND l.from_date <= date(a.window_start, '+330 minutes') AND l.to_date >= date(a.window_start, '+330 minutes')`;
+  AND l.from_date <= ${indiaDateSql("a.window_start")} AND l.to_date >= ${indiaDateSql("a.window_start")}`;
 
 /** The technician's jobs still booked on the days from `from` to `to`, soonest first. */
 async function jobsOnLeave(
@@ -54,7 +54,7 @@ async function jobsOnLeave(
       `SELECT a.id AS appointment_id, a.window_start AS starts_at, a.type, p.name AS client
        FROM appointments a LEFT JOIN people p ON p.id = a.person_id AND p.erased_at IS NULL
        WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
-         AND date(a.window_start, '+330 minutes') BETWEEN ?2 AND ?3
+         AND ${indiaDateSql("a.window_start")} BETWEEN ?2 AND ?3
        ORDER BY a.window_start`,
     )
     .bind(input.technicianId, input.from, input.to)

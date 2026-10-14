@@ -4,13 +4,14 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { grantCredits } from "../../../src/domain/money/credits.ts";
 import { moveJob } from "../../../src/domain/dispatch/dispatch.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import type { MoveReason } from "../../../src/policy/dispatch.ts";
 import { appFor, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
 import { PERSON, VISIT, THURSDAY_NOON, TUESDAY_MORNING, booked, client, visitRow } from "./visit-changes-fixtures.ts";
+import { aCreditSpent } from "../fixtures/index.ts";
 
 let cookie: string;
 
@@ -147,7 +148,7 @@ describe("the terms a visit was booked under", () => {
     await booked("service", TUESDAY_MORNING, 0);
     await bookedHold({ notice: 24, charge: "nothing" });
     await grantCredits(env.DB, { personId: PERSON, visits: 3, source: "referral", sourceId: "attr-1", now: NOW }).run();
-    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+    await aCreditSpent(PERSON, VISIT);
     expect(await cancelTerms()).toMatchObject({ notice: "late", credit: "restored" });
   });
 

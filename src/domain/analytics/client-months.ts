@@ -6,10 +6,11 @@
 // the visit; a month with a fitting whose product has no cost set has none. The current month stands as of tonight.
 // Records marked as tests are left out.
 
-import { addDays, addMonths, indiaDate, monthOf } from "../../lib/india-time.ts";
+import { addDays, addMonths, indiaDate, indiaDateSql, monthOf } from "../../lib/india-time.ts";
 import { standingOn, type StandingDays } from "../../policy/client-standing.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
 import type { FirstTouch } from "./leads.ts";
+import { tierOf } from "../../config/visit-types.ts";
 
 interface VisitRow {
   readonly person_id: string;
@@ -28,7 +29,7 @@ interface Visit {
   readonly cost: number | null;
 }
 
-const ON_ITS_DAY = "date(a.window_start, '+330 minutes')";
+const ON_ITS_DAY = indiaDateSql("a.window_start");
 
 /** The technician's rate for the visit: their grade's for its city, else for every city, from the rate in force. */
 const rateFor = (
@@ -39,7 +40,7 @@ const rateFor = (
 
 /** What the visit cost us: its hair system on a first fit or replacement, the consumables used, and the visit's pay. */
 const COST = `(CASE WHEN a.type IN ('first_fit', 'replacement') THEN
-      (SELECT c.cost FROM standard_costs c WHERE c.item = a.type AND c.tier = COALESCE(a.tier, 'standard')
+      (SELECT c.cost FROM standard_costs c WHERE c.item = a.type AND c.tier = ${tierOf("a.tier")}
          AND c.valid_from <= ${ON_ITS_DAY} ORDER BY c.valid_from DESC LIMIT 1)
     ELSE 0 END)
     + (SELECT COALESCE(SUM(u.quantity * COALESCE(u.unit_cost, 0)), 0) FROM consumables_used u WHERE u.appointment_id = a.id)

@@ -84,7 +84,7 @@ describe("a job held to a slot", () => {
     await runAt(india("2026-10-13 05:30"), missed, deps);
     expect(deps.alerts).toEqual([
       expect.stringContaining(
-        `The cron's analytics_nightly job has not run well since ${india("2026-10-12 03:10").toISOString()}`,
+        `analytics_nightly job (runbook, "Alerts and the cron"): it has not run well since ${india("2026-10-12 03:10").toISOString()}`,
       ),
     ]);
   });

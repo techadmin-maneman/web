@@ -32,6 +32,8 @@ import { createStubBooks } from "../../src/providers/books/stub.ts";
 import { createGeocodeProvider } from "../../src/providers/geocode/index.ts";
 import { createStubRoutes } from "../../src/providers/routes/stub.ts";
 import { createStubMessaging } from "../../src/providers/messaging/stub.ts";
+import { handleRazorpayBatch } from "../../src/queues/razorpay.ts";
+import { fakeBatch } from "./batches.ts";
 
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
 
@@ -443,17 +445,37 @@ export interface RazorpayDelivery {
   readonly bindings?: Partial<Env>;
 }
 
-/** Razorpay's event, signed as Razorpay signs it, delivered to the webhook; a string is sent as the body it is. */
-export async function deliverRazorpay(event: object | string, delivery: RazorpayDelivery = {}): Promise<Response> {
+/**
+ * Razorpay's event, signed as Razorpay signs it, delivered to the webhook, and what it queued applied by the queue's
+ * consumer, as the queue would deliver it at once; a string is sent as the body it is. `retried` says the consumer
+ * asked to try the event again later, as for a refund that came before its payment, and `again` is that next try.
+ */
+export async function deliverRazorpay(
+  event: object | string,
+  delivery: RazorpayDelivery = {},
+): Promise<Response & { readonly retried: boolean; readonly again: () => Promise<boolean> }> {
   const settings = { razorpay: RAZORPAY, ...delivery.settings };
-  const app = appFor("local", delivery.deps ?? fakeDependencies(), settings, "public");
+  const deps = delivery.deps ?? fakeDependencies();
+  const app = appFor("local", deps, settings, "public");
   const body = typeof event === "string" ? event : JSON.stringify(event);
   const secret =
     delivery.secret === undefined ? (settings.razorpay?.webhookSecret ?? RAZORPAY_WEBHOOK_SECRET) : delivery.secret;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (secret !== null) headers["X-Razorpay-Signature"] = await saltedHash(secret, body);
   if (delivery.eventId !== null) headers["X-Razorpay-Event-Id"] = delivery.eventId ?? `evt_${crypto.randomUUID()}`;
-  return request(app, "/api/hooks/razorpay", { method: "POST", body, headers }, delivery.bindings);
+  const queue = fakeQueue();
+  const bindings: Partial<Env> = { RAZORPAY_QUEUE: queue, ...delivery.bindings };
+  const response = await request(app, "/api/hooks/razorpay", { method: "POST", body, headers }, bindings);
+  const config = { ...LOCAL_CONFIG, settings: { ...LOCAL_SETTINGS, ...settings } };
+  /** The queue delivering what the webhook queued, for its `attempts`th time: whether its consumer asked to retry. */
+  const apply = async (attempts: number) => {
+    const batch = fakeBatch("mm-razorpay-local", queue.sent, { attempts });
+    await handleRazorpayBatch({ batch, env: { ...env, ...bindings }, config, deps, log: createLogger() });
+    return batch.messages.some((message) => message.retry.mock.calls.length > 0);
+  };
+  let attempts = 1;
+  const retried = await apply(attempts);
+  return Object.assign(response, { retried, again: () => apply((attempts += 1)) });
 }
 
 /**

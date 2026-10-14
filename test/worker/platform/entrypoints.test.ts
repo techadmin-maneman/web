@@ -161,7 +161,7 @@ describe("scheduled handler while D1 is being restored", () => {
 
     const alert = await env.DB.prepare("SELECT key, message FROM alerts").first<{ key: string; message: string }>();
     expect(alert?.key).toBe(`maintenance:${startedAt}`);
-    expect(alert?.message).toContain('switch it off: runbook, "Restoring D1"');
+    expect(alert?.message).toContain('Switch maintenance off once the restore is done (runbook, "Restoring D1")');
   });
 });
 

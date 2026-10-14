@@ -112,7 +112,9 @@ describe("an erased client's CRM Contact", () => {
 
     failNext("CRM said 500");
     await pass(deps);
-    expect(deps.alerts).toEqual([expect.stringMatching(new RegExp(`Contact ${CONTACT}.*CRM said 500.*by hand`))]);
+    expect(deps.alerts).toEqual([
+      expect.stringMatching(new RegExp(`In the CRM, clear Contact ${CONTACT}.*CRM said 500`)),
+    ]);
 
     await pass(deps);
     expect(erased).toEqual([]);

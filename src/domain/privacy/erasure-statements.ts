@@ -4,6 +4,7 @@
 import type { NoticePurpose } from "../../config/notices.ts";
 import { blankProfiles } from "../clients/hair-profiles.ts";
 import { recordConsent } from "./consents.ts";
+import { goneNumberSql } from "../../lib/mobile.ts";
 
 /** Of the person's addresses, one a technician's check-in was measured against. */
 const MEASURED_AGAINST = "EXISTS (SELECT 1 FROM checkins c WHERE c.address_id = addresses.id)";
@@ -92,7 +93,7 @@ export async function personalDataStatements(
     // The number is replaced, not kept: a later booking from it starts afresh, with a new consent.
     db
       .prepare(
-        `UPDATE people SET erased_at = ?2, name = 'Erased', email = NULL, mobile_e164 = 'erased:' || id,
+        `UPDATE people SET erased_at = ?2, name = 'Erased', email = NULL, mobile_e164 = ${goneNumberSql("erased")},
            contactable = 0
          WHERE id = ?1`,
       )
@@ -118,9 +119,11 @@ function careRecords(db: D1Database, personId: string): D1PreparedStatement[] {
         "UPDATE chat_messages SET text = NULL WHERE conversation_id IN (SELECT id FROM conversations WHERE person_id = ?1)",
       )
       .bind(personId),
-    db.prepare("UPDATE conversations SET mobile_e164 = 'erased:' || id WHERE person_id = ?1").bind(personId),
+    db.prepare(`UPDATE conversations SET mobile_e164 = ${goneNumberSql("erased")} WHERE person_id = ?1`).bind(personId),
     // Nobody looks after an erased record, so it counts towards no one's clients (docs/decisions/0131-care-people.md).
     db.prepare("DELETE FROM care_owners WHERE person_id = ?1").bind(personId),
+    // Nothing goes to an erased record's CRM lead but its erasure (docs/decisions/0203-a-vendor-down-is-held-off.md).
+    db.prepare("DELETE FROM crm_contact_updates WHERE person_id = ?1").bind(personId),
     // Care's words to the city team about them (docs/decisions/0135-city-matters.md).
     db.prepare("UPDATE city_matters SET note = NULL WHERE person_id = ?1").bind(personId),
     db.prepare("UPDATE remedies SET note = NULL WHERE person_id = ?1").bind(personId),

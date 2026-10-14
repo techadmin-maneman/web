@@ -309,11 +309,11 @@ export async function issuedInvoiceOf(
 ): Promise<{ readonly invoiceId: string | null } | null> {
   const visit = await db
     .prepare(
-      `SELECT fsm_invoice_id, invoice_issued_at FROM appointments
+      `SELECT books_invoice_id, invoice_issued_at FROM appointments
        WHERE id = ?1 AND person_id = ?2 AND deleted_at IS NULL`,
     )
     .bind(visitId, personId)
-    .first<{ fsm_invoice_id: string | null; invoice_issued_at: string | null }>();
+    .first<{ books_invoice_id: string | null; invoice_issued_at: string | null }>();
   if (visit === null) return null;
-  return { invoiceId: visit.invoice_issued_at === null ? null : visit.fsm_invoice_id };
+  return { invoiceId: visit.invoice_issued_at === null ? null : visit.books_invoice_id };
 }

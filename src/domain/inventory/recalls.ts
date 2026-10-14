@@ -8,6 +8,8 @@ import { auditStatement } from "../platform/audit.ts";
 import type { Place } from "./stock-places.ts";
 import type { Written } from "./stock.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
+import { read, readAll } from "../../lib/read-all.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 export interface Recall {
   readonly id: string;
@@ -92,37 +94,36 @@ export async function recallableLots(db: D1Database): Promise<RecallableLot[]> {
 export async function recallDetail(db: D1Database, id: string): Promise<RecallDetail | null> {
   const row = await db.prepare(`${RECALL} WHERE r.id = ?1`).bind(id).first<RecallRow>();
   if (row === null) return null;
-  const [held, worn] = await db.batch<
-    | { place: string; name: string | null; quantity: number }
-    | { code: string; person_id: string; person: string; due_on: string | null }
-  >([
-    db
-      .prepare(
-        `SELECT b.place, COALESCE(p.name, t.name) AS name, b.quantity FROM stock_lot_balances b
+  const { held, worn } = await readAll(db, {
+    held: read<{ place: string; name: string | null; quantity: number }>(
+      db
+        .prepare(
+          `SELECT b.place, COALESCE(p.name, t.name) AS name, b.quantity FROM stock_lot_balances b
          LEFT JOIN stock_places p ON p.id = b.place LEFT JOIN technicians t ON t.id = p.technician_id
          WHERE b.lot_id = ?1 AND b.quantity > 0 ORDER BY b.quantity DESC`,
-      )
-      .bind(row.lot_id),
-    db
-      .prepare(
-        `SELECT p.id, p.piece_code AS code, p.person_id, pe.name AS person, p.replacement_due_at AS due_on
+        )
+        .bind(row.lot_id),
+    ),
+    worn: read<{ id: string; code: string; person_id: string; person: string; due_on: string | null }>(
+      db
+        .prepare(
+          `SELECT p.id, p.piece_code AS code, p.person_id, pe.name AS person, p.replacement_due_at AS due_on
          FROM stock_units u JOIN pieces p ON p.piece_code = u.code JOIN people pe ON pe.id = p.person_id
          WHERE u.lot_id = ?1 AND u.state = 'fitted' AND p.deleted_at IS NULL AND p.failed_at IS NULL
            AND p.replaced_at IS NULL AND pe.erased_at IS NULL
          ORDER BY pe.name COLLATE NOCASE`,
-      )
-      .bind(row.lot_id),
-  ]);
+        )
+        .bind(row.lot_id),
+    ),
+  });
   return {
     ...recallOf(row),
-    held: ((held?.results ?? []) as { place: string; name: string | null; quantity: number }[]).map((each) => ({
+    held: held.map((each) => ({
       placeId: each.place,
       place: each.name ?? each.place,
       quantity: each.quantity,
     })),
-    worn: (
-      (worn?.results ?? []) as { id: string; code: string; person_id: string; person: string; due_on: string | null }[]
-    ).map((each) => ({
+    worn: worn.map((each) => ({
       pieceId: each.id,
       pieceCode: each.code,
       personId: each.person_id,
@@ -141,14 +142,13 @@ export async function raiseRecall(
   input: { readonly lotId: string; readonly reason: string; readonly today: string },
   written: Written,
 ): Promise<
-  | { readonly ok: true; readonly id: string; readonly messageIds: readonly string[] }
-  | { readonly ok: false; readonly fields: string[] }
+  { readonly ok: true; readonly id: string; readonly messageIds: readonly string[] } | Refusal<"invalid_request">
 > {
   const lot = await db
     .prepare("SELECT recalled_at FROM stock_lots WHERE id = ?1")
     .bind(input.lotId)
     .first<{ recalled_at: string | null }>();
-  if (lot?.recalled_at !== null) return { ok: false, fields: ["lot_id"] };
+  if (lot?.recalled_at !== null) return refusal("invalid_request", ["lot_id"]);
   const id = crypto.randomUUID();
   const at = written.now.toISOString();
   await db.batch([

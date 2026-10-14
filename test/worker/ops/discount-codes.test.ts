@@ -284,7 +284,7 @@ describe("a code on a client's visit, in the console", () => {
 
     await env.DB.batch([
       env.DB.prepare("DELETE FROM payments"),
-      env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'inv-1' WHERE id = ?1").bind(VISIT),
+      env.DB.prepare("UPDATE appointments SET books_invoice_id = 'inv-1' WHERE id = ?1").bind(VISIT),
     ]);
     expect((await post(`/api/visits/${VISIT}/discount-code`, { code: "TENPC" })).status).toBe(409);
   });

@@ -161,7 +161,7 @@ describe("GET /api/visits/:id and the photographs", () => {
     expect(await detail("ap-consult")).toMatchObject({ document_id: null, invoice_expected: false });
 
     // Once the pass has issued it, the same visit hands the app the document to open.
-    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-41', invoice_issued_at = ?1 WHERE id = ?2")
+    await env.DB.prepare("UPDATE appointments SET books_invoice_id = 'stub-41', invoice_issued_at = ?1 WHERE id = ?2")
       .bind(NOW.toISOString(), ids["ap-done"] ?? "")
       .run();
     expect(await detail("ap-done")).toMatchObject({ document_id: ids["ap-done"], invoice_expected: true });
@@ -170,7 +170,7 @@ describe("GET /api/visits/:id and the photographs", () => {
   it("offers no document while the invoice Books holds is still a draft", async () => {
     const ids = await seed([done("ap-done", "2026-09-10")]);
     await signIn();
-    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-41' WHERE id = ?1")
+    await env.DB.prepare("UPDATE appointments SET books_invoice_id = 'stub-41' WHERE id = ?1")
       .bind(ids["ap-done"] ?? "")
       .run();
     expect(await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json()).toMatchObject({ document_id: null });
@@ -185,7 +185,7 @@ describe("GET /api/visits/:id and the photographs", () => {
       (await (await get(`/api/visits/${ids[name] ?? ""}`)).json<{ invoice_held: unknown }>()).invoice_held;
 
     expect(await held("ap-done")).toBeNull();
-    await env.DB.prepare("UPDATE appointments SET fsm_invoice_id = 'stub-41' WHERE id = ?1")
+    await env.DB.prepare("UPDATE appointments SET books_invoice_id = 'stub-41' WHERE id = ?1")
       .bind(ids["ap-done"] ?? "")
       .run();
     expect(await held("ap-done")).toBe("checking");

@@ -55,9 +55,9 @@ describe("stock that expires soon", () => {
     await look(morning());
     expect([...job.deps.alerts].sort()).toEqual([
       expect.stringContaining(
-        "Stock in National warehouse expires within 30 days: Solvent lot SV-OLD, 200 ml, expires 2026-10-10",
+        "what expires in National warehouse within 30 days: Solvent lot SV-OLD, 200 ml, expires 2026-10-10",
       ),
-      expect.stringContaining(`Stock in technician ${IMRAN}'s kit expires within 30 days: Solvent lot SV-OLD, 100 ml`),
+      expect.stringContaining(`what expires in technician ${IMRAN}'s kit within 30 days: Solvent lot SV-OLD, 100 ml`),
     ]);
     expect(job.deps.alerts.join(" ")).not.toContain("SV-NEW");
 
@@ -102,7 +102,7 @@ describe("a transfer long on its way", () => {
     await look(morning(6));
     expect((await open()).results).not.toContainEqual({ key: `transfer_overdue:${transfer}` });
     await look(morning(8));
-    expect(job.deps.alerts.at(-1)).toContain("50 ml of Solvent, sent from National warehouse to Gurgaon stockroom");
+    expect(job.deps.alerts.at(-1)).toContain("50 ml of Solvent sent from National warehouse to Gurgaon stockroom");
 
     await job.opsPost(`/api/stock/transfers/${transfer}/receive`, {});
     await look(morning(9));

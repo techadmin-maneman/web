@@ -30,7 +30,7 @@ describe("reading the schema from the migrations", () => {
   it("reads each column's type, whether it may be empty, its default and its key", () => {
     const leads = tables.find((table) => table.name === "leads");
     expect(leads?.columns).toEqual([
-      { name: "id", type: "TEXT", notNull: false, defaultValue: null, primaryKey: true, references: null },
+      { name: "id", type: "TEXT", notNull: false, defaultValue: null, primaryKey: true, references: null, note: "" },
       {
         name: "person_id",
         type: "TEXT",
@@ -38,9 +38,51 @@ describe("reading the schema from the migrations", () => {
         defaultValue: null,
         primaryKey: false,
         references: "people.id",
+        note: "",
       },
-      { name: "state", type: "TEXT", notNull: true, defaultValue: "'new'", primaryKey: false, references: null },
-      { name: "created_at", type: "TEXT", notNull: false, defaultValue: null, primaryKey: false, references: null },
+      {
+        name: "state",
+        type: "TEXT",
+        notNull: true,
+        defaultValue: "'new'",
+        primaryKey: false,
+        references: null,
+        note: "",
+      },
+      {
+        name: "created_at",
+        type: "TEXT",
+        notNull: false,
+        defaultValue: null,
+        primaryKey: false,
+        references: null,
+        note: "",
+      },
+    ]);
+  });
+
+  it("carries what the migrations say a column holds: on its line, above it, or above the ALTER that adds it", () => {
+    const [notes] = migratedTables([
+      migration(
+        "0001_notes.sql",
+        [
+          "CREATE TABLE notes (",
+          "  id TEXT PRIMARY KEY,",
+          "  amount_paise INTEGER NOT NULL, -- what the client paid, in paise",
+          "  -- When it was sent, as an instant.",
+          "  sent_at TEXT",
+          ");",
+          "-- The day it falls due, in India.",
+          "ALTER TABLE notes ADD COLUMN due_date TEXT;",
+          "ALTER TABLE notes RENAME COLUMN sent_at TO posted_at;",
+        ].join("\n"),
+      ),
+    ]);
+    expect(notes?.columns.map((column) => [column.name, column.note])).toEqual([
+      ["id", ""],
+      ["amount_paise", "what the client paid, in paise"],
+      ["posted_at", "When it was sent, as an instant."],
+      ["due_date", "The day it falls due, in India."],
     ]);
   });
 

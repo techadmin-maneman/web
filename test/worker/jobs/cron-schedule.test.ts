@@ -1,6 +1,5 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { BOOKS_BILL_ACCOUNTS } from "../../../src/config/environments.ts";
 import { NO_GST } from "../../../src/config/gst.ts";
 import { CALLS_PER_VISIT as BOOKS_CALLS_PER_VISIT } from "../../../src/domain/books/books-invoices.ts";
 import { startRun } from "../../../src/domain/platform/cron-runs.ts";
@@ -269,7 +268,7 @@ describe("CRON_JOBS", () => {
     for (let run = 0; run < 2; run += 1) {
       await runCronJobs(meter, { env: halfFull, deps, config: LOCAL_CONFIG, log: createLogger() });
     }
-    expect(deps.alerts).toEqual([expect.stringContaining("The database holds 5.20 GB, 50% of the 10 GB")]);
+    expect(deps.alerts).toEqual([expect.stringContaining("it holds 5.20 GB, 50% of the 10 GB")]);
   });
 });
 
@@ -283,6 +282,8 @@ describe("the Books pass's options", () => {
     orgId: "60088931635",
     refundAccountId: "bank-7",
     gst: { gstin: "06AAACM1234A1Z5", stateCode: "HR", sac: "999721" },
+    itemPush: true,
+    billAccounts: { hairSystems: "acct-cogs", consumables: "acct-raw" },
   };
 
   it("takes the refund account and GST from Books' own settings, and the bill accounts from the environment's", () => {
@@ -294,7 +295,7 @@ describe("the Books pass's options", () => {
     };
     expect(booksSyncOptions(config)).toEqual({
       refundAccountId: "bank-7",
-      billAccounts: BOOKS_BILL_ACCOUNTS.staging,
+      billAccounts: { hairSystems: "acct-cogs", consumables: "acct-raw" },
       labelAsTest: true,
       gst: zohoBooks.gst,
     });

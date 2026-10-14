@@ -28,7 +28,7 @@
 
 import type { BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
-import { addDays, indiaDate, indiaInstant } from "../../lib/india-time.ts";
+import { addDays, indiaDate, indiaDateSql, indiaInstant } from "../../lib/india-time.ts";
 import { type JobEventKind } from "../../policy/in-job-steps.ts";
 import {
   jobDay,
@@ -48,6 +48,7 @@ import { bookedMinutes } from "../booking/occupancy.ts";
 import { isOneOf } from "../../lib/one-of.ts";
 import { storedOutcomeOf } from "./job-event-bodies.ts";
 import { creditSpentOn } from "../visits/visit-facts.ts";
+import { tierOf } from "../../config/visit-types.ts";
 
 /** The statuses of a job in the list: still live, or closed today so the technician can see what they did. */
 const SHOWN = ["scheduled", "dispatched", "in_progress", "completed", "terminated"] as const;
@@ -143,15 +144,15 @@ export const SELECT_JOB = `
     d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
     d.access_notes, d.lat, d.lng, ${creditSpentOn("a.id")} AS on_credit,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
-              WHERE b.item = a.type AND b.tier = COALESCE(a.tier, 'standard')
-                AND b.valid_from <= date(a.window_start, '+330 minutes')
+              WHERE b.item = a.type AND b.tier = ${tierOf("a.tier")}
+                AND b.valid_from <= ${indiaDateSql("a.window_start")}
               ORDER BY b.valid_from DESC LIMIT 1), 0) AS free,
     s.minutes AS service_minutes, s.name AS service_name
   FROM appointments a
   LEFT JOIN people p ON p.id = a.person_id
   LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
   LEFT JOIN serviceable_pincodes sp ON sp.pincode = a.service_pincode
-  LEFT JOIN services s ON s.kind = a.type AND s.tier = COALESCE(a.tier, 'standard')
+  LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
   WHERE a.technician_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL`;
 
 /** The jobs on one India date, in time order. Statuses the technician can still act on, and what they closed today. */

@@ -19,7 +19,7 @@ async function person(id: string, mobile: string) {
 async function visit(id: string, personId: string, invoiceId: string | null, issued = true) {
   await env.DB.prepare(
     `INSERT INTO appointments (id, fsm_id, person_id, type, status, fsm_status, window_start, window_end,
-       fsm_invoice_id, invoice_issued_at, fsm_modified_at, synced_at)
+       books_invoice_id, invoice_issued_at, fsm_modified_at, synced_at)
      VALUES (?1, ?2, ?3, 'first_fit', 'completed', 'Completed', '2026-09-10T04:30:00.000Z', '2026-09-10T07:30:00.000Z',
        ?4, ?5, ?6, ?6)`,
   )

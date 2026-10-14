@@ -17,6 +17,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import { needsReason, REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 import { HOLD_REASONS } from "../../policy/fraud-holds.ts";
 import { dueAt } from "../../policy/tasks.ts";
+import { storedJson } from "../../lib/stored-json.ts";
 
 const PersonRef = z.object({ person_id: z.uuid(), name: z.string() }).strict();
 
@@ -115,9 +116,11 @@ export function registerOpsReferrals(app: App): void {
           referrer: { person_id: row.referrer_id, name: row.referrer_name },
           referred: { person_id: row.referred_person_id, name: row.referred_name },
           fitted_on: indiaDate(new Date(row.window_start)),
-          signals: (JSON.parse(row.fraud_signals ?? "[]") as string[]).filter(
-            (signal): signal is (typeof HOLD_REASONS)[number] => known.has(signal),
-          ),
+          signals: storedJson(
+            z.array(z.string()),
+            row.fraud_signals ?? "[]",
+            "referral_attributions.fraud_signals",
+          ).filter((signal): signal is (typeof HOLD_REASONS)[number] => known.has(signal)),
           held_since: row.held_since,
           due: dueAt(new Date(row.held_since), "referral_review", sla).toISOString(),
         })),

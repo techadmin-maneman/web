@@ -187,7 +187,7 @@ describe("sending again what an alert gave up on", () => {
     });
     await sendMessage({ db: env.DB, config: LOCAL_CONFIG, deps: failing, log: createLogger(), messageId: MESSAGE });
 
-    expect(failing.alerts).toEqual([expect.stringContaining(`Message ${MESSAGE}`) as string]);
+    expect(failing.alerts).toEqual([expect.stringContaining(`Send message ${MESSAGE}`) as string]);
     expect((await list()).alerts).toMatchObject([{ kind: "message_failed", count: 1 }]);
   });
 

@@ -124,7 +124,7 @@ describe("payments and refunds", () => {
       expect(told).toEqual([
         expect.stringMatching(
           new RegExp(
-            `^Payment ${PAYMENT} \\(Books stub-payment-.+\\) has nothing to be set against: visit ${VISIT} was cancelled and Rs\\. 4,000 of it kept\\.`,
+            `^Refund payment ${PAYMENT}, or keep it in Books as the client's credit: it has nothing to be set against \\(visit ${VISIT} was cancelled and Rs\\. 4,000 of it kept\\)\\. Books payment stub-payment-`,
           ),
         ) as string,
       ]);
@@ -147,7 +147,7 @@ describe("payments and refunds", () => {
       await pass(createStubBooks(), "books-customer-9");
       expect(told).toEqual([
         expect.stringContaining(
-          `has nothing to be set against: visit ${VISIT} was a no-show and Rs. 4,000 of it kept.`,
+          `has nothing to be set against (visit ${VISIT} was a no-show and Rs. 4,000 of it kept).`,
         ),
       ]);
     });
@@ -189,8 +189,8 @@ describe("payments and refunds", () => {
       expect(told).toEqual([
         expect.stringMatching(
           new RegExp(
-            `^Payment ${SECOND} \\(Books stub-payment-.+\\) has nothing to be set against: it is the late fee for ` +
-              `moving visit ${VISIT}, and Rs\\. 30,000 of it kept\\.`,
+            `^Refund payment ${SECOND}, or keep it in Books as the client's credit: it has nothing to be set ` +
+              `against \\(it is the late fee for moving visit ${VISIT}, and Rs\\. 30,000 of it kept\\)\\.`,
           ),
         ) as string,
       ]);

@@ -311,7 +311,7 @@ async function storeResult(
 
   const readyAt = deps.now();
   const latencyMs = readyAt.getTime() - Date.parse(job.submitted_at ?? job.created_at);
-  const [stored, queued] = await db.batch([
+  const [stored, queued] = await db.batch<{ id: string }>([
     db
       .prepare(
         `UPDATE tryon_jobs SET state = 'ready', result_key = ?2, expires_at = ?3, latency_ms = ?4
@@ -346,7 +346,7 @@ async function storeResult(
   // A render made is the key and the units working again.
   if (from === "downloading") await Promise.all(Object.values(TRYON_PAUSED_KEYS).map((key) => deps.resolveAlert(key)));
 
-  for (const row of (queued?.results ?? []) as { id: string }[]) {
+  for (const row of queued?.results ?? []) {
     await notifyMessage(env.MESSAGE_QUEUE, { id: row.id, requestId: job.request_id }, log);
   }
   return DONE;

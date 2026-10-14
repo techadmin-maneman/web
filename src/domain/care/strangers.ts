@@ -7,6 +7,7 @@ import { personByMobile } from "../clients/people.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import type { ChannelCode } from "../../policy/channels.ts";
 import { giveCarePerson } from "./care-people.ts";
+import { hasNumber } from "../../lib/mobile.ts";
 
 interface Change {
   readonly conversationId: string;
@@ -21,7 +22,7 @@ async function strangerChat(db: D1Database, id: string): Promise<{ mobile: strin
     .prepare("SELECT mobile_e164, person_id FROM conversations WHERE id = ?1")
     .bind(id)
     .first<{ mobile_e164: string; person_id: string | null }>();
-  if (chat === null || chat.mobile_e164.startsWith("erased:")) return "not_found";
+  if (chat === null || !hasNumber(chat.mobile_e164)) return "not_found";
   return chat.person_id === null ? { mobile: chat.mobile_e164 } : "known";
 }
 

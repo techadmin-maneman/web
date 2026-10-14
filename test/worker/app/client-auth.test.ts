@@ -83,8 +83,8 @@ describe("a login code that does not go", () => {
 
     await tries(2);
     expect(deps.alerts).toEqual([
-      "3 login codes failed to send in the last hour, the latest with HTTP 500 INTERNAL_SERVER_ERROR. Clients " +
-        'and technicians cannot sign in. Check the WhatsApp bridge (runbook, "WhatsApp (Evolution) is down").',
+      'Check the WhatsApp bridge now (runbook, "WhatsApp (Evolution) is down"): 3 login codes failed to send in ' +
+        "the last hour (the latest: HTTP 500 INTERNAL_SERVER_ERROR), so nobody can sign in.",
     ]);
   });
 

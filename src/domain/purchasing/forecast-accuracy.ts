@@ -10,6 +10,7 @@ import {
   withinHighPercent,
   type Measured,
 } from "../../policy/forecast-accuracy.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 /** How many lines one statement writes. */
 const LINES_A_STATEMENT = 400;
@@ -32,25 +33,28 @@ export async function measureLastForecast(db: D1Database, now: Date, today: stri
     .first<{ id: string; run_on: string; period_days: number }>();
   if (run === null) return null;
   const end = addDays(run.run_on, run.period_days);
-  const [expected, used] = await db.batch<ExpectedRow | UsedRow>([
-    db
-      .prepare(
-        `SELECT consumable_code AS code, city, expected, high FROM forecast_lines WHERE run_id = ?1 AND period = 0`,
-      )
-      .bind(run.id),
-    db
-      .prepare(
-        `SELECT m.consumable_code AS code, COALESCE(t.city, '') AS city, SUM(-m.quantity) AS used
+  const { expected, used } = await readAll(db, {
+    expected: read<ExpectedRow>(
+      db
+        .prepare(
+          `SELECT consumable_code AS code, city, expected, high FROM forecast_lines WHERE run_id = ?1 AND period = 0`,
+        )
+        .bind(run.id),
+    ),
+    used: read<UsedRow>(
+      db
+        .prepare(
+          `SELECT m.consumable_code AS code, COALESCE(t.city, '') AS city, SUM(-m.quantity) AS used
          FROM stock_movements m INDEXED BY stock_movements_used_by_day
          LEFT JOIN technicians t ON t.id = COALESCE(m.technician_id, m.place_id)
          WHERE m.reason = 'used' AND m.created_at >= ?1 AND m.created_at < ?2 GROUP BY 1, 2`,
-      )
-      .bind(indiaInstant(run.run_on, "00:00").toISOString(), indiaInstant(end, "00:00").toISOString()),
-  ]);
+        )
+        .bind(indiaInstant(run.run_on, "00:00").toISOString(), indiaInstant(end, "00:00").toISOString()),
+    ),
+  });
   const lines = new Map<string, { code: string; city: string } & Measured>();
-  for (const row of (expected?.results ?? []) as ExpectedRow[])
-    lines.set(`${row.code}|${row.city}`, { ...row, actual: 0 });
-  for (const row of (used?.results ?? []) as UsedRow[]) {
+  for (const row of expected) lines.set(`${row.code}|${row.city}`, { ...row, actual: 0 });
+  for (const row of used) {
     const key = `${row.code}|${row.city}`;
     const line = lines.get(key) ?? { code: row.code, city: row.city, expected: 0, high: 0, actual: 0 };
     lines.set(key, { ...line, actual: line.actual + row.used });

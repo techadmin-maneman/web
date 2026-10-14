@@ -89,6 +89,7 @@ const availabilityRoute = opsRoute({
   request: { query: AvailabilityQuerySchema },
   responses: {
     200: { description: "Each day's windows", ...json(OpsAvailabilitySchema) },
+    400: errorResponse("invalid_request: no client or kind named, or a field that is not one"),
     404: errorResponse("not_found: no such client in the caller's cities, or one who has been erased"),
     422: errorResponse(
       "not_bookable: the kind offers no such service; no_product: a first fit, with no hair system on sale",

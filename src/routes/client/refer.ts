@@ -14,7 +14,8 @@ import { PUBLIC_ORIGIN } from "../../config/environments.ts";
 import { isFitted } from "../../domain/visits/client-visits.ts";
 import { spendableCredits, type Balance } from "../../domain/money/credits.ts";
 import { liveCard, makeCard, revokeCard } from "../../domain/referrals/referral-cards.ts";
-import { inviteOf, referralCodeOf } from "../../domain/referrals/referrals.ts";
+import { inviteOf } from "../../domain/referrals/referrals.ts";
+import { cardOf, codeOf, fittedFriends, invitedAs, type FittedFriend } from "../../domain/referrals/refer-page.ts";
 import { clientOf } from "../../http/client-session.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { indiaDate } from "../../lib/india-time.ts";
@@ -85,19 +86,11 @@ const ReferSchema = z
   .strict()
   .openapi("Refer");
 
-interface FittedRow {
-  friend_first_name: string | null;
-  name: string;
-  erased_at: string | null;
-  window_start: string;
-  visits: number | null;
-}
-
 /**
  * A fitted friend's first name, as the grant kept it. An erased friend has none, since the erasure blanks
  * it: the tracker must not tell the referrer that the friend asked to be erased.
  */
-function friendName(friend: FittedRow): string | null {
+function friendName(friend: FittedFriend): string | null {
   if (friend.friend_first_name !== null) return friend.friend_first_name;
   if (friend.erased_at !== null) return null;
   return firstNameOf(friend.name);
@@ -116,12 +109,6 @@ function inviteCredits(
 ): "checking" | "refused" | null {
   if (invited === null || invited.friend_visits === 0) return null;
   return INVITE_CREDITS[invited.grant_state] ?? null;
-}
-
-/** The client's code, made from their initials the first time they need one. */
-async function codeOf(db: D1Database, personId: string, now: Date): Promise<string> {
-  const person = await db.prepare("SELECT name FROM people WHERE id = ?1").bind(personId).first<{ name: string }>();
-  return referralCodeOf(db, personId, person?.name ?? "", now);
 }
 
 const NOT_FITTED = "not_fitted: Refer opens once the client's first fit is done";
@@ -221,28 +208,13 @@ export function registerClientRefer(app: App): void {
     if (!(await isFitted(db, session.subjectId))) return refuse(c, "not_fitted");
     const code = await codeOf(db, session.subjectId, now);
     const [card, invite, balance, fitted, invited] = await Promise.all([
-      db
-        .prepare("SELECT card_state, card_version FROM referral_codes WHERE code = ?1")
-        .bind(code)
-        .first<{ card_state: "house" | "personal"; card_version: number }>(),
+      cardOf(db, code),
       // The invite as the landing reads it, with naming on: it names the client exactly when they have agreed to
       // the cards' current lines.
       inviteOf({ db, code, nameOnInvite: true }),
       spendableCredits(db, session.subjectId, now),
-      db
-        .prepare(
-          `SELECT r.friend_first_name, p.name, p.erased_at, a.window_start, g.visits FROM referral_attributions r
-           JOIN people p ON p.id = r.referred_person_id JOIN appointments a ON a.id = r.first_fit_appointment_id
-           LEFT JOIN credit_ledger g ON g.kind = 'grant' AND g.source_kind = 'referral' AND g.source_id = r.id
-             AND g.person_id = ?2
-           WHERE r.code = ?1 AND r.grant_state IN ('approved', 'granted') ORDER BY a.window_start DESC`,
-        )
-        .bind(code, session.subjectId)
-        .all<FittedRow>(),
-      db
-        .prepare("SELECT grant_state, friend_visits FROM referral_attributions WHERE referred_person_id = ?1")
-        .bind(session.subjectId)
-        .first<{ grant_state: string; friend_visits: number | null }>(),
+      fittedFriends(db, code, session.subjectId),
+      invitedAs(db, session.subjectId),
     ]);
     const consented = (invite?.referrerFirstName ?? null) !== null;
     return c.json(
@@ -252,7 +224,7 @@ export function registerClientRefer(app: App): void {
         named: consented && c.var.config.settings.referrerNameOnInvite,
         credits: creditsBody(balance),
         card: { state: card?.card_state ?? ("house" as const), version: card?.card_version ?? 1, consented },
-        fitted: fitted.results.map((friend) => ({
+        fitted: fitted.map((friend) => ({
           first_name: friendName(friend),
           month: indiaDate(new Date(friend.window_start)).slice(0, 7),
           visits: friend.visits ?? 0,

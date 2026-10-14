@@ -11,6 +11,7 @@ import { placeById, WAREHOUSE, type Place } from "./stock-places.ts";
 import { sendStock } from "./stock-transit.ts";
 import { kitUnits } from "./stock-units.ts";
 import type { Written } from "./stock.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 interface KitLot {
   readonly lotCode: string;
@@ -174,7 +175,7 @@ export async function handBack(
   kit: Place,
   handed: HandedBack,
   written: Written,
-): Promise<{ readonly ok: true } | { readonly ok: false; readonly fields: string[] }> {
+): Promise<{ readonly ok: true } | Refusal<"invalid_request">> {
   const to = (await placeById(db, kit))?.parentId ?? WAREHOUSE;
   if (handed.pieces.length > 0) {
     const held = await db
@@ -184,7 +185,8 @@ export async function handBack(
       )
       .bind(kit, JSON.stringify(handed.pieces))
       .first<number>("held");
-    if (held !== new Set(handed.pieces).size || held !== handed.pieces.length) return { ok: false, fields: ["pieces"] };
+    if (held !== new Set(handed.pieces).size || held !== handed.pieces.length)
+      return refusal("invalid_request", ["pieces"]);
     await db.batch(piecesHandedIn(db, { kit, to, pieces: handed.pieces }, written));
   }
   if (handed.expired) {

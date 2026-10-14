@@ -9,6 +9,7 @@ import { tellUnapplied } from "./books-kept.ts";
 import { type Pass, claimToRecord, tellFailure, closeFailures, claimToApply, markApplied } from "./books-pass.ts";
 import { type PaymentPaidFor, supplyOf } from "./receipt-supply.ts";
 import { PER_PASS } from "./vendor-pass.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 // ---------------------------------------------------------------------------
 // Recording a payment
@@ -86,7 +87,7 @@ interface PaymentToApply {
   person_id: string;
   books_payment_id: string;
   amount: number;
-  fsm_invoice_id: string;
+  books_invoice_id: string;
 }
 
 /**
@@ -96,9 +97,9 @@ interface PaymentToApply {
 export async function paymentsToApply(pass: Pass): Promise<PaymentToApply[]> {
   const { results } = await pass.db
     .prepare(
-      `SELECT p.id, p.person_id, p.books_payment_id, p.amount, a.fsm_invoice_id
+      `SELECT p.id, p.person_id, p.books_payment_id, p.amount, a.books_invoice_id
        FROM payments p JOIN appointments a ON a.id = p.appointment_id
-       WHERE p.books_payment_id IS NOT NULL AND p.books_applied_at IS NULL AND a.fsm_invoice_id IS NOT NULL
+       WHERE p.books_payment_id IS NOT NULL AND p.books_applied_at IS NULL AND a.books_invoice_id IS NOT NULL
          AND p.status = 'captured' AND p.kind = 'visit'
          AND (p.books_checked_at IS NULL OR p.books_checked_at < ?1)
        ORDER BY p.captured_at LIMIT ?2`,
@@ -116,13 +117,13 @@ export async function applyPayment(pass: Pass, payment: PaymentToApply): Promise
     kind: "apply",
     id: payment.id,
     personId: payment.person_id,
-    what: `payment ${payment.id} against invoice ${payment.fsm_invoice_id}`,
+    what: `payment ${payment.id} against invoice ${payment.books_invoice_id}`,
     then: "Set it against the invoice in Books by hand.",
   } as const;
 
   let invoice;
   try {
-    invoice = await deps.books.invoice(payment.fsm_invoice_id);
+    invoice = await deps.books.invoice(payment.books_invoice_id);
   } catch (error) {
     await tellFailure(pass, failed, error);
     return false;
@@ -134,7 +135,7 @@ export async function applyPayment(pass: Pass, payment: PaymentToApply): Promise
     await tellUnapplied(
       pass.deps.alertOnce,
       payment,
-      `invoice ${payment.fsm_invoice_id} is ${invoice?.status ?? "missing"}`,
+      `invoice ${payment.books_invoice_id} is ${invoice?.status ?? "missing"}`,
     );
     await markApplied(pass, payment.id);
     return false;
@@ -160,10 +161,11 @@ async function tellLeftOver(pass: Pass, payment: PaymentToApply, owed: number): 
   const left = payment.amount - owed;
   await pass.deps.alertOnce({
     key: `books_unapplied:${payment.id}`,
-    message:
-      `Payment ${payment.id} (Books ${payment.books_payment_id}) was ${rupees(payment.amount)}, and invoice ` +
-      `${payment.fsm_invoice_id} owed ${rupees(owed)} of it, so ${rupees(left)} has nothing to be set against. ` +
-      "It stays in Books as credit owed to the client.",
+    message: ALERT_WORDS.books_unapplied({
+      what: `${rupees(left)} of payment ${payment.id}`,
+      why: `invoice ${payment.books_invoice_id} owed ${rupees(owed)} of its ${rupees(payment.amount)}`,
+      books: payment.books_payment_id,
+    }),
     link: paymentsTab(payment.person_id),
   });
 }

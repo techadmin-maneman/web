@@ -9,6 +9,7 @@ import type { CallBudget } from "../lib/call-budget.ts";
 import type { Logger } from "../log.ts";
 import { BRIDGE_CLOSED_READINGS } from "../policy/alerts.ts";
 import type { BridgeFault } from "../providers/messaging/index.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
 
 const FIXES: Readonly<Record<BridgeFault, string>> = {
   no_instance: "Check EVOLUTION_API_URL and EVOLUTION_INSTANCE_NAME against the bridge's list of instances",
@@ -31,9 +32,7 @@ export async function checkWhatsAppBridge(
   log.warn("whatsapp_bridge_closed", { fault: connection.fault, detail: connection.detail });
   await deps.alertOnce({
     key: "whatsapp_bridge",
-    message:
-      `The WhatsApp bridge is not connected (${connection.detail}): no login code or message can be sent until ` +
-      `it is. ${FIXES[connection.fault]} (runbook, "WhatsApp (Evolution) is down").`,
+    message: ALERT_WORDS.whatsapp_bridge({ fix: FIXES[connection.fault], detail: connection.detail }),
     after: BRIDGE_CLOSED_READINGS,
   });
 }

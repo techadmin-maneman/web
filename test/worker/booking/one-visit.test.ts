@@ -322,7 +322,7 @@ describe("closing a one visit the client was fitted at", () => {
 
     expect((await closeAsDone(job)).status).toBe(202);
     expect(job.deps.alerts).toHaveLength(1);
-    expect(job.deps.alerts[0]).toContain("the client was fitted with Mane Man Natural, which the price book has no");
+    expect(job.deps.alerts[0]).toContain("Price Mane Man Natural in the price book");
   });
 
   it("sends nothing for a visit closed partly done, which stays to be decided", async () => {

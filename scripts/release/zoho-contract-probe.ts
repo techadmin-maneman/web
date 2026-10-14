@@ -38,6 +38,8 @@ const booksSettings: ZohoBooksSettings = {
   apiHost: requiredEnv("ZOHO_BOOKS_API_HOST"),
   orgId: requiredEnv("ZOHO_BOOKS_ORG_ID"),
   refundAccountId: null,
+  itemPush: false,
+  billAccounts: null,
   gst: NO_GST,
 };
 

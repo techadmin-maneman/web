@@ -5,6 +5,8 @@
 import type { Surface } from "../../config/environments.ts";
 import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import type { AuditAction, AuditActor } from "../platform/audit.ts";
+import { z } from "zod";
+import { storedJson } from "../../lib/stored-json.ts";
 
 /** How many entries a page holds. */
 const ACTIVITY_PAGE = 50;
@@ -112,7 +114,7 @@ function entryOf(row: Row): ActivityEntry {
     action: row.action,
     subject:
       row.subject_kind === null || row.subject_id === null ? null : { kind: row.subject_kind, id: row.subject_id },
-    detail: row.detail === null ? null : (JSON.parse(row.detail) as Record<string, unknown>),
+    detail: row.detail === null ? null : storedJson(z.record(z.string(), z.unknown()), row.detail, "audit_log.detail"),
   };
 }
 

@@ -191,6 +191,8 @@ const connected = {
       refreshToken: "1000.books-refresh",
       orgId: "60088931635",
       refundAccountId: null,
+      itemPush: false,
+      billAccounts: null,
       gst: NO_GST,
     },
   },

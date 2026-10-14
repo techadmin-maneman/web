@@ -13,7 +13,7 @@ import { isWithin, techniciansWithin } from "../../domain/clients/places.ts";
 import { BOARD_DAYS, boardVersion, dispatchBoard } from "../../domain/dispatch/dispatch-board.ts";
 import { dispatchRoomFor } from "../../domain/dispatch/dispatch.ts";
 import { nearestKm } from "../../domain/dispatch/nearest.ts";
-import { APPOINTMENT_STATUSES } from "../../domain/visits/visit-status.ts";
+import { APPOINTMENT_STATUSES, STATUS_MEANINGS } from "../../domain/visits/visit-status.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
@@ -69,7 +69,7 @@ const BlockSchema = z
   .object({
     ...VISIT,
     window: z.enum(BOOKING_WINDOWS),
-    status: z.enum(APPOINTMENT_STATUSES),
+    status: z.enum(APPOINTMENT_STATUSES).openapi({ description: STATUS_MEANINGS }),
     notice_hours: z.number().int().openapi({
       description:
         "The notice the visit was sold under, in hours, or the one in force for a visit no hold sold: a change of the client's own inside it costs them, one ops make never does.",

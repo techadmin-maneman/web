@@ -1530,7 +1530,7 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
-**409**: not_ready: a refund of a payment not yet recorded, whose event does not carry it; Razorpay retries it
+**503**: unavailable: the event could not be queued; Razorpay sends it again
 
 ```json
 {

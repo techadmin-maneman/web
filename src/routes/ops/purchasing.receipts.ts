@@ -93,10 +93,7 @@ export function registerOpsReceipts(app: App): void {
       },
       written(c),
     );
-    if (!received.ok) {
-      if ("missing" in received) return refuse(c, "not_found");
-      return "state" in received ? refuse(c, "order_state") : refuse(c, "invalid_request", received.fields);
-    }
+    if (!received.ok) return refuse(c, received.code, received.fields);
     return c.json(await ordersAnswer(c), 200);
   });
 

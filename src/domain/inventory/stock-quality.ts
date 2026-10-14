@@ -5,6 +5,7 @@
 
 import { failureRatePercent, unusedByExpiry } from "../../policy/stock-quality.ts";
 import { allPlaces, type Place } from "./stock-places.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 export interface FailureGroup {
   readonly name: string;
@@ -105,24 +106,28 @@ export async function expiryRisk(
   input: { readonly today: string; readonly since: string; readonly paceDays: number },
   within: ReadonlySet<Place> | null,
 ): Promise<LotAtRisk[]> {
-  const [held, left] = await db.batch<LotRow | { place: string; code: string; left: number }>([
-    db.prepare(
-      `SELECT b.place, b.lot_id, b.quantity, l.consumable_code AS code, c.name, l.lot_code, l.expires_on,
+  const { held, left } = await readAll(db, {
+    held: read<LotRow>(
+      db.prepare(
+        `SELECT b.place, b.lot_id, b.quantity, l.consumable_code AS code, c.name, l.lot_code, l.expires_on,
          COALESCE(l.landed_cost_paise, c.unit_cost) AS cost
        FROM stock_lot_balances b INDEXED BY stock_lot_balances_held JOIN stock_lots l ON l.id = b.lot_id
        JOIN consumables c ON c.code = l.consumable_code
        WHERE b.quantity > 0 AND l.expires_on IS NOT NULL`,
+      ),
     ),
-    db
-      .prepare(
-        `SELECT COALESCE(place_id, technician_id, 'central') AS place, consumable_code AS code, SUM(-quantity) AS left
+    left: read<{ place: string; code: string; left: number }>(
+      db
+        .prepare(
+          `SELECT COALESCE(place_id, technician_id, 'central') AS place, consumable_code AS code, SUM(-quantity) AS left
          FROM stock_movements INDEXED BY stock_movements_latest
          WHERE created_at >= ?1 AND quantity < 0 AND reason IN ('used', 'transferred') GROUP BY 1, 2`,
-      )
-      .bind(input.since),
-  ]);
-  const lots = ((held?.results ?? []) as LotRow[]).filter((lot) => within === null || within.has(lot.place));
-  const pace = (left?.results ?? []) as { place: string; code: string; left: number }[];
+        )
+        .bind(input.since),
+    ),
+  });
+  const lots = held.filter((lot) => within === null || within.has(lot.place));
+  const pace = left;
   const perDay = (place: string, code: string) =>
     (pace.find((row) => row.place === place && row.code === code)?.left ?? 0) / input.paceDays;
   const names = new Map((await allPlaces(db)).map((place) => [place.id, place.name]));

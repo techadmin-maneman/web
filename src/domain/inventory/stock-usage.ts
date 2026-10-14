@@ -12,6 +12,8 @@ import {
   type StockUsage,
 } from "../../policy/stock-usage.ts";
 import { allPlaces, type Place } from "./stock-places.ts";
+import { tierOf } from "../../config/visit-types.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 interface ItemUsage {
   readonly code: string;
@@ -57,39 +59,41 @@ export async function usageAgainstExpected(
   within: ReadonlySet<Place> | null,
   flags: StockUsage,
 ): Promise<TechnicianUsage[]> {
-  const [visits, usage, used, items, technicians] = await db.batch<
-    VisitRow | UseRow | UsedRow | ItemRow | { id: string; name: string }
-  >([
-    db
-      .prepare(
-        `SELECT technician_id, type, COALESCE(tier, 'standard') AS tier, COUNT(*) AS visits
+  const { visits, usage, used, items, technicians } = await readAll(db, {
+    visits: read<VisitRow>(
+      db
+        .prepare(
+          `SELECT technician_id, type, ${tierOf("tier")} AS tier, COUNT(*) AS visits
          FROM appointments INDEXED BY appointments_done_visits
          WHERE status = 'completed' AND type IN ('first_fit', 'service', 'replacement') AND deleted_at IS NULL
            AND window_start >= ?1 AND technician_id IS NOT NULL GROUP BY 1, 2, 3`,
-      )
-      .bind(since),
-    db.prepare("SELECT visit_type, tier, consumable_code AS code, quantity FROM consumable_usage"),
-    db
-      .prepare(
-        `SELECT technician_id, consumable_code AS code, SUM(-quantity) AS used
+        )
+        .bind(since),
+    ),
+    usage: read<UseRow>(db.prepare("SELECT visit_type, tier, consumable_code AS code, quantity FROM consumable_usage")),
+    used: read<UsedRow>(
+      db
+        .prepare(
+          `SELECT technician_id, consumable_code AS code, SUM(-quantity) AS used
          FROM stock_movements INDEXED BY stock_movements_used_by_day
          WHERE reason = 'used' AND created_at >= ?1 AND technician_id IS NOT NULL GROUP BY 1, 2`,
-      )
-      .bind(since),
-    db.prepare(
-      `SELECT c.code, c.name, c.unit_cost, h.code IS NOT NULL AS hair_system
-       FROM consumables c LEFT JOIN hair_systems h ON h.code = c.code`,
+        )
+        .bind(since),
     ),
-    db.prepare("SELECT id, name FROM technicians"),
-  ]);
-  const itemOf = new Map(((items?.results ?? []) as ItemRow[]).map((row) => [row.code, row]));
-  const nameOf = new Map(
-    ((technicians?.results ?? []) as { id: string; name: string }[]).map((row) => [row.id, row.name]),
-  );
+    items: read<ItemRow>(
+      db.prepare(
+        `SELECT c.code, c.name, c.unit_cost, h.code IS NOT NULL AS hair_system
+       FROM consumables c LEFT JOIN hair_systems h ON h.code = c.code`,
+      ),
+    ),
+    technicians: read<{ id: string; name: string }>(db.prepare("SELECT id, name FROM technicians")),
+  });
+  const itemOf = new Map(items.map((row) => [row.code, row]));
+  const nameOf = new Map(technicians.map((row) => [row.id, row.name]));
   const counted = tally(
-    (visits?.results ?? []) as VisitRow[],
-    (usage?.results ?? []) as UseRow[],
-    ((used?.results ?? []) as UsedRow[]).filter((row) => itemOf.get(row.code)?.hair_system !== 1),
+    visits,
+    usage,
+    used.filter((row) => itemOf.get(row.code)?.hair_system !== 1),
   );
   return [...counted]
     .filter(([technician]) => within === null || within.has(technician))
@@ -175,25 +179,29 @@ export async function shrinkage(
   within: ReadonlySet<Place> | null,
   flags: StockUsage,
 ): Promise<PlaceLoss[]> {
-  const [left, counts] = await db.batch<LeftRow | CountedRow>([
-    db
-      .prepare(
-        `SELECT COALESCE(m.place_id, m.technician_id, 'central') AS place, m.reason, SUM(-m.quantity * c.unit_cost) AS value,
+  const { left, counts } = await readAll(db, {
+    left: read<LeftRow>(
+      db
+        .prepare(
+          `SELECT COALESCE(m.place_id, m.technician_id, 'central') AS place, m.reason, SUM(-m.quantity * c.unit_cost) AS value,
            COUNT(*) AS moves
          FROM stock_movements m INDEXED BY stock_movements_latest JOIN consumables c ON c.code = m.consumable_code
          WHERE m.created_at >= ?1 AND m.quantity < 0 GROUP BY 1, 2`,
-      )
-      .bind(since),
-    db
-      .prepare(
-        `SELECT t.place_id, COUNT(*) AS lines, SUM(l.recounted IS NULL) AS right
+        )
+        .bind(since),
+    ),
+    counts: read<CountedRow>(
+      db
+        .prepare(
+          `SELECT t.place_id, COUNT(*) AS lines, SUM(l.recounted IS NULL) AS right
          FROM count_tasks t INDEXED BY count_tasks_done JOIN count_lines l ON l.task_id = t.id
          WHERE t.state = 'done' AND t.done_at >= ?1 GROUP BY 1`,
-      )
-      .bind(since),
-  ]);
-  const leftRows = (left?.results ?? []) as LeftRow[];
-  const countRows = (counts?.results ?? []) as CountedRow[];
+        )
+        .bind(since),
+    ),
+  });
+  const leftRows = left;
+  const countRows = counts;
   return (await allPlaces(db))
     .filter((place) => within === null || within.has(place.id))
     .flatMap((place): PlaceLoss[] => {

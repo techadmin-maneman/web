@@ -3044,7 +3044,8 @@ Request body:
         "completed",
         "cancelled",
         "terminated"
-      ]
+      ],
+      "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
     },
     "not_home": {
       "type": "boolean",
@@ -4394,7 +4395,8 @@ Request body:
         "completed",
         "cancelled",
         "terminated"
-      ]
+      ],
+      "description": "scheduled: booked, its technician not yet at the door; dispatched: its technician checked in at the door; in_progress: its technician began the work; completed: done; cancelled: called off before it began; terminated: ended before it was done: partly done, or a no-show, which its outcome tells apart"
     },
     "not_home": {
       "type": "boolean",

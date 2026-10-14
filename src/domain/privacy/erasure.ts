@@ -38,6 +38,7 @@ import { type CrmSyncMessage } from "../../config/pipeline.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
 import { personalDataStatements } from "./erasure-statements.ts";
 import { deleteErasedFiles, type ErasureEnv } from "./erasure-files.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 export interface ErasureSummary {
   readonly personId: string;
@@ -196,9 +197,7 @@ async function cancelOpenLinks(linkIds: readonly string[], options: EraseOptions
       options.log.warn("erased_link_not_cancelled", { link_id: linkId, reason });
       await options.alertOnce({
         key: `erased_link:${linkId}`,
-        message:
-          `Payment link ${linkId}, of a client erased since, could not be cancelled: ${reason}. ` +
-          "Cancel it in Razorpay's dashboard.",
+        message: ALERT_WORDS.erased_link({ link: linkId, reason }),
       });
     }
   }

@@ -124,11 +124,7 @@ async function planAnswer(c: Context<AppEnv>) {
 }
 
 async function after(c: Context<AppEnv>, decided: Decided) {
-  if (!decided.ok) {
-    if ("missing" in decided) return refuse(c, "not_found");
-    if ("state" in decided) return refuse(c, "order_state");
-    return refuse(c, "invalid_request", decided.fields);
-  }
+  if (!decided.ok) return refuse(c, decided.code, decided.fields);
   return c.json(await planAnswer(c), 200);
 }
 

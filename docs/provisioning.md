@@ -48,10 +48,12 @@ W d1 create maneman-<env> --location apac      # put the ID in wrangler.jsonc, e
 W queues create mm-render-<t>
 W queues create mm-crm-sync-<t>
 W queues create mm-messaging-<t>
+W queues create mm-razorpay-<t>                # Razorpay's events (docs/decisions/0202-razorpay-events-queued.md)
+W queues create mm-dead-letters-<t>            # what every other queue gave up on
 npm run check:config -- --require-provisioned  # must pass before anything deploys
 ```
 
-`wrangler.jsonc` binds all three queues and all four buckets below in every environment, so an upload of mm-api fails until each exists. The release uploads before it migrates (ADR 0006), so a missing one stops it with the database untouched.
+`wrangler.jsonc` binds all five queues and all four buckets below in every environment, so an upload of mm-api fails until each exists. The release uploads before it migrates (ADR 0006), so a missing one stops it with the database untouched.
 
 R2 must be enabled on the account first (dashboard → Storage & databases → R2; it needs a payment method). Try-on photos and results must not outlive 30 days, so each bucket gets an expiry rule:
 

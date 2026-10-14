@@ -117,6 +117,29 @@ describe("Razorpay's webhook: what it cannot use", () => {
     expect(await payment()).toBeNull();
   });
 
+  it("answers unavailable, and lets the event go, when its queue will not take it, so Razorpay's next try is taken", async () => {
+    captureLogs();
+    const refusing = { send: () => Promise.reject(new Error("queue down")) } as unknown as Queue;
+    const refused = await deliverRazorpay(paymentEvent("payment.captured"), {
+      eventId: "evt_1",
+      bindings: { RAZORPAY_QUEUE: refusing },
+    });
+    expect(refused.status).toBe(503);
+    expect(await seenEvents()).toEqual({ n: 0 });
+
+    await person("+919810000001");
+    expect((await deliver(paymentEvent("payment.captured"), "evt_1")).status).toBe(200);
+    expect(await payment()).toMatchObject({ reference: A_REFERENCE });
+  });
+
+  it("queues one of two deliveries of an event that arrive together", async () => {
+    await person("+919810000001");
+    const both = await Promise.all([1, 2].map(() => deliver(paymentEvent("payment.captured"), "evt_1")));
+    expect(both.map((delivered) => delivered.status)).toEqual([200, 200]);
+    expect(await seenEvents()).toEqual({ n: 1 });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 1 });
+  });
+
   // Razorpay always names its event; a delivery that does not is known by its body, so a resend is still applied once.
   it("knows a delivery with no event ID by its body, and applies the same body once", async () => {
     await person("+919810000001");
@@ -200,22 +223,22 @@ describe("Razorpay's webhook: refunds", () => {
     ]);
   });
 
-  it("asks Razorpay to send again a refund of a payment not yet arrived that the event does not carry", async () => {
+  it("tries again later a refund of a payment not yet arrived that the event does not carry", async () => {
     const early = await deliver(refundEvent("refund.processed", 1000000), "evt_1");
-    expect(early.status).toBe(409);
+    expect([early.status, early.retried]).toEqual([200, true]);
     await deliver(paymentEvent("payment.captured"), "evt_2");
-    expect((await deliver(refundEvent("refund.processed", 1000000), "evt_1")).status).toBe(200);
+    expect(await early.again()).toBe(false);
     expect((await payment())?.status).toBe("partially_refunded");
+    // Razorpay sending it again finds it taken.
+    expect((await deliver(refundEvent("refund.processed", 1000000), "evt_1")).retried).toBe(false);
   });
 
-  it("takes nothing from a payment that is not Razorpay's shape, and leaves it for Razorpay to send again", async () => {
+  it("records nothing from a payment that is not Razorpay's shape, and tries it again later", async () => {
     captureLogs();
     const response = await deliver(paymentEvent("payment.captured", { amount: undefined }), "evt_1");
 
-    expect(response.status).toBe(500);
+    expect([response.status, response.retried]).toEqual([200, true]);
     expect(await payment()).toBeNull();
-    const seen = await env.DB.prepare("SELECT COUNT(*) AS n FROM razorpay_events").first<{ n: number }>();
-    expect(seen?.n).toBe(0);
   });
 });
 
@@ -248,11 +271,11 @@ describe("Razorpay's webhook: a refund of a payment whose own events never reach
     expect(await payment()).toMatchObject({ status: "refunded", reference: null, captured_at: null });
   });
 
-  it("takes nothing when the payment the event carries is another, and leaves it for Razorpay to send again", async () => {
+  it("records nothing when the payment the event carries is another, and tries it again later", async () => {
     const refund = refundEvent("refund.processed", 3540000, "rfnd_1", refundedPayment({ id: "pay_other" }));
-    expect((await deliver(refund, "evt_1")).status).toBe(409);
+    expect((await deliver(refund, "evt_1")).retried).toBe(true);
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 0 });
-    expect((await seenEvents())?.n).toBe(0);
+    expect((await seenEvents())?.n).toBe(1);
     expect(await alertsKept()).toEqual([]);
   });
 });

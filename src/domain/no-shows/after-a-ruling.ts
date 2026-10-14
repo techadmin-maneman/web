@@ -13,6 +13,7 @@ import { ASKS, askRefund, refundLeftToOps, refundReceipt } from "../money/refund
 import { visitPayment } from "../visits/visit-changes.ts";
 import { creditOfVisit } from "../messages/visit-message-text.ts";
 import { rupees } from "@maneman/web-kit/money";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** Money going back to the client once a ruling is written. */
 interface NoShowRefund {
@@ -70,9 +71,7 @@ async function alertIfCreditNotBack(db: D1Database, alertOnce: AlertOnce, credit
   if ((await creditOfVisit(db, credit.appointmentId)) !== "kept") return;
   await alertOnce({
     key: `no_show_credit_not_back:${credit.why}:${credit.appointmentId}`,
-    message:
-      `The visit credit for visit ${credit.appointmentId}, a no-show ${credit.why}, could not come back: its grant ` +
-      "has expired or been withdrawn. The client is told so; settle it with them by hand if they are owed one.",
+    message: ALERT_WORDS.no_show_credit_not_back({ visit: credit.appointmentId, why: credit.why }),
     link: credit.personId === null ? "/payments" : paymentsTab(credit.personId),
   });
 }

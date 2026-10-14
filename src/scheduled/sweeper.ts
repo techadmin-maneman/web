@@ -36,6 +36,8 @@ import type { RenderMessage } from "../queues/render.ts";
 import { requeueUnsentMessages } from "./unsent-messages.ts";
 import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../config/pipeline.ts";
+import { ALERT_WORDS } from "../config/alert-words.ts";
+import { staleContactUpdates } from "../domain/clients/contact-updates.ts";
 
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
@@ -121,6 +123,7 @@ export async function sweep(
   const context: SweepContext = { env, deps, log, budget: options.budget };
   const leads = await requeueLeads(context);
   const erasures = await requeueCrmErasures(context);
+  await requeueContactUpdates(context);
   const messages = await requeueMessages(context);
   const { renders, downloads } = await requeueTryons(context);
   const { expired: jobsExpired, kept: tryOnsKept } = await expireTryOns(context);
@@ -160,6 +163,29 @@ export async function requeueLeads(context: SweepContext): Promise<string[]> {
   );
   logCount(log, "leads_requeued", leads.length);
   return leads;
+}
+
+/** How long an owed contact update waits, since its change or its last try, before the sweeper sends it again. */
+const CONTACT_UPDATE_WAIT_MS = 15 * MINUTE_MS;
+
+/** Contact changes still owed to a CRM lead (src/domain/clients/contact-updates.ts), sent to crm-sync again. */
+export async function requeueContactUpdates(context: SweepContext): Promise<string[]> {
+  const { db, env, before, log } = sweepRun(context);
+  const owed = await staleContactUpdates(db, { before: before(CONTACT_UPDATE_WAIT_MS), limit: BATCH_LIMIT });
+  await sendAll(
+    env.CRM_QUEUE,
+    owed.map(
+      (update) =>
+        ({
+          update_person_id: update.personId,
+          request_id: "sweeper",
+          ...(update.inviteAttached ? { invite_attached: true as const } : {}),
+        }) satisfies CrmSyncMessage,
+    ),
+    log,
+  );
+  logCount(log, "contact_updates_requeued", owed.length);
+  return owed.map((update) => update.personId);
 }
 
 /** Erased people whose CRM record is still to be blanked, sent to crm-sync again. */
@@ -306,7 +332,7 @@ export async function checkYoucamUnits(context: SweepContext, unitFloor: number)
   // Told once, not every hour, until a top-up lifts the balance over the floor.
   await deps.alertOnce({
     key: "youcam_units_low",
-    message: `YouCam is down to ${String(credits)} units, below the floor of ${String(unitFloor)}. Top up before try-ons stop.`,
+    message: ALERT_WORDS.youcam_units_low({ units: credits, floor: unitFloor }),
   });
   return credits;
 }

@@ -8,6 +8,7 @@ import { latestFits } from "../clients/hair-profiles.ts";
 import { auditStatement, auditStatementWhen } from "../platform/audit.ts";
 import { MATCHED_FIELDS } from "../inventory/stock-match.ts";
 import type { Written } from "../platform/audit.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 /** Where an order stands, as ops and the client read it: its own state, and its purchase order's once paid. */
 type CustomOrderStatus = "awaiting_payment" | "paid" | "ordered" | "arrived" | "refunded" | "cancelled";
@@ -138,15 +139,15 @@ export async function raiseCustomOrder(
   db: D1Database,
   raised: NewCustomOrder,
   written: Written,
-): Promise<{ readonly ok: true; readonly id: string } | { readonly ok: false; readonly fields: string[] }> {
+): Promise<{ readonly ok: true; readonly id: string } | Refusal<"invalid_request">> {
   const spec = (await latestFits(db, [raised.personId])).get(raised.personId);
   if (spec === undefined || MATCHED_FIELDS.some((field) => spec[field] === null))
-    return { ok: false, fields: ["profile"] };
+    return refusal("invalid_request", ["profile"]);
   const supplier = await db
     .prepare("SELECT 1 FROM suppliers WHERE id = ?1 AND retired_at IS NULL")
     .bind(raised.supplierId)
     .first();
-  if (supplier === null) return { ok: false, fields: ["supplier_id"] };
+  if (supplier === null) return refusal("invalid_request", ["supplier_id"]);
   const id = crypto.randomUUID();
   const at = written.now.toISOString();
   await db.batch([

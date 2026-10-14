@@ -33,7 +33,8 @@ import {
 import { unitsFor } from "../../policy/visit-length.ts";
 import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { bookedMinutes, claimsOf, loadBlackouts, occupancy } from "../booking/occupancy.ts";
-import { breaksRotation, visitsOfClient } from "../booking/technician-rotation.ts";
+import { visitsOfClient } from "../booking/technician-rotation.ts";
+import { allowedTechnicians, breaksRotation } from "../../policy/technician-rotation.ts";
 import { releaseDeadHolds } from "../booking/hold-slot.ts";
 import { begunPastArrival, visitBegun } from "../visits/visit-begun.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
@@ -192,21 +193,17 @@ export async function planMove(db: D1Database, input: MoveInput, now: Date): Pro
   const blackoutReason = ontoBlackout ? (input.blackoutReason ?? null) : null;
   const placing = { minutes: bookedMinutes(job), start: wasStart };
   const from = { technicianId: job.technician_id, date: indiaDate(wasStart) };
-  // Never the technician of the client's visit before or after, unless nobody else in the city has room (ADR 0117).
-  const someoneElseFits = cityTechnicians.some((each) => {
-    if (each.id === technicianId) return false;
-    const theirs = targetOf({ job, technicianId: each.id, place: { date, window }, schedule, now });
-    if (breaksRotation(clientVisits, from, theirs)) return false;
-    const fit = landingOf({
-      day: held(each.id, date),
-      job: placing,
-      target: theirs,
-      blackoutWithoutReason: false,
-      beside: false,
-    });
-    return fit.kind !== "refused";
-  });
-  const beside = breaksRotation(clientVisits, from, target) && someoneElseFits;
+  // Never the technician of the client's visit before or after, unless nobody else in the city has room.
+  const targetFor = (id: string) => targetOf({ job, technicianId: id, place: { date, window }, schedule, now });
+  const fits = (id: string) =>
+    landingOf({ day: held(id, date), job: placing, target: targetFor(id), blackoutWithoutReason: false, beside: false })
+      .kind !== "refused";
+  const candidates = [
+    technicianId,
+    ...cityTechnicians.map((each) => each.id).filter((id) => id !== technicianId && fits(id)),
+  ];
+  const allowed = allowedTechnicians(candidates, (id) => breaksRotation(clientVisits, from, targetFor(id)));
+  const beside = !allowed.includes(technicianId);
   const landing = landingOf({
     day: held(technicianId, date),
     job: placing,
@@ -454,23 +451,29 @@ export async function dispatchRoomFor(
     const startsAt = timesAt(target, landing.start, visit, schedule).start.toISOString();
     return { startsAt, beside: breaksRotation(clientVisits, from, target) };
   };
-  // Never the technician of the client's visit before or after, unless nobody else in the city has room (ADR 0117).
-  const othersHaveRoom = (date: string, window: BookingWindow) =>
-    technicians.some((technician) => {
-      // The job staying where it is counts as room: it need not go to the barred technician.
-      if (isWhereItIs(job, targetOf({ job, technicianId: technician.id, place: { date, window }, schedule, now }))) {
-        return true;
-      }
-      return landsWith(technician.id, date, window)?.beside === false;
-    });
-  const startsFor = (technicianId: string, date: string): RoomStart[] =>
-    BOOKING_WINDOWS.flatMap((window) => {
-      const lands = landsWith(technicianId, date, window);
-      if (lands === null || (lands.beside && othersHaveRoom(date, window))) return [];
-      return [{ window, starts_at: lands.startsAt }];
-    });
+  // Never the technician of the client's visit before or after, unless nobody else in the city has room. The job
+  // staying where it is counts as room, beside nobody: it need not go to the barred technician.
+  const allowedIn = (date: string, window: BookingWindow) =>
+    allowedTechnicians(
+      technicians.flatMap((technician): { id: string; startsAt: string | null; beside: boolean }[] => {
+        const target = targetOf({ job, technicianId: technician.id, place: { date, window }, schedule, now });
+        if (isWhereItIs(job, target)) return [{ id: technician.id, startsAt: null, beside: false }];
+        const lands = landsWith(technician.id, date, window);
+        return lands === null ? [] : [{ id: technician.id, ...lands }];
+      }),
+      (candidate) => candidate.beside,
+    );
+  const offered = dates.flatMap((date) =>
+    BOOKING_WINDOWS.flatMap((window) =>
+      allowedIn(date, window).flatMap(({ id, startsAt }) =>
+        startsAt === null ? [] : [{ id, date, window, startsAt }],
+      ),
+    ),
+  );
   const roomOn = (technicianId: string, date: string): Room => {
-    const starts = startsFor(technicianId, date);
+    const starts: RoomStart[] = offered
+      .filter((each) => each.id === technicianId && each.date === date)
+      .map((each) => ({ window: each.window, starts_at: each.startsAt }));
     return { technician_id: technicianId, date, windows: starts.map((each) => each.window), starts };
   };
   const ownDate = indiaDate(visit.start);

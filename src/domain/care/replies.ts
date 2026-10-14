@@ -6,6 +6,7 @@ import type { MessagingSettings } from "../../config/settings.ts";
 import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
 import type { MessagingProvider, SendResult } from "../../providers/messaging/index.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
+import { hasNumber } from "../../lib/mobile.ts";
 
 /** What a chat was about, as Care close it. */
 export const CLOSE_REASONS = [
@@ -41,7 +42,7 @@ async function numberOf(
     .bind(conversationId)
     .first<{ mobile_e164: string; test_record: number }>();
   if (row === null) return "not_found";
-  return row.mobile_e164.startsWith("+") ? { to: row.mobile_e164, testRecord: row.test_record === 1 } : "erased";
+  return hasNumber(row.mobile_e164) ? { to: row.mobile_e164, testRecord: row.test_record === 1 } : "erased";
 }
 
 /** Why a reply is kept unsent: messaging is off, or it is to a test record the allowlist holds back. */

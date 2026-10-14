@@ -233,8 +233,8 @@ describe("what charging a no-show costs the client", () => {
 
     expect(await restores()).toBe(0);
     expect(deps.alerts).toEqual([
-      `The visit credit for visit ${VISIT}, a no-show charged, could not come back: its grant has expired or been ` +
-        "withdrawn. The client is told so; settle it with them by hand if they are owed one. " +
+      `Settle visit ${VISIT}'s credit with the client by hand if they are owed one: its grant expired or was ` +
+        "withdrawn, so it could not come back after the no-show charged. The client is told so. " +
         `http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
@@ -278,8 +278,8 @@ describe("what charging a no-show costs the client", () => {
     await charge(createStubPayments(), deps);
 
     expect(deps.alerts).toEqual([
-      `The refund of Rs. 26,000 for visit ${VISIT}, a no-show charged, failed (Razorpay payment pay_visit). ` +
-        `Refund it by hand in Razorpay, once. http://ops.localhost:4323/clients/${PERSON}/payments`,
+      "Refund payment pay_visit by hand in Razorpay, once: Razorpay refused the refund of Rs. 26,000 for visit " +
+        `${VISIT}, a no-show charged. http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
     // The charge stands: the ruling is recorded whatever Razorpay says.
     expect(await recorded()).toMatchObject({ kept_amount: 400000 });

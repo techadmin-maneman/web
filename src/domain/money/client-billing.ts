@@ -35,7 +35,7 @@ interface InvoiceRow {
   id: string;
   window_start: string;
   type: VisitType;
-  fsm_invoice_id: string | null;
+  books_invoice_id: string | null;
   invoice_issued_at: string | null;
 }
 
@@ -61,7 +61,7 @@ const BOOKING_LINKS = `SELECT h.id, COALESCE(s.name, h.type) AS product,
   WHERE h.person_id = ?1 AND h.pay_by_link = 1 AND h.payment_link_url IS NOT NULL`;
 
 // The visits the invoice passes bill: finished, sold for a price, and not a one visit the client declined.
-const BILLED_VISITS = `SELECT a.id, a.window_start, a.type, a.fsm_invoice_id, a.invoice_issued_at
+const BILLED_VISITS = `SELECT a.id, a.window_start, a.type, a.books_invoice_id, a.invoice_issued_at
   FROM appointments a
   WHERE a.person_id = ?1 AND a.status = 'completed' AND a.deleted_at IS NULL AND a.window_start IS NOT NULL
     AND a.type IN ('first_fit', 'service', 'replacement') AND a.one_visit IS NOT 'declined'
@@ -102,7 +102,7 @@ export async function paymentLinksOf(db: D1Database, personId: string, now: Date
 
 function invoiceStateOf(row: InvoiceRow): InvoiceState {
   if (row.invoice_issued_at !== null) return "issued";
-  return row.fsm_invoice_id === null ? "to_raise" : "draft";
+  return row.books_invoice_id === null ? "to_raise" : "draft";
 }
 
 /** Where each finished visit's invoice stands in Books, the latest visit first. */

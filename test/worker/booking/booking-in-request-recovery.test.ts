@@ -168,7 +168,7 @@ describe("money owed back on a hold", () => {
 
     expect(deps.alerts).toEqual([
       expect.stringContaining(
-        `Booking ${ordered.holdId} owes back payment pay_late of Rs. 2,000, and Razorpay refused the refund.`,
+        `Refund payment pay_late of Rs. 2,000 from Razorpay's dashboard: Razorpay refused it. Booking ${ordered.holdId}.`,
       ),
     ]);
     const tasks = (await outstandingTasks(env.DB, NOW, TASK_SLA_HOURS)).tasks;
@@ -197,7 +197,7 @@ describe("money owed back on a hold", () => {
     await webhook("payment.captured", "evt_late", payment("pay_late", ordered, at(13 * 60)), deps);
 
     expect(deps.alerts).toEqual([
-      expect.stringContaining("and Razorpay did not say whether it refunded it. Check Razorpay's dashboard"),
+      expect.stringContaining("dashboard first: Razorpay did not say whether it refunded its Rs. 2,000."),
     ]);
   });
 

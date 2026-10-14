@@ -354,7 +354,7 @@ describe("the deletion window", () => {
     expect(await alertAgedDeletions(env.DB, NOW, deps.alertOnce)).toBe(0);
 
     expect(deps.alerts).toEqual([
-      `Deletion request ${AGED} has waited 25 days. Decide it by 2026-09-25, within 30 days of the request. ` +
+      `Decide deletion request ${AGED} by 2026-09-25: it has waited 25 of its 30 days. ` +
         "http://ops.localhost:4323/deletion-requests",
     ]);
     expect(await openAlerts()).toEqual([

@@ -2,6 +2,7 @@
 // a new test writes its data through these, never as INSERT statements of its own
 // (test/node/tooling/test-data.test.ts).
 
+export { aCreditSpent } from "./credits.ts";
 export { aHold } from "./holds.ts";
 export { aPayment } from "./payments.ts";
 export { anAddress, aPerson } from "./people.ts";

@@ -21,7 +21,6 @@ import {
   type CheckLine,
 } from "../lib/books-org-check.ts";
 import { readJsonc } from "../lib/jsonc.ts";
-import { BOOKS_BILL_ACCOUNTS } from "../../src/config/environments.ts";
 import { requiredEnv, zohoScriptClient } from "../lib/zoho-script-client.ts";
 
 // --use-worker-token is read by refreshTokenForScript; it is named here so the parser takes it.
@@ -60,10 +59,9 @@ const lines: CheckLine[] = [
   ),
   refundAccount(refundAccountId, refundAccountId === null ? null : await read(`/bankaccounts/${refundAccountId}`)),
 ];
-const billAccounts = BOOKS_BILL_ACCOUNTS[environment];
 for (const [linesOf, accountId] of [
-  ["hair systems", billAccounts?.hairSystems ?? null],
-  ["consumables", billAccounts?.consumables ?? null],
+  ["hair systems", workerVar(environment, "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT") ?? null],
+  ["consumables", workerVar(environment, "BOOKS_BILL_CONSUMABLES_ACCOUNT") ?? null],
 ] as const) {
   lines.push(
     billAccount({ linesOf, accountId }, accountId === null ? null : await read(`/chartofaccounts/${accountId}`)),

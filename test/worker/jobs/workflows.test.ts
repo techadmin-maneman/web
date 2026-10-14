@@ -63,7 +63,7 @@ describe("the night's copy", () => {
     const given = steps("stage visits");
     await expect(copyNight(given, run(), "2026-09-22")).rejects.toThrow("stage visits broke");
     expect(given.ran.at(-1)).toBe("tell of the failure");
-    expect(deps.alerts).toEqual([expect.stringContaining("Last night's reporting copy failed: stage visits broke")]);
+    expect(deps.alerts).toEqual([expect.stringContaining("last night's failed (stage visits broke)")]);
   });
 });
 

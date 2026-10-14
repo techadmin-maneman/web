@@ -10,6 +10,7 @@ import { refuse, type ErrorCode } from "./errors.ts";
 import type { Logger } from "../log.ts";
 import { sha256Hex } from "../lib/hash.ts";
 import { DAY_MS, MINUTE_MS } from "../lib/durations.ts";
+import { storedJson } from "../lib/stored-json.ts";
 
 const TTL_MS = DAY_MS;
 
@@ -79,9 +80,12 @@ async function startIdempotent(db: D1Database, record: IdempotencyRecord, now: D
   if (existing.request_hash !== record.requestHash) return { kind: "key_reused" };
   if (existing.response_json === null) return { kind: "in_progress" };
 
-  const stored = JSON.parse(existing.response_json) as { status: number; body: unknown };
+  const stored = storedJson(KEPT_ANSWER, existing.response_json, "idempotency.response_json");
   return { kind: "replay", body: stored.body, status: stored.status };
 }
+
+/** A success's answer as finishIdempotent keeps it. */
+const KEPT_ANSWER = z.object({ status: z.number().int(), body: z.unknown() });
 
 /** A success's answer, kept beside its status: every public keyed route answers a 201, a console write its own. */
 async function finishIdempotent(db: D1Database, record: IdempotencyRecord, body: unknown, status = 201): Promise<void> {

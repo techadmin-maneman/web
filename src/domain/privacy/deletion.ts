@@ -24,6 +24,7 @@ import { DAY_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { firstNameOf } from "../../lib/names.ts";
 import { queueMessage } from "../messages/queued-messages.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 type DeletionState = "requested" | "done" | "rejected";
 
@@ -265,9 +266,12 @@ export async function alertAgedDeletions(db: D1Database, now: Date, alertOnce: A
   for (const request of aged.results) {
     await alertOnce({
       key: deletionWaitingKey(request.id),
-      message:
-        `Deletion request ${request.id} has waited ${String(ALERT_AFTER_DAYS)} days. Decide it by ` +
-        `${decideBy(request.created_at)}, within ${String(DELETION_DECIDED_WITHIN_DAYS)} days of the request.`,
+      message: ALERT_WORDS.deletion_waiting({
+        request: request.id,
+        by: decideBy(request.created_at),
+        waited: ALERT_AFTER_DAYS,
+        within: DELETION_DECIDED_WITHIN_DAYS,
+      }),
       link: "/deletion-requests",
     });
     await db

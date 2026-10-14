@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
 import { settleOwedRefunds } from "../../../src/domain/money/cancel-refunds.ts";
 import {
   changeableVisit,
@@ -47,6 +47,7 @@ import {
   messagesOf,
   changes,
 } from "./booking-in-request-fixtures.ts";
+import { aCreditSpent } from "../fixtures/index.ts";
 
 beforeEach(async () => {
   await markDatabase();
@@ -197,7 +198,7 @@ describe("a visit the client and ops cancel at the same moment", () => {
   it("gives its credit back once", async () => {
     await env.DB.prepare("DELETE FROM payments").run();
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "referral", sourceId: "attr-1", now: NOW }).run();
-    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+    await aCreditSpent(PERSON, VISIT);
 
     expect(await cancelledByBoth(fakeDependencies())).toEqual(["cancelled", "not_changeable"]);
 
@@ -287,7 +288,7 @@ describe("a visit cancelled, when something fails after it is cancelled", () => 
   it("gives a credit back with the cancel itself, whatever fails after", async () => {
     await env.DB.prepare("DELETE FROM payments").run();
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "referral", sourceId: "attr-1", now: NOW }).run();
-    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+    await aCreditSpent(PERSON, VISIT);
     useMessageQueue(queueThatRefuses());
 
     const done = await cancelFree(fakeDependencies(), failingAfterTheFirstBatch(env.DB));
@@ -348,9 +349,9 @@ describe("the cron's cancel_refunds job", () => {
 
     expect(asked).toBe(2);
     expect(deps.alerts).toEqual([
-      `Razorpay did not answer the refund of Rs. 2,000 for visit ${VISIT}, cancelled by the client (payment ` +
-        "pay_visit), so it may have been made. Look at the payment in Razorpay, and refund it by hand only if no " +
-        `refund of Rs. 2,000 is there. http://ops.localhost:4323/clients/${PERSON}/payments`,
+      "Look at payment pay_visit in Razorpay first: Razorpay did not say whether it made the refund of Rs. 2,000 " +
+        `for visit ${VISIT}, cancelled by the client. Refund it by hand only if no refund of Rs. 2,000 is there. ` +
+        `http://ops.localhost:4323/clients/${PERSON}/payments`,
     ]);
   });
 
@@ -366,7 +367,7 @@ describe("the cron's cancel_refunds job", () => {
     await run(deps);
 
     expect(deps.alerts).toHaveLength(1);
-    expect(deps.alerts[0]).toContain(`Rs. 2,000 for visit ${VISIT}, cancelled by ops (payment pay_visit)`);
+    expect(deps.alerts[0]).toContain(`the refund of Rs. 2,000 for visit ${VISIT}, cancelled by ops.`);
   });
 
   it("leaves alone a claim whose visit was never cancelled, and one the Worker before it refunded", async () => {

@@ -8,6 +8,7 @@
 import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { needsSecondApproval, CANCELLABLE, type PoState } from "../../policy/purchasing.ts";
 import { auditStatement, auditStatementWhen, type AuditAction, type Written, opsEntry } from "../platform/audit.ts";
+import { type Refusal, refusal } from "../../lib/refusal.ts";
 
 interface PoLine {
   readonly id: string;
@@ -126,7 +127,7 @@ async function purchaseOrder(db: D1Database, id: string): Promise<PurchaseOrder 
 const entry = (written: Written, action: AuditAction, id: string, detail: Record<string, string | number> = {}) =>
   opsEntry(written, action, { kind: "purchase_order", id }, detail);
 
-type Refused = { readonly ok: false; readonly fields: string[] };
+type Refused = Refusal<"invalid_request">;
 
 /**
  * A new order to an active supplier, each line of a stock code it lists, at its listed price, of at least its minimum
@@ -146,16 +147,16 @@ export async function draftOrder(
     .prepare("SELECT currency FROM suppliers WHERE id = ?1 AND retired_at IS NULL")
     .bind(draft.supplierId)
     .first<{ currency: string }>();
-  if (supplier === null) return { ok: false, fields: ["supplier_id"] };
+  if (supplier === null) return refusal("invalid_request", ["supplier_id"]);
   const { results: listed } = await db
     .prepare("SELECT consumable_code, unit_price, minimum_order FROM supplier_items WHERE supplier_id = ?1")
     .bind(draft.supplierId)
     .all<{ consumable_code: string; unit_price: number; minimum_order: number }>();
   const priced = draft.lines.map((line) => ({ line, item: listed.find((each) => each.consumable_code === line.code) }));
   const refused = priced.findIndex(({ line, item }) => item === undefined || line.quantity < item.minimum_order);
-  if (refused >= 0) return { ok: false, fields: [`lines.${String(refused)}`] };
+  if (refused >= 0) return refusal("invalid_request", [`lines.${String(refused)}`]);
   if (new Set(draft.lines.map((line) => line.code)).size !== draft.lines.length)
-    return { ok: false, fields: ["lines"] };
+    return refusal("invalid_request", ["lines"]);
 
   const id = crypto.randomUUID();
   const at = written.now.toISOString();
@@ -189,10 +190,10 @@ export async function draftOrder(
 /** An order's change, written only where its state still allows it: refused as gone, or as no longer allowed. */
 type Changed =
   | { readonly ok: true }
-  | { readonly ok: false; readonly missing: true }
-  | { readonly ok: false; readonly state: true }
-  | { readonly ok: false; readonly sameApprover: true }
-  | { readonly ok: false; readonly customOrder: true };
+  | Refusal<"not_found">
+  | Refusal<"order_state">
+  | Refusal<"same_approver">
+  | Refusal<"custom_order">;
 
 /**
  * An update of one order. Its SQL sets `change_id = ?1`, this request's token, on the order `?2`, and takes its own
@@ -224,7 +225,7 @@ async function changed(
   ]);
   if (result?.meta.changes === 1) return { ok: true };
   const exists = await db.prepare("SELECT 1 FROM purchase_orders WHERE id = ?1").bind(order.id).first();
-  return exists === null ? { ok: false, missing: true } : { ok: false, state: true };
+  return exists === null ? refusal("not_found") : refusal("order_state");
 }
 
 /**
@@ -238,9 +239,9 @@ export async function approveOrder(
   written: Written,
 ): Promise<Changed> {
   const order = await purchaseOrder(db, id);
-  if (order === null) return { ok: false, missing: true };
-  if (order.state !== "drafted") return { ok: false, state: true };
-  if (order.approvedBy === written.actor.id) return { ok: false, sameApprover: true };
+  if (order === null) return refusal("not_found");
+  if (order.state !== "drafted") return refusal("order_state");
+  if (order.approvedBy === written.actor.id) return refusal("same_approver");
   const at = written.now.toISOString();
   const twice = needsSecondApproval(order, rule.aboveRupees, rule.rupeesToOne);
   const update: OrderUpdate =
@@ -289,7 +290,7 @@ export async function cancelOrder(db: D1Database, id: string, reason: string, wr
     .prepare("SELECT 1 FROM po_lines WHERE po_id = ?1 AND custom_order_id IS NOT NULL LIMIT 1")
     .bind(id)
     .first();
-  if (carries !== null) return { ok: false, customOrder: true };
+  if (carries !== null) return refusal("custom_order");
   const update = {
     sql: `UPDATE purchase_orders SET change_id = ?1, state = 'cancelled', cancelled_by = ?3, cancelled_at = ?4,
             cancel_reason = ?5, updated_at = ?4

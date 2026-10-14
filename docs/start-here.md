@@ -35,7 +35,7 @@ this map, or when the map names something that no longer exists.
 
 ### Booking a visit
 
-- **Database work** (`src/domain/booking/`): `availability`, `open-windows`, `asked-windows`, `occupancy`, `slot-times`,
+- **Database work** (`src/domain/booking/`): `book-paid-hold`, `availability`, `open-windows`, `asked-windows`, `occupancy`, `slot-times`,
   `technician-choice`, `technician-rotation`, `hold-slot`, `holds`, `hold-stages`, `booked-hold`, `unbooked-holds`,
   `give-back`, `bookings`, `visit-booking`, `move-in-place`, `public-booking`, `public-consultation`, `site-notices`,
   `public-waitlist`, `public-lead`, `site-visit`, `form-person`, `proposed-visits`,
@@ -144,8 +144,8 @@ this map, or when the map names something that no longer exists.
   `client-billing`, `refunds`, `auto-refunds`, `cancel-refunds`, `credits`, `credit-reminders`, `discount-codes`,
   `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `discount-code-figures`, `requested-codes`,
   `day-money`, `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `city-prices`,
-  `razorpay-catch-up`, `custom-order-links`, `custom-order-refunds`,
-  `payment-refunds`
+  `razorpay-catch-up`, `razorpay-events` (Razorpay's events, applied from their queue), `custom-order-links`,
+  `custom-order-refunds`, `payment-refunds`
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
   `fraud-holds`
 - **Data** (`src/config/`): `gst`
@@ -163,7 +163,7 @@ this map, or when the map names something that no longer exists.
 
 ### Clients
 
-- **Database work** (`src/domain/clients/`): `people`, `client-list`, `profile`, `fitted`, `hair-profiles`, `client-notes`,
+- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `profile`, `fitted`, `hair-profiles`, `client-notes`,
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`
 - **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `home-prompt`
 - **Vendor** (`src/providers/`): `geocode/`
@@ -185,7 +185,7 @@ this map, or when the map names something that no longer exists.
 
 ### Referrals
 
-- **Database work** (`src/domain/referrals/`): `referrals`, `referral-grants`, `referral-cards`, `referral-messages`,
+- **Database work** (`src/domain/referrals/`): `refer-page` (what Refer reads), `referrals`, `referral-grants`, `referral-cards`, `referral-messages`,
   `invite-lookups`, `channels`, `channel-grants`, `partner-statements`
 - **Rules** (`src/policy/`): `referral-reward`, `invites`
 - **Data** (`src/config/`): `referral-cards`, `invite-codes`, `house-card`, `card-overlay`
@@ -196,7 +196,7 @@ this map, or when the map names something that no longer exists.
 
 ### The try-on
 
-- **Database work** (`src/domain/try-on/`): `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`,
+- **Database work** (`src/domain/try-on/`): `tryon-uploads` (a photograph's one write, claimed), `tryon`, `tryon-claims`, `client-try-ons`, `kept-try-ons`,
   `photo`
 - **Rules** (`src/policy/`): `tryon-delivery`, `kept-try-ons`
 - **Data** (`src/config/`): `tryon`
@@ -291,7 +291,7 @@ this map, or when the map names something that no longer exists.
 
 ### The platform
 
-- **Database work** (`src/domain/platform/`): `audit` (the audit log every write adds to), `alerts`, `ops-settings`
+- **Database work** (`src/domain/platform/`): `audit` (the audit log every write adds to), `alerts`, `vendor-breakers` (a vendor held off while it keeps failing), `ops-settings`
   (the Rules every module reads), `cron-runs`, `backups`, `maintenance`, `storage-meter`, `ceilings`, `test-records`,
   `enqueue`
 - **Rules** (`src/policy/`): `database-size`, `storage-share`, `launch`, `staging-test-records`
