@@ -113,7 +113,12 @@ export const profile = {
     /** The button's name to a screen reader, which hears every row's "Sign out". */
     signOutOf: (device: string) => `Sign out ${device}`,
     signOutOthers: "Sign out everywhere else",
+    /** Asked before every other device is signed out, which cannot be undone. */
+    confirmOthers: "Sign out of every other device?",
+    yes: "Sign out",
+    no: "Keep them",
     failed: "That didn’t go through. Try again.",
+    notLoaded: "Where you’re signed in didn’t load.",
   },
   support: {
     label: "Support",

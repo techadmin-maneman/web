@@ -31,6 +31,7 @@ import { SignIn } from "./login/SignIn.tsx";
 import { routeOf, usePath, type Route } from "./route.ts";
 import { SessionContext, useOnline, type Session } from "./session.ts";
 import { ErrorBoundary } from "./states/ErrorBoundary.tsx";
+import { Loading } from "./states/States.tsx";
 import { Checklist } from "./steps/Checklist.tsx";
 import { CloseOut } from "./steps/CloseOut.tsx";
 import { Consumables } from "./steps/Consumables.tsx";
@@ -99,7 +100,11 @@ export function App() {
 
   switch (state.kind) {
     case "checking":
-      return <div className={styles.checking} aria-busy="true" />;
+      return (
+        <div className={styles.checking}>
+          <Loading />
+        </div>
+      );
     case "out":
       return <SignIn why={state.why} onSignedIn={() => void check()} />;
     case "in": {
