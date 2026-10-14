@@ -12,7 +12,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type StaffList, type StaffToken } from "../api.ts";
+import { type StaffList, type StaffToken } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess, whoami } from "../lib/access.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
@@ -24,6 +24,7 @@ import { StaffForm } from "./StaffForm.tsx";
 import form from "../components/forms.module.css";
 import styles from "./staff.module.css";
 import { FormActions } from "../components/FormActions.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.staff;
 
@@ -48,7 +49,7 @@ function Enforcement({ staff, onChanged }: PanelProps) {
           primary={!on}
           question={on ? words.stopTitle : words.startTitle}
           lines={[on ? words.stopLine : words.startLine]}
-          send={async () => sentOf(await api.setEnforcement(!on), (next) => ({ next }))}
+          send={async () => sentOf(await settingsApi.setEnforcement(!on), (next) => ({ next }))}
           onDone={(sent) => {
             onChanged(sent.next);
           }}
@@ -160,7 +161,7 @@ function People({ staff, onChanged }: PanelProps) {
             key={person.email}
             name={person.email}
             words={copy.removing}
-            send={() => api.deleteStaff(person.email)}
+            send={() => settingsApi.deleteStaff(person.email)}
             refusal={(code) => errorText(copy.errors, { code, fields: [] })}
             onDeleted={(next) => {
               onChanged(next);
@@ -199,7 +200,7 @@ function TokenRow({ token, removable, onChanged }: TokenRowProps) {
           ariaLabel={words.removeLabel(token.label)}
           question={words.removeTitle(token.label)}
           lines={[words.removeLine]}
-          send={async () => sentOf(await api.removeServiceToken(token.client_id), (next) => ({ next }))}
+          send={async () => sentOf(await settingsApi.removeServiceToken(token.client_id), (next) => ({ next }))}
           onDone={(sent) => {
             onChanged(sent.next);
           }}
@@ -217,7 +218,9 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
   const ready = clientId.trim() !== "" && label.trim() !== "";
   const steps = useSteps(
     async () =>
-      sentOf(await api.addServiceToken({ client_id: clientId.trim(), label: label.trim() }), (next) => ({ next })),
+      sentOf(await settingsApi.addServiceToken({ client_id: clientId.trim(), label: label.trim() }), (next) => ({
+        next,
+      })),
     (sent) => {
       setClientId("");
       setLabel("");
@@ -288,7 +291,7 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
 }
 
 export function Staff() {
-  const [loaded, retry] = useLoad(api.staff);
+  const [loaded, retry] = useLoad(settingsApi.staff);
   /** The page as the last change left it, so it follows a change without reading it again. */
   const [changed, setChanged] = useState<StaffList | null>(null);
 

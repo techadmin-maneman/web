@@ -8,7 +8,7 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Grievance } from "../api.ts";
+import { type Grievance } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { Reach } from "../components/Reach.tsx";
 import { OpsLink } from "../components/Shell.tsx";
@@ -20,6 +20,7 @@ import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./grievances.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { grievancesApi } from "./grievances-api.ts";
 
 /** Where a grievance is in its answer: open, sending, or refused by the API. */
 type Answering =
@@ -41,7 +42,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
 
   const send = async () => {
     setAnswering({ step: "sending" });
-    const answer = await api.resolveGrievance(each.id, response.trim());
+    const answer = await grievancesApi.resolveGrievance(each.id, response.trim());
     if (answer.ok) onAnswered();
     else setAnswering({ step: "failed", code: answer.code });
   };
@@ -94,7 +95,7 @@ function Open({ each, now, mayAnswer, onAnswered }: OpenProps) {
 }
 
 function GrievanceQueue() {
-  const [loaded, retry] = useLoad(api.grievances);
+  const [loaded, retry] = useLoad(grievancesApi.grievances);
   const mayAnswer = useAccess().mayCall("POST /api/grievances/{id}/resolve");
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;

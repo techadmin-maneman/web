@@ -9,7 +9,7 @@ import { Button } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
-import { api, type NumberChange } from "../api.ts";
+import { type NumberChange } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { Reach } from "../components/Reach.tsx";
 import { OpsLink } from "../components/Shell.tsx";
@@ -21,6 +21,7 @@ import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./number-changes.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { numberChangesApi } from "./number-changes-api.ts";
 
 type Choice = "confirm" | "reject";
 
@@ -41,22 +42,8 @@ interface ChangeProps {
   readonly onDecided: () => void;
 }
 
-function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
-  const [deciding, setDeciding] = useState<Deciding>({ step: "open" });
-  const [reason, setReason] = useState("");
-  const rejectButton = useRef<HTMLButtonElement>(null);
-
-  const decide = async (choice: Choice) => {
-    setDeciding({ step: "sending", choice });
-    const answer = await api.decideNumberChange(change.id, choice, choice === "reject" ? reason.trim() : null);
-    if (answer.ok) onDecided();
-    else setDeciding({ step: "failed", code: answer.code });
-  };
-
-  const sending = deciding.step === "sending";
-  // Only a rejection is asked about: the reason is what the route will not take without.
-  const asking = deciding.step === "asking" || (sending && deciding.choice === "reject");
-
+/** Who is changing number, from which to which, how long it has left, and whether the new one is someone else's. */
+function ChangeFacts({ change, now }: { change: ChangeProps["change"]; now: Date }) {
   return (
     <>
       <div className={styles.head}>
@@ -73,6 +60,33 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       {change.new_number_held_by !== null && (
         <p className={styles.proven}>{copy.heldBy(change.new_number_held_by.name, change.new_number_held_by.client)}</p>
       )}
+    </>
+  );
+}
+
+function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
+  const [deciding, setDeciding] = useState<Deciding>({ step: "open" });
+  const [reason, setReason] = useState("");
+  const rejectButton = useRef<HTMLButtonElement>(null);
+
+  const decide = async (choice: Choice) => {
+    setDeciding({ step: "sending", choice });
+    const answer = await numberChangesApi.decideNumberChange(
+      change.id,
+      choice,
+      choice === "reject" ? reason.trim() : null,
+    );
+    if (answer.ok) onDecided();
+    else setDeciding({ step: "failed", code: answer.code });
+  };
+
+  const sending = deciding.step === "sending";
+  // Only a rejection is asked about: the reason is what the route will not take without.
+  const asking = deciding.step === "asking" || (sending && deciding.choice === "reject");
+
+  return (
+    <>
+      <ChangeFacts change={change} now={now} />
       {asking && (
         <div className={styles.reason}>
           <Field label={copy.reason.label} look={{ label: styles.reasonLabel }}>
@@ -142,7 +156,7 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
 }
 
 function NumberChangeQueue() {
-  const [loaded, retry] = useLoad(api.numberChanges);
+  const [loaded, retry] = useLoad(numberChangesApi.numberChanges);
   const mayDecide = useAccess().mayCall("POST /api/number-changes/{id}/decision");
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;

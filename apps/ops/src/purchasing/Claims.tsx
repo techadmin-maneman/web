@@ -10,7 +10,6 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -19,8 +18,9 @@ import { ReturnedPieces } from "./ReturnedPieces.tsx";
 import type { Claim, SupplierClaims, Orders } from "./types.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
-const loadClaims = () => client.get("/api/supplier-claims");
+const loadClaims = () => purchasingApi.claims();
 
 /** What a claim is worth: the credit given, else what was claimed at the order's price. */
 const valueOf = (claim: Claim) => inCurrency(claim.credit_amount ?? claim.unit_price * claim.quantity, claim.currency);

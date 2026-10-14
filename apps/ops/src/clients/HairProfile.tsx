@@ -25,13 +25,14 @@ import {
   type HistoryForm,
 } from "@maneman/web-kit/hair-profile";
 import { useCallback, useId, useState } from "react";
-import { api, type ClientHairProfile, type HairProfileVersion, type HairProfileView } from "../api.ts";
+import { type ClientHairProfile, type HairProfileVersion, type HairProfileView } from "../api.ts";
 import { clients, dispatch, NOT_PERMITTED } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./profile.module.css";
 import { isOneOf } from "@rules/lib/one-of.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.profile;
 
@@ -197,7 +198,7 @@ function CorrectionForm({
         setProblem(copy.refused);
         return;
       }
-      const answer = await api.correctHairProfile(clientId, bodyOf(fit, history, page.latest?.id ?? null));
+      const answer = await clientsApi.correctHairProfile(clientId, bodyOf(fit, history, page.latest?.id ?? null));
       if (answer.ok) {
         onSaved(answer.body);
         return;
@@ -347,7 +348,7 @@ function productOptions(products: Products, latest: HairProfileView | null): { v
 }
 
 export function HairProfile({ clientId }: { clientId: string }) {
-  const load = useCallback(() => api.clientHairProfile(clientId), [clientId]);
+  const load = useCallback(() => clientsApi.clientHairProfile(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
   // What the correction answered, which stands over what was read when the tab opened.
   const [saved, setSaved] = useState<ClientHairProfile | null>(null);

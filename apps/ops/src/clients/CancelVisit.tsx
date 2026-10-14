@@ -10,10 +10,11 @@ import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
-import { api, type CancelOutcome, type CancelTerms } from "../api.ts";
+import { type CancelOutcome, type CancelTerms } from "../api.ts";
 import { clients } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.cancel;
 
@@ -67,7 +68,7 @@ function CancelForm({
   const cancel = () =>
     once(async () => {
       setFailed(null);
-      const answer = await api.cancelVisit(terms.visit_id, terms.notice, onClientTerms, reason.trim());
+      const answer = await clientsApi.cancelVisit(terms.visit_id, terms.notice, onClientTerms, reason.trim());
       if (answer.ok) {
         onCancelled(gives);
         return;
@@ -140,7 +141,7 @@ function useTerms(visitId: string): readonly [Terms, () => void] {
 
   useEffect(() => {
     let current = true;
-    void api.cancelTerms(visitId).then((answer) => {
+    void clientsApi.cancelTerms(visitId).then((answer) => {
       if (!current) return;
       setTerms(answer.ok ? { state: "loaded", value: answer.body } : { state: "failed", code: answer.code });
     });

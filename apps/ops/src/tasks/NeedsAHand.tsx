@@ -10,12 +10,13 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
-import { api, type OpenAlert } from "../api.ts";
+import { type OpenAlert } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { needsAHand as copy } from "../content.ts";
 import { alertNeed, markDoneNeed, useAccess, type Access } from "../lib/access.ts";
 import { PanelFailed } from "../states/States.tsx";
 import styles from "./tasks.module.css";
+import { tasksApi } from "./tasks-api.ts";
 
 /** The few words that name what went wrong. */
 function titleOf(kind: string): string {
@@ -43,7 +44,8 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
     once(async () => {
       setActing(action);
       setFailed(null);
-      const answer = action === "send" ? await api.sendAlertAgain(alert.id) : await api.resolveAlert(alert.id);
+      const answer =
+        action === "send" ? await tasksApi.sendAlertAgain(alert.id) : await tasksApi.resolveAlert(alert.id);
       setActing(null);
       if (answer.ok) onClosed();
       else setFailed(answer.code);
@@ -87,7 +89,7 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
 }
 
 function AlertList({ access }: { access: Access }) {
-  const [loaded, retry] = useLoad(api.alerts);
+  const [loaded, retry] = useLoad(tasksApi.alerts);
   const [closed, setClosed] = useState<readonly string[]>([]);
   const heading = useRef<HTMLHeadingElement>(null);
 

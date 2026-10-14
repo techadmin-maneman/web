@@ -8,7 +8,7 @@ import { buttonLook } from "@maneman/ui/Button";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
-import { api, type ReturnedVisit, type Roster, type Technician, type TechnicianSummary } from "../api.ts";
+import { type ReturnedVisit, type Roster, type Technician, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import {
@@ -20,11 +20,13 @@ import {
   type TechnicianTab,
 } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { Details, Returned } from "./TechnicianForms.tsx";
+import { Details } from "./TechnicianForms.tsx";
+import { Returned } from "./TechnicianSwitch.tsx";
 import { Kit } from "./TechnicianKit.tsx";
 import { Leave } from "./TechnicianLeave.tsx";
 import { Phones } from "./TechnicianPhones.tsx";
 import styles from "./technicians.module.css";
+import { techniciansApi } from "./technicians-api.ts";
 
 /** A technician as the roster carries them, with their phones while they are active. */
 interface Entry {
@@ -139,12 +141,12 @@ function NotOnRoster() {
 }
 
 export function TechnicianScreen({ technicianId, tab }: { technicianId: string; tab: TechnicianTab }) {
-  const [loaded, retry] = useLoad(api.technicians);
+  const [loaded, retry] = useLoad(techniciansApi.technicians);
   // The roster as read again after a change on this page.
   const [fresh, setFresh] = useState<Roster | null>(null);
 
   const readAgain = async () => {
-    const answer = await api.technicians();
+    const answer = await techniciansApi.technicians();
     if (answer.ok) setFresh(answer.body);
   };
 

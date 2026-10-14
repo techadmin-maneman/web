@@ -10,13 +10,13 @@ import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import type { Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
 interface Line {
   readonly code: string;
@@ -249,7 +249,7 @@ export function DraftOrder({
       expected_on: expected === "" ? null : expected,
       note: note.trim() === "" ? null : note.trim(),
     };
-    const answer = await client.post("/api/purchase-orders", { body });
+    const answer = await purchasingApi.draftOrder(body);
     if (!answer.ok) {
       setFailure({ code: answer.code, fields: answer.fields });
       return;

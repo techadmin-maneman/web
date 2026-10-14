@@ -10,13 +10,14 @@ import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { api, type Stock, type StockPlaceChange } from "../api.ts";
+import { type Stock, type StockPlaceChange } from "../api.ts";
 import { stockPlaces as copy } from "../content/stock-places.ts";
 import form from "../components/forms.module.css";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { stockApi } from "./stock-api.ts";
 
 type Place = Stock["places"][number];
 type Kind = Place["kind"];
@@ -113,7 +114,7 @@ function AddPlace({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock
       kind === "hub"
         ? { kind, name: name.trim(), parent_id: parentId, zone: where }
         : { kind, name: name.trim(), parent_id: parentId, city: where };
-    if (await send(() => api.addStockPlace(place))) setName("");
+    if (await send(() => stockApi.addStockPlace(place))) setName("");
   };
   return (
     <div className={form.group}>
@@ -161,7 +162,7 @@ function ChangePlace(props: { stock: Stock; place: Place; onChanged: (stock: Sto
   const { failure, busy, send } = useSending(props.onChanged);
   const parents = parentsFor(stock, place.kind, place.id);
   const save = async (change: StockPlaceChange) => {
-    if (await send(() => api.changeStockPlace(place.id, change))) props.onDone();
+    if (await send(() => stockApi.changeStockPlace(place.id, change))) props.onDone();
   };
   const edited: StockPlaceChange = {
     ...(place.kind !== "kit" && name.trim() !== place.name ? { name: name.trim() } : {}),

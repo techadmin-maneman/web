@@ -6,11 +6,12 @@ import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
-import { api, type ServedPincode } from "../api.ts";
+import { type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import styles from "./areas.module.css";
 import { AREA_NAME, PINCODE } from "./rules.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { areasApi } from "./areas-api.ts";
 
 const copy = areas.add;
 
@@ -45,7 +46,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
   const add = () =>
     once(async () => {
       setCode(null);
-      const answer = await api.addPincode({ pincode: number, area: name, city });
+      const answer = await areasApi.addPincode({ pincode: number, area: name, city });
       if (!answer.ok) {
         setCode(answer.code);
         return;

@@ -4,11 +4,12 @@
 
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useState } from "react";
-import { api, type Word } from "../api.ts";
+import { type Word } from "../api.ts";
 import { words as copy } from "../content/words.ts";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import styles from "./words.module.css";
+import { wordsApi } from "./words-api.ts";
 
 const { form: formWords, check } = copy;
 
@@ -52,7 +53,8 @@ export function WordForm(props: {
   const { word } = props;
   const [text, setText] = useState(props.start);
   const steps = useSteps(
-    async () => sentOf(await api.setWord(word.key, text === word.text ? null : text), (body) => ({ word: body.word })),
+    async () =>
+      sentOf(await wordsApi.setWord(word.key, text === word.text ? null : text), (body) => ({ word: body.word })),
     (sent) => {
       props.onDone(sent.word);
     },

@@ -2,15 +2,16 @@
 // a contact, and its payment terms and warranty. The check shows each field that changes, old beside new, before
 // anything is sent (ADR 0071).
 
+import type { Success } from "@maneman/web-kit/api";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import { settings } from "../content/settings.ts";
 import form from "../components/forms.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { settingsApi } from "./settings-api.ts";
 
-export type Suppliers = paths["/api/suppliers"]["get"]["responses"][200]["content"]["application/json"];
+export type Suppliers = Success<paths["/api/suppliers"]["get"]>;
 export type Supplier = Suppliers["suppliers"][number];
 
 const copy = settings.suppliers;
@@ -193,9 +194,7 @@ export function SupplierForm({
     async () => {
       const body = bodyOf(draft);
       const answer =
-        supplier === null
-          ? await client.post("/api/suppliers", { body })
-          : await client.post("/api/suppliers/{id}", { path: { id: supplier.id }, body });
+        supplier === null ? await settingsApi.addSupplier(body) : await settingsApi.changeSupplier(supplier.id, body);
       return sentOf(answer, (suppliers) => ({ suppliers }));
     },
     (sent) => {

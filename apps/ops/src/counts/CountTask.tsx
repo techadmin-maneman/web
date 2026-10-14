@@ -1,6 +1,7 @@
 // One count task (docs/decisions/0185-cycle-counts.md): counted blind, item by item; what differed counted again; and
 // a recount that still differs signed off by a manager, who alone sees what the ledger held.
 
+import type { Success } from "@maneman/web-kit/api";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -9,7 +10,6 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
@@ -19,8 +19,9 @@ import { PieceScans } from "../stock/index.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { countsApi } from "./counts-api.ts";
 
-type Task = paths["/api/count-tasks/{id}"]["get"]["responses"][200]["content"]["application/json"];
+type Task = Success<paths["/api/count-tasks/{id}"]["get"]>;
 
 type Item = Task["items"][number];
 
@@ -53,10 +54,9 @@ function Counting({
     const body = {
       lines: items.map((item) => lineOf(item, figures[item.consumable_code] ?? "", scans[item.consumable_code] ?? [])),
     };
-    const path = { path: { id: task.task.id } };
     const answer = recount
-      ? await client.post("/api/count-tasks/{id}/recounts", { ...path, body })
-      : await client.post("/api/count-tasks/{id}/counts", { ...path, body });
+      ? await countsApi.askRecount(task.task.id, body)
+      : await countsApi.recordCounts(task.task.id, body);
     onAnswer(answer, recount ? copy.recountSaid : copy.countSaid);
   };
   return (
@@ -100,10 +100,7 @@ function Counting({
 
 /** What the ledger held beside both counts, and the sign-off with why: for a manager. */
 function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, said: () => string) => void }) {
-  const load = useCallback(
-    () => client.get("/api/count-tasks/{id}/differences", { path: { id: task.task.id } }),
-    [task.task.id],
-  );
+  const load = useCallback(() => countsApi.differences(task.task.id), [task.task.id]);
   const [loaded, retry] = useLoad(load);
   const [note, setNote] = useState("");
   if (loaded.state === "loading") return <Loading />;
@@ -158,11 +155,9 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
           size="small"
           disabled={note.trim() === ""}
           onClick={() =>
-            void client
-              .post("/api/count-tasks/{id}/sign-off", { path: { id: task.task.id }, body: { note: note.trim() } })
-              .then((answer) => {
-                onAnswer(answer, () => copy.signedSaid);
-              })
+            void countsApi.signOff(task.task.id, note.trim()).then((answer) => {
+              onAnswer(answer, () => copy.signedSaid);
+            })
           }
         >
           {copy.signOff}
@@ -194,7 +189,7 @@ function Step({
 export const whatOf = (task: Task["task"]): string => task.item?.name ?? copy.classes[task.count_class];
 
 export function CountTaskPanel({ id, panelId, onChanged }: { id: string; panelId: string; onChanged: () => void }) {
-  const load = useCallback(() => client.get("/api/count-tasks/{id}", { path: { id } }), [id]);
+  const load = useCallback(() => countsApi.countTask(id), [id]);
   const [loaded, retry] = useLoad(load);
   const [task, setTask] = useState<Task | null>(null);
   const [said, setSaid] = useState<string | null>(null);

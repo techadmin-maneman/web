@@ -11,7 +11,7 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { api, type ActivityEntry } from "../api.ts";
+import { type ActivityEntry } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { activity } from "../content/activity.ts";
 import { activityPath, clientPath, dispatchPath, technicianPath } from "../route.ts";
@@ -19,6 +19,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./activity.module.css";
 import { askedOf, filtersOf, type Filters } from "./filters.ts";
 import { Narrow } from "./Narrow.tsx";
+import { activityApi } from "./activity-api.ts";
 
 const copy = activity;
 
@@ -125,7 +126,7 @@ interface Older {
 
 /** The log as narrowed, a page at a time: older pages are added beneath as they are asked for. */
 function Log({ filters }: { filters: Filters }) {
-  const [loaded, retry] = useLoad(useCallback(() => api.activity(askedOf(filters)), [filters]));
+  const [loaded, retry] = useLoad(useCallback(() => activityApi.activity(askedOf(filters)), [filters]));
   const [older, setOlder] = useState<Older | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [olderFailed, setOlderFailed] = useState<{ requestId: string | null } | null>(null);
@@ -136,7 +137,7 @@ function Log({ filters }: { filters: Filters }) {
   const next = older === null ? loaded.value.next_cursor : older.next;
   const showOlder = async (cursor: string) => {
     setLoadingOlder(true);
-    const answer = await api.activity(askedOf(filters, cursor));
+    const answer = await activityApi.activity(askedOf(filters, cursor));
     setLoadingOlder(false);
     setOlderFailed(answer.ok ? null : { requestId: answer.requestId });
     if (!answer.ok) return;

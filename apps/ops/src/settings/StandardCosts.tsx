@@ -10,7 +10,6 @@ import type { Sent as Body, Success } from "@maneman/web-kit/api";
 import { shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupeeFigure, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
@@ -19,13 +18,14 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import { review } from "../content/common.ts";
 import { Refused, sentOf, useSteps } from "./SettingForm.tsx";
 import form from "../components/forms.module.css";
+import { settingsApi } from "./settings-api.ts";
 
 type Product = Success<paths["/api/standard-costs"]["get"]>["products"][number];
 type CostChange = Body<paths["/api/standard-costs"]["post"]>;
 
 const copy = settings.standardCosts;
 
-const loadCosts = () => client.get("/api/standard-costs");
+const loadCosts = () => settingsApi.standardCosts();
 
 function CostRow(props: { product: Product; mayChange: boolean; onSaved: (products: Product[]) => void }) {
   const { product } = props;
@@ -35,7 +35,7 @@ function CostRow(props: { product: Product; mayChange: boolean; onSaved: (produc
   const steps = useSteps(
     async () => {
       const change: CostChange = { item: product.item, tier: product.tier, cost: paiseFromRupees(typed) };
-      return sentOf(await client.post("/api/standard-costs", { body: change }), (body) => ({
+      return sentOf(await settingsApi.setStandardCost(change), (body) => ({
         products: body.products,
       }));
     },

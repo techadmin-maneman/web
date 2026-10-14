@@ -11,7 +11,6 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
@@ -22,8 +21,9 @@ import { OrderPanel } from "./OrderPanel.tsx";
 import { SupplierScores } from "./SupplierScores.tsx";
 import type { Orders } from "./types.ts";
 import { RowHead } from "../components/RowHead.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
-const loadOrders = () => client.get("/api/purchase-orders");
+const loadOrders = () => purchasingApi.orders();
 
 function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) {
   const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;

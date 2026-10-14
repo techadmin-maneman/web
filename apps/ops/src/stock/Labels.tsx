@@ -9,7 +9,7 @@ import { Checkbox, ChoiceGroup, Field, NumberInput, Select } from "@maneman/ui/F
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { client, type Stock, type StockUnits } from "../api.ts";
+import { type Stock, type StockUnits } from "../api.ts";
 import { stockLabels as copy } from "../content/stock-labels.ts";
 import { useAccess } from "../lib/access.ts";
 import form from "../components/forms.module.css";
@@ -21,6 +21,7 @@ import styles from "./labels.module.css";
 import { holdingOf } from "./holdings.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { stockApi } from "./stock-api.ts";
 
 /** The item and place whose labels the panel shows. */
 export interface LabelsFor {
@@ -101,10 +102,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
 }
 
 function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
-  const load = useCallback(
-    () => client.get("/api/stock/units", { query: { consumable_code: at.code, place_id: at.place } }),
-    [at.code, at.place],
-  );
+  const load = useCallback(() => stockApi.units({ consumable_code: at.code, place_id: at.place }), [at.code, at.place]);
   const [loaded, retry] = useLoad(load);
   /** The units after a labelling, and how many labellings: each ticks its own batch afresh. */
   const [after, setAfter] = useState<{ readonly units: StockUnits; readonly times: number } | null>(null);
@@ -118,7 +116,7 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
   const label = async () => {
     setLabelling("busy");
     const body = { consumable_code: at.code, place_id: at.place, quantity: toLabel };
-    const answer = await client.post("/api/stock/units", { body });
+    const answer = await stockApi.addUnits(body);
     if (!answer.ok) {
       setLabelling("failed");
       return;
@@ -163,7 +161,7 @@ function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: Labels
   const print = async () => {
     if (lot === undefined) return;
     setFailed(false);
-    const answer = await client.post("/api/stock/lots/{id}/label", { path: { id: lot.id } });
+    const answer = await stockApi.labelLot(lot.id);
     if (!answer.ok) {
       setFailed(true);
       return;

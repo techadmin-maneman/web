@@ -10,7 +10,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
-import { api, type TechnicianPay as Pay } from "../api.ts";
+import { type TechnicianPay as Pay } from "../api.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -20,6 +20,7 @@ import { PayStatement } from "./PayStatement.tsx";
 import form from "../components/forms.module.css";
 import styles from "./technician-pay.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = technicianPay.technicians;
 
@@ -125,7 +126,7 @@ function PayTechnicians({ pay, maySet, onChanged }: { pay: Pay; maySet: boolean;
 }
 
 export function TechnicianPay() {
-  const [loaded, retry] = useLoad(api.technicianPay);
+  const [loaded, retry] = useLoad(settingsApi.technicianPay);
   /** The pay as the last change left it, so the page follows a change without reading it again. */
   const [changed, setChanged] = useState<Pay | null>(null);
   const access = useAccess();

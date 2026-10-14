@@ -1,10 +1,10 @@
 // How right the forecast was, beneath it on the Supply plan (docs/decisions/0183-forecast-accuracy.md): the city's last
 // measured periods, and each item across them, the furthest off first.
 
+import type { Success } from "@maneman/web-kit/api";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
@@ -12,8 +12,9 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { dayAfter } from "./Forecast.tsx";
 import styles from "./supply-plan.module.css";
 import { RowHead } from "../components/RowHead.tsx";
+import { supplyPlanApi } from "./supply-plan-api.ts";
 
-type Accuracy = paths["/api/stock/forecast-accuracy"]["get"]["responses"][200]["content"]["application/json"];
+type Accuracy = Success<paths["/api/stock/forecast-accuracy"]["get"]>;
 
 const copy = supplyPlan.accuracy;
 
@@ -74,7 +75,7 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
 }
 
 export function AccuracyPart({ city }: { city: string }) {
-  const load = useCallback(() => client.get("/api/stock/forecast-accuracy", { query: { city } }), [city]);
+  const load = useCallback(() => supplyPlanApi.accuracy({ city }), [city]);
   const [loaded, retry] = useLoad(load);
   return (
     <div className={form.group}>

@@ -5,13 +5,13 @@ import { Button } from "@maneman/ui/Button";
 import { rupees } from "@maneman/web-kit/money";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { ReceiveForm } from "./ReceiveForm.tsx";
 import type { Order, Orders } from "./types.ts";
 import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
 function ReceiptList({ orders, order }: { orders: Orders; order: Order }) {
   const named = (lineId: string) => {
@@ -57,7 +57,7 @@ export function Receiving({
   const [receiving, setReceiving] = useState(false);
   const receivable = order.state === "sent" || order.state === "part_received";
   const close = async () => {
-    const answer = await client.post("/api/purchase-orders/{id}/close", { path: { id: order.id } });
+    const answer = await purchasingApi.closeOrder(order.id);
     if (answer.ok) onChanged(answer.body, copy.receive.closed);
   };
   return (

@@ -7,13 +7,13 @@ import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Fi
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import type { Cities, CityPrice } from "./types.ts";
 import { RowHead } from "../components/RowHead.tsx";
+import { citiesApi } from "./cities-api.ts";
 
 const copy = cities.prices;
 type Item = CityPrice["item"];
@@ -27,12 +27,7 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => void }) {
       ariaLabel={copy.withdrawLabel(item, price.city)}
       question={copy.withdrawQuestion(item, price.city, price.valid_from)}
       send={async () =>
-        sentOf(
-          await client.delete("/api/cities/{name}/prices/{item}/{tier}/{valid_from}", {
-            path: { name: price.city, item: price.item, tier: price.tier, valid_from: price.valid_from },
-          }),
-          () => ({}),
-        )
+        sentOf(await citiesApi.removePrice(price.city, price.item, price.tier, price.valid_from), () => ({}))
       }
       onDone={onDone}
       errors={copy.errors}
@@ -191,15 +186,12 @@ function PriceForm({ cities, onSaved }: { cities: Cities; onSaved: () => void })
   const steps = useSteps(
     async () =>
       sentOf(
-        await client.post("/api/cities/{name}/prices", {
-          path: { name: draft.city },
-          body: {
-            item: draft.item,
-            tier: draft.tier.trim(),
-            amount_ex_gst: Number(draft.amount) * 100,
-            gst_percent: Number(draft.gst),
-            valid_from: draft.from,
-          },
+        await citiesApi.addPrice(draft.city, {
+          item: draft.item,
+          tier: draft.tier.trim(),
+          amount_ex_gst: Number(draft.amount) * 100,
+          gst_percent: Number(draft.gst),
+          valid_from: draft.from,
         }),
         () => ({}),
       ),

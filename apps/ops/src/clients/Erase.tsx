@@ -12,7 +12,7 @@ import { Button } from "@maneman/ui/Button";
 import { Checkbox } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
-import { api, type ErasedClientRecord } from "../api.ts";
+import { type ErasedClientRecord } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { ErasureLists } from "../components/ErasureLists.tsx";
@@ -22,6 +22,7 @@ import styles from "./clients.module.css";
 import { MoneyRecords } from "./Payments.tsx";
 import { VisitRecords } from "./Visits.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.erasure;
 
@@ -105,7 +106,7 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
 
   const erase = (settledByHand: boolean) =>
     once(async () => {
-      const answer = await api.eraseClient(clientId, settledByHand);
+      const answer = await clientsApi.eraseClient(clientId, settledByHand);
       if (answer.ok) {
         onErased();
         return;

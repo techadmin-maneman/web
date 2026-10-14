@@ -9,10 +9,11 @@ import { Drawer } from "@maneman/ui/Drawer";
 import { ChoiceGroup, Field, Radio, TextArea, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useId, useState } from "react";
-import { api, type HandClose } from "../api.ts";
+import { type HandClose } from "../api.ts";
 import { clients } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.handClose;
 
@@ -69,7 +70,7 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
   const close = () =>
     once(async () => {
       setFailed(null);
-      const answer = await api.closeVisit(visitId, {
+      const answer = await clientsApi.closeVisit(visitId, {
         outcome,
         ...(timed ? { started_at: instantOf(date, started), ended_at: instantOf(date, ended) } : {}),
         reason: reason.trim(),

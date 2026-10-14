@@ -1,10 +1,11 @@
 // A label scanned on the Stock page (docs/decisions/0162-scanning-labels.md): the piece it names, its lot and expiry,
 // where it is now, and every change to it, oldest first.
 
+import type { Success } from "@maneman/web-kit/api";
 import { ScanField } from "@maneman/ui/ScanField";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { client, type Stock } from "../api.ts";
+import { type Stock } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import { stockLabels as copy } from "../content/stock-labels.ts";
 import form from "../components/forms.module.css";
@@ -12,8 +13,9 @@ import { recordedBy } from "../lib/who.ts";
 import { placeName } from "./StockForm.tsx";
 import styles from "./labels.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { stockApi } from "./stock-api.ts";
 
-type StockUnitFound = paths["/api/stock/units/{code}"]["get"]["responses"][200]["content"]["application/json"];
+type StockUnitFound = Success<paths["/api/stock/units/{code}"]["get"]>;
 
 type Looked =
   | { readonly state: "none" }
@@ -58,7 +60,7 @@ export function LabelFound({ stock }: { stock: Stock }) {
   const by = (actor: string) =>
     stock.places.some((each) => each.id === actor) ? placeName(stock, actor) : recordedBy(actor);
   const find = async (label: string) => {
-    const answer = await client.get("/api/stock/units/{code}", { path: { code: label } });
+    const answer = await stockApi.unit(label);
     setLooked(answer.ok ? { state: "found", unit: answer.body } : { state: "missing" });
   };
   return (

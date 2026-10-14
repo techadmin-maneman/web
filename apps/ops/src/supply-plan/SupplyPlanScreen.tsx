@@ -9,7 +9,6 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client } from "../api.ts";
 import form from "../components/forms.module.css";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
@@ -19,8 +18,9 @@ import { Planning } from "./Planning.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { supplyPlanApi } from "./supply-plan-api.ts";
 
-const loadPlan = () => client.get("/api/supply-plan");
+const loadPlan = () => supplyPlanApi.plan();
 
 function Lines({
   lines,
@@ -109,7 +109,7 @@ export function SupplyPlanScreen() {
                 variant="outline"
                 size="small"
                 onClick={() =>
-                  void client.post("/api/supply-plan/draft").then((answer) => {
+                  void supplyPlanApi.draftPlan().then((answer) => {
                     answered(answer, copy.drafted);
                   })
                 }

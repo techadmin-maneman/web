@@ -6,15 +6,16 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { client, type Stock } from "../api.ts";
+import { type Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./stock.module.css";
 import { unitOf } from "./holdings.ts";
 import { RowHead } from "../components/RowHead.tsx";
+import { stockApi } from "./stock-api.ts";
 
-const loadDemand = () => client.get("/api/stock/demand");
+const loadDemand = () => stockApi.demand();
 
 export function Demand({ stock }: { stock: Stock }) {
   const [loaded, retry] = useLoad(loadDemand);

@@ -6,10 +6,11 @@ import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type PartnerStatement, type PartnerStatements } from "../api.ts";
+import { type PartnerStatement, type PartnerStatements } from "../api.ts";
 import { partnerCommission } from "../content/partner-commission.ts";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import form from "../components/forms.module.css";
+import { settingsApi } from "./settings-api.ts";
 
 const { form: formWords, check, errors } = partnerCommission;
 
@@ -88,7 +89,12 @@ export function PayoutForm(props: {
   const steps = useSteps(
     async () =>
       sentOf(
-        await api.recordPartnerPayout(statement.channel_id, { month, amount, paid_on: draft.paidOn, reference }),
+        await settingsApi.recordPartnerPayout(statement.channel_id, {
+          month,
+          amount,
+          paid_on: draft.paidOn,
+          reference,
+        }),
         (body) => ({ statements: body }),
       ),
     (sent) => {

@@ -16,7 +16,7 @@ import { type Loaded, useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, minutesBetween, shortDate, todayInIndia } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { type ReactNode, useCallback, useRef, useState } from "react";
-import { api, type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
+import { type ChargePreview, type DecidedNoShow, type NoShowCase } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink } from "../components/Shell.tsx";
 import { firstShown, noShows } from "../content.ts";
@@ -29,6 +29,7 @@ import { Distance } from "./Distance.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./no-shows.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { noShowsApi } from "./no-shows-api.ts";
 
 type Choice = "charged" | "waived";
 
@@ -64,7 +65,7 @@ function DayHead({ date, shown, onDay }: { date: string; shown: string; onDay: (
 function Money() {
   // The day asked for; null for today, which the API answers when it is given no date.
   const [asked, setAsked] = useState<string | null>(null);
-  const load = useCallback(() => api.dayMoney(asked), [asked]);
+  const load = useCallback(() => noShowsApi.dayMoney(asked), [asked]);
   const [loaded, retry] = useLoad(load);
   const copy = noShows.money;
 
@@ -218,7 +219,7 @@ const keepsCreditToo = (preview: Loaded<ChargePreview>): boolean =>
  */
 function ConfirmCharge({ each, onCharge, onBack }: { each: NoShowCase; onCharge: () => void; onBack: () => void }) {
   const panel = useFocusOnMount<HTMLDivElement>();
-  const [preview] = useLoad(useCallback(() => api.chargePreview(each.id), [each.id]));
+  const [preview] = useLoad(useCallback(() => noShowsApi.chargePreview(each.id), [each.id]));
   const day = each.visit_date === null ? copy.noDay : shortDate(each.visit_date);
   return (
     <div
@@ -290,7 +291,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
 
   const decide = async (choice: Choice) => {
     setRuling({ step: "sending" });
-    const answer = await api.decideNoShow(each.id, choice, reason.trim());
+    const answer = await noShowsApi.decideNoShow(each.id, choice, reason.trim());
     if (answer.ok) onDecided();
     else setRuling({ step: "failed", code: answer.code });
   };
@@ -355,7 +356,7 @@ function Case({ each, now, may, onDecided }: CaseProps) {
 }
 
 function NoShowQueue({ onDecided }: { onDecided: () => void }) {
-  const [loaded, retry] = useLoad(api.noShows);
+  const [loaded, retry] = useLoad(noShowsApi.noShows);
   const access = useAccess();
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
@@ -398,7 +399,7 @@ function rulingOf(each: DecidedNoShow): string {
 
 /** The cases ruled on today, the latest first, so a case ops have just charged or waived can still be seen. */
 function DecidedToday() {
-  const [loaded, retry] = useLoad(api.decidedNoShows);
+  const [loaded, retry] = useLoad(noShowsApi.decidedNoShows);
   const decided = noShows.decided;
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;

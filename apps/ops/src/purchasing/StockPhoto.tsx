@@ -7,22 +7,17 @@ import { Button } from "@maneman/ui/Button";
 import { errorText } from "@maneman/web-kit/refusal";
 import { smallJpeg } from "@maneman/web-kit/small-jpeg";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import styles from "./purchasing.module.css";
-
-type Stored = { photo_id: string };
+import { purchasingApi } from "./purchasing-api.ts";
 
 /** The file made small and stored: its ID, or the refusal's code. */
 async function stored(file: File): Promise<{ id: string } | { code: string }> {
   const bitmap = await createImageBitmap(file);
   const small = await smallJpeg(bitmap, bitmap.width, bitmap.height);
   bitmap.close();
-  const answer = await client.request<Stored>("POST", "/api/stock-photos", {
-    body: small.blob,
-    headers: { "Content-Type": "image/jpeg" },
-  });
+  const answer = await purchasingApi.storePhoto(small.blob);
   return answer.ok ? { id: answer.body.photo_id } : { code: answer.code };
 }
 

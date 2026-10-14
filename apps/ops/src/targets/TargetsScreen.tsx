@@ -11,13 +11,13 @@ import type { Sent, Success } from "@maneman/web-kit/api";
 import { fullMonth } from "@maneman/web-kit/dates";
 import type { Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import { targets as copy } from "../content/targets.ts";
 import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
+import { targetsApi } from "./targets-api.ts";
 
 type Targets = Success<paths["/api/targets"]["get"]>;
 type Measure = Targets["measures"][number];
@@ -70,7 +70,7 @@ function TargetForm({ list, onSaved }: { list: Targets; onSaved: (list: Targets)
   const set = async () => {
     setFailure(null);
     const change: TargetChange = { month: list.month, city, measure, target: Number(typed) };
-    const answer = await client.post("/api/targets", { body: change });
+    const answer = await targetsApi.setTarget(change);
     if (!answer.ok) {
       setFailure({ code: answer.code, fields: answer.fields });
       return;
@@ -121,7 +121,7 @@ function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets
   if (list.targets.length === 0) return <p className={form.note}>{copy.none}</p>;
   const remove = async (city: string, measure: Measure) => {
     setFailure(null);
-    const answer = await client.post("/api/targets/remove", { body: { month: list.month, city, measure } });
+    const answer = await targetsApi.removeTarget({ month: list.month, city, measure });
     if (answer.ok) onSaved(answer.body);
     else setFailure({ code: answer.code, fields: answer.fields });
   };
@@ -166,7 +166,7 @@ function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets
 }
 
 function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (month: string) => void }) {
-  const load = useCallback(() => client.get("/api/targets", { query: month === null ? {} : { month } }), [month]);
+  const load = useCallback(() => targetsApi.targets(month === null ? {} : { month }), [month]);
   const [loaded, retry] = useLoad(load);
   const [saved, setSaved] = useState<Targets | null>(null);
   const mayChange = useAccess().mayCall("POST /api/targets");

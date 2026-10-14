@@ -13,7 +13,7 @@ import { Table } from "@maneman/ui/Table";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
 import { indiaDate, listDate, todayInIndia, yearInIndia } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { api, type Area, type Launch, type ServedPincode } from "../api.ts";
+import { type Area, type Launch, type ServedPincode } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { areas, waitlist } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -25,6 +25,7 @@ import { AddPincode } from "./AddPincode.tsx";
 import styles from "./areas.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { areasApi } from "./areas-api.ts";
 
 const copy = areas.launch;
 
@@ -224,7 +225,7 @@ function Pincodes({
 }
 
 export function Waiting() {
-  const [loaded, retry] = useLoad(api.waitlist);
+  const [loaded, retry] = useLoad(areasApi.waitlist);
   const [launching, setLaunching] = useState<Launching | null>(null);
   const [adding, setAdding] = useState<Area | null>(null);
   /** An error code from asking what a launch would send, before there is a panel to hold it. */
@@ -242,7 +243,7 @@ export function Waiting() {
     async (area: Area) => {
       setRefused(null);
       setLaunchOn(openingLaunchDay(area, today));
-      const answer = await api.launch(area.pincode, false);
+      const answer = await areasApi.launch(area.pincode, false);
       if (answer.ok) setLaunching({ area, preview: answer.body, step: "asking" });
       else setRefused(answer.code);
     },
@@ -278,7 +279,7 @@ export function Waiting() {
     if (launching === null) return;
     setLaunching({ ...launching, step: "sending", code: undefined });
     // Today is left to the API, whose day it is; only a day ops chose is sent.
-    const answer = await api.launch(launching.area.pincode, true, launchOn === today ? null : launchOn);
+    const answer = await areasApi.launch(launching.area.pincode, true, launchOn === today ? null : launchOn);
     if (!answer.ok) {
       setLaunching({ ...launching, step: "asking", code: answer.code });
       return;

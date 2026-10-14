@@ -8,7 +8,7 @@ import { buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Blackout } from "../api.ts";
+import { type Blackout } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
@@ -18,6 +18,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.blackouts;
 
@@ -164,7 +165,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
   const ready = draft.from !== "" && draft.to !== "" && draft.reason.trim() !== "";
   const steps = useSteps(
     async () =>
-      sentOf(await api.addBlackouts({ ...periodOf(draft), reason: draft.reason.trim() }), (body) => ({
+      sentOf(await settingsApi.addBlackouts({ ...periodOf(draft), reason: draft.reason.trim() }), (body) => ({
         days: body.blackouts,
       })),
     (sent) => {
@@ -177,7 +178,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
   const review = {
     ...steps,
     check: () => {
-      void api.blackoutsBooked(periodOf(draft)).then((answer) => {
+      void settingsApi.blackoutsBooked(periodOf(draft)).then((answer) => {
         setBooked(answer.ok ? answer.body.booked : null);
         steps.check();
       });
@@ -251,7 +252,9 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
           label={copy.remove}
           ariaLabel={copy.removeLabel(words)}
           question={copy.reopen(words)}
-          send={async () => sentOf(await api.removeBlackouts(periodOf(period)), (body) => ({ days: body.blackouts }))}
+          send={async () =>
+            sentOf(await settingsApi.removeBlackouts(periodOf(period)), (body) => ({ days: body.blackouts }))
+          }
           onDone={(sent) => {
             onRemoved(sent.days);
           }}
@@ -263,7 +266,7 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
 }
 
 export function Blackouts() {
-  const [loaded, retry] = useLoad(api.blackouts);
+  const [loaded, retry] = useLoad(settingsApi.blackouts);
   /** The days as the last change left them, so the list follows a change without reading it again. */
   const [changed, setChanged] = useState<readonly Blackout[] | null>(null);
   const access = useAccess();

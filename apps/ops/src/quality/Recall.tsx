@@ -1,13 +1,13 @@
 // One recall (docs/decisions/0187-recalls.md): where its lot's stock is, who wears its pieces, and its close once dealt
 // with; and a lot recalled, with why.
 
+import type { Success } from "@maneman/web-kit/api";
 import { fullDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { BookVisit } from "../clients/index.ts";
@@ -15,9 +15,10 @@ import { quality as copy } from "../content/quality.ts";
 import { useAccess } from "../lib/access.ts";
 import { FormActions } from "../components/FormActions.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { qualityApi } from "./quality-api.ts";
 
-export type Quality = paths["/api/recalls"]["get"]["responses"][200]["content"]["application/json"];
-export type Detail = paths["/api/recalls/{id}"]["get"]["responses"][200]["content"]["application/json"];
+export type Quality = Success<paths["/api/recalls"]["get"]>;
+export type Detail = Success<paths["/api/recalls/{id}"]["get"]>;
 
 /** What a step answered: the recall, or the refusal. */
 export type Answer =
@@ -142,7 +143,7 @@ export function RecallDetail({
             variant="outline"
             size="small"
             onClick={() =>
-              void client.post("/api/recalls/{id}/close", { path: { id: recall.id } }).then((answer) => {
+              void qualityApi.closeRecall(recall.id).then((answer) => {
                 onAnswer(answer, copy.closedSaid);
               })
             }
@@ -204,7 +205,7 @@ export function RaiseRecall({
           size="small"
           disabled={lot === "" || reason.trim() === ""}
           onClick={() =>
-            void client.post("/api/recalls", { body: { lot_id: lot, reason: reason.trim() } }).then((answer) => {
+            void qualityApi.raiseRecall({ lot_id: lot, reason: reason.trim() }).then((answer) => {
               onAnswer(answer, copy.raisedSaid);
               if (answer.ok) setReason("");
             })

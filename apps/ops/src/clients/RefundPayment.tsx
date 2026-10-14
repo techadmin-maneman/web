@@ -7,10 +7,11 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client, type ClientPayment } from "../api.ts";
+import { type ClientPayment } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.payments;
 
@@ -54,10 +55,7 @@ function RefundForm({ entry, left }: { entry: Paid; left: number }) {
   const refund = () =>
     once(async () => {
       setFailed(null);
-      const answer = await client.post("/api/payments/{id}/refund", {
-        path: { id: entry.id },
-        body: { reason: reason.trim() },
-      });
+      const answer = await clientsApi.refundPayment(entry.id, { reason: reason.trim() });
       if (answer.ok) setAsked(answer.body.amount);
       else setFailed(errorText(copy.refundErrors, answer));
     });

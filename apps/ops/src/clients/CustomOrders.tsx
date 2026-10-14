@@ -12,7 +12,6 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
-import { client } from "../api.ts";
 import form from "../components/forms.module.css";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { useAccess } from "../lib/access.ts";
@@ -21,6 +20,7 @@ import { RaiseCustomOrder, type CustomOrders } from "./RaiseCustomOrder.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 type Order = CustomOrders["orders"][number];
 /** What a step answered: the client's whole list, or the refusal. */
@@ -61,11 +61,9 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
         variant="destructive"
         size="small"
         onClick={() =>
-          void client
-            .post("/api/custom-orders/{id}/refund", { path: { id: order.id }, body: { reason } })
-            .then((answer) => {
-              onAnswer(answer, copy.refunded);
-            })
+          void clientsApi.refundCustomOrder(order.id, reason).then((answer) => {
+            onAnswer(answer, copy.refunded);
+          })
         }
       >
         {copy.refund}
@@ -77,7 +75,6 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
 function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
   const access = useAccess();
   if (order.status !== "awaiting_payment") return <Refund order={order} onAnswer={onAnswer} />;
-  const path = { path: { id: order.id } };
   return (
     <FormActions>
       {order.link_sent_at === null && access.mayCall("POST /api/custom-orders/{id}/send-link") && (
@@ -85,7 +82,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
           variant="outline"
           size="small"
           onClick={() =>
-            void client.post("/api/custom-orders/{id}/send-link", path).then((answer) => {
+            void clientsApi.sendCustomOrderLink(order.id).then((answer) => {
               onAnswer(answer, copy.sent);
             })
           }
@@ -98,7 +95,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
           variant="outline"
           size="small"
           onClick={() =>
-            void client.post("/api/custom-orders/{id}/cancel", path).then((answer) => {
+            void clientsApi.cancelCustomOrder(order.id).then((answer) => {
               onAnswer(answer, copy.cancelled);
             })
           }
@@ -157,7 +154,7 @@ function OrdersTable({
 }
 
 export function CustomOrders({ clientId }: { clientId: string }) {
-  const load = useCallback(() => client.get("/api/clients/{id}/custom-orders", { path: { id: clientId } }), [clientId]);
+  const load = useCallback(() => clientsApi.customOrders(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
   const [customOrders, setCustomOrders] = useState<CustomOrders | null>(null);
   const [raising, setRaising] = useState(false);

@@ -7,11 +7,12 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
-import { api, type Consent } from "../api.ts";
+import { type Consent } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
 import { Erase } from "./Erase.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.consents;
 
@@ -46,7 +47,7 @@ function ConsentRow({ consent }: { consent: Consent }) {
 }
 
 export function Consents({ clientId, name, onErased }: { clientId: string; name: string; onErased: () => void }) {
-  const load = useCallback(() => api.clientConsents(clientId), [clientId]);
+  const load = useCallback(() => clientsApi.clientConsents(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
 
   if (loaded.state === "loading") return <Loading />;

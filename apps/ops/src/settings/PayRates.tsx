@@ -11,13 +11,14 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { api, type TechnicianPay } from "../api.ts";
+import { type TechnicianPay } from "../api.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { technicianPay } from "../content/technician-pay.ts";
 import { AddGradeForm, RenameGradeForm, SetRateForm } from "./PayForms.tsx";
 import { rateNow, ratesLater } from "./pay-rates.ts";
 import form from "../components/forms.module.css";
 import styles from "./technician-pay.module.css";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = technicianPay.rates;
 
@@ -91,7 +92,7 @@ function RateActingRow({ grade, span, ...row }: { grade: Grade; span: number } &
           <div className={styles.ask}>
             <DeleteAction
               name={grade.name}
-              send={() => api.deletePayGrade(grade.id)}
+              send={() => settingsApi.deletePayGrade(grade.id)}
               refusal={(refused) =>
                 refused === "in_use" ? copy.inUse : errorText(technicianPay.errors, { code: refused, fields: [] })
               }

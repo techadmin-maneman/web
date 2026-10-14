@@ -5,7 +5,6 @@
 import { Checkbox, ChoiceGroup, DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { CODE_LENGTH } from "@rules/policy/discount-codes.ts";
-import { api } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import {
   checkLines,
@@ -20,6 +19,7 @@ import {
 } from "./discount-draft.ts";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import form from "../components/forms.module.css";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.discountCodes;
 
@@ -220,7 +220,7 @@ export function DiscountCodeForm({
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [made, setMade] = useState<readonly string[] | null>(null);
   const steps = useSteps(
-    async () => sentOf(await api.makeDiscountCodes(requestOf(draft)), (body) => ({ codes: body.codes })),
+    async () => sentOf(await settingsApi.makeDiscountCodes(requestOf(draft)), (body) => ({ codes: body.codes })),
     (sent) => {
       setDraft(EMPTY);
       setMade(sent.codes);

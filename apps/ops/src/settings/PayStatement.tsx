@@ -10,7 +10,6 @@ import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
-import { api } from "../api.ts";
 import type { components } from "../api-schema.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { csvText } from "../lib/csv.ts";
@@ -18,6 +17,7 @@ import { saveFile } from "../lib/save-file.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import styles from "./technician-pay.module.css";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = technicianPay.statement;
 
@@ -108,7 +108,7 @@ export function PayStatement({ today }: { today: string }) {
   const months = monthsTo(today);
   // A month's pay is drawn up once it has ended, so the last one is shown first.
   const [month, setMonth] = useState(months[1] ?? today.slice(0, 7));
-  const load = useCallback(() => api.payStatement(month), [month]);
+  const load = useCallback(() => settingsApi.payStatement(month), [month]);
   const [loaded, retry] = useLoad(load);
   return (
     <Panel titleId="pay-statement" title={copy.title} className={form.panel}>

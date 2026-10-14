@@ -11,7 +11,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type Consumable, type Consumables as ConsumableList } from "../api.ts";
+import { type Consumable, type Consumables as ConsumableList } from "../api.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { deleting } from "../content.ts";
 import { settings } from "../content/settings.ts";
@@ -25,6 +25,7 @@ import { ServiceUsage } from "./ServiceUsage.tsx";
 import styles from "./consumables.module.css";
 import form from "../components/forms.module.css";
 import { RowHead } from "../components/RowHead.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.consumables;
 
@@ -172,7 +173,7 @@ function ConsumableEditor({
         <DeleteAction
           key={`delete-${named.code}`}
           name={named.name}
-          send={() => api.deleteConsumable(named.code)}
+          send={() => settingsApi.deleteConsumable(named.code)}
           refusal={(code) => (code === "in_use" ? copy.inUse : errorText(copy.errors, { code }))}
           onDeleted={(body) => {
             onSaved(body, copy.deleted);
@@ -197,7 +198,7 @@ function ConsumableEditor({
 }
 
 export function Consumables() {
-  const [loaded, retry] = useLoad(api.consumables);
+  const [loaded, retry] = useLoad(settingsApi.consumables);
   /** The list after a change, so the table follows without reading it again. */
   const [consumables, setConsumables] = useState<ConsumableList | null>(null);
   const [doing, setDoing] = useState<Doing>({ kind: "add" });

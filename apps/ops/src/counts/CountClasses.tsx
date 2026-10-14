@@ -1,20 +1,21 @@
 // Each item's count class (docs/decisions/0185-cycle-counts.md): its kind's own, a hair system weekly and the rest
 // quarterly, or the one ops set.
 
+import type { Success } from "@maneman/web-kit/api";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { countsApi } from "./counts-api.ts";
 
-export type CountTasks = paths["/api/count-tasks"]["get"]["responses"][200]["content"]["application/json"];
+export type CountTasks = Success<paths["/api/count-tasks"]["get"]>;
 type CountClass = CountTasks["classes"][number]["count_class"];
 
 const CLASSES: readonly CountClass[] = ["weekly", "monthly", "quarterly"];
@@ -30,10 +31,7 @@ export function CountClasses({
   const [said, setSaid] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const change = async (code: string, chosen: string) => {
-    const answer = await client.post("/api/consumables/{code}/count-class", {
-      path: { code },
-      body: { count_class: chosen === OWN ? null : (chosen as CountClass) },
-    });
+    const answer = await countsApi.setCountClass(code, { count_class: chosen === OWN ? null : (chosen as CountClass) });
     if (answer.ok) {
       onChanged(answer.body);
       setSaid(copy.classSaid);

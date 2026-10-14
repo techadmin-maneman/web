@@ -9,10 +9,10 @@ import { Drawer } from "@maneman/ui/Drawer";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useState } from "react";
-import { api } from "../api.ts";
 import styles from "../components/visit-dialog.module.css";
 import { dispatch } from "../content.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { dispatchApi } from "./dispatch-api.ts";
 
 const copy = dispatch.letIn;
 
@@ -24,7 +24,7 @@ function LetInForm({ visitId, onLetIn }: { visitId: string; onLetIn: () => void 
   const letIn = () =>
     once(async () => {
       setFailed(null);
-      const answer = await api.letIn(visitId, reason.trim());
+      const answer = await dispatchApi.letIn(visitId, reason.trim());
       if (answer.ok) onLetIn();
       else setFailed(errorText(copy.errors, { code: answer.code }));
     });

@@ -10,7 +10,7 @@ import { Button } from "@maneman/ui/Button";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
-import { api, type JobOnLeave, type StandingLeave, type TechnicianSummary } from "../api.ts";
+import { type JobOnLeave, type StandingLeave, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -19,6 +19,7 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./technicians.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { techniciansApi } from "./technicians-api.ts";
 
 const copy = technicians.leave;
 
@@ -79,7 +80,7 @@ function Period({
   const takeBack = async () => {
     setStep("sending");
     setFailed(null);
-    const answer = await api.cancelLeave(technician.id, leave.id);
+    const answer = await techniciansApi.cancelLeave(technician.id, leave.id);
     if (!answer.ok) {
       setStep("checking");
       setFailed(refusal(answer.code));
@@ -148,7 +149,7 @@ function LeaveForm({
     once(async () => {
       setFailed(null);
       const note = entry.note.trim();
-      const answer = await api.recordLeave(technician.id, {
+      const answer = await techniciansApi.recordLeave(technician.id, {
         from: entry.from,
         to: entry.to,
         note: note === "" ? null : note,
@@ -223,7 +224,7 @@ function LeaveForm({
 
 /** Read when the tab opens and again after every change, since the dispatch board reads the same rows. */
 export function Leave({ technician }: { technician: TechnicianSummary }) {
-  const load = useCallback(() => api.standingLeave(technician.id), [technician.id]);
+  const load = useCallback(() => techniciansApi.standingLeave(technician.id), [technician.id]);
   const [loaded, retry] = useLoad(load);
   const [fresh, setFresh] = useState<readonly StandingLeave[] | null>(null);
   const [recording, setRecording] = useState(false);
@@ -235,7 +236,7 @@ export function Leave({ technician }: { technician: TechnicianSummary }) {
 
   const leave = fresh ?? loaded.value.leave;
   const readAgain = async () => {
-    const answer = await api.standingLeave(technician.id);
+    const answer = await techniciansApi.standingLeave(technician.id);
     if (answer.ok) setFresh(answer.body.leave);
   };
 

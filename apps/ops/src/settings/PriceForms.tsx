@@ -8,7 +8,7 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import { addDays, longDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type Price } from "../api.ts";
+import { type Price } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import form from "../components/forms.module.css";
 import styles from "./prices.module.css";
@@ -16,6 +16,7 @@ import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 
 import type { Written } from "./ServiceForms.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.services;
 const formWords = copy.form;
@@ -166,8 +167,8 @@ export function PriceForm(props: {
   const steps = useSteps(async () => {
     const answer =
       correcting === undefined
-        ? await api.setPrice(change)
-        : await api.correctPrice({ ...change, was_valid_from: correcting.valid_from });
+        ? await settingsApi.setPrice(change)
+        : await settingsApi.correctPrice({ ...change, was_valid_from: correcting.valid_from });
     return sentOf(answer, (body) => ({ prices: body.prices, said: copy.done.price }));
   }, props.onDone);
   // A day typed before tomorrow, which the date picker's min alone does not stop.
@@ -226,7 +227,11 @@ export function TakeBack(props: {
 }) {
   const { target, row } = props;
   const steps = useSteps(async () => {
-    const answer = await api.withdrawPrice({ item: target.item, tier: target.tier, valid_from: row.valid_from });
+    const answer = await settingsApi.withdrawPrice({
+      item: target.item,
+      tier: target.tier,
+      valid_from: row.valid_from,
+    });
     return sentOf(answer, (body) => ({ prices: body.prices, said: copy.done.takenBack }));
   }, props.onDone);
   return (

@@ -11,7 +11,7 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type ServedPincode } from "../api.ts";
+import { type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { saveFile } from "../lib/save-file.ts";
@@ -39,6 +39,7 @@ import {
 } from "./served-draft.ts";
 import { CityTabs, LaunchCheck, PincodeRow, SaveNotes, UploadFile, type Saving, type Upload } from "./ServedParts.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { areasApi } from "./areas-api.ts";
 
 const copy = areas.served;
 
@@ -87,7 +88,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
 
   const send = async () => {
     setSaving({ step: "saving" });
-    const answer = await api.setServiceArea(changes);
+    const answer = await areasApi.setServiceArea(changes);
     if (!answer.ok) {
       setSaving({ step: "failed", code: answer.code });
       return;
@@ -216,7 +217,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
 }
 
 export function Served() {
-  const [loaded, retry] = useLoad(api.serviceArea);
+  const [loaded, retry] = useLoad(areasApi.serviceArea);
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   return <Area pincodes={loaded.value.pincodes} cities={loaded.value.cities} />;

@@ -1,17 +1,18 @@
 // One line of the supply plan (docs/decisions/0180-supply-plan.md): approved at the quantity ops leave in its box, or
 // rejected with why; once decided, what came of it.
 
+import type { Success } from "@maneman/web-kit/api";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
-import { client } from "../api.ts";
+import { supplyPlanApi } from "./supply-plan-api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import { FormActions } from "../components/FormActions.tsx";
 
-export type Plan = paths["/api/supply-plan"]["get"]["responses"][200]["content"]["application/json"];
+export type Plan = Success<paths["/api/supply-plan"]["get"]>;
 export type Line = Plan["lines"][number];
 
 /** What a decision answered: the whole plan, or the refusal. */
@@ -37,7 +38,6 @@ function Reject({
   onKeep: () => void;
 }) {
   const [reason, setReason] = useState("");
-  const path = { path: { id: line.id } };
   return (
     <div className={form.group}>
       <Field label={copy.why_label} className={form.field}>
@@ -58,11 +58,9 @@ function Reject({
           size="small"
           disabled={reason.trim() === ""}
           onClick={() =>
-            void client
-              .post("/api/supply-plan/lines/{id}/reject", { ...path, body: { reason: reason.trim() } })
-              .then((answer) => {
-                onAnswer(answer, copy.rejectedSaid);
-              })
+            void supplyPlanApi.rejectLine(line.id, reason.trim()).then((answer) => {
+              onAnswer(answer, copy.rejectedSaid);
+            })
           }
         >
           {copy.confirmReject}
@@ -81,7 +79,6 @@ export function PlanLineSteps({ line, onAnswer }: { line: Line; onAnswer: (answe
   const [rejecting, setRejecting] = useState(false);
   if (line.state !== "proposed") return <Decided line={line} decided={line.state} />;
   if (!access.mayCall("POST /api/supply-plan/lines/{id}/approve")) return null;
-  const path = { path: { id: line.id } };
   const count = Number(quantity);
   if (rejecting) {
     return (
@@ -113,11 +110,9 @@ export function PlanLineSteps({ line, onAnswer }: { line: Line; onAnswer: (answe
         size="small"
         disabled={!Number.isInteger(count) || count < 1}
         onClick={() =>
-          void client
-            .post("/api/supply-plan/lines/{id}/approve", { ...path, body: { quantity: count } })
-            .then((answer) => {
-              onAnswer(answer, copy.approvedSaid);
-            })
+          void supplyPlanApi.approveLine(line.id, count).then((answer) => {
+            onAnswer(answer, copy.approvedSaid);
+          })
         }
       >
         {copy.approve}

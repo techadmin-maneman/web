@@ -3,11 +3,11 @@
 
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import type { City } from "./types.ts";
+import { citiesApi } from "./cities-api.ts";
 
 const formWords = cities.form;
 
@@ -160,10 +160,7 @@ export function CityForm(props: {
   const steps = useSteps(
     async () => {
       const body = bodyOf(draft);
-      const answer =
-        city === null
-          ? await client.post("/api/cities", { body })
-          : await client.patch("/api/cities/{name}", { path: { name: city.name }, body });
+      const answer = city === null ? await citiesApi.addCity(body) : await citiesApi.changeCity(city.name, body);
       return sentOf(answer, () => ({}));
     },
     () => {

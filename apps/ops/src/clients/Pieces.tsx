@@ -10,10 +10,11 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { Suspense, useCallback } from "react";
-import { api, type Piece } from "../api.ts";
+import { type Piece } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./clients.module.css";
+import { clientsApi } from "./clients-api.ts";
 
 const HairProfile = lazyScreen(() => import("./HairProfile.tsx").then((module) => module.HairProfile));
 
@@ -63,7 +64,7 @@ export function Pieces({ clientId }: { clientId: string }) {
 }
 
 function PieceTable({ clientId }: { clientId: string }) {
-  const load = useCallback(() => api.clientPieces(clientId), [clientId]);
+  const load = useCallback(() => clientsApi.clientPieces(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
 
   if (loaded.state === "loading") return <Loading />;

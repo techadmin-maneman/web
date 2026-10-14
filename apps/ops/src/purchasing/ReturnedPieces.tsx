@@ -6,7 +6,6 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
@@ -15,6 +14,7 @@ import { StockPhoto } from "./StockPhoto.tsx";
 import type { ReturnedPiece } from "./types.ts";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
 function warrantyOf(piece: ReturnedPiece): string {
   if (piece.warranty_ends_on === null) return copy.returns.unknown;
@@ -66,11 +66,8 @@ function WriteOff({
           size="small"
           disabled={reason.trim() === "" || photoId === null}
           onClick={() =>
-            void client
-              .post("/api/returned-pieces/{id}/write-off", {
-                path: { id: piece.id },
-                body: { reason: reason.trim(), photo_id: photoId ?? "" },
-              })
+            void purchasingApi
+              .writeOffReturned(piece.id, { reason: reason.trim(), photo_id: photoId ?? "" })
               .then((answer) => {
                 onAnswer(answer, copy.returns.writtenOff);
               })
@@ -102,7 +99,7 @@ export function ReturnedPieces({
   const access = useAccess();
   if (pieces.length === 0) return <p className={form.note}>{copy.returns.none}</p>;
   const claim = async (piece: ReturnedPiece) => {
-    onAnswer(await client.post("/api/returned-pieces/{id}/claim", { path: { id: piece.id } }), copy.returns.claimed);
+    onAnswer(await purchasingApi.claimReturned(piece.id), copy.returns.claimed);
   };
   return (
     <Table className={form.table}>

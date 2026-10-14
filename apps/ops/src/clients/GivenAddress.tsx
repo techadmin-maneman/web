@@ -10,10 +10,11 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { AddressSearch, type AddressSuggestion } from "@maneman/ui/AddressSearch";
 import { useId, useRef, useState } from "react";
 import { ADDRESS_FIELDS, given, missingParts, type AddressField, type AddressPart } from "@maneman/web-kit/address";
-import { api, type AddressGiven, type ClientRecord } from "../api.ts";
+import { type AddressGiven, type ClientRecord } from "../api.ts";
 import { clients, NOT_PERMITTED } from "../content.ts";
 import styles from "./address.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.given;
 
@@ -59,7 +60,7 @@ function BuildingSearch({
     <AddressSearch
       value={value}
       search={async (query) => {
-        const answer = await api.addressSuggestions(clientId, query, sessionToken);
+        const answer = await clientsApi.addressSuggestions(clientId, query, sessionToken);
         return answer.ok ? { ok: true, suggestions: answer.body.suggestions } : { ok: false };
       }}
       onType={onType}
@@ -107,7 +108,7 @@ export function GivenAddressForm({
         requestAnimationFrame(() => form.current?.querySelector<HTMLInputElement>("[aria-invalid]")?.focus());
         return;
       }
-      const answer = await api.saveGivenAddress(clientId, {
+      const answer = await clientsApi.saveGivenAddress(clientId, {
         ...sent,
         line2: orNull(sent.line2),
         access_notes: orNull(sent.access_notes),

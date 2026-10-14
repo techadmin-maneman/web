@@ -13,7 +13,6 @@ import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import {
-  api,
   type ClientInvoice,
   type ClientPayment,
   type ClientPaymentLink,
@@ -25,6 +24,7 @@ import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
 import { RefundPayment } from "./RefundPayment.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 type Credits = ClientRecord["credits"];
 type Reason = CreditAdjustment["reason"];
@@ -249,7 +249,7 @@ function CreditForm({
 
   const send = async (change: { visits: number; reason: Reason }) => {
     setAdjusting({ step: "sending" });
-    const answer = await api.adjustCredits(clientId, change);
+    const answer = await clientsApi.adjustCredits(clientId, change);
     if (!answer.ok) {
       setAdjusting({ step: "failed", code: answer.code });
       return;

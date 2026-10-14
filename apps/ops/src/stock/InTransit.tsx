@@ -10,7 +10,7 @@ import { Table } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client, type Stock } from "../api.ts";
+import { type Stock } from "../api.ts";
 import { stockTransit as copy } from "../content/stock-transit.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
@@ -21,6 +21,7 @@ import { unitOf } from "./holdings.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { stockApi } from "./stock-api.ts";
 
 type Transfer = Stock["in_transit"][number];
 
@@ -42,7 +43,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
       ...(units.length === 0 ? {} : { units: [...units] }),
       ...(note.trim() === "" ? {} : { note: note.trim() }),
     };
-    const answer = await client.post("/api/stock/transfers/{id}/receive", { path: { id: transfer.id }, body });
+    const answer = await stockApi.receiveTransfer(transfer.id, body);
     if (answer.ok) props.onDone(answer.body);
     else setFailure({ code: answer.code, fields: answer.fields });
   };
@@ -140,7 +141,7 @@ export function InTransit({ stock, onChanged }: { stock: Stock; onChanged: (stoc
   const transfer = stock.in_transit.find((each) => each.id === receiving);
   const sendBack = async (id: string) => {
     setFailure(null);
-    const answer = await client.post("/api/stock/transfers/{id}/send-back", { path: { id } });
+    const answer = await stockApi.sendBack(id);
     if (answer.ok) onChanged(answer.body);
     else setFailure({ code: answer.code, fields: answer.fields });
   };

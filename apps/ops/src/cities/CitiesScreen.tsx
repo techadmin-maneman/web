@@ -3,15 +3,15 @@
 // from. Each change is checked before it is sent, and the page reads itself again after it.
 
 import { useLiveLoad } from "@maneman/ui/useLoad";
-import { client } from "../api.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import { CityList } from "./CityList.tsx";
 import { CityPrices } from "./CityPrices.tsx";
 import { CityRules } from "./CityRules.tsx";
 import { Registrations } from "./Registrations.tsx";
+import { citiesApi } from "./cities-api.ts";
 
-const loadCities = () => client.get("/api/cities");
+const loadCities = () => citiesApi.cities();
 
 /** Read again every ten minutes while open, and after every change. */
 const EVERY_MS = 10 * 60_000;

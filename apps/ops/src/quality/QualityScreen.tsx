@@ -10,7 +10,6 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client } from "../api.ts";
 import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { useAccess } from "../lib/access.ts";
@@ -20,8 +19,9 @@ import { FailuresPanel } from "./Failures.tsx";
 import { RaiseRecall, RecallDetail, type Answer, type Quality, type Detail } from "./Recall.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { qualityApi } from "./quality-api.ts";
 
-const loadRecalls = () => client.get("/api/recalls");
+const loadRecalls = () => qualityApi.recalls();
 
 function Recalls({ quality, opener, onOpen }: { quality: Quality; opener: RowOpener; onOpen: (id: string) => void }) {
   if (quality.recalls.length === 0) return <p className={form.note}>{copy.none}</p>;
@@ -89,7 +89,7 @@ export function QualityScreen() {
     reload();
   };
   const open = (id: string) => {
-    void client.get("/api/recalls/{id}", { path: { id } }).then((answer) => {
+    void qualityApi.recall(id).then((answer) => {
       if (answer.ok) setOpened(answer.body);
     });
   };

@@ -15,6 +15,7 @@ import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import styles from "./clients.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.invite;
 
@@ -70,7 +71,7 @@ function AttachForm({
 
   const send = async () => {
     setAttaching({ step: "sending" });
-    const answer = await api.attachInvite(clientId, { code: code.trim(), reason: reason.trim() });
+    const answer = await clientsApi.attachInvite(clientId, { code: code.trim(), reason: reason.trim() });
     if (answer.ok) {
       onInvite(answer.body, "attached");
       return;

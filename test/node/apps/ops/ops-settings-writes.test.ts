@@ -7,28 +7,44 @@ import { readdirSync, readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-const API = "apps/ops/src/api.ts";
 const SETTINGS = "apps/ops/src/settings";
 
-/** The calls of api.ts that read, though they post: a search sends its words in the body. */
+/** The console's API modules: api.ts, and each feature's own (care-api.ts, settings-api.ts). */
+const MODULES = [
+  "apps/ops/src/api.ts",
+  ...readdirSync("apps/ops/src", { withFileTypes: true }).flatMap((entry) =>
+    entry.isDirectory()
+      ? readdirSync(`apps/ops/src/${entry.name}`)
+          .filter((name) => name.endsWith("-api.ts"))
+          .map((name) => `apps/ops/src/${entry.name}/${name}`)
+      : [],
+  ),
+];
+
+/** The calls that read, though they post: a search sends its words in the body. */
 const READS_BY_POST = new Set(["findClients", "addressSuggestions"]);
 
-/** Each member of `api` whose call writes: a post, put, patch or delete. */
-function writesOf(): Set<string> {
-  const source = ts.createSourceFile(API, readFileSync(API, "utf8"), ts.ScriptTarget.ES2022, true);
-  const writes = new Set<string>();
-  const visit = (node: ts.Node): void => {
-    if (ts.isPropertyAssignment(node) && ts.isIdentifier(node.name)) {
-      if (
-        /client\.(post|put|patch|delete)\(/.test(node.initializer.getText(source)) &&
-        !READS_BY_POST.has(node.name.text)
-      ) {
-        writes.add(node.name.text);
+/** Each module's members whose call writes, a post, put, patch or delete, by the module's exported name. */
+function writesOf(): Map<string, Set<string>> {
+  const writes = new Map<string, Set<string>>();
+  for (const path of MODULES) {
+    const source = ts.createSourceFile(path, readFileSync(path, "utf8"), ts.ScriptTarget.ES2022, true);
+    for (const statement of source.statements) {
+      if (!ts.isVariableStatement(statement)) continue;
+      for (const declaration of statement.declarationList.declarations) {
+        const { initializer } = declaration;
+        if (!ts.isIdentifier(declaration.name) || initializer === undefined) continue;
+        if (!ts.isObjectLiteralExpression(initializer)) continue;
+        const members = new Set<string>();
+        for (const member of initializer.properties) {
+          if (!ts.isPropertyAssignment(member) || !ts.isIdentifier(member.name)) continue;
+          const writing = /client\.(post|put|patch|delete)\(/.test(member.initializer.getText(source));
+          if (writing && !READS_BY_POST.has(member.name.text)) members.add(member.name.text);
+        }
+        if (members.size > 0) writes.set(declaration.name.text, members);
       }
     }
-    ts.forEachChild(node, visit);
-  };
-  visit(source);
+  }
   return writes;
 }
 
@@ -52,7 +68,7 @@ function sentTheOneWay(node: ts.Node): boolean {
 }
 
 /** Each write a settings file makes some other way, as "file: api.member" or "file: client.post". */
-function strayWrites(file: string, writes: ReadonlySet<string>): string[] {
+function strayWrites(file: string, writes: ReadonlyMap<string, ReadonlySet<string>>): string[] {
   const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.ES2022, true, ts.ScriptKind.TSX);
   const stray: string[] = [];
   const visit = (node: ts.Node): void => {
@@ -60,7 +76,7 @@ function strayWrites(file: string, writes: ReadonlySet<string>): string[] {
       const { expression: object, name } = node.expression;
       const by = ts.isIdentifier(object) ? object.text : "";
       const writing =
-        (by === "api" && writes.has(name.text)) || (by === "client" && /^(post|put|patch|delete)$/.test(name.text));
+        writes.get(by)?.has(name.text) === true || (by === "client" && /^(post|put|patch|delete)$/.test(name.text));
       if (writing && !sentTheOneWay(node)) stray.push(`${file}: ${by}.${name.text}`);
     }
     ts.forEachChild(node, visit);
@@ -76,7 +92,8 @@ describe("Settings", () => {
 
   it("sends every write from a form's steps or a DeleteAction", () => {
     const writes = writesOf();
-    expect(writes.size).toBeGreaterThan(20);
+    expect([...writes.values()].reduce((sum, members) => sum + members.size, 0)).toBeGreaterThan(20);
+    expect(writes.get("settingsApi")?.size).toBeGreaterThan(3);
     const files = readdirSync(SETTINGS)
       .filter((name) => name.endsWith(".tsx"))
       .map((name) => `${SETTINGS}/${name}`);

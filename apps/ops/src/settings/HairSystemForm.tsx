@@ -6,10 +6,11 @@ import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, client, type Consumables as ConsumableList } from "../api.ts";
+import { type Consumables as ConsumableList } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import form from "../components/forms.module.css";
 import { SettingForm, useSteps } from "./SettingForm.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.consumables.hairSystems;
 
@@ -188,9 +189,9 @@ export function HairSystemForm({
   const [draft, setDraft] = useState<Draft>(blank);
   const steps = useSteps(
     async () => {
-      const added = await client.post("/api/hair-systems", { body: bodyOf(draft) });
+      const added = await settingsApi.addHairSystem(bodyOf(draft));
       // The list is read again, with the new code in it.
-      const answer = added.ok ? await api.consumables() : added;
+      const answer = added.ok ? await settingsApi.consumables() : added;
       return answer.ok
         ? { ok: true as const, consumables: answer.body }
         : { ok: false as const, code: answer.code, fields: answer.fields };

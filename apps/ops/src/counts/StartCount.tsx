@@ -6,19 +6,19 @@ import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client } from "../api.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import type { CountTasks } from "./CountClasses.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { countsApi } from "./counts-api.ts";
 
 export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; onStarted: (id: string) => void }) {
   const [place, setPlace] = useState("");
   const [item, setItem] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
   const start = async () => {
-    const answer = await client.post("/api/count-tasks", { body: { place_id: place, consumable_code: item } });
+    const answer = await countsApi.startCount({ place_id: place, consumable_code: item });
     if (answer.ok) {
       setFailure(null);
       onStarted(answer.body.task.id);

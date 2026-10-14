@@ -11,7 +11,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, minutesBetween, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type DisputeRuling, type NoShowDispute } from "../api.ts";
+import { type DisputeRuling, type NoShowDispute } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { Reach } from "../components/Reach.tsx";
 import { OpsLink } from "../components/Shell.tsx";
@@ -23,6 +23,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Distance } from "./Distance.tsx";
 import styles from "./no-shows.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { noShowsApi } from "./no-shows-api.ts";
 
 const copy = noShows.dispute;
 
@@ -110,7 +111,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
 
   const rule = async (ruling: DisputeRuling) => {
     setStep({ kind: "sending" });
-    const answer = await api.ruleOnDispute(each.id, ruling, reason.trim());
+    const answer = await noShowsApi.ruleOnDispute(each.id, ruling, reason.trim());
     if (answer.ok) onRuled();
     else setStep({ kind: "failed", code: answer.code });
   };
@@ -179,7 +180,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
 
 /** `onRuled`: a dispute was ruled on, which may have refunded money today. */
 export function Disputes({ onRuled }: { onRuled: () => void }) {
-  const [loaded, retry] = useLoad(api.disputes);
+  const [loaded, retry] = useLoad(noShowsApi.disputes);
   const access = useAccess();
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;

@@ -10,10 +10,11 @@ import { Button } from "@maneman/ui/Button";
 import { fullDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type ClientVisit, type VisitDiscountCode } from "../api.ts";
+import { type ClientVisit, type VisitDiscountCode } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./clients.module.css";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.code;
 
@@ -46,7 +47,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
 
   const apply = async () => {
     setStep("applying");
-    const answer = await api.enterVisitCode(visit.id, typed.trim());
+    const answer = await clientsApi.enterVisitCode(visit.id, typed.trim());
     if (!answer.ok) {
       setFailure(said(answer.code));
       setStep("entering");
@@ -59,7 +60,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
 
   const remove = async () => {
     setStep("removing");
-    const answer = await api.removeVisitCode(visit.id);
+    const answer = await clientsApi.removeVisitCode(visit.id);
     setStep("showing");
     if (!answer.ok) {
       setFailure(said(answer.code));

@@ -9,7 +9,7 @@ import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { Checkbox, ChoiceGroup, Field, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
-import { api, type Stock } from "../api.ts";
+import { type Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
@@ -19,6 +19,7 @@ import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { stockApi } from "./stock-api.ts";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
 export type Kind = (typeof KINDS)[number];
@@ -155,7 +156,7 @@ async function sent(stock: Stock, draft: Draft) {
   const note = draft.note.trim() === "" ? null : draft.note.trim();
   switch (draft.kind) {
     case "delivery":
-      return api.recordDelivery({
+      return stockApi.recordDelivery({
         consumable_code: code,
         quantity: Number(draft.quantity),
         note,
@@ -163,7 +164,7 @@ async function sent(stock: Stock, draft: Draft) {
         expires_on: draft.expiresOn === "" ? null : draft.expiresOn,
       });
     case "transfer":
-      return api.recordTransfer({
+      return stockApi.recordTransfer({
         consumable_code: code,
         quantity: Number(draft.quantity),
         from: draft.from,
@@ -172,7 +173,7 @@ async function sent(stock: Stock, draft: Draft) {
         ...(toAKit(stock, draft) ? { wait_for_scan: draft.waitForScan } : {}),
       });
     case "count":
-      return api.recordCount({
+      return stockApi.recordCount({
         consumable_code: code,
         place_id: draft.place,
         counted: Number(draft.counted),
@@ -181,7 +182,7 @@ async function sent(stock: Stock, draft: Draft) {
         expires_on: draft.expiresOn === "" ? null : draft.expiresOn,
       });
     case "write_off":
-      return api.recordWriteOff({
+      return stockApi.recordWriteOff({
         consumable_code: code,
         place_id: draft.place,
         quantity: Number(draft.quantity),

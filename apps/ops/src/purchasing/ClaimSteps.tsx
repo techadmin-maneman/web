@@ -4,7 +4,6 @@
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
@@ -12,8 +11,9 @@ import { StockPhoto } from "./StockPhoto.tsx";
 import type { Claim } from "./types.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
 import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
-export type ClaimAnswer = Awaited<ReturnType<typeof client.post<"/api/supplier-claims/{id}/send">>>;
+export type ClaimAnswer = Awaited<ReturnType<typeof purchasingApi.sendClaim>>;
 
 /** The claim's whole value in its currency's main unit, as the credit box starts: "250.00" for 25,000 cents. */
 const wholeValue = (claim: Claim) => ((claim.unit_price * claim.quantity) / 100).toFixed(2);
@@ -52,11 +52,9 @@ function Withdraw({
         size="small"
         disabled={note === ""}
         onClick={() =>
-          void client
-            .post("/api/supplier-claims/{id}/withdraw", { path: { id: claim.id }, body: { note } })
-            .then((answer) => {
-              onAnswer(answer, copy.claims.withdrawnSaid);
-            })
+          void purchasingApi.withdrawClaim(claim.id, note).then((answer) => {
+            onAnswer(answer, copy.claims.withdrawnSaid);
+          })
         }
       >
         {copy.claims.confirmWithdraw}
@@ -79,7 +77,6 @@ function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAn
   const [note, setNote] = useState("");
   const [photoId, setPhotoId] = useState<string | null>(null);
   const [withdrawing, setWithdrawing] = useState(false);
-  const path = { path: { id: claim.id } };
   const said = note.trim();
   return (
     <div className={form.group}>
@@ -102,11 +99,8 @@ function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAn
             variant="primary"
             size="small"
             onClick={() =>
-              void client
-                .post("/api/supplier-claims/{id}/send", {
-                  ...path,
-                  body: { note: said === "" ? null : said, photo_id: photoId },
-                })
+              void purchasingApi
+                .sendClaim(claim.id, { note: said === "" ? null : said, photo_id: photoId })
                 .then((answer) => {
                   onAnswer(answer, copy.claims.sentSaid);
                 })
@@ -136,10 +130,7 @@ function Sent({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAnswe
   const decide = async (outcome: "credit" | "replacement" | "rejected") => {
     const said = note.trim();
     const body = { outcome, credit_amount: outcome === "credit" ? amount : null, note: said === "" ? null : said };
-    onAnswer(
-      await client.post("/api/supplier-claims/{id}/decide", { path: { id: claim.id }, body }),
-      copy.claims.settledSaid,
-    );
+    onAnswer(await purchasingApi.decideClaim(claim.id, body), copy.claims.settledSaid);
   };
   return (
     <div className={form.group}>

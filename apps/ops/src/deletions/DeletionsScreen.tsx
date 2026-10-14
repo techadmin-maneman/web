@@ -11,7 +11,7 @@ import { Checkbox, Field, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useRef, useState } from "react";
-import { api, type DeletionRequest } from "../api.ts";
+import { type DeletionRequest } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { Reach } from "../components/Reach.tsx";
 import { OpsLink } from "../components/Shell.tsx";
@@ -24,6 +24,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "../components/erasure.module.css";
 import { ErasureLists } from "../components/ErasureLists.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { deletionsApi } from "./deletions-api.ts";
 
 type Choice = "delete" | "reject";
 
@@ -96,7 +97,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
   const decide = async (choice: Choice) => {
     setDeciding({ step: "sending", choice });
     // Rejecting keeps the account and needs a reason; deleting sends the field as null.
-    const answer = await api.decideDeletion(request.id, choice, choice === "reject" ? reason.trim() : null);
+    const answer = await deletionsApi.decideDeletion(request.id, choice, choice === "reject" ? reason.trim() : null);
     if (answer.ok) onDecided(choice);
     else setDeciding({ step: "failed", code: answer.code });
   };
@@ -223,7 +224,7 @@ function SettleOn({ personId, code }: { personId: string; code: string }) {
 }
 
 function DeletionQueue() {
-  const [loaded, retry] = useLoad(api.deletionRequests);
+  const [loaded, retry] = useLoad(deletionsApi.deletionRequests);
   const mayDecide = useAccess().mayCall("POST /api/deletion-requests/{id}/decision");
   const [done, setDone] = useState<string | null>(null);
   if (loaded.state === "loading") return <Loading />;

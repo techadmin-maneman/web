@@ -5,10 +5,11 @@
 import { Field, TextInput } from "@maneman/ui/Field";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type Consumable, type Consumables } from "../api.ts";
+import { type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import form from "../components/forms.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.consumables;
 const formWords = copy.form;
@@ -87,6 +88,55 @@ function Figure(props: { label: string; value: string; onChange: (text: string) 
   );
 }
 
+/** What the item is called, what it is counted in, and what one costs us. */
+function Particulars({ draft, onEdit }: { draft: Draft; onEdit: (field: keyof Draft) => (text: string) => void }) {
+  const edit = onEdit;
+  return (
+    <div className={form.fields}>
+      <Field label={formWords.name} className={form.field}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={form.areaBox}
+            maxLength={60}
+            value={draft.name}
+            onChange={(event) => {
+              edit("name")(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={formWords.unit} className={form.field}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={form.figureBox}
+            maxLength={20}
+            value={draft.unit}
+            onChange={(event) => {
+              edit("unit")(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={formWords.cost} className={form.field}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={form.amountBox}
+            inputMode="decimal"
+            maxLength={10}
+            value={draft.cost}
+            onChange={(event) => {
+              edit("cost")(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+    </div>
+  );
+}
+
 export function ConsumableForm({
   consumable,
   maxUnitCost,
@@ -120,7 +170,9 @@ export function ConsumableForm({
         shelf_life_days: levelOf(draft.shelf),
       };
       const answer =
-        consumable === null ? await api.addConsumable(fields) : await api.changeConsumable(consumable.code, fields);
+        consumable === null
+          ? await settingsApi.addConsumable(fields)
+          : await settingsApi.changeConsumable(consumable.code, fields);
       return sentOf(answer, (consumables) => ({ consumables }));
     },
     (sent) => {
@@ -155,48 +207,7 @@ export function ConsumableForm({
         </p>
       ))}
     >
-      <div className={form.fields}>
-        <Field label={formWords.name} className={form.field}>
-          {(control) => (
-            <TextInput
-              {...control}
-              className={form.areaBox}
-              maxLength={60}
-              value={draft.name}
-              onChange={(event) => {
-                edit("name")(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-        <Field label={formWords.unit} className={form.field}>
-          {(control) => (
-            <TextInput
-              {...control}
-              className={form.figureBox}
-              maxLength={20}
-              value={draft.unit}
-              onChange={(event) => {
-                edit("unit")(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-        <Field label={formWords.cost} className={form.field}>
-          {(control) => (
-            <TextInput
-              {...control}
-              className={form.amountBox}
-              inputMode="decimal"
-              maxLength={10}
-              value={draft.cost}
-              onChange={(event) => {
-                edit("cost")(event.target.value);
-              }}
-            />
-          )}
-        </Field>
-      </div>
+      <Particulars draft={draft} onEdit={edit} />
       <div className={form.fields}>
         <Figure label={formWords.kit} value={draft.kit} onChange={edit("kit")} />
         <Figure label={formWords.store} value={draft.store} onChange={edit("store")} />

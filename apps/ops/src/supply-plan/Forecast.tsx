@@ -1,12 +1,12 @@
 // The forecast on the Supply plan (docs/decisions/0182-the-events-calendar.md): one city at a time, each item's expected
 // use in each period of the latest run, with its high case; and beneath, how right the forecasts before it were.
 
+import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
@@ -14,8 +14,9 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { AccuracyPart } from "./Accuracy.tsx";
 import styles from "./supply-plan.module.css";
 import { RowHead } from "../components/RowHead.tsx";
+import { supplyPlanApi } from "./supply-plan-api.ts";
 
-type Forecast = paths["/api/stock/forecast"]["get"]["responses"][200]["content"]["application/json"];
+type Forecast = Success<paths["/api/stock/forecast"]["get"]>;
 
 const copy = supplyPlan.forecast;
 const DAY = 24 * 60 * 60 * 1000;
@@ -84,7 +85,7 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
 
 export function ForecastPanel({ cities }: { cities: readonly string[] }) {
   const [city, setCity] = useState(cities[0] ?? "");
-  const load = useCallback(() => client.get("/api/stock/forecast", { query: { city } }), [city]);
+  const load = useCallback(() => supplyPlanApi.forecast({ city }), [city]);
   const [loaded, retry] = useLoad(load);
   return (
     <Panel titleId="plan-forecast" title={copy.title}>

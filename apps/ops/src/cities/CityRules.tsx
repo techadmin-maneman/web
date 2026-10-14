@@ -5,12 +5,12 @@ import { Panel } from "@maneman/ui/Panel";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import type { Cities, CityRuleName } from "./types.ts";
+import { citiesApi } from "./cities-api.ts";
 
 const copy = cities.rules;
 
@@ -18,14 +18,7 @@ function RuleForm(props: { city: string; rule: CityRuleName; now: number | null;
   const [figure, setFigure] = useState(props.now === null ? "" : String(props.now));
   const name = copy.names[props.rule];
   const steps = useSteps(
-    async () =>
-      sentOf(
-        await client.patch("/api/cities/{name}/rules/{rule}", {
-          path: { name: props.city, rule: props.rule },
-          body: { value: Number(figure) },
-        }),
-        () => ({}),
-      ),
+    async () => sentOf(await citiesApi.setRule(props.city, props.rule, { value: Number(figure) }), () => ({})),
     props.onSaved,
   );
   const was = props.now === null ? copy.national : String(props.now);
@@ -76,12 +69,7 @@ function RuleRow(props: { city: string; rule: CityRuleName; own: number | null; 
         <ActionCheck
           label={copy.back}
           question={copy.backQuestion(name, props.city)}
-          send={async () =>
-            sentOf(
-              await client.delete("/api/cities/{name}/rules/{rule}", { path: { name: props.city, rule: props.rule } }),
-              () => ({}),
-            )
-          }
+          send={async () => sentOf(await citiesApi.removeRule(props.city, props.rule), () => ({}))}
           onDone={props.onSaved}
           errors={copy.errors}
         />

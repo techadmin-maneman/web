@@ -13,7 +13,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { api, type Partner, type Partners as PartnerList } from "../api.ts";
+import { type Partner, type Partners as PartnerList } from "../api.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { BOOKING_URL } from "../content/common.ts";
 import { partners as copy } from "../content/partners.ts";
@@ -26,6 +26,7 @@ import form from "../components/forms.module.css";
 import styles from "./partners.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { referralsApi } from "./referrals-api.ts";
 
 /** The site the partner's link opens: the environment's own. */
 const SITE = new URL(BOOKING_URL[import.meta.env.MM_ENV]);
@@ -47,7 +48,7 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
   const paused = partner.paused_at !== null;
   const send = async () => {
     setStep("sending");
-    const answer = await api.pausePartner(partner.id, !paused);
+    const answer = await referralsApi.pausePartner(partner.id, !paused);
     if (!answer.ok) {
       setStep({ code: answer.code, fields: answer.fields });
       return;
@@ -195,7 +196,7 @@ function PartnerTable(row: RowProps) {
 }
 
 export function Partners() {
-  const [loaded, retry] = useLoad(api.partners);
+  const [loaded, retry] = useLoad(referralsApi.partners);
   /** The list as the last change left it, so the panel follows a change without reading it again. */
   const [changed, setChanged] = useState<PartnerList | null>(null);
   const [adding, setAdding] = useState(false);

@@ -5,10 +5,11 @@
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type Partner, type Partners, type PartnerTerms } from "../api.ts";
+import { type Partner, type Partners, type PartnerTerms } from "../api.ts";
 import { partners as copy } from "../content/partners.ts";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
+import { referralsApi } from "./referrals-api.ts";
 
 const { form: formWords, check } = copy;
 
@@ -166,9 +167,12 @@ export function PartnerForm(props: {
   const terms = termsOf(draft);
   const steps = useSteps(
     async () =>
-      sentOf(partner === null ? await api.addPartner(terms) : await api.changePartner(partner.id, terms), (list) => ({
-        list,
-      })),
+      sentOf(
+        partner === null ? await referralsApi.addPartner(terms) : await referralsApi.changePartner(partner.id, terms),
+        (list) => ({
+          list,
+        }),
+      ),
     (sent) => {
       props.onDone(sent.list);
     },

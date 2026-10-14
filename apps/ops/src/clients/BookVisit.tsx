@@ -13,7 +13,6 @@ import { addDays, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/date
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import {
-  api,
   type BookingWindow,
   type VisitAvailability,
   type VisitBooked,
@@ -24,6 +23,7 @@ import { clients, dispatch } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
 import { Choose, CoverChoice } from "./book-choices.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.book;
 
@@ -193,7 +193,7 @@ function slotOf(offered: VisitAvailability, choice: Choice, picked: Picked) {
 function useAvailability(clientId: string, choice: Choice, tier: string | undefined, from: string | undefined) {
   const load = useCallback(
     () =>
-      api.visitAvailability({
+      clientsApi.visitAvailability({
         client: clientId,
         kind: kindOf(choice),
         ...(tier === undefined ? {} : { tier }),
@@ -245,7 +245,7 @@ function BookingForm({
     once(async () => {
       if (day === undefined || window === undefined) return;
       setFailed(null);
-      const answer = await api.bookVisit(
+      const answer = await clientsApi.bookVisit(
         visitOf({
           clientId,
           choice,

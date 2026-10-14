@@ -7,10 +7,11 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useState } from "react";
-import { api, type Task } from "../api.ts";
+import { type Task } from "../api.ts";
 import { tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./tasks.module.css";
+import { tasksApi } from "./tasks-api.ts";
 
 const copy = tasks.link;
 
@@ -41,7 +42,7 @@ export function PaymentLinkActions({ task, subject }: { task: Task; subject: str
     once(async () => {
       setDone("");
       setFailed(null);
-      const answer = await api.resendPaymentLink(task.id);
+      const answer = await tasksApi.resendPaymentLink(task.id);
       if (answer.ok) setDone(copy.outcomes[answer.body.outcome]);
       else setFailed(errorLine(answer.code));
     });

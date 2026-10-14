@@ -14,7 +14,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState, type ReactNode } from "react";
-import { api, type DiscountCode, type DiscountCodes as DiscountCodeList } from "../api.ts";
+import { type DiscountCode, type DiscountCodes as DiscountCodeList } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -26,6 +26,7 @@ import { DiscountCodeForm } from "./DiscountCodeForm.tsx";
 import { FindForm } from "./FindCode.tsx";
 import form from "../components/forms.module.css";
 import styles from "./discount-codes.module.css";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.discountCodes;
 const columns = copy.columns;
@@ -84,7 +85,7 @@ function SwitchOffCheck({ code, onDone, onBack }: { code: DiscountCode; onDone: 
       label={copy.switchOff}
       question={copy.switchTitle(code.code)}
       lines={[copy.switchLine(code.uses)]}
-      send={async () => sentOf(await api.switchOffDiscountCode(code.id), () => ({}))}
+      send={async () => sentOf(await settingsApi.switchOffDiscountCode(code.id), () => ({}))}
       onDone={onDone}
       errors={copy.errors}
       onCancel={onBack}
@@ -145,7 +146,7 @@ function CodeActingRow({ code, span, acting, onAct, onDone }: { code: DiscountCo
           <div className={styles.ask}>
             <DeleteAction
               name={code.code}
-              send={() => api.deleteDiscountCode(code.id)}
+              send={() => settingsApi.deleteDiscountCode(code.id)}
               refusal={(refused) =>
                 refused === "in_use" ? copy.inUse : errorText(copy.errors, { code: refused, fields: [] })
               }
@@ -303,7 +304,7 @@ function SwitchedOff({ codes, ...row }: { codes: readonly DiscountCode[] } & Row
 
 export function DiscountCodes() {
   const [finding, setFinding] = useState<string | null>(null);
-  const load = useCallback(() => api.discountCodes(finding), [finding]);
+  const load = useCallback(() => settingsApi.discountCodes(finding), [finding]);
   const [loaded, retry] = useLoad(load);
   /** The list as it was read again after a change, so what was typed above it stays. */
   const [refreshed, setRefreshed] = useState<DiscountCodeList | null>(null);
@@ -322,7 +323,7 @@ export function DiscountCodes() {
     setFinding(code);
   };
   const refresh = async () => {
-    const answer = await api.discountCodes(finding);
+    const answer = await settingsApi.discountCodes(finding);
     if (answer.ok) setRefreshed(answer.body);
   };
   const row: RowProps = {

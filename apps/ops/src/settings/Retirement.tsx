@@ -6,10 +6,11 @@
 import { Field, DateInput, Fieldset } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Consumable, type Consumables } from "../api.ts";
+import { type Consumable, type Consumables } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.consumables;
 const words = copy.retiring;
@@ -27,7 +28,9 @@ export function Restoring({ consumable, onSaved, onCancel }: Props) {
       <ActionCheck
         label={copy.restore}
         question={words.restore(consumable.name)}
-        send={async () => sentOf(await api.restoreConsumable(consumable.code), (consumables) => ({ consumables }))}
+        send={async () =>
+          sentOf(await settingsApi.restoreConsumable(consumable.code), (consumables) => ({ consumables }))
+        }
         onDone={(sent) => {
           onSaved(sent.consumables, words.done);
         }}
@@ -42,7 +45,7 @@ export function Restoring({ consumable, onSaved, onCancel }: Props) {
 export function Retiring({ consumable, today, onSaved, onCancel }: Props & { readonly today: string }) {
   const [from, setFrom] = useState(today);
   const steps = useSteps(
-    async () => sentOf(await api.retireConsumable(consumable.code, from), (consumables) => ({ consumables })),
+    async () => sentOf(await settingsApi.retireConsumable(consumable.code, from), (consumables) => ({ consumables })),
     (sent) => {
       onSaved(sent.consumables, words.done);
     },

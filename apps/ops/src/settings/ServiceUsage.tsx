@@ -7,7 +7,7 @@ import { Field, Fieldset, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Consumables, type ServiceUse } from "../api.ts";
+import { type Consumables, type ServiceUse } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
@@ -15,6 +15,7 @@ import { review } from "../content/common.ts";
 import form from "../components/forms.module.css";
 import styles from "./consumables.module.css";
 import { SettingForm, sentOf, useSteps, type Sent } from "./SettingForm.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.consumables;
 const words = copy.usage;
@@ -137,7 +138,7 @@ export function ServiceUsage({ consumables, onSaved }: ServiceUsageProps) {
   const steps = useSteps(
     async (): Promise<Sent<{ next: Consumables }>> => {
       if (service === undefined) return { ok: false, code: "not_found" };
-      const answer = await api.setServiceUsage({ visit_type: service.visit_type, tier: service.tier, items });
+      const answer = await settingsApi.setServiceUsage({ visit_type: service.visit_type, tier: service.tier, items });
       return sentOf(answer, (next) => ({ next }));
     },
     (sent) => {

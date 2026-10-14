@@ -12,7 +12,6 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { addDays, fullDate, listDate, todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import {
-  api,
   type Leave,
   type Roster as RosterBook,
   type Technician,
@@ -28,6 +27,7 @@ import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddTechnician } from "./TechnicianForms.tsx";
 import styles from "./technicians.module.css";
+import { techniciansApi } from "./technicians-api.ts";
 
 /** The route's period ends the day after the last one counted; the note names that last day. */
 const lastDay = (exclusiveEnd: string) => addDays(exclusiveEnd, -1);
@@ -147,10 +147,10 @@ function RosterTable({
 }
 
 function Roster() {
-  const [loaded, retry] = useLoad(api.technicians);
+  const [loaded, retry] = useLoad(techniciansApi.technicians);
   // The roster carries no period, so the figures are a read of their own; the
   // table is one table either way, and waits for both.
-  const [work, retryWork] = useLoad(api.technicianWork);
+  const [work, retryWork] = useLoad(techniciansApi.technicianWork);
   // The roster as read again after a technician is added.
   const [fresh, setFresh] = useState<RosterBook | null>(null);
   const [adding, setAdding] = useState(false);
@@ -173,7 +173,7 @@ function Roster() {
   const roster = fresh ?? loaded.value;
   const figures = new Map(work.value.technicians.map((each) => [each.technician_id, each]));
   const readAgain = async () => {
-    const answer = await api.technicians();
+    const answer = await techniciansApi.technicians();
     if (answer.ok) setFresh(answer.body);
   };
 

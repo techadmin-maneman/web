@@ -7,6 +7,7 @@ import { api, type Board } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { blockOn, type Job } from "./job.ts";
 import type { Notice } from "./landing.ts";
+import { dispatchApi } from "./dispatch-api.ts";
 
 interface Shown {
   readonly board: Board | null;
@@ -75,7 +76,7 @@ export function useClientCalls(refresh: () => Promise<Board | null>, setNotice: 
   /** The visit stays where it is. */
   const withdraw = useCallback(
     async (proposalId: string, name: string) => {
-      const answer = await api.withdrawProposal(proposalId);
+      const answer = await dispatchApi.withdrawProposal(proposalId);
       setNotice(
         answer.ok
           ? { tone: "done", text: dispatch.landing.withdrawn(name), call: null }

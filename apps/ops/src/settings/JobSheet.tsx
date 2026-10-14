@@ -7,13 +7,14 @@ import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
-import { api, type JobSheet as Sheet, type VisitType } from "../api.ts";
+import { type JobSheet as Sheet, type VisitType } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { ListEditor, ListRead } from "./ListEditor.tsx";
 import form from "../components/forms.module.css";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.jobSheet;
 
@@ -33,7 +34,7 @@ function Reasons(
 }
 
 export function JobSheet() {
-  const [loaded, retry] = useLoad(api.jobSheet);
+  const [loaded, retry] = useLoad(settingsApi.jobSheet);
   /** The sheet after a save, so "Set by" follows without reading it again. */
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [kind, setKind] = useState<VisitType>("service");
@@ -83,7 +84,7 @@ export function JobSheet() {
           longest={current.max_label}
           itemLabel={copy.item}
           addLabel={copy.add}
-          send={(items) => api.setChecklist(kind, items)}
+          send={(items) => settingsApi.setChecklist(kind, items)}
           pick={(saved) => saved.checklists.find((each) => each.visit_type === kind) ?? checklist}
           onSaved={setSheet}
         />
@@ -94,7 +95,7 @@ export function JobSheet() {
         list={current.partial_reasons}
         most={current.max_partial_reasons}
         mayChange={mayChangeReasons}
-        send={(items) => api.setPartialReasons(items)}
+        send={(items) => settingsApi.setPartialReasons(items)}
         pick={(saved) => saved.partial_reasons}
         onSaved={setSheet}
         longest={current.max_label}
@@ -105,7 +106,7 @@ export function JobSheet() {
         list={current.lost_reasons}
         most={current.max_lost_reasons}
         mayChange={mayChangeLost}
-        send={(items) => api.setLostReasons(items)}
+        send={(items) => settingsApi.setLostReasons(items)}
         pick={(saved) => saved.lost_reasons}
         onSaved={setSheet}
         longest={current.max_label}

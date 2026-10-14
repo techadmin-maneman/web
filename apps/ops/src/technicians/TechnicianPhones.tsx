@@ -7,11 +7,12 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Device, type Technician } from "../api.ts";
+import { type Device, type Technician } from "../api.ts";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import styles from "./technicians.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { techniciansApi } from "./technicians-api.ts";
 
 const copy = technicians.phones;
 
@@ -42,7 +43,7 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
 
   const revoke = async () => {
     setRevoking({ step: "sending" });
-    const answer = await api.revokeDevice(technician.id, phone.device_id);
+    const answer = await techniciansApi.revokeDevice(technician.id, phone.device_id);
     if (answer.ok) setRevoking({ step: "revoked", at: answer.body.revoked_at });
     else setRevoking({ step: "failed", code: answer.code });
   };
@@ -124,7 +125,7 @@ function SignInStopped({ technician, since }: { technician: Technician; since: s
 
   const allow = async () => {
     setAllowing({ step: "sending" });
-    const answer = await api.allowSignIn(technician.id);
+    const answer = await techniciansApi.allowSignIn(technician.id);
     setAllowing(answer.ok ? { step: "allowed" } : { step: "failed", code: answer.code });
   };
 

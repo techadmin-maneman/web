@@ -15,7 +15,7 @@ import { fullMonth, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
-import { api, type PartnerStatement, type PartnerStatements } from "../api.ts";
+import { type PartnerStatement, type PartnerStatements } from "../api.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { partnerCommission } from "../content/partner-commission.ts";
 import { useAccess } from "../lib/access.ts";
@@ -26,6 +26,7 @@ import { PayoutForm } from "./PayoutForm.tsx";
 import form from "../components/forms.module.css";
 import styles from "./partner-commission.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = partnerCommission;
 const columns = copy.columns;
@@ -139,7 +140,7 @@ function StatementActingRow({
         <div className={styles.ask}>
           <DeleteAction
             name={copy.paymentTo(statement.name, fullMonth(statements.month))}
-            send={() => api.deletePartnerPayout(statement.channel_id, statements.month)}
+            send={() => settingsApi.deletePartnerPayout(statement.channel_id, statements.month)}
             refusal={(refused) => errorText(copy.errors, { code: refused, fields: [] })}
             onDeleted={(next) => {
               onDone(next, copy.done.deleted);
@@ -231,7 +232,7 @@ function MonthChoice({ statements, onMonth }: { statements: PartnerStatements; o
 
 export function PartnerCommission() {
   const [month, setMonth] = useState<string | null>(null);
-  const load = useCallback(() => api.partnerStatements(month), [month]);
+  const load = useCallback(() => settingsApi.partnerStatements(month), [month]);
   const [loaded, retry] = useLoad(load);
   /** The month as the last change left it, so the page follows a change without reading it again. */
   const [changed, setChanged] = useState<PartnerStatements | null>(null);

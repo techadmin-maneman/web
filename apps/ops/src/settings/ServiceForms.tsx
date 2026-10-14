@@ -6,11 +6,12 @@ import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Kind, type OpsService, type Price, type ServiceCatalogue } from "../api.ts";
+import { type Kind, type OpsService, type Price, type ServiceCatalogue } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { PRICE_TIER, tierCodeOf } from "@rules/policy/services.ts";
 import form from "../components/forms.module.css";
 import { Refused, SettingForm, sentOf, useSteps, type Sent } from "./SettingForm.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.services;
 const formWords = copy.form;
@@ -35,7 +36,7 @@ export function RenameForm(props: {
   const { service } = props;
   const [name, setName] = useState(service.name);
   const steps = useSteps(async () => {
-    const answer = await api.renameService(service.kind, service.tier, name.trim());
+    const answer = await settingsApi.renameService(service.kind, service.tier, name.trim());
     return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
@@ -78,7 +79,7 @@ export function DescribeForm(props: {
   const was = service.description ?? "";
   const [line, setLine] = useState(was);
   const steps = useSteps(async () => {
-    const answer = await api.describeService(service.kind, service.tier, line.trim());
+    const answer = await settingsApi.describeService(service.kind, service.tier, line.trim());
     return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
@@ -120,7 +121,7 @@ export function LengthForm(props: {
   const { service, bounds } = props;
   const [minutes, setMinutes] = useState(String(service.minutes));
   const steps = useSteps(async () => {
-    const answer = await api.setServiceLength(service.kind, service.tier, Number(minutes));
+    const answer = await settingsApi.setServiceLength(service.kind, service.tier, Number(minutes));
     return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
@@ -165,7 +166,7 @@ export function RetireForm(props: {
   const { service, today } = props;
   const [from, setFrom] = useState(today);
   const steps = useSteps(async () => {
-    const answer = await api.retireService(service.kind, service.tier, from);
+    const answer = await settingsApi.retireService(service.kind, service.tier, from);
     return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
@@ -205,7 +206,7 @@ export function RestoreCheck(props: {
 }) {
   const { service } = props;
   const steps = useSteps(async () => {
-    const answer = await api.restoreService(service.kind, service.tier);
+    const answer = await settingsApi.restoreService(service.kind, service.tier);
     return sentOf(answer, savedCatalogue);
   }, props.onDone);
   return (
@@ -231,7 +232,7 @@ export function OrderCheck(props: {
 }) {
   const names = (services: readonly OpsService[]) => services.map((service) => service.name).join(", ");
   const steps = useSteps(async () => {
-    const answer = await api.orderServices(
+    const answer = await settingsApi.orderServices(
       props.kind,
       props.now.map((service) => service.tier),
     );
@@ -266,7 +267,7 @@ export function AddForm(props: {
   const [minutes, setMinutes] = useState(String(props.minutes));
   const codeSent = codeTyped ? code.trim() : (tierCodeOf(name) ?? "");
   const steps = useSteps(async () => {
-    const answer = await api.addService({ kind, name: name.trim(), tier: codeSent, minutes: Number(minutes) });
+    const answer = await settingsApi.addService({ kind, name: name.trim(), tier: codeSent, minutes: Number(minutes) });
     return sentOf(answer, savedCatalogue);
   }, props.onDone);
   const ready = name.trim() !== "" && PRICE_TIER.test(codeSent) && minutes.trim() !== "";

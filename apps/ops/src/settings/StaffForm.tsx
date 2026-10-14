@@ -5,7 +5,7 @@ import { Field, Checkbox, Fieldset, Select, TextInput } from "@maneman/ui/Field"
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
-import { api, type StaffList, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
+import { type StaffList, type StaffGrant, type StaffPerson, type StaffSave } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { review } from "../content/common.ts";
 import {
@@ -24,6 +24,7 @@ import styles from "./staff.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.staff;
 
@@ -153,7 +154,7 @@ export function StaffForm(props: {
   const [draft, setDraft] = useState<Draft>(draftOf(person));
   const sent: StaffSave = { email: draft.email.trim(), active: draft.active, grants: [...draft.grants] };
   const steps = useSteps(
-    async () => sentOf(await api.saveStaff(sent), (next) => ({ next })),
+    async () => sentOf(await settingsApi.saveStaff(sent), (next) => ({ next })),
     (done) => {
       onSaved(done.next);
     },

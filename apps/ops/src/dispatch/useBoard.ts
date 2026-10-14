@@ -4,7 +4,8 @@
 
 import type { Loaded } from "@maneman/ui/useLoad";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, type Board, type BoardQuery } from "../api.ts";
+import { type Board, type BoardQuery } from "../api.ts";
+import { dispatchApi } from "./dispatch-api.ts";
 
 /** How often the open board asks whether anything on it has changed, while nothing is in hand. */
 export const POLL_MS = 60_000;
@@ -42,7 +43,7 @@ export function useBoard(query: BoardQuery, paused: boolean): BoardData {
     const mine = reads.current;
     lastReadAt.current = Date.now();
     lastLookAt.current = lastReadAt.current;
-    const answer = await api.board({ from, city });
+    const answer = await dispatchApi.board({ from, city });
     if (mine !== reads.current) return null;
     if (!answer.ok) {
       const failed = { state: "failed", notFound: answer.status === 404, requestId: answer.requestId } as const;
@@ -66,7 +67,7 @@ export function useBoard(query: BoardQuery, paused: boolean): BoardData {
     }
     lastLookAt.current = now;
     const readsBefore = reads.current;
-    const answer = await api.boardVersion();
+    const answer = await dispatchApi.boardVersion();
     // A read started meanwhile, for this week or another, has the newer board.
     if (readsBefore !== reads.current) return;
     if (answer.ok && answer.body.version !== shownVersion.current) await read();

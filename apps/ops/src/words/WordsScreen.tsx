@@ -11,7 +11,7 @@ import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
-import { api, type Word } from "../api.ts";
+import { type Word } from "../api.ts";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column, type TableView } from "../components/useTableView.ts";
 import { words as copy } from "../content/words.ts";
@@ -23,6 +23,7 @@ import { LastPublished, PublishCheck } from "./WordsPublish.tsx";
 import form from "../components/forms.module.css";
 import styles from "./words.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
+import { wordsApi } from "./words-api.ts";
 
 /** What is open beneath a line's row: its form, opened with a wording, or its history. */
 type Acting =
@@ -151,7 +152,7 @@ function WordsTable({ view, row }: { view: TableView<Word>; row: RowProps }) {
 }
 
 function Words() {
-  const [loaded, retry] = useLoad(api.words);
+  const [loaded, retry] = useLoad(wordsApi.words);
   /** Each line as its last change left it, so the table follows a change without reading the list again. */
   const [changed, setChanged] = useState<ReadonlyMap<string, Word>>(new Map());
   const [acting, setActing] = useState<Acting>(null);

@@ -6,11 +6,12 @@ import { whoWords } from "../lib/who.ts";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { api, type WordsPublish } from "../api.ts";
+import { type WordsPublish } from "../api.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { words as copy } from "../content/words.ts";
 import form from "../components/forms.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { wordsApi } from "./words-api.ts";
 
 const { publish } = copy;
 
@@ -32,7 +33,7 @@ export function PublishCheck(props: {
   const [step, setStep] = useState<"checking" | "sending" | Failure>("checking");
   const send = async () => {
     setStep("sending");
-    const answer = await api.publishWords();
+    const answer = await wordsApi.publishWords();
     if (!answer.ok) {
       setStep({ code: answer.code, fields: answer.fields });
       return;

@@ -1,6 +1,7 @@
 // The events calendar on the Supply plan (docs/decisions/0182-the-events-calendar.md): the events still to end, each
 // taken off with a press, and one added with its city, its days and how much it lifts or drops demand.
 
+import type { Success } from "@maneman/web-kit/api";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -8,7 +9,6 @@ import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
@@ -17,8 +17,9 @@ import { dayAfter } from "./Forecast.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { supplyPlanApi } from "./supply-plan-api.ts";
 
-export type Calendar = paths["/api/demand-events"]["get"]["responses"][200]["content"]["application/json"];
+export type Calendar = Success<paths["/api/demand-events"]["get"]>;
 
 type Answer =
   | { readonly ok: true; readonly body: Calendar }
@@ -60,14 +61,12 @@ function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (
     draft.percent.trim() !== "" &&
     Number.isInteger(percent);
   const add = async () => {
-    const answer = await client.post("/api/demand-events", {
-      body: {
-        name: draft.name.trim(),
-        city: draft.city === "" ? null : draft.city,
-        starts_on: draft.startsOn,
-        ends_on: draft.endsOn,
-        uplift_percent: percent,
-      },
+    const answer = await supplyPlanApi.addDemandEvent({
+      name: draft.name.trim(),
+      city: draft.city === "" ? null : draft.city,
+      starts_on: draft.startsOn,
+      ends_on: draft.endsOn,
+      uplift_percent: percent,
     });
     if (onAnswer(answer)) setDraft(EMPTY);
   };
@@ -128,9 +127,7 @@ function EventRow({
             variant="outline"
             size="small"
             aria-label={copy.remove(event.name)}
-            onClick={() =>
-              void client.post("/api/demand-events/{id}/remove", { path: { id: event.id } }).then(onAnswer)
-            }
+            onClick={() => void supplyPlanApi.removeDemandEvent(event.id).then(onAnswer)}
           >
             {copy.removeShort}
           </Button>

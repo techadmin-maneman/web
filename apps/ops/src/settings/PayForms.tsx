@@ -7,11 +7,12 @@ import { Checkbox, DateInput, Field, NumberInput, Select, TextInput } from "@man
 import { shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { api, type PayKind, type TechnicianPay } from "../api.ts";
+import { type PayKind, type TechnicianPay } from "../api.ts";
 import { technicianPay } from "../content/technician-pay.ts";
 import { rateNow } from "./pay-rates.ts";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import form from "../components/forms.module.css";
+import { settingsApi } from "./settings-api.ts";
 
 const { form: formWords, check, errors } = technicianPay;
 
@@ -47,7 +48,7 @@ function NameField({ name, onName }: { name: string; onName: (name: string) => v
 export function AddGradeForm({ onDone, onCancel }: FormProps) {
   const [name, setName] = useState("");
   const steps = useSteps(
-    async () => sentOf(await api.addPayGrade(name.trim()), (pay) => ({ pay })),
+    async () => sentOf(await settingsApi.addPayGrade(name.trim()), (pay) => ({ pay })),
     (sent) => {
       onDone(sent.pay);
     },
@@ -75,7 +76,7 @@ export function AddGradeForm({ onDone, onCancel }: FormProps) {
 export function RenameGradeForm({ grade, onDone, onCancel }: FormProps & { readonly grade: Grade }) {
   const [name, setName] = useState(grade.name);
   const steps = useSteps(
-    async () => sentOf(await api.renamePayGrade(grade.id, name.trim()), (pay) => ({ pay })),
+    async () => sentOf(await settingsApi.renamePayGrade(grade.id, name.trim()), (pay) => ({ pay })),
     (sent) => {
       onDone(sent.pay);
     },
@@ -232,7 +233,7 @@ export function SetRateForm(props: FormProps & { readonly grade: Grade; readonly
   const steps = useSteps(
     async () =>
       sentOf(
-        await api.setPayRate({ grade_id: grade.id, city, kind: draft.kind, amount, from: draft.from }),
+        await settingsApi.setPayRate({ grade_id: grade.id, city, kind: draft.kind, amount, from: draft.from }),
         (body) => ({
           pay: body,
         }),
@@ -268,7 +269,8 @@ export function GradeOfForm(props: FormProps & { readonly technician: PayTechnic
   const nameOf = (id: string | null) =>
     pay.grades.find((each) => each.id === id)?.name ?? technicianPay.technicians.noGrade;
   const steps = useSteps(
-    async () => sentOf(await api.setPayGradeOf(technician.id, grade === "" ? null : grade), (body) => ({ pay: body })),
+    async () =>
+      sentOf(await settingsApi.setPayGradeOf(technician.id, grade === "" ? null : grade), (body) => ({ pay: body })),
     (sent) => {
       props.onDone(sent.pay);
     },

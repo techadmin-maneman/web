@@ -7,13 +7,13 @@ import { Field, Fieldset, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import type { Order, Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
 interface LineDraft {
   readonly received: string;
@@ -143,7 +143,7 @@ export function ReceiveForm(props: {
     (!foreign || RUPEES.test(extras.rate.trim()));
   const send = async () => {
     const body = receiptBody(order, lines, extras);
-    const answer = await client.post("/api/purchase-orders/{id}/receipts", { path: { id: order.id }, body });
+    const answer = await purchasingApi.receive(order.id, body);
     if (answer.ok) props.onReceived(answer.body, copy.receive.done);
     else setFailure({ code: answer.code, fields: answer.fields });
   };

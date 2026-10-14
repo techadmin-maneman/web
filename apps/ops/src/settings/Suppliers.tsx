@@ -7,7 +7,6 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -16,10 +15,11 @@ import { SupplierForm, type Supplier, type Suppliers as SupplierList } from "./S
 import { SupplierItems } from "./SupplierItems.tsx";
 import { ActionCheck, sentOf } from "./SettingForm.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.suppliers;
 
-const loadSuppliers = () => client.get("/api/suppliers");
+const loadSuppliers = () => settingsApi.suppliers();
 
 /** What the form beneath the table is doing: adding one, or changing the one named. */
 type Doing = { readonly kind: "add" } | { readonly kind: "change"; readonly id: string };
@@ -62,9 +62,7 @@ function Actions(props: {
           question={retired ? copy.restoreQuestion(supplier.name) : copy.retireQuestion(supplier.name)}
           send={async () =>
             sentOf(
-              await client.post(retired ? "/api/suppliers/{id}/restore" : "/api/suppliers/{id}/retire", {
-                path: { id: supplier.id },
-              }),
+              await (retired ? settingsApi.restoreSupplier(supplier.id) : settingsApi.retireSupplier(supplier.id)),
               (suppliers) => ({ suppliers }),
             )
           }

@@ -13,7 +13,7 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { api, type Held, type Referrer } from "../api.ts";
+import { type Held, type Referrer } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink } from "../components/Shell.tsx";
 import { referrals } from "../content.ts";
@@ -25,6 +25,7 @@ import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import styles from "./referrals.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { referralsApi } from "./referrals-api.ts";
 
 /** The partners' panel, fetched as the page draws it: it stays out of the console's first load. */
 const Partners = lazyScreen(() => import("./Partners.tsx").then((module) => module.Partners));
@@ -62,7 +63,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
 
   const decide = async (choice: Choice) => {
     setDecision({ step: "sending", choice });
-    const answer = await api.decideReferral(grant.id, choice, reason.trim());
+    const answer = await referralsApi.decideReferral(grant.id, choice, reason.trim());
     if (answer.ok) onDecided();
     else setDecision({ step: "failed", code: answer.code });
   };
@@ -170,7 +171,7 @@ function HeldGrant({ grant, now, mayDecide, onDecided }: HeldGrantProps) {
 
 /** The held queue. A decision can change the referrers' figures beneath, so each one tells the page. */
 function ReviewQueue({ onDecided }: { onDecided: () => void }) {
-  const [loaded, retry] = useLoad(api.held);
+  const [loaded, retry] = useLoad(referralsApi.held);
   const mayDecide = useAccess().mayCall("POST /api/referrals/{id}/decision");
   const copy = referrals.queue;
   if (loaded.state === "loading") return <Loading />;
@@ -216,7 +217,7 @@ function useReferrers(version: number) {
 
   useEffect(() => {
     let current = true;
-    void api.referrers().then((answer) => {
+    void referralsApi.referrers().then((answer) => {
       if (!current) return;
       setPages(
         answer.ok
@@ -231,7 +232,7 @@ function useReferrers(version: number) {
 
   const more = async (shown: Extract<Pages, { state: "loaded" }>) => {
     setPages({ ...shown, fetching: true });
-    const answer = await api.referrers(shown.next ?? undefined);
+    const answer = await referralsApi.referrers(shown.next ?? undefined);
     if (!answer.ok) {
       setPages({ ...shown, fetching: false });
       return;

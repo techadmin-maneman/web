@@ -8,7 +8,6 @@ import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
 import { useState } from "react";
-import { client } from "../api.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { useAccess } from "../lib/access.ts";
@@ -17,8 +16,9 @@ import { CountClasses, type CountTasks } from "./CountClasses.tsx";
 import { CountTaskPanel, whatOf } from "./CountTask.tsx";
 import { StartCount } from "./StartCount.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { countsApi } from "./counts-api.ts";
 
-const loadTasks = () => client.get("/api/count-tasks");
+const loadTasks = () => countsApi.countTasks();
 
 function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpener }) {
   if (countTasks.tasks.length === 0) return <p className={form.note}>{copy.none}</p>;

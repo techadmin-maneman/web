@@ -6,13 +6,14 @@ import { Button, RowButton } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
-import { api, type Word } from "../api.ts";
+import { type Word } from "../api.ts";
 import { words as copy } from "../content/words.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeOf } from "./WordForm.tsx";
 import form from "../components/forms.module.css";
 import styles from "./words.module.css";
 import { FormActions } from "../components/FormActions.tsx";
+import { wordsApi } from "./words-api.ts";
 
 const versions = copy.versions;
 
@@ -31,7 +32,7 @@ export function WordHistory(props: {
   readonly onClose: () => void;
 }) {
   const { word } = props;
-  const load = useCallback(() => api.wordHistory(word.key), [word.key]);
+  const load = useCallback(() => wordsApi.wordHistory(word.key), [word.key]);
   const [loaded, retry] = useLoad(load);
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;

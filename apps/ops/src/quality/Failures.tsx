@@ -1,23 +1,24 @@
 // Failure rates on the Quality page (docs/decisions/0188-failure-rates-and-value-at-risk.md): the pieces fitted in the
 // last year and how many failed, grouped one way at a time.
 
+import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { qualityApi } from "./quality-api.ts";
 
-type Rates = paths["/api/quality/failures"]["get"]["responses"][200]["content"]["application/json"];
+type Rates = Success<paths["/api/quality/failures"]["get"]>;
 type Way = "code" | "lot" | "supplier" | "technician";
 
 const WAYS: readonly Way[] = ["code", "lot", "supplier", "technician"];
-const loadRates = () => client.get("/api/quality/failures");
+const loadRates = () => qualityApi.failures();
 
 const groupsOf = (rates: Rates, way: Way) =>
   ({ code: rates.by_code, lot: rates.by_lot, supplier: rates.by_supplier, technician: rates.by_technician })[way];

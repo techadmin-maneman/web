@@ -1,11 +1,11 @@
 // Raising a custom order (docs/decisions/0174-custom-orders.md): made to the client's profile, from a supplier at its
 // price, with what the client pays and when the supplier promised it. Raising it sends the client the payment link.
 
+import type { Success } from "@maneman/web-kit/api";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { clients } from "../content.ts";
@@ -13,9 +13,9 @@ import { customOrders as copy } from "../content/custom-orders.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { clientsApi } from "./clients-api.ts";
 
-export type CustomOrders =
-  paths["/api/clients/{id}/custom-orders"]["get"]["responses"][200]["content"]["application/json"];
+export type CustomOrders = Success<paths["/api/clients/{id}/custom-orders"]["get"]>;
 
 const WAVES = ["straight", "slight_wave", "wavy", "curly"] as const;
 
@@ -134,16 +134,13 @@ export function RaiseCustomOrder({
   };
   const ready = draft.supplierId !== "" && draft.supplierPrice !== "" && smallest(draft.amount) >= 100;
   const raise = async () => {
-    const answer = await client.post("/api/clients/{id}/custom-orders", {
-      path: { id: clientId },
-      body: {
-        supplier_id: draft.supplierId,
-        supplier_price: smallest(draft.supplierPrice),
-        amount: smallest(draft.amount),
-        promised_on: draft.promised === "" ? null : draft.promised,
-        wave: WAVES.find((each) => each === draft.wave) ?? null,
-        note: draft.note.trim() === "" ? null : draft.note.trim(),
-      },
+    const answer = await clientsApi.raiseCustomOrder(clientId, {
+      supplier_id: draft.supplierId,
+      supplier_price: smallest(draft.supplierPrice),
+      amount: smallest(draft.amount),
+      promised_on: draft.promised === "" ? null : draft.promised,
+      wave: WAVES.find((each) => each === draft.wave) ?? null,
+      note: draft.note.trim() === "" ? null : draft.note.trim(),
     });
     if (answer.ok) onRaised(answer.body, copy.raise.raised);
     else setFailure({ code: answer.code, fields: answer.fields });

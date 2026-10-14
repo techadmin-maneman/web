@@ -9,7 +9,6 @@ import { Table } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -20,8 +19,9 @@ import type { Order, Orders } from "./types.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { purchasingApi } from "./purchasing-api.ts";
 
-type Answer = Awaited<ReturnType<typeof client.post<"/api/purchase-orders/{id}/send">>>;
+type Answer = Awaited<ReturnType<typeof purchasingApi.sendOrder>>;
 
 /** Whether the person signed in may approve the order now: not where they gave its first approval already. */
 function useApprovable(order: Order): boolean {
@@ -38,9 +38,8 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
   const approvable = useApprovable(order);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
-  const path = { path: { id: order.id } };
   const step = async (to: "approve" | "send", said: string) => {
-    onAnswer(await client.post(`/api/purchase-orders/{id}/${to}`, path), said);
+    onAnswer(await (to === "approve" ? purchasingApi.approveOrder(order.id) : purchasingApi.sendOrder(order.id)), said);
   };
   const cancellable =
     ["drafted", "approved", "sent"].includes(order.state) && access.mayCall("POST /api/purchase-orders/{id}/cancel");
@@ -89,11 +88,9 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
               size="small"
               disabled={reason.trim() === ""}
               onClick={() =>
-                void client
-                  .post("/api/purchase-orders/{id}/cancel", { ...path, body: { reason: reason.trim() } })
-                  .then((answer) => {
-                    onAnswer(answer, copy.order.cancelled);
-                  })
+                void purchasingApi.cancelOrder(order.id, reason.trim()).then((answer) => {
+                  onAnswer(answer, copy.order.cancelled);
+                })
               }
             >
               {copy.order.confirmCancel}

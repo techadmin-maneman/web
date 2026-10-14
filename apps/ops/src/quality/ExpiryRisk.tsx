@@ -1,22 +1,23 @@
 // Value at risk on the Quality page (docs/decisions/0188-failure-rates-and-value-at-risk.md): each lot that will not
 // all be used before it expires at its place's pace, valued at its landed cost, with what to do about it.
 
+import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
-import { client } from "../api.ts";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { fullDate } from "@maneman/web-kit/dates";
 import { RowHead } from "../components/RowHead.tsx";
+import { qualityApi } from "./quality-api.ts";
 
-type Risk = paths["/api/stock/expiry-risk"]["get"]["responses"][200]["content"]["application/json"];
+type Risk = Success<paths["/api/stock/expiry-risk"]["get"]>;
 type Lot = Risk["lots"][number];
 
-const loadRisk = () => client.get("/api/stock/expiry-risk");
+const loadRisk = () => qualityApi.expiryRisk();
 
 const quantity = (value: number) => value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
 

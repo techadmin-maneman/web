@@ -6,13 +6,13 @@ import { Table } from "@maneman/ui/Table";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import type { Cities } from "./types.ts";
 import { RowHead } from "../components/RowHead.tsx";
+import { citiesApi } from "./cities-api.ts";
 
 const copy = cities.registrations;
 
@@ -50,7 +50,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
     books_branch_id: draft.branch.trim() === "" ? null : draft.branch.trim(),
   };
   const steps = useSteps(
-    async () => sentOf(await client.post("/api/gst-registrations", { body }), () => ({})),
+    async () => sentOf(await citiesApi.addGstRegistration(body), () => ({})),
     () => {
       setDraft(EMPTY);
       onSaved();
@@ -135,12 +135,7 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
                       ariaLabel={copy.removeLabel(registration.state_code)}
                       question={copy.removeQuestion(registration.state_code)}
                       send={async () =>
-                        sentOf(
-                          await client.delete("/api/gst-registrations/{state_code}", {
-                            path: { state_code: registration.state_code },
-                          }),
-                          () => ({}),
-                        )
+                        sentOf(await citiesApi.removeGstRegistration(registration.state_code), () => ({}))
                       }
                       onDone={saved(copy.removed)}
                       errors={copy.errors}

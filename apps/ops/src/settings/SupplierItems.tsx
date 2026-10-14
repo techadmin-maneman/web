@@ -8,13 +8,13 @@ import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { inCurrency, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
-import { client } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import type { Supplier, Suppliers } from "./SupplierForm.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.suppliers;
 const words = copy.item;
@@ -138,8 +138,7 @@ function ItemForm({
     lead_time_days: Number(draft.lead),
   };
   const steps = useSteps(
-    async () =>
-      sentOf(await client.post("/api/suppliers/{id}/items", { path: { id: supplier.id }, body }), (next) => ({ next })),
+    async () => sentOf(await settingsApi.setSupplierItem(supplier.id, body), (next) => ({ next })),
     (sent) => {
       onSaved(sent.next, words.saved);
       setDraft(draftOf(suppliers, null));
@@ -207,12 +206,7 @@ function RemoveItem(props: {
       label={words.remove}
       question={words.removeQuestion(props.name, props.supplier.name)}
       send={async () =>
-        sentOf(
-          await client.post("/api/suppliers/{id}/items/{code}/remove", {
-            path: { id: props.supplier.id, code: props.code },
-          }),
-          (next) => ({ next }),
-        )
+        sentOf(await settingsApi.removeSupplierItem(props.supplier.id, props.code), (next) => ({ next }))
       }
       onDone={(sent) => {
         setAsking(false);

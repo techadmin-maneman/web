@@ -11,10 +11,11 @@ import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useRef, useState, type RefObject } from "react";
-import { api, type ClosableGroup, type Task, type TaskGroup } from "../api.ts";
+import { type ClosableGroup, type Task, type TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
 import styles from "./tasks.module.css";
 import { useRereadOnChange } from "../components/Refusal.tsx";
+import { tasksApi } from "./tasks-api.ts";
 
 type Group = TaskGroup["group"];
 
@@ -225,7 +226,7 @@ export function TaskActions({
   const makeOwner = (next: string | null, back: RefObject<HTMLButtonElement | null>) =>
     once(async () => {
       setFailed(null);
-      const answer = await api.setTaskOwner(group, task.id, next);
+      const answer = await tasksApi.setTaskOwner(group, task.id, next);
       if (!answer.ok) {
         setFailed({ code: answer.code, closing: false });
         return;
@@ -237,7 +238,7 @@ export function TaskActions({
   const close = (as: ClosableGroup, reason: string) =>
     once(async () => {
       setFailed(null);
-      const answer = await api.closeTask(as, task.id, reason);
+      const answer = await tasksApi.closeTask(as, task.id, reason);
       if (answer.ok) onClosed();
       else setFailed({ code: answer.code, closing: true });
     });
