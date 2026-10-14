@@ -4,6 +4,7 @@
 // its audit entry, which keeps IDs, codes and amounts, never a grade's name.
 
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 export const VISIT_PAY_KINDS = ["consultation", "one_visit", "first_fit", "service", "replacement", "no_show"] as const;
 type VisitPayKind = (typeof VISIT_PAY_KINDS)[number];
@@ -46,17 +47,22 @@ export interface TechnicianPay {
 const RATE_COLUMNS = "grade_id, city, visit_kind AS kind, amount, effective_from, set_by, set_at";
 
 export async function technicianPay(db: D1Database, today: string): Promise<TechnicianPay> {
-  const [grades, technicians, rates] = await db.batch([
-    db.prepare(
-      `SELECT g.id, g.name, (SELECT COUNT(*) FROM technicians t WHERE t.pay_grade_id = g.id AND t.active = 1) AS technicians
+  const { grades, technicians, rates } = await readAll(db, {
+    grades: read<PayGrade>(
+      db.prepare(
+        `SELECT g.id, g.name, (SELECT COUNT(*) FROM technicians t WHERE t.pay_grade_id = g.id AND t.active = 1) AS technicians
        FROM pay_grades g ORDER BY g.name`,
+      ),
     ),
-    db.prepare(
-      "SELECT id, name, city, pay_grade_id AS grade_id FROM technicians WHERE active = 1 AND test_record = 0 ORDER BY name",
+    technicians: read<PayTechnician>(
+      db.prepare(
+        "SELECT id, name, city, pay_grade_id AS grade_id FROM technicians WHERE active = 1 AND test_record = 0 ORDER BY name",
+      ),
     ),
-    db
-      .prepare(
-        `SELECT ${RATE_COLUMNS} FROM (
+    rates: read<PayRate>(
+      db
+        .prepare(
+          `SELECT ${RATE_COLUMNS} FROM (
            SELECT r.*, row_number() OVER (
              PARTITION BY grade_id, coalesce(city, ''), visit_kind ORDER BY effective_from DESC) AS latest
            FROM visit_pay_rates r WHERE effective_from <= ?1)
@@ -64,13 +70,14 @@ export async function technicianPay(db: D1Database, today: string): Promise<Tech
          UNION ALL
          SELECT ${RATE_COLUMNS} FROM visit_pay_rates WHERE effective_from > ?1
          ORDER BY grade_id, city, kind, effective_from`,
-      )
-      .bind(today),
-  ]);
+        )
+        .bind(today),
+    ),
+  });
   return {
-    grades: (grades?.results ?? []) as PayGrade[],
-    technicians: (technicians?.results ?? []) as PayTechnician[],
-    rates: (rates?.results ?? []) as PayRate[],
+    grades: grades,
+    technicians: technicians,
+    rates: rates,
   };
 }
 

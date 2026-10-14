@@ -8,6 +8,7 @@ import { auditStatement } from "../platform/audit.ts";
 import { labelColumns, labelFields, labelsFound, labelsHeld, labelsOf, type CountedLine } from "./count-labels.ts";
 import type { Place } from "./stock-places.ts";
 import { count, type Written } from "./stock.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 type TaskState = "open" | "recount" | "sign_off" | "done";
 
@@ -202,22 +203,24 @@ type DifferenceRow = Pick<Difference, "code" | "name" | "held" | "counted" | "re
 
 /** What the place holds of each code, and which of them are hair systems. */
 async function heldNow(db: D1Database, place: Place, codes: readonly string[]) {
-  const [held, pieces] = await db.batch<{ code: string; quantity: number }>([
-    db
-      .prepare(
-        `SELECT consumable_code AS code, quantity FROM stock_balances
+  const { held, pieces } = await readAll(db, {
+    held: read<{ code: string; quantity: number }>(
+      db
+        .prepare(
+          `SELECT consumable_code AS code, quantity FROM stock_balances
          WHERE place = ?1 AND consumable_code IN (SELECT value FROM json_each(?2))`,
-      )
-      .bind(place, JSON.stringify(codes)),
-    db
-      .prepare("SELECT code, 0 AS quantity FROM hair_systems WHERE code IN (SELECT value FROM json_each(?1))")
-      .bind(JSON.stringify(codes)),
-  ]);
-  return {
-    held: new Map(
-      ((held?.results ?? []) as { code: string; quantity: number }[]).map((row) => [row.code, row.quantity]),
+        )
+        .bind(place, JSON.stringify(codes)),
     ),
-    pieces: new Set(((pieces?.results ?? []) as { code: string }[]).map((row) => row.code)),
+    pieces: read<{ code: string }>(
+      db
+        .prepare("SELECT code, 0 AS quantity FROM hair_systems WHERE code IN (SELECT value FROM json_each(?1))")
+        .bind(JSON.stringify(codes)),
+    ),
+  });
+  return {
+    held: new Map(held.map((row) => [row.code, row.quantity])),
+    pieces: new Set(pieces.map((row) => row.code)),
   };
 }
 

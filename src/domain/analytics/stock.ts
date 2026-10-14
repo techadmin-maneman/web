@@ -8,6 +8,7 @@ import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { levelAt } from "../../policy/stock.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
 import { tierOf } from "../../config/visit-types.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 interface Item {
   readonly code: string;
@@ -99,31 +100,39 @@ function weeksOf(
 
 /** The catalogue, the places, the ledger and what each completed visit was expected to use. */
 async function readStock(db: D1Database) {
-  const [items, places, movements, expected] = await db.batch<Item | StockPlace | Movement | Expected>([
-    db.prepare("SELECT code, name, unit, unit_cost, reorder_kit, reorder_central, reorder_store FROM consumables"),
-    db.prepare(
-      `SELECT p.id, p.kind, COALESCE(p.city, t.city) AS city, p.technician_id
+  const { items, places, movements, expected } = await readAll(db, {
+    items: read<Item>(
+      db.prepare("SELECT code, name, unit, unit_cost, reorder_kit, reorder_central, reorder_store FROM consumables"),
+    ),
+    places: read<StockPlace>(
+      db.prepare(
+        `SELECT p.id, p.kind, COALESCE(p.city, t.city) AS city, p.technician_id
        FROM stock_places p LEFT JOIN technicians t ON t.id = p.technician_id
        WHERE p.technician_id IS NULL OR t.test_record = 0`,
+      ),
     ),
-    db.prepare(
-      `SELECT m.id, m.created_at, COALESCE(m.place_id, m.technician_id, 'central') AS place,
+    movements: read<Movement>(
+      db.prepare(
+        `SELECT m.id, m.created_at, COALESCE(m.place_id, m.technician_id, 'central') AS place,
          m.consumable_code AS code, m.reason, m.quantity, m.appointment_id
        FROM stock_movements m LEFT JOIN technicians t ON t.id = m.technician_id
        WHERE m.technician_id IS NULL OR t.test_record = 0`,
+      ),
     ),
-    db.prepare(
-      `SELECT a.technician_id, a.window_start, u.consumable_code AS code, u.quantity
+    expected: read<Expected>(
+      db.prepare(
+        `SELECT a.technician_id, a.window_start, u.consumable_code AS code, u.quantity
        FROM appointments a JOIN technicians t ON t.id = a.technician_id AND t.test_record = 0
        JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
        WHERE a.status = 'completed' AND a.deleted_at IS NULL`,
+      ),
     ),
-  ]);
+  });
   return {
-    catalogue: (items?.results ?? []) as Item[],
-    places: (places?.results ?? []) as StockPlace[],
-    moves: (movements?.results ?? []) as Movement[],
-    expected: (expected?.results ?? []) as Expected[],
+    catalogue: items,
+    places: places,
+    moves: movements,
+    expected: expected,
   };
 }
 

@@ -6,6 +6,7 @@ import { careMinutesBetween, replyBy, type CareHours } from "../../policy/care-h
 import { DAY_MS } from "../../lib/durations.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 interface Replies {
   readonly chats: number;
@@ -73,26 +74,32 @@ function countBy<T>(rows: readonly T[], keyOf: (row: T) => string | null): Map<s
 export async function careNumbers(db: D1Database, days: number, hours: CareHours, now: Date): Promise<CareNumbers> {
   const to = indiaDate(now);
   const since = new Date(now.getTime() - days * DAY_MS).toISOString();
-  const [chatRows, openRows, remedyRows] = await db.batch([
-    db
-      .prepare(
-        `SELECT c.opened_at, c.closed_at, c.close_reason, o.email AS owner,
+  const { chatRows, openRows, remedyRows } = await readAll(db, {
+    chatRows: read<ChatRow>(
+      db
+        .prepare(
+          `SELECT c.opened_at, c.closed_at, c.close_reason, o.email AS owner,
            (SELECT MIN(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
               AND m.author <> ?2 AND m.sent_at >= c.opened_at) AS first_reply_at
          FROM conversations c LEFT JOIN care_owners o ON o.person_id = c.person_id
          WHERE c.opened_at >= ?1`,
-      )
-      .bind(since, AUTO_REPLY),
-    db.prepare("SELECT state, last_inbound_at FROM conversations WHERE state IN ('open', 'waiting')"),
-    db
-      .prepare(
-        `SELECT reason, COUNT(*) AS remedies, SUM(visits) AS visits FROM remedies
+        )
+        .bind(since, AUTO_REPLY),
+    ),
+    openRows: read<{ state: string; last_inbound_at: string | null }>(
+      db.prepare("SELECT state, last_inbound_at FROM conversations WHERE state IN ('open', 'waiting')"),
+    ),
+    remedyRows: read<CareNumbers["remedies"][number]>(
+      db
+        .prepare(
+          `SELECT reason, COUNT(*) AS remedies, SUM(visits) AS visits FROM remedies
          WHERE given_at >= ?1 AND state = 'given' GROUP BY reason ORDER BY remedies DESC`,
-      )
-      .bind(since),
-  ]);
-  const chats = (chatRows?.results ?? []) as ChatRow[];
-  const open = (openRows?.results ?? []) as { state: string; last_inbound_at: string | null }[];
+        )
+        .bind(since),
+    ),
+  });
+  const chats = chatRows;
+  const open = openRows;
   const waiting = open.filter((chat) => chat.state === "open");
   const closedSameDay = chats.filter(
     (chat) => chat.closed_at !== null && indiaDate(new Date(chat.closed_at)) === indiaDate(new Date(chat.opened_at)),
@@ -112,7 +119,7 @@ export async function careNumbers(db: D1Database, days: number, hours: CareHours
     reasons: [...countBy(chats, (chat) => chat.close_reason)]
       .map(([reason, rows]) => ({ reason, chats: rows.length }))
       .sort((one, other) => other.chats - one.chats),
-    remedies: (remedyRows?.results ?? []) as CareNumbers["remedies"],
+    remedies: remedyRows,
     by_person: [...countBy(chats, (chat) => chat.owner)]
       .map(([email, rows]) => ({ email, ...repliesOf(rows, hours) }))
       .sort((one, other) => other.chats - one.chats),

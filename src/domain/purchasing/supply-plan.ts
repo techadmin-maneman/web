@@ -16,6 +16,7 @@ import {
   supplierFor,
   type PeriodForecast,
 } from "../../policy/supply-plan.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 type ForecastRow = { consumable_code: string; city: string; period: number; expected: number; high: number };
 type TermsRow = {
@@ -51,49 +52,59 @@ async function standing(db: D1Database, runId: string) {
     .bind(runId)
     .all<ForecastRow>();
   const codes = JSON.stringify([...new Set(forecast.map((row) => row.consumable_code))]);
-  const [terms, held, moving, reserved, coming, rooms] = await db.batch<
-    TermsRow | HeldRow | ByCity | { id: string; kind: string; city: string | null }
-  >([
-    db
-      .prepare(
-        `SELECT i.consumable_code AS code, i.supplier_id, i.unit_price, i.pack_size, i.minimum_order, i.lead_time_days
+  const { terms, held, moving, reserved, coming, rooms } = await readAll(db, {
+    terms: read<TermsRow>(
+      db
+        .prepare(
+          `SELECT i.consumable_code AS code, i.supplier_id, i.unit_price, i.pack_size, i.minimum_order, i.lead_time_days
          FROM supplier_items i JOIN suppliers s ON s.id = i.supplier_id
          WHERE i.consumable_code IN (SELECT value FROM json_each(?1)) AND s.retired_at IS NULL`,
-      )
-      .bind(codes),
-    db
-      .prepare(
-        `SELECT b.consumable_code AS code, p.kind, COALESCE(p.city, t.city) AS city, SUM(b.quantity) AS held
+        )
+        .bind(codes),
+    ),
+    held: read<HeldRow>(
+      db
+        .prepare(
+          `SELECT b.consumable_code AS code, p.kind, COALESCE(p.city, t.city) AS city, SUM(b.quantity) AS held
          FROM stock_balances b JOIN stock_places p ON p.id = b.place LEFT JOIN technicians t ON t.id = p.technician_id
          WHERE b.consumable_code IN (SELECT value FROM json_each(?1)) AND b.quantity > 0 GROUP BY 1, 2, 3`,
-      )
-      .bind(codes),
-    db.prepare(
-      `SELECT x.consumable_code AS code, COALESCE(p.city, t.city) AS city, SUM(x.quantity) AS quantity
+        )
+        .bind(codes),
+    ),
+    moving: read<ByCity>(
+      db.prepare(
+        `SELECT x.consumable_code AS code, COALESCE(p.city, t.city) AS city, SUM(x.quantity) AS quantity
        FROM stock_transfers x INDEXED BY stock_transfers_in_transit JOIN stock_places p ON p.id = x.to_place
        LEFT JOIN technicians t ON t.id = p.technician_id WHERE x.state = 'in_transit' GROUP BY 1, 2`,
+      ),
     ),
-    db.prepare(
-      `SELECT u.consumable_code AS code, COALESCE(p.city, t.city) AS city, COUNT(*) AS quantity
+    reserved: read<ByCity>(
+      db.prepare(
+        `SELECT u.consumable_code AS code, COALESCE(p.city, t.city) AS city, COUNT(*) AS quantity
        FROM stock_units u INDEXED BY stock_units_reserved JOIN stock_places p ON p.id = u.place
        LEFT JOIN technicians t ON t.id = p.technician_id
        WHERE u.custom_order_id IS NOT NULL AND u.state = 'held' GROUP BY 1, 2`,
+      ),
     ),
-    db.prepare(
-      `SELECT l.consumable_code AS code, NULL AS city, SUM(l.quantity - l.received_quantity) AS quantity
+    coming: read<ByCity>(
+      db.prepare(
+        `SELECT l.consumable_code AS code, NULL AS city, SUM(l.quantity - l.received_quantity) AS quantity
        FROM purchase_orders o INDEXED BY purchase_orders_open JOIN po_lines l ON l.po_id = o.id
        WHERE o.state IN ('approved', 'sent', 'part_received') AND l.custom_order_id IS NULL GROUP BY 1`,
+      ),
     ),
-    db.prepare("SELECT id, kind, city FROM stock_places WHERE kind IN ('warehouse', 'stockroom')"),
-  ]);
+    rooms: read<{ id: string; kind: string; city: string | null }>(
+      db.prepare("SELECT id, kind, city FROM stock_places WHERE kind IN ('warehouse', 'stockroom')"),
+    ),
+  });
   return {
     forecast,
-    terms: (terms?.results ?? []) as TermsRow[],
-    held: (held?.results ?? []) as HeldRow[],
-    moving: (moving?.results ?? []) as ByCity[],
-    reserved: (reserved?.results ?? []) as ByCity[],
-    coming: (coming?.results ?? []) as ByCity[],
-    rooms: (rooms?.results ?? []) as { id: string; kind: string; city: string | null }[],
+    terms: terms,
+    held: held,
+    moving: moving,
+    reserved: reserved,
+    coming: coming,
+    rooms: rooms,
   };
 }
 

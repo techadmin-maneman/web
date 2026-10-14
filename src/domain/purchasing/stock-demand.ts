@@ -9,6 +9,7 @@ import { hairSystemSpecs, matchingCode, type HairSystemSpec } from "../inventory
 import { tierOf } from "../../config/visit-types.ts";
 import { bookedAhead } from "../../config/statuses.ts";
 import { visitCity } from "../clients/places.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 /** One stock code's expected use in one city over the weeks ahead, beside what the city holds. */
 export interface Demand {
@@ -135,22 +136,24 @@ export async function stockDemand(
   days: number,
 ): Promise<{ readonly demand: Demand[]; readonly atRisk: AtRisk[] }> {
   const { from, to } = weeksAhead(today, days);
-  const [used, fits] = await db.batch<{ code: string; city: string | null; expected: number } | FitRow>([
-    db
-      .prepare(
-        `SELECT u.consumable_code AS code, ${CITY} AS city, SUM(u.quantity) AS expected
+  const { used, fits } = await readAll(db, {
+    used: read<{ code: string; city: string | null; expected: number }>(
+      db
+        .prepare(
+          `SELECT u.consumable_code AS code, ${CITY} AS city, SUM(u.quantity) AS expected
          FROM appointments a
          JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
          WHERE ${bookedAhead("a")}
          GROUP BY 1, 2`,
-      )
-      .bind(from, to),
-    fitsStatement(db, from, to),
-  ]);
-  const coded = await codedFits(db, (fits?.results ?? []) as FitRow[]);
+        )
+        .bind(from, to),
+    ),
+    fits: read<FitRow>(fitsStatement(db, from, to)),
+  });
+  const coded = await codedFits(db, fits);
   const held = await heldByCity(db, null);
   const expected = new Map<string, number>();
-  for (const row of (used?.results ?? []) as { code: string; city: string | null; expected: number }[]) {
+  for (const row of used) {
     expected.set(`${row.code}|${row.city ?? ""}`, row.expected);
   }
   for (const { fit, code } of coded) {

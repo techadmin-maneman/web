@@ -7,6 +7,7 @@ import { indiaDate, indiaDateSql } from "../../lib/india-time.ts";
 import { CHANNELS, type Channel } from "../../policy/channels.ts";
 import type { Row, TableRows } from "../../providers/warehouse/index.ts";
 import { tierOf } from "../../config/visit-types.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 interface EntryRow {
   readonly key: string;
@@ -41,16 +42,18 @@ const CREDITS_USED = `SELECT r.id, a.window_start, a.service_city AS city, r.vis
       AND x.source_id = r.source_id)`;
 
 export async function spendRows(db: D1Database): Promise<TableRows> {
-  const [entries, credits] = await db.batch<EntryRow | CreditRow>([
-    db.prepare(
-      `SELECT 'e:' || id AS key, month, city, channel, campaign, amount FROM spend_entries WHERE removed_at IS NULL
+  const { entries, credits } = await readAll(db, {
+    entries: read<EntryRow>(
+      db.prepare(
+        `SELECT 'e:' || id AS key, month, city, channel, campaign, amount FROM spend_entries WHERE removed_at IS NULL
        UNION ALL
        SELECT 'p:' || id, month, NULL, 'partner', NULL, amount FROM partner_payouts WHERE amount > 0`,
+      ),
     ),
-    db.prepare(CREDITS_USED),
-  ]);
+    credits: read<CreditRow>(db.prepare(CREDITS_USED)),
+  });
   const rows: Row[] = [
-    ...((entries?.results ?? []) as EntryRow[]).map((row) => ({
+    ...entries.map((row) => ({
       spend_key: row.key,
       day: `${row.month}-01`,
       city: row.city,
@@ -58,7 +61,7 @@ export async function spendRows(db: D1Database): Promise<TableRows> {
       campaign_key: row.campaign === null ? null : row.campaign.trim().toLowerCase(),
       amount: rupees(row.amount),
     })),
-    ...((credits?.results ?? []) as CreditRow[]).map((row) => ({
+    ...credits.map((row) => ({
       spend_key: `c:${row.id}`,
       day: indiaDate(new Date(row.window_start)),
       city: row.city,

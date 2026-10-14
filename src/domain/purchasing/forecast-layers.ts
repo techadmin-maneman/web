@@ -14,6 +14,7 @@ import { hairSystemSpecs, matchingCode } from "../inventory/hair-systems.ts";
 import { tierOf } from "../../config/visit-types.ts";
 import { bookedAhead } from "../../config/statuses.ts";
 import { visitCity } from "../clients/places.ts";
+import { read, readAll } from "../../lib/read-all.ts";
 
 export interface Horizon {
   readonly today: string;
@@ -46,35 +47,37 @@ type FitRow = {
 
 /** The visits booked in the horizon: each fit's hair system, and each visit's consumables. */
 export async function bookedLayer(db: D1Database, horizon: Horizon): Promise<LayerMap> {
-  const [fits, used] = await db.batch<
-    FitRow | { code: string; city: string | null; window_start: string; quantity: number }
-  >([
-    db
-      .prepare(
-        `SELECT a.person_id, a.type, a.tier, a.window_start, ${visitCity("a")} AS city
+  const { fits, used } = await readAll(db, {
+    fits: read<FitRow>(
+      db
+        .prepare(
+          `SELECT a.person_id, a.type, a.tier, a.window_start, ${visitCity("a")} AS city
          FROM appointments a
          WHERE ${bookedAhead("a")} AND a.type IN ('first_fit', 'replacement')`,
-      )
-      .bind(horizon.today, lastDay(horizon)),
-    db
-      .prepare(
-        `SELECT u.consumable_code AS code, ${visitCity("a")} AS city, a.window_start, u.quantity
+        )
+        .bind(horizon.today, lastDay(horizon)),
+    ),
+    used: read<{
+      code: string;
+      city: string | null;
+      window_start: string;
+      quantity: number;
+    }>(
+      db
+        .prepare(
+          `SELECT u.consumable_code AS code, ${visitCity("a")} AS city, a.window_start, u.quantity
          FROM appointments a JOIN consumable_usage u ON u.visit_type = a.type AND u.tier = ${tierOf("a.tier")}
          WHERE ${bookedAhead("a")}`,
-      )
-      .bind(horizon.today, lastDay(horizon)),
-  ]);
+        )
+        .bind(horizon.today, lastDay(horizon)),
+    ),
+  });
   const layer: LayerMap = new Map();
-  for (const row of (used?.results ?? []) as {
-    code: string;
-    city: string | null;
-    window_start: string;
-    quantity: number;
-  }[]) {
+  for (const row of used) {
     const period = periodIn(horizon, dayOf(row.window_start));
     if (period !== null) add(layer, keyOf(row.code, row.city, period), row.quantity);
   }
-  const fitRows = (fits?.results ?? []) as FitRow[];
+  const fitRows = fits;
   const profiles = await latestFits(
     db,
     fitRows.map((fit) => fit.person_id),
@@ -206,25 +209,29 @@ function upliftOf(events: readonly EventRow[], city: string | null, start: strin
 
 /** What each city used of each item over its last periods, as a period's worth in each period, lifted by events. */
 export async function baselineLayer(db: D1Database, horizon: Horizon): Promise<LayerMap> {
-  const [used, events] = await db.batch<{ code: string; city: string | null; used: number } | EventRow>([
-    db
-      .prepare(
-        `SELECT m.consumable_code AS code, t.city, SUM(-m.quantity) AS used
+  const { used, events } = await readAll(db, {
+    used: read<{ code: string; city: string | null; used: number }>(
+      db
+        .prepare(
+          `SELECT m.consumable_code AS code, t.city, SUM(-m.quantity) AS used
          FROM stock_movements m INDEXED BY stock_movements_used_by_day
          LEFT JOIN technicians t ON t.id = COALESCE(m.technician_id, m.place_id)
          WHERE m.reason = 'used' AND m.created_at >= ?1 GROUP BY 1, 2`,
-      )
-      .bind(addDays(horizon.today, -horizon.assumptions.baseline_periods * horizon.periodDays)),
-    db
-      .prepare(
-        `SELECT city, starts_on, ends_on, uplift_percent FROM demand_events INDEXED BY demand_events_by_end
+        )
+        .bind(addDays(horizon.today, -horizon.assumptions.baseline_periods * horizon.periodDays)),
+    ),
+    events: read<EventRow>(
+      db
+        .prepare(
+          `SELECT city, starts_on, ends_on, uplift_percent FROM demand_events INDEXED BY demand_events_by_end
          WHERE deleted_at IS NULL AND ends_on >= ?1 AND starts_on < ?2`,
-      )
-      .bind(horizon.today, lastDay(horizon)),
-  ]);
-  const eventRows = (events?.results ?? []) as EventRow[];
+        )
+        .bind(horizon.today, lastDay(horizon)),
+    ),
+  });
+  const eventRows = events;
   const layer: LayerMap = new Map();
-  for (const row of (used?.results ?? []) as { code: string; city: string | null; used: number }[]) {
+  for (const row of used) {
     if (row.used <= 0) continue;
     for (let period = 0; period < horizon.horizonPeriods; period += 1) {
       const start = addDays(horizon.today, period * horizon.periodDays);
