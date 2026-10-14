@@ -48,4 +48,3 @@ export function invoiceState(visit: VisitDetail, now: number): InvoiceState {
   if (since > INVOICE_LATE_MS) return "late";
   return since > INVOICE_USUAL_MS ? "delayed" : "generating";
 }
-

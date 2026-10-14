@@ -48,7 +48,7 @@ export const RECORD_LEAVE = `POST ${LEAVE}` as const satisfies Call;
 
 export const CANCEL_LEAVE = `POST ${CANCEL}` as const satisfies Call;
 
-export const PHONE = "Revoke Chrome on Android · 7f3b of Imran Qureshi";
+export const PHONE = "Revoke Imran Qureshi’s phone (Chrome on Android · 7f3b)";
 
 // --ink, a primary button's own
 export /**

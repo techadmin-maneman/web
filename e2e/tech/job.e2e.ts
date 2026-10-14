@@ -80,13 +80,13 @@ test("shows the piece on the client’s head and the last visit’s after photog
   await page.goto(`/jobs/${JOB_ID}`);
 
   const piece = page.getByRole("region", { name: "The piece" });
-  await expect(piece).toContainText(techCopy.steps.piece.placeholder);
+  await expect(piece).toContainText(ROHITS_PIECE.piece_code);
   await expect(piece).toContainText("PLACEHOLDER_STANDARD");
   await expect(piece).toContainText("LOT-4417");
   const photo = page.getByRole("img", { name: techCopy.job.piece.lastVisitImage });
   await expect(photo).toHaveAttribute("src", `/api/tech/jobs/${JOB_ID}/last-visit-photo`);
   await expect.poll(() => photo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1);
-  await expect(page.getByText("Last visit, after. 22 Aug, Imran.")).toBeVisible();
+  await expect(page.getByText(techCopy.job.piece.lastVisit("22 Aug", "Imran"))).toBeVisible();
 });
 
 test("says what a first fit was paid for, apart from the hair profile, and warns when they differ", async ({
