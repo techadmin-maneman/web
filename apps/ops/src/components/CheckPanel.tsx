@@ -1,9 +1,6 @@
-// The check before a change is sent: what it was beside what it will be, and
-// only the second press sends it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
-// It takes the focus as it opens, so it is read at once and never opens out of
-// sight. Every write in the console that is not a deletion goes through it, in the words of `review`
-// (../content/common.ts): a change made in boxes is reviewed and goes back to them to edit; a one-press action asks
-// its question and is cancelled.
+// The check before a change is sent: what it was beside what it will be, and only the second press sends it
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). Every write but a deletion goes through it, in the
+// words of `review` (../content/common.ts). It takes the focus as it opens, so it is read at once.
 
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { Button } from "@maneman/ui/Button";

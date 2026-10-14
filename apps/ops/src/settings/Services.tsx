@@ -1,11 +1,7 @@
 // The services clients book, and every price each has had and is to have (docs/decisions/0085-services-ops-can-edit.md,
-// 0061-ops-editable-inputs.md). A kind of visit is code; the services within it are ops', and each is added, renamed,
-// described, timed, priced, ordered and retired from a day here. A price is a row from the day it applies, so an
-// invoice already issued keeps the figure it was issued under, and the row in force and the spent ones stay.
-//
-// Each kind is a table, a row a service: its price in force and the next to come. A row's Edit opens what may be done
-// to it, with its prices still to come and its earlier ones. One action is open at a time, and each shows what it
-// changes before it is sent (./ServiceForms.tsx).
+// 0061-ops-editable-inputs.md). A kind of visit is code; its services are ops'. A price is a row from the day it
+// applies, so an issued invoice keeps its figure. One action is open at a time, each checked before it is sent
+// (./ServiceForms.tsx).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";

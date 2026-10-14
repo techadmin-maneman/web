@@ -1,12 +1,6 @@
-// The ops console's calls to mm-api (docs/openapi-ops.json), made with the one
-// client the apps share (packages/web-kit/api.ts), so each call's path, query,
-// body and answer are checked against ./api-schema.ts. Every call is
-// same-origin, so Cloudflare Access's own cookie goes with it and the Origin
-// matches, which the ops surface requires on a write
-// (docs/decisions/0026-hosts-and-surfaces.md).
-//
-// The console holds no session of its own. Access decides who gets here, and
-// mm-api records each call under that identity (docs/decisions/0031-access-and-audit.md).
+// The console's calls to mm-api (docs/openapi-ops.json), through the client the apps share (packages/web-kit/api.ts),
+// each checked against ./api-schema.ts. Every call is same-origin, so Access's cookie goes with it and the Origin
+// matches, as a write on the ops surface requires (docs/decisions/0026-hosts-and-surfaces.md).
 
 import { createClient, type Answer as Answered, type Sent, type Success } from "@maneman/web-kit/api";
 import type { components, paths } from "./api-schema.ts";

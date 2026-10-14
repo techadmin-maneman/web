@@ -1,12 +1,7 @@
-// Stock (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md): what each place holds of
-// each consumable (the warehouse, hubs, stockrooms and technicians' kits), which is low, the latest movements,
-// and, for national managers, the places themselves. Stock is kept in our own ledger, so a free consultation or a credit visit deducts what it used
-// as any other job does.
-//
-// What a place holds is the sum of its movements. A job's use comes out of the
-// kit of the technician who recorded it, as their step lands; ops record the
-// rest here. A place at or below its level is marked Low in words, and raises
-// one alert (src/domain/inventory/stock.ts), which is why there is no Tasks group for it.
+// Stock (docs/decisions/0087-consumables-and-stock.md, 0155-the-stock-place-tree.md): what each place holds of each
+// item, which is low, the latest movements, and, for national managers, the places. A place holds the sum of its
+// movements; a job's use comes out of its technician's kit. Low raises one alert (src/domain/inventory/stock.ts), so
+// Tasks has no group for it.
 
 import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";

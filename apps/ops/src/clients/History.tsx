@@ -1,11 +1,6 @@
-// What the client's record adds up to: how often they have been served, what
-// they have bought, what they have paid, and when their piece falls due. The
-// design draws no such tab; the figures are the ones its own drawer and page
-// head imply (docs/fidelity-method.md).
-//
-// The record is already loaded for the page's head, so this tab fetches
-// nothing: moving on to it costs no request at all. For whoever may read the
-// audit log, it links to everything done on the record, in Activity.
+// What the client's record adds up to: visits, purchases, payments, and when their piece falls due, from the record the
+// page already holds, so the tab asks for nothing. For whoever may read the audit log, it links to everything done on
+// the record, in Activity.
 
 import { fullDate, shortMonth } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";

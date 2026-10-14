@@ -1,12 +1,7 @@
-// Every piece the client has been fitted with, in the design's own six
-// columns. A piece is recorded by the technician's phone, so nothing here is
-// edited (src/routes/ops/client-pieces.ts). Above them, the client's
-// hair profile, which the board does not draw (./HairProfile.tsx), the stock it matches (./StockMatch.tsx) and the
-// client's custom orders (./CustomOrders.tsx), each loaded when the tab first opens.
-//
-// The board sets the live piece's replacement date in brass and leaves the rest
-// quiet. A piece that has failed has been replaced, so the brass falls on the
-// one that has not.
+// Every piece the client has been fitted with, read only, since the technician's phone records them
+// (src/routes/ops/client-pieces.ts). Above them the hair profile (./HairProfile.tsx), the stock it matches
+// (./StockMatch.tsx) and custom orders (./CustomOrders.tsx), each loaded when the tab first opens. Only the live
+// piece's replacement date is in brass.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { lazyScreen } from "@maneman/ui/lazyScreen";

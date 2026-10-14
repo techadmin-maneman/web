@@ -1,10 +1,7 @@
-// One list of the job sheet as ops edit it: a kind of visit's checklist, or
-// the partial reasons (docs/decisions/0087-consumables-and-stock.md). Its items
-// in their order, each renamed in its box, moved, or taken off; one added at
-// the foot; one taken off put back. An item keeps its code through all of it,
-// so a phone that holds the list as it was still sends what the API
-// understands. The check shows what is added, renamed and taken off before
-// anything is sent (ADR 0071).
+// One list of the job sheet as ops edit it: a checklist or the partial reasons
+// (docs/decisions/0087-consumables-and-stock.md). Items are renamed, moved, taken off or put back, each keeping its
+// code, so a phone holding the old list still sends what the API understands. The check shows what changes first (ADR
+// 0071).
 
 import { TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";

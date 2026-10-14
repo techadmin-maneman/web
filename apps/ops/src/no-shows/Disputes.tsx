@@ -1,8 +1,6 @@
-// The Payments page's second card, one a dispute, in a queue with its count: a charge the client disputed in the app, with
-// the evidence its no-show was ruled on, what the charge took, the client's own words, and Refund or Uphold, each
-// with a note the server refuses to go without (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). Refund
-// gives back what the charge took; the client is told the ruling either way, never the note. A dispute waits on the
-// Tasks board too, whose link opens its row here.
+// The Payments page's disputes: a charge the client disputed in the app, with the evidence its no-show was ruled on,
+// what it took and the client's words, and Refund or Uphold, each with a note
+// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The client is told the ruling, never the note.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextArea } from "@maneman/ui/Field";

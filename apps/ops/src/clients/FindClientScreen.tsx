@@ -1,14 +1,7 @@
-// The way into a client's page. The board opens on a client and draws no way
-// of finding one, so this is the console's own: any part of a name, or four
-// digits or more of a number, sent in the request body, never in a path or a
-// query string, so a number stays out of URLs, referrers and logs
-// (src/routes/ops/clients.ts). The matches are listed by name, each with where
-// the client stands and their next visit, so two of one name can be told apart.
-//
-// Every other page's header searches here too. The words and what they found
-// are kept in the history entry, so Back from a client finds the results again;
-// before any search, the clients opened this session are offered
-// (lib/client-search.ts), and beneath them every client (./ClientList.tsx).
+// The way into a client's page: any part of a name, or four or more digits of a number, sent in the body so a number
+// stays out of URLs and logs (src/routes/ops/clients.ts). The search and its results are kept in the history entry, so
+// Back finds them; before a search, the clients opened this session (lib/client-search.ts), then every client
+// (./ClientList.tsx).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextInput } from "@maneman/ui/Field";

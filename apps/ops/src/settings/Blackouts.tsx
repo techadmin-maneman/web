@@ -1,12 +1,6 @@
-// Blackout days: the days no visit is offered, in the app or from the site
-// (docs/decisions/0088-every-policy-in-the-console.md). The runbook's SQL set
-// them before; no board draws them, so the panel is laid out as Rules is.
-//
-// The API keeps one row a day. The list shows the days run together where they
-// follow one another for the same reason, added by the same press, so each run
-// names who added all of it; offering them again sends that run of days back. Closing a day moves nothing already
-// booked on it, so the check before it says how many visits the days strand, and each run says how many are still
-// booked on it and opens the dispatch board on its first day to move them.
+// Blackout days: the days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). The API keeps a row
+// a day; the list runs together the days one press added, each run naming who added it. Closing a day moves nothing
+// booked on it, so the check counts the visits it strands, and each run links to the board to move them.
 
 import { DateInput, Label, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";

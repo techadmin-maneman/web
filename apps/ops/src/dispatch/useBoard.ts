@@ -1,8 +1,6 @@
-// The board's data, for the week and city asked for. A new week or city loads afresh. While the board is open it asks
-// every minute, and when the tab comes back into view, whether anything on it has changed, and reads itself again
-// only when something has; so what another ops user moved shows up without anybody pressing anything. A quiet read
-// never shows the loading state and never drops the board it has: the grid keeps its scroll, and the keyboard keeps
-// its place.
+// The board's data for the week and city asked for. While open it asks every minute, and when the tab comes back,
+// whether anything changed, and reads itself again only then, so another user's move shows up unasked; a quiet read
+// keeps the board, its scroll and the keyboard's place.
 
 import type { Loaded } from "@maneman/ui/useLoad";
 import { useCallback, useEffect, useRef, useState } from "react";

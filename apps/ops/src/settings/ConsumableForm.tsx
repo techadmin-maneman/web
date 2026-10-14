@@ -1,9 +1,6 @@
-// Adding a consumable, or changing one: its name, its unit, what one costs,
-// the levels a kit, a hub or stockroom and the warehouse are low at, and its shelf life
-// (docs/decisions/0087-consumables-and-stock.md, 0157-lots-and-expiry.md). The boxes start from what the
-// consumable is now; the check shows each field that changes, old beside new,
-// before anything is sent (ADR 0071). Every box holds text: an empty level is
-// no level, never a nought.
+// Adding or changing a consumable: its name, unit, cost, the levels each kind of place is low at, and its shelf life
+// (docs/decisions/0087-consumables-and-stock.md, 0157-lots-and-expiry.md). The check shows each changed field, old
+// beside new (ADR 0071). Every box holds text, so an empty level is no level, never a nought.
 
 import { Field, TextInput } from "@maneman/ui/Field";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";

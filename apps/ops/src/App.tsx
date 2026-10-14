@@ -1,10 +1,7 @@
-// The ops console. There is no login here: Cloudflare Access decides who
-// reaches the host, and mm-api checks its token on every call and records the
-// identity (docs/decisions/0031-access-and-audit.md). The console therefore
-// opens straight on a section: Tasks, or the first the person may open.
-//
-// Areas, the settings sections and a technician's page load the first time they open, so
-// the console's first load stays within its 150 KB budget (scripts/lib/spa-build.ts).
+// The ops console. Cloudflare Access decides who reaches it and mm-api records each call under that identity
+// (docs/decisions/0031-access-and-audit.md), so there is no login: it opens on Tasks, or the first section the person
+// may open. Most sections load the first time they open, which keeps the first load within its budget
+// (scripts/lib/spa-build.ts).
 
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
 import { lazyScreen } from "@maneman/ui/lazyScreen";

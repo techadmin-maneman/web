@@ -1,11 +1,6 @@
-// Making discount codes (docs/decisions/0108-discount-codes.md): one code ops type, or codes generated, one or a
-// batch of single-use codes; what each takes off, a percentage with an optional cap or an amount, both before GST;
-// what it covers; and its limits. No board draws it, so it is laid out as Blackout days is. The draft and the check's
-// lines are ./discount-draft.ts.
-//
-// Nothing is made until ops have read what will be: the check lists the code or how many, what each takes off, what
-// it covers and its limits, and only the second press makes them, as a price is set
-// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// Making discount codes (docs/decisions/0108-discount-codes.md): one code typed, or a batch generated; what each takes
+// off before GST, what it covers, and its limits. The draft and the check's lines are ./discount-draft.ts; nothing is
+// made until the check has been read and the second press made (ADR 0071).
 
 import { Checkbox, ChoiceGroup, DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";

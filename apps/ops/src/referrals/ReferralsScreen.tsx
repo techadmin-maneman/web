@@ -1,10 +1,6 @@
-// Referrals: the grants the fraud rules held, each approved or rejected here, over every referrer's figures, and the
-// partners who refer on their own code (./Partners.tsx). Approving a grant releases its credits. The board asks for a
-// reason on either decision, the server refuses one without it, and it is kept with the decision under whoever Access
-// says is signed in (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts).
-//
-// Each name in a held pair is a way to that client's page, and each grant says
-// how long it has been held, as the board writes it.
+// Referrals: the grants the fraud rules held, approved or rejected with a reason here
+// (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts), over every referrer's figures, and the partners
+// who refer on their own code (./Partners.tsx). Approving a grant releases its credits.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
@@ -285,7 +281,7 @@ function ReferrersTable({ version }: { version: number }) {
   return (
     <section className={styles.panel} aria-labelledby="referrers">
       <div className={styles.panelBody}>
-        {/* The board's frame opens on the column heads; the caption above it is the board's own furniture. */}
+        {/* The design draws no heading here, so the section's name is said, not shown. */}
         <VisuallyHidden as="h2" id="referrers">
           {copy.title}
         </VisuallyHidden>

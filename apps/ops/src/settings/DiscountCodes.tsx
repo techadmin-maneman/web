@@ -1,10 +1,6 @@
-// Finance · Discount codes (docs/decisions/0108-discount-codes.md): what every code has come to, then the codes in a
-// table that sorts, each with its uses, clients, what it gave and what was paid. A code is made from Make codes, found by
-// how it begins, switched off, or, while no booking has taken it, deleted.
-//
-// Switching a code off is shown before it is sent, and only the second press sends it
-// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). Codes switched off fold away beneath the table, their
-// uses on record.
+// Finance · Discount codes (docs/decisions/0108-discount-codes.md): what every code has come to, then a table of codes
+// with their uses and takings. A code is made, found by how it begins, switched off after a check (ADR 0071), or
+// deleted while no booking has taken it; codes switched off fold away beneath.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Disclosure } from "@maneman/ui/Disclosure";

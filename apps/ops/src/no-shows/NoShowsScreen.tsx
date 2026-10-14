@@ -1,19 +1,7 @@
-// Payments: a day's money over the charges it was
-// kept on, today unless ops pick another day, then each charge a client
-// disputed, refunded or upheld here (Disputes.tsx), then each no-show case
-// with the evidence ops rule on, charged or waived here
-// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md), then the cases
-// ruled on today. A ruling reads the day's money again.
-//
-// A case is evidence a client may be charged on, so it names the client and
-// says when the visit was booked for, when the technician's phone says they
-// arrived and when that reached us, and what became of the reminder. A ruling
-// carries its reason, which the server refuses to go without, and a charge is
-// asked about once more, with what it keeps and refunds, before it is sent.
-//
-// The server never charges by itself: a charge costs what the booking was sold
-// to cost a no-show once ops rule, under whoever Access says is signed in
-// (src/policy/no-show.ts, docs/decisions/0031-access-and-audit.md).
+// Payments: the day's money over the charges kept on it, then the disputed charges (Disputes.tsx), then each no-show
+// case with its evidence, charged or waived here, then today's rulings
+// (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). A ruling needs a reason and a charge is asked about once
+// more; the server never charges by itself (src/policy/no-show.ts).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";

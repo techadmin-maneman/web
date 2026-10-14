@@ -1,10 +1,7 @@
-// Areas' Waiting tab: who waits in each pincode, the longest wait first. Choosing a pincode asks the API
-// what marking it live would send, before anything is sent; only the panel's press launches it, which serves the
-// pincode and queues a WhatsApp to everyone on its list who asked to be told (docs/decisions/0048-referrals.md).
-//
-// A pincode already live can be chosen too: one served before a launch from Settings told its waitlist left them
-// untold, and this is how they are told (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A pincode
-// the service area does not hold is added first, with its area's name and its city.
+// Areas' Waiting tab: who waits in each pincode, longest first. Choosing one shows what launching it would send, and
+// only the panel's press serves it and messages its waitlist (docs/decisions/0048-referrals.md). A pincode already live
+// can be chosen too, for a waitlist a launch from Settings left untold
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";

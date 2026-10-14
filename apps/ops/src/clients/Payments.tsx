@@ -1,12 +1,6 @@
-// The client's Payments tab: what they have paid and had back, the payment
-// links they were sent and the invoice of each finished visit, all from the
-// record the page already holds; and their service-visit credits, which ops can
-// put right by hand (docs/decisions/0068-a-paid-hold-is-kept.md). The board
-// draws the tab and nothing in it (docs/fidelity-method.md).
-//
-// A credit given or taken in error once needed SQL to correct. The form sends
-// the visits and the reason, and the server writes the ledger's entry and its
-// audit entry together; the balance it answers is shown, and heads the page.
+// The client's Payments tab: payments and refunds, payment links and each finished visit's invoice, from the record the
+// page holds; and their service-visit credits, which ops correct by hand, the server writing the ledger and audit
+// entries together (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";

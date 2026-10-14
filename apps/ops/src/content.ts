@@ -1,9 +1,6 @@
-// Every word the ops console shows, from design/phase2/Ops Console.dc.html. A
-// component holds no copy of its own. Lines the design does not draw are
-// ours.
-//
+// Every word the ops console shows, from design/phase2/Ops Console.dc.html; lines the design does not draw are ours.
 // One file a feature, in ./content/. What is exported here is in every page's first load (vite.config.ts reads this
-// list); a page loaded only when opened imports its words from its own file, so they load with it.
+// list); a page loaded when opened imports its words from its own file.
 
 export * from "./content/common.ts";
 export * from "./content/shell.ts";

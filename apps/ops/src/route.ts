@@ -1,19 +1,6 @@
-// The console's pages, by path. Links change the path without a reload; the
-// Worker answers every path with the console, so a page can be opened directly.
-//
-// SECTIONS below is the one list of them, in the navigation's order: by
-// department, Tasks first. The navigation draws it, routeOf reads it, and each
-// page is titled from it. SECTION_GROUPS gathers sections of one job under one
-// entry, each section a tab of the others: inventory, Care, and the data requests.
-// Four sections have pages beneath them:
-//
-//   /clients/:id/:tab       a client's page, a tab at a time
-//   /technicians/:id/:tab   a technician's page: their week, leave, phones and kit
-//   /areas/:tab             who waits where, and the pincodes we serve
-//   /settings/:tab          the rules, closed days and the job sheet
-//
-// Anything else, "/" included, is where the console opens: Tasks, or for a
-// person who may not open Tasks, the first section they may.
+// The console's pages, by path. Links change the path without a reload, and the Worker answers every path with the
+// console, so a page can be opened directly. SECTIONS is the one list of them, in the navigation's order: the
+// navigation draws it, routeOf reads it, and each page is titled from it.
 
 import { areas, clients, settingsTabs, shell, technicians } from "./content.ts";
 import type { Department } from "./lib/grants.ts";
@@ -29,6 +16,10 @@ interface SectionShape {
   readonly reads: string;
 }
 
+/**
+ * Every section, by department, Tasks first. SECTION_GROUPS gathers the sections of one job under one entry, each a tab
+ * of the others: inventory, Care, and the data requests.
+ */
 export const SECTIONS = [
   { page: "tasks", path: "/tasks", department: "operations", reads: "GET /api/tasks" },
   { page: "dispatch", path: "/dispatch", department: "operations", reads: "GET /api/dispatch" },
@@ -122,6 +113,16 @@ export type SettingsTab = (typeof SETTINGS_TABS)[number];
 export const AREA_TABS = ["waiting", "served"] as const;
 export type AreaTab = (typeof AREA_TABS)[number];
 
+/**
+ * A page, as its path names it. Four sections have pages beneath them:
+ *
+ *   /clients/:id/:tab       a client's page, a tab at a time
+ *   /technicians/:id/:tab   a technician's page: their week, leave, phones and kit
+ *   /areas/:tab             who waits where, and the pincodes we serve
+ *   /settings/:tab          the rules, closed days and the job sheet
+ *
+ * Anything else, "/" included, is where the console opens: Tasks, or the first section the person may open.
+ */
 export type Route =
   | { readonly page: PlainPage }
   | { readonly page: "areas"; readonly tab: AreaTab }

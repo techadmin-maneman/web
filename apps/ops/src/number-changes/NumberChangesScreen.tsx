@@ -1,14 +1,6 @@
-// Number changes: a client is moving to another mobile number, and the change
-// waits here. The rule, quoted in migrations/0008_profile.sql, is "A code goes
-// to both numbers. The change then waits for ops to confirm, and takes effect
-// only after that confirmation" (docs/decisions/0042-client-profile.md).
-//
-// The design draws no board for it (docs/fidelity-method.md), so it is built as
-// the Referrals review queue is. Confirming moves the client at once, and the
-// decision is written to the audit log as `number_change.decide`, under whoever
-// Access says is signed in (ADR 0031). A rejection needs a reason; a number
-// somebody else already holds is refused by the API, and said so here. Each
-// change says how long it has left, counted as the Tasks board counts it.
+// Number changes waiting for ops: a code went to both numbers, and the change takes effect only once ops confirm it
+// (docs/decisions/0042-client-profile.md). Built as the Referrals review queue is; a rejection needs a reason, a number
+// someone else holds is refused, and each change says how long it has left, as Tasks counts it.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Label, TextArea } from "@maneman/ui/Field";
@@ -75,7 +67,7 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       </div>
       <p className={styles.when}>{copy.requested(longDate(change.requested_at))}</p>
       <p className={styles.move}>{copy.move(phoneWords(change.old_mobile), phoneWords(change.new_mobile))}</p>
-      {/* The new number: the one to confirm the change on. */}
+      {/* Ops confirm the change with the client on the new number. */}
       <Reach name={change.name} mobile={change.new_mobile} />
       <p className={styles.proven}>{copy.proven}</p>
       {change.new_number_held_by !== null && (

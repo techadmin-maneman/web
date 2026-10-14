@@ -1,12 +1,7 @@
-// The client's Visits tab: where their visits go, and every visit to come and
-// done. The board draws the tab and nothing in it, so it is built as board
-// B1's own table is. The record already holds all of it, so the tab asks the
-// API for nothing (docs/fidelity-method.md), but to save an address the client
-// gives ops on the phone (GivenAddress.tsx; docs/decisions/0092-task-owners.md),
-// to enter a discount code on a visit or take it off (VisitCode.tsx;
-// docs/decisions/0108-discount-codes.md), to book the client a visit (BookVisit.tsx), and to cancel a visit to come
-// (CancelVisit.tsx) or close by hand one whose technician's phone was lost (CloseVisit.tsx). Each visit to come links
-// to its place on the dispatch board. Beneath the visits, any booking that refunded its payment by itself, and why.
+// The client's Visits tab: every visit to come and done, from the record the page holds. From here ops save an address
+// given on the phone (GivenAddress.tsx), set a visit's discount code (VisitCode.tsx), book a visit (BookVisit.tsx), and
+// cancel one (CancelVisit.tsx) or close one by hand (CloseVisit.tsx). Beneath, any booking that refunded itself, and
+// why.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { capsLook } from "@maneman/ui/Caps";

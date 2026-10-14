@@ -1,13 +1,6 @@
-// The client's photographs, locked, then open. The locked state says
-// plainly what opening them does. Opening them asks the API to log the view
-// first, one entry for the whole opening, and nothing is fetched unless that
-// is written (docs/decisions/0031-access-and-audit.md). The time shown is the
-// one the API logged, by its own clock, and beside the photographs is the log
-// of who opened them before.
-//
-// The newest visits' photographs come first; earlier ones are fetched only when
-// asked for, since a client of some years has a great many. The opening is held
-// by the client's page, so leaving this tab and coming back is the same view.
+// The client's photographs, locked, then open. Opening logs the view first, one entry for the whole opening, and
+// nothing is fetched unless that is written (docs/decisions/0031-access-and-audit.md); beside them is who opened them
+// before. The newest visits come first, earlier ones when asked for.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";

@@ -1,10 +1,7 @@
-// What each service is expected to use: where the technician's steppers start
-// on a job of it (docs/decisions/0087-consumables-and-stock.md). A service is
-// one the console holds, by its name, a kind at a time
-// (docs/decisions/0085-services-ops-can-edit.md); a retired one is here too,
-// marked, since a visit sold before it was retired is still done. The whole
-// list is sent at once, and the check shows each consumable whose figure
-// changes, old beside new (ADR 0071). An empty box is none.
+// What each service is expected to use, where the technician's steppers start
+// (docs/decisions/0087-consumables-and-stock.md), a kind at a time; a retired service is listed too, since a visit sold
+// before it was retired is still done. The list is sent whole, after a check of each changed figure (ADR 0071). An
+// empty box is none.
 
 import { Fieldset, Label, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";

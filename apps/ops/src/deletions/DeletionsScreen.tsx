@@ -1,21 +1,7 @@
-// Deletion requests: a client has asked, from their own app, to have their
-// account erased, and ops decide it here (docs/decisions/0049-dpdp.md). The
-// runbook's "Erasure within the day" is the procedure; this is where it starts.
-//
-// The design draws no board for it (docs/fidelity-method.md), so it is built as
-// the Referrals review queue is. Two things are its own, and both are because an
-// erasure cannot be undone:
-//
-//   - Deleting takes two deliberate steps. The second says what is destroyed
-//     and what is kept, and is not offered until ops confirm they have checked
-//     the request with the client on their own number (the runbook's step 1).
-//   - The panel takes focus when it opens, so it is read by ear as well as by
-//     eye before anything is sent.
-//
-// The decision is written to the audit log as `deletion.decide`, under whoever
-// Access says is signed in, in the same batch as the erasure (ADRs 0031, 0066).
-// The API refuses while the client has a visit booked or a payment held, and
-// the refusal's copy says which, with a link to the client's tab that settles it.
+// Deletion requests a client made in their app, decided here (docs/decisions/0049-dpdp.md; the runbook's Erasure within
+// the day). An erasure cannot be undone, so deleting takes two steps, the second offered only once ops confirm the
+// request with the client on their own number. The API refuses while a visit is booked or a payment held, and says
+// which.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";

@@ -1,8 +1,7 @@
-// A discount code on one of the client's visits, in the Visits tab's last column (docs/decisions/0108-discount-codes.md).
-// No board draws it. Ops enter a code on a visit, or take it off, only while the visit is not paid for, linked or
-// invoiced (`price_open`), and a consultation, which costs nothing, takes none. A one visit's code the client typed
-// when booking on the site is shown under "None" and starts the box. The cell keeps what its last answer said, so the
-// tab is not read again for it.
+// A discount code on one of the client's visits, in the Visits tab's last column
+// (docs/decisions/0108-discount-codes.md). A code goes on or comes off only while the visit's price is open
+// (`price_open`), and a consultation takes none. A code the client typed on the site shows under None and starts the
+// box.
 
 import { Label, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";

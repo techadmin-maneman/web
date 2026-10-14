@@ -1,9 +1,6 @@
-// Settings, under Admin: the rules, the days no visit is offered, and the job sheet the technician app reads with a
-// job.
-//
-// The price book, the discount codes, the service area and the Staff list are sections of their own departments
-// (./PanelScreens.tsx); the items we stock and the suppliers we buy them from are Inventory's (ItemsScreen,
-// SuppliersScreen).
+// Settings, under Admin: the rules, the days no visit is offered, and the job sheet. The price book, discount codes,
+// service area and Staff list are sections of their own departments (./PanelScreens.tsx); the items and suppliers are
+// Inventory's.
 
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { OpsLink } from "../components/Shell.tsx";

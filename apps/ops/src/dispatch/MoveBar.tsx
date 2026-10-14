@@ -1,8 +1,5 @@
-// The bar above the board while a job is in hand: what is moving and how much
-// of a day it takes (the brief's "a hint shows its slot size", A2), and the
-// keyboard's way to a destination: "choose a destination from a list, then the
-// same sheet". The list holds the windows the job would land in, on the rows
-// ops have narrowed the board to, so it is as short as the search makes it, the nearest first (ADR 0120).
+// The bar above the board while a job is in hand: what is moving and how much of a day it takes, and the keyboard's way
+// to a destination, a list of the windows it would land in on the rows on screen, nearest first (ADR 0120).
 
 import { Label, Select } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";

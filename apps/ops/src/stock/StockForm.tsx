@@ -1,13 +1,7 @@
-// Recording a movement of stock (docs/decisions/0087-consumables-and-stock.md):
-// a delivery into the warehouse, a transfer between two places, a count,
-// or a loss somebody saw. Before anything is sent, the check shows what each
-// place holds now beside what it will hold (ADR 0071); a count shows the
-// figure it finds, and the ledger takes the difference. A place that would
-// hold less than nothing says so, since a delivery or a count is then missing.
-// A hair system's transfer or loss names its pieces by their labels, scanned
-// (docs/decisions/0162-scanning-labels.md), and counts them. A top-up to a kit
-// counts once the technician scans it in, unless handed over in person
-// (docs/decisions/0164-the-kit-screen.md).
+// Recording a movement of stock (docs/decisions/0087-consumables-and-stock.md): a delivery, a transfer, a count or a
+// loss, checked first with what each place holds beside what it will (ADR 0071). A hair system's pieces are named by
+// their scanned labels (docs/decisions/0162-scanning-labels.md); a top-up to a kit counts once the technician scans it
+// in (docs/decisions/0164-the-kit-screen.md).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";

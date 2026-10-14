@@ -1,10 +1,7 @@
-// Erasing a client from their page, when they ask outside the app: on WhatsApp or the phone. A request they made in
-// the app is decided in Deletion requests instead, which tells them when it is done, so it is not offered here then.
-//
-// As in Deletion requests, erasing takes two deliberate steps: the second says what is destroyed and what is kept,
-// and waits for ops to confirm the request came from the client's own number. The API refuses while a visit is booked,
-// a payment held or a payment link unpaid; ops may then erase all the same, saying they will settle it by hand today.
-// From then on the client's page shows only what is kept of them.
+// Erasing a client who asks outside the app, on WhatsApp or the phone; a request made in the app is decided in Deletion
+// requests. It takes two steps, the second saying what is destroyed and what is kept once ops confirm the request came
+// from the client's own number. Where the API refuses for a booked visit or money held, ops may erase anyway and settle
+// it by hand today.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";

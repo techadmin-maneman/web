@@ -1,12 +1,6 @@
-// Grievances: what a client has said about the way we use their data, raised
-// from their own app and answered here (docs/decisions/0049-dpdp.md). The
-// hourly alert ops receive says "answer it in Grievances"; this is that section.
-//
-// The design draws no board for it (docs/fidelity-method.md), so it is built as
-// the Referrals review queue is: the queue, a row for each, a decision on each row.
-// Recording the answer closes the grievance and writes `grievance.resolve` to
-// the audit log under whoever Access says is signed in (ADR 0031). It messages
-// nobody: ops answer the client themselves, on the number shown.
+// Grievances: what a client has said about how we use their data, raised in their app and answered here
+// (docs/decisions/0049-dpdp.md), built as the Referrals review queue is. Recording the answer closes it and writes
+// `grievance.resolve` to the audit log (ADR 0031); it messages nobody, since ops answer the client on the number shown.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { errorText } from "@maneman/web-kit/refusal";

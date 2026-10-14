@@ -1,12 +1,7 @@
-// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md):
-// what the technician ticks on each kind of visit, the reasons they may pick
-// when a job is left partly done, and why a client is not going ahead after a
-// consultation (docs/decisions/0149-lost-reasons.md). All are set here, and the technician app reads them with each job; a phone
-// keeps the list it was given with the job, and an item taken off is kept, so
-// what a phone recorded before the change is still understood.
-//
-// Until ops save a list, the committed one stands (src/config/job-sheet.ts),
-// and the panel says so.
+// Settings, Job sheet (docs/decisions/0087-consumables-and-stock.md): what the technician ticks on each kind of visit,
+// the reasons a job is left partly done, and why a client does not go ahead (docs/decisions/0149-lost-reasons.md). A
+// phone keeps the list it got with the job and an item taken off is kept, so older records still read. Until ops save a
+// list, src/config/job-sheet.ts's stands.
 
 import { Label, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";

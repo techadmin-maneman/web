@@ -1,10 +1,7 @@
-// An address a client gives ops on the phone, recorded on their page and saved
-// as theirs, marked as given to ops (docs/decisions/0092-task-owners.md; open
-// point 62). The form follows the client app's own (apps/app/src/profile/AddressForm.tsx):
-// the same fields (@maneman/web-kit/address) and checks, and the same building search, whose one session
-// token covers every keystroke and the save, so Google bills the search once
-// (docs/decisions/0054-address-capture.md). The search is an addition, never a
-// gate: an address typed without it saves, with no pin. No board draws any of it.
+// An address a client gives ops on the phone, saved as theirs and marked as given to ops
+// (docs/decisions/0092-task-owners.md; open point 62). It is the client app's form
+// (apps/app/src/profile/AddressForm.tsx), its building search one session token for every keystroke and the save
+// (docs/decisions/0054-address-capture.md); an address typed without the search saves with no pin.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { capsLook } from "@maneman/ui/Caps";

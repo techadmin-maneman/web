@@ -1,8 +1,6 @@
-// The console's frame (design/phase2/Ops Console): the
-// navigation column on ink down the left, a header naming the section with who
-// is signed in at its right, and the section's panels. The navigation groups
-// the sections by department, shows only those the person may open, and says
-// how many tasks wait in each. App draws it once, round whichever page is open.
+// The console's frame (design/phase2/Ops Console), which App draws once round whichever page is open: the navigation on
+// ink down the left, by department, with only the sections the person may open and how many tasks wait in each; and a
+// header naming the section, with who is signed in at its right.
 
 import { SkipLink } from "@maneman/ui/SkipLink";
 import { capsLook } from "@maneman/ui/Caps";

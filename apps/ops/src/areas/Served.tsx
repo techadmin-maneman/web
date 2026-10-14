@@ -1,17 +1,7 @@
-// Areas' Served tab: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md).
-//
-// 198 pincodes is more than any web form should ask anybody to work through,
-// and they are already marked in a spreadsheet (data/pincodes/README.md).
-// So this screen is built for the two things they actually do: launch one
-// area, which is one row and a date, and hand over the whole file, which is an
-// upload. A city at a time keeps the table short; the bulk pair fills a city in
-// one press; and only the pincodes that changed are ever sent.
-//
-// Everything goes through the table: a file read is shown pincode by pincode,
-// then put into the table, and the one Save sends it. Serving a pincode is a
-// launch, so a save that would message people waiting there opens the launch
-// panel Waiting uses first (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
-// A pincode the file does not hold is added beneath the table.
+// Areas' Served tab: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md). The pincodes live in a
+// spreadsheet (data/pincodes/README.md), so the tab does two things: launch one area, and take the whole file back,
+// shown pincode by pincode before the one Save. A save that would message people waiting opens the launch panel first
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Fieldset } from "@maneman/ui/Field";

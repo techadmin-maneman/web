@@ -1,19 +1,7 @@
-// The board's grid: technicians down, seven days across, each column headed by
-// its utilisation. The header row and the technicians' column stay put while
-// the grid scrolls under them, so a board of many technicians can be
-// read at any depth.
-//
-// While a job is in hand, each day offers only the windows the job would land
-// in, as the server answered for it: a day with none says so, and a day ops
-// recorded leave on offers nothing (ADR 0062). The windows are for the mouse;
-// the keyboard chooses from the list above the board, so the grid's thousands
-// of windows are not each a stop in the tab order.
-//
-// A search that names a client, an area or a pincode outlines the blocks it
-// found, so the one visit is plain among a technician's eight.
-//
-// A row, a day and a block each draw again only when what they show changes, so a board of a hundred technicians
-// keeps up with a drag and with the search.
+// The board's grid: technicians down, seven days across, each day headed by its utilisation, the header and names
+// staying put as it scrolls. With a job in hand each day offers the windows it would land in (ADR 0062), for the mouse;
+// the keyboard chooses from the list above. A search outlines what it found. A row, a day and a block draw again only
+// when what they show changes.
 
 import { TextButton } from "@maneman/ui/TextLink";
 import { Table } from "@maneman/ui/Table";

@@ -1,13 +1,6 @@
-// Technicians: who works, their city, the jobs they
-// have finished and how those ran, one 34 px row each, as the board draws them,
-// however many there are. The board's fifth column is Skill, and nothing records
-// what a technician is trained for, so Leave stands there instead and a line
-// beneath the table says why (docs/open-points.md, item 59).
-//
-// A technician's name opens their own page (./TechnicianScreen.tsx): their details,
-// week, leave, phones and kit, which the board's rows have no room for. Ops add
-// technicians here (./TechnicianForms.tsx); those switched off are listed
-// beneath the table.
+// Technicians: who works, their city, and the jobs they have finished and how those ran, one row each. Nothing records
+// a technician's skills, so Leave stands in the design's Skill column (docs/open-points.md, item 59). A name opens
+// their page (./TechnicianScreen.tsx); they are added here (./TechnicianForms.tsx).
 
 import { classes } from "@maneman/ui/classes";
 import { EmptyState } from "@maneman/ui/EmptyState";

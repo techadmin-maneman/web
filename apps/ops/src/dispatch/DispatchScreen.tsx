@@ -1,25 +1,7 @@
-// The dispatch board: active technicians
-// down, seven days across, four slots a day, and the jobs nobody holds yet in
-// a tray on the right (src/policy/dispatch.ts).
-//
-// A job is moved by dragging it onto a technician's window, or, without a
-// mouse, by opening it and choosing a destination from a list. Either way the
-// board first asks where the job would land, and offers only those windows;
-// then the reason picker comes before anything is written. The server
-// checks again before anything is written (docs/decisions/0034-clash-check.md)
-// and refuses a move made from a board that has gone stale
-// (docs/decisions/0069-dispatch-under-concurrency.md). A refusal names the
-// technician and the window the board asked for, because the API answers with
-// the code alone.
-//
-// The board reads itself again when something on it has changed (useBoard.ts),
-// and after a move, without the loading state: the grid keeps its scroll, and
-// the keyboard goes back to the block that moved.
-//
-// A link may open the board on a week, a city, a search and a visit
-// ("?from=2026-10-12&find=Imran&visit=…"), as Tasks, a client's visits, a
-// technician's leave and blackout days do; the visit's drawer opens. The address
-// keeps all four as ops change them (./address.ts).
+// The dispatch board: active technicians down, seven days across, and the jobs nobody holds in a tray
+// (src/policy/dispatch.ts). A job is moved by dragging it or from its drawer: the board offers only the windows it
+// would land in and asks a reason, and the server checks again (docs/decisions/0034-clash-check.md,
+// 0069-dispatch-under-concurrency.md). The address keeps the week, city, search and visit (./address.ts).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { useCallback, useMemo, useRef, useState } from "react";

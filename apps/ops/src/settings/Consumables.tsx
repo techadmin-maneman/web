@@ -1,12 +1,6 @@
-// Settings, Consumables (docs/decisions/0087-consumables-and-stock.md): what a
-// technician may record using on a job, what one costs us, and the levels a kit
-// and the central store are low at; and beneath, what each service is expected
-// to use, which the technician's steppers start at.
-//
-// The list is ops', and a job's use is ours alone: no client's
-// invoice carries a consumable, so what one costs is only ever read here. Each
-// change shows its old figure beside the new before it is sent (ADR 0071). Hair
-// systems are listed with them, counted in pieces, and added by spec beneath
+// Settings, Consumables (docs/decisions/0087-consumables-and-stock.md): what a technician may record using on a job,
+// what each costs us, its low levels, and what each service is expected to use. No client's invoice carries a
+// consumable, so its cost is read only here. Hair systems are listed too, counted in pieces
 // (docs/decisions/0156-hair-systems-in-stock.md).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";

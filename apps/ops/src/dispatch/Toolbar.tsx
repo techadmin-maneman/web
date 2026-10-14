@@ -1,8 +1,6 @@
-// Above the grid: the week, the city, and a way to find one row among many.
-// The brief asks for "a city and week picker"; the design letters the city
-// in its header and draws no control, so they stand in a row of their own
-// (docs/fidelity-method.md). Finding narrows the rows only: the figures at each
-// column's head stay the day's own.
+// Above the grid: the week, the city, and a search for one row among many, in a row of their own since the design draws
+// no control for them (docs/fidelity-method.md). The search narrows the rows only: each day's figures stay the day's
+// own.
 
 import { Label, Select, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";

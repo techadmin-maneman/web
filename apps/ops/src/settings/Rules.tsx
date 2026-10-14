@@ -1,15 +1,6 @@
-// Settings › Rules: every rule ops set for themselves, a section per subject, each section with one Save.
-//
-// A rule is numbers or choices. Every number says its unit and its bounds
-// before anything is typed, each box its own where a rule's figures differ, and
-// a refusal names the box it came from, which the API gives as the rule's name
-// or as "rule.key". A draft is held as text, never as a number: an empty box
-// would read as nought, and a nought here is a radius no arrival can pass or a
-// cycle due the day it is fitted. A choice is picked from those its key may
-// take, each in the console's words.
-//
-// Nothing is sent until ops have seen the change: each figure that moves, the
-// old beside the new, and only the second press sends it, as a price is set.
+// Settings › Rules: every rule ops set for themselves, a section per subject, each with one Save. A number states its
+// unit and bounds, and a draft is text, never a number, since an empty box read as nought would be a radius no arrival
+// passes. Each figure that moves is shown old beside new before the second press sends it.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Disclosure } from "@maneman/ui/Disclosure";
