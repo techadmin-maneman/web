@@ -5,7 +5,14 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { CONTENT_FILES, contentProblems, placeholderMarks } from "../../../scripts/lib/content-gate.ts";
+import {
+  API_COPY_SHOWN_ON,
+  apiCopyInProduction,
+  CONTENT_FILES,
+  contentProblems,
+  placeholderMarks,
+} from "../../../scripts/lib/content-gate.ts";
+import { ENABLED_SURFACES, SURFACES } from "../../../src/config/environments.ts";
 
 const SOURCE = [
   "// Every word the app shows. A component holds no copy of its own. Lines the",
@@ -103,11 +110,22 @@ describe("the production gate on the apps' copy", () => {
     });
   });
 
-  it("refuses a production release of the API while its copy holds a mark", () => {
-    const marked = CONTENT_FILES.api.some((file) => placeholderMarks(readFileSync(file, "utf8")).length > 0);
+  it("refuses a production release of the API while its copy holds a mark on a surface production shows", () => {
+    const shown = apiCopyInProduction();
+    const marked = shown.some((file) => placeholderMarks(readFileSync(file, "utf8")).length > 0);
     const check = spawnSync(process.execPath, ["scripts/release/check-copy.ts", "api"], { encoding: "utf8" });
     expect(check.status).toBe(marked ? 1 : 0);
-    if (marked) expect(check.stderr).toContain("src/config/job-sheet.ts");
+    if (marked) expect(check.stderr).toContain("PLACEHOLDER");
+  });
+
+  it("gates the job sheet on the apps that show it, and the WhatsApp texts on every surface", () => {
+    expect(API_COPY_SHOWN_ON["src/config/job-sheet.ts"]).toEqual(["client", "tech"]);
+    expect(API_COPY_SHOWN_ON["src/config/message-templates.ts"]).toEqual(SURFACES);
+    const shown = apiCopyInProduction();
+    expect(shown).toContain("src/config/message-templates.ts");
+    expect(shown.includes("src/config/job-sheet.ts")).toBe(
+      ENABLED_SURFACES.production.some((surface) => surface === "client" || surface === "tech"),
+    );
   });
 
   it("names each file still marked, how many lines, and where the first are", () => {

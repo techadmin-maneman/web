@@ -27,7 +27,6 @@ What a later release drops, once no deployed Worker reads it. Each waits for the
 | `detail` on each task of `GET /api/tasks`, words read by position                                              | `facts`, by the task's group (`src/domain/ops/task-facts.ts`)  | the release whose console reads `facts`       | —    |
 | `hair_color` on `POST /api/tryon/generate`, which the site of the release before sends                         | Nothing: the look keeps the visitor's own colour               | the release after 0171                        | 0201 |
 | `tryon_jobs.hair_color`, `endpoint`, `provider_color` and `color_route`, AILabTools' choice, no longer written | Nothing                                                        | the release after 0171                        | 0201 |
-| The view `visits` and its three `INSTEAD OF` triggers (0169), for the Worker that read the old name            | `visit_outcomes`                                               | the release after 0169                        | 0199 |
 
 ## Comments an applied migration cannot correct
 
