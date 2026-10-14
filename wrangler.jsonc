@@ -119,6 +119,9 @@
     "BOOKS_REFUND_ACCOUNT_ID": "",
     // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
     "BOOKS_GSTIN": "",
+    "BOOKS_ITEM_PUSH": "false",
+    "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "",
+    "BOOKS_BILL_CONSUMABLES_ACCOUNT": "",
     "BOOKS_GST_STATE": "",
     "STAFF_BOOTSTRAP_ADMINS": "ops@localhost",
     "BOOKS_SAC": "",
@@ -263,6 +266,9 @@
         "BOOKS_REFUND_ACCOUNT_ID": "4242595000000352005",
         // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
         "BOOKS_GSTIN": "",
+        "BOOKS_ITEM_PUSH": "true",
+        "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "4242595000000000567",
+        "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
         "BOOKS_GST_STATE": "",
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         "BOOKS_SAC": "",
@@ -405,6 +411,9 @@
         "BOOKS_REFUND_ACCOUNT_ID": "",
         // GST in Books, empty until the CA gives the GSTIN, the state it is registered in and the SAC code.
         "BOOKS_GSTIN": "",
+        "BOOKS_ITEM_PUSH": "false",
+        "BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT": "4242595000000000567",
+        "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
         "BOOKS_GST_STATE": "",
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
         "BOOKS_SAC": "",

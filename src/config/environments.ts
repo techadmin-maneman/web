@@ -14,32 +14,6 @@ export function isEnvironmentName(value: unknown): value is EnvironmentName {
   return isOneOf(ENVIRONMENTS, value);
 }
 
-/**
- * Whether the hourly item check makes and writes Books' items, in the environment's own organisation, from the
- * console's services and the price book (src/domain/books/books-items.ts). Staging and production never share an
- * organisation (docs/decisions/0200-staging-tenants-of-its-own.md): production writes once its price book holds the
- * owner's prices. A constant, kept with the code that reads it (docs/decisions/0194-the-build-on-workers-paid.md).
- */
-export const BOOKS_ITEM_PUSH: Readonly<Record<EnvironmentName, boolean>> = {
-  local: false,
-  staging: true,
-  production: false,
-};
-
-/**
- * The Books accounts a receipt's bill posts to (src/domain/books/books-bills.ts): a hair system's lines to Cost of Goods
- * Sold, a consumable's to Raw Materials and Consumables, in each environment's own organisation. Production's are the
- * real organisation's; staging's are those of its own once it has one (docs/provisioning.md, step 11b). A constant
- * rather than Worker vars, for the same limit as BOOKS_ITEM_PUSH's. None locally, where no bill is made.
- */
-export const BOOKS_BILL_ACCOUNTS: Readonly<
-  Record<EnvironmentName, { readonly hairSystems: string; readonly consumables: string } | null>
-> = {
-  local: null,
-  staging: { hairSystems: "4242595000000000567", consumables: "4242595000000034057" },
-  production: { hairSystems: "4242595000000000567", consumables: "4242595000000034057" },
-};
-
 /** The D1 database each environment must be bound to. */
 export const EXPECTED_DATABASE_NAME: Readonly<Record<EnvironmentName, string>> = {
   local: "maneman-local",

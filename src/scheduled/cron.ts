@@ -10,7 +10,7 @@
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
 // invocation may send (docs/decisions/0112-workers-paid.md).
 
-import { BOOKS_BILL_ACCOUNTS, BOOKS_ITEM_PUSH, OPS_ORIGIN } from "../config/environments.ts";
+import { OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { bookUnbookedHolds } from "../domain/booking/unbooked-holds.ts";
@@ -322,7 +322,7 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
   const checked = await checkBooksItems(
     env.DB,
     { books: deps.books, alertOnce: deps.alertOnce, resolveAlert: deps.resolveAlert, log },
-    { push: BOOKS_ITEM_PUSH[config.environment], sac: booksGst(config).sac, now: deps.now(), budget },
+    { push: config.settings.zohoBooks?.itemPush ?? false, sac: booksGst(config).sac, now: deps.now(), budget },
   );
   if (checked !== null && checked.differs.length > 0) log.warn("books_items_differ", { ...checked });
 }
@@ -331,7 +331,7 @@ async function booksItemsJob({ env, deps, config, log, budget }: CronContext): P
 export function booksSyncOptions(config: StaticConfig): BooksSyncOptions {
   return {
     refundAccountId: config.settings.zohoBooks?.refundAccountId ?? null,
-    billAccounts: BOOKS_BILL_ACCOUNTS[config.environment],
+    billAccounts: config.settings.zohoBooks?.billAccounts ?? null,
     labelAsTest: config.environment !== "production",
     gst: booksGst(config),
   };

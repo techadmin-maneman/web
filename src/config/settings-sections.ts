@@ -111,12 +111,21 @@ function readZohoBooks(read: Reader, providers: ProvidersRead): ZohoBooksSetting
     orgId: read.text("ZOHO_BOOKS_ORG_ID"),
     refundAccountId: read.optionalText("BOOKS_REFUND_ACCOUNT_ID"),
     gst: readGstRegistration(read),
+    itemPush: read.flag("BOOKS_ITEM_PUSH"),
+    billAccounts: readBillAccounts(read),
   };
   checkZohoHosts(read, [
     ["ZOHO_BOOKS_ACCOUNTS_HOST", zohoBooks.accountsHost],
     ["ZOHO_BOOKS_API_HOST", zohoBooks.apiHost],
   ]);
   return zohoBooks;
+}
+
+/** The two accounts a receipt's bill posts to, or none while either is unset. */
+function readBillAccounts(read: Reader): ZohoBooksSettings["billAccounts"] {
+  const hairSystems = read.optionalText("BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT");
+  const consumables = read.optionalText("BOOKS_BILL_CONSUMABLES_ACCOUNT");
+  return hairSystems === null || consumables === null ? null : { hairSystems, consumables };
 }
 
 /** The GST registration, each part empty until the CA gives it. */

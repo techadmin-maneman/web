@@ -28,6 +28,20 @@ Within a layer, modules import each other freely, as long as no cycle forms.
 - **A vendor's error** is `providers/provider-error.ts`, which the domain reads without naming the vendor.
 - **What a domain function works with**, the database, the clock, a provider and the logger, comes as one context object, the request's logger always among them: booking and giving back a hold take `BookingContext` (`domain/booking/booked-hold.ts`). A module takes one when it is next changed; nothing makes its own logger.
 
+## Where a setting goes
+
+Each value the code reads lives in one of five places, by who changes it and how often:
+
+| Plane                                                                                           | What belongs there                                                                                                                                                                                                                            | Changed by                               | Read through                                        |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------- |
+| Worker vars and secrets (`wrangler.jsonc`, `wrangler secret`)                                   | What differs by environment: each vendor's keys, hosts and IDs, the Books accounts, which provider each capability runs on (`*_PROVIDER`), and a switch the owner may want off in one environment first (`REFERRER_NAME_ON_INVITE`, ADR 0061) | a deploy                                 | `config/settings.ts`, checked at startup            |
+| Constants beside their rule (`policy/`, `config/limits.ts`)                                     | A figure a ruling settled, the same in every environment: limits, ceilings' defaults, give-up counts                                                                                                                                          | a code change                            | the module that holds the rule                      |
+| Environment facts (`config/environments.ts`)                                                    | What names an environment's own resources, for the startup guard and the config check alike: its database's name and its resources' token                                                                                                     | a code change                            | the guard and `scripts/ci/check-wrangler-config.ts` |
+| Ops settings (`ops_settings`, Admin › Settings)                                                 | A figure ops own and change without a deploy: notices, fees, waits, stock levels, cadences (ADR 0193)                                                                                                                                         | ops, in the console                      | `domain/platform/ops-settings.ts`                   |
+| Words (each surface's `content/`, and the Words page's overlay in D1, which the site publishes) | What a client or a member of staff reads                                                                                                                                                                                                      | ops, on the Words page, or a code change | each surface's words module                         |
+
+A provider switch stays only while an environment may run either way: a capability none runs yet (`ROUTES_PROVIDER`, `SMS_PROVIDER`) is `none` until the owner turns it on.
+
 ## The domain's folders
 
 Each folder of `domain/` is a module: the work it holds, and the core tables it alone writes.
