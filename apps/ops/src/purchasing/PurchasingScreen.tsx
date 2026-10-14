@@ -102,9 +102,7 @@ export function PurchasingScreen() {
               }}
             />
           )}
-          {access.mayCall("POST /api/purchase-orders/letterhead") && (
-            <Letterhead orders={current} onSaved={changed} />
-          )}
+          {access.mayCall("POST /api/purchase-orders/letterhead") && <Letterhead orders={current} onSaved={changed} />}
           {access.mayCall("GET /api/supplier-claims") && <Claims orders={current} />}
           {access.mayCall("GET /api/supplier-scorecard") && <SupplierScores />}
         </div>
