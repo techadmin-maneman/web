@@ -17,8 +17,8 @@ async function signIn(page: Page): Promise<void> {
   await page.goto("/");
   await page.getByRole("textbox", { name: "Mobile number" }).fill(day.mobile);
   await page.getByRole("button", { name: "Send the code" }).click();
+  // The sixth digit sends the code.
   await page.getByRole("textbox", { name: "Code" }).fill(LOCAL_LOGIN_CODE);
-  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: /jobs? today$/ })).toBeVisible();
 }
 
