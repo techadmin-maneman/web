@@ -160,6 +160,28 @@ describe("POST /api/bookings", () => {
 });
 
 describe("confirmBooking", () => {
+  // A payment that landed after the switch-off booked the visit onto a technician who was signed out.
+  it("books a paid hold unassigned, and tells ops, once its technician was switched off", async () => {
+    const app = appFor("local", fakeDependencies(), {}, "client");
+    const holdId = await heldService(app);
+    await post(app, "/api/bookings", { hold_id: holdId });
+    await captured(holdId);
+    await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = 't1'").run();
+    const told: string[] = [];
+    const alertOnce = (alert: { message: string }) => {
+      told.push(alert.message);
+      return Promise.resolve();
+    };
+
+    const booked = await confirmBooking(
+      { db: env.DB, payments: createStubPayments(), now: NOW, log: createLogger(), alertOnce },
+      holdId,
+    );
+    expect(booked).toBe("booked");
+    expect(await visitOf(holdId)).toMatchObject({ status: "scheduled", technician_id: null });
+    expect(told).toEqual([expect.stringContaining("the one it was held with was switched off")]);
+  });
+
   it("books a paid hold with its technician and times, its own ID its FSM ID, and links the payment", async () => {
     const app = appFor("local", fakeDependencies(), {}, "client");
     const holdId = await heldService(app);

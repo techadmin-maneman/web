@@ -95,6 +95,7 @@ const FINANCE_KINDS = [
 ];
 
 const OPERATIONS_KINDS = [
+  "booked_unassigned",
   "low_stock",
   "fit_without_piece",
   "stock_expiring",

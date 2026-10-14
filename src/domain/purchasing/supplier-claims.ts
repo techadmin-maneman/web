@@ -141,16 +141,16 @@ export type ClaimChanged =
 
 /**
  * A claim's update and its audit entry, the entry written only where the update stamped this request's token, so a
- * step refused for the claim's state is never audited. `?1` is the claim, `?9` the token.
+ * step refused for the claim's state is never audited. Its SQL sets `change_id = ?1`, the token, on the claim `?2`,
+ * and takes its own values from `?3` on.
  */
 async function changed(
   db: D1Database,
   claim: { readonly id: string; readonly action: AuditAction },
-  update: { readonly sql: string; readonly binds: readonly (string | number | null)[] },
+  update: { readonly sql: string; readonly values: readonly (string | number | null)[] },
   written: Written,
 ): Promise<ClaimChanged> {
   const token = crypto.randomUUID();
-  const unused = Array.from({ length: 8 - update.binds.length }, () => null);
   const entry = {
     surface: "ops" as const,
     actor: written.actor,
@@ -163,7 +163,7 @@ async function changed(
     binds: [claim.id, token],
   };
   const [result] = await db.batch([
-    db.prepare(update.sql).bind(...update.binds, ...unused, token),
+    db.prepare(update.sql).bind(token, claim.id, ...update.values),
     auditStatementWhen(db, entry, written.now, landed),
   ]);
   if (result?.meta.changes === 1) return { ok: true };
@@ -179,10 +179,10 @@ export function sendClaim(
   written: Written,
 ): Promise<ClaimChanged> {
   const update = {
-    sql: `UPDATE supplier_claims SET change_id = ?9, state = 'sent', sent_by = ?2, sent_at = ?3, note = COALESCE(?4, note),
-            photo_id = COALESCE(?5, photo_id)
-          WHERE id = ?1 AND state = 'drafted'`,
-    binds: [id, written.actor.id, written.now.toISOString(), sent.note, sent.photoId],
+    sql: `UPDATE supplier_claims SET change_id = ?1, state = 'sent', sent_by = ?3, sent_at = ?4, note = COALESCE(?5, note),
+            photo_id = COALESCE(?6, photo_id)
+          WHERE id = ?2 AND state = 'drafted'`,
+    values: [written.actor.id, written.now.toISOString(), sent.note, sent.photoId],
   };
   return changed(db, { id, action: "supplier_claim.send" }, update, written);
 }
@@ -190,9 +190,9 @@ export function sendClaim(
 /** A drafted claim withdrawn, with why: not worth sending. */
 export function withdrawClaim(db: D1Database, id: string, note: string, written: Written): Promise<ClaimChanged> {
   const update = {
-    sql: `UPDATE supplier_claims SET change_id = ?9, state = 'withdrawn', decided_by = ?2, decided_at = ?3, note = ?4
-          WHERE id = ?1 AND state = 'drafted'`,
-    binds: [id, written.actor.id, written.now.toISOString(), note],
+    sql: `UPDATE supplier_claims SET change_id = ?1, state = 'withdrawn', decided_by = ?3, decided_at = ?4, note = ?5
+          WHERE id = ?2 AND state = 'drafted'`,
+    values: [written.actor.id, written.now.toISOString(), note],
   };
   return changed(db, { id, action: "supplier_claim.withdraw" }, update, written);
 }
@@ -212,11 +212,10 @@ export function decideClaim(
 ): Promise<ClaimChanged> {
   const accepted = answer.outcome !== "rejected";
   const update = {
-    sql: `UPDATE supplier_claims SET change_id = ?9, state = ?4, outcome = ?5, credit_amount = ?6,
-            note = COALESCE(?7, note), decided_by = ?2, decided_at = ?3
-          WHERE id = ?1 AND state = 'sent'`,
-    binds: [
-      id,
+    sql: `UPDATE supplier_claims SET change_id = ?1, state = ?5, outcome = ?6, credit_amount = ?7,
+            note = COALESCE(?8, note), decided_by = ?3, decided_at = ?4
+          WHERE id = ?2 AND state = 'sent'`,
+    values: [
       written.actor.id,
       written.now.toISOString(),
       accepted ? "accepted" : "rejected",
