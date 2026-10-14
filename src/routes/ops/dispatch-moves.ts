@@ -13,7 +13,6 @@ import type { Context } from "hono";
 import { BOOKING_WINDOWS } from "../../config/scheduling.ts";
 import { type MoveInput, moveFromTheBoard, moveJob, recordToldByPhone } from "../../domain/dispatch/dispatch.ts";
 import { proposeMove, withdrawProposal } from "../../domain/dispatch/move-proposals.ts";
-import { auditStatement } from "../../domain/platform/audit.ts";
 import type { AuditEntry } from "../../domain/platform/audit.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -269,21 +268,18 @@ async function propose(c: Context<AppEnv>, request: MoveRequest) {
   if (!(await mayGoTo(c, request))) return refuse(c, "invalid_request", ["technician_id"]);
   const input = inputOf(c, request);
   const now = c.var.deps.now();
-  const outcome = await proposeMove(c.env.DB, { notify: (messageId) => queueMessage(c, messageId) }, input, now);
+  const audit = (proposalId: string) => ({
+    surface: "ops" as const,
+    actor: actorOf(c),
+    action: "dispatch.move_proposed" as const,
+    subject: { kind: "appointment", id: input.appointmentId },
+    requestId: c.var.requestId,
+    detail: { proposal_id: proposalId, reason: input.reason },
+  });
+  const notify = (messageId: string) => queueMessage(c, messageId);
+  const outcome = await proposeMove(c.env.DB, { notify, audit }, input, now);
   if (outcome.kind === "same_day") return refuse(c, "invalid_request", ["date"]);
   if (outcome.kind !== "proposed") return refusedMove(c, outcome);
-  await auditStatement(
-    c.env.DB,
-    {
-      surface: "ops",
-      actor: actorOf(c),
-      action: "dispatch.move_proposed",
-      subject: { kind: "appointment", id: input.appointmentId },
-      requestId: c.var.requestId,
-      detail: { proposal_id: outcome.proposalId, reason: input.reason },
-    },
-    now,
-  ).run();
   c.var.log.info("dispatch_move_proposed", { appointment_id: input.appointmentId, proposal_id: outcome.proposalId });
   return c.json({ proposal_id: outcome.proposalId, client_notice: outcome.clientNotice }, 200);
 }

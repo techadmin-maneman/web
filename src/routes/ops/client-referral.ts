@@ -22,7 +22,7 @@ import {
 } from "../../domain/referrals/referrals.ts";
 import { errorBody, errorResponse, ErrorResponseSchema, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { withinRouteReach } from "../../http/staff-access.ts";
+import { clientInReach } from "../../http/staff-access.ts";
 import { CRM_ORG_HAS_REFERRAL_FIELDS } from "../../config/crm.ts";
 import { REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 import { enqueue } from "../../domain/platform/enqueue.ts";
@@ -128,13 +128,7 @@ export function registerOpsClientReferral(app: App): void {
     const { code, reason } = c.req.valid("json");
     const { requestId } = c.var;
     const db = c.env.DB;
-    const person = await db
-      .prepare("SELECT id FROM people WHERE id = ?1 AND erased_at IS NULL")
-      .bind(personId)
-      .first<{ id: string }>();
-    if (person === null || !(await withinRouteReach(c, "client", personId))) {
-      return refuse(c, "not_found");
-    }
+    if ((await clientInReach(c, personId)) === null) return refuse(c, "not_found");
     const invite = await inviteOf({ db, code, nameOnInvite: false });
     if (invite === null) return refuse(c, "unknown_invite");
 

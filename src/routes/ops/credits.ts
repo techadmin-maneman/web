@@ -11,7 +11,7 @@ import type { App } from "../../http/context.ts";
 import { ADJUST_REASONS, adjustCredits } from "../../domain/money/credits.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { withinRouteReach } from "../../http/staff-access.ts";
+import { clientInReach } from "../../http/staff-access.ts";
 
 /** More than a year of monthly visits either way is not a correction. */
 const MOST_VISITS = 12;
@@ -68,13 +68,7 @@ export function registerOpsCredits(app: App): void {
     const personId = c.req.valid("param").id;
     const { visits, reason } = c.req.valid("json");
     const db = c.env.DB;
-    const person = await db
-      .prepare("SELECT id FROM people WHERE id = ?1 AND erased_at IS NULL")
-      .bind(personId)
-      .first<{ id: string }>();
-    if (person === null || !(await withinRouteReach(c, "client", personId))) {
-      return refuse(c, "not_found");
-    }
+    if ((await clientInReach(c, personId)) === null) return refuse(c, "not_found");
 
     const balance = await adjustCredits(db, {
       personId,

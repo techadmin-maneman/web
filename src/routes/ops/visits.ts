@@ -37,7 +37,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
-import { routeReach, withinRouteReach } from "../../http/staff-access.ts";
+import { clientInReach, routeReach, withinRouteReach } from "../../http/staff-access.ts";
 import { stripStart } from "../../policy/next-visit.ts";
 import { PRICE_TIER } from "../../policy/services.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
@@ -270,12 +270,8 @@ const owedOf = (owed: readonly Remake[], kind: VisitType) =>
     .map((each) => ({ id: each.id, why: each.why, piece_code: each.pieceCode, since: each.since }));
 
 /** Whether the client is on our records, not erased, and in the caller's cities. */
-async function isClientInReach(c: Context<AppEnv>, client: string): Promise<boolean> {
-  const person = await c.env.DB.prepare("SELECT 1 FROM people WHERE id = ?1 AND erased_at IS NULL")
-    .bind(client)
-    .first();
-  return person !== null && withinRouteReach(c, "client", client);
-}
+const isClientInReach = async (c: Context<AppEnv>, client: string): Promise<boolean> =>
+  (await clientInReach(c, client)) !== null;
 
 /** A booking outside the caller's cities: a client elsewhere is not found, and a technician elsewhere is not free. */
 async function refusedElsewhere(c: Context<AppEnv>, asked: VisitAsked) {
