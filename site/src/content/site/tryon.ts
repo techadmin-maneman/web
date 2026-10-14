@@ -70,15 +70,10 @@ export function lookPictures(list: readonly { readonly picture?: string | undefi
   return pictures.length === list.length ? pictures : null;
 }
 
-/** The consent screen's words, from the photo notice: its title, its rows and the agreement. */
+/** The consent screen's words: the photo notice's parts, its title, its rows and the agreement. */
 export function consentCopy(photo: Notice) {
-  const [title = "", ...rest] = photo.lines;
-  const agreement = rest.at(-1) ?? "";
-  const rows = rest.slice(0, -1).map((line) => {
-    const [k = "", ...v] = line.split(": ");
-    return { k, v: v.join(": ") };
-  });
-  return { title, rows, agreement };
+  if (photo.layout === undefined) throw new Error(`the ${photo.version} notice has no parts for the consent screen`);
+  return photo.layout;
 }
 
 /** The gate's words, from its notice. */

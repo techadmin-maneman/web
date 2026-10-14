@@ -79,16 +79,19 @@ function openApp(event: Click, appOrigin: string, mobile: string): void {
 /** What a code takes off the hair system's price, before GST: "Rs. 1,000 off", or "10% off, up to Rs. 2,000". */
 function offOf(standing: StandingCode): string {
   const words = referral.booked.code;
-  if (standing.kind === "amount") return words.amountOff(rupees(standing.value));
-  return words.percentOff(standing.value, standing.cap === null ? null : rupees(standing.cap));
+  if (standing.kind === "amount") return fill(words.amountOff, { amount: rupees(standing.value) });
+  const percent = String(standing.value);
+  if (standing.cap === null) return fill(words.percentOff, { percent });
+  return fill(words.percentOffCapped, { percent, cap: rupees(standing.cap) });
 }
 
 /** What the confirmation says of the code sent: what it takes off when they pay, or that the booking stands without. */
 function codeNote(booking: Booking): string | null {
   if (booking.code === null) return null;
   const standing = "discount_code" in booking.result ? booking.result.discount_code : null;
-  if (standing === null) return referral.booked.code.notApplied(booking.code.toUpperCase());
-  return referral.booked.code.applied(standing.code, offOf(standing));
+  const words = referral.booked.code;
+  if (standing === null) return fill(words.notApplied, { code: booking.code.toUpperCase() });
+  return fill(words.applied, { code: standing.code, off: offOf(standing) });
 }
 
 /** The window's hours as the form offered them: "12 to 4 pm". */
@@ -102,7 +105,7 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
   const entry: CalendarEntry = {
     title: result.one_visit ? calendar.title.oneVisit : calendar.title.consultation,
     ...windowSpan(result.date, result.window),
-    details: calendar.details(hoursOf(result.window), props.ready),
+    details: fill(calendar.details, { hours: hoursOf(result.window), ready: props.ready }),
     uid: `${result.date}-${result.window}@maneman.in`,
   };
   return (
@@ -124,7 +127,8 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
 function headlineOf(result: Booking["result"]): { label: string; title: string; body: string } {
   if (result.state === "requested") return referral.requested;
   const { booked } = referral;
-  return { label: booked.label, title: booked.when(longDay(result.date), hoursOf(result.window)), body: booked.body };
+  const title = fill(booked.when, { day: longDay(result.date), hours: hoursOf(result.window) });
+  return { label: booked.label, title, body: booked.body };
 }
 
 export function Booked(props: { booking: Booking; reward: ReferralReward | null; heading: HeadingRef }) {

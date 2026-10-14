@@ -86,7 +86,7 @@ describe("content", () => {
   it("builds the consent screen and the gate from the backend's notices, word for word", () => {
     const consent = site.consentCopy(site.notices.photo);
     expect(consent.title).toBe("What happens to your photograph.");
-    expect(consent.rows.map((row) => row.k)).toEqual([
+    expect(consent.rows.map((row) => row.label)).toEqual([
       "Used for",
       "Kept for",
       "Training",
@@ -197,7 +197,7 @@ describe("content", () => {
     expect(site.pageTitles.home).toContain("across Delhi NCR");
     expect(site.pageDescriptions.home).toContain("across Delhi NCR");
     expect(referral.waitlist.body).toBe("Delhi NCR only, for now.");
-    expect(referral.preview.description(3)).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
+    expect(referral.preview.description).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
   });
 
   // Production keeps a result fourteen days (ADR 0039), as the privacy notice says.

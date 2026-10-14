@@ -3647,6 +3647,174 @@
     "text": "Check your pincode"
   },
   {
+    "key": "site:referral/rewardWords.serviceVisit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{count} service visit"
+  },
+  {
+    "key": "site:referral/rewardWords.serviceVisits",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{count} service visits"
+  },
+  {
+    "key": "site:referral/rewardWords.visit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{count} visit"
+  },
+  {
+    "key": "site:referral/rewardWords.visits",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{count} visits"
+  },
+  {
+    "key": "site:referral/rewardWords.offer.toReferrer",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Get fitted and your friend gets {referrer} free."
+  },
+  {
+    "key": "site:referral/rewardWords.offer.both",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Get fitted and you both get {friend} free."
+  },
+  {
+    "key": "site:referral/rewardWords.offer.toFriend",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Get fitted and you get {friend} free."
+  },
+  {
+    "key": "site:referral/rewardWords.offer.unequal",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Get fitted and you get {friend} free. Your friend gets {referrerCount}."
+  },
+  {
+    "key": "site:referral/rewardWords.discount.amount",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{amount} off your first fit."
+  },
+  {
+    "key": "site:referral/rewardWords.discount.percent",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{percent}% off your first fit."
+  },
+  {
+    "key": "site:referral/rewardWords.discount.percentCapped",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{percent}% off your first fit, up to {cap}."
+  },
+  {
+    "key": "site:referral/rewardWords.unknown.free",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The consultation is still free."
+  },
+  {
+    "key": "site:referral/rewardWords.unknown.one",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The consultation is still free; the {visits} does not apply."
+  },
+  {
+    "key": "site:referral/rewardWords.unknown.many",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The consultation is still free; the {visits} do not apply."
+  },
+  {
+    "key": "site:referral/rewardWords.told.named",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{name} is told when you are fitted."
+  },
+  {
+    "key": "site:referral/rewardWords.told.unnamed",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Whoever invited you is told when you are fitted."
+  },
+  {
+    "key": "site:referral/rewardWords.told.landsOne",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{told} That is when the {visits} lands."
+  },
+  {
+    "key": "site:referral/rewardWords.told.landsMany",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{told} That is when the {visits} land."
+  },
+  {
+    "key": "site:referral/rewardWords.remembered",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "You have an invite. {told}"
+  },
+  {
+    "key": "site:referral/rewardWords.credits.one",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The {visits} lands when you are fitted."
+  },
+  {
+    "key": "site:referral/rewardWords.credits.many",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The {visits} land when you are fitted."
+  },
+  {
+    "key": "site:referral/rewardWords.expired.free",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "More than 12 months old. The consultation is still free."
+  },
+  {
+    "key": "site:referral/rewardWords.expired.one",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "More than 12 months old. The consultation is still free; the {visits} does not apply."
+  },
+  {
+    "key": "site:referral/rewardWords.expired.many",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "More than 12 months old. The consultation is still free; the {visits} do not apply."
+  },
+  {
     "key": "site:referral/referral.arrival.invited",
     "surface": "site",
     "group": "Invite page",
@@ -4018,6 +4186,20 @@
     "text": "Search isn’t available right now. Type your address below instead."
   },
   {
+    "key": "site:referral/referral.address.building.foundOne",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "1 building found"
+  },
+  {
+    "key": "site:referral/referral.address.building.foundMany",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{count} buildings found"
+  },
+  {
     "key": "site:referral/referral.address.building.attribution",
     "surface": "site",
     "group": "Invite page",
@@ -4347,6 +4529,13 @@
     "text": "Booked"
   },
   {
+    "key": "site:referral/referral.booked.when",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{day}, {hours}"
+  },
+  {
     "key": "site:referral/referral.booked.body",
     "surface": "site",
     "group": "Invite page",
@@ -4401,6 +4590,48 @@
     "group": "Invite page",
     "where": "referral",
     "text": "Mane Man consultation and fit"
+  },
+  {
+    "key": "site:referral/referral.booked.calendar.details",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Arriving {hours}. {ready}"
+  },
+  {
+    "key": "site:referral/referral.booked.code.applied",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Code {code}: {off}, taken when you pay."
+  },
+  {
+    "key": "site:referral/referral.booked.code.notApplied",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We couldn’t apply code {code}. Your booking stands without it."
+  },
+  {
+    "key": "site:referral/referral.booked.code.amountOff",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{amount} off"
+  },
+  {
+    "key": "site:referral/referral.booked.code.percentOff",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{percent}% off"
+  },
+  {
+    "key": "site:referral/referral.booked.code.percentOffCapped",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{percent}% off, up to {cap}"
   },
   {
     "key": "site:referral/referral.booked.appHint",
@@ -4590,6 +4821,13 @@
     "group": "Invite page",
     "where": "referral",
     "text": "Mane Man, recommended by {partner}"
+  },
+  {
+    "key": "site:referral/referral.preview.description",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Home-fitted hair systems across Delhi NCR. {visits} free when you’re fitted."
   },
   {
     "key": "site:referral/referral.preview.descriptionWithout",

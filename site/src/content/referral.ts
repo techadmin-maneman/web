@@ -26,19 +26,62 @@ function lineOf(notice: Notice): string {
   return line;
 }
 
+/**
+ * The sentences that give what an invite earns, each count a hole, so the Words page can change them
+ * (docs/decisions/0126-the-words-page.md). Where a verb agrees with a count, each count has its own sentence.
+ */
+export const rewardWords = {
+  serviceVisit: "{count} service visit",
+  serviceVisits: "{count} service visits",
+  /** The design's shorter count, once the page has said what they are. */
+  visit: "{count} visit",
+  visits: "{count} visits",
+  /** The navy block's offer, "you" the friend who opened it and "your friend" whoever sent it. */
+  offer: {
+    toReferrer: "Get fitted and your friend gets {referrer} free.",
+    both: "Get fitted and you both get {friend} free.",
+    toFriend: "Get fitted and you get {friend} free.",
+    unequal: "Get fitted and you get {friend} free. Your friend gets {referrerCount}.",
+  },
+  /** A partner's discount, which comes off the friend's first fit by itself. */
+  discount: {
+    amount: "{amount} off your first fit.",
+    percent: "{percent}% off your first fit.",
+    percentCapped: "{percent}% off your first fit, up to {cap}.",
+  },
+  /** A code we do not know, whose visits the friend does not get. */
+  unknown: {
+    free: "The consultation is still free.",
+    one: "The consultation is still free; the {visits} does not apply.",
+    many: "The consultation is still free; the {visits} do not apply.",
+  },
+  /** Beneath the form: who is told of the fit, then when the friend's visits land. */
+  told: {
+    named: "{name} is told when you are fitted.",
+    unnamed: "Whoever invited you is told when you are fitted.",
+    landsOne: "{told} That is when the {visits} lands.",
+    landsMany: "{told} That is when the {visits} land.",
+  },
+  /** /book's line for the invite this browser remembers, above the consultation form's button. */
+  remembered: "You have an invite. {told}",
+  /** The booked confirmation's line of the friend's visits. */
+  credits: { one: "The {visits} lands when you are fitted.", many: "The {visits} land when you are fitted." },
+  /** C4's "Code expired" frame's line. */
+  expired: {
+    free: "More than 12 months old. The consultation is still free.",
+    one: "More than 12 months old. The consultation is still free; the {visits} does not apply.",
+    many: "More than 12 months old. The consultation is still free; the {visits} do not apply.",
+  },
+};
+
 /** "1 service visit", "3 service visits". */
 function serviceVisits(count: number): string {
-  return count === 1 ? "1 service visit" : `${String(count)} service visits`;
+  return fill(count === 1 ? rewardWords.serviceVisit : rewardWords.serviceVisits, { count: String(count) });
 }
 
-/** "1 visit", "3 visits": the design's shorter count, once the page has said what they are. */
+/** "1 visit", "3 visits". */
 function visits(count: number): string {
-  return count === 1 ? "1 visit" : `${String(count)} visits`;
-}
-
-/** The verb that agrees with a count: "lands" for one, "land" for any other. */
-function agreeing(count: number, one: string, many: string): string {
-  return count === 1 ? one : many;
+  return fill(count === 1 ? rewardWords.visit : rewardWords.visits, { count: String(count) });
 }
 
 /** The friend's visits, or none where the reward is not known. */
@@ -57,11 +100,12 @@ export function inviteReward(invite: Invite | null, reward: ReferralReward | nul
 /** The navy block's offer: what the invite earns each side. Null where it earns nobody anything. */
 function inviteOffer(reward: ReferralReward): string | null {
   const { referrer_visits: referrer, friend_visits: friend } = reward;
+  const { offer } = rewardWords;
   if (friend === 0 && referrer === 0) return null;
-  if (friend === 0) return `Get fitted and your friend gets ${serviceVisits(referrer)} free.`;
-  if (referrer === friend) return `Get fitted and you both get ${serviceVisits(friend)} free.`;
-  if (referrer === 0) return `Get fitted and you get ${serviceVisits(friend)} free.`;
-  return `Get fitted and you get ${serviceVisits(friend)} free. Your friend gets ${String(referrer)}.`;
+  if (friend === 0) return fill(offer.toReferrer, { referrer: serviceVisits(referrer) });
+  const words = { friend: serviceVisits(friend), referrerCount: String(referrer) };
+  if (referrer === friend) return fill(offer.both, words);
+  return fill(referrer === 0 ? offer.toFriend : offer.unequal, words);
 }
 
 /**
@@ -69,44 +113,51 @@ function inviteOffer(reward: ReferralReward): string | null {
  * "Rs. 2,000 off your first fit.", or "20% off your first fit, up to Rs. 5,000."
  */
 function discountOffer(terms: NonNullable<Invite["discount"]>): string {
-  if (terms.kind === "amount") return `${rupees(terms.value)} off your first fit.`;
-  const percent = `${String(terms.value)}% off your first fit`;
-  return terms.cap === null ? `${percent}.` : `${percent}, up to ${rupees(terms.cap)}.`;
+  const { discount } = rewardWords;
+  if (terms.kind === "amount") return fill(discount.amount, { amount: rupees(terms.value) });
+  const percent = String(terms.value);
+  return terms.cap === null
+    ? fill(discount.percent, { percent })
+    : fill(discount.percentCapped, { percent, cap: rupees(terms.cap) });
+}
+
+/** One of three sentences by the friend's visits: none, one, or more. */
+function byVisits(friend: number, sentences: { free: string; one: string; many: string }, count: string): string {
+  if (friend === 0) return sentences.free;
+  return fill(friend === 1 ? sentences.one : sentences.many, { visits: count });
 }
 
 /** A code we do not know, whose visits the friend does not get. */
 function unknownBody(reward: ReferralReward | null): string {
   const friend = friendVisits(reward);
-  if (friend === 0) return "The consultation is still free.";
-  return `The consultation is still free; the ${serviceVisits(friend)} ${agreeing(friend, "does", "do")} not apply.`;
+  return byVisits(friend, rewardWords.unknown, serviceVisits(friend));
 }
 
 /** Beneath the form: who is told of the fit, and when the friend's visits land. */
 function toldWhenFitted(name: string | null, reward: ReferralReward | null): string {
-  const told =
-    name === null ? "Whoever invited you is told when you are fitted." : `${name} is told when you are fitted.`;
+  const { told: words } = rewardWords;
+  const told = name === null ? words.unnamed : fill(words.named, { name });
   const friend = friendVisits(reward);
   if (friend === 0) return told;
-  return `${told} That is when the ${visits(friend)} ${agreeing(friend, "lands", "land")}.`;
+  return fill(friend === 1 ? words.landsOne : words.landsMany, { told, visits: visits(friend) });
 }
 
 /** /book's line for the invite this browser remembers, above the consultation form's button. */
 function rememberedOnBooking(reward: ReferralReward | null): string {
-  return `You have an invite. ${toldWhenFitted(null, reward)}`;
+  return fill(rewardWords.remembered, { told: toldWhenFitted(null, reward) });
 }
 
 /** The booked confirmation's line of the friend's visits; null where they get none, or it is not known. */
 function visitsLand(reward: ReferralReward | null): string | null {
   const friend = friendVisits(reward);
   if (friend === 0) return null;
-  return `The ${serviceVisits(friend)} ${agreeing(friend, "lands", "land")} when you are fitted.`;
+  return fill(friend === 1 ? rewardWords.credits.one : rewardWords.credits.many, { visits: serviceVisits(friend) });
 }
 
 /** C4's "Code expired" frame's line. */
 function expiredBody(reward: ReferralReward | null): string {
   const friend = friendVisits(reward);
-  if (friend === 0) return "More than 12 months old. The consultation is still free.";
-  return `More than 12 months old. The consultation is still free; the ${visits(friend)} ${agreeing(friend, "does", "do")} not apply.`;
+  return byVisits(friend, rewardWords.expired, visits(friend));
 }
 
 export const referral = {
@@ -222,7 +273,8 @@ export const referral = {
       label: "Search for your building",
       hint: "Search for your building or society, so your technician can find you.",
       unavailable: "Search isn’t available right now. Type your address below instead.",
-      found: (count: number) => (count === 1 ? "1 building found" : `${String(count)} buildings found`),
+      foundOne: "1 building found",
+      foundMany: "{count} buildings found",
       // Google asks for their name against suggestions shown without a map.
       attribution: "Google Maps",
     },
@@ -299,7 +351,7 @@ export const referral = {
    */
   booked: {
     label: "Booked",
-    when: (day: string, hours: string) => `${day}, ${hours}`,
+    when: "{day}, {hours}",
     body: "Your technician arrives in that window. Details are on WhatsApp at +91 {mobile}.",
     ready: {
       consultation: `${capitalised(visitLength.consultation)} at home, and free. Nothing is fitted.`,
@@ -311,17 +363,17 @@ export const referral = {
       file: "Apple or Outlook",
       fileName: "mane-man-visit.ics",
       title: { consultation: "Mane Man consultation", oneVisit: "Mane Man consultation and fit" },
-      details: (hours: string, ready: string) => `Arriving ${hours}. ${ready}`,
+      details: "Arriving {hours}. {ready}",
     },
     credits: visitsLand,
     // Not drawn: the discount code given with the one visit, as it stands on the booking, or not, when another
     // booking took its last use a moment before (ADR 0108). What it takes off is before GST.
     code: {
-      applied: (code: string, off: string) => `Code ${code}: ${off}, taken when you pay.`,
-      notApplied: (code: string) => `We couldn’t apply code ${code}. Your booking stands without it.`,
-      amountOff: (amount: string) => `${amount} off`,
-      percentOff: (percent: number, cap: string | null) =>
-        cap === null ? `${String(percent)}% off` : `${String(percent)}% off, up to ${cap}`,
+      applied: "Code {code}: {off}, taken when you pay.",
+      notApplied: "We couldn’t apply code {code}. Your booking stands without it.",
+      amountOff: "{amount} off",
+      percentOff: "{percent}% off",
+      percentOffCapped: "{percent}% off, up to {cap}",
     },
     appHint: "See it in the app too: sign in with this number.",
     app: "Open the app",
@@ -378,8 +430,7 @@ export const referral = {
     title: "{name} sent you a Mane Man invite",
     titleUnnamed: "You have a Mane Man invite",
     titlePartner: "Mane Man, recommended by {partner}",
-    description: (friend: number) =>
-      `Home-fitted hair systems across ${serviceArea}. ${serviceVisits(friend)} free when you’re fitted.`,
+    description: `Home-fitted hair systems across ${serviceArea}. {visits} free when you’re fitted.`,
     descriptionWithout: `Home-fitted hair systems across ${serviceArea}.`,
   },
 };
@@ -403,5 +454,5 @@ export function invitePageTitle(invite: Invite | null): string {
 export function inviteDescription(invite: Invite | null, reward: ReferralReward | null): string {
   const friend = friendVisits(inviteReward(invite, reward));
   if (invite?.state !== "valid" || friend === 0) return referral.preview.descriptionWithout;
-  return referral.preview.description(friend);
+  return fill(referral.preview.description, { visits: serviceVisits(friend) });
 }

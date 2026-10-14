@@ -24,9 +24,9 @@ export function Consent(props: {
       <Title heading={props.heading}>{words.title}</Title>
       <dl class={styles.rows}>
         {words.rows.map((row) => (
-          <div key={row.k} class={styles.row}>
-            <dt class={capsLook(styles.rowKey)}>{row.k}</dt>
-            <dd class={styles.rowValue}>{row.v}</dd>
+          <div key={row.label} class={styles.row}>
+            <dt class={capsLook(styles.rowKey)}>{row.label}</dt>
+            <dd class={styles.rowValue}>{row.says}</dd>
           </div>
         ))}
       </dl>

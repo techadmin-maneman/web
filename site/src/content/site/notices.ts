@@ -1,6 +1,6 @@
 // The notices a consent is given under, as the backend records them, and which are approved.
 
-import { CURRENT_NOTICE, findNotice, LANDING_NOTICES } from "@rules/config/notices.ts";
+import { CURRENT_NOTICE, findNotice, LANDING_NOTICES, type NoticeLayout } from "@rules/config/notices.ts";
 import { KEEPING_NOTICES } from "@rules/policy/kept-try-ons.ts";
 
 export interface Notice {
@@ -8,6 +8,8 @@ export interface Notice {
   /** Counsel has signed off this wording. */
   readonly approved: boolean;
   readonly lines: readonly string[];
+  /** Its parts, where a screen lays them out (the try-on's consent). */
+  readonly layout?: NoticeLayout;
 }
 
 /**
@@ -25,7 +27,8 @@ const APPROVED_NOTICES: readonly string[] = [
 function notice(version: string): Notice {
   const found = findNotice(version);
   if (found === undefined) throw new Error(`no notice ${version} in src/config/notices.ts`);
-  return { version, approved: APPROVED_NOTICES.includes(version), lines: found.text };
+  const approved = APPROVED_NOTICES.includes(version);
+  return { version, approved, lines: found.text, ...("layout" in found ? { layout: found.layout } : {}) };
 }
 
 // ---------------------------------------------------------------------------

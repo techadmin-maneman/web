@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
 import type { AddressFields as Address, RequiredPart } from "../../lib/address.ts";
 import { suggestBuildings } from "../../lib/api.ts";
+import { fill } from "../../lib/text.ts";
 import styles from "./Invite.module.css";
 
 const copy = referral.address;
@@ -67,7 +68,11 @@ export function AddressFieldset(props: {
           onChoose={(chosen) => {
             props.onChange({ ...address, building: chosen.primary, placeId: chosen.place_id });
           }}
-          words={copy.building}
+          words={{
+            ...copy.building,
+            found: (count) =>
+              count === 1 ? copy.building.foundOne : fill(copy.building.foundMany, { count: String(count) }),
+          }}
         />
         <AddressFields
           without={address.building.trim() === "" ? [] : ["line1"]}
