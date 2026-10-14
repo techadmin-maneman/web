@@ -17,6 +17,8 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { PieceScans } from "../stock/index.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 type Task = paths["/api/count-tasks/{id}"]["get"]["responses"][200]["content"]["application/json"];
 
@@ -87,11 +89,11 @@ function Counting({
           </Field>
         </div>
       ))}
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void save()}>
           {recount ? copy.saveRecount : copy.saveCount}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }
@@ -121,9 +123,7 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
         <tbody>
           {loaded.value.lines.map((line) => (
             <tr key={line.consumable_code}>
-              <th scope="row" className={form.rowHead}>
-                {line.name}
-              </th>
+              <RowHead>{line.name}</RowHead>
               <td className={form.figure}>{line.held}</td>
               <td className={form.figure}>{line.counted}</td>
               <td className={form.figure}>{line.recounted ?? ""}</td>
@@ -152,7 +152,7 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
           />
         )}
       </Field>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -167,7 +167,7 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
         >
           {copy.signOff}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }

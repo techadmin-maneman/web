@@ -23,6 +23,7 @@ import form from "../components/forms.module.css";
 import styles from "./staff.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 const copy = settings.staff;
 
@@ -226,7 +227,7 @@ export function StaffForm(props: {
           ))}
         </ul>
       </Fieldset>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="outline"
           size="small"
@@ -237,7 +238,7 @@ export function StaffForm(props: {
         >
           {copy.form.addGrant}
         </Button>
-      </div>
+      </FormActions>
       {listed && <Refusal className={form.error} said={errorText(copy.errors, { code: "already_listed" })} />}
     </SettingForm>
   );

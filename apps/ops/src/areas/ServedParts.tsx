@@ -10,9 +10,12 @@ import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import type { AreaChange, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import form from "../components/forms.module.css";
+import styles from "./areas.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import type { Draft, FileChange, Row } from "./served-draft.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = areas.served;
 const launch = areas.launch;
@@ -40,13 +43,11 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
   const id = pincode.pincode;
   return (
     <tr>
-      <th scope="row" className={form.rowHead}>
-        {id}
-      </th>
+      <RowHead>{id}</RowHead>
       <td>
         <TextInput
           compact
-          className={form.cellText}
+          className={styles.cellText}
           id={`area-${id}`}
           maxLength={40}
           aria-label={copy.areaLabel(id)}
@@ -70,7 +71,7 @@ export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProp
       <td>
         <DateInput
           compact
-          className={form.cellDate}
+          className={styles.cellDate}
           aria-label={copy.launchOn(id)}
           disabled={!mayChange}
           value={row.launch_on ?? ""}
@@ -138,7 +139,7 @@ function FilePreview({
     );
   }
   return (
-    <div className={form.uploaded}>
+    <div className={styles.uploaded}>
       <InlineMessage tone="saved" className={form.saved}>
         {copy.upload.read(rows.length)}
       </InlineMessage>
@@ -155,9 +156,7 @@ function FilePreview({
         <tbody>
           {rows.map((row) => (
             <tr key={row.pincode.pincode}>
-              <th scope="row" className={form.rowHead}>
-                {row.pincode.pincode}
-              </th>
+              <RowHead>{row.pincode.pincode}</RowHead>
               <td>{row.pincode.area}</td>
               <td>{describe(row.now)}</td>
               <td>{describe(row.file)}</td>
@@ -165,14 +164,14 @@ function FilePreview({
           ))}
         </tbody>
       </Table>
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" onClick={onApply}>
           {copy.upload.apply}
         </Button>
         <Button variant="outline" size="small" className={form.quiet} onClick={onCancel}>
           {copy.upload.cancel}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }
@@ -242,7 +241,7 @@ export function CityTabs({
   const cityTabs = [...new Set(pincodes.map((each) => each.city))];
   return (
     <>
-      <Tabs className={form.cities} label={copy.title}>
+      <Tabs className={styles.cities} label={copy.title}>
         {cityTabs.map((each) => {
           const all = pincodes.filter((one) => one.city === each);
           const served = all.filter((one) => draft[one.pincode]?.served === true).length;
@@ -261,7 +260,7 @@ export function CityTabs({
       </Tabs>
 
       {mayChange && (
-        <div className={form.actions}>
+        <FormActions>
           {[true, false].map((served) => (
             <Button
               variant="outline"
@@ -275,7 +274,7 @@ export function CityTabs({
               {served ? copy.bulk.serve(city) : copy.bulk.stop(city)}
             </Button>
           ))}
-        </div>
+        </FormActions>
       )}
     </>
   );

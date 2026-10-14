@@ -12,6 +12,7 @@ import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./stock.module.css";
 import { unitOf } from "./holdings.ts";
+import { RowHead } from "../components/RowHead.tsx";
 
 const loadDemand = () => client.get("/api/stock/demand");
 
@@ -44,9 +45,7 @@ export function Demand({ stock }: { stock: Stock }) {
                 <tbody>
                   {loaded.value.demand.map((row) => (
                     <tr key={`${row.consumable_code}/${row.city ?? ""}`}>
-                      <th scope="row" className={form.rowHead}>
-                        {named(row.consumable_code)}
-                      </th>
+                      <RowHead>{named(row.consumable_code)}</RowHead>
                       <td>{row.city ?? words.noCity}</td>
                       <td className={form.figure}>{`${String(row.expected)} ${unit(row.consumable_code)}`}</td>
                       <td className={form.figure}>

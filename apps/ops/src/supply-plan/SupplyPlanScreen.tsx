@@ -17,6 +17,8 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { PlanLineSteps, type Answer, type Line, type Plan } from "./PlanLine.tsx";
 import { Planning } from "./Planning.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const loadPlan = () => client.get("/api/supply-plan");
 
@@ -47,10 +49,10 @@ function Lines({
         <tbody>
           {shown.map((line) => (
             <tr key={line.id}>
-              <th scope="row" className={form.rowHead}>
+              <RowHead>
                 {line.name}
                 <p className={form.note}>{copy.why(line)}</p>
-              </th>
+              </RowHead>
               {kind === "transfer" ? (
                 <>
                   <td>{line.from ?? ""}</td>
@@ -102,7 +104,7 @@ export function SupplyPlanScreen() {
           )}
           {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
           {access.mayCall("POST /api/supply-plan/draft") && (
-            <div className={form.actions}>
+            <FormActions>
               <Button
                 variant="outline"
                 size="small"
@@ -114,7 +116,7 @@ export function SupplyPlanScreen() {
               >
                 {copy.draft}
               </Button>
-            </div>
+            </FormActions>
           )}
           <Planning />
         </div>

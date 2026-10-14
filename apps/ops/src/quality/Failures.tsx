@@ -11,6 +11,7 @@ import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 type Rates = paths["/api/quality/failures"]["get"]["responses"][200]["content"]["application/json"];
 type Way = "code" | "lot" | "supplier" | "technician";
@@ -58,9 +59,7 @@ function Groups({ rates }: { rates: Rates }) {
         <tbody>
           {groupsOf(rates, way).map((group) => (
             <tr key={group.name}>
-              <th scope="row" className={form.rowHead}>
-                {group.name}
-              </th>
+              <RowHead>{group.name}</RowHead>
               <td className={form.figure}>{group.fitted}</td>
               <td className={form.figure}>{group.failed}</td>
               <td className={form.figure}>{copy.rate(group.rate_percent)}</td>

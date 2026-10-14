@@ -16,6 +16,7 @@ import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import styles from "./clients.module.css";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = clients.list;
 const STATES = ["lead", "fitted", "nothing_booked"] as const;
@@ -122,11 +123,11 @@ function Rows({ listed }: { listed: Listed }) {
         <tbody>
           {listed.clients.map((client) => (
             <tr key={client.id}>
-              <th scope="row" className={form.rowHead}>
+              <RowHead>
                 <OpsLink className={form.link} to={clientPath(client.id, "visits")}>
                   {client.name}
                 </OpsLink>
-              </th>
+              </RowHead>
               <td>{phoneWords(client.mobile)}</td>
               <td>{clients.states[client.state]}</td>
               <td>{client.city ?? copy.noCity}</td>

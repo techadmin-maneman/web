@@ -19,6 +19,8 @@ import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 import { unitOf } from "./holdings.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 type Transfer = Stock["in_transit"][number];
 
@@ -80,7 +82,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
       {ready && figure < transfer.quantity && (
         <p className={form.note}>{copy.short(transfer.quantity - figure, unit)}</p>
       )}
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void record()}>
           {copy.confirm}
         </Button>
@@ -93,7 +95,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
         >
           {copy.cancel}
         </Button>
-      </div>
+      </FormActions>
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </div>
   );
@@ -109,9 +111,7 @@ function TransferRow(props: { stock: Stock; transfer: Transfer; onReceive: () =>
   const to = placeName(stock, transfer.to);
   return (
     <tr>
-      <th scope="row" className={form.rowHead}>
-        {what}
-      </th>
+      <RowHead>{what}</RowHead>
       <td className={form.figure}>
         {transfer.quantity} {unit}
       </td>

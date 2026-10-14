@@ -11,6 +11,7 @@ import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { fullDate } from "@maneman/web-kit/dates";
+import { RowHead } from "../components/RowHead.tsx";
 
 type Risk = paths["/api/stock/expiry-risk"]["get"]["responses"][200]["content"]["application/json"];
 type Lot = Risk["lots"][number];
@@ -40,9 +41,7 @@ function Lots({ risk }: { risk: Risk }) {
         <tbody>
           {risk.lots.map((lot) => (
             <tr key={`${lot.place_id}-${lot.lot_code}-${lot.consumable_code}`}>
-              <th scope="row" className={form.rowHead}>
-                {lot.place}
-              </th>
+              <RowHead>{lot.place}</RowHead>
               <td>{lot.name}</td>
               <td>{lot.lot_code}</td>
               <td>{fullDate(lot.expires_on)}</td>

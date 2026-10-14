@@ -10,6 +10,7 @@ import { useAccess } from "../lib/access.ts";
 import form from "../components/forms.module.css";
 import type { Cities, City } from "./types.ts";
 import { CityForm } from "./CityForm.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = cities.list;
 
@@ -42,9 +43,7 @@ export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => v
         <tbody>
           {cities.cities.map((city) => (
             <tr key={city.name}>
-              <th scope="row" className={form.rowHead}>
-                {city.name}
-              </th>
+              <RowHead>{city.name}</RowHead>
               <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
               <td>{city.zone ?? copy.noZone}</td>
               <td>{statusOf(city)}</td>

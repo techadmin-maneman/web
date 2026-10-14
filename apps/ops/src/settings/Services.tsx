@@ -13,10 +13,10 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState, type ReactNode } from "react";
-import { api, type Kind, type LateFee, type OpsService, type Price, type ServiceCatalogue } from "../api.ts";
+import { api, type Kind, type LateFee, type OpsService, type ServiceCatalogue } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { settings } from "../content/settings.ts";
-import { useAccess, type OpsCall } from "../lib/access.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { rulePath } from "./rule-groups.ts";
 import {
@@ -24,92 +24,29 @@ import {
   DescribeForm,
   LengthForm,
   OrderCheck,
-  PriceForm,
-  priceWords,
   RenameForm,
   RestoreCheck,
   RetireForm,
-  TakeBack,
-  type Priced,
   type Written,
 } from "./ServiceForms.tsx";
+import { PriceForm, priceWords, TakeBack, type Priced } from "./PriceForms.tsx";
+import {
+  CALL_OF,
+  whereOf,
+  actionWhere,
+  withPrices,
+  asPriced,
+  lateFeePriced,
+  standing,
+  pricesOf,
+  type ServiceWord,
+  type Action,
+} from "./service-actions.ts";
 import form from "../components/forms.module.css";
 import styles from "./prices.module.css";
+import { FormActions } from "../components/FormActions.tsx";
 
 const copy = settings.services;
-
-/** A service's buttons, each named by its words and its label. */
-type ServiceWord = "price" | "rename" | "describe" | "length" | "retire" | "restore" | "up" | "down";
-
-/** The one action open, and the block it is open in. */
-type Action =
-  | { readonly kind: "price"; readonly target: Priced }
-  | { readonly kind: "correct" | "takeBack"; readonly target: Priced; readonly row: Price }
-  | { readonly kind: "rename" | "describe" | "length" | "retire" | "restore"; readonly service: OpsService }
-  | { readonly kind: "order"; readonly of: Kind; readonly tiers: readonly string[] }
-  | { readonly kind: "add"; readonly of: Kind };
-
-/** The call each action makes: an action is offered only where the person's access reaches its call. */
-const CALL_OF: Readonly<Record<Action["kind"], OpsCall>> = {
-  price: "POST /api/prices",
-  correct: "POST /api/prices/correct",
-  takeBack: "POST /api/prices/withdraw",
-  rename: "POST /api/services/{kind}/{tier}/name",
-  describe: "POST /api/services/{kind}/{tier}/description",
-  length: "POST /api/services/{kind}/{tier}/length",
-  retire: "POST /api/services/{kind}/{tier}/retire",
-  restore: "POST /api/services/{kind}/{tier}/restore",
-  order: "POST /api/services/{kind}/order",
-  add: "POST /api/services",
-};
-
-/** Where a block is, so an action and what came of it are shown in the one it belongs to. */
-const whereOf = (item: string, tier: string) => `${item}/${tier}`;
-
-const actionWhere = (action: Action): string => {
-  if (action.kind === "order" || action.kind === "add") return action.of;
-  if ("target" in action) return whereOf(action.target.item, action.target.tier);
-  return whereOf(action.service.kind, action.service.tier);
-};
-
-/** The services after a price is set or taken back: each service's and late fee's rows, from the book's answer. */
-function withPrices(services: ServiceCatalogue, styles: readonly Price[]): ServiceCatalogue {
-  const rowsOf = (item: string, tier: string) => styles.filter((row) => row.item === item && row.tier === tier);
-  return {
-    ...services,
-    services: services.services.map((service) => ({ ...service, prices: rowsOf(service.kind, service.tier) })),
-    late_fees: services.late_fees.map((fee) => ({ ...fee, prices: rowsOf(fee.item, "standard") })),
-  };
-}
-
-const asPriced = (service: OpsService): Priced => ({
-  item: service.kind,
-  tier: service.tier,
-  name: service.name,
-  prices: service.prices,
-});
-
-const lateFeePriced = (fee: LateFee): Priced => ({
-  item: fee.item,
-  tier: "standard",
-  name: copy.lateFees[fee.item],
-  prices: fee.prices,
-});
-/** When a service stops, or stopped, being offered; nothing while it is offered. */
-function standing(service: OpsService, today: string): string | null {
-  if (service.retired_date === null) return null;
-  const from = longDate(service.retired_date);
-  return service.retired_date > today ? copy.retiring(from) : copy.retired(from);
-}
-
-/** A row's own prices: the one in force, those still to come, soonest first, and the spent ones. */
-function pricesOf(target: Priced, today: string) {
-  return {
-    inForce: target.prices.find((price) => price.in_force),
-    toCome: target.prices.filter((price) => price.valid_from > today).reverse(),
-    spent: target.prices.filter((price) => !price.in_force && price.valid_from <= today),
-  };
-}
 
 interface Opened {
   readonly action: Action | null;
@@ -225,7 +162,7 @@ function Strip(props: {
   return (
     <tr className={styles.strip} id={props.id}>
       <td colSpan={copy.columns.length + 1}>
-        <div className={form.actions}>
+        <FormActions>
           {props.actions.map((action) => (
             <ActionButton
               key={action.word}
@@ -238,7 +175,7 @@ function Strip(props: {
             </ActionButton>
           ))}
           {props.link}
-        </div>
+        </FormActions>
         {toCome.map((row) => (
           <p key={row.valid_from} className={styles.line}>
             {copy.toCome(priceWords(row), longDate(row.valid_from))}
@@ -436,8 +373,8 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
   const name = copy.kinds[kind];
   const titleId = `kind-${kind}`;
   return (
-    <section className={classes(form.kind, styles.kind)} aria-labelledby={titleId}>
-      <h3 className={form.kindTitle} id={titleId}>
+    <section className={classes(styles.kindSection, styles.kind)} aria-labelledby={titleId}>
+      <h3 className={styles.kindTitle} id={titleId}>
         {name}
       </h3>
       <div className={styles.scroll}>

@@ -4,13 +4,6 @@
   margin-top: var(--sp-16);
 }
 
-.select,
-.text {
-  display: block;
-  width: 100%;
-  margin-top: var(--sp-8);
-}
-
 /* Room for the arrow the shared Select draws. */
 /* Earlier and later days, either side of the day's box. */
 .days {

@@ -14,6 +14,7 @@ import { useAccess } from "../lib/access.ts";
 import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import type { Supplier, Suppliers } from "./SupplierForm.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = settings.suppliers;
 const words = copy.item;
@@ -256,9 +257,7 @@ export function SupplierItems({
           <tbody>
             {supplier.items.map((item) => (
               <tr key={item.consumable_code}>
-                <th scope="row" className={form.rowHead}>
-                  {named(item.consumable_code)}
-                </th>
+                <RowHead>{named(item.consumable_code)}</RowHead>
                 <td>{item.their_code ?? ""}</td>
                 <td className={form.figure}>
                   {words.perUnit(inCurrency(item.unit_price, supplier.currency), unitOf(item.consumable_code))}

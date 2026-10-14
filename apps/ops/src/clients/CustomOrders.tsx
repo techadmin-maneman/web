@@ -19,6 +19,8 @@ import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { RaiseCustomOrder, type CustomOrders } from "./RaiseCustomOrder.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 type Order = CustomOrders["orders"][number];
 /** What a step answered: the client's whole list, or the refusal. */
@@ -37,7 +39,7 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
   if (order.status !== "paid" && order.status !== "ordered") return null;
   if (!access.mayCall("POST /api/custom-orders/{id}/refund")) return null;
   return (
-    <div className={form.actions}>
+    <FormActions>
       <Field label={copy.refundWhy} className={form.field}>
         {(control) => (
           <Select
@@ -68,7 +70,7 @@ function Refund({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, 
       >
         {copy.refund}
       </Button>
-    </div>
+    </FormActions>
   );
 }
 
@@ -77,7 +79,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
   if (order.status !== "awaiting_payment") return <Refund order={order} onAnswer={onAnswer} />;
   const path = { path: { id: order.id } };
   return (
-    <div className={form.actions}>
+    <FormActions>
       {order.link_sent_at === null && access.mayCall("POST /api/custom-orders/{id}/send-link") && (
         <Button
           variant="outline"
@@ -104,7 +106,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
           {copy.cancel}
         </Button>
       )}
-    </div>
+    </FormActions>
   );
 }
 
@@ -130,9 +132,7 @@ function OrdersTable({
       <tbody>
         {customOrders.orders.map((order) => (
           <tr key={order.id}>
-            <th scope="row" className={form.rowHead}>
-              {copy.number(order.number)}
-            </th>
+            <RowHead>{copy.number(order.number)}</RowHead>
             <td>{copy.spec(order)}</td>
             <td className={form.figure}>{rupees(order.amount)}</td>
             <td>
@@ -191,7 +191,7 @@ export function CustomOrders({ clientId }: { clientId: string }) {
         />
       )}
       {current !== null && !raising && access.mayCall("POST /api/clients/{id}/custom-orders") && (
-        <div className={form.actions}>
+        <FormActions>
           <Button
             variant="outline"
             size="small"
@@ -201,7 +201,7 @@ export function CustomOrders({ clientId }: { clientId: string }) {
           >
             {copy.raise.open}
           </Button>
-        </div>
+        </FormActions>
       )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>

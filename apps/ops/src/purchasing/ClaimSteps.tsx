@@ -11,6 +11,7 @@ import { useAccess } from "../lib/access.ts";
 import { StockPhoto } from "./StockPhoto.tsx";
 import type { Claim } from "./types.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
+import { FormActions } from "../components/FormActions.tsx";
 
 export type ClaimAnswer = Awaited<ReturnType<typeof client.post<"/api/supplier-claims/{id}/send">>>;
 
@@ -95,7 +96,7 @@ function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAn
         )}
       </Field>
       {!withdrawing && <StockPhoto label={copy.photo.claim} photoId={photoId} onPhoto={setPhotoId} />}
-      <div className={form.actions}>
+      <FormActions>
         {!withdrawing && access.mayCall("POST /api/supplier-claims/{id}/send") && (
           <Button
             variant="primary"
@@ -123,7 +124,7 @@ function Drafted({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAn
             onAnswer={onAnswer}
           />
         )}
-      </div>
+      </FormActions>
     </div>
   );
 }
@@ -166,7 +167,7 @@ function Sent({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAnswe
           />
         )}
       </Field>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -181,7 +182,7 @@ function Sent({ claim, onAnswer }: { claim: Claim; onAnswer: (answer: ClaimAnswe
         <Button variant="outline" size="small" onClick={() => void decide("rejected")}>
           {copy.claims.rejected}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }

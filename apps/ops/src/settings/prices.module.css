@@ -106,3 +106,23 @@
   align-self: center;
   font-size: var(--fs-14);
 }
+
+/* A kind of visit, its heading over its table of services, on the panel's rules. */
+.kindSection {
+  margin-top: var(--sp-20);
+  border-top: var(--hairline) solid var(--text);
+}
+
+.kindTitle {
+  margin: var(--sp-16) var(--sp-20) 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-18);
+}
+
+/* What the item and tier chosen cost today: the figure the boxes beneath start from. */
+.formNow {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}

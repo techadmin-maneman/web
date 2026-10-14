@@ -17,6 +17,7 @@ import { dispatchPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 const copy = settings.blackouts;
 
@@ -235,7 +236,7 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
       <p className={form.set}>{setLine(period)}</p>
       {period.booked > 0 && <p className={form.checkWarning}>{copy.booked(period.booked)}</p>}
       {period.booked > 0 && mayShow && (
-        <div className={form.actions}>
+        <FormActions>
           <OpsLink
             className={buttonLook({ variant: "outline", size: "small", className: form.quiet })}
             to={dispatchPath({ from: period.from })}
@@ -243,7 +244,7 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
           >
             {copy.show}
           </OpsLink>
-        </div>
+        </FormActions>
       )}
       {mayRemove && (
         <ActionCheck

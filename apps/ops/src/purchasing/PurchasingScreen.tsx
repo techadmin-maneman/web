@@ -21,6 +21,7 @@ import { DraftOrder } from "./DraftOrder.tsx";
 import { OrderPanel } from "./OrderPanel.tsx";
 import { SupplierScores } from "./SupplierScores.tsx";
 import type { Orders } from "./types.ts";
+import { RowHead } from "../components/RowHead.tsx";
 
 const loadOrders = () => client.get("/api/purchase-orders");
 
@@ -41,7 +42,7 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
       <tbody>
         {orders.orders.map((order) => (
           <tr key={order.id}>
-            <th scope="row" className={form.rowHead}>
+            <RowHead>
               <RowButton
                 className={form.inline}
                 aria-label={copy.open(copy.number(order.number))}
@@ -49,7 +50,7 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
               >
                 {copy.number(order.number)}
               </RowButton>
-            </th>
+            </RowHead>
             <td>{supplierOf(order.supplier_id)}</td>
             <td>{copy.states[order.state]}</td>
             <td className={form.figure}>{inCurrency(order.total, order.currency)}</td>

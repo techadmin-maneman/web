@@ -11,6 +11,7 @@ import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import type { CountTasks } from "./CountClasses.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; onStarted: (id: string) => void }) {
   const [place, setPlace] = useState("");
@@ -62,11 +63,11 @@ export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; 
             </Select>
           )}
         </Field>
-        <div className={form.actions}>
+        <FormActions>
           <Button variant="primary" size="small" disabled={place === "" || item === ""} onClick={() => void start()}>
             {copy.start}
           </Button>
-        </div>
+        </FormActions>
       </div>
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>

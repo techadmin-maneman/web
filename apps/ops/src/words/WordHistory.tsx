@@ -12,6 +12,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeOf } from "./WordForm.tsx";
 import form from "../components/forms.module.css";
 import styles from "./words.module.css";
+import { FormActions } from "../components/FormActions.tsx";
 
 const versions = copy.versions;
 
@@ -73,11 +74,11 @@ export function WordHistory(props: {
           </li>
         )}
       </ol>
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="outline" size="small" className={form.quiet} onClick={props.onClose}>
           {versions.close}
         </Button>
-      </div>
+      </FormActions>
     </section>
   );
 }

@@ -24,6 +24,7 @@ import { Restoring, Retiring } from "./Retirement.tsx";
 import { ServiceUsage } from "./ServiceUsage.tsx";
 import styles from "./consumables.module.css";
 import form from "../components/forms.module.css";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = settings.consumables;
 
@@ -65,9 +66,9 @@ function ConsumableRow({
   const notRetired = consumable.retired_from === null;
   return (
     <tr>
-      <th scope="row" className={form.rowHead}>
+      <RowHead>
         {name} <span className={styles.unit}>{consumable.unit}</span>
-      </th>
+      </RowHead>
       <td className={form.figure}>{rupees(consumable.unit_cost)}</td>
       <td>
         {copy.levels({

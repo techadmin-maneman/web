@@ -18,6 +18,7 @@ import { PieceScans } from "./PieceScans.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
 export type Kind = (typeof KINDS)[number];
@@ -373,7 +374,7 @@ export function StockForm({
             }}
           />
         ) : (
-          <div className={form.actions}>
+          <FormActions>
             <Button
               variant="primary"
               size="small"
@@ -384,7 +385,7 @@ export function StockForm({
             >
               {copy.record.check}
             </Button>
-          </div>
+          </FormActions>
         )}
         {step.step === "recorded" && (
           <InlineMessage tone="saved" className={form.saved}>

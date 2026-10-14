@@ -12,6 +12,7 @@ import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 export type CountTasks = paths["/api/count-tasks"]["get"]["responses"][200]["content"]["application/json"];
 type CountClass = CountTasks["classes"][number]["count_class"];
@@ -57,9 +58,7 @@ export function CountClasses({
             const own = item.hair_system ? "weekly" : "quarterly";
             return (
               <tr key={item.consumable_code}>
-                <th scope="row" className={form.rowHead}>
-                  {item.name}
-                </th>
+                <RowHead>{item.name}</RowHead>
                 <td>
                   <Field label={copy.classLabel(item.name)} className={form.field}>
                     {(control) => (

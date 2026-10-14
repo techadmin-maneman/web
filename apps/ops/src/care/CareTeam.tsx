@@ -19,6 +19,7 @@ import { careApi, type CareMember } from "./care-api.ts";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 const copy = care.team;
 
@@ -49,7 +50,7 @@ function DaysOffForm(props: { member: CareMember; onDone: () => void; onCancel: 
           />
         ))}
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -61,7 +62,7 @@ function DaysOffForm(props: { member: CareMember; onDone: () => void; onCancel: 
         <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
           {copy.cancel}
         </Button>
-      </div>
+      </FormActions>
       <Refused failed={failure} errors={copy.errors} />
     </div>
   );
@@ -98,7 +99,7 @@ function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: ()
           )}
         </Field>
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -110,7 +111,7 @@ function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: ()
         <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
           {copy.cancel}
         </Button>
-      </div>
+      </FormActions>
       <Refused failed={failure} errors={copy.errors} />
     </div>
   );
@@ -135,7 +136,7 @@ function NameForm(props: { member: CareMember; onDone: () => void; onCancel: () 
           )}
         </Field>
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -147,7 +148,7 @@ function NameForm(props: { member: CareMember; onDone: () => void; onCancel: () 
         <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
           {copy.cancel}
         </Button>
-      </div>
+      </FormActions>
       <Refused failed={failure} errors={copy.errors} />
     </div>
   );

@@ -9,6 +9,7 @@ import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { supplyPlan as copy } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
+import { FormActions } from "../components/FormActions.tsx";
 
 export type Plan = paths["/api/supply-plan"]["get"]["responses"][200]["content"]["application/json"];
 export type Line = Plan["lines"][number];
@@ -51,7 +52,7 @@ function Reject({
           />
         )}
       </Field>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="destructive"
           size="small"
@@ -69,7 +70,7 @@ function Reject({
         <Button variant="outline" size="small" onClick={onKeep}>
           {copy.keep}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }
@@ -94,7 +95,7 @@ export function PlanLineSteps({ line, onAnswer }: { line: Line; onAnswer: (answe
     );
   }
   return (
-    <div className={form.actions}>
+    <FormActions>
       <Field label={copy.quantity(line.name)} className={form.field}>
         {(control) => (
           <TextInput
@@ -130,6 +131,6 @@ export function PlanLineSteps({ line, onAnswer }: { line: Line; onAnswer: (answe
       >
         {copy.reject}
       </Button>
-    </div>
+    </FormActions>
   );
 }

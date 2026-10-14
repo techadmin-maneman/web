@@ -11,6 +11,7 @@ import form from "../components/forms.module.css";
 import { useAccess } from "../lib/access.ts";
 import { ReceiveForm } from "./ReceiveForm.tsx";
 import type { Order, Orders } from "./types.ts";
+import { FormActions } from "../components/FormActions.tsx";
 
 function ReceiptList({ orders, order }: { orders: Orders; order: Order }) {
   const named = (lineId: string) => {
@@ -75,7 +76,7 @@ export function Receiving({
           }}
         />
       ) : (
-        <div className={form.actions}>
+        <FormActions>
           {receivable && access.mayCall("POST /api/purchase-orders/{id}/receipts") && (
             <Button
               variant="primary"
@@ -92,7 +93,7 @@ export function Receiving({
               {copy.receive.close}
             </Button>
           )}
-        </div>
+        </FormActions>
       )}
     </>
   );

@@ -16,6 +16,7 @@ import form from "../components/forms.module.css";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 type Place = Stock["places"][number];
 type Kind = Place["kind"];
@@ -138,7 +139,7 @@ function AddPlace({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock
           onChange={setArea}
         />
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -147,7 +148,7 @@ function AddPlace({ stock, onChanged }: { stock: Stock; onChanged: (stock: Stock
         >
           {copy.add.send}
         </Button>
-      </div>
+      </FormActions>
       <Refused failure={failure} />
     </div>
   );
@@ -176,7 +177,7 @@ function ChangePlace(props: { stock: Stock; place: Place; onChanged: (stock: Sto
           <PlaceChoice label={copy.change.under} value={under} options={parents} onChange={setUnder} />
         )}
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -193,7 +194,7 @@ function ChangePlace(props: { stock: Stock; place: Place; onChanged: (stock: Sto
         <Button variant="outline" size="small" onClick={props.onDone}>
           {copy.change.cancel}
         </Button>
-      </div>
+      </FormActions>
       <Refused failure={failure} />
     </div>
   );

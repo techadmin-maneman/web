@@ -18,6 +18,8 @@ import { OrderSheet } from "./OrderSheet.tsx";
 import { Receiving } from "./Receiving.tsx";
 import type { Order, Orders } from "./types.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 type Answer = Awaited<ReturnType<typeof client.post<"/api/purchase-orders/{id}/send">>>;
 
@@ -44,7 +46,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
     ["drafted", "approved", "sent"].includes(order.state) && access.mayCall("POST /api/purchase-orders/{id}/cancel");
   return (
     <>
-      <div className={form.actions}>
+      <FormActions>
         {approvable && (
           <Button variant="primary" size="small" onClick={() => void step("approve", copy.order.approved)}>
             {order.approved_by === null ? copy.order.approve : copy.order.secondApprove}
@@ -66,7 +68,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
             {copy.order.cancel}
           </Button>
         )}
-      </div>
+      </FormActions>
       {cancelling && (
         <div className={form.group}>
           <Field label={copy.order.reason} className={form.field}>
@@ -81,7 +83,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
               />
             )}
           </Field>
-          <div className={form.actions}>
+          <FormActions>
             <Button
               variant="destructive"
               size="small"
@@ -105,7 +107,7 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
             >
               {copy.order.keep}
             </Button>
-          </div>
+          </FormActions>
         </div>
       )}
     </>
@@ -128,9 +130,7 @@ function LinesTable({ order, named }: { order: Order; named: (code: string) => s
       <tbody>
         {order.lines.map((line) => (
           <tr key={line.id}>
-            <th scope="row" className={form.rowHead}>
-              {named(line.consumable_code)}
-            </th>
+            <RowHead>{named(line.consumable_code)}</RowHead>
             <td className={form.figure}>{line.quantity}</td>
             <td className={form.figure}>{inCurrency(line.unit_price, order.currency)}</td>
             <td className={form.figure}>{inCurrency(line.unit_price * line.quantity, order.currency)}</td>
@@ -176,7 +176,7 @@ export function OrderPanel({
       </p>
       <Steps order={order} onAnswer={answered} />
       <Receiving orders={orders} order={order} onChanged={onChanged} />
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="outline"
           size="small"
@@ -186,7 +186,7 @@ export function OrderPanel({
         >
           {copy.order.print}
         </Button>
-      </div>
+      </FormActions>
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
       {printing && (
         <OrderSheet

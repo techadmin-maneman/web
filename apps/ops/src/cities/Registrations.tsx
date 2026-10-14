@@ -12,6 +12,7 @@ import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import type { Cities } from "./types.ts";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = cities.registrations;
 
@@ -124,9 +125,7 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
           <tbody>
             {cities.registrations.map((registration) => (
               <tr key={registration.state_code}>
-                <th scope="row" className={form.rowHead}>
-                  {registration.state_code}
-                </th>
+                <RowHead>{registration.state_code}</RowHead>
                 <td>{registration.gstin}</td>
                 <td>{registration.books_branch_id ?? copy.noBranch}</td>
                 <td>

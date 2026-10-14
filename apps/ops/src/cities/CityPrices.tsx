@@ -13,6 +13,7 @@ import { useAccess } from "../lib/access.ts";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import type { Cities, CityPrice } from "./types.ts";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = cities.prices;
 type Item = CityPrice["item"];
@@ -56,9 +57,7 @@ function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => void }) 
       <tbody>
         {cities.prices.map((price) => (
           <tr key={`${price.city}/${price.item}/${price.tier}/${price.valid_from}`}>
-            <th scope="row" className={form.rowHead}>
-              {price.city}
-            </th>
+            <RowHead>{price.city}</RowHead>
             <td>
               {copy.items[price.item]} · {price.tier}
             </td>

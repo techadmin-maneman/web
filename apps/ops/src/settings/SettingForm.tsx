@@ -12,6 +12,7 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
 import { review } from "../content/common.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 /** What a send came to: what to hand on, or the refusal with the boxes it names. */
 export type Sent<T> = ({ readonly ok: true } & T) | ({ readonly ok: false } & Failure);
@@ -91,7 +92,7 @@ export function ActionCheck<T>(props: {
   return (
     <>
       {steps.step === "editing" ? (
-        <div className={form.actions}>
+        <FormActions>
           <Button
             variant={props.primary === true ? "primary" : "outline"}
             size="small"
@@ -101,7 +102,7 @@ export function ActionCheck<T>(props: {
           >
             {props.label}
           </Button>
-        </div>
+        </FormActions>
       ) : (
         <CheckPanel
           question={props.question}
@@ -142,7 +143,7 @@ export function SettingForm(props: {
       {props.above}
       {props.children}
       {steps.step === "editing" ? (
-        <div className={form.actions}>
+        <FormActions>
           <Button variant="primary" size="small" disabled={!props.ready} onClick={steps.check}>
             {review.next}
           </Button>
@@ -151,7 +152,7 @@ export function SettingForm(props: {
               {review.cancel}
             </Button>
           )}
-        </div>
+        </FormActions>
       ) : (
         <CheckPanel busy={steps.step === "saving"} ready={props.sendable ?? true} onSend={steps.go} onBack={steps.edit}>
           {props.checking}

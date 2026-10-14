@@ -55,13 +55,6 @@
   margin-top: var(--sp-12);
 }
 
-.effect {
-  margin: 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-145);
-  color: var(--text-muted);
-}
-
 /* ---- The reason a rejection carries ---------------------------------------- */
 
 .reason {
@@ -78,12 +71,6 @@
   min-height: var(--sp-48);
   margin-top: var(--sp-8);
   resize: vertical;
-}
-
-.reasonHint {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
 }
 
 /* ---- The two decisions ----------------------------------------------------- */

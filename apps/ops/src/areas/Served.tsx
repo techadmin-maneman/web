@@ -38,6 +38,7 @@ import {
   type FileChange,
 } from "./served-draft.ts";
 import { CityTabs, LaunchCheck, PincodeRow, SaveNotes, UploadFile, type Saving, type Upload } from "./ServedParts.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 const copy = areas.served;
 
@@ -176,7 +177,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
         </div>
       )}
       {!checking && mayChange && (
-        <div className={form.actions}>
+        <FormActions>
           <Button
             variant="primary"
             size="small"
@@ -185,7 +186,7 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
           >
             {busy ? copy.saving : copy.save}
           </Button>
-        </div>
+        </FormActions>
       )}
       <SaveNotes saving={saving} changes={changes} badName={badName} later={later} mayChange={mayChange} />
 

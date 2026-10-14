@@ -10,6 +10,7 @@ import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
+import { RowHead } from "../components/RowHead.tsx";
 
 /** The lots that expire by the warning's end, soonest first, each where it is held. */
 export function expiringLots(stock: Stock) {
@@ -46,9 +47,7 @@ export function Expiring({ stock }: { stock: Stock }) {
               const expired = (lot.expires_on ?? "") < stock.today;
               return (
                 <tr key={`${lot.id}/${lot.place}`}>
-                  <th scope="row" className={form.rowHead}>
-                    {consumable?.name ?? lot.code}
-                  </th>
+                  <RowHead>{consumable?.name ?? lot.code}</RowHead>
                   <td>{lot.lot_code}</td>
                   <td>{placeName(stock, lot.place)}</td>
                   <td className={form.figure}>

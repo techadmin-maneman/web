@@ -13,6 +13,7 @@ import { supplyPlan } from "../content/supply-plan.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { AccuracyPart } from "./Accuracy.tsx";
 import styles from "./supply-plan.module.css";
+import { RowHead } from "../components/RowHead.tsx";
 
 type Forecast = paths["/api/stock/forecast"]["get"]["responses"][200]["content"]["application/json"];
 
@@ -60,9 +61,7 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
           <tbody>
             {[...items].map(([code, item]) => (
               <tr key={code}>
-                <th scope="row" className={form.rowHead}>
-                  {item.name}
-                </th>
+                <RowHead>{item.name}</RowHead>
                 {periods.map((period) => {
                   const line = item.periods.get(period);
                   return (

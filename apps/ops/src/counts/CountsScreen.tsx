@@ -16,6 +16,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { CountClasses, type CountTasks } from "./CountClasses.tsx";
 import { CountTaskPanel, whatOf } from "./CountTask.tsx";
 import { StartCount } from "./StartCount.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const loadTasks = () => client.get("/api/count-tasks");
 
@@ -35,9 +36,7 @@ function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpen
       <tbody>
         {countTasks.tasks.map((task) => (
           <tr key={task.id}>
-            <th scope="row" className={form.rowHead}>
-              {task.place}
-            </th>
+            <RowHead>{task.place}</RowHead>
             <td>{whatOf(task)}</td>
             <td>{fullDate(task.due_on)}</td>
             <td>{copy.states[task.state]}</td>

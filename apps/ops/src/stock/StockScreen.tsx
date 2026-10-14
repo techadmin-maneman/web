@@ -23,6 +23,7 @@ import { KINDS, placeName, StockForm, type Kind } from "./StockForm.tsx";
 import type { LabelsFor } from "./Labels.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
+import { RowHead } from "../components/RowHead.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
 const PlacesPanel = lazyScreen(() => import("./PlacesPanel.tsx").then((module) => module.PlacesPanel));
@@ -170,10 +171,10 @@ function OnHand({ stock }: { stock: Stock }) {
         <tbody>
           {stock.consumables.map((consumable) => (
             <tr key={consumable.code}>
-              <th scope="row" className={form.rowHead}>
+              <RowHead>
                 {consumable.name}
                 {consumable.retired && <span className={styles.retired}>{copy.retired}</span>}
-              </th>
+              </RowHead>
               {places.map((place) => (
                 <Held key={place.id} stock={stock} code={consumable.code} place={place.id} />
               ))}

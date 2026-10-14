@@ -13,6 +13,7 @@ import { Refused } from "../settings/index.ts";
 import { QuickReplyPick } from "./QuickReplies.tsx";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
+import { FormActions } from "../components/FormActions.tsx";
 
 const { compose } = copy;
 
@@ -109,7 +110,7 @@ export function Composer(props: {
         <QuickReplyPick name={props.client.name} personId={props.client.personId} onPick={setText} />
         <ReplyBox text={text} onText={setText} />
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -137,7 +138,7 @@ export function Composer(props: {
         >
           {compose.note}
         </Button>
-      </div>
+      </FormActions>
       <div className={styles.closing}>
         <ReasonChoice reason={reason} onReason={setReason} />
         <Button

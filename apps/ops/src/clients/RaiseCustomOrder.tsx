@@ -12,6 +12,7 @@ import { clients } from "../content.ts";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 export type CustomOrders =
   paths["/api/clients/{id}/custom-orders"]["get"]["responses"][200]["content"]["application/json"];
@@ -151,14 +152,14 @@ export function RaiseCustomOrder({
     <div className={form.group}>
       <h3 className={form.fieldLabel}>{copy.raise.title}</h3>
       <OrderBoxes customOrders={customOrders} draft={draft} edit={edit} />
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void raise()}>
           {copy.raise.send}
         </Button>
         <Button variant="outline" size="small" onClick={onClose}>
           {copy.raise.keep}
         </Button>
-      </div>
+      </FormActions>
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </div>
   );

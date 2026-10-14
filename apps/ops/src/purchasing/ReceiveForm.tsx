@@ -13,6 +13,7 @@ import form from "../components/forms.module.css";
 import type { Order, Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 interface LineDraft {
   readonly received: string;
@@ -159,14 +160,14 @@ export function ReceiveForm(props: {
         />
       ))}
       <ExtrasFields order={order} extras={extras} onExtras={setExtras} />
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void send()}>
           {copy.receive.send}
         </Button>
         <Button variant="outline" size="small" onClick={props.onCancel}>
           {copy.receive.cancel}
         </Button>
-      </div>
+      </FormActions>
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </div>
   );

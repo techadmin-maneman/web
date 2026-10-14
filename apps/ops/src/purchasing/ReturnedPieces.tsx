@@ -13,6 +13,8 @@ import { useAccess } from "../lib/access.ts";
 import type { ClaimAnswer } from "./ClaimSteps.tsx";
 import { StockPhoto } from "./StockPhoto.tsx";
 import type { ReturnedPiece } from "./types.ts";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 function warrantyOf(piece: ReturnedPiece): string {
   if (piece.warranty_ends_on === null) return copy.returns.unknown;
@@ -58,7 +60,7 @@ function WriteOff({
         )}
       </Field>
       <StockPhoto label={copy.photo.writeOff} photoId={photoId} onPhoto={setPhotoId} />
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="destructive"
           size="small"
@@ -85,7 +87,7 @@ function WriteOff({
         >
           {copy.returns.keep}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }
@@ -116,15 +118,13 @@ export function ReturnedPieces({
       <tbody>
         {pieces.map((piece) => (
           <tr key={piece.id}>
-            <th scope="row" className={form.rowHead}>
-              {piece.piece_code}
-            </th>
+            <RowHead>{piece.piece_code}</RowHead>
             <td>{piece.name ?? ""}</td>
             <td>{shortDate(indiaDate(piece.returned_at))}</td>
             <td>{piece.handed_in_to ?? ""}</td>
             <td>{warrantyOf(piece)}</td>
             <td>
-              <div className={form.actions}>
+              <FormActions>
                 {piece.in_warranty && access.mayCall("POST /api/returned-pieces/{id}/claim") && (
                   <Button variant="primary" size="small" onClick={() => void claim(piece)}>
                     {copy.returns.claim}
@@ -133,7 +133,7 @@ export function ReturnedPieces({
                 {access.mayCall("POST /api/returned-pieces/{id}/write-off") && (
                   <WriteOff piece={piece} onAnswer={onAnswer} />
                 )}
-              </div>
+              </FormActions>
             </td>
           </tr>
         ))}

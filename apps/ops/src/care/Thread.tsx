@@ -21,6 +21,7 @@ import { Stranger } from "./Stranger.tsx";
 import { Composer } from "./Composer.tsx";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
+import { FormActions } from "../components/FormActions.tsx";
 
 const thread = copy.thread;
 
@@ -158,11 +159,11 @@ export function Thread({
           }}
         />
       )}
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="outline" size="small" className={form.quiet} onClick={onClose}>
           {thread.close}
         </Button>
-      </div>
+      </FormActions>
     </section>
   );
 }

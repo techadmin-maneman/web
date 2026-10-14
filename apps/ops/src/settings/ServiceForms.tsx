@@ -1,20 +1,16 @@
-// The forms a service's or a late fee's actions open (./Services.tsx), each shown in the block it acts on. Every one
-// shows what it is now beside what it will be before anything is sent, and only the second press sends it
-// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md). A price's boxes start from the price in force, its
-// GST included: a GST box that opened at nought once made an 18% item GST-free without anyone seeing it.
+// The forms a service's actions open (./Services.tsx), each shown in the block it acts on; a price's are
+// ./PriceForms.tsx. Every one shows what it is now beside what it will be before anything is sent, and only the second
+// press sends it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { errorText } from "@maneman/web-kit/refusal";
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
-import { addDays, longDate } from "@maneman/web-kit/dates";
-import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
+import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Kind, type OpsService, type Price, type ServiceCatalogue } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { PRICE_TIER, tierCodeOf } from "@rules/policy/services.ts";
 import form from "../components/forms.module.css";
 import { Refused, SettingForm, sentOf, useSteps, type Sent } from "./SettingForm.tsx";
-import { Refusal } from "../components/Refusal.tsx";
 
 const copy = settings.services;
 const formWords = copy.form;
@@ -27,192 +23,8 @@ export type Written = Sent<{
   readonly said: string;
 }>;
 
-/** What a price is set for: a service, or a late fee, by the book's item and tier, and the name ops read. */
-export interface Priced {
-  readonly item: Price["item"];
-  readonly tier: string;
-  readonly name: string;
-  /** Every price it has had and is to have, newest first. */
-  readonly prices: readonly Price[];
-}
-
-/** "Rs. 1,234 + 18% GST". */
-export const priceWords = (price: { amount_ex_gst: number; gst_percent: number }) =>
-  copy.price(rupees(price.amount_ex_gst), price.gst_percent);
-
 /** A service's book, as a write that changes a service answers it. */
 const savedCatalogue = (services: ServiceCatalogue) => ({ services, said: copy.done.saved });
-
-/**
- * A new price from a day, tomorrow at the earliest, or, given `correcting`, the price still to come it corrects: taken
- * back and set again, in one go. The boxes start from the price in force, or the one corrected.
- */
-export function PriceForm(props: {
-  readonly target: Priced;
-  readonly correcting?: Price;
-  readonly today: string;
-  readonly maxAmount: number;
-  readonly maxGst: number;
-  readonly onDone: (written: Written & { ok: true }) => void;
-  readonly onCancel: () => void;
-}) {
-  const { target, correcting, today } = props;
-  const inForce = target.prices.find((price) => price.in_force);
-  const start = correcting ?? inForce;
-  const [typedRupees, setRupees] = useState(start === undefined ? "" : rupeesTyped(start.amount_ex_gst));
-  const [gst, setGst] = useState(start === undefined ? "" : String(start.gst_percent));
-  const firstDay = addDays(today, 1);
-  const [from, setFrom] = useState(correcting?.valid_from ?? firstDay);
-  // Rupees on the screen, paise in the book: the API and the database count in paise.
-  const change = {
-    item: target.item,
-    tier: target.tier,
-    amount_ex_gst: paiseFromRupees(typedRupees),
-    gst_percent: Number(gst),
-    valid_from: from,
-  };
-  const steps = useSteps(async () => {
-    const answer =
-      correcting === undefined
-        ? await api.setPrice(change)
-        : await api.correctPrice({ ...change, was_valid_from: correcting.valid_from });
-    return sentOf(answer, (body) => ({ prices: body.prices, said: copy.done.price }));
-  }, props.onDone);
-  // A day typed before tomorrow, which the date picker's min alone does not stop.
-  const tooSoon = from !== "" && from < firstDay;
-  const ready = typedRupees.trim() !== "" && gst.trim() !== "" && from !== "" && !tooSoon;
-  const was = correcting ?? inForce;
-  const sameDay = target.prices.some(
-    (price) => price.valid_from === change.valid_from && price.valid_from !== correcting?.valid_from,
-  );
-
-  return (
-    <SettingForm
-      title={
-        correcting === undefined
-          ? formWords.priceTitle(target.name)
-          : formWords.correctTitle(target.name, longDate(correcting.valid_from))
-      }
-      steps={steps}
-      ready={ready}
-      errors={copy.errors}
-      onCancel={props.onCancel}
-      checking={
-        <>
-          <p className={form.checkLine}>
-            {correcting === undefined
-              ? check.price(
-                  target.name,
-                  was === undefined ? check.nothing : priceWords(was),
-                  priceWords(change),
-                  longDate(change.valid_from),
-                )
-              : check.correct({
-                  name: target.name,
-                  was: priceWords(correcting),
-                  wasFrom: longDate(correcting.valid_from),
-                  now: priceWords(change),
-                  from: longDate(change.valid_from),
-                })}
-          </p>
-          {was !== undefined && was.gst_percent !== change.gst_percent && (
-            <p className={form.checkWarning}>{check.gstChanges(was.gst_percent, change.gst_percent)}</p>
-          )}
-          {sameDay && <p className={form.checkLine}>{check.sameDay}</p>}
-        </>
-      }
-    >
-      {inForce !== undefined && correcting === undefined && (
-        <p className={form.formNow}>{copy.now(priceWords(inForce), longDate(inForce.valid_from))}</p>
-      )}
-      <div className={form.fields}>
-        <Field label={formWords.amount} className={form.field}>
-          {(control) => (
-            <NumberInput
-              {...control}
-              className={form.amountBox}
-              inputMode="numeric"
-              step={1}
-              min={0}
-              max={props.maxAmount / 100}
-              value={typedRupees}
-              onChange={(event) => {
-                setRupees(event.target.value);
-                steps.edit();
-              }}
-            />
-          )}
-        </Field>
-        <Field label={formWords.gst} className={form.field}>
-          {(control) => (
-            <div className={form.fieldRow}>
-              <NumberInput
-                {...control}
-                className={form.figureBox}
-                inputMode="numeric"
-                step={1}
-                min={0}
-                max={props.maxGst}
-                value={gst}
-                onChange={(event) => {
-                  setGst(event.target.value);
-                  steps.edit();
-                }}
-              />
-              <span className={form.unit}>%</span>
-            </div>
-          )}
-        </Field>
-        <Field
-          label={formWords.from}
-
-          error={tooSoon ? formWords.fromTooSoon : null}
-          className={form.field}
-        >
-          {(control) => (
-            <DateInput
-              {...control}
-              className={form.dateBox}
-              min={firstDay}
-              value={from}
-              onChange={(event) => {
-                setFrom(event.target.value);
-                steps.edit();
-              }}
-            />
-          )}
-        </Field>
-      </div>
-    </SettingForm>
-  );
-}
-
-/** Taking back a price still to come: asked once, in its block, before anything is sent. */
-export function TakeBack(props: {
-  readonly target: Priced;
-  readonly row: Price;
-  readonly onDone: (written: Written & { ok: true }) => void;
-  readonly onKeep: () => void;
-}) {
-  const { target, row } = props;
-  const steps = useSteps(async () => {
-    const answer = await api.withdrawPrice({ item: target.item, tier: target.tier, valid_from: row.valid_from });
-    return sentOf(answer, (body) => ({ prices: body.prices, said: copy.done.takenBack }));
-  }, props.onDone);
-  return (
-    <>
-      <CheckPanel
-        question={check.takeBack(longDate(row.valid_from))}
-        busy={steps.step === "saving"}
-        onSend={steps.go}
-        onBack={props.onKeep}
-      />
-      {steps.failed !== null && (
-        <Refusal className={form.error} said={errorText({ ...copy.errors, ...copy.takeBackErrors }, steps.failed)} />
-      )}
-    </>
-  );
-}
 
 /** A service's new name. Its code stays, so its prices, and what was sold under them, stay its own. */
 export function RenameForm(props: {

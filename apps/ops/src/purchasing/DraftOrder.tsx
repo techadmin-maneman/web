@@ -16,6 +16,7 @@ import form from "../components/forms.module.css";
 import type { Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 interface Line {
   readonly code: string;
@@ -157,7 +158,7 @@ function LinesEditor(props: {
           />
         ))}
       </div>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="outline"
           size="small"
@@ -169,7 +170,7 @@ function LinesEditor(props: {
         >
           {copy.draft.addLine}
         </Button>
-      </div>
+      </FormActions>
     </>
   );
 }
@@ -265,11 +266,11 @@ export function DraftOrder({
       <LinesEditor supplier={supplier} lines={lines} consumable={consumable} onLines={setLines} />
       <WhenAndNote expected={expected} note={note} onExpected={setExpected} onNote={setNote} />
       <p className={form.note}>{copy.draft.total(inCurrency(total, supplier.currency))}</p>
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void draft()}>
           {copy.draft.send}
         </Button>
-      </div>
+      </FormActions>
       {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
     </Panel>
   );

@@ -19,6 +19,7 @@ import { ExpiryRiskPanel } from "./ExpiryRisk.tsx";
 import { FailuresPanel } from "./Failures.tsx";
 import { RaiseRecall, RecallDetail, type Answer, type Quality, type Detail } from "./Recall.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const loadRecalls = () => client.get("/api/recalls");
 
@@ -38,9 +39,7 @@ function Recalls({ quality, opener, onOpen }: { quality: Quality; opener: RowOpe
       <tbody>
         {quality.recalls.map((recall) => (
           <tr key={recall.id}>
-            <th scope="row" className={form.rowHead}>
-              {copy.number(recall.number)}
-            </th>
+            <RowHead>{copy.number(recall.number)}</RowHead>
             <td>{recall.name}</td>
             <td>{recall.lot_code}</td>
             <td>{longDate(recall.raised_at)}</td>

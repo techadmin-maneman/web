@@ -12,6 +12,7 @@ import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { usage as copy } from "../content/usage.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 type Usage = paths["/api/stock/usage"]["get"]["responses"][200]["content"]["application/json"];
 type Technician = Usage["technicians"][number];
@@ -41,9 +42,7 @@ function Items({ technician }: { technician: Technician }) {
       <tbody>
         {technician.items.map((item) => (
           <tr key={item.consumable_code}>
-            <th scope="row" className={form.rowHead}>
-              {item.name}
-            </th>
+            <RowHead>{item.name}</RowHead>
             <td className={form.figure}>{quantity(item.expected)}</td>
             <td className={form.figure}>{quantity(item.used)}</td>
             <td className={form.figure}>{copy.over(item.over_percent)}</td>
@@ -68,10 +67,10 @@ function Technicians({ usage }: { usage: Usage }) {
           <tbody>
             {usage.technicians.map((technician) => (
               <tr key={technician.technician_id}>
-                <th scope="row" className={form.rowHead}>
+                <RowHead>
                   {technician.name}
                   {technician.flagged && <p className={form.note}>{copy.flagged}</p>}
-                </th>
+                </RowHead>
                 <td className={form.figure}>{technician.visits}</td>
                 <td className={form.figure}>{rupees(technician.expected_value)}</td>
                 <td className={form.figure}>{rupees(technician.used_value)}</td>
@@ -115,10 +114,10 @@ function Places({ usage }: { usage: Usage }) {
           <tbody>
             {usage.places.map((place) => (
               <tr key={place.place_id}>
-                <th scope="row" className={form.rowHead}>
+                <RowHead>
                   {place.place}
                   {place.flagged && <p className={form.note}>{copy.flagged}</p>}
-                </th>
+                </RowHead>
                 <td className={form.figure}>{rupees(place.left_value)}</td>
                 <td className={form.figure}>{rupees(place.lost_value)}</td>
                 <td className={form.figure}>{copy.percent(place.shrinkage_percent)}</td>

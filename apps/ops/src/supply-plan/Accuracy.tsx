@@ -11,6 +11,7 @@ import { supplyPlan } from "../content/supply-plan.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { dayAfter } from "./Forecast.tsx";
 import styles from "./supply-plan.module.css";
+import { RowHead } from "../components/RowHead.tsx";
 
 type Accuracy = paths["/api/stock/forecast-accuracy"]["get"]["responses"][200]["content"]["application/json"];
 
@@ -43,9 +44,7 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
           <tbody>
             {accuracy.periods.map((period) => (
               <tr key={period.period_start}>
-                <th scope="row" className={form.rowHead}>
-                  {dayAfter(period.period_start, 0, true)}
-                </th>
+                <RowHead>{dayAfter(period.period_start, 0, true)}</RowHead>
                 <td className={form.figure}>{figure(period.expected)}</td>
                 <td className={form.figure}>{figure(period.actual)}</td>
                 <td className={form.figure}>{copy.percent(period.error_percent)}</td>
@@ -60,9 +59,7 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
           <tbody>
             {accuracy.items.map((item) => (
               <tr key={item.consumable_code}>
-                <th scope="row" className={form.rowHead}>
-                  {item.name}
-                </th>
+                <RowHead>{item.name}</RowHead>
                 <td className={form.figure}>{figure(item.expected)}</td>
                 <td className={form.figure}>{figure(item.actual)}</td>
                 <td className={form.figure}>{copy.percent(item.error_percent)}</td>

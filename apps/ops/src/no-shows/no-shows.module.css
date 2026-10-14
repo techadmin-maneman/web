@@ -198,12 +198,6 @@
   resize: none;
 }
 
-.reasonHint {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
 /* A charge asked about once more, where its buttons stood. */
 .confirm {
   margin-top: var(--sp-16);

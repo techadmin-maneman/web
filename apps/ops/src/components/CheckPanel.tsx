@@ -7,6 +7,7 @@ import { Button } from "@maneman/ui/Button";
 import { useId, type ReactNode } from "react";
 import { review } from "../content/common.ts";
 import form from "./forms.module.css";
+import { FormActions } from "./FormActions.tsx";
 
 interface Props {
   /** A one-press action's question, "Pause Acme?"; a change made in boxes is "Review the change". */
@@ -52,14 +53,14 @@ export function CheckPanel({
           {line}
         </p>
       ))}
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={busy || !ready} onClick={onSend}>
           {busy ? review.sending : review.send}
         </Button>
         <Button variant="outline" size="small" className={form.quiet} disabled={busy} onClick={onBack}>
           {question === undefined ? review.edit : review.cancel}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }

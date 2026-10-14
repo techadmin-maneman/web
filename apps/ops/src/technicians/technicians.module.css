@@ -175,12 +175,6 @@
   padding-top: var(--sp-16);
 }
 
-.lead {
-  margin: 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-145);
-}
-
 /* ---- Those switched off, beneath the table ------------------------------- */
 
 .off {

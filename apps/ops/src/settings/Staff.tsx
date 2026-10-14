@@ -23,6 +23,7 @@ import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { StaffForm } from "./StaffForm.tsx";
 import form from "../components/forms.module.css";
 import styles from "./staff.module.css";
+import { FormActions } from "../components/FormActions.tsx";
 
 const copy = settings.staff;
 
@@ -125,7 +126,7 @@ function People({ staff, onChanged }: PanelProps) {
         </tbody>
       </Table>
       {editing === null && mayGrant && (
-        <div className={form.actions}>
+        <FormActions>
           <Button
             variant="outline"
             size="small"
@@ -136,7 +137,7 @@ function People({ staff, onChanged }: PanelProps) {
           >
             {copy.add}
           </Button>
-        </div>
+        </FormActions>
       )}
       {editing !== null && (
         <StaffForm

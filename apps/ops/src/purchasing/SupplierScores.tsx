@@ -9,6 +9,7 @@ import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const loadScores = () => client.get("/api/supplier-scorecard");
 
@@ -36,9 +37,7 @@ export function SupplierScores() {
           <tbody>
             {loaded.value.suppliers.map((score) => (
               <tr key={score.supplier_id}>
-                <th scope="row" className={form.rowHead}>
-                  {score.name}
-                </th>
+                <RowHead>{score.name}</RowHead>
                 <td className={form.figure}>{score.orders}</td>
                 <td className={form.figure}>{copy.scorecard.percent(score.on_time_in_full_percent)}</td>
                 <td className={form.figure}>{copy.scorecard.days(score.lead_days, score.promised_days)}</td>

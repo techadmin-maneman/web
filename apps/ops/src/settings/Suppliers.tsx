@@ -15,6 +15,7 @@ import form from "../components/forms.module.css";
 import { SupplierForm, type Supplier, type Suppliers as SupplierList } from "./SupplierForm.tsx";
 import { SupplierItems } from "./SupplierItems.tsx";
 import { ActionCheck, sentOf } from "./SettingForm.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const copy = settings.suppliers;
 
@@ -104,9 +105,7 @@ function SupplierTable(props: {
       <tbody>
         {suppliers.suppliers.map((supplier) => (
           <tr key={supplier.id}>
-            <th scope="row" className={form.rowHead}>
-              {supplier.name}
-            </th>
+            <RowHead>{supplier.name}</RowHead>
             <td>
               {supplier.country} · {supplier.currency}
             </td>

@@ -18,6 +18,7 @@ import { ClaimSteps, type ClaimAnswer } from "./ClaimSteps.tsx";
 import { ReturnedPieces } from "./ReturnedPieces.tsx";
 import type { Claim, SupplierClaims, Orders } from "./types.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 const loadClaims = () => client.get("/api/supplier-claims");
 
@@ -48,7 +49,7 @@ function ClaimsTable({
       <tbody>
         {claims.claims.map((claim) => (
           <tr key={claim.id}>
-            <th scope="row" className={form.rowHead}>
+            <RowHead>
               <RowButton
                 className={form.inline}
                 aria-label={copy.claims.open(copy.claims.number(claim.number))}
@@ -58,7 +59,7 @@ function ClaimsTable({
               >
                 {copy.claims.number(claim.number)}
               </RowButton>
-            </th>
+            </RowHead>
             <td>{supplierOf(claim.supplier_id)}</td>
             <td>{copy.claims.item(claim.name, claim.quantity, claim.piece_code)}</td>
             <td>{copy.claims.reasons[claim.reason]}</td>

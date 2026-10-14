@@ -15,6 +15,8 @@ import { supplyPlan } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import { dayAfter } from "./Forecast.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { RowHead } from "../components/RowHead.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 export type Calendar = paths["/api/demand-events"]["get"]["responses"][200]["content"]["application/json"];
 
@@ -95,11 +97,11 @@ function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (
       <DemandEntry label={copy.startsOn} type="date" value={draft.startsOn} onChange={edit("startsOn")} />
       <DemandEntry label={copy.endsOn} type="date" value={draft.endsOn} onChange={edit("endsOn")} />
       <DemandEntry label={copy.percent} type="number" value={draft.percent} onChange={edit("percent")} />
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {copy.save}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }
@@ -116,9 +118,7 @@ function EventRow({
 }) {
   return (
     <tr>
-      <th scope="row" className={form.rowHead}>
-        {event.name}
-      </th>
+      <RowHead>{event.name}</RowHead>
       <td>{event.city ?? supplyPlan.everyCity}</td>
       <td>{copy.days(dayAfter(event.starts_on, 0), dayAfter(event.ends_on, 0, true))}</td>
       <td className={form.figure}>{copy.change(event.uplift_percent)}</td>

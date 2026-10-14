@@ -110,13 +110,6 @@
   color: var(--text-muted);
 }
 
-.note {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
-}
-
 /* The table's search, flush with the table beneath. */
 .narrow {
   margin-inline: 0;

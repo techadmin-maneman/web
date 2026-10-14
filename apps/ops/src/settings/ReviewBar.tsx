@@ -6,15 +6,16 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { review } from "../content/common.ts";
 import { settings } from "../content/settings.ts";
 import form from "../components/forms.module.css";
+import { FormActions } from "../components/FormActions.tsx";
 
 export function ReviewBar(props: { ready: boolean; saved: boolean; onReview: () => void }) {
   return (
     <>
-      <div className={form.actions}>
+      <FormActions>
         <Button variant="primary" size="small" disabled={!props.ready} onClick={props.onReview}>
           {review.next}
         </Button>
-      </div>
+      </FormActions>
       {props.saved && (
         <InlineMessage tone="saved" className={form.saved}>
           {settings.rules.saved}

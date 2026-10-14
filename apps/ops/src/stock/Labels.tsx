@@ -20,6 +20,7 @@ import { placeName } from "./StockForm.tsx";
 import styles from "./labels.module.css";
 import { holdingOf } from "./holdings.ts";
 import { Refusal } from "../components/Refusal.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 /** The item and place whose labels the panel shows. */
 export interface LabelsFor {
@@ -72,7 +73,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
         ))}
       </ChoiceGroup>
       {toPrint.length > 0 && (
-        <div className={form.actions}>
+        <FormActions>
           <Button
             variant="primary"
             size="small"
@@ -85,7 +86,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
           >
             {printing === null ? copy.print(toPrint.length) : copy.printing}
           </Button>
-        </div>
+        </FormActions>
       )}
       {printing !== null && (
         <LabelSheet
@@ -206,7 +207,7 @@ function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: Labels
         </Field>
       </div>
       {failed && <Refusal className={form.error} said={copy.noLabel} />}
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -215,7 +216,7 @@ function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: Labels
         >
           {printing === null ? copy.print(count) : copy.printing}
         </Button>
-      </div>
+      </FormActions>
       {printing !== null && (
         <LabelSheet
           labels={printing}

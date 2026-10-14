@@ -14,6 +14,7 @@ import { review } from "../content/common.ts";
 import styles from "./consumables.module.css";
 import form from "../components/forms.module.css";
 import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { FormActions } from "../components/FormActions.tsx";
 
 const copy = settings.jobSheet;
 
@@ -220,7 +221,7 @@ export function ListEditor(props: Props) {
           />
         ))}
       </ol>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="outline"
           size="small"
@@ -233,7 +234,7 @@ export function ListEditor(props: Props) {
         >
           {props.addLabel}
         </Button>
-      </div>
+      </FormActions>
       {off.length > 0 && (
         <div className={styles.retired}>
           <p className={styles.retiredTitle}>{copy.retired}</p>

@@ -13,6 +13,8 @@ import form from "../components/forms.module.css";
 import { BookVisit } from "../clients/index.ts";
 import { quality as copy } from "../content/quality.ts";
 import { useAccess } from "../lib/access.ts";
+import { FormActions } from "../components/FormActions.tsx";
+import { RowHead } from "../components/RowHead.tsx";
 
 export type Quality = paths["/api/recalls"]["get"]["responses"][200]["content"]["application/json"];
 export type Detail = paths["/api/recalls/{id}"]["get"]["responses"][200]["content"]["application/json"];
@@ -37,9 +39,7 @@ function Rows({ columns, rows }: { columns: readonly string[]; rows: readonly (r
       <tbody>
         {rows.map(([head, ...cells]) => (
           <tr key={`${head}-${cells.join("-")}`}>
-            <th scope="row" className={form.rowHead}>
-              {head}
-            </th>
+            <RowHead>{head}</RowHead>
             {cells.map((cell, index) => (
               <td key={index}>{cell}</td>
             ))}
@@ -96,9 +96,7 @@ function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }
       <tbody>
         {worn.map((each) => (
           <tr key={each.piece_id}>
-            <th scope="row" className={form.rowHead}>
-              {each.person}
-            </th>
+            <RowHead>{each.person}</RowHead>
             <td>{each.piece_code}</td>
             <td>{each.due_on === null ? "" : fullDate(each.due_on)}</td>
             <td>{mayBook && <BookFree worn={each} />}</td>
@@ -139,7 +137,7 @@ export function RecallDetail({
         <WornRows worn={recall.worn} mayBook={recall.closed_at === null && access.mayCall("POST /api/visits")} />
       )}
       {recall.closed_at === null && access.mayCall("POST /api/recalls/{id}/close") && (
-        <div className={form.actions}>
+        <FormActions>
           <Button
             variant="outline"
             size="small"
@@ -151,7 +149,7 @@ export function RecallDetail({
           >
             {copy.close}
           </Button>
-        </div>
+        </FormActions>
       )}
     </Panel>
   );
@@ -200,7 +198,7 @@ export function RaiseRecall({
           />
         )}
       </Field>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="destructive"
           size="small"
@@ -214,7 +212,7 @@ export function RaiseRecall({
         >
           {copy.confirmRaise}
         </Button>
-      </div>
+      </FormActions>
     </div>
   );
 }

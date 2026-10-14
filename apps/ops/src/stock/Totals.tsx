@@ -7,6 +7,7 @@ import { stock as copy } from "../content/stock.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
 import styles from "./stock.module.css";
+import { RowHead } from "../components/RowHead.tsx";
 
 export type Grouping = "zone" | "city";
 
@@ -44,9 +45,7 @@ export function Totals({ stock, by }: { stock: Stock; by: Grouping }) {
         <tbody>
           {stock.consumables.map((consumable) => (
             <tr key={consumable.code}>
-              <th scope="row" className={form.rowHead}>
-                {consumable.name}
-              </th>
+              <RowHead>{consumable.name}</RowHead>
               <td className={styles.held}>{copy.held(sum(consumable.code, null), consumable.unit)}</td>
               {groups.map((group) => (
                 <td className={styles.held} key={group}>

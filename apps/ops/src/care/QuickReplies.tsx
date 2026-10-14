@@ -15,6 +15,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi } from "./care-api.ts";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
+import { FormActions } from "../components/FormActions.tsx";
 
 const copy = care.quick;
 
@@ -116,7 +117,7 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
         </Field>
       </div>
       <p className={form.note}>{copy.holes}</p>
-      <div className={form.actions}>
+      <FormActions>
         <Button
           variant="primary"
           size="small"
@@ -125,7 +126,7 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
         >
           {copy.add}
         </Button>
-      </div>
+      </FormActions>
       <Refused failed={failure} errors={copy.errors} />
     </div>
   );
