@@ -1614,7 +1614,7 @@
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "If yours is not here, "
+    "text": "If yours isn’t here, "
   },
   {
     "key": "site:home/faq.intro.link",
@@ -1712,7 +1712,7 @@
     "surface": "site",
     "group": "Home",
     "where": "faq",
-    "text": "What if I do not like it at the fit?"
+    "text": "What if I don’t like it?"
   },
   {
     "key": "site:home/faq.items.6.a",
@@ -1908,7 +1908,7 @@
     "surface": "site",
     "group": "Page not found",
     "where": "notFound",
-    "text": "This page is not here."
+    "text": "This page isn’t here."
   },
   {
     "key": "site:pages/notFound.body",
@@ -3210,7 +3210,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Two answers to the same mirror. Here’s how they differ."
+    "text": "Two ways back to a full head of hair. Here’s how they differ."
   },
   {
     "key": "site:guides/guides.0.sections.0.heading",
@@ -4414,14 +4414,14 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "We are not in {area} yet"
+    "text": "We’re not in {area} yet"
   },
   {
     "key": "site:referral/referral.waitlist.titleUnknown",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "We are not there yet"
+    "text": "We’re not there yet"
   },
   {
     "key": "site:referral/referral.waitlist.body",
@@ -4694,7 +4694,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Code {code}: {off}, taken when you pay."
+    "text": "Code {code}: {off}, applied when you pay."
   },
   {
     "key": "site:referral/referral.booked.code.notApplied",
@@ -4771,7 +4771,7 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "We will message you"
+    "text": "We’ll message you"
   },
   {
     "key": "site:referral/referral.requested.body",

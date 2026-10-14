@@ -175,7 +175,7 @@ test("Home keeps a visit done but not yet closed, and shows the credit tile and 
   expect(await axeViolations(page)).toEqual([]);
 
   await tab(page, "Visits").click();
-  await expect(page.getByText("Service visit · Done · notes on the way · Imran")).toBeVisible();
+  await expect(page.getByText("Service visit · Done · record on its way · Imran")).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.next.book })).toHaveCount(0);
 
   // An invoice just issued is a line of its own, beneath whichever prompt leads.

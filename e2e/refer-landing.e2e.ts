@@ -216,7 +216,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   // The navy block says what the pincode answered, in place of the pincode field.
-  await expect(page.getByText("We are not in Bandra yet")).toBeVisible();
+  await expect(page.getByText("We’re not in Bandra yet")).toBeVisible();
   await expect(page.getByLabel("Pincode", { exact: true })).toBeHidden();
   await expect(page.getByText("For 400050, Bandra")).toBeVisible();
   // Nothing is booked, so nothing asks where (ADR 0081).
@@ -448,7 +448,7 @@ test("the pincode’s answer is announced, and the pincode can be changed", asyn
   await visit(page, `/r/${CODE}`);
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
   await page.getByLabel("Pincode").press("Enter");
-  await expect(page.getByRole("heading", { name: "We are not in Bandra yet" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "We’re not in Bandra yet" })).toBeFocused();
 
   await page.getByRole("button", { name: referralCopy.referral.pincode.changeLabel }).click();
   await expect(page.getByLabel("Pincode")).toBeFocused();

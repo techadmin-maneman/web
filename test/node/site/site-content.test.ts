@@ -261,7 +261,7 @@ describe("the second copy round", () => {
   // The site promised a refit or a refund within 14 days; the app's pay step, that the technician stops. The FAQ says
   // first that a client who decides against it before the fit pays nothing, as the one visit's flow has it.
   it("gives the guarantee in one sentence on the home page, in the FAQ and at the app’s pay step", () => {
-    const answer = site.faq.items.find((item) => item.q === "What if I do not like it at the fit?")?.a ?? "";
+    const answer = site.faq.items.find((item) => item.q === "What if I don’t like it?")?.a ?? "";
     expect(site.guarantee.text).toBe(GUARANTEE);
     expect(answer.startsWith("Say so before it’s fitted and you pay nothing. Once it’s fitted: ")).toBe(true);
     expect(answer.toLowerCase().endsWith(GUARANTEE.toLowerCase())).toBe(true);

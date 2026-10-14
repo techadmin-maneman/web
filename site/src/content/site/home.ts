@@ -429,7 +429,7 @@ export const guarantee = {
 
 export const faq = {
   title: "Questions",
-  intro: { before: "If yours is not here, ", link: "ask on WhatsApp", after: "." },
+  intro: { before: "If yours isn’t here, ", link: "ask on WhatsApp", after: "." },
   items: [
     {
       q: "Will anyone be able to tell?",
@@ -456,7 +456,7 @@ export const faq = {
       a: "Colour is matched against forty samples in daylight at the consultation, including the grey percentage. The hairline is drawn on your forehead with a pencil and agreed with you before anything is fitted.",
     },
     {
-      q: "What if I do not like it at the fit?",
+      q: "What if I don’t like it?",
       a: `Say so before it’s fitted and you pay nothing. Once it’s fitted: ${GUARANTEE.charAt(0).toLowerCase()}${GUARANTEE.slice(1)}`,
     },
     {

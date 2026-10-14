@@ -347,7 +347,7 @@ test("a request waiting for ops to fix the hour offers no calendar", async ({ pa
   await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, state: "requested" } } });
   await bookHere(page);
 
-  await expect(page.getByRole("heading", { level: 1, name: "We will message you" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "We’ll message you" })).toBeVisible();
   await expect(page.getByRole("link", { name: referralCopy.referral.booked.calendar.google })).toHaveCount(0);
 });
 
@@ -487,7 +487,7 @@ test("says a wrong code under its box, and what a right one takes off once booke
   await box.fill(" WEDDNG25 ");
   await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
-  await expect(page.getByText("Code WEDDNG25: Rs. 1,000 off, taken when you pay.")).toBeVisible();
+  await expect(page.getByText("Code WEDDNG25: Rs. 1,000 off, applied when you pay.")).toBeVisible();
   const sent = requests.at(-1)?.postDataJSON() as Record<string, unknown>;
   expect(sent).toMatchObject({ one_visit: true, discount_code: "WEDDNG25" });
 });
@@ -511,7 +511,7 @@ test("says what a percentage code takes off, up to its cap", async ({ page }) =>
   const standing = { code: "TENPC", kind: "percent", value: 10, cap: 200_000 };
   await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, one_visit: true, discount_code: standing } } });
   await bookOneVisitWithCode(page, "tenpc");
-  await expect(page.getByText("Code TENPC: 10% off, up to Rs. 2,000, taken when you pay.")).toBeVisible();
+  await expect(page.getByText("Code TENPC: 10% off, up to Rs. 2,000, applied when you pay.")).toBeVisible();
 });
 
 test("offers the one visit the morning and the afternoon, never the evening, and the consultation all three", async ({
@@ -625,7 +625,7 @@ test("says nothing about an invite to someone who came here directly", async ({ 
 test("a pincode we do not serve lists the number kept, with the launch alert offered", async ({ page }) => {
   const requests = await mockApi(page);
   await openWaitlist(page);
-  await expect(page.getByText("We are not in Bandra yet")).toBeVisible();
+  await expect(page.getByText("We’re not in Bandra yet")).toBeVisible();
   await expect(page.getByText("Step 3 of 3 · The list")).toBeVisible();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
 

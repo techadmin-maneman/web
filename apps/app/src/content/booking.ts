@@ -90,7 +90,7 @@ export const booking = {
     confirm: "Confirm visit",
     // A free service visit covers it. Our words: the reward's name, in place of the board's.
     credit: {
-      zero: "Rs. 0",
+      zero: "Free",
       used: "1 free service visit used",
       remaining: (left: number) => `${String(left)} remaining`,
       /** The notice the hold is sold under, which ops set: 24 hours to begin with. */

@@ -326,7 +326,7 @@ test("says the payment is in, and lets nothing go, when the time ends on a paid 
   );
   await toPayment(page);
   await page.clock.fastForward("11:00");
-  await expect(page.getByRole("dialog", { name: "Your payment is in. We are booking your visit." })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Your payment is in. We’re booking your visit." })).toBeVisible();
   expect(released).toEqual([]);
 });
 

@@ -51,7 +51,7 @@ export const guides: readonly Guide[] = [
     updated: "2026-10-13",
     title: "Hair system or hair transplant",
     description: "Hair system or transplant: what each involves, how soon you see a result, and who each suits.",
-    lead: "Two answers to the same mirror. Here’s how they differ.",
+    lead: "Two ways back to a full head of hair. Here’s how they differ.",
     sections: [
       {
         heading: "What each one is",

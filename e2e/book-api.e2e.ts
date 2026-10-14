@@ -52,7 +52,7 @@ test("a pincode we do not serve takes the number instead", async ({ page }) => {
   await leaveDetails(page, "You may contact me on WhatsApp about this consultation.");
   await page.getByLabel("Pincode").fill(UNSERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
-  await expect(page.getByText(`We are not in ${UNSERVED.area} yet`)).toBeVisible();
+  await expect(page.getByText(`We’re not in ${UNSERVED.area} yet`)).toBeVisible();
 
   await page.getByText("You may contact me about this request.").click();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();

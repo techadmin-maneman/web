@@ -36,7 +36,7 @@ export const booking = {
 // ---------------------------------------------------------------------------
 
 export const notFound = {
-  title: "This page is not here.",
+  title: "This page isn’t here.",
   body: "The address may have changed. Everything is on the home page.",
   home: "Back to the site",
 };

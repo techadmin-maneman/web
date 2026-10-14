@@ -24,7 +24,7 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await expect(card).toContainText(shortDate("2027-09-25"));
   await expect(card).toContainText("Morning, 9 am to 12 pm");
   await expect(card).toContainText(appCopy.VISIT_TYPES.service);
-  await expect(card).toContainText("Your payment is in. We are booking your visit.");
+  await expect(card).toContainText("Your payment is in. We’re booking your visit.");
   await expect(card).toContainText("We’ll message you on WhatsApp when it’s booked.");
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
   await expect(page.getByRole("button", { name: appCopy.home.next.book })).toHaveCount(0);

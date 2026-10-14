@@ -301,8 +301,8 @@ export const referral = {
   },
   /** The waitlist form, shown when the pincode is not served. */
   waitlist: {
-    title: "We are not in {area} yet",
-    titleUnknown: "We are not there yet",
+    title: "We’re not in {area} yet",
+    titleUnknown: "We’re not there yet",
     body: `${serviceArea} only, for now.`,
     leave: "Leave us your number",
     forPincode: "For {pincode}{area}",
@@ -369,7 +369,7 @@ export const referral = {
     // Not drawn: the discount code given with the one visit, as it stands on the booking, or not, when another
     // booking took its last use a moment before (ADR 0108). What it takes off is before GST.
     code: {
-      applied: "Code {code}: {off}, taken when you pay.",
+      applied: "Code {code}: {off}, applied when you pay.",
       notApplied: "We couldn’t apply code {code}. Your booking stands without it.",
       amountOff: "{amount} off",
       percentOff: "{percent}% off",
@@ -395,7 +395,7 @@ export const referral = {
    */
   requested: {
     label: "Request received",
-    title: "We will message you",
+    title: "We’ll message you",
     body: "On WhatsApp, at +91 {mobile}, to fix the hour.",
   },
   listed: {

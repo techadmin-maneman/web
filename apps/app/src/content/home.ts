@@ -30,7 +30,7 @@ export const freeVisitsTile = {
 };
 
 /** The booking sheet's words for a paid visit still being booked, which Home repeats while it waits. */
-export const PAID_IN = "Your payment is in. We are booking your visit.";
+export const PAID_IN = "Your payment is in. We’re booking your visit.";
 
 export const TOLD_WHEN_BOOKED = "We’ll message you on WhatsApp when it’s booked.";
 
@@ -69,7 +69,7 @@ export const home = {
     paid: "Paid in full. We are placing your order.",
     ordered: (date: string | null) =>
       date === null ? "Your hair system is being made." : `Your hair system is being made, due by ${date}.`,
-    arrived: "Your hair system has arrived. We will call to book your fit.",
+    arrived: "Your hair system has arrived. We’ll message you to book your fit.",
   },
   /**
    * Home's one prompt, and the invoice line beneath it (src/domain/clients/home-prompt.ts). The replacement's line and
@@ -97,7 +97,7 @@ export const home = {
     openInvoice: "Open the invoice",
   },
   /** A visit not yet closed, once it has begun. Our words: the design draws neither. */
-  stages: { in_progress: "Today · in progress", done: "Done · notes on the way", closing: "Wrapping up" },
+  stages: { in_progress: "Today · in progress", done: "Done · record on its way", closing: "Wrapping up" },
   next: {
     label: "Your next visit",
     /** "Service visit · 1 hour 30 minutes". */
@@ -155,7 +155,7 @@ export const home = {
    */
   beingBooked: {
     paid: PAID_IN,
-    free: "We are booking your visit.",
+    free: "We’re booking your visit.",
     told: TOLD_WHEN_BOOKED,
   },
   // The design draws no Home for a client with nothing booked.
