@@ -77,7 +77,7 @@ function movementValues(id: string, movement: Movement, written: Written) {
   ];
 }
 
-export function movementStatement(
+function movementStatement(
   db: D1Database,
   movement: Movement,
   written: Written,
@@ -127,7 +127,7 @@ export function leavingCondition(out: {
 }
 
 /** A movement's row written only where the movement `id` earlier in the same batch was. */
-export const afterMovement = (id: string) => ({
+const afterMovement = (id: string) => ({
   sql: "EXISTS (SELECT 1 FROM stock_movements WHERE id = ?13)",
   binds: [id],
 });

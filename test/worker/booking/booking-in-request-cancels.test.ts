@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
 import { settleOwedRefunds } from "../../../src/domain/money/cancel-refunds.ts";
 import {
   changeableVisit,
@@ -47,6 +47,7 @@ import {
   messagesOf,
   changes,
 } from "./booking-in-request-fixtures.ts";
+import { aCreditSpent } from "../fixtures/index.ts";
 
 beforeEach(async () => {
   await markDatabase();
@@ -197,7 +198,7 @@ describe("a visit the client and ops cancel at the same moment", () => {
   it("gives its credit back once", async () => {
     await env.DB.prepare("DELETE FROM payments").run();
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "referral", sourceId: "attr-1", now: NOW }).run();
-    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+    await aCreditSpent(PERSON, VISIT);
 
     expect(await cancelledByBoth(fakeDependencies())).toEqual(["cancelled", "not_changeable"]);
 
@@ -287,7 +288,7 @@ describe("a visit cancelled, when something fails after it is cancelled", () => 
   it("gives a credit back with the cancel itself, whatever fails after", async () => {
     await env.DB.prepare("DELETE FROM payments").run();
     await grantCredits(env.DB, { personId: PERSON, visits: 1, source: "referral", sourceId: "attr-1", now: NOW }).run();
-    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+    await aCreditSpent(PERSON, VISIT);
     useMessageQueue(queueThatRefuses());
 
     const done = await cancelFree(fakeDependencies(), failingAfterTheFirstBatch(env.DB));

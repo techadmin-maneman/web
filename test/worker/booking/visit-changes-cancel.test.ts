@@ -4,12 +4,12 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
-import { clawBack, creditBalance, grantCredits, redeemCredit } from "../../../src/domain/money/credits.ts";
+import { clawBack, creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
 import { openSession } from "../../../src/domain/sign-in/sessions.ts";
 import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { PaymentUnanswered } from "../../../src/providers/provider-error.ts";
-import { aPerson } from "../fixtures/index.ts";
+import { aCreditSpent, aPerson } from "../fixtures/index.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request, savedAddress } from "../helpers.ts";
 import {
   PERSON,
@@ -206,7 +206,7 @@ describe("POST /api/appointments/:id/cancel", () => {
     await booked("service", THURSDAY_NOON, 0);
     await env.DB.prepare("DELETE FROM payments").run();
     await grantCredits(env.DB, { personId: PERSON, visits: 3, source: "referral", sourceId: "attr-1", now: NOW }).run();
-    await redeemCredit(env.DB, PERSON, VISIT, NOW).run();
+    await aCreditSpent(PERSON, VISIT);
     await clawBack(env.DB, "referral", "attr-1", NOW);
     const app = client();
 
