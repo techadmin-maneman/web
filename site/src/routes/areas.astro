@@ -1,0 +1,29 @@
+---
+// Where we come (src/content/guides.ts), at /areas. The build adds the route only once its wording is shown
+// (site/astro.config.ts): for staging under the design's "Placeholder" tag until it is approved, for production then.
+import { buttonLook } from "@maneman/ui/Button";
+import { areasPage } from "../content/guides.ts";
+import TextPage from "../layouts/TextPage.astro";
+---
+
+<TextPage
+  pageTitle={areasPage.pageTitle}
+  description={areasPage.description}
+  title={areasPage.title}
+  publish={areasPage.publish}
+>
+  <p slot="lead" class="lead" data-cities={areasPage.cities}>
+    {areasPage.lead}
+  </p>
+  <p>{areasPage.streets}</p>
+  <p>{areasPage.next}</p>
+  <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
+    {areasPage.check}
+  </a>
+</TextPage>
+
+<style>
+  .book {
+    margin-top: var(--sp-48);
+  }
+</style>

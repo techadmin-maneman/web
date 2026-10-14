@@ -1,0 +1,44 @@
+---
+// A guide (src/content/guides.ts), at /guides/<slug>. One whose wording is not yet approved is built for staging under
+// the design's "Placeholder" tag, and production builds no page for it.
+import { buttonLook } from "@maneman/ui/Button";
+import { guides, guidesPage, type Guide } from "../../content/guides.ts";
+import TextPage from "../../layouts/TextPage.astro";
+import { isShown } from "../../lib/build.ts";
+
+export function getStaticPaths() {
+  return guides.filter(isShown).map((guide) => ({ params: { slug: guide.slug }, props: { guide } }));
+}
+
+interface Props {
+  guide: Guide;
+}
+
+const { guide } = Astro.props;
+---
+
+<TextPage
+  pageTitle={`${guide.title} · Mane Man`}
+  description={guide.description}
+  title={guide.title}
+  lead={guide.lead}
+  publish={guide.publish}
+>
+  {guide.sections.map((section) => (
+    <section>
+      <h2>{section.heading}</h2>
+      {section.paragraphs.map((paragraph) => (
+        <p>{paragraph}</p>
+      ))}
+    </section>
+  ))}
+  <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
+    {guidesPage.book}
+  </a>
+</TextPage>
+
+<style>
+  .book {
+    margin-top: var(--sp-48);
+  }
+</style>

@@ -1,0 +1,58 @@
+---
+// A long-form page of text in the site layout: the design's "Placeholder" tag while its wording waits, the title and
+// its lead, then the page's own sections. The guides, the cities, the privacy notice and the terms are drawn in it.
+import { capsLook } from "@maneman/ui/Caps";
+import { placeholderTag } from "../content/site.ts";
+import { SHOW_PLACEHOLDER_TAGS } from "../lib/build.ts";
+import Site from "./Site.astro";
+
+interface Props {
+  pageTitle: string;
+  description: string;
+  title: string;
+  /** The sentence beneath the title; a page whose lead the Worker writes into draws its own in the "lead" slot. */
+  lead?: string;
+  /** Its wording is approved; until then, outside production, the page is tagged. */
+  publish: boolean;
+}
+
+const { pageTitle, description, title, lead, publish } = Astro.props;
+---
+
+<Site title={pageTitle} description={description}>
+  <article class="page">
+    {SHOW_PLACEHOLDER_TAGS && !publish && <div class={capsLook("label tag")}>{placeholderTag}</div>}
+    <h1 class="section-title">{title}</h1>
+    <slot name="lead">{lead !== undefined && <p class="lead">{lead}</p>}</slot>
+    <slot />
+  </article>
+</Site>
+
+<style>
+  .page {
+    max-width: var(--measure-column);
+    margin: 0 auto;
+    padding: var(--book-pad-top) var(--gutter) var(--section-gap);
+    min-height: calc(100vh - var(--header-h));
+  }
+  .tag {
+    display: inline-block;
+    margin-bottom: var(--sp-24);
+  }
+  .page :global(h2) {
+    margin: var(--sp-48) 0 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-24);
+    font-weight: var(--weight-regular);
+    line-height: var(--lh-130);
+  }
+  .page :global(p) {
+    margin: var(--sp-16) 0 0;
+    font-size: var(--fs-lead);
+    line-height: var(--lh-160);
+    text-wrap: pretty;
+  }
+  .page :global(.lead) {
+    color: var(--text-muted);
+  }
+</style>
