@@ -8,7 +8,7 @@
 import { signInAgain } from "@maneman/web-kit/access";
 import { createClient, type Answer as Answered } from "@maneman/web-kit/api";
 import type { components, paths } from "./api-schema.ts";
-import { heardFromApi } from "./lib/clock.ts";
+import { heardFromApi } from "@maneman/web-kit/clock";
 
 type Schemas = components["schemas"];
 export type LoginChallenge = Schemas["LoginChallenge"];

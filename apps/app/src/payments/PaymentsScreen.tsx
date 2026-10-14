@@ -14,7 +14,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { listDate, yearInIndia } from "@maneman/web-kit/dates";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { rupees } from "@maneman/web-kit/money";
 import { api, type CreditLine, type Entry, type Me, type OwedPayment } from "../api.ts";
 import { empty, payments } from "../content.ts";

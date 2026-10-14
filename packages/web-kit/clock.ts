@@ -1,8 +1,6 @@
-// The API's clock. A hold lasts ten minutes by the API's clock, and a phone's
-// own can be minutes out: counted on the phone's, a hold 3 minutes fast reads
-// "6:59" from the start, and one 11 minutes fast has lapsed before it began.
-// Every fresh answer's Date header says what the API's clock read, so the app
-// counts on the phone's clock moved by the difference (apps/app/src/api.ts).
+// The API's clock, for both apps. A phone's own can be minutes or hours out: a hold counted on it lapses before it
+// began, and a technician's "today" is the wrong day. Every fresh answer's Date header says what the API's clock read,
+// so the apps count on the phone's clock moved by the difference (each app's api.ts).
 
 let offset = 0;
 
@@ -20,6 +18,14 @@ export function heardFromApi(date: string | null, receivedAt: number = Date.now(
 
 /** Now by the API's clock, in milliseconds. */
 export const apiNow = (): number => Date.now() + offset;
+
+/** How far the phone's clock is from the API's, in milliseconds, for the technician app to keep for offline opens. */
+export const apiOffset = (): number => offset;
+
+/** Starts from an offset kept on the phone, before any answer has been heard. */
+export function startFrom(kept: number): void {
+  offset = kept;
+}
 
 /** Whole seconds from now until `deadline`, a time by the API's clock in milliseconds; never below nought. */
 export const secondsUntil = (deadline: number): number => Math.max(0, Math.ceil((deadline - apiNow()) / 1000));

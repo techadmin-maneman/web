@@ -2,7 +2,7 @@
 // the countdown, the late fee, and the step that is still loading.
 
 import { capsLook } from "@maneman/ui/Caps";
-import { apiNow } from "../../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import type { Hold, Price } from "../../api.ts";

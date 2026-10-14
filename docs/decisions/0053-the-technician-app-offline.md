@@ -186,3 +186,9 @@ Board A3's piece card and last visit's photograph, board B3's "Pick from the lis
 ## Update, 4 October 2026: the day's list names the client
 
 From the day before the visit, when a job unlocks, the day's list carries the client's name (`client_name`), as the card does, so Today names each row without waiting for the cards. The service worker's copy of today's list now holds those names. It holds nothing the phone's store does not already hold in the cards it keeps, and it is deleted with the store at sign-out and on revocation. The service worker still keeps no card, so no mobile, address or gate code.
+
+## Update, 14 October 2026: one offline copy of the day, on the API's clock
+
+The service worker no longer keeps today's list. It decided "today" by the phone's clock, and the app treated its copy as fresh, so a phone hours out cached the wrong day and the app let go of what it held on the strength of it. The phone's own store already kept the day, and `useDay` already fell back to it with no signal, so the worker now keeps the shell alone and drops the earlier build's `mm-tech-day` when it takes over. Nothing the worker holds names a client.
+
+The day the technician works, the no-show wait, the check-in's time and the close-out's length are on the API's clock (`packages/web-kit/clock.ts`, which the client app's holds already used). Each fresh answer's `Date` header sets it, and the phone keeps the difference in its store, so an open with no signal still dates the day by the API's clock.

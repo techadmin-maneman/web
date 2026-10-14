@@ -2,10 +2,14 @@
 // counts the evidence chain and the close-out show: what is left of the wait, and how long the
 // job took.
 
+import { apiNow } from "@maneman/web-kit/clock";
 import { addDays, indiaClock, todayInIndia as indiaToday } from "@maneman/web-kit/dates";
 
-/** Today's calendar date in India, YYYY-MM-DD: the day the app asks the backend for. */
-export const todayInIndia = (now: Date = new Date()): string => indiaToday(now.getTime());
+/** Now by the API's clock: the phone's own can be hours out. */
+export const apiDate = (): Date => new Date(apiNow());
+
+/** Today's calendar date in India by the API's clock, YYYY-MM-DD: the day the app asks the backend for. */
+export const todayInIndia = (at: Date = apiDate()): string => indiaToday(at.getTime());
 
 export const dayAfter = (isoDate: string): string => addDays(isoDate, 1);
 export const dayBefore = (isoDate: string): string => addDays(isoDate, -1);

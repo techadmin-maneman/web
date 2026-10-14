@@ -38,6 +38,7 @@ import { receiptLine, type ReceiptLine } from "./receipt.ts";
 import frame from "../components/frame.module.css";
 import styles from "./job.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 /** The phone's own fix, which the API measures against the address (src/policy/check-in.ts). */
 function position(): Promise<GeolocationPosition> {
@@ -52,11 +53,11 @@ function position(): Promise<GeolocationPosition> {
 
 /** The countdown, once a second, as the board's "no pulse" asks: whole seconds, nothing else moving. */
 function useNow(running: boolean): number {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(apiNow);
   useEffect(() => {
     if (!running) return;
     const tick = setInterval(() => {
-      setNow(Date.now());
+      setNow(apiNow());
     }, 1000);
     return () => {
       clearInterval(tick);
@@ -65,11 +66,11 @@ function useNow(running: boolean): number {
   return now;
 }
 
-/** Whether the phone's clock is still before `at`; the screen is drawn again the moment it is not. */
+/** Whether the API's clock is still before `at`; the screen is drawn again the moment it is not. */
 function useBefore(at: number): boolean {
-  const [before, setBefore] = useState(() => Date.now() < at);
+  const [before, setBefore] = useState(() => apiNow() < at);
   useEffect(() => {
-    const left = at - Date.now();
+    const left = at - apiNow();
     setBefore(left > 0);
     if (left <= 0) return;
     const opens = setTimeout(() => {
@@ -120,7 +121,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
         setNoPosition(true);
         return;
       }
-      const at = new Date().toISOString();
+      const at = new Date(apiNow()).toISOString();
       const body = { lat: fix.coords.latitude, lng: fix.coords.longitude, accuracy_m: fix.coords.accuracy, at };
       await queue("check_in", job.id, body, job.starts_at);
       await replay();

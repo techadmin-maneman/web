@@ -27,6 +27,7 @@
   --fs-app-title-long: var(--fs-32); /* a longer title */
   /* Primary buttons and fields are tokens.css's --btn-lg (56px); icon buttons and links its --tap (44px). */
   --tap-row: var(--sp-64); /* rows, tabs, the code's boxes */
+  --copy-target: var(--tap); /* an error's reference, copied; the technician app's is its own larger target */
   --sp-40: 40px; /* initials and square marks: the dispatch board's, the share sheet's */
   --sp-64: 64px;
   --switch-width: 46px; /* a consent's switch */

@@ -6,7 +6,7 @@ import { shortDate } from "@maneman/web-kit/dates";
 import type { JobSummary } from "../api.ts";
 import { changed, job as copy, oneVisit, types, typesLower } from "../content.ts";
 import type { HeldJob } from "../store/jobs.ts";
-import { clock, dayAfter, todayInIndia } from "./when.ts";
+import { apiDate, clock, dayAfter, todayInIndia } from "./when.ts";
 
 type Named = Pick<JobSummary, "type" | "one_visit">;
 
@@ -36,7 +36,7 @@ function startWords(start: string, now: Date): string {
  * A job by what the phone always holds, whether or not its card is open: "4 pm consultation · Gurgaon". `startsAt`
  * is the start the technician knew, which a job ops moved no longer has.
  */
-export function jobLabel(held: HeldJob | undefined, startsAt: string | null, now: Date = new Date()): string {
+export function jobLabel(held: HeldJob | undefined, startsAt: string | null, now: Date = apiDate()): string {
   const start = startsAt ?? held?.starts_at ?? null;
   const words: string[] = [];
   if (start !== null) words.push(startWords(start, now));

@@ -22,7 +22,7 @@ import { jobLabel } from "../lib/kind.ts";
 import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { clock } from "../lib/when.ts";
+import { apiDate, clock } from "../lib/when.ts";
 import { go, STEP_PATHS, stepPath, type InJobStep } from "../route.ts";
 import { useSession } from "../session.ts";
 import { account, forget, replay, sendAgain, STUCK, type EventKind, type JobAccount } from "../store/outbox.ts";
@@ -52,7 +52,7 @@ function Stopped(props: {
   const toCorrect = correctable(stopped);
   return (
     <div className={styles.stopped} role="alert">
-      <p className={styles.stoppedLine}>{whatStopped(stopped, new Date(), props.startsAt)}</p>
+      <p className={styles.stoppedLine}>{whatStopped(stopped, apiDate(), props.startsAt)}</p>
       {stopped.requestId !== null && (
         <ErrorRef requestId={stopped.requestId} words={reference} className={styles.reference} />
       )}

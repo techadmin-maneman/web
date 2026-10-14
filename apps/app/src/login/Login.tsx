@@ -14,7 +14,7 @@ import { api, type LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
 import { focusIfLost } from "@maneman/ui/arrival";
 import { nameInTitle } from "../lib/arrival.ts";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { CodeScreen, type CodeProblem } from "./CodeScreen.tsx";
 import { HelpScreen } from "./HelpScreen.tsx";
 import { MobileScreen } from "./MobileScreen.tsx";

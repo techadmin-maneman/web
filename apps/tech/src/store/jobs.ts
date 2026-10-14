@@ -12,6 +12,7 @@
 import type { CheckIn, Job, JobState, JobSummary } from "../api.ts";
 import { dayAfter } from "../lib/when.ts";
 import { all, clear, get, put, remove } from "./db.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 
 export async function keepDay(date: string, jobs: readonly JobSummary[]): Promise<void> {
   await put("days", { date, jobs });
@@ -57,7 +58,7 @@ export async function keptArrival(jobId: string): Promise<CheckIn | null> {
 }
 
 /** When the technician took the outcome, which the close-out's duration runs to. */
-export async function keepClosed(jobId: string, at: number = Date.now()): Promise<void> {
+export async function keepClosed(jobId: string, at: number = apiNow()): Promise<void> {
   await put("closures", { job_id: jobId, at });
 }
 

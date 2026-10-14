@@ -15,6 +15,7 @@ import { signInAgain } from "@maneman/web-kit/access";
 import { createClient, type Answer as Answered } from "@maneman/web-kit/api";
 import type { components, paths } from "./api-schema.ts";
 import { EVENT_ID_HEADER, JOB_STARTS_AT_HEADER, SUPERSEDED } from "./routes.ts";
+import { heardClock } from "./store/device.ts";
 
 export {
   ALREADY_CLOSED,
@@ -100,9 +101,6 @@ const PATIENCE_MS = {
   upload: 60_000,
 } as const;
 
-/** Set by the service worker on the day's list it answered from its copy (apps/tech/sw/sw.ts). */
-const SERVED_FROM = "Mm-Served-From";
-
 const sessionListeners = new Set<(code: string) => void>();
 const reachListeners = new Set<(reached: boolean) => void>();
 
@@ -131,15 +129,16 @@ function reached(answered: boolean): void {
 }
 
 const client = createClient<paths, ErrorCode>({
-  // Staging's Access sign-in ran out: the page goes back through it, past the service worker's copy. The outbox keeps
-  // every write it had, as it does with no connection.
+  // Staging's Access sign-in ran out: the page goes back through it, past the service worker. The outbox keeps every
+  // write it had, as it does with no connection.
   onAccessLapsed: signInAgain,
   onSessionEnded: (code) => {
     for (const listener of sessionListeners) listener(code);
   },
-  // The day's list from the service worker's copy is still the day, but it is not the API answering.
+  // The technician's day, the no-show wait and the close-out are dated on the API's clock.
   onAnswer: (response) => {
-    reached(response.headers.get(SERVED_FROM) !== "cache");
+    if (response.ok) void heardClock(response.headers.get("Date")).catch(() => undefined);
+    reached(true);
   },
   onUnreached: () => {
     reached(false);

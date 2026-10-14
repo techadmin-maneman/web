@@ -67,10 +67,7 @@ describe("a visit being booked", () => {
     expect(bookingName(kept)).toBe("Service visit");
   });
 
-  it("has no price on a Home the phone kept from before it had one, where it said only true or false", () => {
-    const kept = { ...BOOKING, one_visit: true } as unknown as BeingBooked;
-    expect(bookingName(kept)).toBe("Consultation and fit");
-    expect(oneVisitOf(kept)).toBeNull();
+  it("reads the price a one visit carries", () => {
     expect(oneVisitOf(BOOKING)).toEqual(PRICE);
   });
 });
@@ -80,9 +77,5 @@ describe("a visit's title", () => {
   it("names the service beside the kind where the API names one", () => {
     expect(visitTitle({ type: "first_fit", service: "Mane Man Essential" })).toBe("First fit · Mane Man Essential");
     expect(visitTitle({ type: "service", service: null })).toBe("Service visit");
-  });
-
-  it("is the kind alone on a visit the phone kept from before the API named the service", () => {
-    expect(visitTitle({ type: "first_fit" } as VisitSummary)).toBe("First fit");
   });
 });

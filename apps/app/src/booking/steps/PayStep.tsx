@@ -8,7 +8,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold, MoveTerms } from "../../api.ts";
 import { booking, change, WINDOW_HOURS } from "../../content.ts";
-import { apiNow } from "../../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../../lib/money.ts";
 import { CodeBox } from "../CodeBox.tsx";
 import { photoLines } from "../consents.ts";

@@ -18,7 +18,7 @@
 
   /* A link to look at, a full touch target to press: the technician app's is its own, for a gloved thumb. */
   .copy {
-    min-height: var(--copy-target, var(--tap));
+    min-height: var(--copy-target);
     padding: 0 var(--sp-8);
     border: 0;
     background: none;

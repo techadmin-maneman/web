@@ -5,7 +5,7 @@
 import { useEffect, useRef, type Dispatch, type RefObject } from "react";
 import { api, type Hold } from "../api.ts";
 import { booking } from "../content.ts";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { loadCheckout, type Paid } from "./checkout.ts";
 import { holdOf, type BookingEvent, type Step } from "./flow.ts";
 import { useHoldLapse, usePollHold } from "./hold-clocks.ts";

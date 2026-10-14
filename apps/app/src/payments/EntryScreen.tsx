@@ -19,7 +19,7 @@ import { useCallback, useState } from "react";
 import { api, documentUrl, receiptUrl, type EntryDetail } from "../api.ts";
 import { messages, payments } from "../content.ts";
 import { Shell } from "../components/Shell.tsx";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../lib/money.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { Loading } from "../states/Loading.tsx";

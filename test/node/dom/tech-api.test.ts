@@ -87,13 +87,4 @@ describe("whether anything answered", () => {
     stop();
     expect(heard).toEqual([false]);
   });
-
-  it("is no when the day came from the service worker's copy, which is still the day", async () => {
-    const { heard, stop } = listen();
-    answering(() => json(200, { date: "2030-09-01", jobs: [] }, { "Mm-Served-From": "cache" }));
-    const answer = await api.jobs("2030-09-01");
-    stop();
-    expect(answer).toMatchObject({ ok: true, body: { date: "2030-09-01", jobs: [] } });
-    expect(heard).toEqual([false]);
-  });
 });

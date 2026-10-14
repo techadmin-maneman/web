@@ -23,7 +23,7 @@ import { api, documentUrl, type VisitDetail } from "../api.ts";
 import { messages, ONE_VISIT, visits } from "../content.ts";
 import { AddToCalendar } from "../components/AddToCalendar.tsx";
 import { Shell } from "../components/Shell.tsx";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { duration, invoiceState, oneVisitOf, visitName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { firstNameOf } from "@rules/lib/names.ts";

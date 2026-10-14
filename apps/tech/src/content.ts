@@ -6,7 +6,7 @@
 import type { Moved } from "@maneman/web-kit/api";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Angle, FitSpec, History } from "./api.ts";
-import { clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
+import { apiDate, clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
 
 export const signIn = {
   title: "Technician sign in",
@@ -244,7 +244,7 @@ function startMoved(why: Why, startsNow: string | null): startsNow is string {
  * them; a job moved to another time names the new one once `startsNow`, the
  * start on the card the phone holds, differs; a cancellation is named first.
  */
-export function whatStopped(why: Why, now: Date = new Date(), startsNow: string | null = null): string {
+export function whatStopped(why: Why, now: Date = apiDate(), startsNow: string | null = null): string {
   const field = why.fields.find((each) => stopped[each] !== undefined);
   const moved = why.moved ?? null;
   if (field === "technician" && moved !== null) return movedTo(moved, now);
@@ -271,7 +271,7 @@ export const titles = {
 } as const;
 
 /** When a locked card opens. One that opened while the screen was up says to open the job again. */
-function opensAt(unlocksAt: string, now: Date = new Date()): string {
+function opensAt(unlocksAt: string, now: Date = apiDate()): string {
   if (Date.parse(unlocksAt) > now.getTime()) return `Opens at ${timeAndDay(unlocksAt, now)}.`;
   return `Open since ${timeAndDay(unlocksAt, now)}. Go back and open the job again.`;
 }

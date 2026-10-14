@@ -38,14 +38,11 @@ describe("a one visit's card", () => {
 });
 
 describe("a visit's name and length", () => {
-  const summary = (oneVisit: VisitSummary["one_visit"] | undefined) =>
-    ({ type: "first_fit", ...(oneVisit === undefined ? {} : { one_visit: oneVisit }) }) as VisitSummary;
+  const summary = (oneVisit: VisitSummary["one_visit"]) => ({ type: "first_fit", one_visit: oneVisit }) as VisitSummary;
 
   it("calls a one visit a consultation and fit, and a first fit by its own name", () => {
     expect(summaryName(summary(PRICE))).toBe("Consultation and fit");
     expect(summaryName(summary(null))).toBe("First fit");
-    // A visit the phone kept from a release before one visits had a price.
-    expect(summaryName(summary(undefined))).toBe("First fit");
   });
 
   it("gives the length in hours and minutes, as booking does", () => {

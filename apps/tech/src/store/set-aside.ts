@@ -4,7 +4,7 @@
 
 import { reportClientError } from "@maneman/web-kit/client-errors";
 import { DEVICE_REVOKED, TECHNICIAN_INACTIVE } from "../api.ts";
-import { clear, DAY_CACHE, deviceRecord, put, remove, wipe } from "./db.ts";
+import { clear, deviceRecord, put, remove, wipe } from "./db.ts";
 import { keptMe } from "./device.ts";
 import { dropCards, dropJobs } from "./jobs.ts";
 import { unsentJobs } from "./outbox.ts";
@@ -49,8 +49,6 @@ async function keepsWork(code: string | null, now: number): Promise<boolean> {
 }
 
 async function dropAllButWork(): Promise<void> {
-  // No cache storage outside a secure context, and none in the development server.
-  if (typeof caches !== "undefined") await caches.delete(DAY_CACHE).catch(() => false);
   await dropCards();
   await remove("device", "me");
 }

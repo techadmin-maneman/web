@@ -5,7 +5,7 @@
 
 import { cssToken } from "@maneman/ui/cssToken";
 import type { Booking } from "../api.ts";
-import { secondsUntil } from "../lib/clock.ts";
+import { secondsUntil } from "@maneman/web-kit/clock";
 
 const SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
 /**

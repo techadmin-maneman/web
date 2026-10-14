@@ -21,7 +21,7 @@ import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/d
 import { rupees } from "@maneman/web-kit/money";
 import { documentUrl, type Me, type OneVisitPrice, type VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
-import { apiNow } from "../lib/clock.ts";
+import { apiNow } from "@maneman/web-kit/clock";
 import { bookingName, oneVisitOf, visitName } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
