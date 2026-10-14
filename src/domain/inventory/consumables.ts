@@ -10,7 +10,7 @@
 // the ledger stay, and restoring it offers it again.
 
 import { STANDARD_TIER, type VisitType } from "../../config/visit-types.ts";
-import { auditStatement, auditStatementIfDeleted, type AuditActor } from "../platform/audit.ts";
+import { auditStatement, auditStatementIfDeleted, type Written } from "../platform/audit.ts";
 import { allServices, serviceOf } from "../booking/services.ts";
 import { freshCode } from "../../lib/slug.ts";
 import { insertRow } from "../../lib/sql.ts";
@@ -79,12 +79,6 @@ export const isOffered = (consumable: Consumable, today: string): boolean =>
 const codeFor = (name: string, taken: ReadonlySet<string>): string => freshCode(name, 32, "consumable", taken);
 
 /** What ops write, with who and why, so every change lands with its audit entry. */
-interface Written {
-  readonly actor: AuditActor;
-  readonly requestId: string;
-  readonly now: Date;
-}
-
 type Saved = { readonly ok: true; readonly consumable: Consumable } | { readonly ok: false; readonly fields: string[] };
 
 /** The other consumable already called this, whatever the case; null when the name is free. */

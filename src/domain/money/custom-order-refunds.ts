@@ -7,7 +7,7 @@ import { addDays, indiaDate } from "../../lib/india-time.ts";
 import type { PaymentsProvider } from "../../providers/payments/index.ts";
 import { auditStatement } from "../platform/audit.ts";
 import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
-import type { Written } from "../inventory/stock.ts";
+import type { Written } from "../platform/audit.ts";
 import { askRefund, refundLeftToOps, refundReceipt } from "./refunds.ts";
 
 export const REFUND_REASONS = ["not_ordered", "late", "failed_check"] as const;

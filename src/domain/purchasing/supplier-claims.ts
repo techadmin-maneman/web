@@ -4,7 +4,7 @@
 
 import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { auditStatementWhen, type AuditAction } from "../platform/audit.ts";
-import type { Written } from "../inventory/stock.ts";
+import type { Written } from "../platform/audit.ts";
 
 export const CLAIM_REASONS = ["damaged", "qc_failed", "warranty"] as const;
 export const CLAIM_STATES = ["drafted", "sent", "accepted", "rejected", "withdrawn"] as const;

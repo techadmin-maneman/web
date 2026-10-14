@@ -7,7 +7,7 @@
 
 import { drawnNumbers, freshNumber } from "../../lib/references.ts";
 import { needsSecondApproval, CANCELLABLE, type PoState } from "../../policy/purchasing.ts";
-import { auditStatement, auditStatementWhen, type AuditActor, type AuditAction } from "../platform/audit.ts";
+import { auditStatement, auditStatementWhen, type AuditAction, type Written, opsEntry } from "../platform/audit.ts";
 
 interface PoLine {
   readonly id: string;
@@ -33,12 +33,6 @@ export interface PurchaseOrder {
   readonly secondApprovedBy: string | null;
   readonly sentAt: string | null;
   readonly cancelReason: string | null;
-}
-
-interface Written {
-  readonly actor: AuditActor;
-  readonly requestId: string;
-  readonly now: Date;
 }
 
 type OrderRow = {
@@ -129,14 +123,8 @@ export async function purchaseOrder(db: D1Database, id: string): Promise<Purchas
   return row === null ? null : ((await withLines(db, [row]))[0] ?? null);
 }
 
-const entry = (written: Written, action: AuditAction, id: string, detail: Record<string, string | number> = {}) => ({
-  surface: "ops" as const,
-  actor: written.actor,
-  action,
-  subject: { kind: "purchase_order", id },
-  requestId: written.requestId,
-  detail,
-});
+const entry = (written: Written, action: AuditAction, id: string, detail: Record<string, string | number> = {}) =>
+  opsEntry(written, action, { kind: "purchase_order", id }, detail);
 
 type Refused = { readonly ok: false; readonly fields: string[] };
 

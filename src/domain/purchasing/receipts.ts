@@ -5,7 +5,7 @@
 // (src/policy/purchasing.ts), kept on the line and on its lot. The order moves on to part received or received.
 
 import { landedUnitCosts } from "../../policy/purchasing.ts";
-import { auditStatement, type AuditActor } from "../platform/audit.ts";
+import { auditStatement, type Written } from "../platform/audit.ts";
 import { deliveryStatements } from "../inventory/stock.ts";
 import { receiptClaimStatements } from "./supplier-claims.ts";
 
@@ -25,12 +25,6 @@ export interface Receipt {
   readonly receivedAt: string;
   readonly supplierInvoice: string | null;
   readonly lines: readonly (ReceiptLine & { readonly landedUnitPaise: number })[];
-}
-
-interface Written {
-  readonly actor: AuditActor;
-  readonly requestId: string;
-  readonly now: Date;
 }
 
 type Refused = { readonly ok: false; readonly fields: string[] } | { readonly ok: false; readonly state: true };

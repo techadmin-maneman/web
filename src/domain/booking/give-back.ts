@@ -21,36 +21,36 @@ type GivenBack =
   | { readonly kind: "nothing_paid" }
   | { readonly kind: "booked" };
 
-/** Razorpay would not refund the payment: nothing has gone back, and the hold still holds its time. */
-export class RefundRefused extends Error {
-  readonly paymentId: string;
-  readonly amount: number;
-
-  constructor(paymentId: string, amount: number, cause: unknown) {
-    super(`Razorpay refused the refund of ${paymentId}`, { cause });
-    this.paymentId = paymentId;
-    this.amount = amount;
-  }
-}
-
 /**
- * Razorpay did not say whether it refunded the payment, twice: the refund may have been made, and the hold still
- * holds its time. Asking again is safe, under the hold's receipt (src/domain/money/refunds.ts).
+ * A refund the hold's let-go could not finish, and the hold still holds its time: Razorpay refused it, so nothing has
+ * gone back; or it did not say, twice, whether it refunded, so the refund may have been made. Asking again is safe,
+ * under the hold's receipt (src/domain/money/refunds.ts).
  */
-export class RefundUnanswered extends Error {
+export class RefundNotDone extends Error {
+  readonly outcome: "refused" | "unanswered";
   readonly paymentId: string;
   readonly amount: number;
 
-  constructor(paymentId: string, amount: number, cause: unknown) {
-    super(`Razorpay did not answer the refund of ${paymentId}`, { cause });
-    this.paymentId = paymentId;
-    this.amount = amount;
+  constructor(
+    outcome: "refused" | "unanswered",
+    payment: { readonly id: string; readonly amount: number },
+    cause: unknown,
+  ) {
+    super(
+      outcome === "refused"
+        ? `Razorpay refused the refund of ${payment.id}`
+        : `Razorpay did not answer the refund of ${payment.id}`,
+      { cause },
+    );
+    this.outcome = outcome;
+    this.paymentId = payment.id;
+    this.amount = payment.amount;
   }
 }
 
 /**
  * Lets a hold go, and refunds, once, what is left of any payment taken for it. Says what it did with the money; throws
- * RefundRefused, or RefundUnanswered, and keeps the hold, when Razorpay will not refund it or will not say whether it
+ * RefundNotDone, and keeps the hold, when Razorpay will not refund it or will not say whether it
  * did. `alongside` is written in the same batch as the hold is let go, such as ops' audit entry; `ifRefunded` is
  * written in that batch only when this call made the refund.
  */
@@ -167,6 +167,6 @@ async function refundOnce({
   }
   // Let go, so the refund can be asked for again: its receipt keeps Razorpay from making it twice.
   await db.prepare("UPDATE slot_holds SET refunded_at = NULL WHERE id = ?1").bind(holdId).run();
-  if (asked.kind === "refused") throw new RefundRefused(payment.razorpay_payment_id, payment.amount, asked.error);
-  throw new RefundUnanswered(payment.razorpay_payment_id, payment.amount, asked.error);
+  const refund = { id: payment.razorpay_payment_id, amount: payment.amount };
+  throw new RefundNotDone(asked.kind === "refused" ? "refused" : "unanswered", refund, asked.error);
 }

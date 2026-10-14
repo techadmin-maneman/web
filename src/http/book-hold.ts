@@ -4,7 +4,7 @@ import { rupees } from "@maneman/web-kit/money";
 import type { Context } from "hono";
 import { paymentsTab } from "../domain/platform/alerts.ts";
 import { confirmBooking } from "../domain/booking/bookings.ts";
-import { RefundRefused, RefundUnanswered } from "../domain/booking/give-back.ts";
+import { RefundNotDone } from "../domain/booking/give-back.ts";
 import { failureReason } from "../log.ts";
 import type { AppEnv } from "./context.ts";
 import { queueMessage } from "./queue-message.ts";
@@ -31,22 +31,18 @@ export async function bookHold(c: Context<AppEnv>, holdId: string): Promise<void
     log.info("booking", { hold_id: holdId, outcome });
   } catch (error) {
     log.warn("booking_failed", { hold_id: holdId, reason: failureReason(error) });
-    if (error instanceof RefundRefused || error instanceof RefundUnanswered) await tellRefundOwed(c, holdId, error);
+    if (error instanceof RefundNotDone) await tellRefundOwed(c, holdId, error);
   }
 }
 
-async function tellRefundOwed(
-  c: Context<AppEnv>,
-  holdId: string,
-  error: RefundRefused | RefundUnanswered,
-): Promise<void> {
+async function tellRefundOwed(c: Context<AppEnv>, holdId: string, error: RefundNotDone): Promise<void> {
   const personId = await c.env.DB.prepare("SELECT person_id FROM slot_holds WHERE id = ?1")
     .bind(holdId)
     .first<string>("person_id");
   const owed = `Booking ${holdId} owes back payment ${error.paymentId} of ${rupees(error.amount)}`;
   // A refund Razorpay never answered may have been made: ops look before they refund, so it is not made twice.
   const message =
-    error instanceof RefundRefused
+    error.outcome === "refused"
       ? `${owed}, and Razorpay refused the refund. Refund it from Razorpay's dashboard.`
       : `${owed}, and Razorpay did not say whether it refunded it. Check Razorpay's dashboard, and refund it there ` +
         "only if no refund of it shows.";
