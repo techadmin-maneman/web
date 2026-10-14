@@ -14,7 +14,7 @@ export const WRITTEN_ELSEWHERE: Readonly<Partial<Record<CoreTable, readonly stri
     "src/domain/money/payment-links.ts",
     "src/domain/privacy/erasure-statements.ts",
   ],
-  visits: ["src/domain/privacy/erasure-statements.ts"],
+  visit_outcomes: ["src/domain/privacy/erasure-statements.ts"],
   slot_holds: [
     "src/domain/money/discount-code-holds.ts",
     "src/domain/money/payments.ts",

@@ -321,7 +321,7 @@ const QUEUES: readonly Queue[] = [
            'reason', COALESCE((SELECT r.label FROM partial_reasons r WHERE r.code = v.partial_reason),
              CASE WHEN v.partial_reason IS NULL THEN v.close_reason END)) AS facts,
          COALESCE(v.ended_at, a.window_end, v.updated_at) AS since, NULL AS due_by, '' AS episode
-    FROM visits v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
+    FROM visit_outcomes v JOIN appointments a ON a.id = v.appointment_id JOIN people pe ON pe.id = a.person_id
    WHERE v.outcome = 'partial' AND v.followed_up = 0 AND COALESCE(v.partial_reason, '') <> 'no_show'
      AND a.deleted_at IS NULL AND pe.erased_at IS NULL
      AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)`,

@@ -107,7 +107,7 @@ describe("the weekly backup", () => {
 
     // Read children first: a row added while the backup runs cannot be missing the row it points at.
     const read = manifest.tables.map((table) => table.name);
-    expect(read.indexOf("visits")).toBeLessThan(read.indexOf("people"));
+    expect(read.indexOf("visit_outcomes")).toBeLessThan(read.indexOf("people"));
 
     // D1 loads a long file as several transactions; the strictest split checks every statement as it lands.
     const restored = new DatabaseSync(":memory:");

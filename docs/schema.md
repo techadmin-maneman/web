@@ -24,7 +24,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 | Bookings and moves | `appointments`, `slot_holds`, `slot_claims`, `dispatch_moves`, `move_proposals`, `visit_changes`, `consultation_requests`, `first_fit_requests` | A visit booked, moved or cancelled since is lost, and its time can be booked again. Where FSM still holds visits, the cron books them there a second time | The rows since `<T>`, before the switch is turned off |
 | Messages | `outbound_messages` | The sweeper sends again what was sent since | The rows since `<T>`, before the switch is turned off |
 | The Care inbox | `conversations`, `chat_messages`, `care_owners`, `care_weekly_off`, `care_leave`, `care_names`, `city_matters`, `quick_replies`, `remedies`, `technician_updates` | A message written since, the client's or ours, is gone from its thread | The rows since `<T>`; WhatsApp's own copy shows what was said |
-| Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visits`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
+| Technicians' steps, pieces and photographs | `job_events`, `checkins`, `visit_outcomes`, `consumables_used`, `no_show_cases`, `no_show_disputes`, `no_show_refunds`, `pieces`, `photos`, `photo_sets` | Steps, check-ins, outcomes, pieces fitted, no-shows, disputes and the refunds they owe since are lost; a photograph's file is kept with no row | The rows since `<T>` |
 | Hair profiles | `hair_profiles` | A profile recorded since is lost, and one an erasure blanked since is whole again | Adding the rows since `<T>`: they are only ever added. Erasing again blanks the rest |
 | Purchase orders | `purchase_orders`, `po_lines`, `receipts`, `receipt_lines`, `supplier_claims`, `custom_orders` | An order drafted since is gone, one approved, sent, received or cancelled since goes back to where it stood, a receipt since is lost with the stock it brought, and a claim or custom order since is gone or back at its earlier step | Adding the rows since `<T>`, and each order's, claim's and custom order's state from the audit log and Razorpay |
 | Stock | `stock_movements`, `stock_places`, `stock_lots`, `stock_lot_moves`, `stock_transfers`, `stock_units`, `stock_unit_events`, `piece_returns` | A delivery, transfer, count or loss recorded since, or a job's use, is lost, so what each place holds is wrong; a hub or stockroom added or changed since goes back, and each piece is where it was | Adding the rows since `<T>`, and setting each unit where its latest line of history puts it |
@@ -95,7 +95,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [hair_systems](#hair_systems): Each hair system kept in stock: its product, base size, colour, grey and density, matched exactly to a client's profile; its stock code is a row of `consumables`, counted in pieces (ADR 0156).
 - [idempotency](#idempotency): The stored answer to each `Idempotency-Key`, so a request sent again gets its first answer (ADR 0011).
 - [job_events](#job_events): The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).
-- [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
+- [last_visits](#last_visits): Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
 - [leads](#leads): Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).
 - [lost_reasons](#lost_reasons): Why a client is not going ahead with a fit after their consultation, as ops set them, one they took off kept as retired; none means the committed list (ADR 0149).
 - [maintenance](#maintenance): One row while D1 is being restored: the cron and the queue consumers stand still until it is deleted (runbook, "Restoring D1").
@@ -175,8 +175,8 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
 - [visit_blackouts](#visit_blackouts): Days on which no visit is offered.
 - [visit_changes](#visit_changes): Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).
+- [visit_outcomes](#visit_outcomes): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 - [visit_pay_rates](#visit_pay_rates): What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).
-- [visits](#visits): What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 - [waitlist_entries](#waitlist_entries): Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).
 - [webhook_inbox](#webhook_inbox): FSM's webhook deliveries, each kept once (ADR 0032).
 - [word_versions](#word_versions): Every wording a line of the site or a WhatsApp message has had on the Words page; the newest is in force (ADR 0126).
@@ -247,7 +247,7 @@ Indexes:
 
 Each visit, mirrored from FSM or booked without it: when, with whom, of what type and in what state, and what we have learnt of each since, such as the window asked for and its invoice. `fsm_id` is FSM's ID for a visit FSM holds, otherwise the row's own (ADR 0032, ADR 0110).
 
-Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`, `0168_upkeep_out_of_triggers.sql`.
+Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_invoice_checks.sql`, `0030_invoice_issued.sql`, `0034_leave_and_asked_window.sql`, `0037_cron_indexes.sql`, `0041_vendor_correctness.sql`, `0044_hand_offs_and_messages.sql`, `0048_done_visits.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0056_task_owners.sql`, `0059_no_show_charges_and_disputes.sql`, `0060_flat_task_reads.sql`, `0061_one_visit.sql`, `0063_discount_codes.sql`, `0066_client_note_in_fsm.sql`, `0070_field_record_ours.sql`, `0076_books_without_fsm.sql`, `0090_board_version.sql`, `0098_checkin_waivers.sql`, `0099_retention.sql`, `0104_fsm_columns_expand.sql`, `0158_visits_left_open.sql`, `0168_upkeep_out_of_triggers.sql`, `0169_visits_whole.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -300,6 +300,8 @@ Indexes:
 - `appointments_to_bill`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND deleted_at IS NULL AND type IN ('first_fit', 'service', 'replacement') AND one_visit IS NOT 'declined'`
 - `appointments_to_invoice`: on (`window_start`), where `status = 'completed' AND invoice_issued_at IS NULL AND fsm_work_order_id IS NOT NULL AND deleted_at IS NULL`
 - A `UNIQUE` constraint: unique on (`fsm_id`)
+
+Triggers: `appointments_kept_whole`, `appointments_whole`.
 
 ## audit_log
 
@@ -1339,7 +1341,7 @@ Indexes:
 
 ## last_visits
 
-Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
+Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.
 
 Made by `0053_balances_and_last_visits.sql`; changed by `0056_task_owners.sql`, `0095_last_visits_unfitted.sql`.
 
@@ -3264,32 +3266,11 @@ Indexes:
 - `visit_changes_one_end`: unique on (`appointment_id`), where `kind IN ('replaced', 'cancelled')`
 - `visit_changes_refund_owed`: on (`created_at`), where `kind = 'cancelled' AND refund_settled_at IS NULL`
 
-## visit_pay_rates
-
-What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).
-
-Made by `0108_technician_pay.sql`.
-
-| Column | Type | May be empty | Default | Key |
-| --- | --- | --- | --- | --- |
-| `id` | TEXT | no |  | primary key |
-| `grade_id` | TEXT | no |  | → `pay_grades.id` |
-| `city` | TEXT | yes |  | → `cities.name` |
-| `visit_kind` | TEXT | no |  |  |
-| `amount` | INTEGER | yes |  |  |
-| `effective_from` | TEXT | no |  |  |
-| `set_by` | TEXT | no |  |  |
-| `set_at` | TEXT | no |  |  |
-
-Indexes:
-
-- `visit_pay_rates_one_a_day`: unique on (`grade_id`, `null`, `visit_kind`, `effective_from`)
-
-## visits
+## visit_outcomes
 
 What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0011_fsm_mirror.sql`; changed by `0044_hand_offs_and_messages.sql`, `0060_flat_task_reads.sql`, `0082_ops_cancel_and_close.sql`, `0128_lost_reasons.sql`.
+Made by `0169_visits_whole.sql`.
 
 | Column | Type | May be empty | Default | Key |
 | --- | --- | --- | --- | --- |
@@ -3313,6 +3294,27 @@ Indexes:
 - `visits_partial_open`: on (`appointment_id`), where `outcome = 'partial' AND followed_up = 0`
 
 Triggers: `visits_followed_up_added`, `visits_followed_up_changed`.
+
+## visit_pay_rates
+
+What a visit pays a technician, beside their salary: per grade and kind of visit, for every city or one, from a date (ADR 0122).
+
+Made by `0108_technician_pay.sql`.
+
+| Column | Type | May be empty | Default | Key |
+| --- | --- | --- | --- | --- |
+| `id` | TEXT | no |  | primary key |
+| `grade_id` | TEXT | no |  | → `pay_grades.id` |
+| `city` | TEXT | yes |  | → `cities.name` |
+| `visit_kind` | TEXT | no |  |  |
+| `amount` | INTEGER | yes |  |  |
+| `effective_from` | TEXT | no |  |  |
+| `set_by` | TEXT | no |  |  |
+| `set_at` | TEXT | no |  |  |
+
+Indexes:
+
+- `visit_pay_rates_one_a_day`: unique on (`grade_id`, `null`, `visit_kind`, `effective_from`)
 
 ## waitlist_entries
 

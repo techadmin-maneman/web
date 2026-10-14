@@ -52,7 +52,7 @@ async function seed(visits: Visit[]): Promise<Record<string, string>> {
       ...(closed
         ? [
             env.DB.prepare(
-              `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at)
+              `INSERT INTO visit_outcomes (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at)
                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
             ).bind(
               crypto.randomUUID(),
@@ -223,7 +223,7 @@ describe("GET /api/visits/:id and the photographs", () => {
     await signIn();
     const visit = ids["ap-missed"] ?? "";
     await env.DB.batch([
-      env.DB.prepare("UPDATE visits SET outcome = 'no_show', partial_reason = NULL"),
+      env.DB.prepare("UPDATE visit_outcomes SET outcome = 'no_show', partial_reason = NULL"),
       env.DB.prepare(
         `INSERT INTO checkins (id, appointment_id, technician_id, at, lat, lng, radius_m, passed, created_at)
          SELECT 'checkin-1', ?1, id, '2026-09-19T04:32:00.000Z', 28.4, 77.0, 200, 1, '2026-09-19T04:32:00.000Z'

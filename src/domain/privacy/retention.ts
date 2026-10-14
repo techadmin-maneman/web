@@ -11,8 +11,9 @@ import {
 import { DAY_MS } from "../../lib/durations.ts";
 
 /**
- * People who never had a visit or a payment (`client_since`, which migration 0099's triggers keep), are on no waitlist, and have done nothing with us since `DORMANT_MONTHS`
- * ago: no booking held, no form sent, no sign-in, no try-on. The oldest first.
+ * People who never had a visit or a payment (`client_since`, which a visit's write stamps, and migration 0099's
+ * triggers for a payment), are on no waitlist, and have done nothing with us since `DORMANT_MONTHS` ago: no booking
+ * held, no form sent, no sign-in, no try-on. The oldest first.
  */
 export async function dormantPeople(db: D1Database, now: Date, limit: number): Promise<string[]> {
   const { results } = await db

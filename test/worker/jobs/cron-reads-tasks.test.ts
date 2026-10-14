@@ -72,7 +72,7 @@ describe("a look at the Tasks board or the Stock page", () => {
      SELECT 'a-' || i || '-' || ?4, 'fsm-a-' || i || '-' || ?4, 'q-' || i, 'service', ${DAYS_AGO}, ${DAYS_AGO},
        '${FIRST_TECHNICIAN}',
        'completed', 'Completed', '${AGO}', '${AGO}' FROM n`,
-    `INSERT INTO visits (id, appointment_id, outcome, updated_at)
+    `INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at)
      SELECT 'v-' || i || '-' || ?4, 'a-' || i || '-' || ?4, 'done', '${AGO}' FROM n`,
     `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount,
        amount_ex_gst, gst_percent, state, appointment_id, expires_at, created_at, updated_at, confirmed_at)
@@ -249,7 +249,7 @@ describe("a look at the Tasks board or the Stock page", () => {
     `INSERT INTO pieces (id, fsm_id, person_id, piece_code, fitted_at, replacement_due_at, synced_at)
      SELECT 'piece-' || i || '-' || ?4, 'fsm-piece-' || i || '-' || ?4, 'kept-' || i, 'MM-' || i || '-' || ?4,
        '${AGO}', ${ITEM_DAY}, '${AGO}' FROM n`,
-    `INSERT INTO visits (id, appointment_id, outcome, partial_reason, updated_at)
+    `INSERT INTO visit_outcomes (id, appointment_id, outcome, partial_reason, updated_at)
      SELECT 'part-' || i || '-' || ?4, 'done-' || i || '-' || ?4, 'partial', 'time', '${AGO}' FROM n`,
     `INSERT INTO dispatch_moves (id, appointment_id, was_start, now_start, reason, actor, fsm_write_state, told_at,
        created_at, updated_at)

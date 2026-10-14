@@ -19,7 +19,7 @@ const PENDING = `SELECT r.id, r.referred_person_id, r.via, pin.launched_at, a.id
   JOIN people fp ON fp.id = r.referred_person_id
   CROSS JOIN appointments a ON a.person_id = r.referred_person_id AND a.type = 'first_fit' AND a.status = 'completed'
     AND a.deleted_at IS NULL
-  JOIN visits v ON v.appointment_id = a.id AND v.outcome = 'done'
+  JOIN visit_outcomes v ON v.appointment_id = a.id AND v.outcome = 'done'
   LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode
   WHERE r.grant_state = 'pending' AND fp.erased_at IS NULL AND ${FIRST_FIT_COUNTS}
   ORDER BY a.window_start LIMIT ?1`;

@@ -47,7 +47,7 @@ beforeEach(async () => {
 async function partlyDoneFit(): Promise<string> {
   const id = await visit(ROHIT, "first_fit", "terminated", "2026-09-19T04:30:00.000Z", IMRAN);
   await env.DB.prepare(
-    `INSERT INTO visits (id, appointment_id, ended_at, outcome, partial_reason, updated_at)
+    `INSERT INTO visit_outcomes (id, appointment_id, ended_at, outcome, partial_reason, updated_at)
      VALUES ('visit-row-1', ?1, '2026-09-19T06:00:00.000Z', 'partial', 'piece_not_ready', ?2)`,
   )
     .bind(id, NOW.toISOString())

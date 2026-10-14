@@ -10,7 +10,7 @@ export async function lostReasonsOf(db: D1Database, appointmentIds: readonly str
   if (appointmentIds.length === 0) return new Map();
   const { results } = await db
     .prepare(
-      `SELECT appointment_id, lost_reason FROM visits
+      `SELECT appointment_id, lost_reason FROM visit_outcomes
        WHERE lost_reason IS NOT NULL AND appointment_id IN (SELECT value FROM json_each(?1))`,
     )
     .bind(JSON.stringify(appointmentIds))
@@ -34,7 +34,7 @@ export async function setLostReason(
 ): Promise<"set" | "not_found" | "unknown_reason"> {
   const consultation = await db
     .prepare(
-      `SELECT 1 FROM visits v JOIN appointments a ON a.id = v.appointment_id
+      `SELECT 1 FROM visit_outcomes v JOIN appointments a ON a.id = v.appointment_id
        WHERE v.appointment_id = ?1 AND a.type = 'consultation' AND a.deleted_at IS NULL`,
     )
     .bind(change.appointmentId)
@@ -45,7 +45,7 @@ export async function setLostReason(
   }
   await db.batch([
     db
-      .prepare("UPDATE visits SET lost_reason = ?2, updated_at = ?3 WHERE appointment_id = ?1")
+      .prepare("UPDATE visit_outcomes SET lost_reason = ?2, updated_at = ?3 WHERE appointment_id = ?1")
       .bind(change.appointmentId, change.reason, change.now.toISOString()),
     auditStatement(
       db,

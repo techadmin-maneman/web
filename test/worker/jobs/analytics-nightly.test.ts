@@ -180,7 +180,7 @@ describe("the copy's leads", () => {
       status: "completed",
     });
     await env.DB.prepare(
-      "INSERT INTO visits (id, appointment_id, outcome, updated_at, lost_reason) VALUES ('vv1', 'c-rohit', 'done', ?1, 'price')",
+      "INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at, lost_reason) VALUES ('vv1', 'c-rohit', 'done', ?1, 'price')",
     )
       .bind(NOW.toISOString())
       .run();

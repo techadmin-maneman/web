@@ -93,11 +93,11 @@ export function closeVisit({
 }): D1PreparedStatement {
   return db
     .prepare(
-      `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, partial_reason,
+      `INSERT INTO visit_outcomes (id, appointment_id, started_at, ended_at, duration_minutes, outcome, partial_reason,
          updated_at, closed_by, close_reason, lost_reason)
        SELECT ?1, id, ?3, ?4, ?5, ?6, ?7, ?8, ?10, ?11, ?12 FROM appointments
        WHERE id = ?2 AND deleted_at IS NULL AND status = ?9
-         AND NOT EXISTS (SELECT 1 FROM visits WHERE appointment_id = ?2)`,
+         AND NOT EXISTS (SELECT 1 FROM visit_outcomes WHERE appointment_id = ?2)`,
     )
     .bind(
       crypto.randomUUID(),

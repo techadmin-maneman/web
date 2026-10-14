@@ -71,7 +71,7 @@ describe("POST /api/tasks/{group}/{id}/close", () => {
          VALUES (?1, ?2, ?3, 'service', ?4, ?4, 'terminated', 'Terminated', ?5, ?5)`,
       ).bind(id, `fsm-${id}`, PERSON, start, NOW.toISOString()),
       env.DB.prepare(
-        `INSERT INTO visits (id, appointment_id, ended_at, outcome, partial_reason, updated_at)
+        `INSERT INTO visit_outcomes (id, appointment_id, ended_at, outcome, partial_reason, updated_at)
          VALUES (?1, ?2, ?3, 'partial', 'client_unwell', ?3)`,
       ).bind(`visit-row-${id}`, id, start),
     ]);

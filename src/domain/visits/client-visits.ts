@@ -370,7 +370,7 @@ export async function visitDetail({
   const row = await db
     .prepare(
       `SELECT ${APPOINTMENT_COLUMNS}, a.invoice_issued_at, a.fsm_invoice_id, v.duration_minutes, v.outcome
-       FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id LEFT JOIN visits v ON v.appointment_id = a.id
+       FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id LEFT JOIN visit_outcomes v ON v.appointment_id = a.id
        WHERE ${LIVE} AND a.id = ?2`,
     )
     .bind(personId, visitId)
@@ -406,7 +406,7 @@ export async function visitOutcomes(
   if (appointmentIds.length === 0) return new Map();
   const placeholders = appointmentIds.map((_, index) => `?${String(index + 1)}`).join(", ");
   const { results } = await db
-    .prepare(`SELECT appointment_id, outcome FROM visits WHERE appointment_id IN (${placeholders})`)
+    .prepare(`SELECT appointment_id, outcome FROM visit_outcomes WHERE appointment_id IN (${placeholders})`)
     .bind(...appointmentIds)
     .all<{ appointment_id: string; outcome: VisitOutcome }>();
   return new Map(results.map((row) => [row.appointment_id, row.outcome]));

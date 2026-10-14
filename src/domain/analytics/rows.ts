@@ -185,7 +185,7 @@ export async function visitRows(db: D1Database, keys: ReadonlyMap<string, string
            + (SELECT COUNT(*) FROM visit_changes x WHERE x.appointment_id = a.id AND x.kind = 'moved') AS moves,
          n.id IS NOT NULL AS no_show, n.kept_amount AS charge
        FROM appointments a JOIN people p ON p.id = a.person_id
-       LEFT JOIN visits v ON v.appointment_id = a.id
+       LEFT JOIN visit_outcomes v ON v.appointment_id = a.id
        LEFT JOIN no_show_cases n ON n.appointment_id = a.id
        WHERE a.deleted_at IS NULL AND a.type IS NOT NULL AND a.window_start IS NOT NULL AND p.test_record = 0`,
     )

@@ -79,7 +79,7 @@ const statusOf = async (id: string) =>
 
 const visitRowOf = (id: string) =>
   env.DB.prepare(
-    "SELECT started_at, ended_at, duration_minutes, outcome, partial_reason FROM visits WHERE appointment_id = ?1",
+    "SELECT started_at, ended_at, duration_minutes, outcome, partial_reason FROM visit_outcomes WHERE appointment_id = ?1",
   )
     .bind(id)
     .first();
@@ -227,7 +227,7 @@ describe("a technician's steps", () => {
     );
 
     expect(await replayed.json()).toMatchObject({ replayed: true, fsm_write_state: "written" });
-    const visits = await env.DB.prepare("SELECT COUNT(*) AS n FROM visits WHERE appointment_id = ?1")
+    const visits = await env.DB.prepare("SELECT COUNT(*) AS n FROM visit_outcomes WHERE appointment_id = ?1")
       .bind(TODAY_JOB)
       .first<{ n: number }>();
     expect(visits?.n).toBe(1);

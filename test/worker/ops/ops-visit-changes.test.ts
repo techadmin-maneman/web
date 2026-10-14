@@ -323,7 +323,7 @@ const today = (time: string) => new Date(`2026-09-21T${time}:00+05:30`).toISOStr
 const visitsRow = () =>
   env.DB.prepare(
     `SELECT outcome, started_at, ended_at, duration_minutes, partial_reason, closed_by, close_reason
-     FROM visits WHERE appointment_id = ?1`,
+     FROM visit_outcomes WHERE appointment_id = ?1`,
   )
     .bind(VISIT)
     .first();

@@ -64,7 +64,7 @@ async function seed(visits: Visit[]): Promise<Record<string, string>> {
       ...(closed
         ? [
             env.DB.prepare(
-              `INSERT INTO visits (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at)
+              `INSERT INTO visit_outcomes (id, appointment_id, started_at, ended_at, duration_minutes, outcome, updated_at)
                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
             ).bind(
               crypto.randomUUID(),

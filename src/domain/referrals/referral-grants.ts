@@ -244,7 +244,7 @@ const ATTRIBUTION = `SELECT r.id, r.code, rc.person_id AS referrer_id, rp.erased
   CROSS JOIN appointments a ON a.person_id = r.referred_person_id AND a.type = 'first_fit' AND a.status = 'completed'
     AND a.deleted_at IS NULL`;
 
-const FIT_DONE = `JOIN visits v ON v.appointment_id = a.id AND v.outcome = 'done'
+const FIT_DONE = `JOIN visit_outcomes v ON v.appointment_id = a.id AND v.outcome = 'done'
   LEFT JOIN serviceable_pincodes pin ON pin.pincode = r.pincode`;
 
 /** The pending referrals one pass settles, the earliest first fit that counts first. */

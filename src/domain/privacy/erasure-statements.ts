@@ -197,7 +197,7 @@ function opsWordsAbout(db: D1Database, personId: string): D1PreparedStatement[] 
       .bind(personId),
     db
       .prepare(
-        `UPDATE visits SET close_reason = NULL
+        `UPDATE visit_outcomes SET close_reason = NULL
          WHERE appointment_id IN (SELECT id FROM appointments WHERE person_id = ?1)`,
       )
       .bind(personId),

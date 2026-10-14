@@ -107,7 +107,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   job_events:
     "The technician app's writes, each once by the ID the phone gave it, and whether it has reached FSM (ADR 0038, ADR 0065).",
   last_visits:
-    "Each client's last first fit, service or replacement done, and last consultation done, kept by triggers from the view `last_visits_now` as their visits change; the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.",
+    "Each client's last first fit, service or replacement done, and last consultation done, kept from the view `last_visits_now` by each write that changes their visits (src/domain/visits/visit-upkeep.ts); the Tasks board's At-risk client and First fit to book read it (ADR 0086), the second along `last_visits_unfitted`, the clients not fitted since their consultation.",
   leads:
     "Each booking, waitlist sign-up and try-on claim as the CRM receives it, and whether it has reached the CRM and FSM (ADR 0011, ADR 0012).",
   maintenance:
@@ -232,7 +232,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
     "A state's own GST registration, which supplies the visits in it, and its Books branch (ADR 0198).",
   visit_changes:
     "Each move or cancel a client made, and each cancel ops made, with its notice and what it cost (ADR 0046).",
-  visits:
+  visit_outcomes:
     "What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times " +
     "(ADR 0032, ADR 0074).",
   waitlist_entries: "Someone waiting for us to reach their pincode, and whether they were told it launched (ADR 0048).",

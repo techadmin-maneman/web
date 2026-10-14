@@ -69,7 +69,7 @@ const LEADS = `SELECT l.id, l.person_id, p.erased_at IS NOT NULL AS erased, l.cr
      (SELECT MIN(y.captured_at) FROM payments y JOIN appointments a ON a.id = y.appointment_id
        WHERE y.person_id = l.person_id AND a.type = 'first_fit' AND y.captured_at IS NOT NULL) AS fit_paid,
      ${firstVisit("'first_fit'", true)} AS fit_done,
-     (SELECT v.lost_reason FROM visits v JOIN appointments a ON a.id = v.appointment_id
+     (SELECT v.lost_reason FROM visit_outcomes v JOIN appointments a ON a.id = v.appointment_id
        WHERE a.person_id = l.person_id AND v.lost_reason IS NOT NULL
        ORDER BY a.window_start DESC LIMIT 1) AS lost_reason,
      sp.city AS area_city, sp.area

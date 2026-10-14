@@ -47,7 +47,7 @@ export async function record() {
     .bind(VISIT, PERSON, NOW.toISOString())
     .run();
   await env.DB.prepare(
-    "INSERT INTO visits (id, appointment_id, outcome, duration_minutes, updated_at) VALUES ('v1', ?1, 'partial', 95, ?2)",
+    "INSERT INTO visit_outcomes (id, appointment_id, outcome, duration_minutes, updated_at) VALUES ('v1', ?1, 'partial', 95, ?2)",
   )
     .bind(VISIT, NOW.toISOString())
     .run();

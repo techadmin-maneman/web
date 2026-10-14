@@ -180,7 +180,7 @@ describe("POST /api/clients/:id/referral", () => {
            VALUES ('fit-1', 'fsm-fit-1', ?1, 'first_fit', 'completed', 'Completed', '2026-09-10T03:30:00.000Z', '2026-09-10T05:00:00.000Z', ?2, ?2)`,
         ).bind(FRIEND, NOW.toISOString()),
         env.DB.prepare(
-          "INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES ('visit-1', 'fit-1', 'done', ?1)",
+          "INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) VALUES ('visit-1', 'fit-1', 'done', ?1)",
         ).bind(NOW.toISOString()),
       ]);
     }

@@ -40,7 +40,7 @@ export async function firstFit(
   )
     .bind(id, `fsm-${id}`, personId, start, NOW.toISOString())
     .run();
-  await env.DB.prepare("INSERT INTO visits (id, appointment_id, outcome, updated_at) VALUES (?1, ?2, ?3, ?4)")
+  await env.DB.prepare("INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at) VALUES (?1, ?2, ?3, ?4)")
     .bind(crypto.randomUUID(), id, outcome, NOW.toISOString())
     .run();
 }
