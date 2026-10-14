@@ -1,7 +1,7 @@
 // Adding a member of staff, or changing their grants and whether they are let in. The whole list of grants is sent
 // and replaces theirs; the check names each grant given or taken away before anything is saved.
 
-import { Checkbox, Fieldset, Label, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Checkbox, Fieldset, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
@@ -57,77 +57,78 @@ function checkLines(person: StaffPerson | null, sent: StaffSave): string[] {
 }
 
 function GrantRow(props: {
-  index: number;
   grant: StaffGrant;
   staff: StaffList;
   onChange: (grant: StaffGrant) => void;
   onRemove: () => void;
 }) {
-  const { index, grant, staff, onChange, onRemove } = props;
-  const id = (box: string) => `staff-grant-${String(index)}-${box}`;
+  const { grant, staff, onChange, onRemove } = props;
   return (
     <li className={staffStyles.grantRow}>
-      <div className={styles.field}>
-        <Label htmlFor={id("department")}>{copy.form.department}</Label>
-        <Select
-          id={id("department")}
-          className={styles.select}
-          value={grant.department}
-          onChange={(event) => {
-            onChange({ ...grant, department: departmentOf(event.target.value, grant.department) });
-          }}
-        >
-          {DEPARTMENTS.map((department) => (
-            <option key={department} value={department}>
-              {copy.departments[department]}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <div className={styles.field}>
-        <Label htmlFor={id("level")}>{copy.form.level}</Label>
-        <Select
-          id={id("level")}
-          className={styles.select}
-          value={grant.level}
-          onChange={(event) => {
-            onChange({ ...grant, level: levelOf(event.target.value, grant.level) });
-          }}
-        >
-          {LEVELS.map((level) => (
-            <option key={level} value={level}>
-              {copy.levels[level]}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <div className={styles.field}>
-        <Label htmlFor={id("place")}>{copy.form.place}</Label>
-        <Select
-          id={id("place")}
-          className={styles.select}
-          value={whereValue(grant)}
-          onChange={(event) => {
-            onChange({ ...grant, ...whereOf(event.target.value) });
-          }}
-        >
-          <option value="national">{copy.national}</option>
-          <optgroup label={copy.zones}>
-            {staff.zones.map((zone) => (
-              <option key={zone.name} value={whereValue({ geography: "zone", place: zone.name })}>
-                {copy.zone(zone.name)}
+      <Field label={copy.form.department} className={styles.field}>
+        {(control) => (
+          <Select
+            {...control}
+            className={styles.select}
+            value={grant.department}
+            onChange={(event) => {
+              onChange({ ...grant, department: departmentOf(event.target.value, grant.department) });
+            }}
+          >
+            {DEPARTMENTS.map((department) => (
+              <option key={department} value={department}>
+                {copy.departments[department]}
               </option>
             ))}
-          </optgroup>
-          <optgroup label={copy.cities}>
-            {staff.cities.map((city) => (
-              <option key={city} value={whereValue({ geography: "city", place: city })}>
-                {city}
+          </Select>
+        )}
+      </Field>
+      <Field label={copy.form.level} className={styles.field}>
+        {(control) => (
+          <Select
+            {...control}
+            className={styles.select}
+            value={grant.level}
+            onChange={(event) => {
+              onChange({ ...grant, level: levelOf(event.target.value, grant.level) });
+            }}
+          >
+            {LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {copy.levels[level]}
               </option>
             ))}
-          </optgroup>
-        </Select>
-      </div>
+          </Select>
+        )}
+      </Field>
+      <Field label={copy.form.place} className={styles.field}>
+        {(control) => (
+          <Select
+            {...control}
+            className={styles.select}
+            value={whereValue(grant)}
+            onChange={(event) => {
+              onChange({ ...grant, ...whereOf(event.target.value) });
+            }}
+          >
+            <option value="national">{copy.national}</option>
+            <optgroup label={copy.zones}>
+              {staff.zones.map((zone) => (
+                <option key={zone.name} value={whereValue({ geography: "zone", place: zone.name })}>
+                  {copy.zone(zone.name)}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label={copy.cities}>
+              {staff.cities.map((city) => (
+                <option key={city} value={whereValue({ geography: "city", place: city })}>
+                  {city}
+                </option>
+              ))}
+            </optgroup>
+          </Select>
+        )}
+      </Field>
       <Button
         variant="outline"
         size="small"
@@ -183,21 +184,22 @@ export function StaffForm(props: {
       ))}
     >
       <div className={styles.fields}>
-        <div className={styles.field}>
-          <Label htmlFor="staff-email">{copy.form.email}</Label>
-          <TextInput
-            id="staff-email"
-            className={styles.text}
-            type="email"
-            autoComplete="off"
-            maxLength={254}
-            disabled={person !== null}
-            value={draft.email}
-            onChange={(event) => {
-              edit({ email: event.target.value });
-            }}
-          />
-        </div>
+        <Field label={copy.form.email} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.text}
+              type="email"
+              autoComplete="off"
+              maxLength={254}
+              disabled={person !== null}
+              value={draft.email}
+              onChange={(event) => {
+                edit({ email: event.target.value });
+              }}
+            />
+          )}
+        </Field>
       </div>
       <Checkbox
         className={styles.once}
@@ -212,7 +214,6 @@ export function StaffForm(props: {
           {draft.grants.map((grant, index) => (
             <GrantRow
               key={index}
-              index={index}
               grant={grant}
               staff={staff}
               onChange={(changed) => {

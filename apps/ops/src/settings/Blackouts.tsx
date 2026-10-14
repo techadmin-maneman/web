@@ -2,7 +2,7 @@
 // a day; the list runs together the days one press added, each run naming who added it. Closing a day moves nothing
 // booked on it, so the check counts the visits it strands, and each run links to the board to move them.
 
-import { DateInput, Label, Select, TextInput } from "@maneman/ui/Field";
+import { Field, DateInput, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { buttonLook } from "@maneman/ui/Button";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -82,6 +82,78 @@ const periodOf = (period: { from: string; to: string; city: string | null }) => 
   ...(period.city === null || period.city === "" ? {} : { city: period.city }),
 });
 
+/** The days, the city and the reason, as ops type them. */
+function DraftBoxes(props: {
+  draft: Draft;
+  today: string;
+  cities: readonly string[];
+  onEdit: (field: keyof Draft, value: string) => void;
+}) {
+  const { draft, today, cities, onEdit } = props;
+  return (
+    <div className={styles.fields}>
+      <Field label={copy.from} className={styles.field}>
+        {(control) => (
+          <DateInput
+            {...control}
+            className={styles.date}
+            min={today}
+            value={draft.from}
+            onChange={(event) => {
+              onEdit("from", event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={copy.to} className={styles.field}>
+        {(control) => (
+          <DateInput
+            {...control}
+            className={styles.date}
+            min={draft.from === "" ? today : draft.from}
+            value={draft.to}
+            onChange={(event) => {
+              onEdit("to", event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={copy.city} className={styles.field}>
+        {(control) => (
+          <Select
+            {...control}
+            className={styles.date}
+            value={draft.city}
+            onChange={(event) => {
+              onEdit("city", event.target.value);
+            }}
+          >
+            <option value="">{copy.everyCity}</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <Field label={copy.reason} className={styles.field}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={styles.text}
+            maxLength={60}
+            value={draft.reason}
+            onChange={(event) => {
+              onEdit("reason", event.target.value);
+            }}
+          />
+        )}
+      </Field>
+    </div>
+  );
+}
+
 function AddForm(props: { today: string; cities: readonly string[]; onAdded: (days: readonly Blackout[]) => void }) {
   const { today, onAdded } = props;
   const [draft, setDraft] = useState<Draft>(EMPTY);
@@ -139,62 +211,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
         </>
       }
     >
-      <div className={styles.fields}>
-        <div className={styles.field}>
-          <Label htmlFor="blackout-from">{copy.from}</Label>
-          <DateInput
-            className={styles.date}
-            id="blackout-from"
-            min={today}
-            value={draft.from}
-            onChange={(event) => {
-              edit("from", event.target.value);
-            }}
-          />
-        </div>
-        <div className={styles.field}>
-          <Label htmlFor="blackout-to">{copy.to}</Label>
-          <DateInput
-            className={styles.date}
-            id="blackout-to"
-            min={draft.from === "" ? today : draft.from}
-            value={draft.to}
-            onChange={(event) => {
-              edit("to", event.target.value);
-            }}
-          />
-        </div>
-        <div className={styles.field}>
-          <Label htmlFor="blackout-city">{copy.city}</Label>
-          <Select
-            className={styles.date}
-            id="blackout-city"
-            value={draft.city}
-            onChange={(event) => {
-              edit("city", event.target.value);
-            }}
-          >
-            <option value="">{copy.everyCity}</option>
-            {props.cities.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className={styles.field}>
-          <Label htmlFor="blackout-reason">{copy.reason}</Label>
-          <TextInput
-            className={styles.text}
-            id="blackout-reason"
-            maxLength={60}
-            value={draft.reason}
-            onChange={(event) => {
-              edit("reason", event.target.value);
-            }}
-          />
-        </div>
-      </div>
+      <DraftBoxes draft={draft} today={today} cities={props.cities} onEdit={edit} />
     </SettingForm>
   );
 }

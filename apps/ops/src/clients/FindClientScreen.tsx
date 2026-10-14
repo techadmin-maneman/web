@@ -3,7 +3,7 @@
 // Back finds them; before a search, the clients opened this session (lib/client-search.ts), then every client
 // (./ClientList.tsx).
 
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -119,19 +119,20 @@ export function FindClientScreen() {
           void find(text.trim());
         }}
       >
-        <Label className={styles.findLabel} htmlFor="find">
-          {copy.label}
-        </Label>
-        <TextInput
-          id="find"
-          className={styles.findField}
-          type="search"
-          autoComplete="off"
-          value={text}
-          onChange={(event) => {
-            setText(event.target.value);
-          }}
-        />
+        <Field label={copy.label} look={{ label: styles.findLabel }}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.findField}
+              type="search"
+              autoComplete="off"
+              value={text}
+              onChange={(event) => {
+                setText(event.target.value);
+              }}
+            />
+          )}
+        </Field>
         <Button
           variant="primary"
           size="small"

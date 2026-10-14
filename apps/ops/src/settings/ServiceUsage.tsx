@@ -3,7 +3,7 @@
 // before it was retired is still done. The list is sent whole, after a check of each changed figure (ADR 0071). An
 // empty box is none.
 
-import { Fieldset, Label, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Fieldset, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -49,47 +49,51 @@ function UsageFields(props: {
   const { consumables, listed, draft } = props;
   return (
     <>
-      <div className={styles.field}>
-        <Label htmlFor="usage-service">{words.service}</Label>
-        <Select
-          className={styles.select}
-          id="usage-service"
-          value={props.chosen}
-          onChange={(event) => {
-            props.onChoose(event.target.value);
-          }}
-        >
-          {[...new Set(consumables.services.map((each) => each.visit_type))].map((kind) => (
-            <optgroup key={kind} label={dispatch.typeNames[kind]}>
-              {consumables.services
-                .filter((each) => each.visit_type === kind)
-                .map((each) => (
-                  <option key={keyOf(each)} value={keyOf(each)}>
-                    {serviceName(each)}
-                  </option>
-                ))}
-            </optgroup>
-          ))}
-        </Select>
-      </div>
+      <Field label={words.service} className={styles.field}>
+        {(control) => (
+          <Select
+            {...control}
+            className={styles.select}
+            value={props.chosen}
+            onChange={(event) => {
+              props.onChoose(event.target.value);
+            }}
+          >
+            {[...new Set(consumables.services.map((each) => each.visit_type))].map((kind) => (
+              <optgroup key={kind} label={dispatch.typeNames[kind]}>
+                {consumables.services
+                  .filter((each) => each.visit_type === kind)
+                  .map((each) => (
+                    <option key={keyOf(each)} value={keyOf(each)}>
+                      {serviceName(each)}
+                    </option>
+                  ))}
+              </optgroup>
+            ))}
+          </Select>
+        )}
+      </Field>
       {listed.length === 0 ? (
         <p className={styles.note}>{words.noneOffered}</p>
       ) : (
         <ul className={own.uses}>
           {listed.map((each) => (
             <li className={own.use} key={each.code}>
-              <Label htmlFor={`usage-${each.code}`}>{words.quantity(each.name, each.unit)}</Label>
-              <TextInput
-                className={styles.number}
-                id={`usage-${each.code}`}
-                inputMode="numeric"
-                maxLength={3}
-                readOnly={!props.mayChange}
-                value={draft[each.code] ?? ""}
-                onChange={(event) => {
-                  props.onFigure(each.code, event.target.value);
-                }}
-              />
+              <Field label={words.quantity(each.name, each.unit)}>
+                {(control) => (
+                  <TextInput
+                    {...control}
+                    className={styles.number}
+                    inputMode="numeric"
+                    maxLength={3}
+                    readOnly={!props.mayChange}
+                    value={draft[each.code] ?? ""}
+                    onChange={(event) => {
+                      props.onFigure(each.code, event.target.value);
+                    }}
+                  />
+                )}
+              </Field>
             </li>
           ))}
         </ul>

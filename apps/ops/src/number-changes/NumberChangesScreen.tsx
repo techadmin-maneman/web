@@ -2,7 +2,7 @@
 // (docs/decisions/0042-client-profile.md). Built as the Referrals review queue is; a rejection needs a reason, a number
 // someone else holds is refused, and each change says how long it has left, as Tasks counts it.
 
-import { Label, TextArea } from "@maneman/ui/Field";
+import { Field, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -75,20 +75,21 @@ function Change({ change, now, mayDecide, onDecided }: ChangeProps) {
       )}
       {asking && (
         <div className={styles.reason}>
-          <Label className={styles.reasonLabel} htmlFor={`reason-${change.id}`}>
-            {copy.reason.label}
-          </Label>
-          <TextArea
-            id={`reason-${change.id}`}
-            className={styles.reasonField}
-            maxLength={REASON_MAX_CHARS}
-            // The field stands where the button that asked for it stood, so the keyboard goes to it.
-            autoFocus
-            value={reason}
-            onChange={(event) => {
-              setReason(event.target.value);
-            }}
-          />
+          <Field label={copy.reason.label} look={{ label: styles.reasonLabel }}>
+            {(control) => (
+              <TextArea
+                {...control}
+                className={styles.reasonField}
+                maxLength={REASON_MAX_CHARS}
+                // The field stands where the button that asked for it stood, so the keyboard goes to it.
+                autoFocus
+                value={reason}
+                onChange={(event) => {
+                  setReason(event.target.value);
+                }}
+              />
+            )}
+          </Field>
           <div className={styles.actions}>
             <Button
               variant="outline"

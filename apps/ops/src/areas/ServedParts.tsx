@@ -2,7 +2,7 @@
 // message, what sits beneath Save, and a file read with its changes shown before they go into the table.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Checkbox, DateInput, Fieldset, FileInput, Label, TextInput } from "@maneman/ui/Field";
+import { Field, Checkbox, DateInput, Fieldset, FileInput, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
@@ -191,22 +191,19 @@ export function UploadFile({
 }) {
   return (
     <Fieldset className={styles.group} legend={copy.upload.title} legendLook="title">
-      <div className={styles.field}>
-        <Label htmlFor="area-file">{copy.upload.label}</Label>
-        <FileInput
-          className={styles.file}
-          id="area-file"
-          accept=".csv,text/csv"
-          aria-describedby="area-file-hint"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file !== undefined) onFile(file);
-          }}
-        />
-        <p className={styles.hint} id="area-file-hint">
-          {copy.upload.hint}
-        </p>
-      </div>
+      <Field label={copy.upload.label} hint={copy.upload.hint} className={styles.field} look={{ hint: styles.hint }}>
+        {(control) => (
+          <FileInput
+            {...control}
+            className={styles.file}
+            accept=".csv,text/csv"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file !== undefined) onFile(file);
+            }}
+          />
+        )}
+      </Field>
       {upload?.step === "read" && (
         <FilePreview
           rows={upload.rows}

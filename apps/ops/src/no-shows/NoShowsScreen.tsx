@@ -5,7 +5,7 @@
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { DateInput, Label, TextArea } from "@maneman/ui/Field";
+import { Field, DateInput, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -44,20 +44,19 @@ function DayHead({ date, shown, onDay }: { date: string; shown: string; onDay: (
       <h2 className={styles.dayTitle} id="day-money">
         {copy.title(shortDate(date), date === today)}
       </h2>
-      <div>
-        <Label className={styles.dayLabel} htmlFor="money-day">
-          {copy.pick}
-        </Label>
-        <DateInput
-          className={styles.dayField}
-          id="money-day"
-          max={today}
-          value={shown}
-          onChange={(event) => {
-            if (event.target.value !== "") onDay(event.target.value);
-          }}
-        />
-      </div>
+      <Field label={copy.pick} look={{ label: styles.dayLabel }}>
+        {(control) => (
+          <DateInput
+            {...control}
+            className={styles.dayField}
+            max={today}
+            value={shown}
+            onChange={(event) => {
+              if (event.target.value !== "") onDay(event.target.value);
+            }}
+          />
+        )}
+      </Field>
     </div>
   );
 }
@@ -303,20 +302,21 @@ function Case({ each, now, may, onDecided }: CaseProps) {
   return (
     <>
       <CaseFacts each={each} now={now} />
-      <Label className={styles.reasonLabel} htmlFor={`reason-${each.id}`}>
-        {copy.reason.label}
-      </Label>
-      <TextArea
-        id={`reason-${each.id}`}
-        className={styles.reasonField}
-        maxLength={REASON_MAX_CHARS}
-        placeholder={copy.reason.placeholder}
-        value={reason}
-        disabled={sending || ruling.step === "confirming"}
-        onChange={(event) => {
-          setReason(event.target.value);
-        }}
-      />
+      <Field label={copy.reason.label} look={{ label: styles.reasonLabel }}>
+        {(control) => (
+          <TextArea
+            {...control}
+            className={styles.reasonField}
+            maxLength={REASON_MAX_CHARS}
+            placeholder={copy.reason.placeholder}
+            value={reason}
+            disabled={sending || ruling.step === "confirming"}
+            onChange={(event) => {
+              setReason(event.target.value);
+            }}
+          />
+        )}
+      </Field>
       {ruling.step === "confirming" ? (
         <ConfirmCharge
           each={each}

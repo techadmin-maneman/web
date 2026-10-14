@@ -3,7 +3,7 @@
 // phone keeps the list it got with the job and an item taken off is kept, so older records still read. Until ops save a
 // list, src/config/job-sheet.ts's stands.
 
-import { Label, Select } from "@maneman/ui/Field";
+import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
@@ -50,24 +50,25 @@ export function JobSheet() {
   return (
     <Panel titleId="job-sheet" title={copy.title} className={styles.panel}>
       <div className={styles.group}>
-        <div className={styles.field}>
-          <Label htmlFor="job-sheet-kind">{copy.kind}</Label>
-          <Select
-            className={styles.select}
-            id="job-sheet-kind"
-            value={kind}
-            onChange={(event) => {
-              const chosen = current.checklists.find((each) => each.visit_type === event.target.value);
-              if (chosen !== undefined) setKind(chosen.visit_type);
-            }}
-          >
-            {current.checklists.map((each) => (
-              <option key={each.visit_type} value={each.visit_type}>
-                {typeName(each.visit_type)}
-              </option>
-            ))}
-          </Select>
-        </div>
+        <Field label={copy.kind} className={styles.field}>
+          {(control) => (
+            <Select
+              {...control}
+              className={styles.select}
+              value={kind}
+              onChange={(event) => {
+                const chosen = current.checklists.find((each) => each.visit_type === event.target.value);
+                if (chosen !== undefined) setKind(chosen.visit_type);
+              }}
+            >
+              {current.checklists.map((each) => (
+                <option key={each.visit_type} value={each.visit_type}>
+                  {typeName(each.visit_type)}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
       </div>
       {checklist !== undefined && !mayChangeChecklists && (
         <ListRead title={copy.checklist(typeName(kind))} list={checklist} />

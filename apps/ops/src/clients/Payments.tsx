@@ -3,7 +3,7 @@
 // entries together (docs/decisions/0068-a-paid-hold-is-kept.md).
 
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { ChoiceGroup, Label, Radio, TextInput } from "@maneman/ui/Field";
+import { Field, ChoiceGroup, Radio, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
@@ -215,6 +215,22 @@ function visitsOf(typed: string): number | null {
   return visits === 0 || Math.abs(visits) > MOST_VISITS ? null : visits;
 }
 
+/** The service visits the client holds, and the day the first of them runs out. */
+function Balance({ credits }: { credits: Credits }) {
+  const expiry = credits?.earliest_expiry ?? null;
+  return (
+    <dl className={styles.address}>
+      <div className={styles.addressRow}>
+        <dt className={styles.metaKey}>{creditCopy.balance}</dt>
+        <dd className={styles.addressValue}>
+          {credits === null ? creditCopy.none : creditCopy.visits(credits.visits)}
+          {expiry !== null && ` · ${creditCopy.useBy(longDate(expiry))}`}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 function CreditForm({
   clientId,
   credits,
@@ -230,7 +246,6 @@ function CreditForm({
   const mayAdjust = useAccess().mayCall("POST /api/clients/{id}/credits");
   const visits = visitsOf(typed);
   const sending = adjusting.step === "sending";
-  const expiry = credits?.earliest_expiry ?? null;
 
   const send = async (change: { visits: number; reason: Reason }) => {
     setAdjusting({ step: "sending" });
@@ -250,15 +265,7 @@ function CreditForm({
       <h3 className={capsLook(styles.sectionTitle)} id="credits">
         {creditCopy.title}
       </h3>
-      <dl className={styles.address}>
-        <div className={styles.addressRow}>
-          <dt className={styles.metaKey}>{creditCopy.balance}</dt>
-          <dd className={styles.addressValue}>
-            {credits === null ? creditCopy.none : creditCopy.visits(credits.visits)}
-            {expiry !== null && ` · ${creditCopy.useBy(longDate(expiry))}`}
-          </dd>
-        </div>
-      </dl>
+      <Balance credits={credits} />
       {mayAdjust && (
         <form
           className={styles.creditForm}
@@ -267,18 +274,21 @@ function CreditForm({
             if (visits !== null && reason !== "") void send({ visits, reason });
           }}
         >
-          <Label htmlFor="credit-visits">{creditCopy.change}</Label>
-          <TextInput
-            id="credit-visits"
-            className={styles.numberField}
-            inputMode="numeric"
-            autoComplete="off"
-            value={typed}
-            disabled={sending}
-            onChange={(event) => {
-              setTyped(event.target.value);
-            }}
-          />
+          <Field label={creditCopy.change}>
+            {(control) => (
+              <TextInput
+                {...control}
+                className={styles.numberField}
+                inputMode="numeric"
+                autoComplete="off"
+                value={typed}
+                disabled={sending}
+                onChange={(event) => {
+                  setTyped(event.target.value);
+                }}
+              />
+            )}
+          </Field>
           <ChoiceGroup className={styles.reasons} legend={creditCopy.reason} disabled={sending} ruled>
             {creditCopy.reasons.map((each) => (
               <Radio

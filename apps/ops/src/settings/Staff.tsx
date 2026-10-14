@@ -3,7 +3,7 @@
 // its viewer may see, and refuses a change beyond their own.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
@@ -236,33 +236,35 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
       checking={<p className={styles.checkLine}>{words.adding(label.trim(), clientId.trim())}</p>}
     >
       <div className={styles.fields}>
-        <div className={styles.field}>
-          <Label htmlFor="token-client-id">{words.clientId}</Label>
-          <TextInput
-            id="token-client-id"
-            className={styles.text}
-            autoComplete="off"
-            maxLength={100}
-            value={clientId}
-            onChange={(event) => {
-              setClientId(event.target.value);
-              steps.edit();
-            }}
-          />
-        </div>
-        <div className={styles.field}>
-          <Label htmlFor="token-label">{words.label}</Label>
-          <TextInput
-            id="token-label"
-            className={styles.text}
-            maxLength={60}
-            value={label}
-            onChange={(event) => {
-              setLabel(event.target.value);
-              steps.edit();
-            }}
-          />
-        </div>
+        <Field label={words.clientId} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.text}
+              autoComplete="off"
+              maxLength={100}
+              value={clientId}
+              onChange={(event) => {
+                setClientId(event.target.value);
+                steps.edit();
+              }}
+            />
+          )}
+        </Field>
+        <Field label={words.label} className={styles.field}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.text}
+              maxLength={60}
+              value={label}
+              onChange={(event) => {
+                setLabel(event.target.value);
+                steps.edit();
+              }}
+            />
+          )}
+        </Field>
       </div>
     </SettingForm>
   );

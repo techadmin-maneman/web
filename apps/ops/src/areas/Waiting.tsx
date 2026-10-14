@@ -5,7 +5,7 @@
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { TextButton } from "@maneman/ui/TextLink";
-import { DateInput, Label } from "@maneman/ui/Field";
+import { Field, DateInput } from "@maneman/ui/Field";
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -105,18 +105,19 @@ function LaunchOne({ launching, today, launchOn, mayRename, onLaunchOn, onCancel
         </p>
       )}
       {!area.served && step !== "done" && (
-        <div className={styles.field}>
-          <Label htmlFor="launch-on">{waitlist.date}</Label>
-          <DateInput
-            className={styles.launchDate}
-            id="launch-on"
-            max={today}
-            value={launchOn}
-            onChange={(event) => {
-              onLaunchOn(event.target.value);
-            }}
-          />
-        </div>
+        <Field label={waitlist.date} className={styles.field}>
+          {(control) => (
+            <DateInput
+              {...control}
+              className={styles.launchDate}
+              max={today}
+              value={launchOn}
+              onChange={(event) => {
+                onLaunchOn(event.target.value);
+              }}
+            />
+          )}
+        </Field>
       )}
     </LaunchPanel>
   );

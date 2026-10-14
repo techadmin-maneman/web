@@ -1,7 +1,7 @@
 // The bar above the board while a job is in hand: what is moving and how much of a day it takes, and the keyboard's way
 // to a destination, a list of the windows it would land in on the rows on screen, nearest first (ADR 0120).
 
-import { Label, Select } from "@maneman/ui/Field";
+import { Field, Select } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState, type Ref } from "react";
@@ -70,25 +70,26 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
       {!checking && destinations.length === 0 && <p className={styles.barNote}>{copy.nowhere}</p>}
       {!checking && destinations.length > 0 && (
         <div className={styles.list}>
-          <div className={styles.field}>
-            <Label htmlFor="dispatch-destination">{copy.list}</Label>
-            <Select
-              id="dispatch-destination"
-              value={chosen}
-              onChange={(event) => {
-                setChosen(event.currentTarget.value);
-              }}
-            >
-              <option value="" disabled>
-                {copy.listPrompt}
-              </option>
-              {destinations.map((each) => (
-                <option key={each.key} value={each.key}>
-                  {each.label}
+          <Field label={copy.list} className={styles.field}>
+            {(control) => (
+              <Select
+                {...control}
+                value={chosen}
+                onChange={(event) => {
+                  setChosen(event.currentTarget.value);
+                }}
+              >
+                <option value="" disabled>
+                  {copy.listPrompt}
                 </option>
-              ))}
-            </Select>
-          </div>
+                {destinations.map((each) => (
+                  <option key={each.key} value={each.key}>
+                    {each.label}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
           <Button
             variant="outline"
             size="small"

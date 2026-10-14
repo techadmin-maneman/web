@@ -3,7 +3,7 @@
 // offering it from that day; nothing already recorded moves, and neither does
 // its stock. The check says so before anything is sent (ADR 0071).
 
-import { DateInput, Fieldset, Label } from "@maneman/ui/Field";
+import { Field, DateInput, Fieldset } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type Consumable, type Consumables } from "../api.ts";
@@ -47,7 +47,6 @@ export function Retiring({ consumable, today, onSaved, onCancel }: Props & { rea
       onSaved(sent.consumables, words.done);
     },
   );
-  const id = `retire-${consumable.code}`;
   return (
     <SettingForm
       title={words.title(consumable.name)}
@@ -60,19 +59,20 @@ export function Retiring({ consumable, today, onSaved, onCancel }: Props & { rea
       }
     >
       <div className={styles.fields}>
-        <div className={styles.field}>
-          <Label htmlFor={id}>{words.from}</Label>
-          <DateInput
-            className={styles.date}
-            id={id}
-            min={today}
-            value={from}
-            onChange={(event) => {
-              setFrom(event.target.value);
-              steps.edit();
-            }}
-          />
-        </div>
+        <Field label={words.from} className={styles.field}>
+          {(control) => (
+            <DateInput
+              {...control}
+              className={styles.date}
+              min={today}
+              value={from}
+              onChange={(event) => {
+                setFrom(event.target.value);
+                steps.edit();
+              }}
+            />
+          )}
+        </Field>
       </div>
     </SettingForm>
   );

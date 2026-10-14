@@ -3,10 +3,10 @@
 // (`price_open`), and a consultation takes none. A code the client typed on the site shows under None and starts the
 // box.
 
-import { Label, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
-import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+
 import { fullDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -83,19 +83,20 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
           void apply();
         }}
       >
-        <Label htmlFor={`code-${visit.id}`}>
-          <VisuallyHidden>{copy.label}</VisuallyHidden>
-        </Label>
-        <TextInput
-          id={`code-${visit.id}`}
-          className={styles.codeInput}
-          autoCapitalize="characters"
-          value={typed}
-          onChange={(event) => {
-            setTyped(event.target.value);
-            setFailure(null);
-          }}
-        />
+        <Field label={copy.label} labelHidden error={failure} announce look={{ error: styles.codeError }}>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.codeInput}
+              autoCapitalize="characters"
+              value={typed}
+              onChange={(event) => {
+                setTyped(event.target.value);
+                setFailure(null);
+              }}
+            />
+          )}
+        </Field>
         <Button type="submit" variant="primary" size="small" disabled={typed.trim() === "" || step === "applying"}>
           {step === "applying" ? copy.applying : copy.apply}
         </Button>
@@ -110,7 +111,6 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
         >
           {copy.cancel}
         </Button>
-        {problem}
       </form>
     );
   }

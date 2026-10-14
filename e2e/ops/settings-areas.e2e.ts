@@ -190,6 +190,9 @@ test.describe("the service area, Areas' Served tab", () => {
     const form = page.getByRole("group", { name: opsCopy.areas.add.title });
     await form.getByLabel("Pincode").fill("012345");
     await expect(form.getByRole("alert")).toHaveText(opsCopy.areas.add.badPincode);
+    // The refusal is the box's own: a screen reader hears it with the box.
+    await expect(form.getByLabel("Pincode")).toHaveAccessibleDescription(opsCopy.areas.add.badPincode);
+    await expect(form.getByLabel("Pincode")).toHaveAttribute("aria-invalid", "true");
     await expect(form.getByRole("button", { name: "Add" })).toBeDisabled();
   });
 

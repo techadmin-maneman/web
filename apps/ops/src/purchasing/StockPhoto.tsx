@@ -2,16 +2,15 @@
 // in the browser as the technician's camera makes its photographs, stored, and shown once stored.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { FileInput, Label } from "@maneman/ui/Field";
+import { Field, FileInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { errorText } from "@maneman/web-kit/refusal";
 import { smallJpeg } from "@maneman/web-kit/small-jpeg";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { client } from "../api.ts";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import styles from "./purchasing.module.css";
-import { Refusal } from "../components/Refusal.tsx";
 
 type Stored = { photo_id: string };
 
@@ -36,7 +35,6 @@ export function StockPhoto({
   photoId: string | null;
   onPhoto: (id: string | null) => void;
 }) {
-  const inputId = useId();
   const [busy, once] = useOneAtATime();
   const [failed, setFailed] = useState<string | null>(null);
   const choose = (file: File) =>
@@ -50,43 +48,44 @@ export function StockPhoto({
         setFailed("photo_invalid_file");
       }
     });
+  const refused = failed === null ? null : errorText(copy.errors, { code: failed, fields: [] });
   return (
-    <div className={form.field}>
-      <Label htmlFor={inputId}>{label}</Label>
-      {photoId === null ? (
-        <FileInput
-          className={form.file}
-          id={inputId}
-          accept="image/jpeg,image/png,image/heic,image/webp"
-          capture="environment"
-          disabled={busy}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file !== undefined) void choose(file);
-          }}
-        />
-      ) : (
-        <>
-          <img className={styles.photo} src={`/api/stock-photos/${photoId}`} alt={copy.photo.alt} />
-          <Button
-            variant="outline"
-            size="small"
-            onClick={() => {
-              onPhoto(null);
-            }}
-          >
-            {copy.photo.remove}
-          </Button>
-        </>
-      )}
+    <>
+      <Field label={label} className={form.field} error={refused} announce look={{ error: form.error }}>
+        {(control) =>
+          photoId === null ? (
+            <FileInput
+              {...control}
+              className={form.file}
+              accept="image/jpeg,image/png,image/heic,image/webp"
+              capture="environment"
+              disabled={busy}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file !== undefined) void choose(file);
+              }}
+            />
+          ) : (
+            <>
+              <img className={styles.photo} src={`/api/stock-photos/${photoId}`} alt={copy.photo.alt} />
+              <Button
+                variant="outline"
+                size="small"
+                onClick={() => {
+                  onPhoto(null);
+                }}
+              >
+                {copy.photo.remove}
+              </Button>
+            </>
+          )
+        }
+      </Field>
       {busy && (
         <p className={form.hint} role="status">
           {copy.photo.storing}
         </p>
       )}
-      {failed !== null && (
-        <Refusal className={form.error} said={errorText(copy.errors, { code: failed, fields: [] })} />
-      )}
-    </div>
+    </>
   );
 }

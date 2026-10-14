@@ -6,7 +6,7 @@
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
-import { Checkbox, ChoiceGroup, Field, Label, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
+import { Checkbox, ChoiceGroup, Field, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { api, type Stock } from "../api.ts";
@@ -347,18 +347,19 @@ export function StockForm({
         <div className={form.fields}>
           <HowMany draft={draft} unit={unit} onEdit={edit} />
           {draft.kind !== "transfer" && (
-            <div className={form.field}>
-              <Label htmlFor="stock-note">{draft.kind === "write_off" ? copy.record.lossNote : copy.record.note}</Label>
-              <TextInput
-                className={form.text}
-                id="stock-note"
-                maxLength={200}
-                value={draft.note}
-                onChange={(event) => {
-                  edit("note")(event.target.value);
-                }}
-              />
-            </div>
+            <Field label={draft.kind === "write_off" ? copy.record.lossNote : copy.record.note} className={form.field}>
+              {(control) => (
+                <TextInput
+                  {...control}
+                  className={form.text}
+                  maxLength={200}
+                  value={draft.note}
+                  onChange={(event) => {
+                    edit("note")(event.target.value);
+                  }}
+                />
+              )}
+            </Field>
           )}
         </div>
         {checking ? (

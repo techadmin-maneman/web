@@ -6,7 +6,7 @@ import { Disclosure } from "@maneman/ui/Disclosure";
 import { TextLink } from "@maneman/ui/TextLink";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
-import { Field, Fieldset, Label, NumberInput, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Fieldset, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { ReviewBar } from "./ReviewBar.tsx";
 import { useSteps, type Sent } from "./SettingForm.tsx";
@@ -261,33 +261,35 @@ function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string, text: 
   const ready = key.trim() !== "" && whole(text, rule.min, rule.max);
   return (
     <div className={styles.addKey}>
-      <div className={styles.field}>
-        <Label htmlFor={`${rule.name}-new-key`}>{copy.keyName}</Label>
-        <TextInput
-          className={styles.text}
-          id={`${rule.name}-new-key`}
-          maxLength={64}
-          value={key}
-          onChange={(event) => {
-            setKey(event.target.value);
-          }}
-        />
-      </div>
-      <div className={styles.field}>
-        <Label htmlFor={`${rule.name}-new-value`}>{copy.keyValue}</Label>
-        <NumberInput
-          className={styles.number}
-          id={`${rule.name}-new-value`}
-          inputMode="numeric"
-          step={1}
-          min={rule.min}
-          max={rule.max}
-          value={text}
-          onChange={(event) => {
-            setText(event.target.value);
-          }}
-        />
-      </div>
+      <Field label={copy.keyName} className={styles.field}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={styles.text}
+            maxLength={64}
+            value={key}
+            onChange={(event) => {
+              setKey(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <Field label={copy.keyValue} className={styles.field}>
+        {(control) => (
+          <NumberInput
+            {...control}
+            className={styles.number}
+            inputMode="numeric"
+            step={1}
+            min={rule.min}
+            max={rule.max}
+            value={text}
+            onChange={(event) => {
+              setText(event.target.value);
+            }}
+          />
+        )}
+      </Field>
       <Button
         variant="outline"
         size="small"

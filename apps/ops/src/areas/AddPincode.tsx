@@ -2,7 +2,7 @@
 // ours. It goes in unserved, so adding one messages nobody; marking it live is the launch panel's.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { Label, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
@@ -24,13 +24,11 @@ interface Props {
   readonly onCancel?: () => void;
 }
 
-/** The lines a box's refusal is said in, before anything is sent. */
-function boxRefusals(pincode: string, area: string): string[] {
-  const refusals: string[] = [];
-  if (pincode !== "" && !PINCODE.test(pincode)) refusals.push(copy.badPincode);
-  if (area !== "" && !AREA_NAME.test(area)) refusals.push(copy.badName);
-  return refusals;
-}
+/** Each box's refusal, said on the box before anything is sent; null where it holds what it should. */
+const boxRefusals = (pincode: string, area: string) => ({
+  pincode: pincode !== "" && !PINCODE.test(pincode) ? copy.badPincode : null,
+  area: area !== "" && !AREA_NAME.test(area) ? copy.badName : null,
+});
 
 export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
   const [typed, setTyped] = useState("");
@@ -77,55 +75,53 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
   return (
     <div className={styles.addForm}>
       {pincode === null && (
-        <div className={styles.field}>
-          <Label htmlFor="add-pincode">{copy.pincode}</Label>
+        <Field label={copy.pincode} className={styles.field} error={refusals.pincode} announce>
+          {(control) => (
+            <TextInput
+              {...control}
+              className={styles.box}
+              inputMode="numeric"
+              maxLength={6}
+              value={typed}
+              onChange={(event) => {
+                setTyped(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+      )}
+      <Field label={copy.area} className={styles.field} error={refusals.area} announce>
+        {(control) => (
           <TextInput
+            {...control}
             className={styles.box}
-            id="add-pincode"
-            inputMode="numeric"
-            maxLength={6}
-            value={typed}
+            maxLength={40}
+            value={area}
             onChange={(event) => {
-              setTyped(event.target.value);
+              setArea(event.target.value);
             }}
           />
-        </div>
-      )}
-      <div className={styles.field}>
-        <Label htmlFor="add-area">{copy.area}</Label>
-        <TextInput
-          className={styles.box}
-          id="add-area"
-          maxLength={40}
-          value={area}
-          onChange={(event) => {
-            setArea(event.target.value);
-          }}
-        />
-      </div>
-      <div className={styles.field}>
-        <Label htmlFor="add-city">{copy.city}</Label>
-        <Select
-          className={styles.box}
-          id="add-city"
-          value={city}
-          onChange={(event) => {
-            setCity(event.target.value);
-          }}
-        >
-          <option value="">{copy.chooseCity}</option>
-          {cities.map((each) => (
-            <option key={each} value={each}>
-              {each}
-            </option>
-          ))}
-        </Select>
-      </div>
-      {refusals.map((refusal) => (
-        <p key={refusal} className={styles.error} role="alert">
-          {refusal}
-        </p>
-      ))}
+        )}
+      </Field>
+      <Field label={copy.city} className={styles.field}>
+        {(control) => (
+          <Select
+            {...control}
+            className={styles.box}
+            value={city}
+            onChange={(event) => {
+              setCity(event.target.value);
+            }}
+          >
+            <option value="">{copy.chooseCity}</option>
+            {cities.map((each) => (
+              <option key={each} value={each}>
+                {each}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
       <div className={styles.actions}>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {busy ? copy.adding : copy.add}

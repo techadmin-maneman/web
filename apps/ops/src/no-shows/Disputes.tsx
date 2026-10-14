@@ -2,7 +2,7 @@
 // what it took and the client's words, and Refund or Uphold, each with a note
 // (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md). The client is told the ruling, never the note.
 
-import { Label, TextArea } from "@maneman/ui/Field";
+import { Field, TextArea } from "@maneman/ui/Field";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -138,20 +138,21 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
       <Evidence each={each} />
       {may.uphold && (
         <>
-          <Label className={styles.reasonLabel} htmlFor={`ruling-${each.id}`}>
-            {copy.reason.label}
-          </Label>
-          <TextArea
-            id={`ruling-${each.id}`}
-            className={styles.reasonField}
-            maxLength={REASON_MAX_CHARS}
-            placeholder={copy.reason.placeholder}
-            value={reason}
-            disabled={sending}
-            onChange={(event) => {
-              setReason(event.target.value);
-            }}
-          />
+          <Field label={copy.reason.label} look={{ label: styles.reasonLabel }}>
+            {(control) => (
+              <TextArea
+                {...control}
+                className={styles.reasonField}
+                maxLength={REASON_MAX_CHARS}
+                placeholder={copy.reason.placeholder}
+                value={reason}
+                disabled={sending}
+                onChange={(event) => {
+                  setReason(event.target.value);
+                }}
+              />
+            )}
+          </Field>
           <div className={styles.actions} role="group" aria-label={copy.ruling}>
             {may.refund && (
               <Button
