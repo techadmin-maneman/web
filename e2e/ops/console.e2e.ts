@@ -6,7 +6,7 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, json, TASKS, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, fails, json, TASKS, TASKS_READ_ON } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 /** Who is signed in when Access stands in front, with the routes their calls go ahead on. */
@@ -251,7 +251,8 @@ test("heads each section of a group with the group's sections as tabs, and marks
 });
 
 test("goes to a page by its name from anywhere, with Ctrl K", async ({ page }) => {
-  await answer(page, { "GET /api/tasks": json(TASKS) });
+  // Where it goes is answered here, refused, so the page it opens reads nothing the other specs left behind.
+  await answer(page, { "GET /api/tasks": json(TASKS), "GET /api/dispatch": fails(403, "access_required") });
   await page.goto("/tasks");
   await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
   await page.keyboard.press("Control+k");
