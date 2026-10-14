@@ -35,6 +35,7 @@ export function usePincode() {
 
   async function check(event: Event) {
     event.preventDefault();
+    if (checking) return;
     const problem = pincodeProblem(pincode);
     if (problem !== null) {
       setError(problem);

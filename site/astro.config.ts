@@ -14,7 +14,8 @@ import preact from "@astrojs/preact";
 import { defineConfig } from "astro/config";
 import { RULES_ALIAS } from "../scripts/build/rules-alias.ts";
 import { ANALYTICS_IDS } from "./src/lib/analytics-ids.ts";
-import { siteEnvironment } from "./src/lib/environment.ts";
+import { areasPage, guides } from "./src/content/guides.ts";
+import { shownIn, siteEnvironment } from "./src/lib/environment.ts";
 import { assertPublishable } from "./src/lib/publish-gate.ts";
 import { publishedWordsPlugin, readPublishedWords } from "./src/lib/published-words.ts";
 import { CONTENT_FILES, contentProblems } from "../scripts/lib/content-gate.ts";
@@ -61,6 +62,17 @@ export default defineConfig({
   integrations: [
     preact({ compat: true }),
     {
+      // The guides' list and the cities' page are built only while there is something to show on them.
+      name: "mm-shown-pages",
+      hooks: {
+        "astro:config:setup": ({ injectRoute }) => {
+          const shown = (block: { readonly publish: boolean }) => shownIn(environment, block);
+          if (guides.some(shown)) injectRoute({ pattern: "/guides", entrypoint: "./src/routes/guides.astro" });
+          if (shown(areasPage)) injectRoute({ pattern: "/areas", entrypoint: "./src/routes/areas.astro" });
+        },
+      },
+    },
+    {
       name: "mm-environment-files",
       hooks: {
         "astro:build:done": async ({ dir }) => {
@@ -73,8 +85,9 @@ export default defineConfig({
           }
           const csp = contentSecurityPolicy(inline, ANALYTICS_IDS[environment]);
           const paths = pages.map(pagePath).filter((path) => path !== null);
-          await writeFile(new URL("_headers", dir), headersFile(environment, csp));
-          await writeFile(new URL("robots.txt", dir), robotsFile(environment));
+          const indexed = environment === "production";
+          await writeFile(new URL("_headers", dir), headersFile(indexed, csp));
+          await writeFile(new URL("robots.txt", dir), robotsFile(indexed));
           await mkdir(new URL(".well-known/", dir), { recursive: true });
           await writeFile(new URL(".well-known/security.txt", dir), securityTxt(new Date()));
           await writeFile(new URL("sitemap.xml", dir), sitemapFile(paths.sort()));

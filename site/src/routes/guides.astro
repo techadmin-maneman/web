@@ -1,0 +1,57 @@
+---
+// The guides' list, at /guides: each guide this build has a page for. The build adds the route only while there is one
+// (site/astro.config.ts), so with none approved production has no /guides at all.
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { guides, guidesPage } from "../content/guides.ts";
+import TextPage from "../layouts/TextPage.astro";
+import { isShown } from "../lib/build.ts";
+import { breadcrumbs } from "../lib/structured-data.ts";
+
+const shown = guides.filter(isShown);
+const trail = [
+  { name: guidesPage.home, path: "/" },
+  { name: guidesPage.title, path: "/guides" },
+];
+---
+
+<TextPage
+  pageTitle={guidesPage.pageTitle}
+  description={guidesPage.description}
+  title={guidesPage.title}
+  lead={guidesPage.lead}
+  publish
+  structuredData={[breadcrumbs(trail)]}
+>
+  <ul class="list">
+    {shown.map((guide) => (
+      <li>
+        <a class={textLinkLook({ inline: true, className: "title" })} href={`/guides/${guide.slug}`}>
+          {guide.title}
+        </a>
+        <p class="summary">{guide.description}</p>
+      </li>
+    ))}
+  </ul>
+</TextPage>
+
+<style>
+  .list {
+    margin: var(--sp-48) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .list li {
+    padding: var(--sp-24) 0;
+    border-top: var(--hairline) solid var(--paper-line);
+  }
+  .title {
+    font-family: var(--font-serif);
+    font-size: var(--fs-24);
+    line-height: var(--lh-130);
+  }
+  .list .summary {
+    margin-top: var(--sp-8);
+    font-size: var(--fs-body);
+    color: var(--text-muted);
+  }
+</style>

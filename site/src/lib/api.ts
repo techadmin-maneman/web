@@ -11,7 +11,7 @@ type Body<P extends keyof paths> = paths[P]["post"] extends {
   ? B
   : never;
 export type Attribution = Schemas["Attribution"];
-export type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
+type ErrorCode = Schemas["ErrorResponse"]["error"]["code"];
 type UploadUrlRequest = Schemas["UploadUrlRequest"];
 type UploadUrlResponse = Schemas["UploadUrlResponse"];
 export type GenerateRequest = Schemas["GenerateRequest"];
@@ -24,7 +24,6 @@ export type Invite = Schemas["Invite"];
 export type PincodeAnswer = Schemas["PincodeAnswer"];
 export type BuildingSuggestions = Schemas["AddressSuggestions"];
 export type OpenWindows = Schemas["OpenWindows"];
-export type PublishedPrices = Schemas["PublishedPrices"];
 export type ReferralReward = Schemas["ReferralReward"];
 export type ReferralConsultation = Schemas["ReferralConsultation"];
 export type ReferralWaitlist = Schemas["ReferralWaitlist"];
@@ -48,10 +47,31 @@ type WaitlistRequest = Body<"/api/r/{code}/waitlist">;
  */
 const POLL_TIMEOUT_MS = 10_000;
 
+/**
+ * Why a call came to nothing: the API's own code; `network`, for no answer in time or no connection; or `other`, for
+ * an answer from something in front of the API, a Cloudflare error page or a firewall, which a visitor cannot fix.
+ */
+export type Code = ErrorCode | "network" | "other";
+
 /** An answer from the API: the body, or the error code and the fields it names. */
 export type Answer<T> =
   | { readonly ok: true; readonly body: T }
-  | { readonly ok: false; readonly code: ErrorCode | "network"; readonly fields: readonly string[] };
+  | { readonly ok: false; readonly code: Code; readonly fields: readonly string[] };
+
+/** How long a write waits before it counts as no connection; pressing again sends it again, under its key. */
+const POST_TIMEOUT_MS = 20_000;
+
+/** How long a photograph's upload waits: up to 5 MB on a phone's signal. */
+const UPLOAD_TIMEOUT_MS = 90_000;
+
+/** A signal that gives up after `ms`, on the page's own timers, so a call left unanswered is let go. */
+function within(ms: number): AbortSignal {
+  const giveUp = new AbortController();
+  setTimeout(() => {
+    giveUp.abort();
+  }, ms);
+  return giveUp.signal;
+}
 
 async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
   let response: Response;
@@ -64,7 +84,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
   // Only 204 has no body. Any other answer that is not JSON came from something other than mm-api.
   if (response.ok && (body !== null || response.status === 204)) return { ok: true, body: body as T };
   const refusal = body as Partial<Schemas["ErrorResponse"]> | null;
-  const code = refusal?.error?.code ?? "network";
+  const code = refusal?.error?.code ?? (response.status >= 500 || response.status === 403 ? "other" : "network");
   const fields = refusal?.error?.fields ?? [];
   return { ok: false, code, fields };
 }
@@ -72,7 +92,12 @@ async function call<T>(path: string, init?: RequestInit): Promise<Answer<T>> {
 function post<T>(path: string, body: unknown, idempotencyKey?: string): Promise<Answer<T>> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (idempotencyKey !== undefined) headers["Idempotency-Key"] = idempotencyKey;
-  return call<T>(path, { method: "POST", headers, body: JSON.stringify(body) });
+  return call<T>(path, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+    signal: within(POST_TIMEOUT_MS),
+  });
 }
 
 // The WhatsApp code that proves the number typed, before /book's one visit or
@@ -107,13 +132,23 @@ export function requestUploadUrl(request: UploadUrlRequest): Promise<Answer<Uplo
 
 /** `uploadUrl` is the path the API gave; the photo is always a JPEG, from photo.ts. */
 export function uploadPhoto(uploadUrl: string, photo: Blob): Promise<Answer<null>> {
-  return call<null>(uploadUrl, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: photo });
+  return call<null>(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": "image/jpeg" },
+    body: photo,
+    signal: within(UPLOAD_TIMEOUT_MS),
+  });
 }
 
 /** The photograph's small copy, which a client keeps as their before photo (ADR 0084), on the photo's own link. */
 export function uploadCopy(uploadUrl: string, copy: Blob): Promise<Answer<null>> {
   const [path = "", query = ""] = uploadUrl.split("?");
-  return call<null>(`${path}/copy?${query}`, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: copy });
+  return call<null>(`${path}/copy?${query}`, {
+    method: "PUT",
+    headers: { "Content-Type": "image/jpeg" },
+    body: copy,
+    signal: within(UPLOAD_TIMEOUT_MS),
+  });
 }
 
 /** The gate: where the look goes on WhatsApp, given before the look is made. */
@@ -127,7 +162,7 @@ export function generateLook(request: GenerateRequest): Promise<Answer<JobStatus
 }
 
 export function jobStatus(jobId: string): Promise<Answer<JobStatus>> {
-  return call<JobStatus>(`/api/tryon/status/${jobId}`, { signal: AbortSignal.timeout(POLL_TIMEOUT_MS) });
+  return call<JobStatus>(`/api/tryon/status/${jobId}`, { signal: within(POLL_TIMEOUT_MS) });
 }
 
 // The referral landing at /r/:code. The invite usually arrives in the page the
@@ -136,11 +171,6 @@ export function jobStatus(jobId: string): Promise<Answer<JobStatus>> {
 
 export function fetchInvite(code: string): Promise<Answer<Invite>> {
   return call<Invite>(`/api/r/${code}`);
-}
-
-/** The price book's figures, where the mm-site Worker did not write them into the page (local dev). */
-export function fetchPublishedPrices(): Promise<Answer<PublishedPrices>> {
-  return call<PublishedPrices>("/api/published-prices");
 }
 
 /** What a referral earns, where the mm-site Worker did not write it into the page (local dev). */

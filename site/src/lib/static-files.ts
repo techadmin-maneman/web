@@ -4,18 +4,37 @@
 // The content security policy allows only the site itself, Turnstile and the
 // analytics tags in use. Astro's inline scripts and styles are allowed by their hashes, which
 // the build reads from the finished pages, so no 'unsafe-inline' is needed.
-// Staging and local are never indexed; the smoke check looks for it.
+// Only the live production site is indexed: staging, local and production's coming-soon page never are, and the smoke
+// check looks for it.
 
 import { createHash } from "node:crypto";
 import { WHATSAPP_NUMBER, whatsappChat } from "@maneman/web-kit/whatsapp";
 import type { AnalyticsIds } from "./analytics-ids.ts";
-import type { SiteEnvironment } from "./environment.ts";
 import { SITE_ORIGIN } from "./site-origin.ts";
 
 /** Cloudflare's own limit on a line of `_headers`. */
 export const HEADER_LINE_LIMIT = 2000;
 
 const TURNSTILE = "https://challenges.cloudflare.com";
+
+/** Where a page's browser reports what its policy refused (src/routes/public/csp-reports.ts), by both ways browsers have. */
+const REPORTS = "/api/csp-reports";
+
+type Directive = readonly [name: string, sources: readonly string[]];
+
+const REPORTING: readonly Directive[] = [
+  ["report-uri", [REPORTS]],
+  ["report-to", ["csp"]],
+];
+
+/**
+ * Trusted Types, reported on and not yet enforced: Turnstile's and the analytics tags' scripts may write HTML in ways
+ * it refuses, and the reports say which before it is switched on.
+ */
+const TRUSTED_TYPES_REPORTED: readonly Directive[] = [["require-trusted-types-for", ["'script'"]], ...REPORTING];
+
+const policyOf = (directives: readonly Directive[]): string =>
+  directives.map(([name, sources]) => [name, ...new Set(sources)].join(" ")).join("; ");
 
 /** The hash source for an inline script or style, as a policy writes it. */
 export function cspHash(content: string): string {
@@ -60,7 +79,7 @@ function analyticsSources(ids: AnalyticsIds) {
 export function contentSecurityPolicy(inline: { scripts: string[]; styles: string[] }, ids: AnalyticsIds): string {
   const analytics = analyticsSources(ids);
   const hashes = (contents: string[]) => [...new Set(contents.map(cspHash))].sort();
-  const directives: [string, string[]][] = [
+  const directives: Directive[] = [
     ["default-src", ["'self'"]],
     ["script-src", ["'self'", ...hashes(inline.scripts), TURNSTILE, ...analytics.script]],
     ["style-src", ["'self'", ...hashes(inline.styles)]],
@@ -74,23 +93,29 @@ export function contentSecurityPolicy(inline: { scripts: string[]; styles: strin
     ["base-uri", ["'self'"]],
     ["form-action", ["'self'"]],
     ["frame-ancestors", ["'none'"]],
+    ...REPORTING,
   ];
-  return directives.map(([name, sources]) => [name, ...new Set(sources)].join(" ")).join("; ");
+  return policyOf(directives);
 }
 
 /** The camera is allowed on /try only, for "Use the camera". */
 const PERMISSIONS = (camera: string) => `camera=${camera}, microphone=(), geolocation=(), payment=(), usb=()`;
 
-export function headersFile(environment: SiteEnvironment, csp: string): string {
+/** The `_headers` file: `indexed` only for the live production site. */
+export function headersFile(indexed: boolean, csp: string): string {
   const everyPage = [
     `Content-Security-Policy: ${csp}`,
+    `Content-Security-Policy-Report-Only: ${policyOf(TRUSTED_TYPES_REPORTED)}`,
+    `Reporting-Endpoints: csp="${REPORTS}"`,
+    // No page the site opens, WhatsApp's or a calendar's, can reach back into it.
+    "Cross-Origin-Opener-Policy: same-origin",
     // Two years, for every host under the site's, as the apps send it (packages/web-kit/headers.ts). No preload: the
     // owner's call, since leaving the preload list takes months (ADR 0023, 1).
     "Strict-Transport-Security: max-age=63072000; includeSubDomains",
     "Referrer-Policy: strict-origin-when-cross-origin",
     "X-Content-Type-Options: nosniff",
     `Permissions-Policy: ${PERMISSIONS("()")}`,
-    ...(environment === "production" ? [] : ["X-Robots-Tag: noindex, nofollow"]),
+    ...(indexed ? [] : ["X-Robots-Tag: noindex, nofollow"]),
   ];
   const rules: [string, string[]][] = [
     ["/*", everyPage],
@@ -116,8 +141,8 @@ export function securityTxt(builtAt: Date): string {
 /** Where a weakness is reported. */
 const SECURITY_EMAIL = "security@maneman.in";
 
-export function robotsFile(environment: SiteEnvironment): string {
-  if (environment === "production") return `User-agent: *\nAllow: /\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`;
+export function robotsFile(indexed: boolean): string {
+  if (indexed) return `User-agent: *\nAllow: /\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`;
   return "User-agent: *\nDisallow: /\n";
 }
 

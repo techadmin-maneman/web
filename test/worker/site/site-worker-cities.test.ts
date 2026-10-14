@@ -32,7 +32,10 @@ describe("the cities ops serve", () => {
     await pincode("201301", "Sector 18", "Noida", false);
     const answer = await request(appFor(), "/api/served-cities");
     expect(answer.headers.get("Cache-Control")).toBe("public, max-age=60");
-    expect(await answer.json()).toEqual({ cities: ["Gurgaon", "Mumbai"] });
+    expect(await answer.json()).toEqual({
+      cities: ["Gurgaon", "Mumbai"],
+      areas: { Gurgaon: ["DLF Phase 2", "Sector 65"], Mumbai: ["Bandra"] },
+    });
   });
 
   it("read as a sentence does", () => {
@@ -66,5 +69,39 @@ describe("the site Worker on a page that names the cities", () => {
   it("asks nothing for a page that names no city", async () => {
     const page = await visit("/guides", () => Response.json({ cities: ["Gurgaon"] }));
     expect(page.asked).toEqual([]);
+  });
+});
+
+describe("the site Worker on a city's page", () => {
+  const PAGE = `<!doctype html><html><head></head><body>
+<section data-city-areas="Gurgaon" hidden><h2>Where we come in Gurgaon</h2><ul class="areas" data-areas-of="Gurgaon"></ul></section>
+</body></html>`;
+
+  async function visit(api: Api) {
+    const { env } = siteEnv(api, PAGE);
+    const response = await createSiteWorker().fetch(new Request("https://maneman.in/areas/gurgaon"), env);
+    return response.text();
+  }
+
+  // The city pages were the five names on /areas alone, with nothing of each city's own.
+  it("lists the areas served there, each written as text, and shows them", async () => {
+    const html = await visit(() =>
+      Response.json({ cities: ["Gurgaon"], areas: { Gurgaon: ["DLF Phase 2", "Sector <65>"] } }),
+    );
+    expect(html).toMatch(/<section data-city-areas="Gurgaon"\s*>/);
+    expect(html).toContain("<li>DLF Phase 2</li><li>Sector &#60;65&#62;</li>");
+  });
+
+  it("keeps the areas hidden for a city with none served, or while mm-api cannot say", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const answers: Api[] = [
+      () => Response.json({ cities: ["Noida"], areas: { Noida: ["Sector 18"] } }),
+      () => new Response(null, { status: 503 }),
+    ];
+    for (const api of answers) {
+      const html = await visit(api);
+      expect(html).toContain('<section data-city-areas="Gurgaon" hidden>');
+      expect(html).toContain('<ul class="areas" data-areas-of="Gurgaon"></ul>');
+    }
   });
 });

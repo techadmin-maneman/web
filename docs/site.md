@@ -1,6 +1,6 @@
 # The public site
 
-The site is an Astro build of the design (`design/Mane Man Site v2.dc.html`), served as static assets by the `mm-site` Worker, which answers first only on the pages that show a price and on the referral landing (`site/src/worker.ts`). Why it is built this way: `docs/decisions/0021-public-site.md`. Where it differs from v2: `docs/decisions/0022-site-departures-from-v2.md`. How it sits beside the three Phase 2 apps, and what they share: `docs/front-ends.md`.
+The site is an Astro build of the design (`design/Mane Man Site v2.dc.html`), served as static assets by the `mm-site` Worker, which answers first only on the pages that name the cities ops serve or what a referral earns, on the referral landing, and on the films (`site/src/worker.ts`). Why it is built this way: `docs/decisions/0021-public-site.md`. Where it differs from v2: `docs/decisions/0022-site-departures-from-v2.md`. How it sits beside the three Phase 2 apps, and what they share: `docs/front-ends.md`.
 
 ## Running it
 
@@ -19,7 +19,7 @@ npm run check:site                                # type-checks the .astro templ
 | What                                      | Where                                                    |
 | ----------------------------------------- | -------------------------------------------------------- |
 | Every string and image name               | `site/src/content/site.ts`                               |
-| Prices                                    | The price book, set in the ops console (see "Prices")    |
+| Prices                                    | None: the site gives none (see "Prices")                 |
 | The design's placeholder material, frozen | `site/src/content/design-placeholders.ts`                |
 | Colours, sizes, spaces, fonts, icons      | `packages/brand` (shared with the Phase 2 apps)          |
 | Pages                                     | `site/src/pages`                                         |
@@ -51,10 +51,8 @@ The referral landing's copy (`referral.ts`) is Phase 2's, and marks a line still
 
 ## Prices
 
-Every price on the site and the landing is the price book's, which ops set in the console (`docs/decisions/0073-prices-from-the-price-book.md`). A sentence that gives one holds a hole for each figure, `"{firstFit}, then {service} a month"`, and `site/src/lib/prices.ts` fills it, the totals computed. A page is built with the book's figures of 22 September 2026 (`site/src/content/prices.ts`); the Worker fills the same sentences again from `GET /api/published-prices` on every page it serves, and builds the structured data again. The local build and the browser tests show the built figures on the home page, since no Worker runs there; the booking form's island asks the local API.
+The site and the landing give no prices (`docs/decisions/0103-the-home-pages-first-copy-round.md`), and the pipeline that once wrote the price book's figures into them is gone (`docs/decisions/0204-the-sites-price-pipeline-removed.md`). A price is quoted at the free consultation. If prices return, they are fetched from `GET /api/published-prices` as the site is built, and give the amount a client pays, GST included, as the terms promise.
 
-- **To change a price,** set it in the ops console. No release.
-- **Premium** is not in the book yet (ADR 0025, "Which tier the app books"): its figures are the owner's, in `site/src/content/prices.ts`, until the owner rules on the tier.
 - **Never type a figure into a sentence.** A production build names any rupee figure in `site.ts` or `referral.ts` and stops; only what a transplant and medication cost elsewhere, in the comparison, is allowed.
 
 ## Approving a notice
@@ -103,15 +101,14 @@ The IDs go in `site/src/lib/analytics-ids.ts`, one set for each environment: a G
 ## Headers, budgets and fonts
 
 - **Headers.** The build writes `_headers`: the content security policy, HSTS, the referrer policy, and the camera allowed on `/try` only. Inline scripts and styles are allowed by hash, computed from the built pages, so nothing needs listing by hand. Never add a `style` attribute or a `data:` URL: the policy refuses both, and the browser tests fail.
-- **Lighthouse.** `npm run lighthouse` audits the local build's `/`, `/try`, `/book` and an invite (`/r/PREVIEW1`), and the client app's Home, against their budgets (`scripts/ci/lighthouse.ts`), and CI runs it after the browser tests. Reports go to `lighthouse/`.
+- **Lighthouse.** `npm run lighthouse` audits the local build's `/`, `/try`, `/book`, an invite (`/r/PREVIEW1`), a guide, `/areas`, `/privacy` and the 404, three times each, and the client and technician apps' first screens, against their budgets (`scripts/ci/lighthouse.ts`), and CI runs it after the browser tests. Reports go to `lighthouse/`.
 - **Fonts.** ₹ is drawn from a one-glyph file. If the site starts using another character outside latin, add it in `scripts/build/subset-fonts.ts`, run `npm run fonts`, and take it out of the latin-ext ranges in `packages/brand/fonts.css`.
 
 ## Going live in production
 
-Production still serves `site/placeholder/production`. To go live:
+Until the site goes live there, production serves a coming-soon page: the brand, a line, and WhatsApp to be told when it opens, with the site's headers and never indexed (`scripts/build/coming-soon.ts`). `PRODUCTION_LIVE` in `site/src/lib/flags.ts` decides: while it is off, a production build is that page; the release builds production's site either way, and the smoke check expects whichever it is. To go live:
 
-1. Make `npm run build:site -- --env production` pass. It passed from 22 September 2026, when the terms and the phone number were published, until 1 October 2026: since then the try-on's look goes to WhatsApp only, and its notices that say so, now `photo-v4` and `gate-v4`, wait for counsel (ADR 0104; `docs/open-points.md`, item 146). `test/node/site/site-production-gate.test.ts` holds the build refusing those two and nothing else, and checks what it ships once it passes. **A passing build is not a finished home page:** every placeholder block is left out of it, so today's production home page has no photograph or film at all.
-2. **Look at the production build's home page before going live** (`npm run build:site -- --env production`, then serve `site/dist/production`). Each unpublished block is an open point (`docs/open-points.md`, items 73 to 81): the owner supplies its cleared material, or the section goes. The build ships none of the design's placeholder files, even unlinked, and the gate test checks that too.
+1. Make `npm run build:site -- --env production --live` pass. It passed from 22 September 2026, when the terms and the phone number were published, until 1 October 2026: since then the try-on's look goes to WhatsApp only, and its notices that say so, now `photo-v5` and `gate-v5`, wait for counsel (ADR 0104; `docs/open-points.md`, item 146). `test/node/site/site-production-gate.test.ts` holds the build refusing those two and nothing else, and checks what it ships once it passes. **A passing build is not a finished home page:** every placeholder block is left out of it, so today's production home page has no photograph or film at all.
+2. **Look at the production build's home page before going live** (`npm run build:site -- --env production --live`, then serve `site/dist/production`). Each unpublished block is an open point (`docs/open-points.md`, items 73 to 81): the owner supplies its cleared material, or the section goes. The build ships none of the design's placeholder files, even unlinked, and the gate test checks that too.
 3. Add production's analytics IDs (`docs/open-points.md`, item 84). Bot Fight Mode is off (ADR 0025, item 12), so it needs no decision here.
-4. In `site/wrangler.jsonc`, point production's `assets.directory` at `./dist/production`.
-5. In `deploy-production.yml`, build the production site before "Deploy mm-site".
+4. Set `PRODUCTION_LIVE` to `true`, and release.

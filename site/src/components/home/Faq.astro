@@ -2,11 +2,10 @@
 // Questions: ten disclosures, the first open, one open at a time. <details>
 // sharing a `name` behave as one group, so this needs no script.
 import { textLinkLook } from "@maneman/ui/TextLink";
-import { DisclosureSign, ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
 import { faq, whatsapp } from "../../content/site.ts";
 import { isShown } from "../../lib/build.ts";
-import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
+import Disclosure from "../Disclosure.astro";
 
 // One expression, so no line break can put a space before the full stop.
 const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
@@ -31,17 +30,15 @@ const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
   </div>
   <div class="list">
     {faq.items.map((item, index) => (
-      <details name="faq" open={index === 0} class={ruled.details}>
-        <summary class={ruled.summary}>
-          <span>{item.q}</span>
-          <DisclosureSign />
-        </summary>
+      <Disclosure summary={item.q} look="question" name="faq" open={index === 0}>
         {"cities" in item ? (
-          <p data-cities={item.cities}>{item.a}</p>
+          <p class="answer" data-cities={item.cities}>
+            {item.a}
+          </p>
         ) : (
-          <p data-price={priceTemplate(item.a)}>{asBuilt(item.a)}</p>
+          <p class="answer">{item.a}</p>
         )}
-      </details>
+      </Disclosure>
     ))}
   </div>
 </section>
@@ -51,7 +48,7 @@ const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
     padding-top: var(--faq-pad-top);
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min)), 1fr));
-    gap: var(--faq-gap);
+    gap: var(--space-xl);
     align-items: start;
   }
   .intro {
@@ -67,11 +64,7 @@ const link = isShown(whatsapp) ? whatsappChat(whatsapp.number) : null;
   .list {
     border-top: var(--hairline) solid var(--text);
   }
-  summary {
-    font-size: var(--fs-lead);
-    line-height: var(--lh-145);
-  }
-  details p {
+  .answer {
     margin: 0 0 var(--sp-24);
     font-size: var(--fs-17);
     line-height: var(--lh-160);

@@ -5,7 +5,7 @@ import { useEffect } from "preact/hooks";
 import { useLatest } from "../useLatest.ts";
 import type { PincodeAnswer, ReferralConsultation } from "../../lib/api.ts";
 import { indiaTomorrow } from "../../lib/dates.ts";
-import type { Booking, Listing } from "./Done.tsx";
+import type { Booking, Listing } from "./outcomes.ts";
 import type { PersonFields } from "./useTurnstileForm.ts";
 
 const PREVIEW_STATES = ["arrival", "served", "unserved", "booked", "requested", "expired", "listed"] as const;

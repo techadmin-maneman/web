@@ -190,8 +190,19 @@ jobs:
           npm run smoke -- --base https://maneman.in --environment production
           --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
+      # The coming-soon page until the site goes live in production (PRODUCTION_LIVE, site/src/lib/flags.ts); then the
+      # site, with the words the Words page published for production.
+      - name: Build the site (production)
+        run: npm run build:site -- --env production --words
       - name: Deploy mm-site
         run: node scripts/release/release.ts ship --worker mm-site --env production --tag "$SHA" --message "release $SHA"
+
+      # Cloudflare adds scripts to pages at its edge, which no local run sees: a zone setting switched back on would
+      # break production's pages with nobody told (docs/provisioning.md, step 14).
+      - name: Chromium for the policy check
+        run: npx playwright install --with-deps chromium
+      - name: No production page refuses anything under its content security policy
+        run: npm run smoke:csp -- --environment production
 
       # mm-app, mm-ops and mm-tech have no route in production until their surface is switched on there
       # (docs/decisions/0026), and their first deploy is a bootstrap (docs/provisioning.md, step 11). Until then

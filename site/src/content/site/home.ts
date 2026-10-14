@@ -5,6 +5,8 @@ import { capitalised, serviceArea, visitLength } from "../service.ts";
 import { basePhotos, type Picture } from "./media.ts";
 
 export const header = {
+  /** The first thing a keyboard reaches, past the header to the page. */
+  skip: "Skip to content",
   homeLabel: "Mane Man, home",
   /** What a screen reader calls the header's links. */
   navLabel: "Sections",
@@ -45,6 +47,12 @@ export const footer = {
       ],
     },
   },
+  /** The slim footer on every other page: where to go from there, before the notices. */
+  pagesLabel: "Pages",
+  pages: [
+    { label: "Home", href: "/" },
+    { label: "Try-on", href: "/try" },
+  ],
   area: `${serviceArea} · home service only`,
   entity: "Mane Man Grooming Services Private Limited",
 };
@@ -62,7 +70,7 @@ export const hero = {
   body: "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",
   tryOn: "Try a new look",
   book: "Book a free consultation",
-  // Not in v2: the footage loops, so it can be stopped (WCAG 2.2.2).
+  // The footage loops, so it can be stopped (WCAG 2.2.2).
   pause: "Pause the film",
   play: "Play the film",
 };
@@ -78,7 +86,7 @@ export interface NorwoodStage {
   readonly name: string;
   readonly tag: string;
   readonly description: string;
-  /** The line drawing's bald region (v2's _nwOld), used when norwoodPhotos.use is "drawings". */
+  /** The line drawing's bald region (the design's _nwOld), used when norwoodPhotos.use is "drawings". */
   readonly bald: string;
 }
 
@@ -205,7 +213,8 @@ export const tryOnTeaser = {
   sliderLabel: "Compare before and after",
   /** What a screen reader hears as the handle moves. */
   sliderValue: "{before}% before, {after}% after",
-  start_percent: 46,
+  /** Where the handle starts: the one place the teaser's stylesheet draws it before the page runs. */
+  start_percent: 46 as const,
 };
 
 export const discretionBand = {
@@ -411,25 +420,6 @@ export const materials: { readonly title: string; readonly intro: string; readon
       },
     ],
   };
-
-/**
- * A first fit's price is the cheapest hair system ops offer in the console, and its row and the example say nothing
- * while they offer none.
- */
-export const prices = {
-  label: "Published prices",
-  intro: "No consultation fee, no deposit, no package. You pay for your hair system and the visits you take.",
-  column: "Price",
-  rows: [
-    { label: "First fit", note: "Your hair system, the fitting and the cut", amount: "From {firstFit}" },
-    { label: "Monthly service visit", note: "Refit, clean, trim — at your home", amount: "{service}" },
-    { label: "Replacement hair system", note: "Every six months", amount: "{replacement}" },
-  ],
-  example: "Your first year, from {firstYear}: the first fit and twelve service visits at {service}.",
-  payment: "Pay by UPI or card: in the app as you book, or by a link once you are fitted.",
-  book: "Book a free consultation",
-  tryOn: "Or try a new look first",
-};
 
 export const guarantee = {
   label: "The guarantee",

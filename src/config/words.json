@@ -1,5 +1,12 @@
 [
   {
+    "key": "site:home/header.skip",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "Skip to content"
+  },
+  {
     "key": "site:home/header.homeLabel",
     "surface": "site",
     "group": "Home",
@@ -138,6 +145,27 @@
     "group": "Home",
     "where": "footer",
     "text": "Terms"
+  },
+  {
+    "key": "site:home/footer.pagesLabel",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Pages"
+  },
+  {
+    "key": "site:home/footer.pages.0.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Home"
+  },
+  {
+    "key": "site:home/footer.pages.1.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "footer",
+    "text": "Try-on"
   },
   {
     "key": "site:home/footer.area",
@@ -1561,104 +1589,6 @@
     "text": "Finer, dearer, and a poor match for Indian hair."
   },
   {
-    "key": "site:home/prices.label",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Published prices"
-  },
-  {
-    "key": "site:home/prices.intro",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "No consultation fee, no deposit, no package. You pay for your hair system and the visits you take."
-  },
-  {
-    "key": "site:home/prices.column",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Price"
-  },
-  {
-    "key": "site:home/prices.rows.0.label",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "First fit"
-  },
-  {
-    "key": "site:home/prices.rows.0.note",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Your hair system, the fitting and the cut"
-  },
-  {
-    "key": "site:home/prices.rows.0.amount",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "From {firstFit}"
-  },
-  {
-    "key": "site:home/prices.rows.1.label",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Monthly service visit"
-  },
-  {
-    "key": "site:home/prices.rows.1.note",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Refit, clean, trim — at your home"
-  },
-  {
-    "key": "site:home/prices.rows.2.label",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Replacement hair system"
-  },
-  {
-    "key": "site:home/prices.rows.2.note",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Every six months"
-  },
-  {
-    "key": "site:home/prices.example",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Your first year, from {firstYear}: the first fit and twelve service visits at {service}."
-  },
-  {
-    "key": "site:home/prices.payment",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Pay by UPI or card: in the app as you book, or by a link once you are fitted."
-  },
-  {
-    "key": "site:home/prices.book",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Book a free consultation"
-  },
-  {
-    "key": "site:home/prices.tryOn",
-    "surface": "site",
-    "group": "Home",
-    "where": "prices",
-    "text": "Or try a new look first"
-  },
-  {
     "key": "site:home/guarantee.label",
     "surface": "site",
     "group": "Home",
@@ -2513,6 +2443,13 @@
     "text": "Continue"
   },
   {
+    "key": "site:tryon/tryOn.consent.tickFirst",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Tick the box to agree first."
+  },
+  {
     "key": "site:tryon/tryOn.consent.privacy.before",
     "surface": "site",
     "group": "Try-on",
@@ -2637,6 +2574,13 @@
     "group": "Try-on",
     "where": "tryOn",
     "text": "Sending"
+  },
+  {
+    "key": "site:tryon/tryOn.gate.photoOnItsWay",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Your photo is still on its way."
   },
   {
     "key": "site:tryon/tryOn.gate.errors.rateLimited",
@@ -3196,7 +3140,7 @@
     "surface": "site",
     "group": "Guides",
     "where": "guidesPage",
-    "text": "Hair system guides · Mane Man"
+    "text": "Hair system guides — Mane Man"
   },
   {
     "key": "site:guides/guidesPage.description",
@@ -3213,18 +3157,39 @@
     "text": "Straight answers, before you book anything."
   },
   {
-    "key": "site:guides/guidesPage.read",
-    "surface": "site",
-    "group": "Guides",
-    "where": "guidesPage",
-    "text": "Read"
-  },
-  {
     "key": "site:guides/guidesPage.book",
     "surface": "site",
     "group": "Guides",
     "where": "guidesPage",
     "text": "Book a free consultation"
+  },
+  {
+    "key": "site:guides/guidesPage.related",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "More guides"
+  },
+  {
+    "key": "site:guides/guidesPage.tryOn",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Try a new look"
+  },
+  {
+    "key": "site:guides/guidesPage.questions",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Common questions"
+  },
+  {
+    "key": "site:guides/guidesPage.home",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guidesPage",
+    "text": "Home"
   },
   {
     "key": "site:guides/guides.0.title",
@@ -3665,7 +3630,7 @@
     "surface": "site",
     "group": "Areas",
     "where": "areasPage",
-    "text": "Where we come · Mane Man"
+    "text": "Where we come — Mane Man"
   },
   {
     "key": "site:guides/areasPage.description",
@@ -3710,6 +3675,237 @@
     "text": "Check your pincode"
   },
   {
+    "key": "site:guides/areasPage.cityPages",
+    "surface": "site",
+    "group": "Areas",
+    "where": "areasPage",
+    "text": "City by city"
+  },
+  {
+    "key": "site:guides/cityPage.pageTitle",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Hair systems in {city} — Mane Man"
+  },
+  {
+    "key": "site:guides/cityPage.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Hair systems in {city}"
+  },
+  {
+    "key": "site:guides/cityPage.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Hair systems in 100% real human hair, fitted at your home in {city}. The consultation is free."
+  },
+  {
+    "key": "site:guides/cityPage.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Your technician comes to your home in {city}, matches a hair system to your own hair and fits it there."
+  },
+  {
+    "key": "site:guides/cityPage.areas",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Where we come in {city}"
+  },
+  {
+    "key": "site:guides/cityPage.streets",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Within the city, we serve by pincode. Check yours to see the days we can come."
+  },
+  {
+    "key": "site:guides/cityPage.check",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Check your pincode"
+  },
+  {
+    "key": "site:guides/cityPage.others",
+    "surface": "site",
+    "group": "Guides",
+    "where": "cityPage",
+    "text": "Other cities"
+  },
+  {
+    "key": "site:referral/rewardWords.serviceVisit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{count} service visit"
+  },
+  {
+    "key": "site:referral/rewardWords.serviceVisits",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{count} service visits"
+  },
+  {
+    "key": "site:referral/rewardWords.visit",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{count} visit"
+  },
+  {
+    "key": "site:referral/rewardWords.visits",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{count} visits"
+  },
+  {
+    "key": "site:referral/rewardWords.offer.toReferrer",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Get fitted and your friend gets {referrer} free."
+  },
+  {
+    "key": "site:referral/rewardWords.offer.both",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Get fitted and you both get {friend} free."
+  },
+  {
+    "key": "site:referral/rewardWords.offer.toFriend",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Get fitted and you get {friend} free."
+  },
+  {
+    "key": "site:referral/rewardWords.offer.unequal",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Get fitted and you get {friend} free. Your friend gets {referrerCount}."
+  },
+  {
+    "key": "site:referral/rewardWords.discount.amount",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{amount} off your first fit."
+  },
+  {
+    "key": "site:referral/rewardWords.discount.percent",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{percent}% off your first fit."
+  },
+  {
+    "key": "site:referral/rewardWords.discount.percentCapped",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{percent}% off your first fit, up to {cap}."
+  },
+  {
+    "key": "site:referral/rewardWords.unknown.free",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The consultation is still free."
+  },
+  {
+    "key": "site:referral/rewardWords.unknown.one",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The consultation is still free; the {visits} does not apply."
+  },
+  {
+    "key": "site:referral/rewardWords.unknown.many",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The consultation is still free; the {visits} do not apply."
+  },
+  {
+    "key": "site:referral/rewardWords.told.named",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{name} is told when you are fitted."
+  },
+  {
+    "key": "site:referral/rewardWords.told.unnamed",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "Whoever invited you is told when you are fitted."
+  },
+  {
+    "key": "site:referral/rewardWords.told.landsOne",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{told} That is when the {visits} lands."
+  },
+  {
+    "key": "site:referral/rewardWords.told.landsMany",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "{told} That is when the {visits} land."
+  },
+  {
+    "key": "site:referral/rewardWords.remembered",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "You have an invite. {told}"
+  },
+  {
+    "key": "site:referral/rewardWords.credits.one",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The {visits} lands when you are fitted."
+  },
+  {
+    "key": "site:referral/rewardWords.credits.many",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "The {visits} land when you are fitted."
+  },
+  {
+    "key": "site:referral/rewardWords.expired.free",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "More than 12 months old. The consultation is still free."
+  },
+  {
+    "key": "site:referral/rewardWords.expired.one",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "More than 12 months old. The consultation is still free; the {visits} does not apply."
+  },
+  {
+    "key": "site:referral/rewardWords.expired.many",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "rewardWords",
+    "text": "More than 12 months old. The consultation is still free; the {visits} do not apply."
+  },
+  {
     "key": "site:referral/referral.arrival.invited",
     "surface": "site",
     "group": "Invite page",
@@ -3750,48 +3946,6 @@
     "group": "Invite page",
     "where": "referral",
     "text": "We do not recognise this invite"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.0.what",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "First fit, from"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.0.note",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "The hair system you choose"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.0.incl",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "With the fitting and the cut"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.1.what",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Service visit"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.1.note",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Every month, at home"
-  },
-  {
-    "key": "site:referral/referral.prices.rows.1.incl",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Lifted, cleaned, re-bonded, trimmed"
   },
   {
     "key": "site:referral/referral.howItWorks.title",
@@ -4046,13 +4200,6 @@
     "text": "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing."
   },
   {
-    "key": "site:referral/referral.consultation.plan.notYet",
-    "surface": "site",
-    "group": "Invite page",
-    "where": "referral",
-    "text": "Consultation and fit in one visit isn’t open to book yet."
-  },
-  {
     "key": "site:referral/referral.consultation.code.label",
     "surface": "site",
     "group": "Invite page",
@@ -4128,6 +4275,20 @@
     "group": "Invite page",
     "where": "referral",
     "text": "Search isn’t available right now. Type your address below instead."
+  },
+  {
+    "key": "site:referral/referral.address.building.foundOne",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "1 building found"
+  },
+  {
+    "key": "site:referral/referral.address.building.foundMany",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{count} buildings found"
   },
   {
     "key": "site:referral/referral.address.building.attribution",
@@ -4459,6 +4620,13 @@
     "text": "Booked"
   },
   {
+    "key": "site:referral/referral.booked.when",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{day}, {hours}"
+  },
+  {
     "key": "site:referral/referral.booked.body",
     "surface": "site",
     "group": "Invite page",
@@ -4513,6 +4681,48 @@
     "group": "Invite page",
     "where": "referral",
     "text": "Mane Man consultation and fit"
+  },
+  {
+    "key": "site:referral/referral.booked.calendar.details",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Arriving {hours}. {ready}"
+  },
+  {
+    "key": "site:referral/referral.booked.code.applied",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Code {code}: {off}, taken when you pay."
+  },
+  {
+    "key": "site:referral/referral.booked.code.notApplied",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "We couldn’t apply code {code}. Your booking stands without it."
+  },
+  {
+    "key": "site:referral/referral.booked.code.amountOff",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{amount} off"
+  },
+  {
+    "key": "site:referral/referral.booked.code.percentOff",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{percent}% off"
+  },
+  {
+    "key": "site:referral/referral.booked.code.percentOffCapped",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "{percent}% off, up to {cap}"
   },
   {
     "key": "site:referral/referral.booked.appHint",
@@ -4702,6 +4912,13 @@
     "group": "Invite page",
     "where": "referral",
     "text": "Mane Man, recommended by {partner}"
+  },
+  {
+    "key": "site:referral/referral.preview.description",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Home-fitted hair systems across Delhi NCR. {visits} free when you’re fitted."
   },
   {
     "key": "site:referral/referral.preview.descriptionWithout",

@@ -1,20 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { isPersonName } from "@maneman/web-kit/names";
 import { turnstileWidget, type TurnstileWidget } from "@maneman/web-kit/turnstile";
 import { referral } from "../../content/referral.ts";
-import type { Answer, ErrorCode } from "../../lib/api.ts";
-import { keyPerRequest } from "../../lib/idempotency.ts";
-import { useInvalidFocus } from "../useInvalidFocus.ts";
+import type { Answer, Code } from "../../lib/api.ts";
+import { useSubmission } from "../useSubmission.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
+import type { PersonFields } from "./person.ts";
 
-/** What both forms hold: the name, the number and the agreement. */
-export interface PersonFields {
-  name: string;
-  /** As the field shows it, "98100 00000"; mobileToSend reads it. */
-  mobile: string;
-  consent: boolean;
-}
+export type { PersonFields };
 
 /** The person's fields, by the names the API gives them when it refuses one. */
 export const PERSON_FIELDS = ["name", "mobile", "consent"] as const;
@@ -37,7 +31,7 @@ function personProblems(fields: PersonFields): PersonField[] {
 }
 
 /** What a form says when the API refuses it. */
-function refusal(code: ErrorCode | "network"): string {
+function refusal(code: Code): string {
   const { errors } = referral;
   if (code === "rate_limited") return errors.rateLimited;
   if (code === "turnstile_failed") return errors.turnstile;
@@ -50,9 +44,43 @@ function refusal(code: ErrorCode | "network"): string {
 }
 
 /**
+ * A form's Turnstile widget: made once the visitor starts on the form and removed with it, so no challenge runs for a
+ * page that is only read. `ensure()` makes it for a form sent without ever being focused, as a button pressed in
+ * Safari leaves it.
+ */
+function useFormWidget(
+  element: { readonly current: HTMLFormElement | null },
+  box: { readonly current: HTMLDivElement | null },
+  siteKey: string,
+) {
+  const widget = useRef<TurnstileWidget | null>(null);
+  useEffect(() => {
+    const form = element.current;
+    const container = box.current;
+    if (form === null || container === null) return;
+    const start = () => {
+      widget.current ??= turnstileWidget(container, siteKey);
+    };
+    form.addEventListener("focusin", start);
+    form.addEventListener("input", start);
+    return () => {
+      form.removeEventListener("focusin", start);
+      form.removeEventListener("input", start);
+      void widget.current?.remove();
+      widget.current = null;
+    };
+  }, [element, box, siteKey]);
+  const ensure = () => {
+    if (widget.current === null && box.current !== null) widget.current = turnstileWidget(box.current, siteKey);
+    return widget.current;
+  };
+  return { widget, ensure };
+}
+
+/**
  * What the consultation and the waitlist forms share: the person's fields, whether they have been checked, and
- * sending them with a Turnstile token. The widget is made when the form appears: the box it renders into does not
- * exist until the pincode has decided which form the page shows. `marks` are the fields, by the API's names, that the
+ * sending them with a Turnstile token. The widget is made once the visitor starts on the form, and removed with it:
+ * the box it renders into does not exist until the pincode has decided which form the page shows. `marks` are the fields, by the API's names, that the
  * form marks itself when a refusal names them; a refusal that names none of them is said by the button. On /book the
  * name and number are given first (./AboutYou.tsx), and the forms after it start from them.
  */
@@ -62,20 +90,12 @@ export function useTurnstileForm(
   given: PersonFields = { name: "", mobile: "", consent: false },
 ) {
   const [fields, setFields] = useState<PersonFields>(given);
-  const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
-  // The fields the last refusal named that the form marks.
-  const [refusedFields, setRefusedFields] = useState<readonly string[]>([]);
   const box = useRef<HTMLDivElement>(null);
-  const element = useRef<HTMLFormElement>(null);
-  const widget = useRef<TurnstileWidget | null>(null);
-  const keyFor = useMemo(keyPerRequest, []);
-  const showInvalid = useInvalidFocus(element);
+  const submission = useSubmission(marks);
+  const { touched, failure, setFailure, refusedFields, form: element, keyFor } = submission;
 
-  useEffect(() => {
-    if (box.current !== null) widget.current = turnstileWidget(box.current, siteKey);
-  }, [siteKey]);
+  const { widget, ensure } = useFormWidget(element, box, siteKey);
 
   const problems = personProblems(fields);
   /** The person's fields to mark: those wrong once the form was checked, and those the API refused. */
@@ -85,21 +105,13 @@ export function useTurnstileForm(
 
   /** A change to the person's fields. A field the API refused is no longer marked once it has been changed. */
   function changeFields(next: PersonFields) {
-    setRefusedFields((refused) => refused.filter((field) => !isPersonField(field) || next[field] === fields[field]));
+    submission.unmark((field) => isPersonField(field) && next[field] !== fields[field]);
     setFields(next);
   }
 
   /** A refusal: fields the form marks are marked and the first focused; any other refusal is said by the button. */
-  function refused(code: ErrorCode | "network", named: readonly string[]) {
-    const marked = named.filter((field) => marks.includes(field));
-    if (code === "invalid_request") setTouched(true);
-    setRefusedFields(marked);
-    if (marked.length === 0) {
-      setFailure(refusal(code));
-      return;
-    }
-    setFailure(null);
-    showInvalid();
+  function refused(code: Code, named: readonly string[]) {
+    if (!submission.markRefused(code, named)) setFailure(refusal(code));
   }
 
   /**
@@ -117,15 +129,12 @@ export function useTurnstileForm(
     event.preventDefault();
     if (sending) return;
     if (!complete || problems.length > 0) {
-      setTouched(true);
-      setFailure(null);
-      showInvalid();
+      submission.stopAtFields();
       return;
     }
     setSending(true);
-    setFailure(null);
-    setRefusedFields([]);
-    const token = (await widget.current?.token()) ?? null;
+    submission.starting();
+    const token = (await ensure()?.token()) ?? null;
     if (token === null) {
       setFailure(referral.errors.turnstile);
       setSending(false);

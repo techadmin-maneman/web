@@ -11,3 +11,8 @@ export function siteEnvironment(value: string | undefined): SiteEnvironment {
   }
   return found;
 }
+
+/** Placeholder material shows everywhere but production, where only published blocks do. */
+export function shownIn(environment: SiteEnvironment, block: { readonly publish: boolean }): boolean {
+  return environment !== "production" || block.publish;
+}

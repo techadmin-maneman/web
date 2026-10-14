@@ -16,7 +16,7 @@ import {
   bookConsultation,
   bookPublicConsultation,
   type Consultation as PublicConsultation,
-  type ErrorCode,
+  type Code,
   type ReferralConsultation,
 } from "../../lib/api.ts";
 import { dayStrip, indiaTomorrow, type StripDay } from "../../lib/dates.ts";
@@ -28,7 +28,7 @@ import { useNumberCode } from "../useNumberCode.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
 import { BOOK_STEPS } from "./AboutYou.tsx";
 import { DayStrip, DayWindows, DiscountCode, PlanChoice } from "./ConsultationFields.tsx";
-import type { Booking } from "./Done.tsx";
+import type { Booking } from "./outcomes.ts";
 import {
   ExtentFieldset,
   ForPincode,
@@ -39,15 +39,15 @@ import {
   type FormProps,
 } from "./fields.tsx";
 import styles from "./Invite.module.css";
-import { codeInPath, hairSystemsInPage } from "./page.ts";
+import { codeInPath } from "./page.ts";
 import { byDoor, leadSent } from "./submit.ts";
 import { useOpenWindows } from "./useOpenWindows.ts";
 import { mobileToSend, PERSON_FIELDS, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
 import { isOneOf } from "@rules/lib/one-of.ts";
 import { BOOKING_DAYS } from "@rules/config/scheduling.ts";
+import type { Plan } from "./flow.ts";
 
 type BookingWindow = ReferralConsultation["window"];
-export type Plan = "consultation" | "one_visit";
 
 interface ConsultationProps extends FormProps {
   /** What the form books, which the page's heading follows. */
@@ -82,12 +82,11 @@ const MARKED_HERE: readonly string[] = [...REQUIRED_API_FIELDS, "discount_code"]
 const MARKED_WITH_PERSON: readonly string[] = [...PERSON_FIELDS, ...MARKED_HERE];
 
 /** Whether a refusal means the strip is out of date: a window filled, or a day closed, since it was drawn. */
-const outOfDate = (code: ErrorCode | "network"): boolean => code === "taken" || code === "not_bookable";
+const outOfDate = (code: Code): boolean => code === "taken" || code === "not_bookable";
 
 /** The visit's part of the form: what it books, the day and the window. On /book, its third step. */
 function VisitPart(
   props: ConsultationProps & {
-    oneVisitOffered: boolean;
     days: readonly StripDay[];
     slot: Slot;
     open: ReturnType<typeof useOpenWindows>["days"];
@@ -116,7 +115,7 @@ function VisitPart(
         />
       </div>
 
-      <PlanChoice plan={plan} oneVisitOffered={props.oneVisitOffered} onPlanChange={props.onPlanChange} />
+      <PlanChoice plan={plan} onPlanChange={props.onPlanChange} />
 
       <DayStrip
         days={props.days}
@@ -228,8 +227,6 @@ export function Consultation(props: ConsultationProps) {
   );
   const numberCode = useNumberCode();
   const { plan } = props;
-  // Offered while ops offer a hair system to fit. A page with no word of it offers it, and the API refuses it if not.
-  const [oneVisitOffered] = useState(() => hairSystemsInPage() !== false);
   const [picked, setPicked] = useState<Slot>(() => ({ date: indiaTomorrow(), window: "morning" }));
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
   const [extent, setExtent] = useState<LossExtent | null>(null);
@@ -345,7 +342,6 @@ export function Consultation(props: ConsultationProps) {
       {stage !== "address" && (
         <VisitPart
           {...props}
-          oneVisitOffered={oneVisitOffered}
           days={days}
           slot={slot}
           open={open.days}

@@ -7,7 +7,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
 
-/** The error screen: v2's for a photograph that cannot be used, and the same frame for the other kinds. */
+/** The error screen: the design's for a photograph that cannot be used, and the same frame for the other kinds. */
 export function Failed(props: { kind: ErrorKind; heading: HeadingRef; onAgain: () => void }) {
   const copy = tryOn.error.kinds[props.kind];
   return (

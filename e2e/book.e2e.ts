@@ -197,6 +197,22 @@ test("the page introduces itself, with no invite and no card", async ({ page }) 
   await expect(page.locator("img[width='1200']")).toHaveCount(0);
 });
 
+// Each step's Turnstile widget started its challenge as the page loaded, before anyone had typed.
+test("asks Cloudflare for nothing until the visitor starts on the form", async ({ page }) => {
+  await mockApi(page);
+  const challenges: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).hostname === "challenges.cloudflare.com") challenges.push(request.url());
+  });
+  await visit(page, "/book");
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  expect(challenges).toEqual([]);
+
+  await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
+  await expect.poll(() => challenges.length).toBeGreaterThan(0);
+});
+
 // Twelve fields stood between the visitor and the button, the name and number last, so anyone who stopped halfway
 // left nothing behind (docs/decisions/0116-book-asks-for-the-name-and-number-first.md).
 test("keeps the name and number first, then asks for the area, the visit and the address, a step at a time", async ({
@@ -249,6 +265,36 @@ test("Change returns to the name and number as typed, and the same again is not 
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("For Test Visitor, +91 98100 00001")).toBeVisible();
   expect(leads).toHaveLength(2);
+});
+
+// A reload on any step after the first opened the name and number again, empty, with the history still past them.
+test("a reload resumes the step it was on, the name and number kept, and Back still steps back", async ({ page }) => {
+  await mockApi(page);
+  const leads = await leadCalls(page);
+  await openAtPincode(page);
+
+  await page.reload();
+  await expect(page.getByText("For Test Visitor, +91 98100 00000")).toBeVisible();
+  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await checkPincode(page, SERVED.pincode);
+  await expect(page.getByText("Step 3 of 4 · Your visit")).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText("Step 3 of 4 · Your visit")).toBeVisible();
+  await expect(page.getByText("For Test Visitor, +91 98100 00000")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await page.goBack();
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
+  expect(leads).toHaveLength(1);
+
+  await page.goForward();
+  await page.goForward();
+  await continueAndBook(page);
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Step 1 of 4 · You")).toBeVisible();
+  await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("");
 });
 
 // The field kept the first ten digits, so "+91 98765 43210" was booked as 91987 65432, someone else's number.
@@ -568,7 +614,8 @@ test("says nothing about an invite to someone who came here directly", async ({ 
   await expect(page.getByText(referralCopy.referral.consultation.body)).toHaveCount(0);
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
 
-  await openWaitlist(page);
+  await page.getByRole("button", { name: referralCopy.referral.pincode.changeLabel }).click();
+  await checkPincode(page, UNSERVED.pincode);
   await expect(page.getByRole("button", { name: referralCopy.referral.waitlist.submit })).toBeVisible();
   // Where we do not come yet, the page no longer offers to book.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.booking.titleWaitlist);

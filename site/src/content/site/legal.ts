@@ -1,6 +1,6 @@
 // The privacy and terms pages.
 
-// PLACEHOLDER: the try-on's sentences await counsel with the notices (docs/open-points.md, item 146).
+// PLACEHOLDER: the try-on's sentences await counsel with the notices.
 /**
  * The privacy page's sentences on the try-on: its look goes to WhatsApp only, and a client's try-on is kept
  * (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md, 0084-a-clients-try-on-is-kept.md).
@@ -39,7 +39,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "Who holds it",
         paragraphs: [
-          // PLACEHOLDER: counsel sees this wording, which no longer names Zoho FSM, before production (docs/open-points.md, item 149).
+          // PLACEHOLDER: counsel sees this wording, which no longer names Zoho FSM, before production.
           "Your details are held in our own database, hosted by Cloudflare, where your visits are arranged, and in the customer system our team works from, Zoho CRM. Your hair profile stays in our own database. Payments are made through Razorpay. Our invoices are kept in Zoho Books, made out to your name, number and address.",
           "We use your details to arrange and look after your visits, and for anything else only with your agreement, which you can withdraw in the app or by messaging us at {whatsapp}. To stop our WhatsApp messages, reply STOP to any of them. We never sell your details.",
         ],
@@ -48,14 +48,14 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
         heading: "The try-on",
         paragraphs: [
           TRY_ON_PRIVACY,
-          // PLACEHOLDER: the try-on's cookie sentence awaits counsel with its notices (docs/open-points.md, item 146).
+          // PLACEHOLDER: the try-on's cookie sentence awaits counsel with its notices.
           "The site sets one cookie of its own, for the try-on: it remembers for thirty days that this browser has had its one look.",
         ],
       },
       {
         heading: "Invites and analytics",
         paragraphs: [
-          // PLACEHOLDER: the invite's sentence awaits counsel (docs/open-points.md, item 156).
+          // PLACEHOLDER: the invite's sentence awaits counsel.
           "When you open a friend's invite, this browser keeps the invite's code for thirty days, so that a consultation you book here later still comes with it; it is removed once a booking has used it, or on your first visit after the thirty days.",
           "We measure our visits and advertising with Google Analytics, Google Ads and Meta, which set their own cookies and never receive your name, number or photograph. Visitors' network addresses are kept only in scrambled form, to limit abuse.",
         ],
@@ -63,7 +63,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "How long we keep it",
         paragraphs: [
-          // PLACEHOLDER: the periods, for counsel to confirm (open point 149).
+          // PLACEHOLDER: the periods, for counsel to confirm.
           "Once you are a client, we keep your details, your address and your visit photographs until you ask us to erase them. If you never book a visit or pay us, we erase your details a year after you last used the site or the app. A waitlist place goes a year after we launch in your area. Where a technician checked in at your door is kept only until a no-show charge can no longer be disputed. Invoices are kept for eight years, as the law requires.",
         ],
       },

@@ -30,8 +30,9 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 | Script                                          | What it does                                                                | Run as                 | Writes                                |
 | ----------------------------------------------- | --------------------------------------------------------------------------- | ---------------------- | ------------------------------------- |
 | `app-vite-config.ts`                            | what the three apps' Vite builds share, which each app's config calls       | each app's Vite config | no                                    |
-| `build.ts`                                      | the site for local and staging, and each app for every environment          | `npm run build`        | `dist/`                               |
+| `build.ts`                                      | the site and each app for every environment, then each Worker's dry run     | `npm run build`        | `dist/`                               |
 | `build-site.ts`                                 | the public site for one environment                                         | `npm run build:site`   | `site/dist/`                          |
+| `coming-soon.ts`                                | production's coming-soon page, until the site goes live there               | `build-site.ts`        | `site/dist/production`                |
 | `build-app.ts`, `build-ops.ts`, `build-tech.ts` | one app for one environment, with its budgets                               | `npm run build:<app>`  | `apps/<app>/dist/`                    |
 | `dist-hash.ts`                                  | proves a change leaves every site build byte for byte the same              | by hand                | a hashes file                         |
 | `export-texts.ts`                               | the texts file the owner marks up                                           | `npm run texts:export` | the texts file                        |

@@ -87,7 +87,7 @@ test.describe("upload", () => {
   // On a phone the caption sat across the oval's lower corner brackets.
   test("the frame's caption sits below the oval and its brackets", async ({ page }) => {
     await open(page, "upload");
-    const oval = await page.locator('svg:has(use[href="#oval"])').boundingBox();
+    const oval = await page.locator("svg").filter({ hasText: siteCopy.tryOn.upload.oval }).boundingBox();
     const caption = await page.getByText(siteCopy.tryOn.upload.previewCaption).boundingBox();
     expect(caption?.y ?? 0).toBeGreaterThanOrEqual((oval?.y ?? 0) + (oval?.height ?? 0));
   });

@@ -8,37 +8,27 @@ import Hero from "../components/home/Hero.astro";
 import HowItWorks from "../components/home/HowItWorks.astro";
 import Materials from "../components/home/Materials.astro";
 import Norwood from "../components/home/Norwood.astro";
-import Prices from "../components/home/Prices.astro";
 import Range from "../components/home/Range.astro";
 import Technicians from "../components/home/Technicians.astro";
 import Testimonials from "../components/home/Testimonials.astro";
 import TryOnTeaser from "../components/home/TryOnTeaser.astro";
 import WhatItIs from "../components/home/WhatItIs.astro";
 import { pageDescriptions, pageTitles } from "../content/site.ts";
-import { PRICES_SHOWN } from "../lib/flags.ts";
 import Site from "../layouts/Site.astro";
-import { heroPosterUrl } from "../lib/hero.ts";
-import { BUILT_WORDS } from "../lib/prices.ts";
-import { faqPage, localBusiness } from "../lib/structured-data.ts";
+import { faqPage, localBusiness, organization, webSite } from "../lib/structured-data.ts";
 
-const poster = await heroPosterUrl();
-// Named, so the mm-site Worker builds each again with the price book's figures (site/src/worker.ts).
-const structuredData = [
-  { name: "business", data: localBusiness(BUILT_WORDS) },
-  { name: "faq", data: faqPage(BUILT_WORDS) },
-];
+const structuredData = [organization(), webSite(), localBusiness(), faqPage()];
 ---
 
 <Site title={pageTitles.home} description={pageDescriptions.home} structuredData={structuredData} home>
   <Fragment slot="head">
     <script is:inline>
-      // v2 routed with #tryon and #book, and ads already link to them.
+      // Ads link to #tryon and #book, so both still lead where they did.
       if (location.hash === "#tryon") location.replace("/try");
       else if (location.hash === "#book") location.replace("/book");
     </script>
-    {poster !== undefined && <link rel="preload" as="image" href={poster} fetchpriority="high" />}
   </Fragment>
-  <Hero poster={poster} />
+  <Hero />
   <WhatItIs />
   <Norwood />
   <Comparison />
@@ -48,7 +38,6 @@ const structuredData = [
   <Technicians />
   <Range />
   <Materials />
-  {PRICES_SHOWN && <Prices />}
   <Testimonials />
   <GuaranteeFounder />
   <Faq />

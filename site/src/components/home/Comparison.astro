@@ -1,15 +1,13 @@
 ---
 // Why choose a hair system: against a transplant and medication. A table to
-// assistive technology; to the eye, v2's grid. Below 760 px each row's label moves above it and the
-// columns go to three, as v2 does.
+// assistive technology; to the eye, the design's grid. Below 760 px each row's label moves above it and the
+// columns go to three.
 import { hiddenLook } from "@maneman/ui/VisuallyHidden";
 import { capsLook } from "@maneman/ui/Caps";
 import { comparison, type ComparisonCell } from "../../content/site.ts";
-import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import Icon from "../Icon.astro";
 
-const [firstColumn, secondColumn, thirdColumn] = comparison.columns;
-const columns = [firstColumn, secondColumn, thirdColumn];
+const { columns } = comparison;
 function isMark(cell: ComparisonCell): cell is boolean {
   return typeof cell === "boolean";
 }
@@ -46,7 +44,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
                   <span class={hiddenLook}>{cell ? comparison.yes : comparison.no}</span>
                 </>
               ) : (
-                <span data-price={priceTemplate(cell)}>{asBuilt(cell)}</span>
+                <span>{cell}</span>
               )}
             </div>
           ))}
@@ -64,7 +62,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
     margin-bottom: var(--sp-12);
   }
   .intro {
-    margin: 0 0 var(--intro-gap);
+    margin: 0 0 var(--space-l);
   }
   .table {
     border-top: var(--hairline) solid var(--text);
@@ -77,7 +75,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
   }
   .head {
     align-items: stretch;
-    padding: var(--comparison-head-pad-top) 0 var(--comparison-head-pad-bottom);
+    padding: var(--space-2xs) 0 var(--space-2xs);
   }
   .entry {
     border-top: var(--hairline) solid var(--paper-line);
@@ -96,7 +94,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
     color: var(--text-muted);
   }
   .cell {
-    padding: 0 var(--comparison-cell-pad);
+    padding: 0 var(--space-2xs);
     border-left: var(--hairline) solid var(--paper-line);
     font-size: var(--fs-17);
     line-height: var(--lh-145);
@@ -110,7 +108,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
   }
   .column-head {
     font-family: var(--font-serif);
-    font-size: var(--fs-column-head);
+    font-size: var(--fs-h5);
     line-height: var(--lh-115);
   }
   .yes {
@@ -125,7 +123,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
       padding: 0 0 var(--sp-16);
     }
     .head {
-      padding: var(--comparison-head-pad-top) 0 var(--comparison-head-pad-bottom);
+      padding: var(--space-2xs) 0 var(--space-2xs);
     }
     .corner {
       display: none;
@@ -146,7 +144,7 @@ function isMark(cell: ComparisonCell): cell is boolean {
       font-size: var(--fs-15);
     }
     .column-head {
-      font-size: var(--fs-column-head);
+      font-size: var(--fs-h5);
     }
   }
 </style>

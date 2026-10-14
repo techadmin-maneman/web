@@ -1,13 +1,10 @@
 import { capsLook } from "@maneman/ui/Caps";
 import { messageLook } from "@maneman/ui/InlineMessage";
-import { Label, TextInput } from "@maneman/ui/Field";
-import { MobileInput } from "@maneman/ui/MobileInput";
 import { Button } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
-import { formatMobileField } from "@maneman/web-kit/mobile";
-import { MOST_NAME_LENGTH } from "@maneman/web-kit/names";
 import { gateCopy, numberCode as numberCodeWords, tryOn, type Notice } from "../../content/site.ts";
 import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
+import { MobileField, NameField } from "../PersonFields.tsx";
 import type { FormRef } from "../useInvalidFocus.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
 import styles from "./TryOn.module.css";
@@ -31,14 +28,13 @@ function submitLabel(code: GateCode | null, sending: boolean): string {
   return code === null ? tryOn.gate.submit : tryOn.gate.confirm;
 }
 
-/** What is wrong with a field, said as it is marked. */
-function FieldError(props: { id: string; text: string | null }) {
+/** What the gate says as it sends: that the photograph is still on its way, or why the look did not go. */
+function GateSaid({ photoOnItsWay, failure }: { photoOnItsWay: boolean; failure: string | null }) {
   return (
     <div aria-live="polite">
-      {props.text !== null && (
-        <div id={props.id} class={messageLook({ tone: "error", ground: "ink", className: styles.error })}>
-          {props.text}
-        </div>
+      {photoOnItsWay && <p class={styles.reassurance}>{tryOn.gate.photoOnItsWay}</p>}
+      {failure !== null && (
+        <div class={messageLook({ tone: "error", ground: "ink", className: styles.gateFailure })}>{failure}</div>
       )}
     </div>
   );
@@ -56,6 +52,8 @@ export function Gate(props: {
   mobileBad: boolean;
   failure: string | null;
   sending: boolean;
+  /** The photograph is still uploading, and the look waits for it. */
+  photoOnItsWay: boolean;
   /** Null until a code is on its way to the number typed. */
   code: GateCode | null;
   heading: HeadingRef;
@@ -81,45 +79,15 @@ export function Gate(props: {
         <Title heading={props.heading}>{words.title}</Title>
         <p class={styles.body}>{words.body}</p>
         <div class={styles.fields}>
-          <div>
-            <Label htmlFor="gate-name" onInk>
-              {tryOn.gate.name}
-            </Label>
-            <TextInput
-              onInk
-              id="gate-name"
-              value={props.name}
-              placeholder={tryOn.gate.namePlaceholder}
-              autocomplete="name"
-              maxLength={MOST_NAME_LENGTH}
-              aria-required="true"
-              aria-invalid={nameBad}
-              aria-describedby={nameBad ? "gate-name-error" : undefined}
-              onInput={(event) => {
-                props.onName(event.currentTarget.value);
-              }}
-            />
-            <FieldError id="gate-name-error" text={nameBad ? tryOn.gate.nameError : null} />
-          </div>
-          <div>
-            <Label htmlFor="gate-mobile" onInk>
-              {tryOn.gate.mobile}
-            </Label>
-            <MobileInput
-              onInk
-              prefix="+91"
-              id="gate-mobile"
-              value={props.mobile}
-              placeholder={tryOn.gate.mobilePlaceholder}
-              aria-required="true"
-              aria-invalid={mobileBad}
-              aria-describedby={mobileBad ? "gate-mobile-error" : undefined}
-              onInput={(event) => {
-                props.onMobile(formatMobileField(event.currentTarget.value));
-              }}
-            />
-            <FieldError id="gate-mobile-error" text={mobileBad ? tryOn.gate.mobileError : null} />
-          </div>
+          <NameField id="gate-name" value={props.name} bad={nameBad} words={tryOn.gate} onInk onInput={props.onName} />
+          <MobileField
+            id="gate-mobile"
+            value={props.mobile}
+            bad={mobileBad}
+            words={tryOn.gate}
+            onInk
+            onInput={props.onMobile}
+          />
           {code !== null && (
             <NumberCodeField
               idPrefix="gate"
@@ -133,13 +101,7 @@ export function Gate(props: {
             />
           )}
         </div>
-        <div aria-live="polite">
-          {props.failure !== null && (
-            <div class={messageLook({ tone: "error", ground: "ink", className: styles.gateFailure })}>
-              {props.failure}
-            </div>
-          )}
-        </div>
+        <GateSaid photoOnItsWay={props.photoOnItsWay} failure={props.failure} />
         <Button
           variant="light"
           size="action"

@@ -1,7 +1,7 @@
 .page {
   max-width: var(--measure-column);
   margin: 0 auto;
-  padding: var(--book-pad-top) var(--gutter) var(--section-gap);
+  padding: var(--page-pad-top) var(--gutter) var(--section-gap);
   min-height: calc(100vh - var(--header-h));
 }
 

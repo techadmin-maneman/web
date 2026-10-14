@@ -28,6 +28,8 @@ const PAGES = [
   "/book?state=expired",
   "/privacy",
   "/terms",
+  // Opened from a reminder's own link; with no token in the address, it says the link has run out.
+  "/stop",
   // The guides and the cities, drafts on every build but production's.
   "/guides",
   "/guides/what-is-a-hair-system",

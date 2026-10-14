@@ -9,11 +9,26 @@ import type { ConsentPurpose, ConsentSource } from "../policy/consents.ts";
 /** The agreements given on the public site, and the consents switched in the client app. */
 export type NoticePurpose = "contact" | "tryon_photo" | "result_delivery" | ConsentPurpose;
 
+/** A notice a screen lays out in parts: its title, rows each naming what it says of, and the agreement last. */
+export interface NoticeLayout {
+  readonly title: string;
+  readonly rows: readonly { readonly label: string; readonly says: string }[];
+  readonly agreement: string;
+}
+
 interface Notice {
   readonly version: string;
   readonly purpose: NoticePurpose;
   /** Every line of text shown with the agreement, in order. */
   readonly text: readonly string[];
+  /** Its parts, for a screen that lays them out (the try-on's consent): `text` is them in order. */
+  readonly layout?: NoticeLayout;
+}
+
+/** A notice in parts, and its text: the title, each row as "label: what it says", and the agreement. */
+function laidOut<V extends string>(version: V, purpose: NoticePurpose, layout: NoticeLayout) {
+  const rows = layout.rows.map((row) => `${row.label}: ${row.says}`);
+  return { version, purpose, layout, text: [layout.title, ...rows, layout.agreement] };
 }
 
 /** The line a referrer reads before their invite names them (ADR 0025, item 24). */
@@ -160,19 +175,26 @@ export const NOTICES = [
   },
   // photo-v4's words with who makes the look now: YouCam, which keeps its own copy for thirty days. PLACEHOLDER: awaits
   // counsel.
-  {
-    version: "photo-v5",
-    purpose: "tryon_photo",
-    text: [
-      "What happens to your photograph.",
-      "Used for: Generating your simulation, which is sent to your WhatsApp and never shown on this site. If you book a visit, a small copy is also kept in your Mane Man account as your before photo.",
-      "Kept for: An hour, then deleted automatically. The small copy stays with your simulation for fourteen days at most. If you book a visit in that time, we keep it until you ask us to delete it, and the simulation until the photographs of your first fit are taken.",
-      "Training: Never used to train any model.",
-      "Shared with: YouCam (Perfect Corp), which makes the look and keeps its copy of your photograph for thirty days, and WhatsApp, which delivers it.",
-      "To withdraw: Message us and it is deleted the same day.",
-      "I understand, and I agree to my photograph being used this way.",
+  laidOut("photo-v5", "tryon_photo", {
+    title: "What happens to your photograph.",
+    rows: [
+      {
+        label: "Used for",
+        says: "Generating your simulation, which is sent to your WhatsApp and never shown on this site. If you book a visit, a small copy is also kept in your Mane Man account as your before photo.",
+      },
+      {
+        label: "Kept for",
+        says: "An hour, then deleted automatically. The small copy stays with your simulation for fourteen days at most. If you book a visit in that time, we keep it until you ask us to delete it, and the simulation until the photographs of your first fit are taken.",
+      },
+      { label: "Training", says: "Never used to train any model." },
+      {
+        label: "Shared with",
+        says: "YouCam (Perfect Corp), which makes the look and keeps its copy of your photograph for thirty days, and WhatsApp, which delivers it.",
+      },
+      { label: "To withdraw", says: "Message us and it is deleted the same day." },
     ],
-  },
+    agreement: "I understand, and I agree to my photograph being used this way.",
+  }),
   {
     version: "gate-v4",
     purpose: "result_delivery",

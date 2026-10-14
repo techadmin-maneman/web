@@ -1934,6 +1934,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/csp-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report what a page's content security policy refused
+         * @description A browser's own report, application/reports+json from report-to or application/csp-report from report-uri. Anything else, or more than 16 KB, is let go unread.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Logged, or let go */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description rate_limited: this address has sent its reports for the hour, or every address has */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/hooks/evolution": {
         parameters: {
             query?: never;
@@ -2234,6 +2280,10 @@ export interface components {
         ServedCities: {
             /** @description Each city with a pincode ops serve, in the console's order. */
             cities: string[];
+            /** @description Each of those cities' areas, as a client would recognise them, from its served pincodes, A to Z. */
+            areas: {
+                [key: string]: string[];
+            };
         };
         SiteWords: {
             /** @description The publish; null before any. */

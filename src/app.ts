@@ -51,6 +51,7 @@ import { registerEvolutionHook } from "./routes/hooks/evolution.ts";
 import { registerMsg91Hook } from "./routes/hooks/msg91.ts";
 import { registerRazorpayHook } from "./routes/hooks/razorpay.ts";
 import { registerStopMessages } from "./routes/public/stop-messages.ts";
+import { registerCspReports } from "./routes/public/csp-reports.ts";
 import { OPS_ROUTES } from "./routes/ops/routes.ts";
 import { registerHealth } from "./routes/health.ts";
 import { registerPublishedPrices } from "./routes/public/published-prices.ts";
@@ -95,6 +96,8 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerStopMessages,
     // A script error on the site's own pages, the booking form's and the try-on's.
     registerClientErrors,
+    // What the site's pages' content security policy refused.
+    registerCspReports,
     // Webhooks sit on the public host (ADR 0026).
     registerEvolutionHook,
     registerMsg91Hook,

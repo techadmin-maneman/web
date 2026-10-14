@@ -1,6 +1,6 @@
 # 0023. Launch hardening: headers, analytics, budgets
 
-- Status: accepted. Item 2 was settled by the owner on 22 September 2026: Bot Fight Mode is off, option a (ADR 0025, item 12), and corrected 2 October 2026: JavaScript detections were still on. Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing.
+- Status: accepted. Item 2 was settled by the owner on 22 September 2026: Bot Fight Mode is off, option a (ADR 0025, item 12), and corrected 2 October 2026: JavaScript detections were still on. Section 3 updated 25 September 2026 for the booking pages of ADR 0051 and the referral landing. Corrected 15 October 2026: the policy no longer allows Cloudflare Web Analytics, every refusal is reported, and production's pages are checked after each release.
 - Date: 2026-09-22
 - Topic: Platform
 
@@ -14,7 +14,10 @@ F4 of the front-end prompt asks for security headers, analytics and conversion t
 
 The build writes them into the Workers static-assets `_headers` file (`site/src/lib/static-files.ts`).
 
-- **Content security policy.** It allows the site itself, Turnstile, Cloudflare Web Analytics, and the hosts of whichever analytics tags have an ID. Astro's inline scripts and styles are allowed by their SHA-256 hashes, which the build reads from the finished pages, so the policy needs no `'unsafe-inline'`.
+- **Content security policy.** It allows the site itself, Turnstile, and the hosts of whichever analytics tags have an ID; Cloudflare's Web Analytics beacon is switched off for the zone, and refused. Astro's inline scripts and styles are allowed by their SHA-256 hashes, which the build reads from the finished pages, so the policy needs no `'unsafe-inline'`.
+  - Every refusal is reported, by `report-uri` and by `report-to` (`Reporting-Endpoints`), to `POST /api/csp-reports` on mm-api, which logs each as one `csp_refused` line, the page's path without its query, and stores nothing.
+  - Trusted Types (`require-trusted-types-for 'script'`) are in a report-only policy beside it: Turnstile's and the analytics tags' scripts may write HTML in ways they refuse, and the reports say which before they are enforced.
+  - `Cross-Origin-Opener-Policy: same-origin`, so no page the site opens can reach back into it.
   - Vite no longer inlines small assets as `data:` URLs: the policy allows none.
   - The R2 endpoint the prompt names is not needed, because the photo goes to the API (ADR 0022, 1).
   - `blob:` images are allowed, for the try-on's photograph and result shown from memory.
@@ -40,11 +43,11 @@ Staging runs as (b) until the owner decides.
 
 **Decided: a.** Bot Fight Mode was turned off on 21 September 2026, since it challenged CI's smoke tests (ADR 0008's update of that day), and the owner ruled it stays off on 22 September 2026 (ADR 0025, item 12).
 
-**Corrected 2 October 2026:** the script was still added to every page of every staging host, and blocked there, so JavaScript detections are on for the zone with Bot Fight Mode off. They are turned off in the dashboard (`docs/runbook.md`, step 14; `docs/open-points.md`, item 111), and never allowed with `'unsafe-inline'`. The same day showed Web Analytics' beacon reaching the app, ops and technician hosts, whose policies refuse it (item 144). Neither shows in a local run, the browser tests' or Lighthouse's, since both are added at the edge: so after every staging deploy, `npm run smoke:csp` opens each staging host's pages in Chromium and fails on any refusal.
+**Corrected 2 October 2026:** the script was still added to every page of every staging host, and blocked there, so JavaScript detections are on for the zone with Bot Fight Mode off. They are turned off in the dashboard (`docs/runbook.md`, step 14; `docs/open-points.md`, item 111), and never allowed with `'unsafe-inline'`. The same day showed Web Analytics' beacon reaching the app, ops and technician hosts, whose policies refuse it (item 144). Neither shows in a local run, the browser tests' or Lighthouse's, since both are added at the edge: so after every staging deploy, `npm run smoke:csp` opens each staging host's pages in Chromium and fails on any refusal. Since 15 October 2026 it runs after every production release too, on production's pages.
 
 ### 3. Analytics
 
-- **The tags.** GA4, the Google Ads conversion tag and the Meta Pixel load only when their ID is set for the environment, in `site/src/lib/analytics-ids.ts`. None is set yet; the owner supplies them. Staging's IDs must be test or debug streams, and GA4 marks every hit outside production as debug traffic. Cloudflare Web Analytics needs no code: Cloudflare adds its beacon at the edge, and the policy allows it.
+- **The tags.** GA4, the Google Ads conversion tag and the Meta Pixel load only when their ID is set for the environment, in `site/src/lib/analytics-ids.ts`. None is set yet; the owner supplies them. Staging's IDs must be test or debug streams, and GA4 marks every hit outside production as debug traffic. Cloudflare Web Analytics is not used: its beacon, which Cloudflare adds at the edge, is switched off for the zone and refused by every policy.
 - **The events.** The prompt's events fire from the booking pages and the try-on. Since ADR 0051 the booking pages are `/book` and the referral landing at `/r/:code`, one form with a pincode check; the Phase 1 form these events were first written for is gone. (Updated 25 September 2026: until then the new form fired none of them, so a paid campaign's booking was never counted.)
   - A booking sends `lead_submitted` with `page` (`book` or `invite`), `served`, the pincode's `area`, the `window` and `loss_extent` (null on an invite, which does not ask), then `booking_confirmed` with the `area`, the `window` and whether it was `booked` or `requested`.
   - A number left for an unserved pincode sends `lead_submitted` with `served` false and no window, then `waitlist_submitted` with the `area`.

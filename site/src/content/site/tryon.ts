@@ -70,15 +70,10 @@ export function lookPictures(list: readonly { readonly picture?: string | undefi
   return pictures.length === list.length ? pictures : null;
 }
 
-/** The consent screen's words, from the photo notice: its title, its rows and the agreement. */
+/** The consent screen's words: the photo notice's parts, its title, its rows and the agreement. */
 export function consentCopy(photo: Notice) {
-  const [title = "", ...rest] = photo.lines;
-  const agreement = rest.at(-1) ?? "";
-  const rows = rest.slice(0, -1).map((line) => {
-    const [k = "", ...v] = line.split(": ");
-    return { k, v: v.join(": ") };
-  });
-  return { title, rows, agreement };
+  if (photo.layout === undefined) throw new Error(`the ${photo.version} notice has no parts for the consent screen`);
+  return photo.layout;
 }
 
 /** The gate's words, from its notice. */
@@ -89,9 +84,8 @@ export function gateCopy(gate: Notice) {
 
 /**
  * The try-on's screens. The look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), so
- * v2's processing and result screens are gone, the gate asks for the number before the look is made, and the sent
- * and unavailable screens, which v2 does not draw, are ADR 0104's words
- * (docs/open-points.md, item 163).
+ * the gate asks for the number before the look is made, and the sent and unavailable screens, which the design does
+ * not draw, are ADR 0104's words.
  */
 export const tryOn = {
   back: "Back",
@@ -122,6 +116,8 @@ export const tryOn = {
   /** With the photo notice's words (consentCopy). */
   consent: {
     continue: "Continue",
+    /** Said when Continue is pressed before the box is ticked. */
+    tickFirst: "Tick the box to agree first.",
     privacy: {
       before: "Read the full ",
       link: "privacy notice",
@@ -152,6 +148,8 @@ export const tryOn = {
     // Not drawn: once the WhatsApp code is on its way, the button confirms it and sends the look.
     confirm: "Confirm and send my look",
     sending: "Sending",
+    /** Said while the look waits on the photograph's upload. */
+    photoOnItsWay: "Your photo is still on its way.",
     errors: {
       rateLimited: "This number is out of tries for today. Try again tomorrow.",
       taken: "This look is already on its way to another number.",
@@ -183,7 +181,7 @@ export const tryOn = {
   error: {
     another: "Choose another",
     book: "Book a consultation instead",
-    /** By ErrorKind (lib/tryon-errors.ts). v2's labels, heading and body are the photograph's. */
+    /** By ErrorKind (lib/tryon-errors.ts). The design's labels, heading and body are the photograph's. */
     kinds: {
       photo: {
         step: "Cannot use this photograph",

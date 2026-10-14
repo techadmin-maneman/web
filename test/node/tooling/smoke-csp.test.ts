@@ -16,8 +16,9 @@ describe("the pages it opens", () => {
     ]);
   });
 
-  it("opens only the surfaces production has switched on", () => {
-    expect(pagesToCheck("production")).toEqual([
+  it("opens only the surfaces production has switched on, the site's coming-soon page alone until it goes live", () => {
+    expect(pagesToCheck("production", false)).toEqual(["https://maneman.in/"]);
+    expect(pagesToCheck("production", true)).toEqual([
       "https://maneman.in/",
       "https://maneman.in/book",
       "https://maneman.in/try",

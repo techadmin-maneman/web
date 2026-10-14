@@ -2,7 +2,7 @@
 // Worker, the scripts, the site, the apps and the shared packages.
 //
 // The Worker's entries are src/index.ts, found from wrangler.jsonc, and the OpenAPI generator; the site's are its
-// pages and its Worker; each app's are its page, found from its Vite config, and its service worker; a package's
+// pages, the routes its config adds while they have something to show (site/src/routes/), and its Worker; each app's are its page, found from its Vite config, and its service worker; a package's
 // are what its package.json exports. The scripts, the tests and the browser tests reach into all of them, so an
 // export they alone use counts as used: some exist for the tests, and a policy module's RULES for its test to read.
 // The `!` marks what ships, for knip --production, which this check does not run.
@@ -13,6 +13,7 @@
       "entry": [
         "src/openapi.ts!",
         "site/src/pages/**/*.{astro,ts}!",
+        "site/src/routes/*.astro!",
         "site/src/worker.ts!",
         "site/astro.config.ts",
         "scripts/**/*.ts",

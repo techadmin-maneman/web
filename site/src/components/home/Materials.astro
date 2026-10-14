@@ -2,10 +2,10 @@
 // Materials and construction: what a hair system is made of, group by group. Every group is closed until it is
 // opened, and each opens on its own.
 import { capsLook } from "@maneman/ui/Caps";
-import { DisclosureSign, ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
 import { materials, placeholderTag } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
+import Disclosure from "../Disclosure.astro";
 ---
 
 <section id="materials" class="container materials" data-section="materials">
@@ -13,11 +13,7 @@ import DesignPicture from "../DesignPicture.astro";
   <p class="lead intro">{materials.intro}</p>
   <div class="list">
     {materials.groups.map((group) => (
-      <details class={ruled.details}>
-        <summary class={ruled.summary}>
-          <span>{group.title}</span>
-          <DisclosureSign />
-        </summary>
+      <Disclosure summary={group.title} look="heading">
         <div class="group">
           {group.lead !== undefined && <p class="group-lead">{group.lead}</p>}
           {group.photos !== undefined && isShown(group.photos) && (
@@ -51,7 +47,7 @@ import DesignPicture from "../DesignPicture.astro";
             ))}
           </ul>
         </div>
-      </details>
+      </Disclosure>
     ))}
   </div>
 </section>
@@ -64,15 +60,10 @@ import DesignPicture from "../DesignPicture.astro";
     margin-bottom: var(--sp-12);
   }
   .intro {
-    margin: 0 0 var(--intro-gap);
+    margin: 0 0 var(--space-l);
   }
   .list {
     border-top: var(--hairline) solid var(--text);
-  }
-  summary {
-    font-family: var(--font-serif);
-    font-size: var(--fs-h5);
-    line-height: var(--lh-115);
   }
   .group {
     padding-bottom: var(--sp-24);
@@ -107,7 +98,7 @@ import DesignPicture from "../DesignPicture.astro";
   .item {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min)), 1fr));
-    gap: var(--sp-16) var(--split-gap);
+    gap: var(--sp-16) var(--space-2xl);
     padding: var(--sp-20) 0;
     border-top: var(--hairline) solid var(--paper-line);
   }
@@ -115,7 +106,7 @@ import DesignPicture from "../DesignPicture.astro";
     margin: 0;
     font-family: var(--font-serif);
     font-weight: var(--weight-regular);
-    font-size: var(--fs-large);
+    font-size: var(--fs-lead);
     line-height: var(--lh-115);
   }
   .item p {

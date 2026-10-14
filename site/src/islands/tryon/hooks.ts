@@ -1,10 +1,11 @@
-// The try-on's timers: the watch on the render once its look is on its way to
-// WhatsApp, and the object URLs the page shows the photograph from.
+// The try-on's timers and its place in the browser: the watch on the render once its look is on its way to
+// WhatsApp, the object URLs the page shows the photograph from, and a history entry for each screen.
 
-import { useEffect } from "preact/hooks";
+import { useEffect, useRef } from "preact/hooks";
 import { useLatest } from "../useLatest.ts";
 import { jobStatus } from "../../lib/api.ts";
 import { jobProblem, type Failure } from "../../lib/tryon-errors.ts";
+import { backFrom, type Screen, type TryOnEvent } from "./machine.ts";
 
 /** How often the page asks how the render is going. */
 const POLL_MS = 3_000;
@@ -52,4 +53,57 @@ export function useReleased(url: string | null): void {
     },
     [url],
   );
+}
+
+/**
+ * Each screen after the first is an entry in the browser's history, holding its place alone and never the photo, so
+ * the browser's Back, or a phone's back gesture, steps back through the try-on as its own Back does, and leaves for
+ * the site where that would. `on` is false for a preview's stand-ins. Answers whether the try-on has written an entry
+ * its own Back should go back through.
+ */
+export function useScreenHistory(screen: Screen, send: (event: TryOnEvent) => void, on: boolean): () => boolean {
+  /** Entries written so far, and the screen showing, as the listener reads them. */
+  const depth = useRef(0);
+  const showing = useRef(screen);
+  /** A screen Back opened, which writes no entry of its own. */
+  const returning = useRef(false);
+  const first = useRef(true);
+  const sent = useLatest(send);
+  showing.current = screen;
+
+  useEffect(() => {
+    if (!on) return;
+    const listener = (event: PopStateEvent) => {
+      const state = event.state as { tryOn?: unknown } | null;
+      const at = typeof state?.tryOn === "number" ? state.tryOn : 0;
+      // Forward leaves the screen as it is.
+      if (at >= depth.current) return;
+      depth.current = at;
+      if (backFrom(showing.current) === "home") {
+        location.assign("/");
+        return;
+      }
+      returning.current = true;
+      sent.current({ type: "back" });
+    };
+    addEventListener("popstate", listener);
+    return () => {
+      removeEventListener("popstate", listener);
+    };
+  }, [on, sent]);
+
+  useEffect(() => {
+    if (first.current || !on) {
+      first.current = false;
+      return;
+    }
+    if (returning.current) {
+      returning.current = false;
+      return;
+    }
+    depth.current += 1;
+    history.pushState({ tryOn: depth.current }, "");
+  }, [screen, on]);
+
+  return () => depth.current > 0;
 }

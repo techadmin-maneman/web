@@ -1,11 +1,10 @@
 ---
-// A long-form text page in the site layout, a heading per topic.
-import { capsLook } from "@maneman/ui/Caps";
+// The privacy notice or the terms: a heading per topic, the business number written in as a link to a WhatsApp chat.
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
-import { placeholderTag, whatsapp, type LegalPage } from "../content/site.ts";
-import Site from "../layouts/Site.astro";
-import { SHOW_PLACEHOLDER_TAGS } from "../lib/build.ts";
+import { whatsapp, type LegalPage } from "../content/site.ts";
+import TextPage from "../layouts/TextPage.astro";
+import { aroundWhatsapp } from "../lib/text.ts";
 
 interface Props {
   pageTitle: string;
@@ -14,59 +13,30 @@ interface Props {
 }
 
 const { pageTitle, description, page } = Astro.props;
-
-const WHATSAPP_HOLE = "{whatsapp}";
 const chat = whatsappChat(whatsapp.number);
 ---
 
-<Site title={pageTitle} description={description}>
-  <article class="page">
-    {SHOW_PLACEHOLDER_TAGS && !page.publish && <div class={capsLook("label tag")}>{placeholderTag}</div>}
-    <h1 class="section-title">{page.title}</h1>
-    {page.sections.map((section) => (
-      <section>
-        <h2>{section.heading}</h2>
-        {section.paragraphs.map((paragraph) => (
-          <p>
-            {paragraph.split(WHATSAPP_HOLE).map((text, index) => [
-              index > 0 && (
-                <a class={textLinkLook({ inline: true, className: "chat" })} href={chat}>
-                  {whatsapp.display}
-                </a>
-              ),
-              text,
-            ])}
-          </p>
-        ))}
-      </section>
-    ))}
-  </article>
-</Site>
+<TextPage pageTitle={pageTitle} description={description} title={page.title} publish={page.publish}>
+  {page.sections.map((section) => (
+    <section>
+      <h2>{section.heading}</h2>
+      {section.paragraphs.map((paragraph) => (
+        <p>
+          {aroundWhatsapp(paragraph).map((text, index) => [
+            index > 0 && (
+              <a class={textLinkLook({ inline: true, className: "chat" })} href={chat}>
+                {whatsapp.display}
+              </a>
+            ),
+            text,
+          ])}
+        </p>
+      ))}
+    </section>
+  ))}
+</TextPage>
 
 <style>
-  .page {
-    max-width: var(--measure-column);
-    margin: 0 auto;
-    padding: var(--book-pad-top) var(--gutter) var(--section-gap);
-    min-height: calc(100vh - var(--header-h));
-  }
-  .tag {
-    display: inline-block;
-    margin-bottom: var(--sp-24);
-  }
-  h2 {
-    margin: var(--sp-48) 0 0;
-    font-family: var(--font-serif);
-    font-size: var(--fs-24);
-    font-weight: var(--weight-regular);
-    line-height: var(--lh-130);
-  }
-  p {
-    margin: var(--sp-16) 0 0;
-    font-size: var(--fs-lead);
-    line-height: var(--lh-160);
-    text-wrap: pretty;
-  }
   /* In the sentence's own colour, so underlined to be seen as a link. */
   .chat {
     white-space: nowrap;

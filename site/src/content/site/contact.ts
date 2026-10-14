@@ -36,9 +36,4 @@ export const business = {
   description: pageDescriptions.home,
   /** The cities the FAQ says are covered. */
   areaServed: ["Gurgaon", "Delhi", "Noida", "Faridabad", "Ghaziabad"],
-  /**
-   * A first fit, from the cheapest hair system ops offer to the dearest. Given only while the site gives prices
-   * (PRICES_SHOWN, site/src/lib/flags.ts).
-   */
-  priceRange: "{firstFitRange}",
 };

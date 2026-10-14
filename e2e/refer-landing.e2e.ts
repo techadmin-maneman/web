@@ -201,8 +201,6 @@ test("says what ops set each side gets, and promises the friend nothing ops do n
   reward.friend_visits = 0;
   await page.reload();
   await expect(page.getByText("Get fitted and your friend gets 3 service visits free.")).toBeVisible();
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
-  await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText("Rohit is told when you are fitted.", { exact: true })).toBeVisible();
   await fillForm(page);
   await page.getByText("You may contact me on WhatsApp about this consultation.").click();
@@ -416,13 +414,14 @@ test("a window found full says so, and the form stays", async ({ page }) => {
 // positioned, and without a positioned parent it is placed against the document and widens it.
 test("the page does not scroll sideways, whatever the pincode says", async ({ page }) => {
   await mockApi(page);
+  await visit(page, `/r/${CODE}`);
   for (const pincode of [SERVED.pincode, UNSERVED.pincode]) {
-    await visit(page, `/r/${CODE}`);
     await page.getByLabel("Pincode").fill(pincode);
     await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
     await expect(page.getByRole("button", { name: /Book the consultation|Add me to the list/ })).toBeVisible();
     const width = page.viewportSize()?.width ?? 0;
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await page.getByRole("button", { name: referralCopy.referral.pincode.changeLabel }).click();
   }
 });
 
@@ -554,6 +553,42 @@ test("pressing again after a lost answer sends the same request key", async ({ p
 
   expect(keys).toHaveLength(2);
   expect(keys[0]).toBeTruthy();
+  expect(keys[1]).toBe(keys[0]);
+});
+
+// A request that never answered left the button on "One moment" until the browser gave up, minutes later.
+test("gives up on a request that never answers, says so, and sends it again under the same key", async ({ page }) => {
+  await page.clock.install();
+  await mockApi(page);
+  const keys: (string | undefined)[] = [];
+  await page.route(`**/api/r/${CODE}/consultation`, (route) => {
+    keys.push(route.request().headers()["idempotency-key"]);
+    // The first is left hanging, as a request is when a phone loses its signal after sending.
+    if (keys.length === 1) return;
+    const body = {
+      state: "booked",
+      date: "2026-09-25",
+      window: "morning",
+      area: SERVED.area,
+      credits: true,
+      invite: "valid",
+      one_visit: false,
+    };
+    return route.fulfill({ status: 201, json: body });
+  });
+  await visit(page, `/r/${CODE}`);
+  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
+  await fillForm(page);
+  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await expect.poll(() => keys.length).toBe(1);
+
+  await page.clock.runFor(21_000);
+  await expect(page.getByText(referralCopy.referral.errors.other)).toBeVisible();
+  await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
+  await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
+  expect(keys).toHaveLength(2);
   expect(keys[1]).toBe(keys[0]);
 });
 

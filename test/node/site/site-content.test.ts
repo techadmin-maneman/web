@@ -86,7 +86,7 @@ describe("content", () => {
   it("builds the consent screen and the gate from the backend's notices, word for word", () => {
     const consent = site.consentCopy(site.notices.photo);
     expect(consent.title).toBe("What happens to your photograph.");
-    expect(consent.rows.map((row) => row.k)).toEqual([
+    expect(consent.rows.map((row) => row.label)).toEqual([
       "Used for",
       "Kept for",
       "Training",
@@ -197,7 +197,7 @@ describe("content", () => {
     expect(site.pageTitles.home).toContain("across Delhi NCR");
     expect(site.pageDescriptions.home).toContain("across Delhi NCR");
     expect(referral.waitlist.body).toBe("Delhi NCR only, for now.");
-    expect(referral.preview.description(3)).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
+    expect(referral.preview.description).toMatch(/^Home-fitted hair systems across Delhi NCR\./);
   });
 
   // Production keeps a result fourteen days (ADR 0039), as the privacy notice says.
@@ -279,12 +279,6 @@ describe("the second copy round", () => {
   it("keeps the comparison line and gives a transplant's cost without a sneer", () => {
     expect(site.comparison.intro).toBe("Two of these are not ours.");
     expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
-  });
-
-  // The prices block is hidden, but switched on it said a client pays on the day of the fit, and "piece".
-  it("keeps the hidden prices true to how a client pays, in hair systems rather than pieces", () => {
-    expect(site.prices.payment).not.toMatch(/on the day of the fit/);
-    expect(JSON.stringify({ site: site.prices, landing: referral.prices })).not.toMatch(/\bpiece\b/i);
   });
 });
 
@@ -395,10 +389,10 @@ describe("site helpers", () => {
   });
 
   it("keeps staging and local out of search engines, and only them", () => {
-    expect(headersFile("staging", "default-src 'self'")).toContain("X-Robots-Tag: noindex");
-    expect(robotsFile("local")).toContain("Disallow: /");
-    expect(headersFile("production", "default-src 'self'")).not.toContain("X-Robots-Tag");
-    expect(robotsFile("production")).toContain("Allow: /");
+    expect(headersFile(false, "default-src 'self'")).toContain("X-Robots-Tag: noindex");
+    expect(robotsFile(false)).toContain("Disallow: /");
+    expect(headersFile(true, "default-src 'self'")).not.toContain("X-Robots-Tag");
+    expect(robotsFile(true)).toContain("Allow: /");
   });
 
   it("refuses an unknown build environment", () => {

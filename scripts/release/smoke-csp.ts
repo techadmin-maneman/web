@@ -1,7 +1,8 @@
 // npm run smoke:csp -- --environment staging
 //
 // Opens every switched-on host's pages in headless Chromium, as deployed, and fails on anything a page's content
-// security policy refuses, or a page that does not load (scripts/lib/smoke-csp.ts). Runs after every staging deploy.
+// security policy refuses, or a page that does not load (scripts/lib/smoke-csp.ts). Runs after every staging and
+// production deploy.
 // Cloudflare's own edge scripts are switched off for the zone (provisioning, step 14), so one switched back on fails it.
 //
 // Environment:

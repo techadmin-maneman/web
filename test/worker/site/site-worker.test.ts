@@ -1,25 +1,11 @@
 // The mm-site Worker (site/src/worker.ts): in front of /r/:code, what the preview says for each invite and the page
-// it serves when mm-api cannot answer (docs/decisions/0027-referral-landing.md); and on every page that shows a
-// price, the price book's figures written over the ones the page was built with
-// (docs/decisions/0073-prices-from-the-price-book.md), a first fit's only from the hair systems ops offer; and the
-// built films, given a byte range at a time.
+// it serves when mm-api cannot answer (docs/decisions/0027-referral-landing.md); and the built films, given a byte
+// range at a time.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HOUSE_CARD } from "../../../src/config/house-card.ts";
 import { createSiteWorker, type SiteEnv } from "../../../site/src/worker.ts";
-import {
-  VALID,
-  PRICES,
-  type Api,
-  isPriceRequest,
-  isRewardRequest,
-  REWARD,
-  withPrices,
-  withReward,
-  siteEnv,
-  logged,
-  readPriced,
-} from "./site-worker-fixtures.ts";
+import { VALID, type Api, isRewardRequest, REWARD, withReward, siteEnv, logged } from "./site-worker-fixtures.ts";
 
 const UNKNOWN = {
   state: "unknown",
@@ -181,16 +167,11 @@ describe("the site Worker at /r/:code", () => {
     expect(lookUp?.headers.get("CF-Connecting-IP")).toBe("203.0.113.7");
   });
 
-  it("gives the landing's island the book's prices beside the invite, while the site gives prices", async () => {
-    const page = await open(withPrices(), {}, undefined, createSiteWorker({ pricesShown: true }));
-    expect(JSON.parse(page.invite)).toEqual({ ...VALID, code: "RM4K7P" });
-    expect(readPriced(page.html).written).toEqual(PRICES);
-  });
-
-  it("asks for no price book while the site gives none", async () => {
-    const page = await open(withPrices());
-    expect(page.asked.filter(isPriceRequest)).toEqual([]);
-    expect(readPriced(page.html).written).toBeNull();
+  // The site gives no prices (docs/decisions/0103-the-home-pages-first-copy-round.md).
+  it("asks for no price book, and writes no prices into the page", async () => {
+    const page = await open(() => Response.json(VALID));
+    expect(page.asked.map((request) => new URL(request.url).pathname)).not.toContain("/api/published-prices");
+    expect(page.html).not.toContain("data-prices");
   });
 });
 
@@ -266,6 +247,36 @@ describe("the site Worker on a built film", () => {
     expect(response.status).toBe(416);
     expect(response.headers.get("Content-Range")).toBe("bytes */1000");
     expect(body.length).toBe(0);
+  });
+
+  // The Worker read every film whole, 2.3 MB at a time, to cut a part from it.
+  it("passes the part on as the film arrives, and reads no further than the part", async () => {
+    let pulled = 0;
+    const chunks = Array.from({ length: 10 }, (_, index) => FILM.slice(index * 100, index * 100 + 100));
+    const film = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        const chunk = chunks[pulled];
+        pulled += 1;
+        if (chunk === undefined) controller.close();
+        else controller.enqueue(chunk);
+      },
+    });
+    const { env } = filmEnv(200);
+    const streamed: SiteEnv = {
+      ...env,
+      ASSETS: {
+        fetch: () => new Response(film, { headers: { "Content-Type": "video/mp4", "Content-Length": "1000" } }),
+      } as unknown as Fetcher,
+    };
+    const request = new Request(`https://maneman.in${PATH}`, { headers: { Range: "bytes=50-149" } });
+    const response = await createSiteWorker().fetch(request, streamed);
+    const body = new Uint8Array(await response.arrayBuffer());
+
+    expect(response.status).toBe(206);
+    expect(response.headers.get("Content-Range")).toBe("bytes 50-149/1000");
+    expect(response.headers.get("Content-Length")).toBe("100");
+    expect([...body]).toEqual([...FILM.slice(50, 150)]);
+    expect(pulled).toBeLessThan(chunks.length);
   });
 
   it("passes on what the assets say of a film the browser already has", async () => {

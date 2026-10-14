@@ -654,7 +654,7 @@ Cloudflare can add two scripts to a page at its edge, where no local run sees th
 - **Web Analytics' beacon,** from `static.cloudflareinsights.com`, which it added to every host of the zone (`docs/open-points-settled.md`, item 144).
 - **JavaScript detections,** an inline script that loads `/cdn-cgi/challenge-platform/`, different with every request, so no hash could allow it (ADR 0023, section 2; item 111). Turnstile's own check, on the forms that ask for it, loads from `challenges.cloudflare.com` under the same path, and is allowed.
 
-**If either comes back,** the staging deploy's last step fails: `npm run smoke:csp -- --environment staging` opens every host's pages in Chromium and fails on any refusal. Switch it off again as above. JavaScript detections have no dashboard switch on the free plan: `PUT /zones/<zone>/bot_management` with `{"enable_js": false}`, from a token with Bot Management · Edit on the zone.
+**If either comes back,** the staging deploy's last step fails: `npm run smoke:csp -- --environment staging` opens every host's pages in Chromium and fails on any refusal. The production release runs the same check on production's pages after mm-site is deployed, and every visitor's browser reports a refusal to mm-api, which logs it as `csp_refused`. Switch it off again as above. JavaScript detections have no dashboard switch on the free plan: `PUT /zones/<zone>/bot_management` with `{"enable_js": false}`, from a token with Bot Management · Edit on the zone.
 
 ## 15. The rate-limiting rule
 

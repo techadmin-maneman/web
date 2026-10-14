@@ -1,0 +1,67 @@
+---
+// Where we come (src/content/guides.ts), at /areas, and a link to each city's own page. The build adds the route only
+// once its wording is shown (site/astro.config.ts): for staging under the design's "Placeholder" tag until it is
+// approved, for production then.
+import { buttonLook } from "@maneman/ui/Button";
+import { textLinkLook } from "@maneman/ui/TextLink";
+import { areasPage, cityPage, guidesPage } from "../content/guides.ts";
+import { business } from "../content/site.ts";
+import TextPage from "../layouts/TextPage.astro";
+import { isShown } from "../lib/build.ts";
+import { citySlug } from "../lib/cities.ts";
+import { breadcrumbs } from "../lib/structured-data.ts";
+import { fill } from "../lib/text.ts";
+
+const trail = [
+  { name: guidesPage.home, path: "/" },
+  { name: areasPage.title, path: "/areas" },
+];
+---
+
+<TextPage
+  pageTitle={areasPage.pageTitle}
+  description={areasPage.description}
+  title={areasPage.title}
+  publish={areasPage.publish}
+  structuredData={[breadcrumbs(trail)]}
+>
+  <p slot="lead" class="lead" data-cities={areasPage.cities}>
+    {areasPage.lead}
+  </p>
+  <p>{areasPage.streets}</p>
+  <p>{areasPage.next}</p>
+  <a class={buttonLook({ variant: "primary", size: "action", className: "book" })} href="/book">
+    {areasPage.check}
+  </a>
+  {isShown(cityPage) && (
+    <nav class="cities" aria-labelledby="city-pages">
+      <h2 id="city-pages">{areasPage.cityPages}</h2>
+      <ul>
+        {business.areaServed.map((city) => (
+          <li>
+            <a class={textLinkLook({ inline: true })} href={`/areas/${citySlug(city)}`}>
+              {fill(cityPage.title, { city })}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )}
+</TextPage>
+
+<style>
+  .book {
+    margin-top: var(--sp-48);
+  }
+  .cities {
+    margin-top: var(--sp-48);
+  }
+  .cities ul {
+    margin: var(--sp-16) 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: var(--sp-12);
+    font-size: var(--fs-lead);
+  }
+</style>

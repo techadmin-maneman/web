@@ -1,0 +1,36 @@
+---
+// A ruled disclosure, in the shared package's look (packages/ui/Disclosure.tsx): a row whose plus turns to a minus as
+// it opens. The home page's questions and its materials are drawn in it.
+import { DisclosureSign, ruledDisclosureLook as ruled } from "@maneman/ui/Disclosure";
+
+interface Props {
+  summary: string;
+  /** A question reads as a sentence; a group of materials as a heading. */
+  look: "question" | "heading";
+  /** Disclosures sharing a name open one at a time, with no script. */
+  name?: string;
+  open?: boolean;
+}
+
+const { summary, look, name, open = false } = Astro.props;
+---
+
+<details name={name} open={open} class={ruled.details} data-look={look}>
+  <summary class={ruled.summary}>
+    <span>{summary}</span>
+    <DisclosureSign />
+  </summary>
+  <slot />
+</details>
+
+<style>
+  [data-look="question"] > summary {
+    font-size: var(--fs-lead);
+    line-height: var(--lh-145);
+  }
+  [data-look="heading"] > summary {
+    font-family: var(--font-serif);
+    font-size: var(--fs-h5);
+    line-height: var(--lh-115);
+  }
+</style>

@@ -1,11 +1,7 @@
 ---
-// The drawings every page shares: the brand kit's mark and the two cuts of the
-// wordmark (@maneman/brand/marks), and the try-on's photo guide from the design.
-// Used with <use href="#…">.
-import { MARK, WORDMARK, WORDMARK_SMALL } from "@maneman/brand/marks";
-import { tryOn } from "../content/site.ts";
-
-const { upload } = tryOn;
+// The drawings every page's header draws: the brand kit's mark and the small cut of the wordmark
+// (@maneman/brand/marks), used with <use href="#…">. A drawing one page alone draws is drawn there.
+import { MARK, WORDMARK_SMALL } from "@maneman/brand/marks";
 ---
 
 <svg class="sprite" aria-hidden="true">
@@ -16,36 +12,6 @@ const { upload } = tryOn;
     <symbol id="wms" viewBox={WORDMARK_SMALL.viewBox}>
       <path d={WORDMARK_SMALL.d}></path>
     </symbol>
-    <symbol id="wm" viewBox={WORDMARK.viewBox}>
-      <path d={WORDMARK.d}></path>
-    </symbol>
-    <symbol id="oval" viewBox="0 0 320 400">
-      <path
-        d="M160 92 C196 92 218 126 218 178 C218 232 194 268 160 274 C126 268 102 232 102 178 C102 126 124 92 160 92 Z"
-        class="oval-guide"
-        fill="none"
-        stroke-width="1.6"
-        stroke-dasharray="6 6"
-      ></path>
-      <path
-        d="M30 30 H66 M30 30 V66 M290 30 H254 M290 30 V66 M30 370 H66 M30 370 V334 M290 370 H254 M290 370 V334"
-        class="oval-corners"
-        fill="none"
-        stroke-width="2"
-      ></path>
-      <text
-        x="160"
-        y="332"
-        class="oval-label"
-        font-family="EB Garamond, serif"
-        font-size="15"
-        letter-spacing="1.8"
-        text-anchor="middle"
-        font-variant="small-caps"
-      >
-        {upload.oval}
-      </text>
-    </symbol>
   </defs>
 </svg>
 
@@ -55,14 +21,5 @@ const { upload } = tryOn;
     width: 0;
     height: 0;
     overflow: hidden;
-  }
-  .oval-guide {
-    stroke: var(--ink-line);
-  }
-  .oval-corners {
-    stroke: var(--gilt);
-  }
-  .oval-label {
-    fill: var(--ink-muted);
   }
 </style>

@@ -1,8 +1,9 @@
 // Every line the Words page may change (docs/decisions/0126-the-words-page.md): each string of the site's copy, and
 // each WhatsApp message to a client, with where it appears and its wording in the code. What stays locked is left
-// out: the legal pages and the consent notices, which counsel approves; the price book's holes; images, links, slugs
-// and numerals; the business's structured details; lines with figures built in, which are functions; and the login
-// code's message, whose text WhatsApp and DLT fix. src/config/words.json is this, kept current by `npm run words`.
+// out: the legal pages and the consent notices, which counsel approves; images, links, slugs and numerals; the
+// business's structured details; and the login code's message, whose text WhatsApp and DLT fix. A sentence with a
+// figure in it is a template whose holes the page fills, and is listed with them. src/config/words.json is this, kept
+// current by `npm run words`.
 
 import { TEMPLATES } from "../../../src/config/message-templates.ts";
 import * as guides from "../../../site/src/content/guides.ts";

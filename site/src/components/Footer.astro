@@ -1,21 +1,17 @@
 ---
-// The footer, on the home page only (as v2). The wordmark here is 132 px wide,
-// so it is the display cut (design/brand/README.md); v2 drew the small cut.
+// The footer, on the home page only. The wordmark here is 132 px wide, so it is the display cut
+// (design/brand/README.md).
+import { WORDMARK } from "@maneman/brand/marks";
 import { capsLook } from "@maneman/ui/Caps";
 import { textLinkLook } from "@maneman/ui/TextLink";
-import { areasPage, guides, guidesPage } from "../content/guides.ts";
 import { business, footer, whatsapp } from "../content/site.ts";
 import { isShown } from "../lib/build.ts";
+import { MORE_PAGES } from "../lib/more-pages.ts";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 
 const { service, reach, legal } = footer.columns;
 // The number is given as WhatsApp alone: the footer offers no line to call.
 const showWhatsapp = isShown(whatsapp);
-// The guides and the cities, once their wording is published.
-const more = [
-  ...(guides.some(isShown) ? [{ label: guidesPage.title, href: "/guides" }] : []),
-  ...(isShown(areasPage) ? [{ label: areasPage.title, href: "/areas" }] : []),
-];
 ---
 
 <footer class="footer on-ink">
@@ -26,13 +22,13 @@ const more = [
           <use href="#mm"></use>
         </svg>
         <svg class="word" viewBox="-4 -4 741 108" width="132" height="19" role="img" aria-label={business.name}>
-          <use href="#wm"></use>
+          <path d={WORDMARK.d}></path>
         </svg>
       </div>
       <div class="columns">
         <div class="column">
           <span class={capsLook("title")}>{service.title}</span>
-          {[...service.links, ...more].map((link) => (
+          {[...service.links, ...MORE_PAGES].map((link) => (
             <a class={textLinkLook({ tone: "ink", quiet: true, className: "item" })} href={link.href}>
               {link.label}
             </a>
@@ -81,8 +77,8 @@ const more = [
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: flex-start;
-    gap: var(--footer-gap);
-    padding-bottom: var(--footer-rule-gap);
+    gap: var(--space-l);
+    padding-bottom: var(--space-m);
     border-bottom: var(--hairline) solid var(--ink-rule);
   }
   .brand {
@@ -99,7 +95,7 @@ const more = [
   .columns {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--footer-columns-gap);
+    gap: var(--space-xl);
   }
   .column {
     display: flex;

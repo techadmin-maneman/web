@@ -1,7 +1,7 @@
 // What the service is, in the words every page shares: where we come, and how long each visit takes.
 //
 // The lengths are the backend's VISIT_BLOCKS, so the site says what a visit is booked for. The area is the client app's
-// too (packages/web-kit/service-area.ts), until its wording is settled (open point 14).
+// too (packages/web-kit/service-area.ts), until its wording is settled.
 
 import { SERVICE_AREA } from "@maneman/web-kit/service-area";
 import { VISIT_BLOCKS } from "@rules/config/scheduling.ts";

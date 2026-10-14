@@ -1,7 +1,8 @@
 ---
 // The hero: muted looping footage behind the headline. The poster is the
-// largest thing painted first, so it is preloaded; the video fetches nothing
-// until it plays, once the page has loaded, and phones get their own cut.
+// largest thing painted first, so it is an image of its own, fetched first, and
+// a phone's is the upright centre its own cut of the film opens on; the video,
+// over it, fetches nothing until it plays, once the page has loaded.
 // Over it the opening line shows one phrase at a time, once,
 // and settles on the last; a screen reader hears the whole line once, and
 // reduced motion shows the last phrase alone.
@@ -9,25 +10,25 @@ import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
 import { hero, heroFootage } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import { PHONE_SCREEN } from "../../lib/hero-film.ts";
+import { heroPosters, PHONE_POSTER } from "../../lib/hero.ts";
 import { designMedia } from "../../lib/images.ts";
 
-interface Props {
-  /** The poster's URL, which the page also preloads (src/lib/hero.ts). */
-  poster: string | undefined;
-}
-
-const { poster } = Astro.props;
+const posters = await heroPosters();
 const showFootage = isShown(heroFootage);
 ---
 
 <section class="hero on-ink" data-section="hero">
-  {showFootage && poster !== undefined && (
+  {showFootage && posters !== undefined && (
     <div class="footage">
+      <picture>
+        <source media={PHONE_SCREEN} srcset={posters.phone} width={PHONE_POSTER.width} height={PHONE_POSTER.height} />
+        <img class="poster" src={posters.wide} alt="" width="1440" height="810" fetchpriority="high" />
+      </picture>
       <video
         data-hero-video
         data-film={designMedia(heroFootage.video)}
         data-phone-film={designMedia(heroFootage.phoneVideo)}
-        poster={poster}
         muted
         loop
         playsinline
@@ -40,7 +41,7 @@ const showFootage = isShown(heroFootage);
   <div class="scrim scrim--up"></div>
   <div class="scrim scrim--side"></div>
   {SHOW_PLACEHOLDER_TAGS && showFootage && <div class={capsLook("label tag")}>{heroFootage.tag}</div>}
-  {showFootage && poster !== undefined && (
+  {showFootage && posters !== undefined && (
     <button
       type="button"
       class={buttonLook({ variant: "outlineOnInk", size: "small", className: "strong pause" })}
@@ -133,7 +134,10 @@ const showFootage = isShown(heroFootage);
     inset: 0;
     background: var(--ink-night);
   }
+  .poster,
   video {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -158,7 +162,7 @@ const showFootage = isShown(heroFootage);
     padding: var(--sp-8) var(--sp-12);
     font-size: var(--fs-14);
   }
-  /* Not in v2: the way to stop the footage, at the corner the placeholder tag leaves free (ADR 0022, item 37). */
+  /* The way to stop the footage (WCAG 2.2.2), at the corner the placeholder tag leaves free (ADR 0022). */
   .pause {
     position: absolute;
     z-index: 1;
@@ -170,7 +174,7 @@ const showFootage = isShown(heroFootage);
     width: 100%;
     max-width: var(--page-max);
     margin: 0 auto;
-    padding: 0 var(--gutter) var(--hero-pad-bottom);
+    padding: 0 var(--gutter) var(--space-2xl);
   }
   /* The phrases share one cell, so the line keeps the height of its longest and nothing below it moves. */
   .sequence {
@@ -222,7 +226,7 @@ const showFootage = isShown(heroFootage);
     }
   }
   h1 {
-    margin: var(--hero-body-gap) 0 0;
+    margin: var(--space-xs) 0 0;
     font-family: var(--font-serif);
     font-weight: var(--weight-regular);
     font-size: var(--fs-h4);
@@ -234,7 +238,7 @@ const showFootage = isShown(heroFootage);
   }
   .body {
     margin: var(--sp-16) 0 0;
-    font-size: var(--fs-large);
+    font-size: var(--fs-lead);
     line-height: var(--lh-160);
     color: var(--ink-tag);
     max-width: var(--measure-hero-body);
@@ -244,7 +248,7 @@ const showFootage = isShown(heroFootage);
     display: flex;
     flex-wrap: wrap;
     gap: var(--sp-16);
-    margin-top: var(--hero-actions-gap);
+    margin-top: var(--space-s);
   }
   /* Over the film, the outlines' edge is the stronger line. */
   .strong {

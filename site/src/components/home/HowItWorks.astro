@@ -3,7 +3,6 @@
 import { capsLook } from "@maneman/ui/Caps";
 import { howItWorks, placeholderTag, stepPhotos } from "../../content/site.ts";
 import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
-import { asBuilt, priceTemplate } from "../../lib/prices.ts";
 import DesignPicture from "../DesignPicture.astro";
 
 const showPhotos = isShown(stepPhotos);
@@ -22,9 +21,7 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
           <div>
             <h3>{step.title}</h3>
             <p>{step.body}</p>
-            <div class={capsLook("meta")} data-price={priceTemplate(step.meta)}>
-              {asBuilt(step.meta)}
-            </div>
+            <div class={capsLook("meta")}>{step.meta}</div>
           </div>
         </div>
         {showPhotos && step.photo !== undefined && (
@@ -48,7 +45,7 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
     padding-top: var(--section-gap);
   }
   .section-title {
-    margin-bottom: var(--how-title-gap);
+    margin-bottom: var(--space-xl);
   }
   .steps {
     list-style: none;
@@ -59,15 +56,15 @@ const steps = howItWorks.steps.map((step, index) => ({ ...step, photo: stepPhoto
   .step {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min)), 1fr));
-    gap: var(--how-gap);
+    gap: var(--space-xl);
     align-items: center;
-    padding: var(--how-step-pad) 0;
+    padding: var(--space-l) 0;
     border-bottom: var(--hairline) solid var(--paper-line);
   }
-  /* v2 sits the title on the number's baseline; here the text starts at the number's top, by request. */
+  /* The text starts at the number's top. */
   .text {
     display: flex;
-    gap: var(--how-number-gap);
+    gap: var(--space-s);
     align-items: flex-start;
   }
   /* Trimmed to the capitals, so the tops of the number and the title line up exactly; the title keeps its space below. */

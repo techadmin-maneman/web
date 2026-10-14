@@ -9,6 +9,7 @@ import { Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { stopMessages as words, whatsapp } from "../content/site.ts";
 import { stopMessages, type StoppedMessages } from "../lib/api.ts";
+import { aroundWhatsapp } from "../lib/text.ts";
 import styles from "./StopMessages.module.css";
 
 type Screen =
@@ -16,11 +17,9 @@ type Screen =
   | { readonly kind: "done"; readonly purpose: StoppedMessages["purpose"] }
   | { readonly kind: "expired" };
 
-const WHATSAPP_HOLE = "{whatsapp}";
-
 /** A sentence with the business number, where it names it, as a link to a WhatsApp chat. */
 function WithChatLink(props: { text: string }) {
-  const parts = props.text.split(WHATSAPP_HOLE);
+  const parts = aroundWhatsapp(props.text);
   return (
     <>
       {parts.map((part, index) => (

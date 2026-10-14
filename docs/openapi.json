@@ -350,10 +350,21 @@
               "type": "string"
             },
             "description": "Each city with a pincode ops serve, in the console's order."
+          },
+          "areas": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Each of those cities' areas, as a client would recognise them, from its served pincodes, A to Z."
           }
         },
         "required": [
-          "cities"
+          "cities",
+          "areas"
         ],
         "additionalProperties": false
       },
@@ -3487,6 +3498,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "rate_limited: this address has sent its reports for the hour, or every address has",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/csp-reports": {
+      "post": {
+        "summary": "Report what a page's content security policy refused",
+        "description": "A browser's own report, application/reports+json from report-to or application/csp-report from report-uri. Anything else, or more than 16 KB, is let go unread.",
+        "responses": {
+          "204": {
+            "description": "Logged, or let go"
           },
           "429": {
             "description": "rate_limited: this address has sent its reports for the hour, or every address has",

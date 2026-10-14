@@ -1,18 +1,22 @@
 // Builds the public site for one environment into site/dist/<environment>.
 //
 //   npm run build:site -- --env staging --words   (as a deploy builds: with the words published for staging)
+//   npm run build:site -- --env production --live (the site, as production builds it once it goes live)
 //   npm run dev:site              (the Astro dev server, as local)
 //   npm run check:site            (astro check: the templates' types)
 //
-// Production is refused by the publish gate until the content is ready
-// (docs/site.md); production keeps serving its placeholder until then. The
+// Until the site goes live in production (PRODUCTION_LIVE, site/src/lib/flags.ts),
+// a production build is the coming-soon page (./coming-soon.ts). Once live, it is
+// refused by the publish gate until the content is ready (docs/site.md). The
 // gate runs in site/astro.config.ts, so it holds however the site is built, and
 // refuses copy still marked PLACEHOLDER too (scripts/lib/content-gate.ts).
 
 import { spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { PRODUCTION_LIVE } from "../../site/src/lib/flags.ts";
 import { fetchSiteWords } from "../lib/site-words.ts";
+import { buildComingSoon } from "./coming-soon.ts";
 
 const { values } = parseArgs({
   options: {
@@ -20,6 +24,7 @@ const { values } = parseArgs({
     dev: { type: "boolean", default: false },
     check: { type: "boolean", default: false },
     words: { type: "boolean", default: false },
+    live: { type: "boolean", default: false },
   },
 });
 const environment = values.env;
@@ -31,6 +36,11 @@ function verbOf(): [string, string[]] {
 const [verb, command] = verbOf();
 
 console.log(`${verb} site (${environment})`);
+if (verb === "build" && environment === "production" && !PRODUCTION_LIVE && !values.live) {
+  buildComingSoon();
+  console.log("production is not live yet, so this is its coming-soon page (PRODUCTION_LIVE, site/src/lib/flags.ts)");
+  process.exit(0);
+}
 // With --words, as a deploy builds, the words published for this environment, which the build lays over the copy
 // (site/src/lib/published-words.ts); without, none, so a test's build reads nothing over the network.
 if (verb === "build") {

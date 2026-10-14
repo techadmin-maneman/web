@@ -57,6 +57,8 @@ describe("the content security policy", () => {
         "base-uri 'self'",
         "form-action 'self'",
         "frame-ancestors 'none'",
+        "report-uri /api/csp-reports",
+        "report-to csp",
       ].join("; "),
     );
   });
@@ -77,14 +79,14 @@ describe("the content security policy", () => {
 
   it("fits Cloudflare's line limit with every tag and a dozen inline scripts", () => {
     const scripts = Array.from({ length: 12 }, (_, i) => `console.log(${String(i)})`);
-    const file = headersFile("production", contentSecurityPolicy({ scripts, styles: ["a{}", "b{}"] }, EVERY_TAG));
+    const file = headersFile(true, contentSecurityPolicy({ scripts, styles: ["a{}", "b{}"] }, EVERY_TAG));
     for (const line of file.split("\n")) expect(line.length).toBeLessThanOrEqual(HEADER_LINE_LIMIT);
   });
 });
 
 describe("the headers file", () => {
   it("sends HSTS, the referrer policy and no camera, except on /try", () => {
-    const file = headersFile("production", "default-src 'self'");
+    const file = headersFile(true, "default-src 'self'");
     // The same as the apps send (packages/web-kit/headers.ts), for every host under the site's.
     expect(file).toContain("  Strict-Transport-Security: max-age=63072000; includeSubDomains\n");
     expect(file).toContain("  Referrer-Policy: strict-origin-when-cross-origin\n");
@@ -93,10 +95,22 @@ describe("the headers file", () => {
     expect(file).not.toContain("X-Robots-Tag");
   });
 
+  // A refusal in a real browser left no trace, and nothing kept a page opened from the site from reaching back into it.
+  it("has every refusal reported, Trusted Types' only reported for now, and keeps an opened page apart", () => {
+    const policy = contentSecurityPolicy({ scripts: [], styles: [] }, NO_TAGS);
+    expect(policy).toMatch(/; report-uri \/api\/csp-reports; report-to csp$/);
+    const file = headersFile(true, policy);
+    expect(file).toContain('  Reporting-Endpoints: csp="/api/csp-reports"\n');
+    expect(file).toContain(
+      "  Content-Security-Policy-Report-Only: require-trusted-types-for 'script'; report-uri /api/csp-reports; report-to csp\n",
+    );
+    expect(file).toContain("  Cross-Origin-Opener-Policy: same-origin\n");
+  });
+
   it("keeps staging and local out of search engines", () => {
-    expect(headersFile("staging", "x")).toContain("X-Robots-Tag: noindex, nofollow");
-    expect(robotsFile("staging")).toBe("User-agent: *\nDisallow: /\n");
-    expect(robotsFile("production")).toContain("Sitemap: https://maneman.in/sitemap.xml");
+    expect(headersFile(false, "x")).toContain("X-Robots-Tag: noindex, nofollow");
+    expect(robotsFile(false)).toBe("User-agent: *\nDisallow: /\n");
+    expect(robotsFile(true)).toContain("Sitemap: https://maneman.in/sitemap.xml");
   });
 });
 

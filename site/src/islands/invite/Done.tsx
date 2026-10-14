@@ -11,37 +11,18 @@ import { rupees } from "@maneman/web-kit/money";
 import { googleCalendarLink, icsHref, type CalendarEntry } from "@rules/lib/calendar.ts";
 import { windowSpan } from "@rules/config/scheduling.ts";
 import { referral } from "../../content/referral.ts";
-import type { Consultation, ReferralConsultation, ReferralReward, ReferralWaitlist } from "../../lib/api.ts";
+import type { Consultation, ReferralReward } from "../../lib/api.ts";
 import { clientAppOrigin, signInLink } from "../../lib/app-link.ts";
 import { ENVIRONMENT } from "../../lib/build.ts";
 import { longDay } from "../../lib/dates.ts";
 import { fill } from "../../lib/text.ts";
 import { Icon } from "@maneman/ui/Icon";
 import styles from "./Invite.module.css";
+import type { Booking, Listing } from "./outcomes.ts";
 
 type HeadingRef = { current: HTMLHeadingElement | null };
 
-/**
- * A booking's answer, with the number the visitor typed and the discount code they sent: the answer carries neither.
- * Only the site's own page sends a code, and only its answer says whether it stands.
- */
-export interface Booking {
-  readonly result: ReferralConsultation | Consultation;
-  readonly mobile: string;
-  /** As it was sent; null for none. */
-  readonly code: string | null;
-}
-
 type StandingCode = NonNullable<Consultation["discount_code"]>;
-
-/**
- * The waitlist's answer, the landing's or /book's: /book's carries the invite this browser remembered, if any. With it,
- * the pincode the person gave and whether they asked to be told when we come, which alone earns a promise of a message.
- */
-export type Listing = Pick<ReferralWaitlist, "area" | "credits" | "invite"> & {
-  readonly pincode: string;
-  readonly alerted: boolean;
-};
 
 /** C4's "Code expired" frame, without "Book anyway": it shows once the booking has been made. */
 function Expired(props: { reward: ReferralReward | null }) {
@@ -79,16 +60,19 @@ function openApp(event: Click, appOrigin: string, mobile: string): void {
 /** What a code takes off the hair system's price, before GST: "Rs. 1,000 off", or "10% off, up to Rs. 2,000". */
 function offOf(standing: StandingCode): string {
   const words = referral.booked.code;
-  if (standing.kind === "amount") return words.amountOff(rupees(standing.value));
-  return words.percentOff(standing.value, standing.cap === null ? null : rupees(standing.cap));
+  if (standing.kind === "amount") return fill(words.amountOff, { amount: rupees(standing.value) });
+  const percent = String(standing.value);
+  if (standing.cap === null) return fill(words.percentOff, { percent });
+  return fill(words.percentOffCapped, { percent, cap: rupees(standing.cap) });
 }
 
 /** What the confirmation says of the code sent: what it takes off when they pay, or that the booking stands without. */
 function codeNote(booking: Booking): string | null {
   if (booking.code === null) return null;
   const standing = "discount_code" in booking.result ? booking.result.discount_code : null;
-  if (standing === null) return referral.booked.code.notApplied(booking.code.toUpperCase());
-  return referral.booked.code.applied(standing.code, offOf(standing));
+  const words = referral.booked.code;
+  if (standing === null) return fill(words.notApplied, { code: booking.code.toUpperCase() });
+  return fill(words.applied, { code: standing.code, off: offOf(standing) });
 }
 
 /** The window's hours as the form offered them: "12 to 4 pm". */
@@ -102,7 +86,7 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
   const entry: CalendarEntry = {
     title: result.one_visit ? calendar.title.oneVisit : calendar.title.consultation,
     ...windowSpan(result.date, result.window),
-    details: calendar.details(hoursOf(result.window), props.ready),
+    details: fill(calendar.details, { hours: hoursOf(result.window), ready: props.ready }),
     uid: `${result.date}-${result.window}@maneman.in`,
   };
   return (
@@ -124,7 +108,8 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
 function headlineOf(result: Booking["result"]): { label: string; title: string; body: string } {
   if (result.state === "requested") return referral.requested;
   const { booked } = referral;
-  return { label: booked.label, title: booked.when(longDay(result.date), hoursOf(result.window)), body: booked.body };
+  const title = fill(booked.when, { day: longDay(result.date), hours: hoursOf(result.window) });
+  return { label: booked.label, title, body: booked.body };
 }
 
 export function Booked(props: { booking: Booking; reward: ReferralReward | null; heading: HeadingRef }) {
