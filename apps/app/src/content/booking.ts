@@ -171,7 +171,7 @@ export const booking = {
   paidIn: PAID_IN,
   slow: `This is taking longer than usual. ${TOLD_WHEN_BOOKED}`,
   /** The same, for a free visit to a client who has not agreed to WhatsApp about visits: nothing will be sent. */
-  slowQuiet: "This is taking longer than usual. It shows on Home once it’s booked.",
+  slowQuiet: "This is taking longer than usual. Check Home in a minute.",
   refunded: "We couldn’t book that visit, so we’re refunding your payment in full.",
   failedToStart: "That didn’t go through. Try again.",
   creditGone: "Your free service visit is already used on another booking. This visit is charged at the price below.",
@@ -191,14 +191,14 @@ export const note = {
   /** The note shown back on its visit's card. */
   shown: (text: string) => `Your note: “${text}”`,
   label: "What should they know at the door?",
-  offline: "No connection. Your note is kept here until you’re back online.",
+  offline: "No connection. Save once you’re back online.",
   save: "Save note",
   saving: "Saving",
   saved: (technician: string | null) =>
     technician === null
       ? "Saved. Your technician reads it before your visit."
       : `Saved. ${technician} reads it before your visit.`,
-  withOps: "For now, notes go to us on WhatsApp.",
+  withOps: "Notes for this visit go to us on WhatsApp.",
   failed: "That didn’t go through.",
   whatsapp: "Send it on WhatsApp",
 };
@@ -286,7 +286,7 @@ export const change = {
   termsChanged: "The free change has just run out. This is what it costs now.",
   notChangeable: "This visit can no longer be changed here.",
   message: "Message us",
-  failed: "That didn’t go through. Nothing changed. Try again.",
+  failed: "That didn’t go through. Try again.",
   moved: "Moved",
   moveItem: (what: string) => `${what} · moved`,
   lateFeeItem: (what: string) => `Late fee · ${what.toLowerCase()}`,

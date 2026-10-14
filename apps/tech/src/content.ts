@@ -58,7 +58,7 @@ export const today = {
   },
   offline: {
     title: "No signal · working offline",
-    body: "Today’s jobs and cards are on the phone. Photos go up when signal returns.",
+    body: "Today’s jobs and cards are on the phone.",
   },
   // The board draws no failure for the day's list.
   failed: "The day’s jobs didn’t load.",
@@ -110,7 +110,7 @@ export const update = {
 /** A screen that failed to draw, which React would otherwise leave blank. */
 export const broken = {
   // Neither file draws a screen that failed.
-  message: "This screen didn’t open. Nothing you recorded is lost.",
+  message: "Couldn’t open this screen.",
   reload: "Reload",
 } as const;
 
@@ -187,8 +187,8 @@ const stopped: Readonly<Record<string, string>> = {
   photo_rejected: "The photos wouldn’t upload.",
   // Failed at our end after several tries: nothing is wrong with what was done.
   stuck: "This couldn’t reach us after several tries. Send it again.",
-  not_found: "This job is no longer on your list, so what it holds can’t reach us.",
-  already_closed: "This job is closed, so what it holds can’t reach us.",
+  not_found: "This job is no longer on your list.",
+  already_closed: "This job is closed.",
   piece_code: "The piece’s label wasn’t accepted.",
   old_piece: "The label of the piece that came off wasn’t accepted.",
   // A one visit's product, no longer offered when the step reached us (ADR 0105).
@@ -428,7 +428,7 @@ export const capture = {
   retry: "Try again",
   // The board draws no capture that failed.
   missed: "That photo didn’t save. Take it again.",
-  done: "All five are on the phone. They go up when there is signal.",
+  done: "All five are on the phone.",
   finish: "Done",
   // The board draws no set the API refused.
   refusedPhotos: (angles: readonly string[]) =>

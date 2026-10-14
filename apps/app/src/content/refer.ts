@@ -100,7 +100,7 @@ export const refer = {
     /** The empty tracker's share failure, and its way on. */
     failed: {
       label: "Share failed",
-      line: "The link didn’t generate. Nothing was sent.",
+      line: "Couldn’t create your link. Try again.",
       retry: "Try again",
     },
   },
