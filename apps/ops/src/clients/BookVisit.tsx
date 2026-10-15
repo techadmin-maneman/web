@@ -32,6 +32,10 @@ export interface Prefill {
   readonly replacing?: string;
 }
 
+/** A replacement's "Replaces MM-ESS-0000061-R.", where the hair system in wear is known; nothing for any other visit. */
+const replacesLine = (choice: Choice, prefill: Prefill): string =>
+  choice === "replacement" && prefill.replacing !== undefined ? `${copy.replaces(prefill.replacing)} ` : "";
+
 /** "Wed 23 Sep, 9 am": when the link closes. */
 const whenOf = (instant: string) => `${shortDate(indiaDate(instant))}, ${indiaClock(instant)}`;
 
@@ -222,10 +226,7 @@ function BookingForm({
           )}
         </Field>
       )}
-      {choice === "replacement" && prefill.replacing !== undefined && (
-        <p className={shared.pays}>{copy.replaces(prefill.replacing)}</p>
-      )}
-      <p className={shared.pays}>{payLine(choice, offered, cover !== "")}</p>
+      <p className={shared.pays}>{replacesLine(choice, prefill) + payLine(choice, offered, cover !== "")}</p>
       <div className={shared.actions}>
         <Button
           variant="primary"

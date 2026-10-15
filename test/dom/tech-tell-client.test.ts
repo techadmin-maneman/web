@@ -72,7 +72,7 @@ describe("telling the client from the card", () => {
   });
 
   it("offers only At the gate once they have checked in, so the wait stays in view", () => {
-    draw({ ...JOB, progress: { ...JOB.progress, checked_in_at: "2030-07-01T05:00:00.000Z" } } as Job);
+    draw({ ...JOB, progress: { ...JOB.progress, checked_in_at: "2030-07-01T05:00:00.000Z" } });
     const labels = [...page.querySelectorAll("button")].map((each) => each.textContent.trim());
     expect(labels).toEqual([copy.tell.atGate]);
   });
