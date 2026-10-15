@@ -112,6 +112,14 @@ describe("moving a visit", () => {
     ]);
   });
 
+  // Moving a consultation and fit named a hair system the client had not chosen.
+  it("names a consultation and fit as itself when it is moved, not a hair system", async () => {
+    await booked("first_fit", THURSDAY_NOON, 0);
+    await env.DB.prepare("UPDATE appointments SET one_visit = 'booked', tier = 'essential'").run();
+    const answer = await get(client(), `/api/availability?type=first_fit&from=2026-09-24&moving=${VISIT}`);
+    expect(await answer.json()).toMatchObject({ service: { name: "Consultation and fit" } });
+  });
+
   // A client's free move may go to anyone in their city, their own technician first (ADR 0117).
   it("moves a visit to another technician in the city where its own is busy at the time chosen", async () => {
     await booked("service", THURSDAY_NOON, 200000);

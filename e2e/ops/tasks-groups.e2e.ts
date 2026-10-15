@@ -212,6 +212,7 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
               amount: 3500000,
               url: "https://rzp.io/i/nat",
               product: "Mane Man Natural",
+              visit_id: "97000000-0000-4000-8000-000000000021",
             },
           ),
           task("96000000-0000-4000-8000-000000000022", "Manoj Iyer", "unsent 2500000 - Mane Man Essential", {
@@ -220,6 +221,7 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
             amount: 2500000,
             url: null,
             product: "Mane Man Essential",
+            visit_id: "97000000-0000-4000-8000-000000000022",
           }),
           task("96000000-0000-4000-8000-000000000023", "Ravi Menon", "refused 2500000 - Mane Man Essential", {
             group: "payment_owed",
@@ -227,6 +229,7 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
             amount: 2500000,
             url: null,
             product: "Mane Man Essential",
+            visit_id: "97000000-0000-4000-8000-000000000023",
           }),
           task("96000000-0000-4000-8000-000000000024", "Kabir Sethi", "closed 3500000 - Mane Man Natural", {
             group: "payment_owed",
@@ -234,6 +237,7 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
             amount: 3500000,
             url: null,
             product: "Mane Man Natural",
+            visit_id: "97000000-0000-4000-8000-000000000024",
           }),
         ],
       },

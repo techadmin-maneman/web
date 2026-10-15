@@ -52,6 +52,7 @@ export function HomeScreen() {
     <Shell header={{ kind: "home" }} tab="/" kept>
       <div className={styles.home}>
         {recallFirst !== null && <RemakeCard remake={recallFirst} />}
+        {me.missed_visit !== null && <Missed missed={me.missed_visit} />}
         <HomeBody me={me} offline={offline} />
         {owed !== null && <PaymentOwed owed={owed} />}
         {me.credits !== null && <CreditTile credits={me.credits} />}
@@ -246,6 +247,22 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
         <p className={styles.free}>{booking.paid ? copy.paid : copy.free}</p>
         {booking.told && <p className={styles.free}>{copy.told}</p>}
       </div>
+    </section>
+  );
+}
+
+/** A visit nobody was home for, while ops decide what follows: said here, so the client is not left with silence. */
+function Missed({ missed }: { missed: NonNullable<Me["missed_visit"]> }) {
+  const copy = home.missed;
+  return (
+    <section className={styles.prompt} aria-labelledby="missed">
+      <h2 className={capsLook(styles.label)} id="missed">
+        {copy.label}
+      </h2>
+      <p className={styles.owedLine}>
+        {copy.line(shortDate(missed.date), missed.technician === null ? null : firstNameOf(missed.technician))}
+      </p>
+      <p className={styles.owedWait}>{copy.next}</p>
     </section>
   );
 }

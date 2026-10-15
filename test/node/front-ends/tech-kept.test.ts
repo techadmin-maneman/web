@@ -309,7 +309,18 @@ describe("a day’s jobs", () => {
       { started_at: "2030-09-19T04:05:00.000Z", outcome: null },
       { started_at: null, outcome: null },
     ]);
-    expect((await keptStates()).get("a")).toEqual({ started_at: "2030-09-19T04:05:00.000Z", outcome: null });
+    expect((await keptStates()).get("a")).toEqual({
+      started_at: "2030-09-19T04:05:00.000Z",
+      outcome: null,
+      arrived: false,
+    });
+  });
+
+  it("says the phone checked in at a job, before or after the day that holds it is kept", async () => {
+    await keepArrival("a", arrival);
+    expect((await keptStates()).get("a")).toEqual({ started_at: null, outcome: null, arrived: true });
+    await keepDay(TODAY, [summary("a", TODAY)]);
+    expect((await keptStates()).get("a")).toMatchObject({ arrived: true });
   });
 
   it("kept by an earlier build, before the list said where a job stood, reads as begun on neither", async () => {
@@ -317,7 +328,7 @@ describe("a day’s jobs", () => {
     await firstRelease([{ id: `day:${TODAY}`, kind: "day", date: TODAY, jobs: [earlier] }]);
 
     expect((await keptDay(TODAY))?.[0]?.progress).toEqual({ started_at: null, outcome: null });
-    expect((await keptStates()).get("a")).toEqual({ started_at: null, outcome: null });
+    expect((await keptStates()).get("a")).toEqual({ started_at: null, outcome: null, arrived: false });
   });
 
   it("kept before the list said how long each visit is, says nothing of it", async () => {

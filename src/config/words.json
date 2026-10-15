@@ -5904,6 +5904,14 @@
     "reviewed": true
   },
   {
+    "key": "message:next_visit_overdue_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "next_visit_overdue_v1",
+    "text": "Hi {{1}}, time to book your next visit.\nYour {{2}} was due on {{3}}. Book it in the Mane Man app.",
+    "reviewed": false
+  },
+  {
     "key": "message:next_visit_due_v1",
     "surface": "message",
     "group": "Messages",

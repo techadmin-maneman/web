@@ -67,6 +67,7 @@ export const TaskFactsSchema = z
       amount: paise,
       url: z.string().nullable().openapi({ description: "Null until Razorpay made the link." }),
       product: z.string(),
+      visit_id: z.uuid().openapi({ description: "The one visit it is owed for, which a UPI payment may settle." }),
     }),
     facts("no_show_dispute", { kept: paise.nullable().openapi({ description: "What the charge kept, in paise." }) }),
     facts("payment_to_refund", {

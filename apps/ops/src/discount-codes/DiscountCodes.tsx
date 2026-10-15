@@ -71,6 +71,9 @@ interface May {
   readonly delete: boolean;
 }
 
+/** Whether the person may act on a code at all: else the table has no column for actions. */
+const actsOn = (may: May): boolean => may.off || may.delete;
+
 /** What a row needs to offer its actions and show what they open. */
 interface RowProps {
   readonly acting: Acting;
@@ -185,7 +188,7 @@ function CodeRows({ code, today, ...row }: { code: DiscountCode; today: string }
         <td className={styles.figure}>{rupees(code.given)}</td>
         <td className={styles.figure}>{rupees(code.paid)}</td>
         <td>{dayOf(code.last_used)}</td>
-        <CodeActions code={code} {...row} />
+        {actsOn(row.may) && <CodeActions code={code} {...row} />}
       </tr>
       <CodeActingRow code={code} span={ON_COLUMNS} {...row} />
     </>
@@ -222,9 +225,11 @@ function CodesTable({
           <thead>
             <tr>
               <SortHeads view={view} />
-              <th scope="col">
-                <VisuallyHidden>{columns.actions}</VisuallyHidden>
-              </th>
+              {actsOn(row.may) && (
+                <th scope="col">
+                  <VisuallyHidden>{columns.actions}</VisuallyHidden>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>

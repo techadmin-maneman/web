@@ -260,6 +260,8 @@ export const clients = {
         recall: (piece: string | null) => `${piece ?? "Hair system"}, recalled`,
         failed: (piece: string | null, date: string) => `${piece ?? "Hair system"}, failed ${date}`,
       },
+      /** "Replaces MM-ESS-0000061-R." */
+      replaces: (piece: string) => `Replaces ${piece}.`,
       pays: {
         covered: "Free. No late fee.",
         nothing: "Nothing to pay.",

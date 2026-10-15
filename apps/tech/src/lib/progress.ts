@@ -6,7 +6,8 @@
 // A write the API stopped (superseded or refused) has not happened, so only
 // what is still waiting to be sent counts beside what landed.
 
-import type { CheckIn, Job, JobState, JobSummary, Step } from "../api.ts";
+import type { CheckIn, Job, JobSummary, Step } from "../api.ts";
+import type { Heard } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
 import type { InJobStep } from "../route.ts";
 import { STEP_PATHS } from "../route.ts";
@@ -91,14 +92,14 @@ export const declinedTheFit = (job: Job, queued: readonly Queued[]): boolean => 
 };
 
 /** Where a row of the day's list stands once its job has begun. */
-export type RowState = "closed" | "in_progress";
+export type RowState = "closed" | "in_progress" | "at_the_door";
 
 /**
  * Where a row of the day's list stands, read as its card reads it: the phone's writes still on their way, then what
  * landed, then the visit's status. What landed is the list's word, or a write's answer `heard` since, whichever knows
  * more.
  */
-export function rowState(job: JobSummary, queued: readonly Queued[], heard: JobState | undefined): RowState | null {
+export function rowState(job: JobSummary, queued: readonly Queued[], heard: Heard | undefined): RowState | null {
   const landed = {
     started_at: job.progress.started_at ?? heard?.started_at ?? null,
     outcome: job.progress.outcome ?? heard?.outcome ?? null,
@@ -106,7 +107,7 @@ export function rowState(job: JobSummary, queued: readonly Queued[], heard: JobS
   const known = { id: job.id, progress: landed };
   if (closed(known, queued) || job.status === "completed" || job.status === "terminated") return "closed";
   if (started(known, queued) || job.status === "in_progress") return "in_progress";
-  return null;
+  return heard?.arrived === true ? "at_the_door" : null;
 }
 
 /** Whether ops changed this job under the phone: a write of its came back superseded. */

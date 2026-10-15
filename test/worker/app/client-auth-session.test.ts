@@ -78,6 +78,7 @@ describe("the session", () => {
       consulted: null,
       // Nothing paid for or booked in the app is waiting for FSM (docs/decisions/0095-a-booking-fsm-refuses-is-held.md).
       being_booked: null,
+      missed_visit: null,
       payment_owed: null,
       remake: null,
       credits: null,

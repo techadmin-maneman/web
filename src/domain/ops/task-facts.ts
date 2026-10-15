@@ -69,6 +69,7 @@ export type TaskFacts =
       /** In paise. */
       readonly amount: number;
       readonly url: string | null;
+      readonly visit_id: string;
       readonly product: string;
     }
   | { readonly group: "no_show_dispute"; readonly kept: number | null }

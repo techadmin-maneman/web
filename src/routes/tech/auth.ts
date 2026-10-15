@@ -40,8 +40,8 @@ import { ALERT_WORDS } from "../../config/alert-words.ts";
 function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings): string {
   if (refusal === "number_spent") {
     return (
-      `their number has had its ${String(login.codeMobileDailyLimit)} codes for today, so they can sign in again after ` +
-      "midnight IST. If they did not ask for them all, someone else is asking for codes for their number."
+      `their number has had its ${String(login.codeMobileDailyLimit)} codes for today. If they asked for them, give them ` +
+      "back on their Phones tab to let them sign in now. If not, someone else is asking for codes for their number."
     );
   }
   if (refusal === "address_spent") {
@@ -60,19 +60,23 @@ function refusalReason(refusal: Exclude<CodeGate, "open">, login: LoginSettings)
  * Ops' alert that an active technician was refused a code: raised when they are, and closed once they are given one.
  * Kept after the response, so a technician's number is answered no slower than anyone else's.
  */
-async function keepRefusalAlert(c: Context<AppEnv>, technicianId: string, asked: CodeGate): Promise<void> {
+async function keepRefusalAlert(
+  c: Context<AppEnv>,
+  technician: { readonly id: string; readonly name: string },
+  asked: CodeGate,
+): Promise<void> {
   const { deps, log, config } = c.var;
-  const key = `technician_code_refused:${technicianId}`;
+  const key = `technician_code_refused:${technician.id}`;
   const work =
     asked === "open"
       ? deps.resolveAlert(key)
       : deps.alertOnce({
           key,
           message: ALERT_WORDS.technician_code_refused({
-            technician: technicianId,
+            technician: technician.name,
             reason: refusalReason(asked, config.settings.login),
           }),
-          link: "/technicians",
+          link: `/technicians/${technician.id}/phones`,
         });
   await afterResponse(
     c,
@@ -202,7 +206,7 @@ export function registerTechAuth(app: App): void {
     const testRecord = technician?.testRecord ?? false;
     const mobileHash = await mobileHashOf(ipHashSalt, mobileE164);
     const asked = await mayAskForCode(c, { surface: "tech", mobileHash, ipHash: visitor.ipHash, now, testRecord });
-    if (technician !== null) await keepRefusalAlert(c, technician.id, asked);
+    if (technician !== null) await keepRefusalAlert(c, technician, asked);
     if (asked === "busy") return refuse(c, "busy");
     if (asked !== "open") return refuse(c, "rate_limited");
 

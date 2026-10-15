@@ -126,4 +126,18 @@ describe("a piece that comes off", () => {
       place: IMRAN,
     });
   });
+
+  it("is held in the kit to hand in when it came off because it was due, with no reason", async () => {
+    const [worn = "", fresh = ""] = await inTheKit(code, {});
+    await env.DB.prepare("UPDATE stock_units SET state = 'fitted', place = NULL WHERE code = ?1").bind(worn).run();
+    await job.workTo("piece");
+    const step = { piece_code: fresh, stock_code: code, old_piece: { piece_code: worn } };
+    expect((await job.post(`/api/tech/jobs/${JOB}/piece`, step, "event-piece-01")).status).toBe(202);
+    const returned = await env.DB.prepare("SELECT piece_code, reason FROM piece_returns").all();
+    expect(returned.results).toEqual([{ piece_code: worn, reason: null }]);
+    expect(await env.DB.prepare("SELECT state, place FROM stock_units WHERE code = ?1").bind(worn).first()).toEqual({
+      state: "returned",
+      place: IMRAN,
+    });
+  });
 });

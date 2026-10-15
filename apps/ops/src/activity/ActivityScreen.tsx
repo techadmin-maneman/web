@@ -71,9 +71,10 @@ function What({ action, detail }: Pick<ActivityEntry, "action" | "detail">) {
   const named = Object.hasOwn(copy.actions, action) ? copy.actions[action] : action;
   const surface = CALL_SURFACES[action];
   const said = surface !== undefined && method === "GET" ? copy.opened(copy.surfaces[surface]) : named;
+  const refused = detail?.refused !== undefined;
   return (
     <>
-      <span>{said}</span>
+      <span>{refused ? copy.refused(said) : said}</span>
       {path !== null && (
         <code className={styles.call}>
           {method} {path}

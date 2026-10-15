@@ -307,15 +307,17 @@ async function availability(c: Context<AppEnv>, query: AvailabilityQuery) {
     return c.json(errorBody(refusal, c.var.requestId), 422);
   }
   const reached = await techniciansWithin(db, await routeReach(c));
-  const [strip, credits, onCredit, owed] = await Promise.all([
+  const [strip, credits, onCredit, owed, profile] = await Promise.all([
     windowsOffered({ db, clientId: client, service, days: { start, range }, reached, now }),
     spendableCredits(db, client, now),
     paysByCredit(db, client, kind, now),
     remakesOwed(db, client),
+    kind === "first_fit" ? latestProfile(db, client) : Promise.resolve(null),
   ]);
   return c.json(
     {
       kind,
+      needs_profile: kind === "first_fit" && profile === null,
       services: services.map((each) => ({ ...serviceBody(each), price: each.price })),
       service: serviceBody(service),
       recommended,

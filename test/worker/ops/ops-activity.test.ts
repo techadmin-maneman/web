@@ -49,6 +49,14 @@ async function logged(entries: readonly Omit<AuditEntry, "requestId">[]): Promis
 
 const staff = (id: string) => ({ kind: "staff" as const, id });
 
+/** Entries one request wrote, in order, a moment apart. */
+async function oneRequest(requestId: string, entries: readonly Omit<AuditEntry, "requestId">[]): Promise<void> {
+  const start = Date.parse("2026-09-21T03:30:00.000Z");
+  await env.DB.batch(
+    entries.map((entry, index) => auditStatement(env.DB, { ...entry, requestId }, new Date(start + index * 100))),
+  );
+}
+
 beforeEach(async () => {
   await markDatabase();
   await env.DB.prepare(
@@ -201,6 +209,68 @@ describe("the activity log", () => {
       ),
     ]);
     expect((await read()).entries.map((entry) => entry.action)).toEqual(["visit.cancel"]);
+  });
+
+  it("says a change the API refused was refused, and never lists the refusal on its own", async () => {
+    const care = staff("care@maneman.in");
+    const call = { method: "POST", route: "/api/visits/{id}/upi-payment", path: `/api/visits/${VISIT}/upi-payment` };
+    await oneRequest("req-refused", [
+      { surface: "ops", actor: care, action: "ops.call", detail: call },
+      { surface: "ops", actor: care, action: "call.refused", detail: { status: "409", code: "reference_used" } },
+    ]);
+    const [entry, ...more] = (await read()).entries;
+    expect(more).toEqual([]);
+    expect(entry).toMatchObject({ action: "ops.call", detail: { refused: { status: "409", code: "reference_used" } } });
+  });
+
+  it("lists a count once, by the count its items were counted in", async () => {
+    const care = staff("care@maneman.in");
+    await oneRequest("req-count", [
+      {
+        surface: "ops",
+        actor: care,
+        action: "ops.call",
+        detail: { method: "POST", route: "/api/count-tasks/{id}/counts" },
+      },
+      { surface: "ops", actor: care, action: "count_task.count", subject: { kind: "count_task", id: "ct-1" } },
+      { surface: "ops", actor: care, action: "stock.count", subject: { kind: "consumable", id: "solvent" } },
+    ]);
+    expect((await read()).entries.map((entry) => entry.action)).toEqual(["count_task.count"]);
+  });
+
+  it("leaves out the links a technician's phone asks for to upload photographs to", async () => {
+    await logged([
+      {
+        surface: "tech",
+        actor: { kind: "technician", id: IMRAN },
+        action: "tech.call",
+        detail: {
+          method: "POST",
+          route: "/api/tech/jobs/{id}/photos/upload-url",
+          path: "/api/tech/jobs/j-1/photos/upload-url",
+        },
+      },
+    ]);
+    expect((await read()).entries).toEqual([]);
+  });
+
+  it("writes that a change was refused under the request of the call", async () => {
+    const refused = await request(opsAs("care@maneman.in"), `/api/visits/${VISIT}/upi-payment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://maneman.test" },
+      body: JSON.stringify({ utr: "412345678901" }),
+    });
+    expect(refused.status).toBeGreaterThanOrEqual(400);
+    const rows = await env.DB.prepare(
+      "SELECT action, request_id, detail FROM audit_log WHERE actor = 'care@maneman.in' ORDER BY id",
+    ).all<{
+      action: string;
+      request_id: string;
+      detail: string;
+    }>();
+    expect(rows.results.map((row) => row.action)).toEqual(["ops.call", "call.refused"]);
+    expect(rows.results[1]?.request_id).toBe(rows.results[0]?.request_id);
+    expect(JSON.parse(rows.results[1]?.detail ?? "{}")).toMatchObject({ status: String(refused.status) });
   });
 
   it("is itself written to the log, under whoever read it", async () => {

@@ -11,6 +11,7 @@
 import { useStillToRecord } from "../../policy/stock.ts";
 import { latestStep, takenFor, takenFromKit } from "../field/job-use.ts";
 import { pieceStepOf } from "./pieces.ts";
+import { pieceBodyOf } from "../field/job-event-bodies.ts";
 import { pieceReturnStatements } from "./piece-returns.ts";
 import { givenBackToLots } from "./stock-lots.ts";
 import { takenFrom, takesOf, unitChanges, type Taken } from "./stock-units.ts";
@@ -53,6 +54,13 @@ async function pieceMove(
   return { units: results.map((row) => row.id), takes, state: "held" };
 }
 
+/** The piece a replacement's step names as come off, with why where it failed; null for none. */
+function oldPieceOf(body: unknown): { readonly code: string; readonly reason: string | null } | null {
+  const piece = pieceBodyOf(body);
+  if (piece === null || "declined" in piece || piece.old_piece === null || piece.old_piece === undefined) return null;
+  return { code: piece.old_piece.piece_code, reason: piece.old_piece.failure_reason ?? null };
+}
+
 /** Records the piece the technician's latest piece step fitted, from their kit. Returns whether their kit went down. */
 export async function recordPieceUse(
   db: D1Database,
@@ -69,11 +77,12 @@ export async function recordPieceUse(
   const code = stockCodeOf(body);
   const fitted = new Map(code === null ? [] : [[code, 1]]);
   const at = input.now.toISOString();
-  const returned = pieceStepOf(body)
-    .failed.filter((failure) => failure.field === "old_piece")
-    .flatMap((failure) =>
-      pieceReturnStatements(db, { jobId, technicianId, label: failure.code, reason: failure.reason, at }),
-    );
+  // The piece that came off goes back into the kit to hand in, whether it failed or was due.
+  const oldPiece = oldPieceOf(body);
+  const returned =
+    oldPiece === null
+      ? []
+      : pieceReturnStatements(db, { jobId, technicianId, label: oldPiece.code, reason: oldPiece.reason, at });
   const owed = useStillToRecord(fitted, await takenFor(db, { jobId, technicianId, hairSystems: true }));
   if (owed.size === 0) {
     if (returned.length > 0) await db.batch(returned);

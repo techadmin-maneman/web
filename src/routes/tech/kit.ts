@@ -15,7 +15,8 @@ import { techRoute } from "../../http/session-routes.ts";
 import { technicianOf } from "../../http/technician-session.ts";
 import { isPieceCode } from "../../config/pieces.ts";
 import { MAX_LABELLED } from "../../domain/inventory/stock-units.ts";
-import { indiaDate } from "../../lib/india-time.ts";
+import { addDays, indiaDate } from "../../lib/india-time.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 
 /** A hair system's pieces by their labels, as scanned. */
 const Labels = z.array(z.string().max(32).refine(isPieceCode)).min(1).max(MAX_LABELLED);
@@ -34,7 +35,14 @@ const KitSchema = z
           low: z.boolean().openapi({ description: "At or below the kit level ops set for it." }),
           hair_system: z.boolean(),
           lots: z
-            .array(Lot.extend({ quantity: z.number().int() }).strict())
+            .array(
+              Lot.extend({
+                quantity: z.number().int(),
+                use_first: z.boolean().openapi({
+                  description: "It expires within the days ops are warned before, and has not yet: use it first.",
+                }),
+              }).strict(),
+            )
             .openapi({ description: "The lots it holds some of, soonest to expire first." }),
           units: z
             .array(
@@ -151,7 +159,10 @@ const handBackRoute = techRoute({
 });
 
 async function kitAnswer(c: Context<AppEnv>, kit: string) {
-  const view = await kitView(c.env.DB, kit);
+  const today = indiaDate(c.var.deps.now());
+  const [view, { stockWatch }] = await Promise.all([kitView(c.env.DB, kit), opsInputs(c)]);
+  const warnedBy = addDays(today, stockWatch.expiry_warning_days);
+  const useFirst = (expiresOn: string | null) => expiresOn !== null && expiresOn >= today && expiresOn <= warnedBy;
   return {
     held: view.held.map((item) => ({
       code: item.code,
@@ -160,7 +171,12 @@ async function kitAnswer(c: Context<AppEnv>, kit: string) {
       quantity: item.quantity,
       low: item.low,
       hair_system: item.hairSystem,
-      lots: item.lots.map((lot) => ({ lot_code: lot.lotCode, expires_on: lot.expiresOn, quantity: lot.quantity })),
+      lots: item.lots.map((lot) => ({
+        lot_code: lot.lotCode,
+        expires_on: lot.expiresOn,
+        quantity: lot.quantity,
+        use_first: useFirst(lot.expiresOn),
+      })),
       units: item.units.map((unit) => ({ code: unit.code, lot_code: unit.lotCode, expires_on: unit.expiresOn })),
     })),
     coming: view.coming.map((each) => ({
@@ -178,7 +194,7 @@ async function kitAnswer(c: Context<AppEnv>, kit: string) {
       returned_at: piece.returnedAt,
       reason: piece.reason,
     })),
-    today: indiaDate(c.var.deps.now()),
+    today,
   };
 }
 

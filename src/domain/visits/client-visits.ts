@@ -19,10 +19,17 @@ import { priceOf } from "../money/price-book.ts";
 import { currentAddress } from "../clients/profile.ts";
 import { loadSlotSchedule, type SlotSchedule } from "../booking/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
-import { begunPastArrival, landedOutcome, visitBegun } from "./visit-begun.ts";
+import { begunPastArrival, landedOutcome, missedDayOver, todayStartsOf, visitBegun } from "./visit-begun.ts";
 import { ANGLES, type Angle, type Phase } from "../field/visit-photos.ts";
 import { MINUTE_MS, minutesBetween } from "../../lib/durations.ts";
-import { PAYMENT_HELD, statusIn, VISIT_ENDED, VISIT_LIVE } from "../../config/statuses.ts";
+import {
+  PAYMENT_HELD,
+  statusIn,
+  statusNotIn,
+  VISIT_CALLED_OFF,
+  VISIT_ENDED,
+  VISIT_LIVE,
+} from "../../config/statuses.ts";
 import { creditSpentOn } from "./visit-facts.ts";
 
 /** The three windows the client app offers, by the hour a visit starts in India. */
@@ -195,21 +202,45 @@ async function visitSummaryOf(
 
 /**
  * The client's next visit not yet closed, if any: the soonest still to come
- * or under way, and only if there is none of those, one that is over.
+ * or under way, and only if there is none of those, one that is over. Never one
+ * we missed whose day is over: that is the client's history.
  */
 export async function nextVisit(db: D1Database, personId: string, now: Date): Promise<VisitSummary | null> {
   const [row, context] = await Promise.all([
     db
       .prepare(
         `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-         WHERE ${LIVE} AND ${statusIn("a.status", VISIT_LIVE)}
+         WHERE ${LIVE} AND ${statusIn("a.status", VISIT_LIVE)} AND NOT ${missedDayOver("a", "?3")}
          ORDER BY a.window_end < ?2 OR landed_outcome IS NOT NULL, a.window_start LIMIT 1`,
       )
-      .bind(personId, now.toISOString())
+      .bind(personId, now.toISOString(), todayStartsOf(now))
       .first<AppointmentRow>(),
     contextOf(db, personId),
   ]);
   return row === null ? null : visitSummaryOf(db, row, context, now);
+}
+
+/**
+ * The client's visit nobody was home for, while ops are still to decide it and nothing is booked since: Home says so,
+ * until ops decide and the client is told what follows. Null for none.
+ */
+export async function missedVisit(
+  db: D1Database,
+  personId: string,
+): Promise<{ readonly date: string; readonly technician: string | null } | null> {
+  const row = await db
+    .prepare(
+      `SELECT a.window_start, t.name AS technician FROM appointments a
+         JOIN no_show_cases n ON n.appointment_id = a.id AND n.closed_at IS NOT NULL AND n.decided_at IS NULL
+         LEFT JOIN technicians t ON t.id = a.technician_id
+       WHERE a.person_id = ?1 AND a.deleted_at IS NULL
+         AND NOT EXISTS (SELECT 1 FROM appointments b WHERE b.person_id = a.person_id AND b.deleted_at IS NULL
+                           AND b.window_start > a.window_start AND ${statusNotIn("b.status", VISIT_CALLED_OFF)})
+       ORDER BY a.window_start DESC LIMIT 1`,
+    )
+    .bind(personId)
+    .first<{ window_start: string; technician: string | null }>();
+  return row === null ? null : { date: indiaDate(new Date(row.window_start)), technician: row.technician };
 }
 
 /** The three states the apps show a client in. */
@@ -232,31 +263,36 @@ export async function isFitted(db: D1Database, personId: string): Promise<boolea
   return row?.fitted === 1;
 }
 
-/** `withCancelled`: past visits include those cancelled, so the client's own list keeps a record of a cancellation. */
+/**
+ * `clientsOwn`: the client's own lists, whose history keeps a record of a cancellation and takes a visit we missed once
+ * its day is over. Ops' lists keep that one to come until they close it.
+ */
 export async function listVisits(
   db: D1Database,
   personId: string,
   now: Date,
-  { withCancelled = false }: { readonly withCancelled?: boolean } = {},
+  { clientsOwn = false }: { readonly clientsOwn?: boolean } = {},
 ): Promise<{ upcoming: VisitSummary[]; past: VisitSummary[] }> {
-  const pastStatus = withCancelled
+  const ended = clientsOwn
     ? `(${statusIn("a.status", VISIT_ENDED)} OR ${CANCELLED})`
     : statusIn("a.status", VISIT_ENDED);
+  const missed = clientsOwn ? `(${statusIn("a.status", VISIT_LIVE)} AND ${missedDayOver("a", "?2")})` : "0";
+  const binds = clientsOwn ? [personId, todayStartsOf(now)] : [personId];
   const [context, upcoming, past] = await Promise.all([
     contextOf(db, personId),
     db
       .prepare(
         `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-         WHERE ${LIVE} AND ${statusIn("a.status", VISIT_LIVE)} ORDER BY a.window_start`,
+         WHERE ${LIVE} AND ${statusIn("a.status", VISIT_LIVE)} AND NOT ${missed} ORDER BY a.window_start`,
       )
-      .bind(personId)
+      .bind(...binds)
       .all<AppointmentRow>(),
     db
       .prepare(
         `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
-         WHERE ${LIVE} AND ${pastStatus} ORDER BY a.window_start DESC`,
+         WHERE ${LIVE} AND (${ended} OR ${missed}) ORDER BY a.window_start DESC`,
       )
-      .bind(personId)
+      .bind(...binds)
       .all<AppointmentRow>(),
   ]);
   return {

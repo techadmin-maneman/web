@@ -59,12 +59,12 @@ export const MY_DATA = {
       title: "Your visits",
       fields: {
         type: words("Visit"),
-        tier: text("Price code"),
         hair_system: text("Hair system"),
         window_start: time("From"),
         window_end: time("Until"),
         status: words("Status"),
-        one_visit: yesNo("Consultation and fit in one visit"),
+        // Booked, fitted or declined: the visit stores where it got to, not a yes or no.
+        one_visit: words("Consultation and fit in one visit"),
         asked_window: words("Window you asked for"),
         technician: text("Technician"),
         service_city: text("City"),
@@ -91,7 +91,6 @@ export const MY_DATA = {
       fields: {
         reference: text("Reference"),
         type: words("Visit"),
-        tier: text("Price code"),
         hair_system: text("Hair system"),
         minutes: text("Minutes"),
         date: day("Day"),

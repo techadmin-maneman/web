@@ -631,6 +631,43 @@
           "history": {
             "$ref": "#/components/schemas/ClientRecordHistory"
           },
+          "next_visit": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "first_fit",
+                      "service",
+                      "replacement"
+                    ]
+                  },
+                  "tier": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "due_on": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "required": [
+                  "type",
+                  "tier",
+                  "due_on"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the client app offers them next, which Book a visit opens on: the replacement where the piece falls due first. Null while a visit is booked, and before their consultation is done."
+          },
           "invite": {
             "anyOf": [
               {
@@ -683,6 +720,7 @@
           "payment_links",
           "invoices",
           "history",
+          "next_visit",
           "invite",
           "auto_refunds",
           "lost_reasons"
@@ -2825,6 +2863,10 @@
               "replacement"
             ]
           },
+          "needs_profile": {
+            "type": "boolean",
+            "description": "A first fit for a client with no hair profile, which booking refuses: record it first. A one visit measures it there and then, so is not held back by it."
+          },
           "services": {
             "type": "array",
             "items": {
@@ -2924,6 +2966,7 @@
         },
         "required": [
           "kind",
+          "needs_profile",
           "services",
           "service",
           "recommended",
@@ -8794,6 +8837,7 @@
             "type": "string",
             "enum": [
               "ops.call",
+              "call.refused",
               "client.call",
               "tech.call",
               "consent.switch",
@@ -10634,6 +10678,10 @@
                   ],
                   "description": "When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again."
                 },
+                "out_of_codes": {
+                  "type": "boolean",
+                  "description": "Their number has had its login codes for today. Ops may give them back."
+                },
                 "devices": {
                   "type": "array",
                   "items": {
@@ -10700,6 +10748,7 @@
                 "fits_trained",
                 "visits_to_come",
                 "sign_in_stopped_at",
+                "out_of_codes",
                 "devices",
                 "leave"
               ],
@@ -12125,6 +12174,11 @@
               },
               "product": {
                 "type": "string"
+              },
+              "visit_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "The one visit it is owed for, which a UPI payment may settle."
               }
             },
             "required": [
@@ -12132,7 +12186,8 @@
               "state",
               "amount",
               "url",
-              "product"
+              "product",
+              "visit_id"
             ],
             "additionalProperties": false
           },
@@ -32258,6 +32313,7 @@
               "type": "string",
               "enum": [
                 "ops.call",
+                "call.refused",
                 "client.call",
                 "tech.call",
                 "consent.switch",
@@ -35466,7 +35522,7 @@
     },
     "/api/technicians/{id}/allow-sign-in": {
       "post": {
-        "summary": "Let a technician sign in again, on any phone, after ops revoked one of theirs",
+        "summary": "Let a technician sign in again, on any phone: after ops revoked one of theirs, or once their number has had its login codes for today",
         "parameters": [
           {
             "schema": {
@@ -35541,7 +35597,7 @@
             }
           },
           "404": {
-            "description": "not_found: no such technician stopped signing in, or they are not in the caller's cities",
+            "description": "not_found: no such technician stopped signing in or out of codes, or they are not in the caller's cities",
             "content": {
               "application/json": {
                 "schema": {

@@ -14,7 +14,7 @@ let job: Working;
 let code: string;
 
 interface Kit {
-  held: { code: string; quantity: number; lots: { lot_code: string }[]; units: { code: string }[] }[];
+  held: { code: string; quantity: number; low: boolean; lots: { lot_code: string }[]; units: { code: string }[] }[];
   coming: { id: string; code: string; quantity: number; from: string; units: string[] }[];
   returned: { piece_code: string }[];
 }
@@ -122,6 +122,17 @@ describe("the kit", () => {
     const [item] = (await response.json<Kit>()).held;
     expect(item).toMatchObject({ code, quantity: 2, lots: [{ lot_code: "HS-1" }] });
     expect(item?.units).toHaveLength(2);
+  });
+});
+
+describe("the kit's hair systems", () => {
+  it("leaves out one it holds none of, and never calls one running low", async () => {
+    await job.opsPost(`/api/consumables/${code}`, { reorder_kit: 2 });
+    await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 2, from: "central", to: IMRAN });
+    expect((await kit()).held.find((item) => item.code === code)).toMatchObject({ quantity: 2, low: false });
+
+    await job.opsPost("/api/stock/transfers", { consumable_code: code, quantity: 2, from: IMRAN, to: "central" });
+    expect((await kit()).held.map((item) => item.code)).not.toContain(code);
   });
 });
 

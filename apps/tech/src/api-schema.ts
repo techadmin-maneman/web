@@ -3260,6 +3260,8 @@ export interface components {
                     lot_code: string;
                     expires_on: string | null;
                     quantity: number;
+                    /** @description It expires within the days ops are warned before, and has not yet: use it first. */
+                    use_first: boolean;
                 }[];
                 /** @description A hair system's pieces the kit holds labelled. */
                 units: {

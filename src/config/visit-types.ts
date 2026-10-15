@@ -20,6 +20,9 @@ export const VISIT_TYPE_NAMES: Readonly<Record<VisitType, string>> = {
   replacement: "Replacement",
 };
 
+/** A consultation and fit in one visit (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md), as clients read it. */
+export const ONE_VISIT_NAME = "Consultation and fit";
+
 /**
  * The tier of a kind's standard service, which a booking that names none is for while it is offered, and the late
  * fees' tier. A first fit has no standard service: its booking always names the hair system.

@@ -243,7 +243,11 @@ test("puts a client’s credits right, with the reason, and shows the balance it
   await save.click();
   expect((await sent).postDataJSON()).toEqual({ visits: -1, reason: "correction" });
 
-  await expect(credits.getByRole("status")).toHaveText("Done. They now have 1 visit.");
+  // The drawer closes once saved, and the section says what the change left them with.
+  await expect(credits).toBeHidden();
+  await expect(page.getByRole("region", { name: opsCopy.clients.credits.title }).getByRole("status")).toHaveText(
+    "Done. They now have 1 visit.",
+  );
   // The head reads the balance the API answered, without the record being read again.
   await expect(meta(page).nth(1)).toHaveText("1 · use by 3 Jan 2028");
 });

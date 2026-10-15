@@ -38,6 +38,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from "../lib/durations.ts";
 import { MAX_SYNC_ATTEMPTS, type CrmSyncMessage } from "../config/pipeline.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { staleContactUpdates } from "../domain/clients/contact-updates.ts";
+import { TRYON_PAUSED_KEYS } from "../policy/alerts.ts";
 
 /** A pending lead, or a queued job, older than this has lost its queue message. */
 const PENDING_GRACE_MS = 2 * MINUTE_MS;
@@ -325,6 +326,8 @@ export async function checkYoucamUnits(context: SweepContext, unitFloor: number)
     log.warn("credits_unreadable");
     return null;
   }
+  // YouCam took our key and has units to spend: a try-on paused for either runs again.
+  if (credits > 0) await Promise.all(Object.values(TRYON_PAUSED_KEYS).map((key) => deps.resolveAlert(key)));
   if (credits >= unitFloor) {
     await deps.resolveAlert("youcam_units_low");
     return credits;

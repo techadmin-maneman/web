@@ -212,13 +212,13 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
     if (stale !== null) return { skip: stale };
     return composed;
   }
-  if (isSiteNoticeKind(row.kind)) return composeSiteNotice(db, row.kind, row.person_id);
+  if (isSiteNoticeKind(row.kind)) return composeSiteNotice(db, { kind: row.kind, personId: row.person_id }, now);
   switch (row.kind) {
     case "tryon_result":
       return resultContent(db, config, row, now);
     case "next_service_reminder": {
       const days = (await readOpsInputs(db, now)).nextVisitDays;
-      return composeNextServiceReminder(db, row.subject_id, row.person_id, days);
+      return composeNextServiceReminder(db, row.subject_id, row.person_id, { days, now });
     }
     case "booking_refunded":
       return composeBookingRefunded(db, row.subject_id, row.person_id);

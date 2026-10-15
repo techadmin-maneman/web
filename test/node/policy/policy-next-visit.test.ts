@@ -105,11 +105,11 @@ describe("the next visit", () => {
     expect(serviceDue(TODAY, NEXT_VISIT_DAYS) <= last).toBe(true);
   });
 
-  it("reminds of a service due from today to a week from now, and never of one done today", () => {
-    expect(remindedIfDoneBetween(TODAY, NEXT_VISIT_DAYS)).toEqual({ from: "2026-08-22", to: "2026-08-29" });
+  it("reminds of a service due up to a week from now, one past its day until the client is at risk, and never of one done today", () => {
+    expect(remindedIfDoneBetween(TODAY, NEXT_VISIT_DAYS)).toEqual({ from: "2026-08-16", to: "2026-08-29" });
     // A reminder as long as the cadence would fall the day the visit was done: it goes the day after instead.
     expect(remindedIfDoneBetween(TODAY, { ...NEXT_VISIT_DAYS, service_cadence: 14, reminder_before_due: 14 })).toEqual({
-      from: "2026-09-07",
+      from: "2026-09-01",
       to: "2026-09-20",
     });
   });

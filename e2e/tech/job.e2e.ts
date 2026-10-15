@@ -105,6 +105,18 @@ test("says what a first fit was paid for, apart from the hair profile, and warns
   await expect(piece).toContainText("The hair profile says Mane Man Essential. Check with ops before you fit.");
 });
 
+// Waiting at the door for the client, the job reads so on Today, which the day's list alone never says.
+test("marks a job they checked in at as at the door on Today", async ({ page }) => {
+  await fakeTech(page);
+  await atTheDoor(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await foot(page).click();
+  await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
+
+  await page.goto("/");
+  await expect(page.getByText(techCopy.job.states.atTheDoor)).toBeVisible();
+});
+
 test("gives a consultation’s card the hair profile and no piece", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "consultation";
@@ -130,6 +142,8 @@ test("checks in at the door, and records the time and the distance (board B5)", 
 
   await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
   await expect(page.getByText(/left of 15 minutes/)).toBeVisible();
+  // Checked in after the booked start, the wait runs from the check-in: never "the booked start" for a moment.
+  await expect(page.getByText(/the booked start/)).toHaveCount(0);
   const checkIn = fake.writes.find((write) => write.path.endsWith("/checkin"));
   expect(checkIn?.body).toMatchObject({ lat: 28.39, lng: 77.07 });
   // Every write carries the job's start as the phone holds it, so a job ops moved is refused.

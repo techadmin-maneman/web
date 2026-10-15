@@ -33,10 +33,19 @@ export async function keepLanded(jobId: string, state: JobState): Promise<void> 
   }
 }
 
+/** Where a job stood when last heard of, and whether this phone checked in at it, which the day's list never says. */
+export type Heard = JobState & { readonly arrived: boolean };
+
 /** Where each job of the days the phone holds stood when last heard of, by job. */
-export async function keptStates(): Promise<Map<string, JobState>> {
-  const states = new Map<string, JobState>();
-  for (const day of await all("days")) for (const job of day.jobs) states.set(job.id, job.progress);
+export async function keptStates(): Promise<Map<string, Heard>> {
+  const arrivals = await all("arrivals");
+  const arrived = new Set(arrivals.filter((row) => row.arrival.passed).map((row) => row.job_id));
+  const states = new Map<string, Heard>();
+  for (const day of await all("days")) {
+    for (const job of day.jobs) states.set(job.id, { ...job.progress, arrived: arrived.has(job.id) });
+  }
+  // A check-in counts before the day that holds its job is kept.
+  for (const id of arrived) if (!states.has(id)) states.set(id, { started_at: null, outcome: null, arrived: true });
   return states;
 }
 

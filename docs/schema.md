@@ -308,7 +308,7 @@ Triggers: `appointments_kept_whole`, `appointments_whole`.
 
 Every ops action that reads or changes a client's data, and who took it. An entry is never changed (ADR 0031).
 
-Made by `0005_audit.sql`; changed by `0172_retention_reaches_every_table.sql`.
+Made by `0005_audit.sql`; changed by `0172_retention_reaches_every_table.sql`, `0183_audit_by_request.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -327,6 +327,7 @@ Indexes:
 
 - `audit_log_actor`: on (`actor_kind`, `actor`, `at`)
 - `audit_log_by_at`: on (`at`)
+- `audit_log_by_request`: on (`request_id`), where `request_id IS NOT NULL`
 - `audit_log_subject`: on (`subject_kind`, `subject_id`, `at`)
 
 Triggers: `audit_log_append_only_delete`, `audit_log_append_only_update`.

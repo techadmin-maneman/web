@@ -60,6 +60,8 @@ export const today = {
   offline: {
     title: "No signal · working offline",
     body: "Today’s jobs and cards are on the phone.",
+    /** On a job's step: what the technician does is kept, and goes once the signal is back. */
+    step: "This job’s steps and photographs are kept on the phone and send when the signal is back.",
   },
   // The board draws no failure for the day's list.
   failed: "The day’s jobs didn’t load.",
@@ -306,7 +308,7 @@ export const job = {
   start: "Start job",
   continueJob: "Continue",
   // The board draws no job's state on its card or its row.
-  states: { inProgress: "In progress", closed: "Closed out" },
+  states: { inProgress: "In progress", closed: "Closed out", atTheDoor: "At the door" },
   closedAs: (outcome: string) => `Closed out · ${outcome}`,
   seeCloseOut: "See the close-out",
   notToday: {
@@ -580,7 +582,7 @@ export const closeOut = {
   lastJob: "Back to today",
   // The evidence chain's close: the evidence summary, and what happens to it.
   noShow: {
-    ops: "This goes to ops with the charge.",
+    ops: "This goes to ops.",
     checkedIn: "Checked in",
     distance: "Distance",
     whatsApp: "WhatsApp",
@@ -791,6 +793,8 @@ export const kit = {
     title: "In your kit",
     none: "Your kit is empty.",
     expires: (date: string) => `Expires ${date}`,
+    /** A lot inside the days ops are warned before it expires. */
+    useFirst: (date: string) => `Use first · expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
     pieces: (count: number) => `${String(count)} labelled`,
     /** At or below the level ops keep a kit at: ops send more, and the technician may ask. */

@@ -31,15 +31,18 @@ export function StorageFull() {
   );
 }
 
-/** The offline banner: a paper strip with the line, and the explanation beneath it on ink. */
-export function Offline() {
+/**
+ * The offline banner: a paper strip with the line, and the explanation beneath it on ink: Today's, or a job step's,
+ * whose work waits on the phone.
+ */
+export function Offline({ body = todayCopy.offline.body }: { readonly body?: string }) {
   return (
     <div className={styles.offline} role="status">
       <p className={styles.offlineTitle}>
         <Icon d={APP_ICONS.offline} size="md" weight="heavy" />
         {todayCopy.offline.title}
       </p>
-      <p className={styles.offlineBody}>{todayCopy.offline.body}</p>
+      <p className={styles.offlineBody}>{body}</p>
     </div>
   );
 }

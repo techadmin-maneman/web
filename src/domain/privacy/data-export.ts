@@ -23,13 +23,14 @@ export const EXPORT_QUERIES = {
     FROM addresses WHERE person_id = ?1 ORDER BY created_at`,
   consents: `SELECT purpose, granted, notice_version, source, created_at FROM consents WHERE person_id = ?1
     ORDER BY created_at, rowid`,
-  visits: `SELECT a.type, a.tier, (${HAIR_SYSTEM("a")}) AS hair_system, a.window_start, a.window_end, a.status, a.one_visit, a.asked_window,
+  visits: `SELECT a.type, (${HAIR_SYSTEM("a")}) AS hair_system, a.window_start, a.window_end, a.status, a.one_visit,
+      a.asked_window,
       t.name AS technician, a.service_city, a.service_pincode, a.client_note, a.client_note_at
     FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
     WHERE a.person_id = ?1 AND a.deleted_at IS NULL ORDER BY a.window_start`,
   visit_changes: `SELECT kind, was_start, now_start, notice, ops_terms, refund_amount, kept_amount, created_at
     FROM visit_changes WHERE person_id = ?1 ORDER BY created_at`,
-  bookings_started: `SELECT reference, h.type, tier, (${HAIR_SYSTEM("h")}) AS hair_system, minutes, date, window_label, pincode, move_kind, one_visit, amount,
+  bookings_started: `SELECT reference, h.type, (${HAIR_SYSTEM("h")}) AS hair_system, minutes, date, window_label, pincode, move_kind, one_visit, amount,
       use_credit, pay_by_link, pay_at_visit, change_notice_hours, late_change_charge, no_show_charge, consents_shown, state,
       auto_refund_reason, created_at, confirmed_at
     FROM slot_holds h WHERE person_id = ?1 ORDER BY created_at`,

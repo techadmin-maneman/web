@@ -38,7 +38,8 @@ export const payments = {
     meta: (date: string) => `Fitted ${date}`,
     pay: "Pay now",
     newTab: "opens Razorpay in a new tab",
-    onItsWay: "Your payment link is on its way by text.",
+    /** No link to pay by: Razorpay could not make one, or online payment is off. Ops are told, and settle it. */
+    onItsWay: "We’ll message you to settle this.",
   },
   /**
    * The free service visits among the payments, in the reward's one name, which the row's name or meta says, so its

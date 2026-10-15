@@ -122,9 +122,9 @@ async function linkStillOpen(db: D1Database, personId: string, kind: VisitType, 
 
 /** A consultation or a first fit still to come, or a link open for one, which a second of its kind would double. */
 async function alreadyToCome(db: D1Database, asked: VisitAsked, now: Date): Promise<boolean> {
-  if ((await liveVisitOf(db, asked.personId, asked.kind)) !== null) return true;
+  if ((await liveVisitOf(db, asked.personId, { type: asked.kind, now })) !== null) return true;
   if (await linkStillOpen(db, asked.personId, asked.kind, now)) return true;
-  return asked.oneVisit && (await liveVisitOf(db, asked.personId, "consultation")) !== null;
+  return asked.oneVisit && (await liveVisitOf(db, asked.personId, { type: "consultation", now })) !== null;
 }
 
 /** Why no service was found: no hair system on sale that day, for a first fit; else nothing that is booked so. */

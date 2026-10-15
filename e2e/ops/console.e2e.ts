@@ -5,7 +5,7 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
-import { answer, fails, json, SETTINGS, TASKS, TASKS_READ_ON } from "./fixtures.ts";
+import { answer, DISCOUNT_CODES, fails, json, SETTINGS, TASKS, TASKS_READ_ON } from "./fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 
@@ -97,6 +97,18 @@ test("shows a person who may only look each rule's value, with no box", async ({
   await expect(main.getByRole("spinbutton")).toHaveCount(0);
   await expect(main.getByRole("textbox")).toHaveCount(0);
   await expect(main.getByRole("button", { name: opsCopy.review.next })).toHaveCount(0);
+});
+
+// A person who could only look at the discount codes saw an empty column where the actions go.
+test("gives a person who may only look at the discount codes no column of actions", async ({ page }) => {
+  await answer(page, {
+    "GET /api/whoami": signedIn("viewer@maneman.in", true, [...ONLY_SIGNED_IN, "GET /api/discount-codes"]),
+    "GET /api/discount-codes": json(DISCOUNT_CODES),
+  });
+  await page.goto("/settings/discount-codes");
+  const table = page.getByRole("main").getByRole("table").first();
+  await expect(table.getByRole("row").first().getByRole("columnheader")).toHaveCount(9);
+  await expect(table.locator("tbody").getByRole("button")).toHaveCount(0);
 });
 
 test("opens each page that moved at its new address", async ({ page }) => {

@@ -1,5 +1,5 @@
 // A technician's phones (./field.ts): one revoked, which drops its cached jobs and stops them signing in, and their
-// sign-in allowed again after a revoke.
+// sign-in allowed again after a revoke, or once their number has had its login codes for today.
 
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
@@ -24,11 +24,15 @@ const revokeRoute = opsRoute({
 const allowSignInRoute = opsRoute({
   method: "post",
   path: "/api/technicians/{id}/allow-sign-in",
-  summary: "Let a technician sign in again, on any phone, after ops revoked one of theirs",
+  summary:
+    "Let a technician sign in again, on any phone: after ops revoked one of theirs, or once their number has had " +
+    "its login codes for today",
   request: { params: z.object({ id: z.uuid() }) },
   responses: {
     200: { description: "They may sign in again", ...json(z.object({ allowed: z.literal(true) }).strict()) },
-    404: errorResponse("not_found: no such technician stopped signing in, or they are not in the caller's cities"),
+    404: errorResponse(
+      "not_found: no such technician stopped signing in or out of codes, or they are not in the caller's cities",
+    ),
   },
 });
 
@@ -69,7 +73,9 @@ export function registerOpsTechnicianPhones(app: App): void {
       subject: { kind: "technician", id },
       requestId: c.var.requestId,
     } as const;
-    if (!(await allowSignIn(c.env.DB, id, audit, c.var.deps.now()))) {
+    const { settings } = c.var.config;
+    const count = { salt: settings.ipHashSalt, settings };
+    if (!(await allowSignIn(c.env.DB, id, { audit, count }, c.var.deps.now()))) {
       return refuse(c, "not_found");
     }
     c.var.log.info("technician_sign_in_allowed", { technician_id: id });

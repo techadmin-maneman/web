@@ -19,7 +19,10 @@ export async function servedPincode(pincode: string, city: string, served = true
 }
 
 export async function auditActions(): Promise<string[]> {
-  // Every call is written too (ops.call, client.call); these are the actions each call took.
-  const rows = await env.DB.prepare("SELECT action FROM audit_log WHERE action NOT LIKE '%.call' ORDER BY id").all();
+  // Every call is written too (ops.call, client.call), and a refused one again (call.refused); these are the actions
+  // each call took.
+  const rows = await env.DB.prepare(
+    "SELECT action FROM audit_log WHERE action NOT LIKE '%.call' AND action <> 'call.refused' ORDER BY id",
+  ).all();
   return rows.results.map((row) => String(row.action));
 }

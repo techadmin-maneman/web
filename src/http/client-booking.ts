@@ -3,7 +3,7 @@
 
 import { shortDate } from "@maneman/web-kit/dates";
 import type { Context } from "hono";
-import { type VisitType, VISIT_TYPE_NAMES } from "../config/visit-types.ts";
+import { ONE_VISIT_NAME, type VisitType, VISIT_TYPE_NAMES } from "../config/visit-types.ts";
 import { bookableTypes } from "../domain/booking/availability.ts";
 import { startBooking } from "../domain/booking/bookings.ts";
 import { checkoutHold } from "../domain/booking/holds.ts";
@@ -102,7 +102,7 @@ export async function bookable(
     cityOfPerson(db, personId),
   ]);
   const [types, service] = await Promise.all([
-    bookableTypes(db, personId),
+    bookableTypes(db, personId, c.var.deps.now()),
     bookableService(db, { kind: wanted.type, tier: wanted.tier, on, wears, city }),
   ]);
   if (!types.includes(wanted.type)) return "not_bookable";
@@ -114,7 +114,9 @@ export async function bookable(
 /** A moved visit's own service, by its name as it is now, with the length the visit keeps. */
 export async function movedService(c: Context<AppEnv>, visit: ChangeableVisit) {
   const service = await serviceOf(c.env.DB, visit.type, visit.tier);
-  return { tier: visit.tier, name: service?.name ?? VISIT_TYPE_NAMES[visit.type], minutes: visit.minutes };
+  // A consultation and fit names no hair system until the client chooses one at the visit.
+  const name = visit.oneVisit ? ONE_VISIT_NAME : (service?.name ?? VISIT_TYPE_NAMES[visit.type]);
+  return { tier: visit.tier, name, minutes: visit.minutes };
 }
 
 /**

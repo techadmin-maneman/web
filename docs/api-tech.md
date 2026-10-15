@@ -6594,12 +6594,17 @@ Request body:
                 },
                 "quantity": {
                   "type": "integer"
+                },
+                "use_first": {
+                  "type": "boolean",
+                  "description": "It expires within the days ops are warned before, and has not yet: use it first."
                 }
               },
               "required": [
                 "lot_code",
                 "expires_on",
-                "quantity"
+                "quantity",
+                "use_first"
               ],
               "additionalProperties": false
             },

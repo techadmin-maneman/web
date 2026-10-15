@@ -83,6 +83,9 @@ export const TEMPLATES = {
   no_show_dispute_upheld_v1:
     "Hi {{1}}, we've reviewed your dispute.\nAbout your {{2}} on {{3}}: the charge stands. Message us if you'd like to know why.",
   // Due in a few days with nothing booked: {{2}} "service visit" or "replacement", {{3}} the due day.
+  // The same reminder sent once its day has passed unsent: an outage, or consent given since.
+  next_visit_overdue_v1:
+    "Hi {{1}}, time to book your next visit.\nYour {{2}} was due on {{3}}. Book it in the Mane Man app.",
   next_visit_due_v1:
     "Hi {{1}}, time to book your next visit.\nYour {{2}} is due on {{3}}. Book it in the Mane Man app.",
   visit_cancelled_v1:

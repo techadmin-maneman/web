@@ -181,8 +181,16 @@ describe("where a row of the day’s list stands", () => {
   });
 
   it("goes by what a write’s answer said since the list was read", () => {
-    expect(rowState(job(), [], { started_at: "t", outcome: null })).toBe("in_progress");
-    expect(rowState(job({}, { started_at: "t" }), [], { started_at: "t", outcome: "partial" })).toBe("closed");
+    expect(rowState(job(), [], { started_at: "t", outcome: null, arrived: true })).toBe("in_progress");
+    expect(rowState(job({}, { started_at: "t" }), [], { started_at: "t", outcome: "partial", arrived: true })).toBe(
+      "closed",
+    );
+  });
+
+  it("is at the door once this phone checked in, until the job starts or closes", () => {
+    expect(rowState(job(), [], { started_at: null, outcome: null, arrived: true })).toBe("at_the_door");
+    expect(rowState(job(), [], { started_at: null, outcome: null, arrived: false })).toBeNull();
+    expect(rowState(job(), [queued("start")], { started_at: null, outcome: null, arrived: true })).toBe("in_progress");
   });
 
   it("counts the phone’s writes still on their way, and not those the API stopped, as the card does", () => {

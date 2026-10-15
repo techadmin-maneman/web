@@ -10,6 +10,7 @@ import { type Pass, claimToRecord, tellFailure, closeFailures, claimToApply, mar
 import { type PaymentPaidFor, supplyOf } from "./receipt-supply.ts";
 import { PER_PASS } from "./vendor-pass.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
+import { paidOutsideRazorpay, UPI_MARK } from "../../policy/upi.ts";
 
 // ---------------------------------------------------------------------------
 // Recording a payment
@@ -46,11 +47,13 @@ export async function paymentsToRecord(pass: Pass): Promise<PaymentToRecord[]> {
 export async function recordPayment(pass: Pass, payment: PaymentToRecord): Promise<boolean> {
   const { db, deps } = pass;
   if (!(await claimToRecord(pass, payment.id))) return false;
+  const mode = paidOutsideRazorpay(payment.razorpay_payment_id) ? "UPI" : "Razorpay";
+  const takenAs = payment.razorpay_payment_id.replace(UPI_MARK, "");
   const failed = {
     kind: "payment",
     id: payment.id,
     personId: payment.person_id,
-    what: `payment ${payment.id} (Razorpay ${payment.razorpay_payment_id})`,
+    what: `payment ${payment.id} (${mode} ${takenAs})`,
     then: "It is asked again every hour.",
   } as const;
   try {
@@ -61,10 +64,11 @@ export async function recordPayment(pass: Pass, payment: PaymentToRecord): Promi
       (await deps.books.findPayment(customerId, reference)) ??
       (await deps.books.recordPayment({
         customerId,
+        mode,
         amount: payment.amount,
         date: indiaDate(new Date(payment.captured_at)),
         reference,
-        description: `${pass.label}Razorpay payment ${payment.razorpay_payment_id}`,
+        description: `${pass.label}${mode} payment ${takenAs}`,
         supply: `${pass.label}${supplyOf(payment)}`,
       }));
     await db

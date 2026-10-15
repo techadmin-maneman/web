@@ -24,7 +24,7 @@ const { TellClient } = await import("../../apps/tech/src/job/TellClient.tsx");
 const JOB = {
   id: "22222222-2222-4222-8222-222222222221",
   client: { name: "Rohit Malhotra", mobile: "+919810000001", note: null, whatsapp: true },
-  progress: { started_at: null, outcome: null },
+  progress: { checked_in_at: null, started_at: null, outcome: null },
 } as unknown as Job;
 
 let page: HTMLDivElement;
@@ -69,6 +69,12 @@ describe("telling the client from the card", () => {
       { kind: "update", jobId: JOB.id, body: { preset: "at_gate", minutes: null } },
     ]);
     expect(page.textContent).toContain(copy.tell.sent("Rohit"));
+  });
+
+  it("offers only At the gate once they have checked in, so the wait stays in view", () => {
+    draw({ ...JOB, progress: { ...JOB.progress, checked_in_at: "2030-07-01T05:00:00.000Z" } });
+    const labels = [...page.querySelectorAll("button")].map((each) => each.textContent.trim());
+    expect(labels).toEqual([copy.tell.atGate]);
   });
 
   it("asks for a call where the client takes no WhatsApp messages about visits", () => {

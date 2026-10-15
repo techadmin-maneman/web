@@ -93,6 +93,7 @@ describe("payments and refunds", () => {
       expect(books.made.payments).toEqual([
         {
           customerId: "books-customer-9",
+          mode: "Razorpay",
           amount: 3000000,
           date: "2026-09-21",
           reference: "MM-2026-0841",
@@ -123,6 +124,14 @@ describe("payments and refunds", () => {
       const books = createStubBooks();
       await pass(books, "books-customer-9", NOW, { refundAccountId: null, labelAsTest: false });
       expect(books.made.payments[0]?.description).toBe("Razorpay payment pay_test41");
+    });
+
+    it("records a payment made by UPI at the visit under Books' UPI mode, with its UTR", async () => {
+      await payment();
+      await env.DB.prepare("UPDATE payments SET razorpay_payment_id = 'upi:412345678901'").run();
+      const books = createStubBooks();
+      await pass(books, "books-customer-9", NOW, { refundAccountId: null, labelAsTest: false });
+      expect(books.made.payments[0]).toMatchObject({ mode: "UPI", description: "UPI payment 412345678901" });
     });
 
     it("leaves an authorised payment until it is captured", async () => {

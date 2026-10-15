@@ -304,6 +304,7 @@ describe("Zoho Books", () => {
   const BOOKS_API = "https://www.zohoapis.in/books/v3";
   const PAYMENT = {
     customerId: "customer-1",
+    mode: "Razorpay" as const,
     amount: 200000,
     date: "2026-10-02",
     reference: "MM-2026-0841",

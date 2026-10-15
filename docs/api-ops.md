@@ -13759,7 +13759,7 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 
 ### POST /api/technicians/{id}/allow-sign-in
 
-Let a technician sign in again, on any phone, after ops revoked one of theirs
+Let a technician sign in again, on any phone: after ops revoked one of theirs, or once their number has had its login codes for today
 
 **200**: They may sign in again
 
@@ -13818,7 +13818,7 @@ Let a technician sign in again, on any phone, after ops revoked one of theirs
 }
 ```
 
-**404**: not_found: no such technician stopped signing in, or they are not in the caller's cities
+**404**: not_found: no such technician stopped signing in or out of codes, or they are not in the caller's cities
 
 ```json
 {
@@ -27553,6 +27553,43 @@ Request body:
     "history": {
       "$ref": "#/components/schemas/ClientRecordHistory"
     },
+    "next_visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "tier": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "due_on": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "required": [
+            "type",
+            "tier",
+            "due_on"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client app offers them next, which Book a visit opens on: the replacement where the piece falls due first. Null while a visit is booked, and before their consultation is done."
+    },
     "invite": {
       "anyOf": [
         {
@@ -27605,6 +27642,7 @@ Request body:
     "payment_links",
     "invoices",
     "history",
+    "next_visit",
     "invite",
     "auto_refunds",
     "lost_reasons"
@@ -29862,6 +29900,10 @@ Request body:
         "replacement"
       ]
     },
+    "needs_profile": {
+      "type": "boolean",
+      "description": "A first fit for a client with no hair profile, which booking refuses: record it first. A one visit measures it there and then, so is not held back by it."
+    },
     "services": {
       "type": "array",
       "items": {
@@ -29961,6 +30003,7 @@ Request body:
   },
   "required": [
     "kind",
+    "needs_profile",
     "services",
     "service",
     "recommended",
@@ -36366,6 +36409,7 @@ Request body:
       "type": "string",
       "enum": [
         "ops.call",
+        "call.refused",
         "client.call",
         "tech.call",
         "consent.switch",
@@ -38291,6 +38335,10 @@ Request body:
             ],
             "description": "When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again."
           },
+          "out_of_codes": {
+            "type": "boolean",
+            "description": "Their number has had its login codes for today. Ops may give them back."
+          },
           "devices": {
             "type": "array",
             "items": {
@@ -38357,6 +38405,7 @@ Request body:
           "fits_trained",
           "visits_to_come",
           "sign_in_stopped_at",
+          "out_of_codes",
           "devices",
           "leave"
         ],
@@ -39842,6 +39891,11 @@ Request body:
         },
         "product": {
           "type": "string"
+        },
+        "visit_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The one visit it is owed for, which a UPI payment may settle."
         }
       },
       "required": [
@@ -39849,7 +39903,8 @@ Request body:
         "state",
         "amount",
         "url",
-        "product"
+        "product",
+        "visit_id"
       ],
       "additionalProperties": false
     },

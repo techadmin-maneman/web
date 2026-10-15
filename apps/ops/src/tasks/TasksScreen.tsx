@@ -97,7 +97,9 @@ function TaskRow({ group, task, now, acting, marked }: RowProps) {
         )}
         <BookFromTask task={task} subject={subject} onBooked={acting.onClosed} />
         {group === "payment_owed" && <PaymentLinkActions task={task} subject={subject} />}
-        {group === "upi_due" && <UpiPaymentAction task={task} subject={subject} onRecorded={acting.onClosed} />}
+        {(group === "upi_due" || group === "payment_owed") && (
+          <UpiPaymentAction task={task} subject={subject} onRecorded={acting.onClosed} />
+        )}
         <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
         <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>

@@ -28,7 +28,20 @@ export interface Prefill {
   readonly code?: string;
   /** What the visit makes good, free: one of availability's `owed`. */
   readonly covers?: string;
+  /** The label of the hair system in wear, which a replacement replaces. */
+  readonly replacing?: string;
 }
+
+/** A replacement's "Replaces MM-ESS-0000061-R.", where the hair system in wear is known; nothing for any other visit. */
+const replacesLine = (choice: Choice, prefill: Prefill): string =>
+  choice === "replacement" && prefill.replacing !== undefined ? `${copy.replaces(prefill.replacing)} ` : "";
+
+/**
+ * What the form says was refused: the booking's own refusal, else a first fit for a client with no hair profile, said
+ * as soon as First fit is chosen rather than once the form is filled and sent.
+ */
+const shownRefusal = (failed: string | null, choice: Choice, offered: VisitAvailability): string | null =>
+  failed ?? (choice === "first_fit" && offered.needs_profile ? "no_profile" : null);
 
 /** "Wed 23 Sep, 9 am": when the link closes. */
 const whenOf = (instant: string) => `${shortDate(indiaDate(instant))}, ${indiaClock(instant)}`;
@@ -159,6 +172,7 @@ function BookingForm({
   const firstDay = offered.days[0]?.date;
   const cover = offered.owed.some((each) => each.id === covers) ? covers : "";
   const takesCode = kindOf(choice) !== "consultation" && cover === "";
+  const refused = shownRefusal(failed, choice, offered);
 
   const book = () =>
     once(async () => {
@@ -220,7 +234,7 @@ function BookingForm({
           )}
         </Field>
       )}
-      <p className={shared.pays}>{payLine(choice, offered, cover !== "")}</p>
+      <p className={shared.pays}>{replacesLine(choice, prefill) + payLine(choice, offered, cover !== "")}</p>
       <div className={shared.actions}>
         <Button
           variant="primary"
@@ -228,12 +242,12 @@ function BookingForm({
           className={shared.primary}
           type="submit"
           busy={busy}
-          disabled={day === undefined || window === undefined}
+          disabled={day === undefined || window === undefined || refused === "no_profile"}
         >
           {busy ? copy.booking : copy.book}
         </Button>
       </div>
-      {failed !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: failed })} />}
+      {refused !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: refused })} />}
     </form>
   );
 }

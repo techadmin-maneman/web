@@ -34,9 +34,11 @@ export const supplyPlan = {
     city: "City",
     none: "No forecast yet.",
     empty: (city: string) => `Nothing expected in ${city}.`,
-    /** "Expected use in each 7-day period from 21 Sep 2026, the high case beneath." */
-    note: (days: number, from: string) =>
-      `Expected use in each ${String(days)}-day period from ${from}, the high case beneath.`,
+    /** "Run 21 Sep 2026. Expected use in each 7-day period, the high case beneath." */
+    note: (days: number, ranOn: string) =>
+      `Run ${ranOn}. Expected use in each ${String(days)}-day period, the high case beneath.`,
+    /** Every period of the latest run is over: the hourly job runs the next. */
+    stale: (ranOn: string) => `The last forecast, run ${ranOn}, is out of date. The next runs within the hour.`,
     item: "Item",
     /** "up to 7" */
     high: (figure: string) => `up to ${figure}`,

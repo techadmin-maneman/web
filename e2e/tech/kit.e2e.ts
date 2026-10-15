@@ -22,8 +22,9 @@ function withAKit(fake: Fake): void {
         low: false,
         hair_system: false,
         lots: [
-          { lot_code: "SV-1", expires_on: "2020-01-31", quantity: 20 },
-          { lot_code: "SV-2", expires_on: "2031-01-31", quantity: 100 },
+          { lot_code: "SV-1", expires_on: "2020-01-31", quantity: 20, use_first: false },
+          { lot_code: "SV-2", expires_on: "2031-01-31", quantity: 60, use_first: false },
+          { lot_code: "SV-3", expires_on: "2030-07-20", quantity: 40, use_first: true },
         ],
         units: [],
       },
@@ -53,7 +54,8 @@ test("opens from today, shows each lot’s expiry, and receives a top-up by the 
 
   const held = page.getByRole("region", { name: copy.held.title });
   await expect(held).toContainText("SV-1 · 20 · Expired 31 Jan");
-  await expect(held).toContainText("SV-2 · 100 · Expires 31 Jan");
+  await expect(held).toContainText("SV-2 · 60 · Expires 31 Jan");
+  await expect(held).toContainText("SV-3 · 40 · Use first · expires 20 Jul");
 
   const coming = page.getByRole("region", { name: copy.coming.title });
   const scan = coming.getByLabel(copy.scan.label);

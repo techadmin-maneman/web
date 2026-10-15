@@ -117,6 +117,13 @@ test("lists each transfer and order with why, and approves one at a changed quan
   expect(await axeViolations(page)).toEqual([]);
 });
 
+test("says a forecast every period of which is over is out of date", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-15T06:00:00.000Z"));
+  await open(page);
+  const forecast = page.getByRole("region", { name: copy.forecast.title });
+  await expect(forecast).toContainText(copy.forecast.stale("21 Sep 2026"));
+});
+
 test("rejects a line with why", async ({ page }) => {
   const rejected = { lines: [LOAN, { ...ORDER, state: "rejected" as const, reject_reason: "Bought last week" }] };
   await open(page, { "POST /api/supply-plan/lines/{id}/reject": json(rejected) });
@@ -138,8 +145,12 @@ test("shows a city’s forecast, and adds an event to the calendar", async ({ pa
     starts_on: "2026-11-08",
     ends_on: "2026-11-12",
   };
+  // The forecast's second week: its first is over, so only the second is shown.
+  await page.clock.setFixedTime(new Date("2026-09-29T06:00:00.000Z"));
   await open(page, { "POST /api/demand-events": json({ ...CALENDAR, events: [WEDDINGS, diwali] }) });
   const forecast = page.getByRole("region", { name: copy.forecast.title });
+  await expect(forecast).toContainText(copy.forecast.note(7, "21 Sep 2026"));
+  await expect(forecast.getByRole("columnheader", { name: "21 Sep" })).toHaveCount(0);
   await expect(forecast.getByRole("row").filter({ hasText: "Solvent" }).first()).toContainText(
     copy.forecast.high("15"),
   );

@@ -12,22 +12,27 @@ import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 import { allowedTechnicians, techniciansBarredOn } from "../../policy/technician-rotation.ts";
 import { visitsOfClient } from "./technician-rotation.ts";
 import type { Fitting } from "./occupancy.ts";
+import { missedDayOver, todayStartsOf } from "../visits/visit-begun.ts";
 
-/** A visit booked and still to happen. */
-const STILL_TO_HAPPEN = `deleted_at IS NULL AND ${statusIn("status", VISIT_LIVE)}`;
+/**
+ * The client ?1's visit booked and still to happen: not one nobody arrived at, once its day is over (missedDayOver).
+ * ?2 is the start of today in India.
+ */
+const STILL_TO_HAPPEN = `a.person_id = ?1 AND a.deleted_at IS NULL
+  AND ${statusIn("a.status", VISIT_LIVE)} AND NOT ${missedDayOver("a", "?2")}`;
 
 const PAID_HOLD = paidNotBooked("slot_holds");
 
-/** What decides the types a client ?1 may book, in one statement. */
+/** What decides the types a client ?1 may book today, which began at ?2, in one statement. */
 const STAGE = `SELECT
   ${FITTED} AS fitted,
   EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL AND status = 'completed'
     AND type = 'consultation') AS consulted,
-  EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND ${STILL_TO_HAPPEN}
-      AND (type = 'consultation' OR one_visit = 'booked'))
+  EXISTS (SELECT 1 FROM appointments a WHERE ${STILL_TO_HAPPEN}
+      AND (a.type = 'consultation' OR a.one_visit = 'booked'))
     OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD}
       AND (type = 'consultation' OR one_visit = 1)) AS consultation_live,
-  EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND ${STILL_TO_HAPPEN} AND type = 'first_fit')
+  EXISTS (SELECT 1 FROM appointments a WHERE ${STILL_TO_HAPPEN} AND a.type = 'first_fit')
     OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD} AND type = 'first_fit')
     AS first_fit_live`;
 
@@ -42,8 +47,8 @@ interface StageRow {
  * The types a client may book: a consultation first, then a first fit, then service visits and replacements.
  * A consultation or a first fit is booked once at a time: not while one is still to happen (liveVisitOf).
  */
-export async function bookableTypes(db: D1Database, personId: string): Promise<VisitType[]> {
-  const row = await db.prepare(STAGE).bind(personId).first<StageRow>();
+export async function bookableTypes(db: D1Database, personId: string, now: Date): Promise<VisitType[]> {
+  const row = await db.prepare(STAGE).bind(personId, todayStartsOf(now)).first<StageRow>();
   if (row?.fitted === 1) return ["service", "replacement"];
   if (row?.consulted === 1) return row.first_fit_live === 1 ? [] : ["first_fit"];
   return row?.consultation_live === 1 ? [] : ["consultation"];
@@ -66,18 +71,18 @@ export interface LiveVisit {
 export async function liveVisitOf(
   db: D1Database,
   personId: string,
-  type: VisitType,
+  { type, now }: { readonly type: VisitType; readonly now: Date },
   exceptHoldId: string | null = null,
 ): Promise<LiveVisit | null> {
   if (!ONE_AT_A_TIME.includes(type)) return null;
   const [booked, paid] = await Promise.all([
     db
       .prepare(
-        `SELECT window_start FROM appointments
-         WHERE person_id = ?1 AND (type = ?2 OR (?2 = 'consultation' AND one_visit = 'booked')) AND ${STILL_TO_HAPPEN}
-         ORDER BY window_start LIMIT 1`,
+        `SELECT a.window_start FROM appointments a
+         WHERE ${STILL_TO_HAPPEN} AND (a.type = ?3 OR (?3 = 'consultation' AND a.one_visit = 'booked'))
+         ORDER BY a.window_start LIMIT 1`,
       )
-      .bind(personId, type)
+      .bind(personId, todayStartsOf(now), type)
       .first<{ window_start: string }>(),
     db
       .prepare(

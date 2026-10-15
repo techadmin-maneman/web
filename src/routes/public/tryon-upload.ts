@@ -10,7 +10,7 @@
 // The look goes to WhatsApp only, so no photo is taken while WhatsApp cannot
 // send one (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
 
-import { whatsAppBridgeDown } from "../../domain/platform/alerts.ts";
+import { tryOnStopped } from "../../domain/platform/alerts.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { App } from "../../http/context.ts";
 import { CURRENT_NOTICE } from "../../config/notices.ts";
@@ -122,7 +122,7 @@ export function registerTryonUpload(app: App): void {
     if (request.notice_version !== CURRENT_NOTICE.tryon_photo) {
       return refuse(c, "invalid_request", ["notice_version"]);
     }
-    if (!tryOnRuns(settings.messaging, await whatsAppBridgeDown(c.env.DB))) return refuse(c, "whatsapp_unavailable");
+    if (!tryOnRuns(settings.messaging, await tryOnStopped(c.env.DB))) return refuse(c, "whatsapp_unavailable");
 
     // One look per visitor: a browser whose last render did not fail gets no second photo.
     const lastJobId = await lookCookieJob(c);

@@ -28,6 +28,7 @@ const PAIRINGS: readonly Pairing[] = [
   { text: "--paper", ground: "--ink-deep", where: "every screen’s words" },
   { text: "--ink-soft", ground: "--ink-deep", where: "a line beneath a heading, access notes, a caution" },
   { text: "--ink-muted", ground: "--ink-deep", where: "labels: a stage’s name, a row’s key (the one below 7:1)" },
+  { text: "--paper-shade", ground: "--ink-deep", where: "the stage a job card is at, read in sunlight" },
   { text: "--error-on-ink", ground: "--ink-deep", where: "a check-in that failed, a job whose queue stopped" },
   { text: "--ink-deep", ground: "--gilt", where: "the one primary action" },
   { text: "--ink-deep", ground: "--paper", where: "the offline banner, a ticked box (ADR 0025, item 59)" },

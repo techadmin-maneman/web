@@ -1,5 +1,6 @@
 // What ops do with a "UPI to record" task on the board itself: once the client's UPI payment is in the account, record
-// it under its UTR, which closes the task and sends the client their receipt (docs/decisions/0209).
+// it under its UTR, which closes the task and sends the client their receipt (docs/decisions/0209). A "Payment owed"
+// task offers it too, for a one visit whose link was never paid.
 
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
@@ -10,13 +11,21 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useId, useState } from "react";
-import { type Task } from "../api.ts";
+import { type Task, type VisitType } from "../api.ts";
 import { dispatch, tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import shared from "./tasks.module.css";
 import { tasksApi } from "./tasks-api.ts";
 
 const copy = tasks.upi;
+
+/** The visit a task's UPI payment is for, its kind and what it owes; null for a task of neither group. */
+function dueOf(task: Task): { visitId: string; kind: VisitType; amount: number } | null {
+  const { facts } = task;
+  if (facts.group === "upi_due") return { visitId: task.id, kind: facts.kind, amount: facts.amount };
+  if (facts.group === "payment_owed") return { visitId: facts.visit_id, kind: "first_fit", amount: facts.amount };
+  return null;
+}
 
 /** The drawer's one field, the UTR, and its two buttons. */
 function UpiDrawer(props: {
@@ -76,7 +85,7 @@ export function UpiPaymentAction({
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
   const mayRecord = useAccess().mayCall("POST /api/visits/{id}/upi-payment");
-  const due = task.facts.group === "upi_due" ? task.facts : null;
+  const due = dueOf(task);
   if (due === null || !mayRecord) return null;
 
   const close = () => {
@@ -87,7 +96,7 @@ export function UpiPaymentAction({
   const record = () =>
     once(async () => {
       setFailed(null);
-      const answer = await tasksApi.recordUpiPayment(task.id, utr.trim());
+      const answer = await tasksApi.recordUpiPayment(due.visitId, utr.trim());
       if (answer.ok) {
         close();
         onRecorded();

@@ -158,6 +158,18 @@ describe("what a browser is told: never the look, which goes to WhatsApp only", 
     expect(await (await visitor().call("/api/tryon/availability")).json()).toEqual({ available: true });
   });
 
+  // The try-on said it was paused only after the photo, the look, the name, the number and the code.
+  it("says it does not run while YouCam is paused, before any photograph", async () => {
+    await env.DB.prepare(
+      `INSERT INTO alerts (id, key, message, count, first_seen_at, last_seen_at)
+       VALUES ('a2', 'tryon_paused:credits', 'YouCam is out of units', 1, ?1, ?1)`,
+    )
+      .bind(new Date().toISOString())
+      .run();
+    expect(await (await visitor().call("/api/tryon/availability")).json()).toEqual({ available: false });
+    expect((await visitor().uploadLink()).status).toBe(503);
+  });
+
   it("hands a browser no look and no link to one, whoever it is", async () => {
     const browser = visitor();
     const jobId = await browser.claimed();

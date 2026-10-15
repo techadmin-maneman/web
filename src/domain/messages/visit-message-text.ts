@@ -10,7 +10,7 @@ import { firstNameOf } from "../../lib/names.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { minutesBetween } from "../../lib/durations.ts";
 import { timeRange } from "../../lib/time-range.ts";
-import { type VisitType, VISIT_TYPE_NAMES } from "../../config/visit-types.ts";
+import { ONE_VISIT_NAME, type VisitType, VISIT_TYPE_NAMES } from "../../config/visit-types.ts";
 import { statusIn, PAYMENT_HELD } from "../../config/statuses.ts";
 import type { BookingWindow } from "../../config/scheduling.ts";
 import { type NoShowDecision, type DisputeRuling, WAIVER_GIVES_BACK, type Waiver } from "../../policy/no-show.ts";
@@ -82,7 +82,7 @@ export function hoursOfWindow(date: string, window: BookingWindow, schedule: Slo
 }
 
 /** What a message calls a consultation and fit in one visit while it is still to happen (ADR 0105). */
-const ONE_VISIT_NAME = "consultation and fit";
+const ONE_VISIT_WORDS = ONE_VISIT_NAME.toLowerCase();
 /** Where a refund goes back to, by the payment's method, as a message names it. */
 export const DESTINATIONS: Readonly<Record<string, string>> = { upi: "UPI", card: "card", netbanking: "bank account" };
 
@@ -162,7 +162,7 @@ async function composeVisitText(
   const start = new Date(visit.window_start);
   const params = [
     firstNameOf(visit.name),
-    visit.one_visit === "booked" ? ONE_VISIT_NAME : VISIT_TYPE_NAMES[visit.type].toLowerCase(),
+    visit.one_visit === "booked" ? ONE_VISIT_WORDS : VISIT_TYPE_NAMES[visit.type].toLowerCase(),
     shortDate(indiaDate(start)),
     windowHours(start, await loadSlotSchedule(db)),
     visit.technician === null ? "our technician" : firstNameOf(visit.technician),

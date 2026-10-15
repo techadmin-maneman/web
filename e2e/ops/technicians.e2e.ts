@@ -222,6 +222,22 @@ test("says when a revoke stopped them signing in, and lets them in again", async
   await expect(main.getByRole("status")).toHaveText(opsCopy.technicians.phones.allowed);
 });
 
+// Their number's codes for the day used up, after a lost code or a new phone; ops give them back.
+test("says when they are out of login codes for today, and lets them in again", async ({ page }) => {
+  const [imran, ...others] = TECHNICIANS.technicians;
+  await open(page, {
+    [READ_ROSTER]: json({ ...TECHNICIANS, technicians: [{ ...imran, out_of_codes: true }, ...others] }),
+    [`POST /api/technicians/${IMRAN}/allow-sign-in`]: json({ allowed: true }),
+  });
+  const main = await pageOf(page, "Imran Qureshi", "Phones");
+  await expect(main.getByText(opsCopy.technicians.phones.outOfCodes)).toBeVisible();
+
+  const sent = page.waitForRequest((request) => request.url().endsWith(`/api/technicians/${IMRAN}/allow-sign-in`));
+  await main.getByRole("button", { name: opsCopy.technicians.phones.allow }).click();
+  await sent;
+  await expect(main.getByRole("status")).toHaveText(opsCopy.technicians.phones.allowed);
+});
+
 test("offers no revoke on a phone that is revoked already", async ({ page }) => {
   await open(page);
   const main = await pageOf(page, "Imran Qureshi", "Phones");

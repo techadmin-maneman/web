@@ -44,7 +44,8 @@ export const technicianPay = {
     city: "City",
     grade: "Grade",
     noCity: "No city",
-    noGrade: "No grade",
+    /** A technician with no grade is paid nothing for their visits until they have one. */
+    noGrade: "No grade, so not paid",
     change: "Change grade",
     changeLabel: (name: string) => `Change the grade of ${name}`,
   },

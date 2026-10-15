@@ -18,6 +18,7 @@ import {
   record,
   upcomingVisit,
 } from "./ops-clients-fixtures.ts";
+import { aVisit } from "../fixtures/index.ts";
 
 let ops: App;
 
@@ -134,7 +135,15 @@ describe("GET /api/clients/{id}", () => {
       credits: null,
       visits: { upcoming: [], past: [] },
       payments: [],
+      next_visit: null,
     });
+  });
+
+  it("says what the client app offers them next, which Book a visit opens on", async () => {
+    await aVisit({ person_id: PERSON, type: "service", status: "completed", window_start: "2026-09-01T05:00:00.000Z" });
+    const body = await (await request(ops, `/api/clients/${PERSON}`)).json();
+    // Done 1 September, so the next service falls due 30 days on.
+    expect(body).toMatchObject({ next_visit: { type: "service", due_on: "2026-10-01" } });
   });
 
   // A live test, 4 October 2026: a client whose booking was refunded read "Booked" with nothing booked.

@@ -19,4 +19,11 @@ describe("an alert's headline", () => {
       "Razorpay 400 BAD_REQUEST_ERROR: amount exceeds maximum amount allowed.",
     );
   });
+
+  it("reads past the stop of Rs. before an amount, and leaves out a code's own name", () => {
+    expect(
+      headlineOf("Correct invoice INV-000092 in Books to Rs. 2,200: it was raised at Rs. 2,000. Then send it."),
+    ).toBe("Correct invoice INV-000092 in Books to Rs. 2,200: it was raised at Rs. 2,000.");
+    expect(headlineOf("Messages failed (link_paid). Replay them.")).toBe("Messages failed.");
+  });
 });

@@ -274,6 +274,9 @@ describe("POST /api/visits: what is refused", () => {
     const answer = await book({ client: ROHIT, kind: "first_fit", date: WEDNESDAY, window: "morning" });
     expect(answer.status).toBe(422);
     expect(await answer.json()).toMatchObject({ error: { code: "no_profile" } });
+    // Said by the windows too, so the console says it as soon as First fit is chosen.
+    const windows = await request(opsApp(), `/api/visits/availability?client=${ROHIT}&kind=first_fit`);
+    expect(await windows.json()).toMatchObject({ needs_profile: true });
   });
 });
 

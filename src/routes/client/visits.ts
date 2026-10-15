@@ -93,7 +93,7 @@ export function registerClientVisits(app: App): void {
   app.openapi(visitsRoute, async (c) => {
     const session = clientOf(c);
     const [visits, history] = await Promise.all([
-      listVisits(c.env.DB, session.subjectId, c.var.deps.now(), { withCancelled: true }),
+      listVisits(c.env.DB, session.subjectId, c.var.deps.now(), { clientsOwn: true }),
       clientHistory(c.env.DB, session.subjectId),
     ]);
     // The client is told the month and never the day: see ClientHistorySchema.

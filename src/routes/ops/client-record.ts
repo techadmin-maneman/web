@@ -31,6 +31,8 @@ import { EntrySchema } from "../client/payments.ts";
 import { clientAddressOf, ClientAddressSchema, clientId } from "../schemas/clients.ts";
 import { HISTORY_FIGURES, VisitSummarySchema } from "../schemas/visits.ts";
 import { ClientInviteSchema } from "./client-referral.ts";
+import { nextVisitFacts, type NextOffer } from "../../domain/visits/next-visit.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
 
 const LostReasonSchema = z.object({ code: z.string(), label: z.string() }).strict();
 
@@ -188,6 +190,22 @@ const ClientRecordSchema = z
     visits: RecordVisitsSchema,
     ...RECORD_MONEY,
     history: OpsHistorySchema,
+    next_visit: z
+      .union([
+        z
+          .object({
+            type: z.enum(["first_fit", "service", "replacement"]),
+            tier: z.string().nullable(),
+            due_on: z.iso.date(),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "What the client app offers them next, which Book a visit opens on: the replacement where the piece falls " +
+          "due first. Null while a visit is booked, and before their consultation is done.",
+      }),
     invite: z
       .union([ClientInviteSchema, z.null()])
       .openapi({ description: "The invite they came with, or ops attached; null for none." }),
@@ -281,6 +299,9 @@ const recordRoute = opsRoute({
   },
 });
 
+const nextVisitOf = (offer: NextOffer | null) =>
+  offer === null ? null : { type: offer.type, tier: offer.tier, due_on: offer.due_on };
+
 export function registerOpsClientRecord(app: App): void {
   app.openapi(recordRoute, async (c) => {
     const { id } = c.req.valid("param");
@@ -293,6 +314,7 @@ export function registerOpsClientRecord(app: App): void {
     }
 
     const sheet = jobSheet(db);
+    const next = opsInputs(c).then((inputs) => nextVisitFacts(db, id, now, inputs.nextVisitDays));
     const [address, credits, visits, fitted, payments, links, invoices, history, invite, refunded] = await Promise.all([
       currentAddress(db, id),
       creditBalance(db, id, now),
@@ -321,6 +343,7 @@ export function registerOpsClientRecord(app: App): void {
         payment_links: links,
         invoices,
         history,
+        next_visit: nextVisitOf((await next).offer),
         invite,
         auto_refunds: refunded.map(autoRefundOf),
         lost_reasons: (await sheet).lostReasons.items.map((item) => ({ code: item.id, label: item.label })),

@@ -48,6 +48,30 @@ export async function isSpent(db: D1Database, scope: RateLimitScope, key: string
   return (row?.count ?? 0) >= limitOf(scope, at.settings);
 }
 
+/** Which of these keys have reached the scope's limit in this window already. Counts nothing. */
+export async function spentAmong(
+  db: D1Database,
+  scope: RateLimitScope,
+  keys: readonly string[],
+  at: CountedAt,
+): Promise<Set<string>> {
+  if (keys.length === 0) return new Set();
+  const { results } = await db
+    .prepare(
+      `SELECT key FROM counters WHERE scope = ?1 AND window_start = ?2 AND count >= ?3
+         AND key IN (SELECT value FROM json_each(?4))`,
+    )
+    .bind(scope, windowOf(RATE_LIMITS[scope].per, at.now), limitOf(scope, at.settings), JSON.stringify(keys))
+    .all<{ key: string }>();
+  return new Set(results.map((row) => row.key));
+}
+
+/** Gives back every use `key` has had in this window, so the limit stops it again only once it is reached anew. */
+export const forgetUses = (db: D1Database, scope: RateLimitScope, key: string, now: Date): D1PreparedStatement =>
+  db
+    .prepare("DELETE FROM counters WHERE scope = ?1 AND key = ?2 AND window_start = ?3")
+    .bind(scope, key, windowOf(RATE_LIMITS[scope].per, now));
+
 /** Counts one more in the window, with no limit, and says how many there are now. */
 export async function countOne(db: D1Database, counter: Counter, key: string, now: Date): Promise<number> {
   const row = await db

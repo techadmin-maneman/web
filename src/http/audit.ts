@@ -138,7 +138,28 @@ async function writtenFirst(c: Context<AppEnv>, entry: AuditEntry, next: Next) {
     c.var.log.error("audit_write_failed", { action: entry.action, error });
     return refuse(c, "unavailable");
   }
-  return next();
+  await next();
+  if (c.req.method !== "GET" && c.res.status >= 400) await recordRefusal(c, entry);
+}
+
+/** That a change was refused, so the log does not read the call written before it ran as done. */
+async function recordRefusal(c: Context<AppEnv>, call: AuditEntry): Promise<void> {
+  const answer: unknown = await c.res
+    .clone()
+    .json()
+    .catch(() => null);
+  const code = (answer as { error?: { code?: unknown } } | null)?.error?.code;
+  const refusal: AuditEntry = {
+    ...call,
+    action: "call.refused",
+    detail: { status: String(c.res.status), ...(typeof code === "string" ? { code } : {}) },
+  };
+  try {
+    await auditStatement(c.env.DB, refusal, c.var.deps.now()).run();
+  } catch (error) {
+    // The refusal already stands: the call changed nothing, whatever the log says of it.
+    c.var.log.error("audit_write_failed", { action: refusal.action, error });
+  }
 }
 
 /**

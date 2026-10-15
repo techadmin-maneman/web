@@ -9,6 +9,7 @@ type ActivityAction = components["schemas"]["ActivityEntry"]["action"];
 /** What each action in the log was, as a line in the list says it. */
 const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "ops.call": "Console request",
+  "call.refused": "Refused",
   "client.call": "Client app request",
   "tech.call": "Technician app request",
   "consent.switch": "Consent changed",
@@ -218,6 +219,8 @@ export const activity = {
   records: { person: "Client", appointment: "Visit" },
   /** A call that only read, as its line says it: "Console page opened". */
   opened: (surface: string) => `${surface} page opened`,
+  /** A change the API refused, which changed nothing: "Console request, refused". */
+  refused: (what: string) => `${what}, refused`,
   /** Every other record the log names, by its kind, beside the start of its ID; a kind added since, by its code. */
   kinds: {
     alert: "Alert",

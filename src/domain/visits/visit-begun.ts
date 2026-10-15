@@ -1,5 +1,7 @@
 // Whether a visit has begun, by the technician's steps rather than the visit's status. The SQL fragments read the appointments row the alias names.
 
+import { indiaDate, indiaInstant } from "../../lib/india-time.ts";
+
 /**
  * True once the visit has begun: the technician's phone has landed a check-in, a start or an outcome for it, a one
  * visit was closed as fitted or declined, or its payment link was paid.
@@ -19,6 +21,18 @@ function begunBy(alias: string, stepKinds: string): string {
     OR COALESCE(${alias}.one_visit, '') IN ('fitted', 'declined')
     OR EXISTS (SELECT 1 FROM payment_links pl WHERE pl.appointment_id = ${alias}.id AND pl.paid_at IS NOT NULL))`;
 }
+
+/**
+ * True for a visit nobody arrived at whose day in India is over. Ops have it to close, as a visit left open on Tasks;
+ * it no longer holds the client's place, so they may book again. `todayStarts` is the parameter bound to
+ * todayStartsOf(now).
+ */
+export function missedDayOver(alias: string, todayStarts: string): string {
+  return `(${alias}.window_start < ${todayStarts} AND NOT ${visitBegun(alias)})`;
+}
+
+/** The instant today began in India, for missedDayOver. */
+export const todayStartsOf = (now: Date): string => indiaInstant(indiaDate(now), "00:00").toISOString();
 
 /** The outcome the technician's phone last landed for the visit: done, partial or no_show; NULL before one lands. */
 export function landedOutcome(alias: string): string {

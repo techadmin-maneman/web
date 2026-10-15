@@ -212,10 +212,7 @@ const creditRefusal = (code: string, held: number): string =>
 
 /** Where the form is: being filled, sending, done with the balance it answered, or refused. */
 type Adjusting =
-  | { readonly step: "open" }
-  | { readonly step: "sending" }
-  | { readonly step: "done"; readonly visits: number }
-  | { readonly step: "failed"; readonly code: string };
+  { readonly step: "open" } | { readonly step: "sending" } | { readonly step: "failed"; readonly code: string };
 
 /** A whole number from -12 to 12 that is not nought, or null. */
 function visitsOf(typed: string): number | null {
@@ -251,6 +248,8 @@ function CreditSection({
   onCredits: (credits: Credits) => void;
 }) {
   const mayAdjust = useAccess().mayCall("POST /api/clients/{id}/credits");
+  // What the last change left them with, said beside the balance once its drawer closes.
+  const [saved, setSaved] = useState<number | null>(null);
   return (
     <section className={styles.credits} aria-labelledby="credits">
       <h3 className={capsLook(styles.sectionTitle)} id="credits">
@@ -259,8 +258,23 @@ function CreditSection({
       <Balance credits={credits} />
       {mayAdjust && (
         <DrawerButton label={creditCopy.adjust} title={creditCopy.title}>
-          {() => <CreditForm clientId={clientId} credits={credits} onCredits={onCredits} />}
+          {(close) => (
+            <CreditForm
+              clientId={clientId}
+              credits={credits}
+              onCredits={(changed) => {
+                onCredits(changed);
+                setSaved(changed?.visits ?? 0);
+                close();
+              }}
+            />
+          )}
         </DrawerButton>
+      )}
+      {saved !== null && (
+        <p className={styles.done} role="status">
+          {creditCopy.saved(saved)}
+        </p>
       )}
     </section>
   );
@@ -288,9 +302,6 @@ function CreditForm({
       setAdjusting({ step: "failed", code: answer.code });
       return;
     }
-    setAdjusting({ step: "done", visits: answer.body.visits });
-    setTyped("");
-    setReason("");
     onCredits(answer.body.visits > 0 ? answer.body : null);
   };
 
@@ -340,11 +351,6 @@ function CreditForm({
       >
         {sending ? creditCopy.saving : creditCopy.save}
       </Button>
-      {adjusting.step === "done" && (
-        <p className={styles.done} role="status">
-          {creditCopy.saved(adjusting.visits)}
-        </p>
-      )}
       {adjusting.step === "failed" && (
         <Refusal className={styles.error} said={creditRefusal(adjusting.code, credits?.visits ?? 0)} />
       )}

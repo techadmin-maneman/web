@@ -81,6 +81,20 @@ type ComingRow = {
   sent_at: string;
 };
 
+/**
+ * The lots a line holds, soonest to expire first, within what it holds in all. Use the kit had no record of took its
+ * total below zero but never its lots, so a delivery after it left the lots above the total: what is over came off the
+ * soonest to expire, which go first.
+ */
+function lotsWithin(lots: readonly KitLot[], held: number): KitLot[] {
+  let over = lots.reduce((sum, lot) => sum + lot.quantity, 0) - Math.max(held, 0);
+  return lots.flatMap((lot) => {
+    const cut = Math.min(Math.max(over, 0), lot.quantity);
+    over -= cut;
+    return lot.quantity === cut ? [] : [{ ...lot, quantity: lot.quantity - cut }];
+  });
+}
+
 /** What a kit holds, what is coming to it, and its pieces to hand back. */
 export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
   const [held, lots, units, coming, returned] = await Promise.all([
@@ -89,7 +103,9 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
         `SELECT b.consumable_code, c.name, c.unit, b.quantity, c.reorder_kit,
            EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = b.consumable_code) AS hair_system
          FROM stock_balances b JOIN consumables c ON c.code = b.consumable_code
-         WHERE b.place = ?1 AND (b.quantity <> 0 OR c.reorder_kit IS NOT NULL) ORDER BY c.name COLLATE NOCASE`,
+         WHERE b.place = ?1 AND (b.quantity <> 0 OR (c.reorder_kit IS NOT NULL
+           AND NOT EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = b.consumable_code)))
+         ORDER BY c.name COLLATE NOCASE`,
       )
       .bind(kit)
       .all<HeldRow>(),
@@ -130,11 +146,15 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
       name: row.name,
       unit: row.unit,
       quantity: row.quantity,
-      low: isLow(row.quantity, row.reorder_kit),
+      // What runs low is what a technician uses up; a hair system comes for its own fit.
+      low: row.hair_system !== 1 && isLow(row.quantity, row.reorder_kit),
       hairSystem: row.hair_system === 1,
-      lots: lots.results
-        .filter((lot) => lot.code === row.consumable_code)
-        .map((lot) => ({ lotCode: lot.lot_code, expiresOn: lot.expires_on, quantity: lot.quantity })),
+      lots: lotsWithin(
+        lots.results
+          .filter((lot) => lot.code === row.consumable_code)
+          .map((lot) => ({ lotCode: lot.lot_code, expiresOn: lot.expires_on, quantity: lot.quantity })),
+        row.quantity,
+      ),
       units: units
         .filter((unit) => unit.consumableCode === row.consumable_code)
         .map((unit) => ({ code: unit.code, lotCode: unit.lotCode, expiresOn: unit.expiresOn })),
