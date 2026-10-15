@@ -312,6 +312,10 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Bundle every Worker for every environment (dry run)
         run: npm run build
+      # The production site as it will be once it goes live, held to its publish gate: refused only on what waits for
+      # counsel's approval, or, once nothing does, built with none of the design's placeholder material.
+      - name: The production site's publish gate
+        run: node scripts/ci/site-production-gate.ts
       # The browser tests run local builds; production's pages are opened here, as built, before a release ships them.
       - name: Chromium for production's pages
         run: npx playwright install --with-deps chromium

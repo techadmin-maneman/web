@@ -49,20 +49,21 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 
 ## ci/
 
-| Script                      | What it does                                                                         | Run by                           | Writes |
-| --------------------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------ |
-| `already-checked.ts`        | which checks these very files already passed                                         | `ci.yml`                         | no     |
-| `audit.ts`                  | `npm audit`, with the reviewed allowlist                                             | `npm run audit`, CI              | no     |
-| `auto-merge.ts`             | merges a pull request that passed and should merge itself                            | `auto-merge.yml`                 | GitHub |
-| `production-pages.ts`       | production's built pages opened in Chromium from a local server, failing on an error | `npm run build` first            | no     |
-| `check-migrations.ts`       | the migrations against the rules in `lib/migration-check.ts`                         | `npm run check:migrations`       | no     |
-| `check-open-points.ts`      | `docs/open-points.md` and every citation of a point                                  | `npm run check:open-points`      | no     |
-| `check-wrangler-config.ts`  | every environment redeclares its bindings, within the limits                         | `npm run check:config`, `ci.yml` | no     |
-| `ci-gate.ts`                | fails the gate job unless every job it waits on passed                               | `ci.yml`                         | no     |
-| `lighthouse.ts`             | Lighthouse on the built site and the client app                                      | `npm run lighthouse`, CI         | no     |
-| `lint.ts`                   | ESLint in four runs, each holding its own part's TypeScript projects                 | `npm run lint`, CI               | no     |
-| `old-code-on-new-schema.ts` | the deployed code's Worker tests against the new migrations                          | `ci.yml`                         | no     |
-| `pr-size.ts`                | warns when a pull request changes more by hand than one review reads well            | `ci.yml`                         | no     |
+| Script                      | What it does                                                                                                                       | Run by                           | Writes |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------ |
+| `already-checked.ts`        | which checks these very files already passed                                                                                       | `ci.yml`                         | no     |
+| `audit.ts`                  | `npm audit`, with the reviewed allowlist                                                                                           | `npm run audit`, CI              | no     |
+| `auto-merge.ts`             | merges a pull request that passed and should merge itself                                                                          | `auto-merge.yml`                 | GitHub |
+| `production-pages.ts`       | production's built pages opened in Chromium from a local server, failing on an error                                               | `npm run build` first            | no     |
+| `site-production-gate.ts`   | the production site built as it will go live: refused only on what waits for approval, or built with none of the design's material | CI's build job                   | no     |
+| `check-migrations.ts`       | the migrations against the rules in `lib/migration-check.ts`                                                                       | `npm run check:migrations`       | no     |
+| `check-open-points.ts`      | `docs/open-points.md` and every citation of a point                                                                                | `npm run check:open-points`      | no     |
+| `check-wrangler-config.ts`  | every environment redeclares its bindings, within the limits                                                                       | `npm run check:config`, `ci.yml` | no     |
+| `ci-gate.ts`                | fails the gate job unless every job it waits on passed                                                                             | `ci.yml`                         | no     |
+| `lighthouse.ts`             | Lighthouse on the built site and the client app                                                                                    | `npm run lighthouse`, CI         | no     |
+| `lint.ts`                   | ESLint in four runs, each holding its own part's TypeScript projects                                                               | `npm run lint`, CI               | no     |
+| `old-code-on-new-schema.ts` | the deployed code's Worker tests against the new migrations                                                                        | `ci.yml`                         | no     |
+| `pr-size.ts`                | warns when a pull request changes more by hand than one review reads well                                                          | `ci.yml`                         | no     |
 
 ## release/
 

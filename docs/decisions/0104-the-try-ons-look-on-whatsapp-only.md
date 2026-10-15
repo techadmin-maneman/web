@@ -49,7 +49,7 @@ A try-on whose look could not be sent does not run (`src/policy/tryon-delivery.t
 ### The notices
 
 - **`photo-v3` and `gate-v3`** are v2's words with the promise of a result on screen taken out: the simulation is sent to your WhatsApp and never shown on this site, and the gate makes it once it has the number. They still keep a client's try-on, so `KEEPING_NOTICES` holds `photo-v3` too (ADR 0084). They are placeholders until counsel words them (item 146).
-- **Every build shows them.** Production can no longer show the approved `photo-v1` and `gate-v1` truthfully, so the build-by-build promise (`tryOnPromises`, `TRY_ON_PROMISE`) is gone, and **production's site build refuses until counsel approves them**. Production's `mm-site` serves its placeholder until the site's release (`docs/go-live.md`), so no release is stopped by this; `test/node/site/site-production-gate.test.ts` holds the build refusing these two and nothing else, and checks what a production build ships again the day it builds.
+- **Every build shows them.** Production can no longer show the approved `photo-v1` and `gate-v1` truthfully, so the build-by-build promise (`tryOnPromises`, `TRY_ON_PROMISE`) is gone, and **production's site build refuses until counsel approves them**. Production's `mm-site` serves its placeholder until the site's release (`docs/go-live.md`), so no release is stopped by this; CI's build job holds the build refusing only what waits for approval (`scripts/ci/site-production-gate.ts`), and checks what a production build ships again the day it builds.
 - **The API records only the current versions**: the upload link refuses any photo notice but `photo-v3`, and the claim any gate notice but `gate-v3` (`400 invalid_request`). Staging's consents under earlier versions stand as recorded.
 - **The privacy page** says the number is given before the simulation is made, that it is sent there on WhatsApp and never shown on this site, and that the site sets one cookie for the try-on, remembering for thirty days that this browser has had its look. **The terms' try-on paragraph** says the simulation is sent to WhatsApp and never shown on this site, and names the hair system. **The teaser** says the look is sent privately to your WhatsApp, and so does the try-on page's description.
 
@@ -76,7 +76,7 @@ Every word above that v2 does not have is ours until the owner's second round (i
   - `test/node/policy/policy-tryon-delivery.test.ts`: the rule.
   - `test/worker/site/tryon-api.test.ts`: the claim before the render, the render refused without it, no result route, the look said without the image, and every refusal while WhatsApp cannot send.
   - `test/worker/jobs/sweeper.test.ts`: the message of a look never made is skipped.
-  - `test/worker/privacy/notices.test.ts`, `test/node/site/site-content.test.ts` and `test/node/site/site-production-gate.test.ts`: the notices, the words, and the production build refused on them alone.
+  - `test/worker/privacy/notices.test.ts`, `test/node/site/site-content.test.ts` and `scripts/ci/site-production-gate.ts`: the notices, the words, and the production build refused on them alone.
   - `test/node/site/site-tryon-machine.test.ts`: the screens.
   - `e2e/try.e2e.ts`, `e2e/try-flow.e2e.ts`, `e2e/try-api.e2e.ts` and `e2e/accessibility.e2e.ts`: the screens, the order of the calls, the sent and unavailable screens, and the local API end to end. The tests that asserted the look on screen now assert the sent screen.
 
