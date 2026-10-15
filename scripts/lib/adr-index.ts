@@ -132,14 +132,22 @@ export function adrIndex(files: readonly DecisionFile[], others: readonly Decisi
       .join(", ");
   const last = Math.max(0, ...adrs.map((adr) => Number(adr.number)));
   const next = String(last + 1).padStart(4, "0");
+  const used = new Set(adrs.map((adr) => Number(adr.number)));
+  const unused = Array.from({ length: last }, (_, index) => index + 1)
+    .filter((number) => !used.has(number))
+    .map((number) => String(number).padStart(4, "0"));
+  const gaps =
+    unused.length === 0
+      ? ""
+      : ` ${unused.join(" and ")} ${unused.length === 1 ? "was" : "were"} taken for records never written, and stay unused.`;
   const title = (text: string): string => /^# (.+)$/m.exec(text)?.[1]?.trim() ?? "";
 
   return [
     "# Architecture decision records",
     "",
-    "Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.",
+    "Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).",
     "",
-    `This file is written by \`npm run adr-index\` from the records' own headers, and \`test/node/tooling/adr-index.test.ts\` fails until it is run after a record is added or its status changes. A record names its topic in its header, \`- Topic:\` and one of the headings below, and the test fails on one that does not. The next free number is ${next}.`,
+    `This file is written by \`npm run adr-index\` from the records' own headers, and \`test/node/tooling/adr-index.test.ts\` fails until it is run after a record is added or its status changes. A record names its topic in its header, \`- Topic:\` and one of the headings below, and the test fails on one that does not. The next free number is ${next}.${gaps}`,
     "",
     "## By topic",
     "",

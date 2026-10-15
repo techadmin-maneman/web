@@ -147,13 +147,13 @@ describe("cancelling a client’s visit from the console", () => {
     await show(cancelPanel());
     expect(button("Confirm cancellation").disabled).toBe(true);
 
-    fill("Reason", "Client phoned: his father is unwell");
+    fill("Reason", "Client phoned: their father is unwell");
     answers.push(() => Response.json({ ...LATE_TERMS, cancelled: true }));
     await press("Confirm cancellation");
 
     expect(sent[1]).toEqual({
       path: `/api/visits/${VISIT}/cancel`,
-      body: { confirm: true, notice: "late", reason: "Client phoned: his father is unwell" },
+      body: { confirm: true, notice: "late", reason: "Client phoned: their father is unwell" },
     });
     expect(text()).toContain("Cancelled. Rs. 2,000 refunded to their UPI.");
     await press("Close");

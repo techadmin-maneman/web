@@ -5,13 +5,14 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "tools/*"
   ],
   "engines": {
     "node": ">=24.11.0"
   },
   "scripts": {
-    "gen": "npm run types && npm run openapi && npm run schema && npm run upkeep-sql && npm run adr-index",
+    "gen": "npm run types && npm run openapi && npm run schema && npm run upkeep-sql && npm run adr-index && npm run words && npm run settings",
     "texts:export": "node scripts/build/export-texts.ts",
     "dev": "node scripts/dev/dev-api.ts",
     "dev:all": "node scripts/dev/dev-all.ts",
@@ -27,7 +28,6 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:coverage:front": "vitest run --config vitest.front.config.ts --coverage",
     "audit": "node scripts/ci/audit.ts",
     "verify": "npm run check:types && npm run typecheck && npm run lint && npm run format:check && npm run check:config && npm run check:migrations && npm run check:open-points && npm run check:dead && npm test && npm run build",
     "check:config": "node scripts/ci/check-wrangler-config.ts",
@@ -42,7 +42,7 @@
     "schema": "node scripts/build/generate-schema-doc.ts",
     "settings": "node scripts/build/generate-settings-doc.ts",
     "upkeep-sql": "node scripts/build/generate-upkeep-sql.ts",
-    "words": "vitest run test/node/words -u",
+    "words": "node scripts/build/generate-words.ts",
     "words:reviewed": "node scripts/build/words-reviewed.ts",
     "openapi": "node scripts/build/generate-openapi.ts && openapi-typescript docs/openapi.json --output site/src/lib/api-schema.ts && openapi-typescript docs/openapi-client.json --output apps/app/src/api-schema.ts && openapi-typescript docs/openapi-ops.json --output apps/ops/src/api-schema.ts && openapi-typescript docs/openapi-tech.json --output apps/tech/src/api-schema.ts",
     "smoke": "node scripts/release/smoke.ts",
@@ -81,7 +81,7 @@
     "@astrojs/preact": "6.0.6",
     "@axe-core/playwright": "4.13.0",
     "@babel/standalone": "7.29.0",
-    "@cloudflare/vitest-pool-workers": "0.23.0",
+    "@cloudflare/vitest-plugin": "1.4.2",
     "@cloudflare/workers-types": "5.20261009.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.0",
@@ -104,15 +104,13 @@
     "preact": "10.29.8",
     "prettier": "3.9.9",
     "prettier-plugin-astro": "1.1.0",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
     "sharp": "0.35.5",
     "subset-font": "2.9.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.1",
     "vite": "8.3.4",
     "vitest": "4.1.11",
-    "wrangler": "4.149.0"
+    "wrangler": "4.151.0"
   },
   "overrides": {
     "sharp": "0.35.5",
@@ -124,8 +122,7 @@
     }
   },
   "allowScripts": {
-    "esbuild@0.28.1": true,
-    "workerd@1.20260815.1": true,
-    "workerd@1.20260918.1": true
+    "esbuild@0.28.2": true,
+    "workerd@1.20261012.1": true
   }
 }

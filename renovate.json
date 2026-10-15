@@ -13,7 +13,7 @@
       "groupName": "cloudflare tooling",
       "matchPackageNames": [
         "wrangler",
-        "@cloudflare/vitest-pool-workers",
+        "@cloudflare/vitest-plugin",
         "@cloudflare/workers-types",
         "vitest",
         "@vitest/coverage-istanbul"

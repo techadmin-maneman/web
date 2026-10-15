@@ -149,7 +149,7 @@ describe("a request", () => {
 });
 
 describe("a technician", () => {
-  it("is in the city ops gave him, or in none", async () => {
+  it("is in the city ops gave them, or in none", async () => {
     expect(await citiesOf("technician", ["t-gurgaon", "t-none"])).toEqual({ "t-gurgaon": "Gurgaon", "t-none": null });
   });
 });

@@ -1,4 +1,4 @@
-import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-pool-workers";
+import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 import { RULES_ALIAS } from "./scripts/build/rules-alias.ts";
 import { StalledFiles } from "./test/stalled-files.ts";
@@ -15,18 +15,13 @@ export const NODE_PROJECT = {
   },
 };
 
-/**
- * The apps' components and packages/ui's, on the React 19 they ship with: from packages/ui, React would otherwise
- * resolve to the repository root's React 18, as apps/app/vite.config.ts says.
- */
+/** The apps' components and packages/ui's, on the one React 19 the repository installs. */
 export const DOM_PROJECT = {
   // The apps' code under test is built for the local environment, as the browser tests' builds are.
   define: { "import.meta.env.MM_ENV": JSON.stringify("local") },
   resolve: {
     alias: {
       ...RULES_ALIAS,
-      react: `${import.meta.dirname}/apps/app/node_modules/react`,
-      "react-dom": `${import.meta.dirname}/apps/app/node_modules/react-dom`,
     },
   },
   test: {
@@ -55,13 +50,20 @@ export default defineConfig({
     ],
     coverage: {
       provider: "istanbul",
-      include: ["src/**/*.ts", "scripts/lib/**/*.ts"],
-      // "src/**" also matches the apps' and the site's own src/ folders, which the report then counted as mm-api's.
-      exclude: ["src/**/*.d.ts", "apps/**", "site/**", "packages/**"],
+      // mm-api's code and the scripts' shared modules, and the front ends', each held to floors of their own below,
+      // so one run of the suite measures them all.
+      include: [
+        "src/**/*.ts",
+        "scripts/lib/**/*.ts",
+        "apps/*/src/**/*.{ts,tsx}",
+        "packages/*/**/*.{ts,tsx}",
+        "site/src/**/*.{ts,tsx}",
+      ],
+      exclude: ["**/*.d.ts", "**/api-schema.ts", "**/node_modules/**", "**/dist/**"],
       reporter: ["text", "json-summary"],
       /*
        * Branches as well as lines: the integrations were where branches went untested behind a line figure
-       * that looked well (TCD-03). The files that speak to a vendor, or keep what it says was paid, have floors
+       * that looked well. The files that speak to a vendor, or keep what it says was paid, have floors
        * of their own, so a weak one cannot hide in the whole; each was below 70% on branches before its
        * recorded-reply tests.
        */
@@ -70,9 +72,9 @@ export default defineConfig({
       thresholds:
         process.env.COVERAGE_SHARD === undefined
           ? {
-              // Just under what the suite reaches, so a fall shows.
-              lines: 97,
-              branches: 87,
+              // mm-api's code and the scripts' shared modules, together: just under what the suite reaches, so a fall
+              // shows. No global floor: vitest counts every file into it, the front ends' too, which have their own.
+              "{src,scripts/lib}/**": { lines: 97, branches: 87 },
               "src/providers/**": { lines: 90, branches: 85 },
               "src/providers/payments/razorpay.ts": { lines: 95, branches: 95 },
               "src/domain/money/payments.ts": { lines: 90, branches: 90 },
@@ -89,6 +91,11 @@ export default defineConfig({
               // What the deploy and check scripts share. A release's recovery from a lost reply first runs in an incident.
               "scripts/lib/**": { lines: 85, branches: 70 },
               "scripts/lib/release.ts": { lines: 95, branches: 90 },
+              // The front ends: the node tests of the apps' logic and the DOM tests of their components and hooks.
+              // Just under the 32% of lines and 23% of branches they reached when the report began, rising as screens'
+              // logic moves into node-tested modules; the console has a floor of its own, so its share keeps up.
+              "{apps,packages,site}/**": { lines: 31, branches: 22 },
+              "apps/ops/src/**": { lines: 31, branches: 24 },
             }
           : {},
     },
@@ -131,9 +138,9 @@ export default defineConfig({
            * These tests run inside workerd and write to a real D1, so a slow one is
            * doing work, not hanging. Vitest's five seconds is enough on an idle
            * machine and not on a busy one, which failed CI repeatedly while proving
-           * nothing about the code. Their setup gets the same: with both of the
-           * owner's runners on tests at once, a file's first hook, which applies the
-           * migrations, outran vitest's ten seconds on every run.
+           * nothing about the code. Their setup gets the same: on a busy machine a
+           * file's first hook, which applies the migrations, outruns vitest's ten
+           * seconds.
            */
           testTimeout: 30_000,
           hookTimeout: 30_000,

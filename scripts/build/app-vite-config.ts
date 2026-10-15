@@ -62,7 +62,7 @@ export function appViteConfig(app: AppBuild): UserConfig {
   return {
     root: app.root,
     plugins: [app.react, identify, themeColor(), ...(app.plugins ?? [])],
-    // packages/ui imports React too, and from there would find the repository root's React 18; this bundles the app's.
+    // packages/ui imports React too, as a peer: one copy of it in each bundle, the app's.
     resolve: { dedupe: ["react", "react-dom"], alias: RULES_ALIAS },
     define: { "import.meta.env.MM_ENV": JSON.stringify(environment) },
     build: {

@@ -1,0 +1,22 @@
+name: Page
+description: A push to the urgent topic, for whoever is on call (docs/runbook/alerts.md); nothing where no topic is set.
+inputs:
+  title:
+    description: What failed, as the push's title and its first words.
+    required: true
+  url:
+    description: The topic's address, the URGENT_PUSH_URL secret.
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: A push to the urgent topic
+      shell: bash
+      env:
+        TITLE: ${{ inputs.title }}
+        URGENT_PUSH_URL: ${{ inputs.url }}
+        RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        if [ -z "$URGENT_PUSH_URL" ]; then echo "No URGENT_PUSH_URL: nobody to page"; exit 0; fi
+        curl -fsS -H "Title: $TITLE" -H "Priority: urgent" -H "Tags: rotating_light" -H "Click: $RUN" -d "$TITLE: $RUN" "$URGENT_PUSH_URL"

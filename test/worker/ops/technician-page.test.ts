@@ -88,7 +88,7 @@ beforeEach(async () => {
   await visit(SATURDAY_JOB, "2026-09-19T04:30:00.000Z");
 });
 
-describe("a technician's leave, as his page reads it", () => {
+describe("a technician's leave, as their page reads it", () => {
   // Reopened after one of three jobs had been moved, the panel showed the leave and not the two jobs still on it.
   it("lists the jobs still booked on a leave each time it is read, not only when it was recorded", async () => {
     const id = await recordLeave("2026-09-22", "2026-09-24", "Family wedding");

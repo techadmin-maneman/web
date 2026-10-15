@@ -39,7 +39,7 @@ const left = async (table: string) =>
   (await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${table}`).first<{ n: number }>())?.n;
 
 describe("clearing the technician tester", () => {
-  it("clears the technician, his jobs and the invented client", async () => {
+  it("clears the technician, their jobs and the invented client", async () => {
     await clear();
     expect([await left("technicians"), await left("appointments"), await left("people")]).toEqual([0, 0, 0]);
   });
@@ -70,7 +70,7 @@ describe("clearing the technician tester", () => {
   });
 
   // A hair profile is never deleted (docs/decisions/0106-a-clients-hair-profile.md), so what it points at stays.
-  it("leaves a job a profile was taken at, its client and the technician, him inactive, and clears the rest", async () => {
+  it("leaves a job a profile was taken at, its client and the technician, them inactive, and clears the rest", async () => {
     const at = NOW.toISOString();
     await env.DB.batch([
       env.DB.prepare(

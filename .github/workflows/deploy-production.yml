@@ -197,13 +197,6 @@ jobs:
       - name: Deploy mm-site
         run: node scripts/release/release.ts ship --worker mm-site --env production --tag "$SHA" --message "release $SHA"
 
-      # Cloudflare adds scripts to pages at its edge, which no local run sees: a zone setting switched back on would
-      # break production's pages with nobody told (docs/provisioning.md, step 14).
-      - name: Chromium for the policy check
-        run: npx playwright install --with-deps chromium
-      - name: No production page refuses anything under its content security policy
-        run: npm run smoke:csp -- --environment production
-
       # mm-app, mm-ops and mm-tech have no route in production until their surface is switched on there
       # (docs/decisions/0026), and their first deploy is a bootstrap (docs/provisioning.md, step 11). Until then
       # there is nothing to build or deploy; the production build refuses their placeholder copy anyway.
@@ -228,14 +221,22 @@ jobs:
       - name: Final smoke
         run: npm run smoke -- --base https://maneman.in --environment production --version-tag "$SHA"
 
-      # Nothing until a Phase 2 surface is switched on in production. Then mm-api on its host, and the app
+      # Nothing until the app, the console or the technician app is switched on in production. Then mm-api on its host, and the app
       # the host serves at /, built from this commit. ops.maneman.in is behind Access, so it needs the
       # mm-ci-production service token (provisioning, step 3).
-      - name: Smoke the Phase 2 surfaces
+      - name: Smoke the app's, the console's and the technician app's hosts
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: npm run smoke -- --environment production --surfaces --version-tag "$SHA"
+
+      # Every switched-on host's pages, once each Worker is on its new version. Cloudflare adds scripts to pages at its
+      # edge, which no local run sees: a zone setting switched back on would break production's pages with nobody
+      # told (docs/provisioning.md, step 14).
+      - name: Chromium for the policy check
+        run: npx playwright install --with-deps chromium
+      - name: No production page refuses anything under its content security policy
+        run: npm run smoke:csp -- --environment production
 
       # Every Worker goes back to what it served before, whichever step failed: restoring one that still
       # serves its old version changes nothing (scripts/lib/release.ts).
@@ -265,10 +266,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: A push to the urgent topic (docs/runbook/alerts.md)
-        env:
-          URGENT_PUSH_URL: ${{ secrets.URGENT_PUSH_URL }}
-          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          if [ -z "$URGENT_PUSH_URL" ]; then echo "No URGENT_PUSH_URL: nobody to page"; exit 0; fi
-          curl -fsS -H "Title: Production release failed" -H "Priority: urgent" -H "Tags: rotating_light" -H "Click: $RUN" -d "Production release failed: $RUN" "$URGENT_PUSH_URL"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/page
+        with:
+          title: "Production release failed"
+          url: ${{ secrets.URGENT_PUSH_URL }}

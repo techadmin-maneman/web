@@ -243,7 +243,7 @@ describe("GET /api/no-shows/decided", () => {
   });
 
   it("says a waiver kept nothing, and leaves out a case ruled before today", async () => {
-    expect((await rule({ decision: "waived", reason: "He was stuck in the lift" })).status).toBe(200);
+    expect((await rule({ decision: "waived", reason: "They were stuck in the lift" })).status).toBe(200);
     expect(await decided()).toMatchObject([{ id: CASE, decision: "waived", charge: null }]);
 
     // Ruled at 11:59 pm last night in India.

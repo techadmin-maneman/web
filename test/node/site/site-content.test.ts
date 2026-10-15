@@ -227,7 +227,7 @@ describe("the second copy round", () => {
   });
 
   // /book and its search snippet opened "He measures your scalp", with nobody for "He" to be.
-  it("names the technician on /book and in the try-on before anything is said of him", () => {
+  it("names the technician on /book and in the try-on before anything is said of them", () => {
     expect(site.booking.intro).toMatch(/^Your technician measures your scalp/);
     expect(site.pageDescriptions.book).toBe(site.booking.intro);
     expect(site.tryOn.stage.body).not.toMatch(/\bHe\b/);

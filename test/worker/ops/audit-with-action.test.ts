@@ -226,7 +226,7 @@ describe("ops, when the audit entry cannot be written", () => {
       .bind(GRIEVANCE, PERSON, AT)
       .run();
 
-    const answer = await send(ops, "POST", `/api/grievances/${GRIEVANCE}/resolve`, { response: "Called him back." });
+    const answer = await send(ops, "POST", `/api/grievances/${GRIEVANCE}/resolve`, { response: "Called them back." });
     expect(answer.status).toBe(500);
     expect(await one("SELECT state, response FROM grievances")).toEqual({ state: "open", response: null });
   });

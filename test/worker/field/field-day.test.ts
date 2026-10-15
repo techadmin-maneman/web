@@ -175,7 +175,7 @@ describe("a revoked phone", () => {
     expect(device?.wiped_at).toBe(NOW.toISOString());
   });
 
-  it("stops him signing in, which the roster shows until ops let him in again", async () => {
+  it("stops them signing in, which the roster shows until ops let them in again", async () => {
     await opsPost(`/api/technicians/${IMRAN}/devices/${DEVICE}/revoke`, {});
     const roster = async () =>
       (

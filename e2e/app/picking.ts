@@ -37,8 +37,8 @@ export async function continueToPayment(page: Page): Promise<void> {
   // Three tries: the day has three windows, and a client would give up on the day too.
   for (let tries = 0; tries < 3; tries += 1) {
     await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
-    // The API's answer decides, however long a busy machine takes to give it: on 1 October 2026 a hold answered
-    // after seven seconds, and a five-second wait for the pay step read it as a window gone.
+    // The API's answer decides, however long a busy machine takes to give it: a hold can answer after seven seconds,
+    // which a five-second wait for the pay step would read as a window gone.
     const answered = page.waitForResponse(isCall("POST", "/api/holds"), { timeout: 30_000 });
     const redrawn = windowsAskedAgain(page);
     // "Continue" alone where the day costs nothing, as a free move's does.

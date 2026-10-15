@@ -91,7 +91,7 @@ describe("what a move says once it is sent", () => {
 });
 
 describe("the board’s search", () => {
-  it("keeps a technician’s row by his name, and outlines no block for it", () => {
+  it("keeps a technician’s row by their name, and outlines no block for it", () => {
     expect(answersTo(SALIM, "salim")).toBe(true);
     expect(answersTo(IMRAN, "salim")).toBe(false);
     expect(foundBy(board([IMRAN, SALIM]), "salim")).toBeNull();

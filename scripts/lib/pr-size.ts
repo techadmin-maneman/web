@@ -5,11 +5,14 @@
 
 export const LINE_BUDGET = 800;
 
-/** Written by `npm run openapi`, `npm run schema`, `npm run types`, `npm run adr-index` and npm itself; .gitattributes marks the same. */
+/** Written by `npm run gen`'s commands and npm itself; .gitattributes marks the same. */
 const GENERATED_FILES = [
   /^docs\/api(-(client|ops|tech))?\.md$/,
   /^docs\/openapi(-(client|ops|tech))?\.json$/,
   /^docs\/schema\.md$/,
+  /^docs\/settings\.md$/,
+  /^src\/config\/words\.json$/,
+  /^src\/lib\/rows\.ts$/,
   /^docs\/decisions\/README\.md$/,
   /(^|\/)api-schema\.ts$/,
   /^src\/worker-configuration\.d\.ts$/,

@@ -110,7 +110,7 @@ describe("adding a technician", () => {
     ops = appIn("ops");
   });
 
-  it("adds him under an ID of our own, and his number signs in at once", async () => {
+  it("adds them under an ID of our own, and their number signs in at once", async () => {
     const answer = await send(ops, "POST", "/api/technicians", {
       name: "Naveen Rao",
       mobile: "98100 00007",
@@ -174,7 +174,7 @@ describe("adding a technician", () => {
     expect(answer.status).toBe(201);
   });
 
-  it("gives him one of our cities, and refuses a city that is not one", async () => {
+  it("gives them one of our cities, and refuses a city that is not one", async () => {
     const answer = await send(ops, "POST", "/api/technicians", {
       name: "Naveen Rao",
       mobile: "9810000007",
@@ -203,7 +203,7 @@ describe("adding a technician", () => {
 });
 
 describe("changing a technician", () => {
-  it("changes his name, number and zone, and his initials with his name", async () => {
+  it("changes their name, number and zone, and their initials with their name", async () => {
     const ops = appIn("ops");
 
     const answer = await send(ops, "PATCH", `/api/technicians/${IMRAN}`, {
@@ -250,7 +250,7 @@ describe("changing a technician", () => {
     });
   });
 
-  it("sets his city, takes it away, and refuses a city that is not one of ours", async () => {
+  it("sets their city, takes it away, and refuses a city that is not one of ours", async () => {
     const ops = appIn("ops");
 
     const set = await send(ops, "PATCH", `/api/technicians/${IMRAN}`, { city: "Noida" });
@@ -294,7 +294,7 @@ describe("switching a technician off", () => {
     await visit(SAMEERS, { start: "2026-09-22T04:30:00.000Z", technician: SAMEER });
   });
 
-  it("signs him out at once, and his phone hears that he was switched off, not that its session ran out", async () => {
+  it("signs them out at once, and their phone hears that they were switched off, not that its session ran out", async () => {
     const ops = appIn("ops");
     const tech = appIn("tech");
     const cookie = await signedIn(IMRAN);
@@ -317,7 +317,7 @@ describe("switching a technician off", () => {
     expect(deps.sentCodes).toEqual([]);
   });
 
-  it("gives his visits still to come back as unassigned, and leaves begun, past and others' visits", async () => {
+  it("gives their visits still to come back as unassigned, and leaves begun, past and others' visits", async () => {
     const ops = appIn("ops");
 
     const answer = await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
@@ -347,7 +347,7 @@ describe("switching a technician off", () => {
     ]);
   });
 
-  it("puts those visits in the dispatch board's tray, and takes his row off the board", async () => {
+  it("puts those visits in the dispatch board's tray, and takes their row off the board", async () => {
     const ops = appIn("ops");
     await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
 
@@ -362,7 +362,7 @@ describe("switching a technician off", () => {
     expect(board.unassigned).toContainEqual(expect.objectContaining({ appointment_id: THIS_AFTERNOON }));
   });
 
-  it("answers the same, and changes nothing more, when he is switched off twice", async () => {
+  it("answers the same, and changes nothing more, when they are switched off twice", async () => {
     const ops = appIn("ops");
     await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
 
@@ -381,7 +381,7 @@ describe("switching a technician off", () => {
 });
 
 describe("switching a technician back on", () => {
-  it("lets him sign in again on his number", async () => {
+  it("lets them sign in again on their number", async () => {
     const ops = appIn("ops");
     const tech = appIn("tech");
     await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
@@ -394,7 +394,7 @@ describe("switching a technician back on", () => {
     expect((await auditOf("technician.reactivate")).results).toHaveLength(1);
   });
 
-  it("refuses while another active technician has his number", async () => {
+  it("refuses while another active technician has their number", async () => {
     const ops = appIn("ops");
     await send(ops, "POST", `/api/technicians/${IMRAN}/deactivate`);
     await send(ops, "POST", "/api/technicians", { name: "Naveen Rao", mobile: "9810000009" });

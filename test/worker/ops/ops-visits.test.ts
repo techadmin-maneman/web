@@ -105,7 +105,7 @@ describe("POST /api/visits: what is booked at once", () => {
     });
   });
 
-  it("books with the technician ops chose, and refuses him in a window he is busy in", async () => {
+  it("books with the technician ops chose, and refuses them in a window they are busy in", async () => {
     await rohit("fitted");
     const chosen = await book({
       client: ROHIT,

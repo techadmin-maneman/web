@@ -6,11 +6,15 @@ import { mkdirSync, readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import sharp from "sharp";
 
-/** The design fetches these from unpkg; the same versions are in node_modules. */
+/**
+ * The design fetches these from unpkg; the same versions are installed: React 18, whose UMD build React 19 no longer
+ * ships, in the harness's own workspace (tools/fidelity/package.json).
+ */
 const LIBRARIES: Readonly<Record<string, string>> = {
-  "https://unpkg.com/react@18.3.1/umd/react.production.min.js": "node_modules/react/umd/react.production.min.js",
+  "https://unpkg.com/react@18.3.1/umd/react.production.min.js":
+    "tools/fidelity/node_modules/react/umd/react.production.min.js",
   "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js":
-    "node_modules/react-dom/umd/react-dom.production.min.js",
+    "tools/fidelity/node_modules/react-dom/umd/react-dom.production.min.js",
   "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js": "node_modules/@babel/standalone/babel.min.js",
 };
 

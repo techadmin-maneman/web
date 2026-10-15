@@ -16,13 +16,18 @@ const KINDS = {
     "i",
   ),
   "the owner": /\bthe owner\b/i,
+  // A day something happened, as "on 1 October 2026 a hold answered late": the reason stays, the day goes to git. A
+  // test's own clock, "NOW is Monday 21 September 2026", and a fixture's day "in India on" one, are what the code does.
+  "an incident's date": new RegExp(
+    String.raw`(?<!India |Erased )\b(?:on|since) (?:(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day )?\d{1,2} (?:${MONTHS}) 20\d\d\b`,
+  ),
 } as const;
 
-const FOLDERS = ["src", "apps", "packages", "site/src", "scripts", "test", "e2e"];
-const CODE = /\.(ts|tsx|astro|mjs|css)$/;
+const FOLDERS = ["src", "apps", "packages", "site/src", "scripts", "test", "e2e", ".github", "*.ts"];
+const CODE = /\.(ts|tsx|astro|mjs|css|ya?ml)$/;
 /** The fidelity pairs compare each screen with the design frame its board code names. */
 const PAIRING = "scripts/fidelity/";
-const COMMENT = /^\s*(\/\/|\*|\/\*|\{\/\*)/;
+const COMMENT = /^\s*(\/\/|\*|\/\*|\{\/\*|#)/;
 
 function covered(): string[] {
   const tracked = execFileSync("git", ["ls-files", ...FOLDERS], { encoding: "utf8" }).split("\n");
@@ -50,7 +55,9 @@ describe("comments", () => {
   it("know history when they see it, and leave the rest alone", () => {
     expect(
       historyIn("// Ten minutes (board C4).\n// As the owner ruled on 27 September 2026.\n// Phase 2's apps."),
-    ).toEqual(["1: a design board", "2: a ruling's date", "2: the owner", "3: a phase"]);
+    ).toEqual(["1: a design board", "2: a ruling's date", "2: the owner", "2: an incident's date", "3: a phase"]);
+    expect(historyIn("// on 1 October 2026 a hold answered late")).toEqual(["1: an incident's date"]);
+    expect(historyIn("// NOW is Monday 21 September 2026, 12 noon in India on 22 September 2027.")).toEqual([]);
     expect(historyIn("const area = 'DLF Phase 1'; // the day's money\n// ops ruled on the charge")).toEqual([]);
     expect(historyIn('const label = "Ask the owner to add you.";')).toEqual([]);
   });

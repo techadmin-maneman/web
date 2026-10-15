@@ -45,7 +45,7 @@ The few that come up everywhere. `docs/glossary.md` has the rest, and says which
 | **surface**     | One of the four sites mm-api answers: public, client, ops and tech (`ENABLED_SURFACES`, ADR 0026)                    |
 | **appointment** | A visit booked: the `appointments` table, D1's own record of field work since FSM went (ADR 0110)                    |
 | **hold**        | Ten minutes on a technician's time while a client pays; once paid, the visit is booked in the same request           |
-| **job event**   | A technician's step (arrived, started, photographs, the outcome), sent from his phone's outbox and landed in D1      |
+| **job event**   | A technician's step (arrived, started, photographs, the outcome), sent from their phone's outbox and landed in D1    |
 | **the sweeper** | The cron job that puts back on a queue what went quiet, and deletes what has outlived its use                        |
 | **alert**       | A failure that needs a person: kept in the `alerts` table, told once to the alert space, closed when it is put right |
 | **PLACEHOLDER** | Copy or material still owed by the owner. Staging shows it; a production build refuses it                            |
@@ -73,7 +73,7 @@ npm run typecheck && npm run check:types   # every project, and the generated En
 npm run lint
 npm run format:check                       # npm run format fixes it
 npm test                                   # the Worker tests in workerd and the rest in Node, about five minutes
-npm run test:coverage                      # the same, held to 90% of lines and 80% of branches in src/
+npm run test:coverage                      # the same, held to the coverage floors in vitest.config.ts
 npm run check:config                       # environment isolation, and 64 vars and secrets at most
 npm run check:migrations                   # forward-only; a contract step names its ADR (docs/migrations.md)
 npm run check:open-points                  # one number a point, and every citation of one names a point that exists

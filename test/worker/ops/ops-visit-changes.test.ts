@@ -30,7 +30,7 @@ const TUESDAY_MORNING = "2026-09-22T03:30:00.000Z";
 /** Monday 21 September, 9 am in India: this morning, before NOW. */
 const THIS_MORNING = "2026-09-21T03:30:00.000Z";
 
-const REASON = "Client phoned: his father is unwell";
+const REASON = "Client phoned: their father is unwell";
 
 let payments: StubPayments;
 let messages: ReturnType<typeof fakeQueue>;

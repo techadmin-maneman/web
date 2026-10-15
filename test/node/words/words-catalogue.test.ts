@@ -1,14 +1,15 @@
-// The list of every line the Words page may change (./catalogue.ts) is src/config/words.json, which the API reads;
-// it fails here until `npm run words` writes it again after the copy changes.
+// The list of every line the Words page may change (scripts/lib/words-catalogue.ts) is src/config/words.json, which the
+// API reads; it fails here until `npm run words` writes it again after the copy changes.
 
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { wordsCatalogue } from "./catalogue.ts";
+import { wordsCatalogue, wordsFile } from "../../../scripts/lib/words-catalogue.ts";
 
 describe("the Words page's lines", () => {
   const lines = wordsCatalogue();
 
-  it("are src/config/words.json as it stands", async () => {
-    await expect(`${JSON.stringify(lines, null, 2)}\n`).toMatchFileSnapshot("../../../src/config/words.json");
+  it("are src/config/words.json as it stands", () => {
+    expect(readFileSync("src/config/words.json", "utf8")).toBe(wordsFile());
   });
 
   it("each have a key of their own", () => {

@@ -2,18 +2,18 @@
 // each WhatsApp message to a client, with where it appears and its wording in the code. What stays locked is left
 // out: the legal pages and the consent notices, which counsel approves; images, links, slugs and numerals; the
 // business's structured details; and the login code's message, whose text WhatsApp and DLT fix. A sentence with a
-// figure in it is a template whose holes the page fills, and is listed with them. src/config/words.json is this, kept
-// current by `npm run words`.
+// figure in it is a template whose holes the page fills, and is listed with them. src/config/words.json is this,
+// written by scripts/build/generate-words.ts (`npm run words`, and `npm run gen`).
 
-import REVIEWED from "../../../src/config/words-reviewed.json" with { type: "json" };
-import { TEMPLATES } from "../../../src/config/message-templates.ts";
-import * as guides from "../../../site/src/content/guides.ts";
-import * as referral from "../../../site/src/content/referral.ts";
-import * as service from "../../../site/src/content/service.ts";
-import * as contact from "../../../site/src/content/site/contact.ts";
-import * as home from "../../../site/src/content/site/home.ts";
-import * as pages from "../../../site/src/content/site/pages.ts";
-import * as tryon from "../../../site/src/content/site/tryon.ts";
+import REVIEWED from "../../src/config/words-reviewed.json" with { type: "json" };
+import { TEMPLATES } from "../../src/config/message-templates.ts";
+import * as guides from "../../site/src/content/guides.ts";
+import * as referral from "../../site/src/content/referral.ts";
+import * as service from "../../site/src/content/service.ts";
+import * as contact from "../../site/src/content/site/contact.ts";
+import * as home from "../../site/src/content/site/home.ts";
+import * as pages from "../../site/src/content/site/pages.ts";
+import * as tryon from "../../site/src/content/site/tryon.ts";
 
 export interface WordLine {
   /** "site:home/hero.title", "message:visit_reminder_v1". */
@@ -106,3 +106,6 @@ function messageLines(): WordLine[] {
 }
 
 export const wordsCatalogue = (): WordLine[] => [...siteLines(), ...messageLines()];
+
+/** The catalogue as src/config/words.json holds it. */
+export const wordsFile = (): string => `${JSON.stringify(wordsCatalogue(), null, 2)}\n`;

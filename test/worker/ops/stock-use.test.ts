@@ -108,7 +108,7 @@ describe("a job's use", () => {
     ]);
   });
 
-  it("comes out of his kit as the step lands, with what the service expected and what one cost that day", async () => {
+  it("comes out of their kit as the step lands, with what the service expected and what one cost that day", async () => {
     await readyToRecord();
     const answer = await job.post(
       `/api/tech/jobs/${JOB}/consumables`,
@@ -164,7 +164,7 @@ describe("a job's use", () => {
     expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 8, low: false });
   });
 
-  it("is corrected by the difference when he sends the step again, and an older replay changes nothing", async () => {
+  it("is corrected by the difference when they send the step again, and an older replay changes nothing", async () => {
     await readyToRecord();
     await job.post(
       `/api/tech/jobs/${JOB}/consumables`,

@@ -31,8 +31,9 @@ describe("the registry signatures step", () => {
     expect(text).not.toContain("continue-on-error");
   });
 
-  // Still failing four tries in a row on 29 September 2026. A signature is verified when a lockfile brings the
-  // package in, and the lockfile's integrity hash holds every later install to those bytes.
+  // npm's signature check fails for days at a time, so it runs only where a package comes in: a signature is
+  // verified when a lockfile brings the package in, and the lockfile's integrity hash holds every later install to
+  // those bytes.
   it("runs when a pull request changes a package.json or the lockfile, and only then", () => {
     expect(step("Registry signatures")).toContain("if: needs.changes.outputs.dependencies == 'true'");
     const filter = step("Anything a build, a Worker or a browser can see, and any migration");

@@ -211,7 +211,7 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   technician_devices: "The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).",
   technician_leave: "A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).",
   technicians:
-    "The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).",
+    "Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).",
   tryon_jobs: "One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).",
   tryon_sessions:
     "The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).",
@@ -243,4 +243,31 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   zones: "A region made of cities, as NCR is, which a grant of staff access may name (ADR 0109).",
   zoho_access_tokens:
     "Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).",
+};
+
+/**
+ * Where a migration's note on a column named a module that has since moved: the migrations are never edited, so the
+ * document says where it is now. Each under src/, written without it, since the old paths are gone.
+ */
+export const PATHS_MOVED: Readonly<Record<string, string>> = Object.fromEntries(
+  [
+    ["domain/asked-windows.ts", "src/domain/booking/asked-windows.ts"],
+    ["domain/client-notes.ts", "src/domain/clients/client-notes.ts"],
+    ["domain/tasks.ts", "src/domain/ops/tasks.ts"],
+    ["domain/audit.ts", "src/domain/platform/audit.ts"],
+    ["domain/referral-grants.ts", "src/domain/referrals/referral-grants.ts"],
+    ["domain/books-erasure.ts", "src/domain/books/books-erasure.ts"],
+    ["routes/client-refer.ts", "src/routes/client/refer.ts"],
+    ["config/ops-settings.ts", "src/policy/ops-settings.ts"],
+    ["domain/fsm-mirror.ts", "docs/decisions/0110-field-work-without-fsm.md, which retired the FSM mirror"],
+  ].map(([from = "", to = ""]) => [`src/${from}`, to]),
+);
+
+/** A column whose migration's note no longer says what it is today, in today's words. */
+export const NOTES_NOW: Readonly<Record<string, string>> = {
+  "stock_balances.place": "'central' for the central store; for a technician's kit, their ID.",
+  "technicians.mobile_e164":
+    "The technician's own number, as ops keep it on the Technicians page, which they sign in with by a one-time code, " +
+    "the same flow as clients' but a separate role (src/routes/tech/auth.ts). NULL for a technician with no number, " +
+    "who then cannot sign in.",
 };

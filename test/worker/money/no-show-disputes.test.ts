@@ -210,7 +210,7 @@ describe("GET /api/no-shows/disputes", () => {
   });
 
   // A reminder that was skipped read "Not delivered" on the evidence ops rule a refund on.
-  it("says the reminder never went where it was skipped, and when it reached him where it did", async () => {
+  it("says the reminder never went where it was skipped, and when it reached them where it did", async () => {
     await raised();
     await env.DB.batch([
       env.DB.prepare(
@@ -234,7 +234,7 @@ describe("GET /api/no-shows/disputes", () => {
   it("drops a dispute once it is ruled on", async () => {
     const id = await raised();
     const { app } = opsApp();
-    await rule(app, id, { ruling: "upheld", reason: "He checked in at the door" });
+    await rule(app, id, { ruling: "upheld", reason: "They checked in at the door" });
     expect(await disputes(app)).toEqual([]);
   });
 });
@@ -242,7 +242,7 @@ describe("GET /api/no-shows/disputes", () => {
 describe("an erasure", () => {
   it("blanks the client's reason and ops' ruling on it, and keeps the ruling", async () => {
     const id = await raised();
-    await rule(opsApp().app, id, { ruling: "upheld", reason: "He waited at the door" });
+    await rule(opsApp().app, id, { ruling: "upheld", reason: "They waited at the door" });
 
     expect(await eraseByMobile(MOBILE)).not.toBeNull();
 

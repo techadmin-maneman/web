@@ -1,7 +1,7 @@
 // A client who pays inside the hold gets the visit, or, paying too late, an
 // automatic refund; nothing is booked twice (docs/decisions/0068-a-paid-hold-is-kept.md).
 // Razorpay's webhook books the visit itself, and the cron books one whose request failed part-way
-// (test/worker/booking-without-fsm.test.ts). Each scenario is set at
+// (test/worker/booking/booking-in-request-recovery.test.ts). Each scenario is set at
 // the moment it once went wrong. NOW is Monday 21 September 2026, 12 noon in India, and a hold lasts ten minutes. Every
 // name and number here is made up.
 

@@ -90,7 +90,7 @@ describe("telling the client of a move", () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
   });
 
-  it("messages a client who agreed to WhatsApp about his visits, and says so", async () => {
+  it("messages a client who agreed to WhatsApp about their visits, and says so", async () => {
     await agreeToVisitMessages(true);
 
     const answer = await move(askedForWednesdayMorning(A));

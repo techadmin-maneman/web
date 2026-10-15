@@ -73,7 +73,7 @@ describe("POST /api/holds", () => {
       technician: { name: "Sandeep Rawat" },
     });
 
-    // Imran took Vikram's last visit and Sandeep takes his next, and nobody else works: one of them takes it.
+    // Imran took Vikram's last visit and Sandeep takes their next, and nobody else works: one of them takes it.
     const vikram = await client(false, { lastWith: IMRAN });
     await visit(vikram.id, "service", "scheduled", "2026-09-28T06:30:00.000Z", SANDEEP);
     const between = await hold(vikram, { ...TUESDAY_AFTERNOON, date: "2026-09-24" });

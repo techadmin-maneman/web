@@ -81,7 +81,7 @@ describe("ci.yml on a pull request", () => {
     expect(declared).toEqual(["390", "1440", "app", "ops", "tech", "tech-live", "tech-ios"]);
     expect(run).toEqual(declared);
 
-    // In two halves on two runners (CI-02), every project in each; Lighthouse once, in the first.
+    // In two halves on two runners, every project in each; Lighthouse once, in the first.
     const browser = jobOf("browser");
     expect(browser).toContain("shard: [1, 2]");
     expect(browser).toContain("run: npm run test:e2e -- --shard=${{ matrix.shard }}/2\n");
@@ -151,5 +151,14 @@ describe("deploy-staging.yml", () => {
     expect(check).toBeDefined();
     expect(check).not.toContain("continue-on-error");
     expect(text.indexOf("smoke:csp")).toBeGreaterThan(text.indexOf("--surfaces --version-tag"));
+  });
+
+  // The check ran before the apps' Workers shipped, so a release's own pages there went unchecked.
+  it("opens every production host's pages once every Worker has shipped and been smoked", () => {
+    const text = workflow("deploy-production.yml");
+    expect(text.indexOf("smoke:csp -- --environment production")).toBeGreaterThan(text.indexOf("Deploy mm-tech"));
+    expect(text.indexOf("smoke:csp -- --environment production")).toBeGreaterThan(
+      text.indexOf("--surfaces --version-tag"),
+    );
   });
 });

@@ -28,7 +28,7 @@ Nothing here needs a release. The first two have dates.
 - [x] **The console's permissions on staging** (ADRs 0109 and 0189): on since 26 May 2026.
 - [ ] **Zoho tokens** (provisioning, step 8 and 11b.1): a Self Client refresh token for scripts and proofs alone (item 32); the CRM token again with `ZohoCRM.modules.contacts.ALL` (item 21); and every token with only the scopes its sync uses (item 36).
 - [ ] **The CRM** (provisioning, step 8): `node --env-file=.env.crm-<env> scripts/ops/setup-crm.ts --check`, then without `--check`, then `node --env-file=.env.worker-<env> scripts/ops/check-zoho-setup.ts` (item 34); and, by hand, the one workflow rule: contact consent becoming true assigns an owner, nothing firing for "Try-on — delivery only" (item 35).
-- [ ] **The technicians:** each one added in the console's Technicians with his mobile number, his city and his zone; your own as well, to sign in to the technician app yourself.
+- [ ] **The technicians:** each one added in the console's Technicians with their mobile number, city and zone; your own as well, to sign in to the technician app yourself.
 - [ ] **Books:** delete the receipt `4242595000000065003`, which a proof seeded for a payment that never happened (item 19); add a bank account "Razorpay – staging test" and give its ID to ops for staging's `BOOKS_REFUND_ACCOUNT_ID` (item 10).
 - [ ] **Staging's invite previews:** in Cloudflare Zero Trust, an Access application for `staging.maneman.in` with a Bypass / Everyone policy on the paths `r/`, `images/` and `api/og/`, so WhatsApp can fetch an invite's page and card (provisioning, step 10b, with the check that WhatsApp's crawler gets through; provisioning, step 10 has the same for `api/result/`).
 - [ ] **Material and words:** the home page's cleared material (items 73 to 81); the house referral card, 1200 x 630 under 300 KB (item 52); the Grievance Officer's name and address for the privacy page (item 51); the GA4 and Meta Pixel IDs (item 84); your wording in the texts file (items 39, 41, 42 and 45).
@@ -77,15 +77,15 @@ Each is written up in `docs/verification.md` when it passes. The payment run is 
   5. Book again and pay: Checkout opens over the sheet and takes taps; fail once, then pay. `razorpay_events` holds `payment.failed`, `payment.authorized`, `payment.captured` and `order.paid`, each once; the hold is `booked`, and the visit is on the dispatch board; the receipt message arrives.
   6. Within the hour Books shows the client's customer and the payment.
   7. Move the fit more than 24 hours out: no payment, the same visit moved on the dispatch board, the message arrives.
-  8. Move it in the app to tomorrow's first window, then move it again: the ₹4,000 late fee is asked for and paid. Had ops moved it there on the dispatch board instead, the second move would be free, since a move by ops keeps the client's free change (ADR 0096).
+  8. Move it in the app to tomorrow's first window, then move it again: the first fit's late fee, as Prices sets it, is asked for and paid. Had ops moved it there on the dispatch board instead, the second move would be free, since a move by ops keeps the client's free change (ADR 0096).
   9. Complete the fit: within five minutes the invoice is raised and **sent**, the payment applied in Books, and the app shows the tax invoice. A draft instead is a finding (ruling 46 of ADR 0025).
   10. Book and pay a service visit more than 24 hours out, then cancel it: refunded in full, and the refund reaches Books within the hour.
   11. Book and pay one for tomorrow's first window, then cancel: the payment is kept, and the app says so.
   12. Give the client a credit in the console and book a service visit: "Credit covers it"; cancel it more than 24 hours out and the credit comes back.
   13. Read every open alert (RB, "Alerts and the cron"), check Razorpay's webhook deliveries all succeeded, and list every Zoho record the run made, for item 19's clean-up.
 - [ ] **A restore drill** within the month before launch: the three ways back in RB, "Restoring D1", timed again on staging and written up beside the drill of 13 October 2026.
-- [ ] **A technician's writes** (item 57): one job each closed in the app as done, partial and no-show, and one reassignment, read back in the console; the done job's consumables out of his kit on the Stock page (ADR 0087).
-- [ ] **The field test** (item 72) with the first technician and the owner, on his own phone: it tunes the check-in radius (item 56).
+- [ ] **A technician's writes** (item 57): one job each closed in the app as done, partial and no-show, and one reassignment, read back in the console; the done job's consumables out of their kit on the Stock page (ADR 0087).
+- [ ] **The field test** (item 72) with the first technician, on their own phone: it tunes the check-in radius (item 56).
 - [ ] **A try-on on a mid-range Android phone over mobile data**, and staging's `alerts` read after a day (item 91).
 
 ## 3. The site's release

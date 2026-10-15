@@ -2,11 +2,11 @@
 
 From the try-on harness at `C:\Users\X2\Side projects\AILabTool`, which tested the providers against their live APIs. CI cannot see that path, so everything the build and tests depend on lives here.
 
-| File                                                             | From                                                              | Used by                                                                                  |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [`youcam-api-notes.md`](youcam-api-notes.md)                     | the YouCam handoff and `app/providers/youcam.py`                  | `src/providers/image/youcam.ts` and its stub (ADR 0201)                                  |
-| [`../../data/tryon-refs-v1.json`](../../data/tryon-refs-v1.json) | `docs/prompts/youcam-handoff/youcam-refs/manifest.json`, verbatim | `src/config/presets.ts`: a test holds each reference photograph to its size and sha256   |
-| [`ailabtools-api-notes.md`](ailabtools-api-notes.md)             | `docs/API_NOTES.md`, verbatim                                     | nothing now: AILabTools made the looks until ADR 0201, and the earlier decisions cite it |
+| File                                                             | From                                                      | Used by                                                                                  |
+| ---------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [`youcam-api-notes.md`](youcam-api-notes.md)                     | the YouCam handoff and `app/providers/youcam.py`          | `src/providers/image/youcam.ts` and its stub (ADR 0201)                                  |
+| [`../../data/tryon-refs-v1.json`](../../data/tryon-refs-v1.json) | the YouCam handoff's manifest of the references, verbatim | `src/config/presets.ts`: a test holds each reference photograph to its size and sha256   |
+| [`ailabtools-api-notes.md`](ailabtools-api-notes.md)             | AILabTools' own API notes, verbatim                       | nothing now: AILabTools made the looks until ADR 0201, and the earlier decisions cite it |
 
 The verbatim copies are excluded from Prettier. To refresh one, copy the file again and review the diff. Where this build departs from the harness, and why, is in `docs/decisions/0013-departures-from-the-ailabtools-harness.md`.
 

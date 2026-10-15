@@ -66,7 +66,7 @@ beforeEach(async () => {
 });
 
 describe("a visit and the technicians who may take it", () => {
-  it("offers and holds a Gurgaon visit with Gurgaon's technician, and no one else once she is taken", async () => {
+  it("offers and holds a Gurgaon visit with Gurgaon's technician, and no one else once they are taken", async () => {
     expect(await morningOpenAt(GURGAON)).toBe(true);
     expect(await holdAt(GURGAON)).toBe("Imran Qureshi");
     // Delhi's technician and the one with no city are free, and are offered nothing in Gurgaon.

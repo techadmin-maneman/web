@@ -116,7 +116,7 @@ describe("the ops console’s routes", () => {
     expect(keyOf(routeOf("/areas/served"))).toBe(keyOf(routeOf("/areas")));
   });
 
-  it("opens a technician’s page on his week, and each of its tabs at its own path", () => {
+  it("opens a technician’s page on their week, and each of its tabs at its own path", () => {
     expect(routeOf("/technicians")).toEqual({ page: "technicians", technicianId: null, tab: "week" });
     expect(routeOf(technicianPath(TECHNICIAN))).toEqual({ page: "technicians", technicianId: TECHNICIAN, tab: "week" });
     expect(technicianPath(TECHNICIAN)).toBe(`/technicians/${TECHNICIAN}`);

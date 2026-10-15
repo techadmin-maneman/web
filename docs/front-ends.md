@@ -14,7 +14,7 @@ Four front ends, each served by a Worker of its own, each calling mm-api on its 
 | Its API             | `docs/openapi.json`               | `docs/openapi-client.json`             | `docs/openapi-ops.json`             | `docs/openapi-tech.json`                                 |
 | Its design          | `design/Mane Man Site v2.dc.html` | `design/phase2/Client App.dc.html`     | `design/phase2/Ops Console.dc.html` | `design/phase2/Technician App.dc.html`                   |
 
-Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` serves a placeholder page and the three apps are not yet switched on; both wait for the owner's go-ahead (`docs/runbook.md`, "Where things stand").
+Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` serves the coming-soon page until `PRODUCTION_LIVE` is switched (`site/src/lib/flags.ts`), and the three apps are not yet switched on (`ENABLED_SURFACES`, `src/config/environments.ts`); both wait for launch (`docs/go-live.md`).
 
 ## How a front end reaches the API
 
@@ -34,7 +34,7 @@ Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` se
 
 - **Tokens only.** No stylesheet writes a colour, length, duration, curve, weight or leading of its own; `test/node/site/site-tokens.test.ts` and `test/node/apps/app/app-tokens.test.ts` fail on one.
 - **No copies.** An app that keeps its own icon, mark, router, loader, tap guard or error boundary, hides words its own way, formats rupees or adds India's offset fails a test. What is shared is written once, so a fix reaches every app.
-- **Each app brings its own React.** `packages/ui` imports React without installing it, and each app's `vite.config.ts` dedupes it: the repository's own React 18 is there for the fidelity runs.
+- **One React 19.** `packages/ui` takes React as a peer, and each app's `vite.config.ts` dedupes it; the fidelity harness keeps React 18 in its own workspace (`tools/fidelity/`), for the design exports' UMD build.
 
 ## Inside an app
 

@@ -153,7 +153,7 @@ describe("GET /api/tasks, the next visit", () => {
     expect(groupNames(await tasks())).toEqual(["first_fit_to_book"]);
   });
 
-  // The site's form asks for no first fit since 1 October 2026, so a consultation done is enough.
+  // The site's form asks for no first fit, so a consultation done is enough.
   it("lists a client consulted a week ago and not fitted, in the consultation's window, until the fit is booked", async () => {
     await visitOf(CONSULTATION, "consultation", "2026-09-10T04:30:00.000Z", "completed");
     expect(tasksIn(await tasks(), "first_fit_to_book")).toEqual([

@@ -4,7 +4,7 @@
 # build, the browser tests of every app and Lighthouse, the deployed code on new migrations and the local smoke.
 # Adding a label starts no run.
 #
-# No check runs twice on the same files (the owner's choice of 1 October 2026). The static checks, the unit and
+# No check runs twice on the same files. The static checks, the unit and
 # contract tests and the full suite each take as passed what an earlier run passed on exactly these files: in a pull
 # request, an earlier run on the same head, and on a staging deploy, the merged pull request's head when the merge has
 # its files (scripts/lib/already-checked.ts).
@@ -146,9 +146,8 @@ jobs:
         run: npm run typecheck
       - name: Lint
         # ESLint type-checks through eleven TypeScript projects. One run of them all
-        # outgrew Node's default heap (about 2 GB) on 25 September 2026 and this
-        # 4 GB on 13 October; scripts/ci/lint.ts runs them in four parts, the
-        # largest about 2.3 GB.
+        # outgrows Node's default heap (about 2 GB) and this 4 GB; scripts/ci/lint.ts
+        # runs them in four parts, the largest about 2.3 GB.
         env:
           NODE_OPTIONS: --max-old-space-size=4096
         run: npm run lint
@@ -211,11 +210,11 @@ jobs:
           done
           exit 1
 
-  # One run of the whole suite, so coverage still measures all of src/ and scripts/lib/: 90% of lines and 80% of
-  # branches, with floors of their own for the vendor clients and the release script (vitest.config.ts).
+  # One run of the whole suite, so coverage still measures all of src/ and scripts/lib/, held to the floors in
+  # vitest.config.ts, with floors of their own for the vendor clients, the money modules and the release script.
   # It runs whatever changed: it covers src/ and the migrations, and a config
   # change can break it.
-  # The suite in two halves on two runners, each keeping its coverage to merge: half the wait (CI-02).
+  # The suite in two halves on two runners, each keeping its coverage to merge: half the wait.
   unit:
     name: unit tests (${{ matrix.shard }} of 2)
     needs: changes
@@ -261,10 +260,9 @@ jobs:
           pattern: unit-*
           path: .vitest-reports/
           merge-multiple: true
-      - name: Coverage of lines and branches on src/ and scripts/lib/, from both halves, against the floors
+      # mm-api's, the scripts' shared modules' and the front ends', each against its floors: one run of the tests.
+      - name: Coverage of lines and branches, from both halves, against the floors
         run: npx vitest --merge-reports --coverage
-      - name: The front ends' coverage, of the apps, the shared packages and the site
-        run: npm run test:coverage:front
 
   # Migrations run before code, so the code now deployed runs on this branch's schema until the deploy, and
   # again after a rollback: its own Worker tests must pass on these migrations (docs/decisions/0006).
@@ -302,8 +300,13 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Bundle every Worker for every environment (dry run)
         run: npm run build
+      # The browser tests run local builds; production's pages are opened here, as built, before a release ships them.
+      - name: Chromium for production's pages
+        run: npx playwright install --with-deps chromium
+      - name: Production's pages open without an error
+        run: node scripts/ci/production-pages.ts
 
-  # In two halves on two runners (CI-02); Lighthouse runs in the first, after its tests.
+  # In two halves on two runners; Lighthouse runs in the first, after its tests.
   browser:
     name: browser tests (${{ matrix.shard }} of 2)
     needs: changes
@@ -324,7 +327,7 @@ jobs:
       # project alone (playwright.config.ts). Everything else is Chromium.
       # On GitHub's runners the browsers are cached by Playwright's version; the
       # system libraries they need are not files a cache can keep, so they are
-      # installed either way. The machine's runners keep both on their own disk.
+      # installed either way.
       - name: Which Playwright
         id: playwright
         run: |

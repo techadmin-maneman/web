@@ -268,7 +268,7 @@ describe("POST /api/no-shows/disputes/:id/ruling", () => {
   it("keeps the charge on an uphold, and tells the client", async () => {
     const id = await raised();
     const { app, payments } = opsApp();
-    const answer = await rule(app, id, { ruling: "upheld", reason: "He waited at the door and rang twice" });
+    const answer = await rule(app, id, { ruling: "upheld", reason: "They waited at the door and rang twice" });
     expect(answer.status).toBe(200);
     expect(payments.made.refunds).toEqual([]);
     expect(await env.DB.prepare("SELECT kind FROM outbound_messages").first()).toEqual({

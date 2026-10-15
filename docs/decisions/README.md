@@ -1,8 +1,8 @@
 # Architecture decision records
 
-Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on.
+Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0205.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0206. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -13,7 +13,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0003](0003-environment-identity-guard.md) Environment identity guard
 - [0004](0004-routing-and-hostnames.md) Routing and hostnames
 - [0005](0005-environment-isolation-in-wrangler-config.md) Environment isolation in the wrangler config
-- [0006](0006-deployment-pipeline.md) Deployment pipeline
+- [0006](0006-deployment-pipeline.md) Deployment pipeline (superseded)
 - [0007](0007-platform-constraints.md) Platform facts that block M1's definition of done
 - [0008](0008-owner-decisions-on-platform-constraints.md) Owner decisions on the platform constraints
 - [0009](0009-stay-inside-cloudflare-free-tier.md) Stay inside Cloudflare's free tier
@@ -42,6 +42,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0198](0198-cities-as-data.md) Cities as data
 - [0199](0199-derived-state-in-the-domain.md) Derived state in the domain
 - [0200](0200-staging-tenants-of-its-own.md) Staging's tenants of its own
+- [0205](0205-the-pipeline-as-it-runs.md) The pipeline as it runs
 
 ### Booking and visits
 
@@ -247,7 +248,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0003](0003-environment-identity-guard.md) | Environment identity guard | 2026-09-21 | accepted |  |
 | [0004](0004-routing-and-hostnames.md) | Routing and hostnames | 2026-09-21 | accepted |  |
 | [0005](0005-environment-isolation-in-wrangler-config.md) | Environment isolation in the wrangler config | 2026-09-21 | accepted |  |
-| [0006](0006-deployment-pipeline.md) | Deployment pipeline | 2026-09-21 | accepted | [0010](0010-applying-triggers.md), [0075](0075-tests-held-to-the-contract-and-the-local-stack.md) |
+| [0006](0006-deployment-pipeline.md) | Deployment pipeline | 2026-09-21 | superseded by 0205 on 15 October 2026, which says how the pipeline runs now | [0010](0010-applying-triggers.md), [0075](0075-tests-held-to-the-contract-and-the-local-stack.md), [0205](0205-the-pipeline-as-it-runs.md) |
 | [0007](0007-platform-constraints.md) | Platform facts that block M1's definition of done | 2026-09-21 | resolved by 0008 | [0008](0008-owner-decisions-on-platform-constraints.md) |
 | [0008](0008-owner-decisions-on-platform-constraints.md) | Owner decisions on the platform constraints | 2026-09-21 | accepted |  |
 | [0009](0009-stay-inside-cloudflare-free-tier.md) | Stay inside Cloudflare's free tier | 2026-09-21 | accepted | [0112](0112-workers-paid.md), [0194](0194-the-build-on-workers-paid.md) |
@@ -444,3 +445,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0202](0202-razorpay-events-queued.md) | Razorpay's events are queued, and every queue has its dead letters | 2026-10-14 | accepted |  |
 | [0203](0203-a-vendor-down-is-held-off.md) | A vendor that is down is held off, and a contact change waits in D1 | 2026-10-14 | accepted |  |
 | [0204](0204-the-sites-price-pipeline-removed.md) | The site's price pipeline is removed | 2026-10-15 | accepted |  |
+| [0205](0205-the-pipeline-as-it-runs.md) | The pipeline as it runs | 2026-10-15 | accepted |  |

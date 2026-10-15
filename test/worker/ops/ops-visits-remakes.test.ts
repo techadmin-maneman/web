@@ -43,7 +43,7 @@ beforeEach(async () => {
   ]);
 });
 
-/** Rohit's first fit, left partly done on Saturday: the piece in the kit was not his. */
+/** Rohit's first fit, left partly done on Saturday: the piece in the kit was not theirs. */
 async function partlyDoneFit(): Promise<string> {
   const id = await visit(ROHIT, "first_fit", "terminated", "2026-09-19T04:30:00.000Z", IMRAN);
   await env.DB.prepare(

@@ -130,7 +130,7 @@ test("the code request carries the phone’s own ID, and a wrong code is not an 
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
 
-  // A number FSM does not list. Nothing is sent at all: with no technician there
+  // A number no technician has. Nothing is sent at all: with no technician there
   // is no number to send to (src/routes/tech/auth.ts).
   const unlisted = page.waitForRequest((request) => request.url().endsWith("/api/tech/auth/otp"));
   await page.getByLabel("Mobile number").fill(fixture.unknownMobile);
@@ -140,16 +140,15 @@ test("the code request carries the phone’s own ID, and a wrong code is not an 
   expect(unlistedBody.device_id ?? "").toMatch(/^[A-Za-z0-9_-]{8,64}$/);
   await expect(page.getByText("A 6-digit code is on its way.")).toBeVisible();
 
-  // That request may read FSM's list again, which never names the seeded technician. They are written by hand, so
-  // the sync leaves them active (migration 0046). Before, it could switch them off, and an inactive technician's
-  // session, the one the seed wrote, ends on its next call (ADR 0065).
+  // The seeded technician stays active: an inactive technician's session, the one the seed wrote, ends on its next
+  // call (ADR 0065).
   const seeded = await query<{ active: number }>(
     `SELECT active FROM technicians WHERE id = '${fixture.technicianId}';`,
   );
   record("the seeded technician after the unlisted number", seeded[0] ?? "not found");
   expect(seeded[0]?.active).toBe(1);
 
-  // Now the technician FSM does list. A login code answers whoever asks for it and is no longer held to staging's
+  // Now the seeded technician's own number. A login code answers whoever asks for it and is no longer held to staging's
   // messaging allowlist (ADR 0097) — except this technician's own record, named "Staging test technician", which
   // is one of our own scripts' and so stays fenced regardless (isStagingTestRecord, src/policy/staging-test-records.ts).
   // Nothing is sent, exactly as before that ruling.

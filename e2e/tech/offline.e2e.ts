@@ -48,7 +48,7 @@ test("opens with no connection at all, from the shell and the day the phone kept
   const shell = Object.entries(held).find(([name]) => name.startsWith("mm-tech-shell-"));
   expect(shell?.[1]).toContain("/");
   expect(shell?.[1]?.some((path) => path.startsWith("/assets/"))).toBe(true);
-  // Fonts the app never draws with are not the phone's to keep (apps/tech/sw-build.ts).
+  // Fonts the app never draws with are not the phone's to keep (packages/web-kit/pwa.ts).
   expect(shell?.[1]?.filter((path) => /latin-ext|rupee/.test(path))).toEqual([]);
   // The day is the phone's own store's to keep; the worker holds the shell alone.
   expect(Object.keys(held).filter((name) => !name.startsWith("mm-tech-shell-"))).toEqual([]);

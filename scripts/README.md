@@ -44,23 +44,25 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 | `make-house-card.ts`                            | the house referral card                                                     | by hand                  | the image                             |
 | `rules-alias.ts`                                | `@rules/`, the front ends' way into the backend's shared rules              | each bundler's config    | no                                    |
 | `subset-fonts.ts`                               | the rupee sign cut out of EB Garamond                                       | `npm run fonts`          | the font file                         |
+| `generate-words.ts`                             | `src/config/words.json`, every line the Words page may change               | `npm run words`          | `src/config/words.json`               |
 | `words-reviewed.ts`                             | marks every Words line reviewed in its wording now, after a copy review     | `npm run words:reviewed` | `src/config/words-reviewed.json`      |
 
 ## ci/
 
-| Script                      | What it does                                                              | Run by                           | Writes |
-| --------------------------- | ------------------------------------------------------------------------- | -------------------------------- | ------ |
-| `already-checked.ts`        | which checks these very files already passed                              | `ci.yml`                         | no     |
-| `audit.ts`                  | `npm audit`, with the reviewed allowlist                                  | `npm run audit`, CI              | no     |
-| `auto-merge.ts`             | merges a pull request that passed and should merge itself                 | `auto-merge.yml`                 | GitHub |
-| `check-migrations.ts`       | the migrations against the rules in `lib/migration-check.ts`              | `npm run check:migrations`       | no     |
-| `check-open-points.ts`      | `docs/open-points.md` and every citation of a point                       | `npm run check:open-points`      | no     |
-| `check-wrangler-config.ts`  | every environment redeclares its bindings, within the limits              | `npm run check:config`, `ci.yml` | no     |
-| `ci-gate.ts`                | fails the gate job unless every job it waits on passed                    | `ci.yml`                         | no     |
-| `lighthouse.ts`             | Lighthouse on the built site and the client app                           | `npm run lighthouse`, CI         | no     |
-| `lint.ts`                   | ESLint in four runs, each holding its own part's TypeScript projects      | `npm run lint`, CI               | no     |
-| `old-code-on-new-schema.ts` | the deployed code's Worker tests against the new migrations               | `ci.yml`                         | no     |
-| `pr-size.ts`                | warns when a pull request changes more by hand than one review reads well | `ci.yml`                         | no     |
+| Script                      | What it does                                                                         | Run by                           | Writes |
+| --------------------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------ |
+| `already-checked.ts`        | which checks these very files already passed                                         | `ci.yml`                         | no     |
+| `audit.ts`                  | `npm audit`, with the reviewed allowlist                                             | `npm run audit`, CI              | no     |
+| `auto-merge.ts`             | merges a pull request that passed and should merge itself                            | `auto-merge.yml`                 | GitHub |
+| `production-pages.ts`       | production's built pages opened in Chromium from a local server, failing on an error | `npm run build` first            | no     |
+| `check-migrations.ts`       | the migrations against the rules in `lib/migration-check.ts`                         | `npm run check:migrations`       | no     |
+| `check-open-points.ts`      | `docs/open-points.md` and every citation of a point                                  | `npm run check:open-points`      | no     |
+| `check-wrangler-config.ts`  | every environment redeclares its bindings, within the limits                         | `npm run check:config`, `ci.yml` | no     |
+| `ci-gate.ts`                | fails the gate job unless every job it waits on passed                               | `ci.yml`                         | no     |
+| `lighthouse.ts`             | Lighthouse on the built site and the client app                                      | `npm run lighthouse`, CI         | no     |
+| `lint.ts`                   | ESLint in four runs, each holding its own part's TypeScript projects                 | `npm run lint`, CI               | no     |
+| `old-code-on-new-schema.ts` | the deployed code's Worker tests against the new migrations                          | `ci.yml`                         | no     |
+| `pr-size.ts`                | warns when a pull request changes more by hand than one review reads well            | `ci.yml`                         | no     |
 
 ## release/
 
@@ -90,7 +92,7 @@ Each writes **test records**, named "Staging test", on staging or in the owner's
 | `staging-tryon.ts`          | one try-on through the real API                                                                  | `.env.staging-access`                       |
 | `youcam-probe.ts`           | every look on one photograph, through the real adapter: the time and units each                  | a file holding `YOUCAM_API_KEY`             |
 | `load-test-leads.ts`        | M4's load test: 50 bookings at once, and no duplicates                                           | `.env.staging-access`                       |
-| `seed-technician-tester.ts` | a technician a real person signs in as, and his jobs; `--clear` takes them out                   | wrangler's login                            |
+| `seed-technician-tester.ts` | a technician a real person signs in as, and their jobs; `--clear` takes them out                 | wrangler's login                            |
 | `books-proof.ts`            | a customer, an invoice and a payment in Books, then deleted                                      | `.env.books-scripts`                        |
 | `staging-records.ts`        | lists what staging wrote into the org; `--delete <file>` deletes what the owner kept on the list | `.env.books-scripts` and `.env.crm-scripts` |
 

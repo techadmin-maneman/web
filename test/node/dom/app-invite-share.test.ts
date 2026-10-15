@@ -36,7 +36,7 @@ describe("WhatsApp", () => {
   it("sends the card with the invite’s words where the phone can share it as a file", () => {
     const files = phone(true);
     expect(withCard(files, CARD, TEXT)).toEqual({ files: [CARD], text: TEXT });
-    // The phone is asked about the file alone, as the site's try-on asks (site/src/islands/tryon/Result.tsx).
+    // The phone is asked about the file alone, as the app's other shares ask (apps/app/src/refer/share.ts).
     expect(files.asked).toEqual([{ files: [CARD] }]);
   });
 

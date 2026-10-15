@@ -40,7 +40,7 @@ beforeEach(async () => {
   captureLogs();
   ops = appFor("local", fakeDependencies(), {}, "ops");
   await markDatabase();
-  // Rohit: fitted, his next service on the 30th. Vikram: a consultation on the 24th. Kabir: nothing booked, in
+  // Rohit: fitted, their next service on the 30th. Vikram: a consultation on the 24th. Kabir: nothing booked, in
   // Gurgaon. Anil: nothing booked, and nowhere known.
   for (const [id, name, mobile] of [
     [ROHIT, "Rohit Malhotra", "+919810000001"],

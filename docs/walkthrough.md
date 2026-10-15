@@ -167,6 +167,13 @@ Every step is saved on the phone first and sent in order when there is signal, s
 | Sets a service's expected use         | Where the technician's steppers start for that service                                                                                                                                                                                    |
 | Records a delivery, transfer or count | The central store's and each kit's stock; a count writes the difference; a write-off records a loss; a place at or below its level alerts once until it is restocked                                                                      |
 
+## Stock and Customer Care
+
+Two parts of the business run beside the visits, each with a page of how it works now:
+
+- **Stock and purchasing** ([how it works](how-it-works/inventory.md)): every hair system and consumable in a tree of places, the warehouse down to each technician's kit, as a ledger of movements; each client matched to the one stock code made to their spec; kits checked each evening against tomorrow; suppliers, purchase orders and their receipts at landed cost; and the forecast and supply plan that say what to buy.
+- **Customer Care** ([how it works](how-it-works/care.md)): one inbox for every number that writes to our WhatsApp number, each client with a named Care person, a reply clock in Care's hours that puts a late chat on the Tasks board, and what Care can do: send a matter to a city, give a remedy, take a grievance.
+
 ## What changes without a release
 
 Ops change these in the console, and each is in force within a minute: services and their names, lengths, order and retirement; prices, each from the day it applies, so nothing already sold moves; discount codes; the days blacked out; the rules; the next visit's days; the service area; the job sheet; the consumables and each service's expected use; and stock. Everything else is code and needs a release. The owner has ruled that every policy should move into the console: the move and cancel terms, the no-show charges, the reminder's hour and the rest are listed in `docs/open-points.md`, item 12, and `docs/archive/implementation-plan-2026-09-27.md`, C1.

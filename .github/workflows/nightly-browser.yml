@@ -86,17 +86,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      contents: read
       issues: write
     steps:
-      - name: Open the issue, or add this run to the open one
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          title="The nightly browser tests are failing"
-          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
-          if [ -n "$open" ]; then
-            gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "Failed again: $RUN"
-          else
-            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "Last night's run failed: $RUN. Its traces are the run's artifact. Close this once it passes again."
-          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/failing-issue
+        with:
+          title: "The nightly browser tests are failing"
+          body: "Last night's run failed, its traces in the run's artifact"
+          token: ${{ github.token }}

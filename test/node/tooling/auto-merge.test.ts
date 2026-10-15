@@ -1,6 +1,7 @@
 // A ready pull request from a branch of this repository merges itself once a full CI run passes on its current head,
 // unless it waits for a review (scripts/lib/auto-merge.ts).
 
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -110,7 +111,7 @@ describe("a pull request touching money or personal data", () => {
       "apps/ops/src/refunds.ts",
       "scripts/lib/auto-merge.ts",
       "docs/decisions/0006-deployment-pipeline.md",
-      "src/domain/booking/bookings.ts",
+      "src/domain/booking/availability.ts",
     ];
     expect(sensitiveFiles(files)).toEqual([]);
   });
@@ -119,6 +120,16 @@ describe("a pull request touching money or personal data", () => {
   it("counts a sensitive file renamed to a path outside the list", () => {
     const renamed = ["src/domain/money-back.ts", "src/domain/money/refunds.ts"];
     expect(sensitiveFiles(renamed)).toEqual(["src/domain/money/refunds.ts"]);
+  });
+
+  // A module that reaches the payments provider moves money, wherever it sits.
+  it("covers every module that imports the payments provider", () => {
+    const sources = execFileSync("git", ["ls-files", "src"], { encoding: "utf8" })
+      .split("\n")
+      .filter((file) => file.endsWith(".ts"));
+    const reaching = sources.filter((file) => readFileSync(file, "utf8").includes("providers/payments/"));
+    expect(reaching.length).toBeGreaterThan(3);
+    expect(reaching.filter((file) => sensitiveFiles([file]).length === 0)).toEqual([]);
   });
 
   // A file renamed in the code would otherwise quietly fall out of the list.

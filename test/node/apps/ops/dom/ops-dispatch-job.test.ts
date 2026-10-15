@@ -108,7 +108,7 @@ describe("where a job stands, and what a move changes", () => {
     expect(shownOf(inTray())).toEqual({ technicianId: null, startsAt: "2025-09-20T10:30:00.000Z" });
   });
 
-  it("sends the switched-off technician a tray job is still on, so the move takes it from him", () => {
+  it("sends the switched-off technician a tray job is still on, so the move takes it from them", () => {
     const left = inTray({ was_technician: { id: "t9", name: "Ravi Kumar" } });
     expect(shownOf(left)).toEqual({ technicianId: "t9", startsAt: "2025-09-20T10:30:00.000Z" });
   });
@@ -142,7 +142,7 @@ describe("where a job stands, and what a move changes", () => {
     expect(movesIfCheckInCleared(block({ status: "in_progress", begun: "arrived" }))).toBe(false);
   });
 
-  it("says how far the technician has got on a visit not yet done, from his phone", () => {
+  it("says how far the technician has got on a visit not yet done, from their phone", () => {
     expect(begunWord(block({ begun: "started" }))).toBe("Started");
     expect(begunWord(block({ begun: null }))).toBeNull();
     expect(begunWord(block({ status: "completed", begun: "closed" }))).toBeNull();

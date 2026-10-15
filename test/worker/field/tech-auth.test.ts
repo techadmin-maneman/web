@@ -231,7 +231,7 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     expect(deps.sentCodes.map((sent) => sent.to)).toEqual(["+919810000009"]);
   });
 
-  it("tells ops when an active technician is refused a code, and closes the alert once he is given one", async () => {
+  it("tells ops when an active technician is refused a code, and closes the alert once they are given one", async () => {
     let clock = NOW;
     deps = fakeDependencies({ now: () => clock });
     tech = appFor("local", deps, {}, "tech");
@@ -329,7 +329,7 @@ describe("a signed-in phone", () => {
   // A technician who has left keeps their phone, and on it the cards of the day:
   // clients' addresses and mobiles. Being switched off ends their session at once,
   // and says why, so the phone sets aside what it has not sent rather than wipe it.
-  it("is signed out on its next call once ops switch him off", async () => {
+  it("is signed out on its next call once ops switch them off", async () => {
     const cookie = await signIn();
     await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(IMRAN).run();
 
@@ -387,14 +387,14 @@ describe("the two logins", () => {
 
 // A revoke did not stick. The lost phone still gets their code on WhatsApp, and signing in again with it
 // undid the revoke.
-describe("after ops revoke a phone of his", () => {
+describe("after ops revoke a phone of theirs", () => {
   const staff = { kind: "staff", id: "ops@maneman.test" } as const;
   const signIn = async (deviceId: string) => {
     const { id, code } = await challengeFor("98100 00009");
     return post("/api/tech/auth/verify", { challenge_id: id, code, device_id: deviceId });
   };
 
-  it("no phone of his signs in, even with the right code, until ops let him", async () => {
+  it("no phone of theirs signs in, even with the right code, until ops let them", async () => {
     expect((await signIn(DEVICE)).status).toBe(200);
     await revokeDevice(env.DB, {
       technicianId: IMRAN,

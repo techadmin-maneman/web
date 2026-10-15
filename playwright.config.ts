@@ -117,7 +117,7 @@ export default defineConfig({
         baseURL: `http://tech.localhost:${String(PORTS.tech)}`,
         // The app registers none, and a stale one would answer what page.route() means to fake.
         serviceWorkers: "block",
-        // Board B1's capture: a green test pattern instead of a camera, granted without a prompt.
+        // The capture screen's camera: a green test pattern instead of a camera, granted without a prompt.
         permissions: ["camera"],
         launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
         // The steps stand still, so axe never reads a screen halfway in.
@@ -143,8 +143,8 @@ export default defineConfig({
     },
     {
       /*
-       * The technician app on WebKit, since the owner ruled that technicians
-       * use any phone, including iPhones (docs/open-points.md, item 124). It is
+       * The technician app on WebKit, since technicians use any phone,
+       * including iPhones (docs/open-points.md, item 124). It is
        * the engine an iPhone runs and it is **not** Safari on iOS: it has none
        * of Safari's storage policy, its seven-day cap or its Home Screen Web
        * Apps, so it proves the app's code paths run there and nothing about

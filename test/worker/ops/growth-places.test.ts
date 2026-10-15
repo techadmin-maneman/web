@@ -176,7 +176,7 @@ const served = async () =>
   (await env.DB.prepare("SELECT pincode, served FROM serviceable_pincodes ORDER BY pincode").all()).results;
 
 const REJECTION = { decision: "reject", reason: "The friend lives with the referrer." };
-const ATTACHMENT = { code: DELHI_CODE, reason: "Told us on WhatsApp that Rohit sent him" };
+const ATTACHMENT = { code: DELHI_CODE, reason: "Told us on WhatsApp that Rohit sent them" };
 
 describe("a grant of Growth in one city", () => {
   let delhi: App;
