@@ -80,14 +80,19 @@ If the total nears 8 GB:
 
 Each environment's database may hold 10 GB on Workers Paid (ADR 0112). Past it every write fails, the audit entry each ops call writes first among them, so the console, bookings and payments stop together. The `storage_meter` cron job reads its size once an hour, on the half hour, and tells ops once at 50%, 80% and 95% (the alerts `d1_size:50`, `d1_size:80` and `d1_size:95`). Settings shows it beside the R2 meter.
 
-Where it stands: `npx wrangler d1 info maneman-staging --env staging` (or production's) gives the size. What fills it is usually the audit log:
+**Where it stands.** `npx wrangler d1 info maneman-prod --env production` gives the size; `node scripts/ops/table-sizes.ts --env production` gives each table's rows, the largest first. It reads every row once, so run it at an alert, not on a schedule.
 
-```sql
-SELECT COUNT(*) AS entries, MIN(at) AS oldest FROM audit_log;
-SELECT action, COUNT(*) AS entries FROM audit_log GROUP BY action ORDER BY entries DESC LIMIT 10;
-```
+**What already lets go.** The hourly `retention` job deletes, a few hundred rows a run (`src/policy/retention.ts`): the audit log after two years, messages we sent after two years unless a no-show or a move holds one as evidence, resolved alerts and Razorpay's event IDs after a year, strangers' closed chats after a year, dormant people who never became clients after a year, and the counters after three days.
 
-At 50%, tell the developers. Never delete rows by hand to make room: the audit log and the credit ledger refuse it by trigger, and the rest are clients' records and the history of their money. The audit log's retention, two years once counsel confirms it, is what takes rows off it. At 80%, the owner decides between that and Workers Paid, which holds 10 GB a database and needs a new ADR (ADR 0009).
+**What only grows.** Clients' records and the history of their money stay as long as the client does: visits, payments, `credit_ledger`, `stock_movements`, `job_events` (each technician step, read again for the visit's record), `chat_messages`, `task_spans` and `stored_objects` (a row for each object in R2). Never delete them by hand to make room: the audit log and the credit ledger refuse it by trigger, and the rest are records someone will ask for.
+
+**The plan, by mark.**
+
+- **At 50%**, run `table-sizes.ts` and tell the developers which tables lead. If it is the audit log or the messages, the retention job is behind: check `cron_job:retention` has not been failing.
+- **At 80%**, the owner decides between these, in this order. Each is a few days' work, built when it is chosen; neither runs today.
+  1. **Archive closed rows to R2.** `job_events` of visits closed over a year ago, and `chat_messages` of threads closed over a year ago, written to the backups bucket as the weekly backup writes its files, encrypted, then deleted from D1 by a cron job, a few thousand a run; the pages that show them read the archive for anything that old.
+  2. **Move the high-volume append-only tables to a second D1 database.** A second database (`maneman-prod-history`), bound as `HISTORY_DB` and checked like the first by `scripts/ci/check-wrangler-config.ts`; for each table moved, its module reads and writes through the new binding, the rows are copied over with `wrangler d1 export --table` and imported, and the old table is dropped in a later contract migration (docs/migrations.md). `job_events`, `outbound_messages` and `chat_messages` move first: nothing joins them to a booking or a payment in the same statement.
+- **At 95%**, the console and bookings are days from stopping: archive first, as it frees the most for the least change.
 
 A mark is told once for good; to hear of one again after the database shrank below it, `UPDATE storage_meter SET database_told_percent = 0 WHERE id = 1;`.
 

@@ -107,6 +107,7 @@ Each writes **test records**, named "Staging test", on staging or in the owner's
 | `restore-backup.ts`      | a weekly backup downloaded and decrypted into SQL                                                        | `--env`, `--date`, `--key`, `--out`; wrangler signed in | the SQL file                        |
 | `whatsapp-templates.ts`  | each WhatsApp template as it is submitted to MSG91 for approval                                          | none                                                    | no                                  |
 | `cpu-report.ts`          | mm-api's CPU time over the last day                                                                      | `deploy-staging.yml`, `.env.cf-read`                    | no                                  |
+| `table-sizes.ts`         | each table's rows in an environment's database, the largest first                                        | `--env`, `--top`; wrangler signed in                    | no                                  |
 | `analytics-first-run.ts` | one of every record copied into the reporting copy twice, read back through Zoho's login, then taken out | `.env.analytics-supabase`                               | the reporting copy, then empties it |
 
 ## fidelity/
