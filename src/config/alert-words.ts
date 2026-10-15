@@ -3,6 +3,7 @@
 // last the IDs and days to act on: never a client's name, number or address, since the chat that hears them is
 // outside the console. The kinds are src/policy/alerts.ts's.
 
+import { fullDate } from "@maneman/web-kit/dates";
 import { amountOf } from "@maneman/web-kit/figures";
 import { rupees } from "@maneman/web-kit/money";
 
@@ -241,7 +242,7 @@ export const ALERT_WORDS = {
     readonly waited: number;
     readonly within: number;
   }) =>
-    `Decide deletion request ${a.request} by ${a.by}: it has waited ${String(a.waited)} of its ` +
+    `Decide deletion request ${a.request} by ${fullDate(a.by)}: it has waited ${String(a.waited)} of its ` +
     `${String(a.within)} days.`,
   technician_code_refused: (a: { readonly technician: string; readonly reason: string }) =>
     `Technician ${a.technician} was refused a login code: ${a.reason}`,
