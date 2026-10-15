@@ -19,18 +19,15 @@ export interface JobSheetItem {
 }
 
 /**
- * The checklist per visit type. A service visit has the design's six items;
- * the other types have the steps their screens show. The ids are what a visit
- * records, and never change.
+ * The checklist per visit type, as the owner approved them for launch; ops change them in Settings, Job sheet. The
+ * ids are what a visit records, and never change.
  */
 export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
-  // PLACEHOLDER: the consultation's checklist, until ops give theirs (open point 28).
   consultation: [
     { id: "scalp_checked", label: "Scalp and hairline checked", client: "Scalp and hairline checked" },
     { id: "measurements_taken", label: "Measurements taken", client: "Measurements taken" },
     { id: "options_shown", label: "Options and prices shown", client: "Options and prices talked through" },
   ],
-  // PLACEHOLDER: the first fit's checklist, until ops give theirs (open point 28).
   first_fit: [
     { id: "template_checked", label: "Template checked against the head", client: null },
     { id: "base_trimmed", label: "Base trimmed and shaped", client: "Base trimmed and shaped" },
@@ -39,7 +36,6 @@ export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
     { id: "cut_and_styled", label: "Cut and styled", client: "Cut and styled" },
     { id: "aftercare_explained", label: "Aftercare explained", client: "Aftercare explained" },
   ],
-  // PLACEHOLDER: the service visit's checklist, until ops give theirs (open point 28).
   service: [
     { id: "piece_removed", label: "Hair system removed", client: "Hair system removed" },
     { id: "scalp_cleaned", label: "Scalp cleaned", client: "Scalp cleaned" },
@@ -48,7 +44,6 @@ export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
     { id: "piece_refitted", label: "Hair system refitted", client: "Refitted" },
     { id: "cut_and_styled", label: "Cut and styled", client: "Cut and styled" },
   ],
-  // PLACEHOLDER: the replacement's checklist, until ops give theirs (open point 28).
   replacement: [
     { id: "old_piece_removed", label: "Old hair system removed", client: "Old hair system removed" },
     { id: "scalp_cleaned", label: "Scalp cleaned", client: "Scalp cleaned" },
@@ -60,14 +55,12 @@ export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
 };
 
 /**
- * The reasons behind "Partial · pick a reason". Only "client stopped it" is
- * named in the design, so the others are placeholders, the clinical two among them.
+ * The reasons behind "Partial · pick a reason", as the owner approved them for launch, the clinical two among them.
  * "Ops needs the full set — these drive the task queue", which is why a reason
  * is checked against the list in force before any write.
  */
 export const PARTIAL_REASONS: readonly JobSheetItem[] = [
   { id: "client_stopped_it", label: "Client stopped it partway" },
-  // PLACEHOLDER: three reasons the design does not name, until ops give theirs (open point 28).
   { id: "piece_not_ready", label: "Hair system not ready" },
   { id: "client_unwell", label: "Client unwell" },
   { id: "more_time_needed", label: "More time needed" },
