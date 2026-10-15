@@ -155,12 +155,13 @@ export function stripStart(
 
 /**
  * The days a last visit may have been done on for its next service to be reminded of today: those whose service is
- * due from today to `reminder_before_due` days from now, and never the visit done today.
+ * due up to `reminder_before_due` days from now, or is past its day but its client not yet at risk, and never the
+ * visit done today.
  */
 export function remindedIfDoneBetween(today: string, days: NextVisitDays): { from: string; to: string } {
   return {
-    // Back to the at-risk day: a reminder whose day passed unsent still goes, once, until the task takes over.
-    from: addDays(today, -(days.service_cadence + days.at_risk_after_due)),
+    // A reminder whose day passed unsent still goes, once, until the client is at risk and a task takes over.
+    from: addDays(today, 1 - (days.service_cadence + days.at_risk_after_due)),
     to: sooner(addDays(today, days.reminder_before_due - days.service_cadence), addDays(today, -1)),
   };
 }

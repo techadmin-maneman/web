@@ -406,11 +406,17 @@ describe("the reminder of the next service", () => {
     ]);
   });
 
-  it("is written for none due in eight days, none already past due, and none with a visit booked or paid for", async () => {
-    await visit("service", "2026-08-30T04:30:00.000Z"); // due in eight days
-    expect(await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS)).toEqual([]);
-    await env.DB.prepare("DELETE FROM appointments").run();
+  it("is written for one past its day until the client is at risk, and then not", async () => {
     await visit("service", "2026-08-20T04:30:00.000Z"); // due Saturday, two days ago
+    expect(await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS)).toHaveLength(1);
+    await env.DB.prepare("DELETE FROM outbound_messages").run();
+    await env.DB.prepare("DELETE FROM appointments").run();
+    await visit("service", "2026-08-15T04:30:00.000Z"); // at risk today: the task says it
+    expect(await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS)).toEqual([]);
+  });
+
+  it("is written for none due in eight days, and none with a visit booked or paid for", async () => {
+    await visit("service", "2026-08-30T04:30:00.000Z"); // due in eight days
     expect(await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS)).toEqual([]);
     await env.DB.prepare("DELETE FROM appointments").run();
     await visit("service", "2026-08-29T04:30:00.000Z");
@@ -457,6 +463,23 @@ describe("the reminder of the next service", () => {
     expect(renderMessage("next_visit_due_v1", sent[0]?.params ?? [])).toBe(
       "Hi Rohit, time to book your next visit.\nYour service visit is due on Mon 28 Sep. Book it in the Mane Man app.",
     );
+  });
+
+  it("says a visit past its day was due, not that it is", async () => {
+    await visit("service", "2026-08-20T04:30:00.000Z");
+    await consent(true);
+    const [id = ""] = await queueNextServiceReminders(env.DB, EVENING, NEXT_VISIT_DAYS);
+    const { provider, sent } = recordingProvider();
+    await sendMessage({
+      db: env.DB,
+      config: config({ allowlist: [MOBILE] }),
+      deps: fakeDependencies({ messaging: provider }),
+      log,
+      messageId: id,
+    });
+    expect(sent).toEqual([
+      { to: MOBILE, template: "next_visit_overdue_v1", params: ["Rohit", "service visit", "Sat 19 Sep"] },
+    ]);
   });
 
   it("names the replacement where the piece falls due first", async () => {
