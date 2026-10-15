@@ -23,6 +23,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
 import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
+import { UpiPaymentAction } from "./UpiPaymentAction.tsx";
 import { decidedAt, subjectOf, taskClientPath } from "../lib/task-links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
@@ -96,6 +97,7 @@ function TaskRow({ group, task, now, acting, marked }: RowProps) {
         )}
         <BookFromTask task={task} subject={subject} onBooked={acting.onClosed} />
         {group === "payment_owed" && <PaymentLinkActions task={task} subject={subject} />}
+        {group === "upi_due" && <UpiPaymentAction task={task} subject={subject} onRecorded={acting.onClosed} />}
         <CallAboutMove group={group} task={task} subject={subject} onTold={acting.onClosed} />
         <TaskActions group={group} task={task} subject={subject} {...acting} />
       </div>

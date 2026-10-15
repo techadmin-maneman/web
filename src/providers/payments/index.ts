@@ -61,6 +61,12 @@ export interface MadeLink {
   readonly shortUrl: string;
 }
 
+/** The providers that take no payment, where PAYMENTS_PROVIDER is none. */
+const OFFLINE = new WeakSet<PaymentsProvider>();
+
+/** Whether this provider takes payments online; none does not, and a paid visit is then paid by UPI at the visit. */
+export const takesPaymentsOnline = (payments: PaymentsProvider): boolean => !OFFLINE.has(payments);
+
 export function createPaymentsProvider(
   provider: string | undefined,
   settings: RazorpaySettings | null,
@@ -69,7 +75,7 @@ export function createPaymentsProvider(
   if (provider === "razorpay" && settings !== null) return createRazorpay(settings, deps);
   if (provider === "stub") return createStubPayments();
   const off = () => Promise.reject(new Error("payments are not connected here (PAYMENTS_PROVIDER is none)"));
-  return {
+  const none: PaymentsProvider = {
     createOrder: off,
     orderPayments: off,
     refund: off,
@@ -79,4 +85,6 @@ export function createPaymentsProvider(
     paymentLink: off,
     cancelPaymentLink: off,
   };
+  OFFLINE.add(none);
+  return none;
 }

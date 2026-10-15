@@ -14,7 +14,8 @@ import { Button, ButtonLink } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { OneVisitPrice, VisitSummary } from "../api.ts";
-import { home, messages, note, windowText } from "../content.ts";
+import { home, messages, note, visits, windowText } from "../content.ts";
+import { rupees } from "@maneman/web-kit/money";
 import { oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
@@ -70,7 +71,7 @@ function Reschedule(props: {
       </Button>
     );
   }
-  if (!me.booking.self_serve || props.changing === null) {
+  if (props.changing === null || !me.booking.self_serve_kinds.includes(props.changing.type)) {
     return (
       <ButtonLink
         variant="outlineOnInk"
@@ -122,7 +123,7 @@ function AddNote(props: { what: string; date: string; noting: NotingVisit | null
   const { me, offline } = useSession();
   const [open, setOpen] = useState(false);
   const message = messages.note(props.what, props.date);
-  const noting = me.booking.self_serve ? props.noting : null;
+  const noting = me.booking.self_serve_kinds.length > 0 ? props.noting : null;
   if (noting === null) return <NoteOnWhatsApp message={message} />;
   return (
     <>
@@ -246,6 +247,11 @@ export function VisitCard({
       </div>
       {visit.place !== "" && <p className={styles.place}>{visit.place}</p>}
       {oneVisit !== null && <OneVisitTerms price={oneVisit} />}
+      {visit.pay_at_visit !== null && (
+        <div className={styles.terms}>
+          <p>{visits.payAtVisit(rupees(visit.pay_at_visit))}</p>
+        </div>
+      )}
       {clientNote !== null && <p className={styles.place}>{note.shown(clientNote)}</p>}
       {!hasBegun(visit) && visit.proposed_move !== null && (
         <ProposedMove visitId={visit.id} proposal={visit.proposed_move} />

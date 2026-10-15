@@ -115,7 +115,7 @@ describe("the address the consultation is at", () => {
 
   it("is kept with the day asked for, while self-serve booking is off", async () => {
     const answer = await request(
-      site({ selfServeBooking: false }),
+      site({ selfServeBooking: false, selfServeConsultations: false }),
       "/api/consultation",
       post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { CRM_QUEUE: fakeQueue() },
@@ -200,7 +200,7 @@ describe("the address the consultation is at", () => {
       await pincode("122011", "Sushant Lok", "Gurgaon", true);
       await onAccount("122011");
       const answer = await request(
-        site({ selfServeBooking: false }),
+        site({ selfServeBooking: false, selfServeConsultations: false }),
         "/api/consultation",
         post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
         { CRM_QUEUE: fakeQueue() },

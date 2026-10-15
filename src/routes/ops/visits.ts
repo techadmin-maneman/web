@@ -12,11 +12,13 @@ import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
 import { freeTechnicians } from "../../domain/booking/availability.ts";
 import { confirmUnpaid } from "../../domain/booking/bookings.ts";
 import { giveBack } from "../../domain/booking/give-back.ts";
+import { visitOfHold } from "../../domain/booking/booked-hold.ts";
 import type { Hold } from "../../domain/booking/hold-slot.ts";
 import { remakesOwed, type Remake } from "../../domain/booking/remakes.ts";
 import { offeredServices, type PricedService } from "../../domain/booking/services.ts";
 import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import {
+  atTheVisit,
   bookableRange,
   codeStillApplies,
   holdForSale,
@@ -25,7 +27,6 @@ import {
   paysFor,
   saleFor,
   sendHoldLink,
-  visitOfHold,
   type Sale,
   type VisitAsked,
 } from "../../domain/booking/visit-booking.ts";
@@ -35,6 +36,7 @@ import { auditStatement } from "../../domain/platform/audit.ts";
 import { actorOf } from "../../http/audit.ts";
 import { bookHold } from "../../http/book-hold.ts";
 import type { App, AppEnv } from "../../http/context.ts";
+import { takesPaymentsOnline } from "../../providers/payments/index.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
@@ -312,7 +314,7 @@ async function availability(c: Context<AppEnv>, query: AvailabilityQuery) {
       services: services.map((each) => ({ ...serviceBody(each), price: each.price })),
       service: serviceBody(service),
       recommended,
-      pays: paysFor(false, onCredit, service.price),
+      pays: paysFor(false, onCredit, service.price, takesPaymentsOnline(c.var.deps.payments)),
       credits: credits.visits,
       owed: owedOf(owed, kind),
       days: strip,
@@ -336,7 +338,7 @@ export function registerOpsVisits(app: App): void {
       const { refusal } = checked;
       return refuse(c, refusal.code, "fields" in refusal ? refusal.fields : undefined);
     }
-    const { sale } = checked;
+    const sale = takesPaymentsOnline(c.var.deps.payments) ? checked.sale : atTheVisit(checked.sale);
     const closesAt = sale.pays === "link" ? await linkClosesAt(db, asked, now, inputs.paymentLinks) : null;
     if (sale.pays === "link" && closesAt === null) return refuse(c, "not_bookable");
 

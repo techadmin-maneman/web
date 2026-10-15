@@ -115,7 +115,7 @@ async function confirmFree(db: D1Database, hold: HoldRow, now: Date): Promise<bo
   const confirmed = await db
     .prepare(
       `UPDATE slot_holds SET confirmed_at = COALESCE(confirmed_at, ?2), queued_at = ?2, updated_at = ?2
-       WHERE id = ?3 AND (amount = 0
+       WHERE id = ?3 AND (amount = 0 OR pay_at_visit = 1
          OR (use_credit = 1 AND (confirmed_at IS NOT NULL OR ${SPENDABLE_CREDITS} > 0)))
        RETURNING id`,
     )
@@ -125,8 +125,9 @@ async function confirmFree(db: D1Database, hold: HoldRow, now: Date): Promise<bo
 }
 
 /**
- * Confirms a hold ops book that nothing is paid for at booking: free, or paid by a credit the client still has to
- * spend. False when it no longer qualifies, as when another booking took the client's last credit meanwhile.
+ * Confirms a hold ops book that nothing is paid for at booking: free, paid by a credit the client still has to
+ * spend, or paid by UPI at the visit. False when it no longer qualifies, as when another booking took the client's
+ * last credit meanwhile.
  */
 export async function confirmUnpaid(db: D1Database, holdId: string, now: Date): Promise<boolean> {
   const hold = await bookingHoldRow(db, holdId);

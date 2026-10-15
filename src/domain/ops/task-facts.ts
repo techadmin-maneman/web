@@ -57,6 +57,13 @@ export type TaskFacts =
       readonly fit_window: BookingWindow | null;
     }
   | {
+      readonly group: "upi_due";
+      readonly kind: VisitType;
+      readonly starts_at: Instant;
+      /** In paise. */
+      readonly amount: number;
+    }
+  | {
       readonly group: "payment_owed";
       readonly state: "sent" | "unsent" | "refused" | "closed";
       /** In paise. */

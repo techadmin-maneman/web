@@ -136,3 +136,70 @@ export const BookingSchema = z
   })
   .strict()
   .openapi("Booking");
+
+/** What the client may book in the app, and what the booking sheet opens with. */
+export const BookingOfferSchema = z
+  .object({
+    self_serve: z.boolean().openapi({ description: "Booking every kind of visit in the app is on." }),
+    self_serve_kinds: z.array(z.enum(VISIT_TYPES)).openapi({
+      description:
+        "The kinds of visit the client books, moves and cancels in the app; for any other the app opens WhatsApp.",
+    }),
+    types: z.array(z.enum(VISIT_TYPES)).openapi({ description: "What the client may book now." }),
+    services: z
+      .array(
+        z
+          .object({
+            type: z.enum(VISIT_TYPES),
+            tier: z.string().openapi({ description: "Its code within its kind, which booking it names." }),
+            name: z.string(),
+            description: z
+              .union([z.string(), z.null()])
+              .openapi({ description: "The line ops wrote to read under its name; null for none." }),
+            minutes: z.number().int().openapi({ description: "How long the visit is booked for." }),
+            price: PriceSchema.openapi({ description: "Its price tomorrow, the first day it can be booked." }),
+          })
+          .strict()
+          .openapi("OfferedService"),
+      )
+      .openapi({
+        description:
+          "Every service of those kinds offered and priced now, a kind at a time, in the console's order. A " +
+          "first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet.",
+      }),
+    next: z
+      .union([
+        z
+          .object({
+            type: z.enum(["first_fit", "service", "replacement"]),
+            tier: z
+              .string()
+              .nullable()
+              .openapi({
+                description:
+                  "The service it is offered as: the one the client's last visit of its kind was, while that is " +
+                  "offered, else its kind's first in the console's order (ADR 0085). Null while its kind offers " +
+                  "none, as a first fit does before ops offer a hair system: it cannot be booked yet.",
+              }),
+            due_on: z.iso.date().openapi({
+              description:
+                "India's day it fell or falls due: a service's from the last visit and the cadence, a " +
+                "replacement's the piece's own, a first fit's from the consultation and the lead time.",
+            }),
+            date: z.iso.date().openapi({
+              description: "India's day it is offered on: the day it falls due, or tomorrow once that has passed.",
+            }),
+            window: z.union([z.enum(BOOKING_WINDOWS), z.null()]),
+          })
+          .strict(),
+        z.null(),
+      ])
+      .openapi({
+        description:
+          "What the app offers next, with nothing booked, for the booking sheet to open with: the first fit " +
+          "once the consultation is done, from the lead time and in the consultation's window; " +
+          "or the next service on its due day, in the last visit's window, or the replacement where the piece " +
+          "falls due first, on the earlier of its own due day and the service's (ADR 0086).",
+      }),
+  })
+  .strict();

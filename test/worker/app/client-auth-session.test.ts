@@ -88,6 +88,7 @@ describe("the session", () => {
       // nothing is offered next while a visit is booked (ADR 0086).
       booking: {
         self_serve: true,
+        self_serve_kinds: ["consultation", "first_fit", "service", "replacement"],
         types: ["consultation"],
         services: [
           {

@@ -22,6 +22,7 @@ import type { App, AppEnv } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { selfServeRoute } from "../../http/session-routes.ts";
+import { servesItself } from "../../http/self-serve.ts";
 import { visitorOf } from "../../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../../policy/booking.ts";
 import { takesCredit } from "../../policy/referral-reward.ts";
@@ -136,6 +137,7 @@ export function registerClientBooking(app: App): void {
   app.openapi(holdRoute, async (c) => {
     const personId = clientOf(c).subjectId;
     const { type, tier, date, window, moving: movingId } = c.req.valid("json");
+    if (!servesItself(c, type)) return refuse(c, "ops_assisted");
     const now = c.var.deps.now();
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const [move, offered, range, address, inputs] = await Promise.all([

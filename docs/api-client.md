@@ -5531,7 +5531,10 @@ Request body:
             "claim_state",
             "return_settled",
             "out_of_warranty",
-            "refund_not_due"
+            "refund_not_due",
+            "not_due",
+            "already_paid",
+            "reference_used"
           ]
         },
         "request_id": {
@@ -6271,7 +6274,20 @@ Request body:
       "properties": {
         "self_serve": {
           "type": "boolean",
-          "description": "Booking in the app is on; off, the app opens WhatsApp."
+          "description": "Booking every kind of visit in the app is on."
+        },
+        "self_serve_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "description": "The kinds of visit the client books, moves and cancels in the app; for any other the app opens WhatsApp."
         },
         "types": {
           "type": "array",
@@ -6357,6 +6373,7 @@ Request body:
       },
       "required": [
         "self_serve",
+        "self_serve_kinds",
         "types",
         "services",
         "next"
@@ -6607,6 +6624,17 @@ Request body:
       ],
       "description": "The client's note to the technician on this visit, as they last wrote it; null for none."
     },
+    "pay_at_visit": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client still pays by UPI at the visit, in paise; null where nothing is owed at the visit."
+    },
     "one_visit": {
       "anyOf": [
         {
@@ -6647,6 +6675,7 @@ Request body:
     "technician",
     "place",
     "client_note",
+    "pay_at_visit",
     "one_visit",
     "proposed_move"
   ],
@@ -7976,6 +8005,17 @@ Request body:
       ],
       "description": "The client's note to the technician on this visit, as they last wrote it; null for none."
     },
+    "pay_at_visit": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client still pays by UPI at the visit, in paise; null where nothing is owed at the visit."
+    },
     "one_visit": {
       "anyOf": [
         {
@@ -8102,6 +8142,7 @@ Request body:
     "technician",
     "place",
     "client_note",
+    "pay_at_visit",
     "one_visit",
     "proposed_move",
     "duration_minutes",

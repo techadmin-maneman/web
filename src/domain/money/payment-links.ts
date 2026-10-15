@@ -34,9 +34,10 @@ import { serviceOf } from "../booking/services.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
 import { cityOfVisit } from "../cities/cities.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
+import { oneVisitOwedAtVisit } from "../booking/hold-slot.ts";
 
 /** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
-export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free";
+export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free" | "at_visit";
 
 export interface LinkDeps {
   readonly payments: PaymentsProvider;
@@ -179,6 +180,27 @@ async function settleFree(
       .bind(visit.appointmentId, now.toISOString()),
     ...(told === null ? [message.statement] : []),
   ]);
+}
+
+/**
+ * A fitted one visit while online payment is off (docs/decisions/0209-paid-at-the-visit-by-upi.md): no link, but its
+ * booking owes the product's price, less the visit's discount code, by UPI at the visit, as a paid visit ops booked
+ * then does; ops record it once it is in the account. A code that leaves nothing to pay settles it, as with a link.
+ */
+export async function oweAtVisit(db: D1Database, visit: FittedVisit, now: Date): Promise<LinkSent> {
+  const listed = await priceOf(db, "first_fit", {
+    on: visit.day,
+    tier: visit.tier,
+    city: await cityOfVisit(db, visit.appointmentId),
+  });
+  if (listed === null) return "unpriced";
+  const after = await priceAfterCode(db, visit.appointmentId, listed);
+  if (after.price.amount === 0) {
+    await settleFree(db, visit, after.fix, now);
+    return "free";
+  }
+  await db.batch([...after.fix, oneVisitOwedAtVisit(db, visit.appointmentId, after.price, now)]);
+  return "at_visit";
 }
 
 /** The visit's link at its close: written once, then asked of Razorpay once; what could not be made waits for the cron. */

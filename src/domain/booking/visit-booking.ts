@@ -41,6 +41,7 @@ import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
 import { REMAKE_TERMS, remakeBookedStatement, remakesOwed, type Remake } from "./remakes.ts";
 import { replacementWears } from "../inventory/stock-gap.ts";
+import type { LinkHold } from "./booked-hold.ts";
 import { cityOfPerson } from "../cities/cities.ts";
 
 /** What ops ask for. */
@@ -60,7 +61,7 @@ export interface VisitAsked {
   readonly covers: string | undefined;
 }
 
-export const PAYS = ["nothing", "credit", "link"] as const;
+export const PAYS = ["nothing", "credit", "link", "at_visit"] as const;
 /** How a visit ops book is paid for: nothing at booking, by a credit, or by a payment link. */
 export type Pays = (typeof PAYS)[number];
 
@@ -196,10 +197,18 @@ const remakeSale = (service: PricedService, covers: Remake): Sale => ({
   covers,
 });
 
-/** How it is paid: nothing at booking for a one visit or a free one, a credit where one pays, else a link. */
-export function paysFor(oneVisit: boolean, onCredit: boolean, price: Price): Pays {
+/** How it is paid: nothing for a one visit or a free one, a credit where one pays, else a link, or UPI offline. */
+export function paysFor(oneVisit: boolean, onCredit: boolean, price: Price, online = true): Pays {
   if (oneVisit || price.amount === 0) return "nothing";
-  return onCredit ? "credit" : "link";
+  if (onCredit) return "credit";
+  return online ? "link" : "at_visit";
+}
+
+/** Sold while online payment is off: what would be a link is paid by UPI at the visit, and nothing taken is kept. */
+export function atTheVisit(sale: Sale): Sale {
+  if (sale.pays !== "link") return sale;
+  const terms = { ...sale.terms, lateCharge: "nothing", noShowCharge: "nothing" } as const;
+  return { ...sale, pays: "at_visit", lateFee: null, terms };
 }
 
 /**
@@ -366,6 +375,7 @@ export async function holdForSale({
       oneVisit: asked.oneVisit,
       from: "ops",
       payByLink: sale.pays === "link",
+      payAtVisit: sale.pays === "at_visit",
       ...(asked.technicianId === undefined ? {} : { technicianId: asked.technicianId }),
       afterHold: (holdId) => [
         ...(sale.code === null ? [] : [codeUse({ db, asked, code: sale.code, holdId, by: hold.by, now })]),
@@ -453,38 +463,6 @@ export async function sendHoldLink(
     .bind(hold.id, made.id, made.shortUrl, now.toISOString())
     .run();
   return made;
-}
-
-/** The visit a hold became, once booked; null while it is not. */
-export async function visitOfHold(db: D1Database, holdId: string): Promise<string | null> {
-  const row = await db
-    .prepare("SELECT appointment_id FROM slot_holds WHERE id = ?1 AND state = 'booked'")
-    .bind(holdId)
-    .first<{ appointment_id: string | null }>();
-  return row?.appointment_id ?? null;
-}
-
-/** A hold ops sent a payment link for, and whose it is. */
-export interface LinkHold {
-  readonly id: string;
-  readonly personId: string;
-}
-
-/**
- * The hold a paid link was for: by the link's ID, or by its reference, which is the hold's, or the hold's own ID on a
- * link made before holds had one. Null for no hold of ours.
- */
-export async function holdOfLink(
-  db: D1Database,
-  link: { readonly razorpayLinkId: string; readonly reference: string | null },
-): Promise<LinkHold | null> {
-  return db
-    .prepare(
-      `SELECT id, person_id AS personId FROM slot_holds
-       WHERE pay_by_link = 1 AND (payment_link_id = ?1 OR reference = ?2 OR id = ?2) LIMIT 1`,
-    )
-    .bind(link.razorpayLinkId, link.reference)
-    .first<LinkHold>();
 }
 
 /**

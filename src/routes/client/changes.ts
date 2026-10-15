@@ -6,10 +6,18 @@
 // and POST /api/holds with `moving`.
 
 import { selfServeRoute } from "../../http/session-routes.ts";
+import { servesItself } from "../../http/self-serve.ts";
 import { z } from "@hono/zod-openapi";
-import type { App } from "../../http/context.ts";
+import type { Context } from "hono";
+import type { App, AppEnv } from "../../http/context.ts";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
-import { changeableVisit, changeTerms, termsInForce, type ChangeTerms } from "../../domain/visits/visit-changes.ts";
+import {
+  changeableVisit,
+  changeTerms,
+  kindOfClientVisit,
+  termsInForce,
+  type ChangeTerms,
+} from "../../domain/visits/visit-changes.ts";
 import { cancelVisit } from "../../domain/visits/visit-cancel.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientOf } from "../../http/client-session.ts";
@@ -158,8 +166,15 @@ const cancelRoute = selfServeRoute({
   },
 });
 
+/** Whether the client moves this visit of theirs themselves; one not theirs is answered as not found later. */
+async function changesItself(c: Context<AppEnv>, visitId: string): Promise<boolean> {
+  const kind = await kindOfClientVisit(c.env.DB, visitId, clientOf(c).subjectId);
+  return kind === null || servesItself(c, kind);
+}
+
 export function registerClientChanges(app: App): void {
   app.openapi(moveTermsRoute, async (c) => {
+    if (!(await changesItself(c, c.req.valid("param").id))) return refuse(c, "ops_assisted");
     const move = await moveTermsFor({
       c,
       personId: clientOf(c).subjectId,
@@ -174,6 +189,7 @@ export function registerClientChanges(app: App): void {
     const session = clientOf(c);
     const visitId = c.req.valid("param").id;
     const holdId = c.req.valid("json").hold_id;
+    if (!(await changesItself(c, visitId))) return refuse(c, "ops_assisted");
     const hold = await c.env.DB.prepare(
       "SELECT 1 FROM slot_holds WHERE id = ?1 AND person_id = ?2 AND moves_appointment_id = ?3",
     )
@@ -191,6 +207,7 @@ export function registerClientChanges(app: App): void {
     const now = deps.now();
     const visit = await changeableVisit(c.env.DB, session.subjectId, c.req.valid("param").id, now);
     if (visit === null) return refuse(c, "not_changeable");
+    if (!servesItself(c, visit.type)) return refuse(c, "ops_assisted");
     const terms = await changeTerms({
       db: c.env.DB,
       visit,

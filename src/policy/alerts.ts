@@ -96,6 +96,8 @@ const FINANCE_KINDS = [
 
 const OPERATIONS_KINDS = [
   "booked_unassigned",
+  "city_uncovered",
+  "fully_booked",
   "low_stock",
   "fit_without_piece",
   "photos_unavailable",

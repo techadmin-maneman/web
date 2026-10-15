@@ -13,6 +13,9 @@ export const tasksApi = {
     client.post("/api/tasks/{group}/{id}/close", { path: { group, id }, body: { reason } }),
   /** A one visit's payment link, texted to the client again by Razorpay, or made now where it never was. */
   resendPaymentLink: (linkId: string) => client.post("/api/payment-links/{id}/resend", { path: { id: linkId } }),
+  /** A UPI payment taken at the visit, recorded under its UTR once it is in the account; the client is sent a receipt. */
+  recordUpiPayment: (visitId: string, utr: string) =>
+    client.post("/api/visits/{id}/upi-payment", { path: { id: visitId }, body: { utr } }),
   /** The open alerts ops have been told of, of the caller's own departments. */
   alerts: () => client.get("/api/alerts"),
   /** An alert marked done, under the caller's name. */

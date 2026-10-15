@@ -45,7 +45,8 @@ export function formRequest(c: Context<AppEnv>): FormRequest {
     requestId: c.var.requestId,
     now: c.var.deps.now(),
     environment: c.var.config.environment,
-    selfServeBooking: c.var.config.settings.selfServeBooking,
+    // The site books only what nothing is paid for at booking: a consultation, or one paid for at the visit.
+    selfServeBooking: c.var.config.settings.selfServeConsultations,
     checkPerson: (mobile, token, name) => checkPerson(c, mobile, token, name),
     provedNumber: (codeId, mobileE164) => provedNumber(c, codeId, mobileE164),
     pinOf: (placeId, session) => pinFor(c, placeId, session),

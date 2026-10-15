@@ -105,6 +105,8 @@ interface HoldInput {
   technicianId?: string;
   /** Paid for by a payment link ops send, rather than at the app's Checkout. */
   payByLink?: boolean;
+  /** Paid by UPI at the visit, nothing taken now: ops booked it while online payment is off. */
+  payAtVisit?: boolean;
   /** Written in the same batch, so they stand or fall with the hold: the person and their consent, from the site. */
   alongside?: readonly D1PreparedStatement[];
   /** Written after the hold, in its batch, given its ID: the site's discount code (docs/decisions/0108-discount-codes.md). */
@@ -193,6 +195,7 @@ function holdRow(
     no_show_charge: input.terms?.noShowCharge ?? null,
     one_visit: oneVisit ? 1 : 0,
     pay_by_link: input.payByLink === true ? 1 : 0,
+    pay_at_visit: input.payAtVisit === true ? 1 : 0,
   };
 }
 
@@ -301,4 +304,22 @@ export async function retakeSlot(db: D1Database, hold: HeldTime, now: Date): Pro
   }
   const after = await db.prepare("SELECT state FROM slot_holds WHERE id = ?1").bind(hold.id).first<{ state: string }>();
   return after !== null && after.state !== "released";
+}
+
+/**
+ * A fitted one visit's booking, owing the hair system's price by UPI at the visit while online payment is off
+ * (docs/decisions/0209-paid-at-the-visit-by-upi.md): the amount, with its GST, as the price book had it on the day.
+ */
+export function oneVisitOwedAtVisit(
+  db: D1Database,
+  appointmentId: string,
+  price: { readonly amount: number; readonly amount_ex_gst: number; readonly gst_percent: number },
+  now: Date,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE slot_holds SET pay_at_visit = 1, amount = ?2, amount_ex_gst = ?3, gst_percent = ?4, updated_at = ?5
+       WHERE appointment_id = ?1 AND one_visit = 1 AND state = 'booked'`,
+    )
+    .bind(appointmentId, price.amount, price.amount_ex_gst, price.gst_percent, now.toISOString());
 }

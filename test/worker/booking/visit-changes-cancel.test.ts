@@ -264,7 +264,7 @@ describe("POST /api/appointments/:id/cancel", () => {
       .bind(VISIT, other.id)
       .run();
     expect((await post(app, `/api/appointments/${VISIT}/cancel`, { confirm: false })).status).toBe(409);
-    const off = client({}, { selfServeBooking: false });
+    const off = client({}, { selfServeBooking: false, selfServeConsultations: false });
     const answer = await post(off, `/api/appointments/${VISIT}/cancel`, { confirm: false });
     expect(await answer.json()).toMatchObject({ error: { code: "ops_assisted" } });
   });

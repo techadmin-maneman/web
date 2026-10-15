@@ -24,6 +24,12 @@ export const ALERT_WORDS = {
     `Give the visit on ${a.day} a technician on the board: its own was switched off. Visit ${a.visit}.`,
   unassigned_visit: (a: { readonly visit: string }) =>
     `Send a technician to visit ${a.visit} from the Dispatch board: it is today, and has none.`,
+  city_uncovered: (a: { readonly city: string; readonly pincodes: number }) =>
+    `Add a technician in ${a.city}, or stop serving its ${String(a.pincodes)} pincodes in Areas: no active technician ` +
+    "works there, so the site shows every day full.",
+  fully_booked: (a: { readonly city: string; readonly days: number }) =>
+    `Add a technician or open more hours in ${a.city}: the site has no window open in the next ${String(a.days)} ` +
+    "days there, and sends clients to WhatsApp.",
   credit_visit_without_credit: (a: { readonly booking: string }) =>
     `Decide whether to charge for booking ${a.booking}: it was booked on a visit credit the client no longer had.`,
   replaced_after_begun: (a: { readonly visit: string; readonly booking: string }) =>

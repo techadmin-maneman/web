@@ -23,6 +23,8 @@ import { isLaunchInFuture } from "../../policy/launch.ts";
 import { namedArea } from "./area-names.ts";
 import { auditStatement, type AuditActor, type AuditEntry } from "../platform/audit.ts";
 import { isActiveCity } from "../cities/cities.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
+import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
 import {
   launchPreview,
   launchStatements,
@@ -341,4 +343,37 @@ export async function addPincode(
   ]);
   const waiting = await launchPreview(db, pincode.pincode);
   return { ...pincode, served: false, launch_on: null, waiting: waiting.waiting, to_alert: waiting.alerts };
+}
+
+const UNCOVERED = "city_uncovered:";
+
+/**
+ * Each city with a pincode served and no active technician, told once until a technician works there again or it
+ * is served no more: a technician switched off can leave a city live with nobody, and the site then shows every day
+ * full. Asked at a switch-off or back on, and each morning for whatever else changed.
+ */
+export async function tellOfUncoveredCities(
+  db: D1Database,
+  deps: { readonly alertOnce: AlertOnce; readonly resolveAlert: ResolveAlert },
+): Promise<void> {
+  const { results } = await db
+    .prepare(
+      `SELECT p.city, COUNT(*) AS pincodes FROM serviceable_pincodes p
+       WHERE p.served = 1 AND p.city NOT IN (SELECT city FROM technicians WHERE active = 1 AND city IS NOT NULL)
+       GROUP BY p.city`,
+    )
+    .all<{ city: string; pincodes: number }>();
+  for (const uncovered of results) {
+    await deps.alertOnce({
+      key: `${UNCOVERED}${uncovered.city}`,
+      message: ALERT_WORDS.city_uncovered(uncovered),
+      link: "/technicians",
+    });
+  }
+  const still = new Set(results.map((row) => `${UNCOVERED}${row.city}`));
+  const { results: open } = await db
+    .prepare("SELECT key FROM alerts WHERE resolved_at IS NULL AND key >= ?1 AND key < ?2")
+    .bind(UNCOVERED, `${UNCOVERED.slice(0, -1)};`)
+    .all<{ key: string }>();
+  for (const { key } of open) if (!still.has(key)) await deps.resolveAlert(key);
 }

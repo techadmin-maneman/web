@@ -4210,7 +4210,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due";
+                code: "not_found" | "invalid_request" | "turnstile_failed" | "rate_limited" | "idempotency_in_progress" | "idempotency_key_reused" | "environment_mismatch" | "unavailable" | "internal_error" | "busy" | "photo_invalid_file" | "upload_already_received" | "upload_missing" | "session_required" | "job_not_claimable" | "look_limit_reached" | "claim_required" | "whatsapp_unavailable" | "number_not_proved" | "unauthorized" | "visit_booked" | "payment_held" | "payment_owed" | "forbidden_origin" | "access_required" | "code_expired" | "too_early" | "number_in_use" | "name_taken" | "not_ready" | "ops_assisted" | "taken" | "not_bookable" | "hold_expired" | "address_required" | "not_served" | "already_booked" | "not_changeable" | "terms_changed" | "consent_required" | "not_fitted" | "not_paid" | "device_revoked" | "sign_in_stopped" | "superseded" | "out_of_order" | "not_today" | "already_started" | "piece_code" | "technician_inactive" | "clash" | "on_leave" | "does_not_fit" | "back_to_back" | "past_day" | "window_passed" | "blackout" | "other_city" | "not_trained" | "in_progress" | "too_early_to_close" | "no_check_in" | "too_early_to_arrive" | "already_closed" | "no_service_area" | "launch_in_future" | "no_technician" | "pincode_held" | "service_exists" | "last_of_kind" | "service_retired" | "no_product" | "unknown_invite" | "own_invite" | "already_invited" | "already_disputed" | "not_disputable" | "dispute_window_closed" | "move_gone" | "ask_the_client" | "code_not_applicable" | "code_off" | "already_discounted" | "price_settled" | "code_exists" | "slot_times_too_soon" | "not_permitted" | "last_admin" | "in_use" | "figures_conflict" | "transfer_settled" | "order_state" | "same_approver" | "custom_order" | "claim_state" | "return_settled" | "out_of_warranty" | "refund_not_due" | "not_due" | "already_paid" | "reference_used";
                 request_id: string;
                 /** @description invalid_request: the fields that failed validation, never their values; superseded: what changed under the caller. */
                 fields?: string[];
@@ -4409,8 +4409,10 @@ export interface components {
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             } | null;
             booking: {
-                /** @description Booking in the app is on; off, the app opens WhatsApp. */
+                /** @description Booking every kind of visit in the app is on. */
                 self_serve: boolean;
+                /** @description The kinds of visit the client books, moves and cancels in the app; for any other the app opens WhatsApp. */
+                self_serve_kinds: ("consultation" | "first_fit" | "service" | "replacement")[];
                 /** @description What the client may book now. */
                 types: ("consultation" | "first_fit" | "service" | "replacement")[];
                 /** @description Every service of those kinds offered and priced now, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet. */
@@ -4491,6 +4493,8 @@ export interface components {
             place: string;
             /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
             client_note: string | null;
+            /** @description What the client still pays by UPI at the visit, in paise; null where nothing is owed at the visit. */
+            pay_at_visit: number | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
@@ -4807,6 +4811,8 @@ export interface components {
             place: string;
             /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
             client_note: string | null;
+            /** @description What the client still pays by UPI at the visit, in paise; null where nothing is owed at the visit. */
+            pay_at_visit: number | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */

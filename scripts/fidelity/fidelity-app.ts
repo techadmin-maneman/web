@@ -38,6 +38,9 @@ const STATUS_BAR = 44;
 
 // ---- The design's example, as the API would answer it -------------------------
 
+/** Booking in the app off for every kind, as where ops book. */
+const BOOKS_NOTHING = { self_serve: false, self_serve_kinds: [] };
+const VISIT_KINDS = ["consultation", "first_fit", "service", "replacement"] as const;
 const ME = {
   state: "lead",
   name: "Rohit Malhotra",
@@ -61,7 +64,7 @@ const ME = {
   credits: null,
   prompt: null,
   invoice: null,
-  booking: { self_serve: false, types: ["consultation"], services: [], next: null },
+  booking: { ...BOOKS_NOTHING, types: ["consultation"], services: [], next: null },
   referral_reward: { referrer_visits: 3, friend_visits: 3, valid_days: 365 },
   pending_invite: null,
 } satisfies Schemas["Me"];
@@ -113,6 +116,7 @@ const visit = (n: number, date: string, type: NonNullable<VisitSummary["type"]>,
     place: PLACE,
     client_note: null,
     one_visit: null,
+    pay_at_visit: null,
     proposed_move: null,
   }) satisfies VisitSummary;
 
@@ -154,7 +158,7 @@ const ME_FITTED = {
   next_visit: NEXT,
   credits: { visits: 2, earliest_expiry: "2028-01-03T00:00:00.000Z", expiring_visits: 2 },
   prompt: { kind: "replacement_due", month: "2028-03", tier: null },
-  booking: { self_serve: false, types: ["service", "replacement"], services: OFFERED, next: null },
+  booking: { ...BOOKS_NOTHING, types: ["service", "replacement"], services: OFFERED, next: null },
 } satisfies Schemas["Me"];
 
 const ANGLES = ["front", "top", "left", "right", "hair"] as const;
@@ -266,7 +270,7 @@ const IN_2027 = new Date("2027-09-20T05:00:00Z");
 /** Booking on: the design's strip runs Mon 16 to Sun 29 Sep, with the 17th, 24th and 28th full. */
 const ME_BOOKING = {
   ...ME_FITTED,
-  booking: { ...ME_FITTED.booking, self_serve: true },
+  booking: { ...ME_FITTED.booking, self_serve: true, self_serve_kinds: [...VISIT_KINDS] },
 } satisfies Schemas["Me"];
 const FULL_DAYS = new Set([1, 8, 12]);
 const SERVICE_PRICE = { amount_ex_gst: 200000, amount: 236000, gst_percent: 18 };

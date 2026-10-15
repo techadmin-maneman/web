@@ -68,7 +68,8 @@ export const PAYMENT_BADGES = ["prepaid", "credit", "free", "at_visit"] as const
 export type PaymentBadge = (typeof PAYMENT_BADGES)[number];
 
 /**
- * A one visit is paid for at the visit; a visit a service-visit credit paid
+ * A one visit is paid for at the visit, as is a paid visit ops booked while online payment is off (ADR 0209);
+ * a visit a service-visit credit paid
  * for is Credit; one the price book charges nothing for on its day is Free;
  * any other was paid for ahead. The technician's card and the dispatch board
  * read the same badge.
@@ -77,8 +78,9 @@ export function paymentBadge(visit: {
   readonly onCredit: boolean;
   readonly free: boolean;
   readonly oneVisit: boolean;
+  readonly payAtVisit?: boolean;
 }): PaymentBadge {
-  if (visit.oneVisit) return "at_visit";
+  if (visit.oneVisit || visit.payAtVisit === true) return "at_visit";
   if (visit.onCredit) return "credit";
   if (visit.free) return "free";
   return "prepaid";

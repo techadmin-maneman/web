@@ -4009,7 +4009,10 @@ Razorpay's webhook: payments and refunds
             "claim_state",
             "return_settled",
             "out_of_warranty",
-            "refund_not_due"
+            "refund_not_due",
+            "not_due",
+            "already_paid",
+            "reference_used"
           ]
         },
         "request_id": {

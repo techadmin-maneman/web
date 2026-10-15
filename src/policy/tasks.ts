@@ -98,6 +98,7 @@ export const TASK_GROUPS = [
   "grievance",
   "draft_invoice",
   "payment_owed",
+  "upi_due",
   "payment_to_refund",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
@@ -148,6 +149,8 @@ export const TASK_SLA_HOURS: Slas = {
   grievance: 30 * 24,
   draft_invoice: 48,
   payment_owed: 48,
+  // A UPI payment taken at the visit, recorded the same day it reaches the account.
+  upi_due: 12,
   // Money owed back to a client: refunded within the day.
   payment_to_refund: 24,
 };

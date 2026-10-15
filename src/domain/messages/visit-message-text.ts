@@ -256,15 +256,29 @@ async function refundDestination(db: D1Database, appointmentId: string): Promise
 }
 
 /**
- * A booking's receipt with no payment behind it: a visit a credit paid for, or one a discount code made free, which
- * is told it is booked as a paid one is (docs/decisions/0108-discount-codes.md). A
+ * A booking's receipt with no payment behind it: a visit a credit paid for, one a discount code made free, or one
+ * paid by UPI at the visit, which is told it is booked as a paid one is (docs/decisions/0108-discount-codes.md). A
  * prepaid visit with a code is booked only once paid, so a code on a visit with no payment is one that left nothing
  * to pay.
  */
 async function bookedWithNothingPaid(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
   if (await paidWithCredit(db, appointmentId)) return { template: "visit_booked_credit_v1", params };
   if ((await codeOnVisit(db, appointmentId)) !== null) return { template: "visit_booked_code_v1", params };
+  const atVisit = await dueAtTheVisit(db, appointmentId);
+  if (atVisit !== null) {
+    params[5] = rupees(atVisit);
+    return { template: "visit_booked_at_visit_v1", params };
+  }
   return { skip: "no captured payment for the visit" };
+}
+
+/** What a visit ops booked to be paid by UPI at the visit asks for (docs/decisions/0209); null for any other. */
+async function dueAtTheVisit(db: D1Database, appointmentId: string): Promise<number | null> {
+  const hold = await db
+    .prepare("SELECT amount FROM slot_holds WHERE appointment_id = ?1 AND pay_at_visit = 1 AND state = 'booked'")
+    .bind(appointmentId)
+    .first<{ amount: number }>();
+  return hold?.amount ?? null;
 }
 
 /** Whether a service-visit credit paid for the visit. */

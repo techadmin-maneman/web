@@ -42,7 +42,7 @@ test("keeps a row’s type and its badge each on one line on a narrow phone", as
   await page.goto("/");
 
   const row = page.getByRole("listitem").first();
-  for (const words of ["Consultation and fit", "Pays once fitted"]) {
+  for (const words of ["Consultation and fit", "Pays at the visit"]) {
     const lines = await row.getByText(words).evaluate((element) => {
       const range = document.createRange();
       range.selectNodeContents(element);

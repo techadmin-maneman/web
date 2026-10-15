@@ -5,6 +5,7 @@
 import type { PaymentsProvider, RefundAsked } from "../../providers/payments/index.ts";
 import { PaymentUnanswered } from "../../providers/provider-error.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
+import { paidOutsideRazorpay } from "../../policy/upi.ts";
 
 /** The most calls a refund makes: asked once, and once more at once when the first gave no answer. */
 export const ASKS = 2;
@@ -59,6 +60,8 @@ export async function askRefund(
   refund: RefundAsked,
   options: { readonly askedBefore: boolean } = { askedBefore: false },
 ): Promise<RefundOutcome> {
+  // Never through Razorpay: it holds no such payment. Ops refund it by UPI from the bank, as the refusal's alert says.
+  if (paidOutsideRazorpay(paymentId)) return { kind: "refused", error: new Error("paid by UPI: refund it by UPI") };
   let unanswered = options.askedBefore;
   let lastError: unknown = null;
   for (let asked = 0; asked < ASKS; asked += 1) {

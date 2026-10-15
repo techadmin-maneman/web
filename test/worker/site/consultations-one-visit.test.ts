@@ -166,13 +166,13 @@ describe("a consultation and fit in one visit", () => {
   });
 
   it("asks ops for it while self-serve booking is off, holding nothing", async () => {
-    const answer = await book({ one_visit: true }, { selfServeBooking: false });
+    const answer = await book({ one_visit: true }, { selfServeBooking: false, selfServeConsultations: false });
     expect(await answer.json()).toMatchObject({ state: "requested", one_visit: true });
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(0);
     const asked = await env.DB.prepare("SELECT requested_window, one_visit FROM consultation_requests").all();
     expect(asked.results).toEqual([{ requested_window: "morning", one_visit: 1 }]);
     // Asked again for the same day and window as the consultation alone, the plan asked last stands.
-    await book({}, { selfServeBooking: false });
+    await book({}, { selfServeBooking: false, selfServeConsultations: false });
     const again = await env.DB.prepare("SELECT one_visit FROM consultation_requests").all();
     expect(again.results).toEqual([{ one_visit: 0 }]);
   });
@@ -207,7 +207,7 @@ describe("a consultation and fit in one visit", () => {
 
     it.each([
       ["while self-serve booking is on", {}],
-      ["while self-serve booking is off", { selfServeBooking: false }],
+      ["while self-serve booking is off", { selfServeBooking: false, selfServeConsultations: false }],
     ])("is refused as no_product %s, and writes nothing", async (_, settings) => {
       const answer = await book({ one_visit: true }, settings);
 

@@ -31,6 +31,7 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   grievance: "grievance",
   draft_invoice: "visit",
   payment_owed: "payment_link",
+  upi_due: "visit",
   payment_to_refund: "payment",
 };
 

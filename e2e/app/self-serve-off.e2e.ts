@@ -14,7 +14,7 @@ import { logIn } from "./signed-in.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
 
 /**
- * Passes /api/me through with booking.self_serve false, and anything else `also` changes. Only the browser resolves
+ * Passes /api/me through with booking.self_serve false and no kind the client books, and anything else `also` changes. Only the browser resolves
  * app.localhost, so the answer is fetched from the app's server by its address, on the app's own host.
  */
 async function selfServeOff(page: Page, also: Record<string, unknown> = {}): Promise<void> {
@@ -25,7 +25,10 @@ async function selfServeOff(page: Page, also: Record<string, unknown> = {}): Pro
     });
     if (!answer.ok()) return route.fulfill({ response: answer });
     const me = (await answer.json()) as { booking: Record<string, unknown> };
-    await route.fulfill({ response: answer, json: { ...me, ...also, booking: { ...me.booking, self_serve: false } } });
+    await route.fulfill({
+      response: answer,
+      json: { ...me, ...also, booking: { ...me.booking, self_serve: false, self_serve_kinds: [] } },
+    });
   });
 }
 

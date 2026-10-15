@@ -123,7 +123,7 @@ describe("GET /api/availability/public", () => {
       ),
     ]);
     await env.DB.prepare("UPDATE technicians SET active = 0").run();
-    const off = { selfServeBooking: false };
+    const off = { selfServeBooking: false, selfServeConsultations: false };
 
     for (const day of await daysOf("pincode=122018&plan=consultation", off)) expect(day.windows).toEqual(ALL_OPEN);
     for (const day of await daysOf("pincode=122018&plan=one_visit", off)) {

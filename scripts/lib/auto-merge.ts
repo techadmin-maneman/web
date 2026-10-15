@@ -43,6 +43,8 @@ export const SENSITIVE_PATHS = [
   "src/domain/booking/book-paid-hold",
   "src/domain/booking/give-back",
   "src/domain/booking/visit-booking",
+  "src/domain/visits/one-visit",
+  "src/policy/upi",
   "src/domain/referrals/referral-grants",
   "src/domain/referrals/partner-statements",
   "src/domain/field/technician-pay",
@@ -55,6 +57,8 @@ export const SENSITIVE_PATHS = [
   "src/policy/pay-by-link",
   "src/config/gst",
   "src/routes/ops/credits",
+  "src/routes/ops/visits",
+  "src/routes/ops/upi-payments",
   // Consent, erasure, deletion, retention and a client's export of their data; clients' chats; the reporting copy
   "src/domain/privacy/",
   "src/domain/care/",

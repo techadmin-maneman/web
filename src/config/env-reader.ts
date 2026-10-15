@@ -38,6 +38,11 @@ export class Reader {
     return value === "true";
   }
 
+  /** "true" or "false", or off where it is not set at all. */
+  optionalFlag(name: string): boolean {
+    return this.optionalText(name) === null ? false : this.flag(name);
+  }
+
   /** A whole number from 0 up; vars arrive as strings. */
   count(name: string): number {
     const value = Number(this.text(name));

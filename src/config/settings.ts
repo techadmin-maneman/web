@@ -186,6 +186,11 @@ export interface Settings {
    * Off, the booking routes answer 409 ops_assisted and the app opens WhatsApp instead.
    */
   readonly selfServeBooking: boolean;
+  /**
+   * Clients book, move and cancel a free consultation themselves, on the site and in the app, with no payment taken;
+   * on wherever selfServeBooking is (SELF_SERVE_CONSULTATIONS). Paid visits then go through ops.
+   */
+  readonly selfServeConsultations: boolean;
   /** The referrer's first name on their invite, for those who agreed to it (ADR 0025, item 24). */
   readonly referrerNameOnInvite: boolean;
   readonly ipHashSalt: string;
@@ -316,6 +321,7 @@ export function readSettings(
     turnstileSecret,
     acceptTurnstileTestToken,
     selfServeBooking,
+    selfServeConsultations: selfServeBooking || read.optionalFlag("SELF_SERVE_CONSULTATIONS"),
     referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,

@@ -189,6 +189,7 @@ export const AUDIT_ACTIONS = [
   "custom_order.cancel",
   "custom_order.refund",
   "payment.refund",
+  "payment.upi_record",
   "plan_line.approve",
   "plan_line.reject",
   "demand_event.add",

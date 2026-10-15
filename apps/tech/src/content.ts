@@ -592,7 +592,7 @@ export const badges = {
   credit: "Free visit",
   free: "No charge",
   // No board draws a consultation and fit in one visit, paid for once the client is fitted.
-  at_visit: "Pays once fitted",
+  at_visit: "Pays at the visit",
 } as const;
 
 /**

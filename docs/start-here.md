@@ -147,7 +147,7 @@ this map, or when the map names something that no longer exists.
   `discount-code-holds`, `discount-code-uses`, `discount-code-visits`, `discount-code-figures`, `requested-codes`,
   `day-money`, `one-visit-money`, `price-book`, `price-lookup` (a price in force, the city's own first), `city-prices`,
   `razorpay-catch-up`, `razorpay-events` (Razorpay's events, applied from their queue), `custom-order-links`,
-  `custom-order-refunds`, `payment-refunds`
+  `custom-order-refunds`, `payment-refunds`, `upi-payments` (a visit paid by UPI at the visit, recorded by ops)
 - **Rules** (`src/policy/`): `prices`, `prepayment`, `pay-by-link`, `discount-codes`, `credit-reminders`,
   `fraud-holds`
 - **Data** (`src/config/`): `gst`

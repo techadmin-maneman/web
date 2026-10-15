@@ -165,6 +165,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/partner-statements/{id}/payouts": need("finance", "manage"),
   "POST /api/partner-statements/{id}/payouts/{month}/delete": need("finance", "manage"),
   "POST /api/visits/{id}/discount-code": inOwnPlaces("finance", "act"),
+  "POST /api/visits/{id}/upi-payment": inOwnPlaces("finance", "act"),
   "POST /api/visits/{id}/discount-code/remove": inOwnPlaces("finance", "act"),
   // National Finance only until the route keeps to the caller's cities.
   "POST /api/payment-links/{id}/resend": need("finance", "act"),
@@ -345,6 +346,7 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   grievance: "customer_care",
   draft_invoice: "finance",
   payment_owed: "finance",
+  upi_due: "finance",
   payment_to_refund: "finance",
 };
 

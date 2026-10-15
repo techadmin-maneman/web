@@ -61,6 +61,8 @@ interface VisitSummary {
   readonly prepaid: boolean;
   readonly technician: { readonly name: string; readonly initials: string } | null;
   readonly place: string;
+  /** What is still to pay by UPI at the visit, in paise (ADR 0209); null where nothing is owed at the visit. */
+  readonly pay_at_visit: number | null;
   /** A consultation and fit in one visit not yet closed: what it costs once fitted. Null for any other visit. */
   readonly one_visit: OneVisitPrice | null;
   /** The client's note to the technician on this visit, as they last wrote it; null for none. */
@@ -85,6 +87,8 @@ interface AppointmentRow {
   technician_name: string | null;
   technician_initials: string | null;
   prepaid: number;
+  /** What is still to pay by UPI at the visit, in paise; null for a visit paid otherwise, or paid already. */
+  due_at_visit: number | null;
   begun: number;
   landed_outcome: VisitOutcome | null;
   client_note: string | null;
@@ -106,7 +110,10 @@ const APPOINTMENT_COLUMNS = `a.id, a.type, a.tier, a.one_visit, a.status, a.wind
   t.name AS technician_name, t.initials AS technician_initials, ${PREPAID} AS prepaid,
   ${visitBegun("a")} AS begun, ${landedOutcome("a")} AS landed_outcome, a.client_note,
   EXISTS (SELECT 1 FROM no_show_cases n WHERE n.appointment_id = a.id AND n.closed_at IS NOT NULL) AS not_home,
-  ${openProposalJson("a")} AS proposal`;
+  ${openProposalJson("a")} AS proposal,
+  (SELECT h.amount FROM slot_holds h WHERE h.appointment_id = a.id AND h.pay_at_visit = 1 AND h.state = 'booked'
+     AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id AND p.kind = 'visit'
+                       AND ${statusIn("p.status", PAYMENT_HELD)})) AS due_at_visit`;
 const LIVE = `a.person_id = ?1 AND a.deleted_at IS NULL AND a.window_start IS NOT NULL AND a.window_end IS NOT NULL`;
 /** The statuses of a visit not yet closed. */
 const NOT_CLOSED: readonly AppointmentStatus[] = ["scheduled", "dispatched", "in_progress"];
@@ -175,6 +182,7 @@ async function visitSummaryOf(
         : { name: row.technician_name, initials: row.technician_initials },
     place: context.place(row),
     one_visit: await oneVisitOf(db, row),
+    pay_at_visit: row.due_at_visit,
     client_note: row.client_note,
     proposed_move: openProposalOf(row.proposal, now, context.schedule),
   };

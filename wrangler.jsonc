@@ -132,6 +132,7 @@
     "ANALYTICS_PROVIDER": "stub",
     "ROUTES_PROVIDER": "stub",
     "SELF_SERVE_BOOKING": "true",
+    "SELF_SERVE_CONSULTATIONS": "true",
     "REFERRER_NAME_ON_INVITE": "true",
     "RAZORPAY_KEY_ID": "",
     // Daily ceilings; test/node/tooling/free-tier-budget.test.ts proves they fit the free tier.
@@ -278,6 +279,7 @@
         // Until the owner switches on the Routes and Maps Static APIs for the key (docs/provisioning.md, step 13).
         "ROUTES_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "true",
+        "SELF_SERVE_CONSULTATIONS": "true",
         "REFERRER_NAME_ON_INVITE": "true",
         "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",
         // Daily ceilings; test/node/tooling/free-tier-budget.test.ts proves they fit the free tier.
@@ -418,6 +420,9 @@
         "ANALYTICS_PROVIDER": "none",
         "ROUTES_PROVIDER": "none",
         "SELF_SERVE_BOOKING": "false",
+        // A free consultation is booked outright with no payment taken; paid visits go through ops until online
+        // payment is on.
+        "SELF_SERVE_CONSULTATIONS": "true",
         "REFERRER_NAME_ON_INVITE": "true",
         "RAZORPAY_KEY_ID": "",
         // Daily ceilings; test/node/tooling/free-tier-budget.test.ts proves they fit the free tier.

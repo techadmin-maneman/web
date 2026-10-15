@@ -102,6 +102,7 @@ export const MY_DATA = {
         amount: money("Amount"),
         use_credit: yesNo("Paid with a credit"),
         pay_by_link: yesNo("Paid by link"),
+        pay_at_visit: yesNo("Paid at the visit"),
         change_notice_hours: text("Hours' notice to change it free"),
         late_change_charge: words("Charge for a late change"),
         no_show_charge: words("Charge if you are not home"),

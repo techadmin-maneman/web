@@ -102,7 +102,7 @@ describe("POST /api/appointments/:id/note", () => {
   });
 
   it("sends the client to WhatsApp while self-serve booking is off", async () => {
-    const answer = await note({ note: "Ring twice" }, { selfServeBooking: false });
+    const answer = await note({ note: "Ring twice" }, { selfServeBooking: false, selfServeConsultations: false });
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "ops_assisted" } });
   });

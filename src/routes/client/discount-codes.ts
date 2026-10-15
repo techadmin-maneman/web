@@ -80,6 +80,8 @@ function removalRefusalOf(removed: Removed) {
 
 export function registerClientDiscountCodes(app: App): void {
   app.openapi(enterRoute, async (c) => {
+    // A code takes money off a paid visit, which a client books themselves only with online payment on.
+    if (!c.var.config.settings.selfServeBooking) return refuse(c, "ops_assisted");
     const { subjectId: personId } = clientOf(c);
     const { log, deps } = c.var;
     if (!(await mayCheckCode(c, personId))) return refuse(c, "rate_limited");
@@ -97,6 +99,8 @@ export function registerClientDiscountCodes(app: App): void {
   });
 
   app.openapi(removeRoute, async (c) => {
+    // A code takes money off a paid visit, which a client books themselves only with online payment on.
+    if (!c.var.config.settings.selfServeBooking) return refuse(c, "ops_assisted");
     const { subjectId: personId } = clientOf(c);
     const { deps } = c.var;
     const { id } = c.req.valid("param");

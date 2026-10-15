@@ -9,14 +9,14 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { createLogger } from "../../../src/log.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
-import { type PaymentsProvider } from "../../../src/providers/payments/index.ts";
+import { createPaymentsProvider, type PaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { ProviderError } from "../../../src/providers/provider-error.ts";
 import { CRON_JOBS } from "../../../src/scheduled/cron.ts";
 import { runCronJobs } from "../../../src/scheduled/cron-runner.ts";
 import type { Settings } from "../../../src/config/settings.ts";
 import { A_REFERENCE, captureLogs, LOCAL_CONFIG, LOCAL_SETTINGS, markDatabase, NOW } from "../helpers.ts";
-import { JOB, PERSON, working, type Working } from "../job-fixtures.ts";
+import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 import {
   NATURAL,
   TWO_WEEKS_ON,
@@ -27,6 +27,7 @@ import {
   closeAsDone,
   linkRow,
 } from "./one-visit-fixtures.ts";
+import { aHold } from "../fixtures/index.ts";
 
 /** Staging's messaging, texting only the handsets named. */
 const allowing = (...handsets: string[]): Partial<Settings> => ({
@@ -167,6 +168,28 @@ describe("closing a one visit the client was fitted at", () => {
     expect(await linkRow()).toMatchObject({ tier: NATURAL.tier, amount: NATURAL.amount, made: 1, paid_at: null });
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json();
     expect(card).toMatchObject({ payment_link: { url: expect.stringMatching(/^https:\/\/rzp\.io\//) as string } });
+  });
+
+  // At launch with no online payment: the hair system is paid by UPI at the visit, and ops record it (ADR 0209).
+  it("owes the product's price by UPI at the visit, with no link, while online payment is off", async () => {
+    const payments = createPaymentsProvider("none", null, { fetch, log: createLogger() });
+    const job = await oneVisit({ payments });
+    await aHold({
+      id: "hold-1",
+      person_id: PERSON,
+      technician_id: IMRAN,
+      type: "first_fit",
+      date: "2026-09-21",
+      state: "booked",
+      appointment_id: JOB,
+      one_visit: 1,
+    });
+    await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
+
+    expect((await closeAsDone(job)).status).toBe(202);
+    expect(await linkRow()).toBeNull();
+    const hold = await env.DB.prepare("SELECT pay_at_visit, amount FROM slot_holds WHERE id = 'hold-1'").first();
+    expect(hold).toEqual({ pay_at_visit: 1, amount: NATURAL.amount });
   });
 
   // A link took payment, and Razorpay kept reminding the client, however long it went unpaid.

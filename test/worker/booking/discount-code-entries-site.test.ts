@@ -186,7 +186,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
 
   it("shows Home the one visit asked for while booking is off, priced after the code typed", async () => {
     await make();
-    await book({ discount_code: "TENPC" }, { selfServeBooking: false });
+    await book({ discount_code: "TENPC" }, { selfServeBooking: false, selfServeConsultations: false });
     const me = await homeOfBooker();
     expect(me.consultation?.one_visit).toEqual({ amount: 2_700_000, from: false, code: "TENPC" });
     expect(me.being_booked).toBeNull();
@@ -208,7 +208,7 @@ describe("the site's form, for a consultation and fit in one visit", () => {
 
   it("keeps the code on the request while booking is off, and the Tasks board names it", async () => {
     await make();
-    const answer = await book({ discount_code: "TENPC" }, { selfServeBooking: false });
+    const answer = await book({ discount_code: "TENPC" }, { selfServeBooking: false, selfServeConsultations: false });
     expect(await answer.json()).toMatchObject({ state: "requested", discount_code: TENPC_STANDS });
     const asked = await env.DB.prepare("SELECT one_visit, discount_code FROM consultation_requests").first();
     expect(asked).toEqual({ one_visit: 1, discount_code: "TENPC" });
@@ -248,7 +248,10 @@ describe("the site's form, for a consultation and fit in one visit", () => {
 
     /** The client's one visit, asked for on /book with the code while booking is off. */
     async function requested(code: string, mobile = "9810000002") {
-      const answer = await book({ mobile, discount_code: code }, { selfServeBooking: false });
+      const answer = await book(
+        { mobile, discount_code: code },
+        { selfServeBooking: false, selfServeConsultations: false },
+      );
       expect(await answer.json()).toMatchObject({ state: "requested" });
       const personId = await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1")
         .bind(`+91${mobile}`)

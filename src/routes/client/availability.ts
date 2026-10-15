@@ -16,6 +16,7 @@ import type { App } from "../../http/context.ts";
 import { errorBody, errorResponse, refuse } from "../../http/errors.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { selfServeRoute } from "../../http/session-routes.ts";
+import { servesItself } from "../../http/self-serve.ts";
 import { indiaInstant } from "../../lib/india-time.ts";
 import { changeChargedOnBooking } from "../../policy/moving-a-visit.ts";
 import { stripStart } from "../../policy/next-visit.ts";
@@ -116,6 +117,7 @@ export function registerClientAvailability(app: App): void {
   app.openapi(availabilityRoute, async (c) => {
     const session = clientOf(c);
     const { type, tier, from, moving: movingId } = c.req.valid("query");
+    if (!servesItself(c, type)) return refuse(c, "ops_assisted");
     const now = c.var.deps.now();
     const range = await rangeFor(c, session.subjectId, type);
     const start = stripStart(from, range, BOOKING_DAYS);

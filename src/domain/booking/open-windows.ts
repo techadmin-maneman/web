@@ -10,6 +10,8 @@ import { availability } from "./availability.ts";
 import { ONE_VISIT_FIT, type Fitting } from "./occupancy.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { windowTimesOf, type WindowTimes } from "../../policy/slot-times.ts";
+import { ALERT_WORDS } from "../../config/alert-words.ts";
+import type { AlertOnce } from "../platform/alerts.ts";
 
 /** A day the form offers, and whether booking each of its windows would be taken. */
 interface OpenDay {
@@ -90,5 +92,30 @@ export async function openDays(
       windows: { morning: isOpen("morning"), afternoon: isOpen("afternoon"), evening: isOpen("evening") },
       hours: windowTimesOf(schedule.on(date)),
     };
+  });
+}
+
+/**
+ * Ops told, once a day a city, when the form finds no consultation window open in the next fortnight at a pincode
+ * served: every technician there is booked up, and clients are sent to WhatsApp instead. A one visit's days can be
+ * shut by its hair systems, not by the technicians, so it tells nothing.
+ */
+export async function tellIfFullyBooked(
+  db: D1Database,
+  alertOnce: AlertOnce,
+  asked: { readonly plan: Plan; readonly pincode: string; readonly days: readonly OpenDay[] },
+  now: Date,
+): Promise<void> {
+  if (asked.plan !== "consultation" || asked.days.length === 0) return;
+  if (asked.days.some((day) => Object.values(day.windows).some(Boolean))) return;
+  const city = await db
+    .prepare("SELECT city FROM serviceable_pincodes WHERE pincode = ?1")
+    .bind(asked.pincode)
+    .first<string>("city");
+  if (city === null) return;
+  await alertOnce({
+    key: `fully_booked:${city}:${indiaDate(now)}`,
+    message: ALERT_WORDS.fully_booked({ city, days: asked.days.length }),
+    link: "/dispatch",
   });
 }
