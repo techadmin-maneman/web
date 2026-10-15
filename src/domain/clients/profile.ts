@@ -193,7 +193,7 @@ function addressValues({
  * and the address it belongs to are never out of step. It is the client's own
  * address row and no one else's: Google's Geocoding terms allow an indefinite
  * cache only where it is "logically isolated to the specific End User", so a
- * building's coordinate is never reused across clients (ADR 0054).
+ * building's coordinate is never reused across clients.
  *
  * One a client gave ops on the phone is marked with the member of staff who saved it, and audited in the same batch.
  */

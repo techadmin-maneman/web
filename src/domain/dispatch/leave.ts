@@ -39,7 +39,7 @@ interface JobOnLeave {
 
 /**
  * Whether technician leave `l` covers the India day of appointment `a`: the leave the board draws and the Tasks
- * board reads, as the clash check reads it (ADR 0062).
+ * board reads, as the clash check reads it.
  */
 export const LEAVE_ON_THE_DAY = `l.technician_id = a.technician_id AND l.cancelled_at IS NULL
   AND l.from_date <= ${indiaDateSql("a.window_start")} AND l.to_date >= ${indiaDateSql("a.window_start")}`;

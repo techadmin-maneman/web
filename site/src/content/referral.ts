@@ -371,7 +371,7 @@ export const referral = {
     },
     credits: visitsLand,
     // The discount code given with the one visit, as it stands on the booking, or not, when another
-    // booking took its last use a moment before (ADR 0108). What it takes off is before GST.
+    // booking took its last use a moment before. What it takes off is before GST.
     code: {
       applied: "Code {code}: {off}, applied when you pay.",
       notApplied: "We couldn’t apply code {code}. Your booking stands without it.",
@@ -423,7 +423,7 @@ export const referral = {
     taken: "That time isn’t available. Pick another.",
     notBookable: "That day’s no longer open. Pick another.",
     other: CLIENT_WORDS.failed,
-    // The discount code given does not apply, whatever the reason (ADR 0108).
+    // The discount code given does not apply, whatever the reason.
     codeNotApplicable: "That discount code doesn’t apply. Check it, or leave it out to book without it.",
     // The one visit was asked for while no hair system is offered in the console.
     noProduct: "Consultation and fit in one visit isn’t open to book yet. Book the consultation instead.",
@@ -443,7 +443,7 @@ export const referral = {
   },
 };
 
-/** The title a shared invite carries: a partner's names the partner (docs/decisions/0123-partner-referral-channels.md). */
+/** The title a shared invite carries: a partner's names the partner. */
 export function inviteTitle(name: string | null, partner: string | null = null): string {
   if (partner !== null) return fill(referral.preview.titlePartner, { partner });
   return name === null ? referral.preview.titleUnnamed : fill(referral.preview.title, { name });

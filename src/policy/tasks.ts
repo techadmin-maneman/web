@@ -176,7 +176,7 @@ export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS a
 /**
  * How lately a member of staff must have used the console to be given a task. There is no staff table, and one who
  * has left stays in the audit log for ever; this bounds the list to the people still at work. Ours, not a business rule
- * (docs/decisions/0092-task-owners.md).
+ *.
  */
 export const STAFF_SEEN_WITHIN_DAYS = 90;
 

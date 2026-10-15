@@ -49,7 +49,7 @@ export const login = {
   },
   help: {
     back: "Back",
-    // The design's title is "We have no booking on this number"; neutral, it becomes a question (ADR 0030).
+    // The design's title is "We have no booking on this number"; neutral, it becomes a question.
     title: "No booking on this number?",
     body: "Book a free consultation to get started.",
     hint: "Try the number you gave us, or message us and we’ll link it.",

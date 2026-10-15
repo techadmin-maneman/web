@@ -85,7 +85,7 @@ export function registerTryonResult(app: App): void {
     const jobId = await lookCookieJob(c);
     const job = jobId === null ? null : await loadJob(c.env.DB, jobId);
     if (job === null) return c.body(null, 204);
-    // Once the look has expired, the browser has still had it: the upload link refuses it another (ADR 0104).
+    // Once the look has expired, the browser has still had it: the upload link refuses it another.
     return c.json(statusOf(job), 200);
   });
 

@@ -125,7 +125,7 @@ export const PROVIDER_VARS = {
   // Evolution's bridge, or the WhatsApp Business Platform through MSG91 once the business number's templates are
   // approved (docs/decisions/0114-whatsapp-business-platform-through-msg91.md).
   MESSAGING_PROVIDER: ["evolution", "msg91", "stub"],
-  // Verifies the Cloudflare Access token on the ops surface (docs/decisions/0031-access-and-audit.md).
+  // Verifies the Cloudflare Access token on the ops surface.
   ACCESS_PROVIDER: ["cloudflare", "stub"],
   // Login codes by SMS need a template DLT has approved. Until it is, "none": the app offers WhatsApp only, and a
   // code WhatsApp fails to send goes nowhere else (docs/decisions/0030-one-time-codes.md). "none" is not a stub, so

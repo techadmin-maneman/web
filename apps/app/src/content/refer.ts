@@ -14,7 +14,7 @@ const serviceVisits = (count: number): string => (count === 1 ? "1 service visit
 
 /**
  * Refer's promise, from the referrer's side, in the reward's one name: the sides equal or not, 0, or a reward not
- * known, which gives no count (docs/decisions/0107-referral-rewards-in-the-console.md).
+ * known, which gives no count.
  */
 function promiseOf(reward: Reward | null): string {
   const fitted = "When a friend you refer is fitted,";

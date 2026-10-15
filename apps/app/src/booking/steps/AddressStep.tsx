@@ -9,7 +9,7 @@ import styles from "../booking.module.css";
 import { Heading } from "./shared.tsx";
 
 /**
- * The address, before any slot, for a client who has given none (ADR 0079): Profile's own form, under its heading.
+ * The address, before any slot, for a client who has given none: Profile's own form, under its heading.
  * `refused`: the API refused a hold for want of one, so the sheet came back here. `before`: the
  * steps the sheet takes before the date, of which this is the last.
  */

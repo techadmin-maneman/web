@@ -107,7 +107,7 @@ interface PlannedMove {
   readonly job: LiveJob;
   readonly technicianId: string;
   readonly reason: MoveReason;
-  /** The Access identity that made the move (ADR 0031). */
+  /** The Access identity that made the move. */
   readonly actor: string;
   /** When the visit starts and ends once moved. */
   readonly start: Date;

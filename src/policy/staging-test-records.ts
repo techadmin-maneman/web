@@ -27,7 +27,7 @@ export function skipsAddressLimits(environment: EnvironmentName | undefined, tes
 /**
  * Whether staging's allowlist holds back what would go to this number: an automatic message (a reminder, or one to
  * someone other than who acted; MESSAGE_CLASSES, src/config/message-templates.ts), or anything to a test record, off
- * the allowlist (ADR 0097). A login code is never automatic. Production's allowlist is empty, so nothing is held back.
+ * the allowlist. A login code is never automatic. Production's allowlist is empty, so nothing is held back.
  */
 export function isMessageHeldBack(
   messaging: MessagingSettings,

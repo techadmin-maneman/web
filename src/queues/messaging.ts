@@ -179,7 +179,7 @@ type Content = Sendable | { readonly skip: string };
 const isVisitKind = (kind: string): kind is VisitMessageKind => isOneOf(VISIT_MESSAGE_KINDS, kind);
 
 /**
- * Whether staging's allowlist should hold this message back: an automatic kind (ADR 0097), or one about a record
+ * Whether staging's allowlist should hold this message back: an automatic kind, or one about a record
  * our own scripts made, whatever its kind (people.test_record, src/policy/staging-test-records.ts). The try-on's
  * gate asks it too, since a try-on whose look would be held back does not run (ADR 0104).
  */

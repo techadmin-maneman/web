@@ -90,7 +90,7 @@ export function GivenAddressForm({
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [invalid, setInvalid] = useState<readonly AddressPart[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
-  // One token for the whole search, made when the form opens (docs/decisions/0054-address-capture.md).
+  // One token for the whole search, made when the form opens.
   const [sessionToken] = useState(() => crypto.randomUUID());
   // One save per intent: a second would send the same session token again, and be billed again.
   const [busy, once] = useOneAtATime();

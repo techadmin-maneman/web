@@ -53,7 +53,7 @@ export const PHOTO_ALLOWANCE = {
 export const cronRowsReadPerQuietRun = (jobs: number): number => 150 + 4 * jobs;
 /**
  * The most statements one minute's run may send D1, its own record's included: a fifth of the 1,000 an invocation may
- * send (docs/decisions/0112-workers-paid.md), so a job that loops over a table fails here before it fails in a run.
+ * send, so a job that loops over a table fails here before it fails in a run.
  * test/worker/jobs/cron-reads.test.ts holds every minute of the hour to it, over a history.
  */
 export const CRON_STATEMENTS_PER_RUN = 200;
@@ -137,7 +137,7 @@ export function worstCaseUsage(environments: readonly Ceilings[]): Usage {
   let classB = 0;
   for (const ceilings of environments) {
     // Stored at any moment: each day's results for the retention period, each day's photos for about an hour, and
-    // each photo's small copy for the hour and then as long as its look (ADR 0084). A client's kept try-on is held
+    // each photo's small copy for the hour and then as long as its look. A client's kept try-on is held
     // for good, so it is paid from the photographs' share (photoRunwayVisits).
     const hour = PHOTO_RETENTION_MS + SWEEP_INTERVAL_MS;
     storage += ceilings.renderDaily * ceilings.resultRetentionDays * MAX_RESULT_BYTES;

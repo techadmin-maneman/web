@@ -36,7 +36,7 @@ function PhotosLoading() {
 }
 
 /**
- * Each visit's photographs, newest first, beneath the try-ons still kept (ADR 0082); before the first
+ * Each visit's photographs, newest first, beneath the try-ons still kept; before the first
  * fit, Photos' empty state, or its lines beneath a try-on.
  */
 function Timeline({

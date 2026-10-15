@@ -50,7 +50,7 @@ const UNAVAILABLE_PER_HOUR_TO_ALERT = 5;
 const TURNSTILE_UNAVAILABLE = "turnstile_unavailable";
 
 /**
- * Turnstile unavailable turns every lead, try-on and client login away (ADR 0011), so it is
+ * Turnstile unavailable turns every lead, try-on and client login away, so it is
  * logged, counted by the hour, and told to ops; the alert closes once Turnstile answers again
  * (docs/decisions/0067-alerts-and-silent-failures.md).
  */

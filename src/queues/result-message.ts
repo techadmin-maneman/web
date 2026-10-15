@@ -34,7 +34,7 @@ export async function resultContent(
     .first<{ result_key: string | null; state: string }>();
   if (job?.state !== "ready" || job.result_key === null) return { skip: "no result to send" };
   if (row.attempts === 0) {
-    // The daily cap on try-on results sent to one number, which the gate checks before a look is made (ADR 0104).
+    // The daily cap on try-on results sent to one number, which the gate checks before a look is made.
     const key = await mobileHashOf(config.settings.ipHashSalt, row.mobile_e164);
     const withinCap = await takeOne(db, "message:result:mobile", key, { now, settings: config.settings });
     if (!withinCap) return { skip: "daily message limit reached" };

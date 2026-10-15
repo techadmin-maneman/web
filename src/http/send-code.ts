@@ -103,7 +103,7 @@ export function numberChangeCodes(
 
 /**
  * Whether this account's code would be held back by staging's allowlist: only ever true for one of our own
- * scripts' test records (ADR 0097). A code is never automatic, so a real account's is never held back by it.
+ * scripts' test records. A code is never automatic, so a real account's is never held back by it.
  */
 function codeHeldBack(c: Context<AppEnv>, sendsTo: string, testRecord: boolean): boolean {
   return isMessageHeldBack(c.var.config.settings.messaging, { automatic: false, testRecord, mobileE164: sendsTo });

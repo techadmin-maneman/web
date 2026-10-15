@@ -83,7 +83,7 @@ export const dispatch = {
      */
     asked: (window: string) => `Asked · ${window}`,
     offered: (when: string) => `Offered · ${when}`,
-    /** No Request behind the visit recorded a window, so there is nothing to compare (ADR 0063). */
+    /** No Request behind the visit recorded a window, so there is nothing to compare. */
     notAsked: "Asked · not recorded",
     /** The brief's "referral source": who invited the client, where someone did. */
     referred: (name: string) => `Referred by ${name}`,
@@ -198,7 +198,7 @@ export const dispatch = {
     ],
     /** The board's line, for a client who agreed to WhatsApp about their visits. */
     note: (job: string) => `${job} gets the new window on WhatsApp.`,
-    /** One who has not; the move goes to the Tasks board until ops say they called (ADR 0069). */
+    /** One who has not; the move goes to the Tasks board until ops say they called. */
     call: (name: string, mobile: string) => `${name} isn’t on WhatsApp updates. Call ${mobile} with the new window.`,
     /** After the line, where the visit was paid for: prepaid, or with the client's credit. */
     carries: "Their payment carries over.",
@@ -307,7 +307,7 @@ export const dispatch = {
      */
     clash: (technician: string, date: string, window: string) =>
       `${technician} already has a job on ${date}, ${window}.`,
-    /** Leave is named as leave, so ops know the day is off rather than merely full (ADR 0062). */
+    /** Leave is named as leave, so ops know the day is off rather than merely full. */
     onLeave: (technician: string, date: string) => `${technician} is away on ${date}.`,
     /** A technician never takes two of a client's visits in a row (ADR 0111). */
     backToBack: (technician: string) =>
@@ -317,10 +317,10 @@ export const dispatch = {
     windowPassed: (date: string, window: string) => `Too late for ${date}, ${window}. Choose a later window.`,
     /** The day was blacked out after the board offered it; picking it again asks for the reason. */
     blackout: (date: string) => `${date} is a closed day. Choose it again to give a reason.`,
-    /** The window is free, but the visit's block has no room in it (ADR 0069). */
+    /** The window is free, but the visit's block has no room in it. */
     doesNotFit: (type: string, technician: string, date: string, window: string) =>
       `${type}: no room in ${technician}’s ${window} on ${date}.`,
-    /** Another ops user moved the job while this one was choosing (ADR 0069). */
+    /** Another ops user moved the job while this one was choosing. */
     superseded: (job: string, where: string) => `${job} was just moved by someone else. It’s now ${where}.`,
     supersededWhere: (technician: string, date: string, window: string) => `with ${technician}, ${date}, ${window}`,
     /** The job has left this week, or the city asked for, since. */

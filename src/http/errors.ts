@@ -68,7 +68,7 @@ export const ERROR_CODES = [
   "terms_changed",
   // A referral card without the client's consent to photographs on referral cards (docs/decisions/0048-referrals.md).
   "consent_required",
-  // Refer is a fitted client's, since the invite says they were fitted (docs/decisions/0048-referrals.md); and a
+  // Refer is a fitted client's, since the invite says they were fitted; and a
   // held referral whose friend's consultation and fit is not paid yet cannot be approved.
   "not_fitted",
   "not_paid",
@@ -121,7 +121,7 @@ export const ERROR_CODES = [
   // A pincode served from a day still to come, which /book would take bookings for at once; and a pincode ops would add
   // that the service area holds already.
   "launch_in_future",
-  // Serving a pincode in a city no active technician works in, where nothing could be booked (ADR 0117).
+  // Serving a pincode in a city no active technician works in, where nothing could be booked.
   "no_technician",
   "pincode_held",
   // The services clients book (docs/decisions/0085-services-ops-can-edit.md): another service has the name, or its
@@ -144,7 +144,7 @@ export const ERROR_CODES = [
   // A move to another day the client tried to accept, whose time was taken since or whose visit cannot move now
   // (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
   "move_gone",
-  // A move ops tried to make to another day, which the client is asked to confirm instead (ADR 0115).
+  // A move ops tried to make to another day, which the client is asked to confirm instead.
   "ask_the_client",
   // Discount codes (docs/decisions/0108-discount-codes.md): the code entered does not apply, which is all its enterer
   // is told; the booking carries a code already; the booking's price is settled, so no code goes on or comes off; or

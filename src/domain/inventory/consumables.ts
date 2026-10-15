@@ -334,7 +334,7 @@ export async function servicesForUse(db: D1Database): Promise<UsageService[]> {
 
 /**
  * The service a job was sold as: its visit's own (appointments.tier), from the hold that booked it; its kind's
- * standard one where the visit names no other (docs/decisions/0085-services-ops-can-edit.md).
+ * standard one where the visit names no other.
  */
 export async function serviceOfJob(
   db: D1Database,

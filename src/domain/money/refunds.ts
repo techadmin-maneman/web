@@ -75,7 +75,7 @@ export async function askRefund(
 
 /**
  * What ops are told to do with a refund Razorpay did not make, or would not say it made
- * (docs/decisions/0100-a-refund-is-made-once.md). `what` is the amount and the visit, as "Rs. 500 for visit …".
+ *. `what` is the amount and the visit, as "Rs. 500 for visit …".
  */
 export function refundLeftToOps(
   outcome: "refused" | "unanswered",

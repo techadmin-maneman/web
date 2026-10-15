@@ -231,7 +231,7 @@ async function setting(db: D1Database, price: PriceChange, write: PriceWrite): P
  * Takes back a price still to come, with its audit entry in the same batch.
  * Only a row that applies after today can go: the one in force and every spent
  * one may already stand on an invoice, and a hold keeps the figure it was
- * quoted in any case (docs/decisions/0068-a-paid-hold-is-kept.md).
+ * quoted in any case.
  */
 export async function withdrawPrice(
   db: D1Database,

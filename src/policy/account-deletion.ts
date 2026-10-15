@@ -9,7 +9,7 @@ import { VISIT_LIVE } from "../config/statuses.ts";
 export const DELETION_DECIDED_WITHIN_DAYS = 30;
 
 /**
- * What stands in an erasure's way (docs/decisions/0066-erasure-all-or-nothing.md): an
+ * What stands in an erasure's way: an
  * account is not erased while a visit of theirs is still to happen, or a booking
  * of theirs is paid for or free but not yet a visit; while we hold a payment of
  * theirs with no visit behind it, or owe them a cancelled visit's refund; or

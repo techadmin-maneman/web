@@ -186,7 +186,7 @@ export function registerOpsClientPhotos(app: App): void {
     if (photo === null) return refuse(c, "not_found");
 
     // Within an opening already logged, the image goes; outside one, the opening
-    // is logged first, and a failure serves no photograph (ADR 0031).
+    // is logged first, and a failure serves no photograph.
     const staff = actorOf(c);
     const now = c.var.deps.now();
     if (!(await viewInForce(db, id, staff, now))) {

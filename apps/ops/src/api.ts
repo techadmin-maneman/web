@@ -79,7 +79,7 @@ export type OpsSetting = Body<paths["/api/settings"]["get"]>["settings"][number]
 export type NumberRule = Extract<OpsSetting, { kind: "number" }>;
 export type ChoiceRule = Extract<OpsSetting, { kind: "choice" }>;
 export type SettingValue = OpsSetting["value"];
-/** The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). */
+/** The days no visit is offered. */
 export type Blackout = Body<paths["/api/blackouts"]["get"]>["blackouts"][number];
 export type BlackoutAdd = Sent<paths["/api/blackouts"]["post"]>;
 export type SlotTimes = Body<paths["/api/slot-times"]["get"]>;

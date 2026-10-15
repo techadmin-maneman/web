@@ -254,7 +254,7 @@ export const NOTICES = [
       "Your first name appears on your invite.",
     ],
   },
-  // Given by booking a visit in the app (ADR 0080): each purpose's notice is every line the pay step showed.
+  // Given by booking a visit in the app: each purpose's notice is every line the pay step showed.
   { version: "photos-own-record-booking-v1", purpose: "photos_own_record", text: BOOKING_BOTH },
   { version: "photos-referral-cards-booking-v1", purpose: "photos_referral_cards", text: BOOKING_BOTH },
   { version: "photos-own-record-booking-alone-v1", purpose: "photos_own_record", text: BOOKING_OWN_RECORD },
@@ -362,7 +362,7 @@ export function switchNotice(purpose: ConsentPurpose, source: ConsentSource | nu
 }
 
 /**
- * The notices a consent given by booking is recorded under (ADR 0080), by whether the pay step asked for both
+ * The notices a consent given by booking is recorded under, by whether the pay step asked for both
  * photograph purposes or for one alone. The profile's switch goes on recording CURRENT_NOTICE.
  */
 export const BOOKING_NOTICES = {

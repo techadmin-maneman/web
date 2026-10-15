@@ -237,7 +237,7 @@ export const tryOn = {
         title: "The try-on is busy just now.",
         body: "Try again in a few minutes, or book a consultation and see it in person.",
       },
-      /** While WhatsApp cannot send a look, the try-on does not run (ADR 0104). It has no Choose another. */
+      /** While WhatsApp cannot send a look, the try-on does not run. It has no Choose another. */
       unavailable: {
         step: "Not available right now",
         frame: "Paused",

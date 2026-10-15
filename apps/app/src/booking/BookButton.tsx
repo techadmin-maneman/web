@@ -46,7 +46,7 @@ export function BookButton({
   className?: string;
   /** The kind of visit it books; the first the client may book, if left out. */
   type?: BookableType;
-  /** The service of that kind the app offers, which the sheet opens with chosen (ADR 0085); null for none. */
+  /** The service of that kind the app offers, which the sheet opens with chosen; null for none. */
   tier?: string | null;
   /** The day and window the app offers it on, which the sheet opens with chosen. */
   offer?: Offered;

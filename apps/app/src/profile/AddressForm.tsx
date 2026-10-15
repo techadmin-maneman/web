@@ -66,10 +66,10 @@ export function AddressForm({
   const [refused, setRefused] = useState<Refused | null>(null);
   // One token for the whole search, made when the form opens: it is what puts
   // Google's autocomplete on the free per-session price rather than per
-  // keystroke (docs/decisions/0054-address-capture.md).
+  // keystroke.
   const [sessionToken] = useState(() => crypto.randomUUID());
   // One save per intent: a second sends the same session token again, and Google bills a second
-  // Place Details resolution against a session that was meant to close once (ADR 0054).
+  // Place Details resolution against a session that was meant to close once.
   const [busy, once] = useOneAtATime();
 
   const save = (chosenDraft: Address) =>

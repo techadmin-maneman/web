@@ -28,11 +28,11 @@ export const VISIT_MESSAGE_KINDS = [
   "visit_cancelled",
   // Ops moved the visit on the dispatch board; the client is told the new window and never charged.
   "visit_moved",
-  // The technician checked in at the door: the no-show evidence reads its receipt (ADR 0047).
+  // The technician checked in at the door: the no-show evidence reads its receipt.
   "arrival_notice",
-  // Ops ruled on a visit the client was not home for (docs/decisions/0074-hand-offs-and-messages.md).
+  // Ops ruled on a visit the client was not home for.
   "no_show_decided",
-  // Ops ruled on the client's dispute of its charge (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+  // Ops ruled on the client's dispute of its charge.
   "no_show_dispute_ruled",
 ] as const satisfies readonly MessageKind[];
 
