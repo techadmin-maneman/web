@@ -210,7 +210,7 @@ function paymentCalls({ request, org, read }: BooksApi): Payments {
           method: "POST",
           body: {
             customer_id: payment.customerId,
-            payment_mode: "Razorpay",
+            payment_mode: payment.mode,
             amount: rupees(payment.amount),
             date: payment.date,
             reference_number: payment.reference,

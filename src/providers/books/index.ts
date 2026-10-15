@@ -35,15 +35,17 @@ export interface BooksPdf {
   readonly contentType: "application/pdf";
 }
 
-/** A payment Razorpay took, to record against the client's customer record in Books. Amounts in paise. */
+/** A payment taken, to record against the client's customer record in Books. Amounts in paise. */
 export interface NewBooksPayment {
   readonly customerId: string;
+  /** How the client paid, as Books names it in its payment modes: the receipt prints it. */
+  readonly mode: "Razorpay" | "UPI";
   readonly amount: number;
   /** India's calendar date it was taken. */
   readonly date: string;
   /** Ours, e.g. MM-7KQ3-9F2D: the receipt's reference. */
   readonly reference: string;
-  /** For Books' own list: Razorpay's payment ID. The receipt does not print it. */
+  /** For Books' own list: Razorpay's payment ID, or the UPI transaction's reference. The receipt does not print it. */
   readonly description: string;
   /** What the money was for, which the receipt prints as its description of supply. */
   readonly supply: string;

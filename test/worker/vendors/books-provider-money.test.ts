@@ -169,6 +169,7 @@ describe("Books: payments, receipts and refunds", () => {
     });
     const id = await books.recordPayment({
       customerId: "books-customer-9",
+      mode: "Razorpay",
       amount: 3000050,
       date: "2026-09-21",
       reference: "MM-2026-0841",
@@ -271,7 +272,15 @@ describe("Books: payments, receipts and refunds", () => {
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${BOOKS_API}/customerpayments`]: () => json({ code: 1002, message: "Customer does not exist." }, 400),
     });
-    const payment = { customerId: "x", amount: 100, date: "2026-09-21", reference: "r", description: "d", supply: "s" };
+    const payment = {
+      customerId: "x",
+      mode: "Razorpay" as const,
+      amount: 100,
+      date: "2026-09-21",
+      reference: "r",
+      description: "d",
+      supply: "s",
+    };
     await expect(books.recordPayment(payment)).rejects.toThrow(/400/);
   });
 });
@@ -282,7 +291,15 @@ describe("the stand-ins", () => {
     expect((await books.invoice("stub-41"))?.number).toBe("INV-000041");
     expect(await new Response((await books.invoicePdf("stub-41"))?.body).text()).toMatch(/^%PDF-1\.4/);
     expect(await books.invoicePdf("real-1")).toBeNull();
-    const payment = { customerId: "c", amount: 100, date: "2026-09-21", reference: "r", description: "d", supply: "s" };
+    const payment = {
+      customerId: "c",
+      mode: "UPI" as const,
+      amount: 100,
+      date: "2026-09-21",
+      reference: "r",
+      description: "d",
+      supply: "s",
+    };
     const recorded = await books.recordPayment(payment);
     expect(await new Response((await books.receiptPdf(recorded))?.body).text()).toMatch(/^%PDF-1\.4/);
     expect(await books.receiptPdf("real-1")).toBeNull();
@@ -325,6 +342,7 @@ describe("the stand-ins", () => {
     const invoiced = await books.upsertCustomer({ ...CUSTOMER, personId: "invoiced" });
     await books.recordPayment({
       customerId: paid,
+      mode: "Razorpay",
       amount: 100,
       date: "2026-10-02",
       reference: "r",
@@ -380,7 +398,15 @@ describe("the stand-ins", () => {
   it("none refuses every call plainly", async () => {
     const off = createBooksProvider("none", null, { db: env.DB, fetch, now: () => NOW, log: createLogger() });
     await expect(off.invoice("inv-1")).rejects.toThrow("Books is not connected here (BOOKS_PROVIDER is none)");
-    const payment = { customerId: "c", amount: 1, date: "2026-09-21", reference: "r", description: "d", supply: "s" };
+    const payment = {
+      customerId: "c",
+      mode: "Razorpay" as const,
+      amount: 1,
+      date: "2026-09-21",
+      reference: "r",
+      description: "d",
+      supply: "s",
+    };
     await expect(off.recordPayment(payment)).rejects.toThrow("BOOKS_PROVIDER is none");
     await expect(off.upsertCustomer(CUSTOMER)).rejects.toThrow("BOOKS_PROVIDER is none");
     await expect(off.eraseCustomer("c")).rejects.toThrow("BOOKS_PROVIDER is none");
