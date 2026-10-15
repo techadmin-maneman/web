@@ -330,8 +330,9 @@ Here is how to find everything that change touches.
    npx vitest run --project worker test/worker/privacy/erasure.test.ts
    ```
 
-5. **Open the pull request.** `src/policy/account-deletion.ts` is personal data, so the pull request waits for a
-   person's `reviewed` label (`SENSITIVE_PATHS` in `scripts/lib/auto-merge.ts`). CI runs everything else.
+5. **Open the pull request.** `src/policy/account-deletion.ts` is personal data, so the pull request waits for the
+   `reviewed` label (`SENSITIVE_PATHS` in `scripts/lib/auto-merge.ts`), which whoever lands it gives once they have
+   read it through (CONTRIBUTING.md, "When a person must look"). CI runs everything else.
 
 ## What changes without a release
 

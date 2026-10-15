@@ -42,6 +42,7 @@ One page on getting a change from your laptop to staging. `README.md` says what 
 ## When a person must look
 
 - A pull request that touches money or personal data (the paths in `scripts/lib/auto-merge.ts`), or updates a dependency, waits for the `reviewed` label before it merges. A new push takes the label off, so a review covers what it saw.
+- Who gives the label is the owner's choice, and today it is whoever lands the pull request, after reading the whole of it once CI is green: it marks a self-review, not a second person's. Nothing checks who gave it.
 - Add `hold-for-review` to hold any pull request until it is reviewed.
 - Production is released only on the owner's go, by the `deploy-production` workflow (`docs/runbook.md`).
 

@@ -2,7 +2,8 @@
 // request merges when its branch is in this repository, the run that passed ran the full suite on its current head,
 // and it is ready for review. One that touches money or personal data, or updates dependencies, also waits for the
 // reviewed label, which a push takes off (.github/workflows/review-label.yml), and any pull request can be held by hand
-// with the hold label.
+// with the hold label. Who may give the label is CONTRIBUTING.md's: today whoever lands the pull request, after reading
+// it, by the owner's choice; nothing here checks who.
 //
 // It imports nothing from node_modules: its job installs nothing.
 
@@ -20,40 +21,50 @@ export const REVIEWED_LABEL = "reviewed";
  */
 export const DEPENDENCIES_LABEL = "dependencies";
 
-/** Where money or personal data is decided. Each entry is the start of a path: a file, a family of files, or a folder. */
+/**
+ * Where money or personal data is decided: whole folders where every module is, and the files elsewhere that are.
+ * Each entry is the start of a path. A module that reaches the payments provider is covered, which a test holds.
+ */
 export const SENSITIVE_PATHS = [
-  // Payments, refunds, credits, discounts, no-show charges, prices, invoices and receipts
-  "src/domain/money/payments",
-  "src/domain/money/client-payments",
-  "src/domain/money/payment-links",
-  "src/domain/money/refunds",
-  "src/domain/money/credits",
-  "src/domain/money/discount-code",
-  "src/domain/no-shows/no-show",
+  // Payments, refunds, credits, discounts, prices, invoices, receipts, and what Books keeps of them
+  "src/domain/money/",
+  "src/domain/books/",
+  "src/domain/no-shows/",
+  "src/providers/",
+  "src/routes/hooks/",
+  "src/scheduled/",
+  "src/queues/",
+  "src/dependencies",
+  "src/http/book-hold",
+  "src/domain/booking/holds",
+  "src/domain/booking/booked-hold",
+  "src/domain/booking/bookings",
+  "src/domain/booking/unbooked-holds",
+  "src/domain/booking/book-paid-hold",
+  "src/domain/booking/give-back",
+  "src/domain/booking/visit-booking",
   "src/domain/referrals/referral-grants",
-  "src/domain/money/price-book",
-  // Books' customers, invoices, items and the payments recorded there
-  "src/domain/books/books-",
+  "src/domain/referrals/partner-statements",
+  "src/domain/field/technician-pay",
+  "src/domain/field/pay-statement",
   "src/policy/prices",
   "src/policy/prepayment",
   "src/policy/discount-codes",
   "src/policy/no-show",
   "src/policy/referral-reward",
+  "src/policy/pay-by-link",
   "src/config/gst",
-  "src/providers/payments/",
-  "src/providers/books/",
-  "src/routes/hooks/razorpay",
   "src/routes/ops/credits",
-  // Consent
-  "src/domain/privacy/booking-consents",
+  // Consent, erasure, deletion, retention and a client's export of their data; clients' chats; the reporting copy
+  "src/domain/privacy/",
+  "src/domain/care/",
+  "src/domain/analytics/",
   "src/domain/clients/profile",
   "src/policy/consents",
-  "src/config/notices",
-  // Erasure, deletion and a client's export of their data
-  "src/domain/privacy/erasure",
-  "src/domain/privacy/deletion",
-  "src/domain/privacy/data-export",
   "src/policy/account-deletion",
+  "src/policy/personal-data",
+  "src/policy/retention",
+  "src/config/notices",
   "src/routes/ops/erasure",
   "src/routes/client/data",
   // Health data
