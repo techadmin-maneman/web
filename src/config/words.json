@@ -5920,6 +5920,14 @@
     "reviewed": true
   },
   {
+    "key": "message:visit_missed_by_us_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_missed_by_us_v1",
+    "text": "Hi {{1}}, we're sorry we missed you.\nWe couldn't make your {{2}} on {{3}}, so it's cancelled with nothing to pay. We'll message you to book a new time.",
+    "reviewed": false
+  },
+  {
     "key": "message:visit_cancelled_credit_v1",
     "surface": "message",
     "group": "Messages",

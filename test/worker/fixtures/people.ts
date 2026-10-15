@@ -49,3 +49,19 @@ export const aHairProfile = (personId: string, row: RowOf<"hair_profiles"> = {})
     },
     row,
   );
+
+/** A client's consent to one purpose, given when they booked: WhatsApp about their visits, unless the test says. */
+export const aConsent = (personId: string, row: RowOf<"consents"> = {}) =>
+  writeRow(
+    "consents",
+    {
+      id: crypto.randomUUID(),
+      person_id: personId,
+      purpose: "whatsapp_visits",
+      notice_version: "whatsapp-visits-v1",
+      granted: 1,
+      created_at: AT,
+      source: "app_booking",
+    },
+    row,
+  );
