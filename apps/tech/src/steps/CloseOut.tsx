@@ -26,9 +26,14 @@ import styles from "./close-out.module.css";
 /** Five angles before and five after: the ten the board counts. */
 const IN_A_SET = 5;
 
-/** The next job of the day after this one's time, which the board's last action opens. */
+/** The next job of the day after this one's time still to work, which the board's last action opens. */
 function nextAfter(jobs: readonly JobSummary[], after: string): JobSummary | null {
-  return jobs.find((job) => job.starts_at > after) ?? null;
+  const open = (job: JobSummary) =>
+    job.status !== "completed" &&
+    job.status !== "terminated" &&
+    job.status !== "cancelled" &&
+    job.progress.outcome === null;
+  return jobs.find((job) => job.starts_at > after && open(job)) ?? null;
 }
 
 /** How the job closed, in the heading's words: a one visit done once the client declined is a free consultation. */
