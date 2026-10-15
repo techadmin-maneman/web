@@ -83,9 +83,9 @@ export const VisitSummarySchema = z
     }),
     status: z.enum(APPOINTMENT_STATUSES).openapi({ description: STATUS_MEANINGS }),
     not_home: z.boolean().openapi({ description: "Closed because nobody was home: a no-show." }),
-    stage: z.union([z.enum(["booked", "in_progress", "done", "closing", "missed"]), z.null()]).openapi({
+    stage: z.union([z.enum(["booked", "arrived", "in_progress", "done", "closing", "missed"]), z.null()]).openapi({
       description:
-        "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done " +
+        "For a visit not yet closed: still to come, the technician at the door (checked in), under way (started), closed as done " +
         "from the technician's phone, otherwise over and waiting to be closed, or over with nobody having " +
         "arrived. Null once it is closed.",
     }),

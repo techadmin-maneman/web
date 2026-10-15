@@ -97,6 +97,7 @@ export const home = {
   },
   /** A visit not yet closed, once it has begun. */
   stages: {
+    arrived: "Your technician is at the door",
     in_progress: "Today · in progress",
     done: "Done · record on its way",
     closing: "Wrapping up",

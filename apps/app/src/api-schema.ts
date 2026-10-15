@@ -4484,8 +4484,8 @@ export interface components {
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description Closed because nobody was home: a no-show. */
             not_home: boolean;
-            /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed. */
-            stage: ("booked" | "in_progress" | "done" | "closing" | "missed") | null;
+            /** @description For a visit not yet closed: still to come, the technician at the door (checked in), under way (started), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed. */
+            stage: ("booked" | "arrived" | "in_progress" | "done" | "closing" | "missed") | null;
             /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
@@ -4802,8 +4802,8 @@ export interface components {
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description Closed because nobody was home: a no-show. */
             not_home: boolean;
-            /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed. */
-            stage: ("booked" | "in_progress" | "done" | "closing" | "missed") | null;
+            /** @description For a visit not yet closed: still to come, the technician at the door (checked in), under way (started), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed. */
+            stage: ("booked" | "arrived" | "in_progress" | "done" | "closing" | "missed") | null;
             /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;

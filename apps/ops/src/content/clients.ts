@@ -401,6 +401,7 @@ export const clients = {
     /** A visit to come, by where it stands, and one done, by how it was closed. */
     stages: {
       booked: "Booked",
+      arrived: "At the door",
       in_progress: "In progress",
       done: "Done",
       closing: "Not closed",
