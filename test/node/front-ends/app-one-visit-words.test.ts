@@ -11,10 +11,10 @@ import { summaryName } from "../../../apps/app/src/lib/visit.ts";
 const PRICE = { amount: 3_000_000, from: false, code: null };
 
 describe("a one visit’s card", () => {
-  it("says what it costs once fitted, only if the client goes ahead, and that a link comes by text", () => {
+  it("says what it costs once fitted, only if the client goes ahead, and that it is paid once fitted", () => {
     expect(oneVisitLines(PRICE)).toEqual([
       "Rs. 30,000, only if you go ahead",
-      "Paid once fitted, by a link we text you",
+      "Paid once fitted",
     ]);
   });
 
@@ -22,17 +22,17 @@ describe("a one visit’s card", () => {
     expect(oneVisitLines({ amount: 2_700_000, from: true, code: "TENPC" })).toEqual([
       "From Rs. 27,000, only if you go ahead",
       "Code TENPC applied",
-      "Paid once fitted, by a link we text you",
+      "Paid once fitted",
     ]);
   });
 
-  it("says nothing is to pay when the code covers it, and only that it is paid by link while nothing is priced", () => {
+  it("says nothing is to pay when the code covers it, and only that it is paid once fitted while nothing is priced", () => {
     expect(oneVisitLines({ amount: 0, from: false, code: "FITFREE" })).toEqual([
       "Nothing to pay: code FITFREE covers it",
     ]);
     expect(oneVisitLines({ amount: null, from: false, code: null })).toEqual([
       "You pay only if you go ahead",
-      "Paid once fitted, by a link we text you",
+      "Paid once fitted",
     ]);
   });
 });
