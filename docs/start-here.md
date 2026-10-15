@@ -255,7 +255,8 @@ this map, or when the map names something that no longer exists.
 - **Screens:** `apps/ops/src/spend/`
 - **Vendor** (`src/providers/`): `warehouse/` (Supabase's Postgres, or the stub)
 - **Jobs:** `src/scheduled/analytics.ts`
-- **Tests:** `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`
+- **Schema:** `warehouse/migrations/`, applied by `scripts/ops/warehouse-migrate.ts`
+- **Tests:** `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-postgres.test.ts`
 
 ### The Words page
 
