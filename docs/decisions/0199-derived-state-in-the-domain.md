@@ -21,4 +21,4 @@ The migrations made 62 triggers. Sixteen are guards (append-only, no update, no 
 
 - The contract step's migration waits in docs/migrations.md, "Contract steps waiting".
 - A write that leaves out its upkeep shows as a stale board or task: the worker suite was run once with the appointments triggers dropped and passed but for the tests that list the triggers themselves.
-- Tests: `test/worker/booking/`, `test/worker/ops/dispatch-board.test.ts`, `test/worker/ops/ops-tasks*.test.ts`.
+- Tests: `test/worker/booking/`, `test/worker/dispatch/dispatch-board.test.ts`, `test/worker/ops/ops-tasks*.test.ts`.

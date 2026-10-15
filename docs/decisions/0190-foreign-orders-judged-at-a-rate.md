@@ -18,4 +18,4 @@ ADR 0166 made every purchase order in another currency need a second approver, s
 ## Consequences
 
 - The rate is ops' own, for approvals only; a receipt still records the rupee rate it landed at.
-- Tests: `test/worker/ops/purchase-orders.test.ts`, `e2e/ops/purchasing.e2e.ts`.
+- Tests: `test/worker/purchasing/purchase-orders.test.ts`, `e2e/ops/purchasing.e2e.ts`.

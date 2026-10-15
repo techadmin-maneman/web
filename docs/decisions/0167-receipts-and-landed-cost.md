@@ -20,4 +20,4 @@ Purchase orders are drafted, approved and sent (ADR 0166). The owner ruled on 11
 
 - Each receipt becomes a bill in Zoho Books next; how stock value and cost of goods reach the accounts waits on the CA (INV-2).
 - The supplier scorecard reads actual lead times and failed checks from receipts.
-- Tests: `test/worker/ops/receipts.test.ts`, `e2e/ops/purchasing.e2e.ts`.
+- Tests: `test/worker/purchasing/receipts.test.ts`, `e2e/ops/purchasing.e2e.ts`.

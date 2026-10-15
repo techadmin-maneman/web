@@ -24,4 +24,4 @@ The scope: recall in one action. Block a lot everywhere, see which kits hold it 
 ## Consequences
 
 - Pieces fitted before labels carry only a typed lot, and are not found by a recall; ops find them on the client's page.
-- Tests: `test/worker/ops/recalls.test.ts`, `test/dom/ops-quality.test.ts`, `e2e/ops/quality.e2e.ts`.
+- Tests: `test/worker/inventory/recalls.test.ts`, `test/dom/ops-quality.test.ts`, `e2e/ops/quality.e2e.ts`.

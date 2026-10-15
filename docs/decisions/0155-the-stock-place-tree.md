@@ -22,4 +22,4 @@ Stock was kept in two kinds of place: one central store and each technician's ki
 ## Consequences
 
 - Lots and expiry, dispatch and receipt, the views by level and the demand preview build on these places (the inventory scope's phase 1).
-- Tests: `test/worker/ops/stock-places.test.ts`, `test/worker/ops/stock.test.ts`, `test/worker/ops/operations-places.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`, `e2e/ops/stock.e2e.ts`.
+- Tests: `test/worker/inventory/stock-places.test.ts`, `test/worker/inventory/stock.test.ts`, `test/worker/ops/operations-places.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`, `e2e/ops/stock.e2e.ts`.

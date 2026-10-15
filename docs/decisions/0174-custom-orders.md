@@ -19,4 +19,4 @@ A client whose profile no stock code matches exactly is made a hair system to or
 
 - Until the fit, the payment sits in Books with nothing to set against, and ops are told (`books_unapplied`). How an advance is invoiced and taxed waits on the CA (INV-4).
 - The piece reserved to the client on arrival, the client's view of their order, and refunds for a late or failed piece come next.
-- Tests: `test/worker/ops/custom-orders.test.ts`, `e2e/ops/clients-visits.e2e.ts`.
+- Tests: `test/worker/purchasing/custom-orders.test.ts`, `e2e/ops/clients-visits.e2e.ts`.

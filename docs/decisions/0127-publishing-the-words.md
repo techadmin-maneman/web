@@ -19,4 +19,4 @@ The Words page records new words for the site's lines (ADR 0126). The owner's sc
 ## Consequences
 
 - A line whose place in the copy moved since a publish is left as the code has it, and shows as changed on the page until published again.
-- Tests: `test/worker/ops/words-publish.test.ts`, `test/node/site/site-published-words.test.ts`, `test/node/tooling/site-words.test.ts`, `test/dom/ops-words.test.ts`, `e2e/ops/words.e2e.ts`.
+- Tests: `test/worker/words/words-publish.test.ts`, `test/node/site/site-published-words.test.ts`, `test/node/tooling/site-words.test.ts`, `test/dom/ops-words.test.ts`, `e2e/ops/words.e2e.ts`.

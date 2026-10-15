@@ -21,4 +21,4 @@ Receipts record what arrived damaged or failed its check, which never enters sto
 - A write-off's photograph comes next, required then; a claim may carry one too.
 - An accepted credit becomes a vendor credit in Books against the receipt's bill, after this.
 - The supplier scorecard reads claims and failed checks from here.
-- Tests: `test/worker/ops/supplier-claims.test.ts`, `e2e/ops/supplier-claims.e2e.ts`.
+- Tests: `test/worker/purchasing/supplier-claims.test.ts`, `e2e/ops/supplier-claims.e2e.ts`.

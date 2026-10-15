@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { lateFeeOn } from "../../../src/domain/money/price-book.ts";
 import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
-import { POST, auditFor } from "./ops-settings-fixtures.ts";
+import { POST, auditFor } from "../ops/ops-settings-fixtures.ts";
 
 let ops: App;
 

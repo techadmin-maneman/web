@@ -20,4 +20,4 @@ The owner asked on 11 October 2026 for the team to change the site's words and t
 
 - Phase 2 publishes the site with the words set here, staging first; phase 3 sends the messages with them once WhatsApp approves. Until then the page records the words.
 - A line whose code wording changes keeps its key while its place in the copy does; one moved or renamed in the code starts afresh.
-- Tests: `test/node/words/`, `test/node/policy/word-checks.test.ts`, `test/worker/ops/words.test.ts`, `e2e/ops/words.e2e.ts`.
+- Tests: `test/node/words/`, `test/node/policy/word-checks.test.ts`, `test/worker/words/words.test.ts`, `e2e/ops/words.e2e.ts`.

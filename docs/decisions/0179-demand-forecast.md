@@ -22,4 +22,4 @@ The owner chose a forecast that drafts and a person who approves, run as often a
 
 - The supply plan drafts its top-ups, transfers and orders from the latest run; the events calendar gets its page there.
 - How far the forecast was from what happened is measured run by run once there are runs to measure.
-- Tests: `test/node/policy/forecast.test.ts`, `test/worker/ops/forecast.test.ts`.
+- Tests: `test/node/policy/forecast.test.ts`, `test/worker/purchasing/forecast.test.ts`.

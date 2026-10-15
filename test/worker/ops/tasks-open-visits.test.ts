@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { tellOfUnassignedToday } from "../../../src/domain/dispatch/unassigned.ts";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
-import { A, B, IMRAN, ROHIT, TUESDAY, insertJob } from "./dispatch-fixtures.ts";
+import { A, B, IMRAN, ROHIT, TUESDAY, insertJob } from "../dispatch/dispatch-fixtures.ts";
 
 let ops: App;
 

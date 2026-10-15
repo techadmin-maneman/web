@@ -18,4 +18,4 @@ A custom order's piece is made for one client and paid for in full (ADR 0174). T
 ## Consequences
 
 - A piece a client never takes becomes a case for ops; the refund rules for a late piece, or one that fails its check, come next.
-- Tests: `test/worker/ops/custom-orders.test.ts`.
+- Tests: `test/worker/purchasing/custom-orders.test.ts`.

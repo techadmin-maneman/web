@@ -20,4 +20,4 @@ With stock held at a warehouse, hubs, stockrooms and kits (ADR 0155), in lots th
 
 - The thirty and seven days are figures in `src/policy/stock.ts`; they become settings if ops ask.
 - The morning look reads only the lots still held (a partial index) and the transfers on their way.
-- Tests: `test/worker/ops/stock-watch.test.ts`, `e2e/ops/stock.e2e.ts`.
+- Tests: `test/worker/inventory/stock-watch.test.ts`, `e2e/ops/stock.e2e.ts`.

@@ -20,4 +20,4 @@ The scope's evening check: each kit against its technician's visits tomorrow, a 
 ## Consequences
 
 - The tech app's Kit screen shows an approved top-up among what is coming.
-- Tests: `test/worker/ops/kit-check.test.ts`.
+- Tests: `test/worker/inventory/kit-check.test.ts`.

@@ -18,4 +18,4 @@ The owner ruled on 11 October 2026 that a hair system matches a client only exac
 ## Consequences
 
 - Custom orders are raised from here next.
-- Tests: `test/worker/ops/stock-match.test.ts`, `e2e/ops/clients-visits.e2e.ts`.
+- Tests: `test/worker/inventory/stock-match.test.ts`, `e2e/ops/clients-visits.e2e.ts`.

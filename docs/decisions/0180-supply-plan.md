@@ -20,4 +20,4 @@ The owner chose a plan that drafts and a person who approves (11 October 2026). 
 
 - Kit top-ups, from the evening check of tomorrow's visits, come next; the plan moves stock between stockrooms and the warehouse.
 - Lines decided are kept with the run they came from, to learn from.
-- Tests: `test/node/policy/supply-plan.test.ts`, `test/worker/ops/supply-plan.test.ts`, `test/dom/ops-supply-plan.test.ts`, `e2e/ops/supply-plan.e2e.ts`.
+- Tests: `test/node/policy/supply-plan.test.ts`, `test/worker/purchasing/supply-plan.test.ts`, `test/dom/ops-supply-plan.test.ts`, `e2e/ops/supply-plan.e2e.ts`.

@@ -17,4 +17,4 @@ Every scorecard sets plan beside actual, so the plan needs a home. And the dashb
 ## Consequences
 
 - Making each member of staff a Zoho user, sharing each dashboard filtered by `access`, and scheduling the emails per place are done in Zoho when the copy is switched on.
-- Tests: `test/worker/ops/targets.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`, `e2e/ops/targets.e2e.ts`.
+- Tests: `test/worker/reports/targets.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`, `e2e/ops/targets.e2e.ts`.

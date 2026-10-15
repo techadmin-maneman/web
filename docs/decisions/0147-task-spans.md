@@ -20,4 +20,4 @@ The Customer care dashboard counts cases opened and closed each week, how long t
 ## Consequences
 
 - Spans start on the night this is deployed: a task opened earlier gets its span then, from its own start, and the days before have no closed tasks.
-- Tests: `test/worker/ops/task-spans.test.ts`.
+- Tests: `test/worker/reports/task-spans.test.ts`.

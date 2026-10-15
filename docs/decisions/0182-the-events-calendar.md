@@ -18,4 +18,4 @@ The forecast's baseline reads a calendar of uplifts (ADR 0179), but nothing let 
 ## Consequences
 
 - `GET /api/stock/forecast` names each item it lists.
-- Tests: `test/worker/ops/demand-events.test.ts`, `test/dom/ops-supply-plan-planning.test.ts`, `e2e/ops/supply-plan.e2e.ts`.
+- Tests: `test/worker/purchasing/demand-events.test.ts`, `test/dom/ops-supply-plan-planning.test.ts`, `e2e/ops/supply-plan.e2e.ts`.

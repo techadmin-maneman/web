@@ -24,4 +24,4 @@ The owner's rulings, 11 October 2026:
 
 - Staging's technicians were not marked trained when this landed: until ops mark them, no first fit is offered there.
 - Both changes are expand only (migration 0107).
-- Tests: `test/worker/booking/technician-city.test.ts`, `test/worker/ops/ops-blackouts.test.ts` and `dispatch-landing.test.ts`.
+- Tests: `test/worker/booking/technician-city.test.ts`, `test/worker/dispatch/ops-blackouts.test.ts` and `dispatch-landing.test.ts`.

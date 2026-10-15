@@ -21,4 +21,4 @@ The owner ruled on 11 October 2026 that purchase orders are raised, approved and
 ## Consequences
 
 - Receipts against an order, with lots, labels, a quality check and landed cost, come next; then bills to Books.
-- Tests: `test/worker/ops/purchase-orders.test.ts`, `e2e/ops/purchasing.e2e.ts`.
+- Tests: `test/worker/purchasing/purchase-orders.test.ts`, `e2e/ops/purchasing.e2e.ts`.

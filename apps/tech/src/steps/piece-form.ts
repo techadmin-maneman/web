@@ -1,5 +1,5 @@
 // The piece step's rules (./Piece.tsx), apart from the screen so they can be read and tested on their own
-// (test/node/dom/tech-piece-form.test.ts): which of the client's pieces each list offers, which of the kit's hair
+// (test/node/front-ends/tech-piece-form.test.ts): which of the client's pieces each list offers, which of the kit's hair
 // systems match the client's profile, what still keeps Next dim, and the body the step sends.
 
 import type { EventBody, Job } from "../api.ts";

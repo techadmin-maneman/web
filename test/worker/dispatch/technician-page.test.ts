@@ -9,7 +9,7 @@ import { revokeSession } from "../../../src/domain/sign-in/sessions.ts";
 import type { App } from "../../../src/http/context.ts";
 import { sha256Hex } from "../../../src/lib/hash.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
-import { enforce, listStaff, opsAs, person } from "./staff-fixtures.ts";
+import { enforce, listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
 
 const IMRAN = "33333333-3333-4333-8333-333333333331";
 const SAMEER = "33333333-3333-4333-8333-333333333332";

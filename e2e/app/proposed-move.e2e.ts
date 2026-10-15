@@ -1,6 +1,6 @@
 // A move to another day ops asked the client to confirm (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md),
 // laid over the fitted client's next visit as the local API reads it: Home asks, Accept answers, and Reschedule offers
-// another time beside it. The proposal itself, and accepting it, are test/worker/ops/dispatch-proposals.test.ts's.
+// another time beside it. The proposal itself, and accepting it, are test/worker/dispatch/dispatch-proposals.test.ts's.
 
 import type { Page } from "@playwright/test";
 import { shortDate } from "../../packages/web-kit/dates.ts";

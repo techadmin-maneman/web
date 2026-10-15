@@ -20,4 +20,4 @@ The scope: every job already records what a service is expected to use and what 
 ## Consequences
 
 - A visit's use counts by the day it was recorded, and its expected use by the day it was booked for, so the two can straddle the window's start.
-- Tests: `test/node/policy/stock-usage.test.ts`, `test/worker/ops/stock-usage.test.ts`, `test/dom/ops-usage.test.ts`, `e2e/ops/usage.e2e.ts`.
+- Tests: `test/node/policy/stock-usage.test.ts`, `test/worker/inventory/stock-usage.test.ts`, `test/dom/ops-usage.test.ts`, `e2e/ops/usage.e2e.ts`.

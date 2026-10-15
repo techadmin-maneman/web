@@ -17,4 +17,4 @@ The owner ruled on 11 October 2026 that a booking with no stock in reach is neve
 ## Consequences
 
 - The evening check of tomorrow's kits, and the top-ups it drafts, come with the supply plan.
-- Tests: `test/worker/ops/stock-demand.test.ts`.
+- Tests: `test/worker/purchasing/stock-demand.test.ts`.

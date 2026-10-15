@@ -18,4 +18,4 @@ The owner ruled on 11 October 2026 that a returned piece outside warranty is wri
 ## Consequences
 
 - A photograph stored and never named by a write stays in the bucket; ops' uploads are few and small.
-- Tests: `test/worker/ops/supplier-claims.test.ts`, `e2e/ops/supplier-claims.e2e.ts`.
+- Tests: `test/worker/purchasing/supplier-claims.test.ts`, `e2e/ops/supplier-claims.e2e.ts`.

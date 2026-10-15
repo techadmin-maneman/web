@@ -19,4 +19,4 @@ The stock ledger counted consumables only (ADR 0087), so the pieces a kit carrie
 ## Consequences
 
 - Lots and expiry, the warning when no exact match is in reach, and the dispatch of pieces between places build on these stock codes.
-- Tests: `test/worker/ops/hair-systems.test.ts`, `test/node/dom/tech-piece-form.test.ts`, `e2e/ops/consumables.e2e.ts`, `e2e/tech/piece.e2e.ts`.
+- Tests: `test/worker/inventory/hair-systems.test.ts`, `test/node/front-ends/tech-piece-form.test.ts`, `e2e/ops/consumables.e2e.ts`, `e2e/tech/piece.e2e.ts`.

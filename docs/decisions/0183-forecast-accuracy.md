@@ -18,4 +18,4 @@ The scope: accuracy is measured each period against what happened, with error an
 ## Consequences
 
 - Runs made before this lands are measured too, one an hour, the latest first.
-- Tests: `test/node/policy/forecast-accuracy.test.ts`, `test/worker/ops/forecast-accuracy.test.ts`, `test/dom/ops-supply-plan-planning.test.ts`.
+- Tests: `test/node/policy/forecast-accuracy.test.ts`, `test/worker/purchasing/forecast-accuracy.test.ts`, `test/dom/ops-supply-plan-planning.test.ts`.
