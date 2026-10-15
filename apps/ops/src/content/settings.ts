@@ -146,6 +146,7 @@ export const settings = {
       stock: "Stock",
       purchasing: "Purchasing",
       supply_plan: "Supply plan",
+      limits: "Daily limits",
       console: "The console",
       other: "Other policies",
     },
@@ -224,6 +225,18 @@ export const settings = {
       },
       // Remedies (docs/decisions/0143-remedies.md).
       remedy_limit: { visits: "Free service visits", days: "Over" },
+      // The national daily ceilings (src/policy/ops-settings-ceilings.ts).
+      daily_ceilings: {
+        login_code: "App login codes",
+        tech_code: "Technician login codes",
+        form_code: "Site WhatsApp codes",
+        upload: "Try-on photographs",
+        render: "Try-on looks",
+        result_read: "Try-on results opened",
+        geocode: "Address lookups",
+        route: "Drive times",
+        route_map: "Day maps",
+      },
       // The rest of the rules (docs/decisions/0193-the-rest-of-the-rules-in-the-console.md).
       payment_links: {
         holds_hours: "Holds the slot for",

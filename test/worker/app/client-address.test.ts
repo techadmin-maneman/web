@@ -218,7 +218,7 @@ describe("POST /api/address/suggestions", () => {
     expect(refused.status).toBe(503);
     expect((await refused.json<{ error: { code: string } }>()).error.code).toBe("busy");
     expect(deps.alerts).toEqual([
-      'The daily geocode ceiling (1) is reached; address suggestions answer "busy" until midnight IST.',
+      'The daily geocode ceiling (1) is reached; address suggestions answer "busy" until midnight IST. Raise it in Settings · Rules if the day calls for more.',
     ]);
   });
 

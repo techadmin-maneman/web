@@ -23884,7 +23884,8 @@ Request body:
         "custom_order_grace_days",
         "planning_period_days",
         "planning_horizon_periods",
-        "forecast_assumptions"
+        "forecast_assumptions",
+        "daily_ceilings"
       ]
     },
     "title": {
@@ -24073,7 +24074,8 @@ Request body:
         "custom_order_grace_days",
         "planning_period_days",
         "planning_horizon_periods",
-        "forecast_assumptions"
+        "forecast_assumptions",
+        "daily_ceilings"
       ]
     },
     "title": {

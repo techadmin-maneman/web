@@ -15,6 +15,7 @@ import {
 import { MAX_COPY_BYTES, MAX_RESULT_BYTES } from "../../../src/config/tryon.ts";
 import { PHOTO_SHARE_BYTES } from "../../../src/policy/storage-share.ts";
 import { readJsonc } from "../../../scripts/lib/jsonc.ts";
+import { CEILING_SETTINGS } from "../../../src/policy/ops-settings-ceilings.ts";
 
 function ceilingsOf(environment: "staging" | "production"): Ceilings {
   const config = readJsonc("wrangler.jsonc") as { env: Record<string, { vars: Record<string, string> }> };
@@ -75,6 +76,19 @@ describe("R2's budget", () => {
     expect(overBudget(tooManyRenders)).toEqual([expect.stringMatching(/^R2 would cost \$\d+\.\d\d a month/) as string]);
     const tooManyReads = worstCaseUsage([staging, { ...production, resultReadDaily: 1_000_000 }]);
     expect(overBudget(tooManyReads)).toHaveLength(1);
+  });
+
+  // Ops may raise the try-on's ceilings from the console (src/policy/ops-settings-ceilings.ts), each only so far.
+  it("stays within the budget at the most ops may raise the try-on's ceilings to in production", () => {
+    const [staging, production] = committed as [Ceilings, Ceilings];
+    const { bounds } = CEILING_SETTINGS[0];
+    const most = {
+      ...production,
+      renderDaily: bounds.render.max,
+      uploadDaily: bounds.upload.max,
+      resultReadDaily: bounds.result_read.max,
+    };
+    expect(overBudget(worstCaseUsage([staging, most]))).toEqual([]);
   });
 
   it("reads the allowance Cloudflare publishes", () => {

@@ -26,6 +26,8 @@ import {
   settingNamed,
   type NumberSetting,
 } from "../../policy/ops-settings.ts";
+import type { Settings } from "../../config/settings.ts";
+import { ceilingsIn } from "../../policy/rate-limits.ts";
 
 /** One number, or one per key: the two shapes a rule of numbers takes. */
 const NumberValue = z.union([z.number().int(), z.record(z.string(), z.number().int())]);
@@ -132,7 +134,16 @@ function boundsBody(setting: NumberSetting) {
 
 type State = Awaited<ReturnType<typeof settingStates>>[number];
 
-const stateBody = ({ setting, value, setBy, setAt }: State) => {
+/** The rules whose figures each environment's config gives until ops set theirs. */
+const STANDING: Readonly<Partial<Record<string, (settings: Settings) => Readonly<Record<string, number>>>>> = {
+  daily_ceilings: ceilingsIn,
+};
+
+/** A rule's figures until ops set theirs: this environment's own, where its config gives them. */
+const fallbackOf = (setting: NumberSetting, settings: Settings) =>
+  STANDING[setting.name]?.(settings) ?? setting.fallback;
+
+const stateBody = ({ setting, value, setBy, setAt }: State, settings: Settings) => {
   const described = {
     name: setting.name,
     title: setting.title,
@@ -150,6 +161,7 @@ const stateBody = ({ setting, value, setBy, setAt }: State) => {
       default: setting.fallback,
     };
   }
+  const fallback = fallbackOf(setting, settings);
   return {
     ...described,
     kind: "number" as const,
@@ -158,15 +170,15 @@ const stateBody = ({ setting, value, setBy, setAt }: State) => {
     max: setting.max,
     keys: keysOf(setting),
     bounds: boundsBody(setting),
-    value: value as number | Readonly<Record<string, number>>,
-    default: setting.fallback,
+    value: setBy === null ? fallback : (value as number | Readonly<Record<string, number>>),
+    default: fallback,
   };
 };
 
 export function registerOpsSettings(app: App): void {
   app.openapi(settingsRoute, async (c) => {
     const states = await settingStates(c.env.DB);
-    return c.json({ settings: states.map(stateBody) }, 200);
+    return c.json({ settings: states.map((state) => stateBody(state, c.var.config.settings)) }, 200);
   });
 
   app.openapi(setSettingRoute, async (c) => {
@@ -204,6 +216,6 @@ export function registerOpsSettings(app: App): void {
     const states = await settingStates(c.env.DB);
     const state = states.find((each) => each.setting.name === setting.name);
     if (state === undefined) throw new Error("the register lost a setting between writing and reading it");
-    return c.json(stateBody(state), 200);
+    return c.json(stateBody(state, c.var.config.settings), 200);
   });
 }
