@@ -95,6 +95,24 @@ describe("the address the consultation is at", () => {
     });
   });
 
+  // "Galleria Road" put a road in Meerut first for a client in Gurgaon: Google searches all of India.
+  it("searches near the pincode's city, where the form sends one we know", async () => {
+    const asked: string[] = [];
+    const deps = fakeDependencies();
+    const searching = appFor(
+      "local",
+      { ...deps, geocode: { ...deps.geocode, suggest: (q, token) => (asked.push(q), deps.geocode.suggest(q, token)) } },
+      {},
+      "public",
+    );
+    const ask = (body: object) =>
+      request(searching, "/api/buildings/suggestions", post({ q: "Galleria Road", session: "search-2", ...body }));
+    expect((await ask({ pincode: "122018" })).status).toBe(200);
+    expect((await ask({ pincode: "560001" })).status).toBe(200);
+    expect((await ask({})).status).toBe(200);
+    expect(asked).toEqual(["Galleria Road, Gurgaon", "Galleria Road", "Galleria Road"]);
+  });
+
   it("is kept with the day asked for, while self-serve booking is off", async () => {
     const answer = await request(
       site({ selfServeBooking: false }),

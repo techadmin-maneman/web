@@ -57,6 +57,19 @@ type Suggested =
   | { readonly ok: false; readonly code: "busy" | "unavailable" };
 
 /**
+ * What was typed, with the city of the pincode it is at: Google searches all of India, and "Galleria Road" alone put
+ * a road in Meerut first for a client in Gurgaon. A pincode we do not know, or none, leaves it as typed.
+ */
+async function nearPincode(db: D1Database, q: string, pincode: string | undefined): Promise<string> {
+  if (pincode === undefined) return q;
+  const city = await db
+    .prepare("SELECT city FROM serviceable_pincodes WHERE pincode = ?1")
+    .bind(pincode)
+    .first<string>("city");
+  return city === null || q.toLowerCase().includes(city.toLowerCase()) ? q : `${q}, ${city}`;
+}
+
+/**
  * The buildings matching what was typed, `q`, in one billed session. Counted
  * first against the asker's day, `limitScope` and `asker` (a client, or a member
  * of staff), so one cannot spend the day's ceiling alone, then against the ceiling.
@@ -68,13 +81,18 @@ export async function suggestBuildings(
     readonly asker: string;
     readonly q: string;
     readonly session: string;
+    /** The pincode the address is at, where the form has it already: its city keeps the search near it. */
+    readonly pincode?: string | undefined;
   },
 ): Promise<Suggested> {
   const now = c.var.deps.now();
   const within = await takeOne(c.env.DB, asking.limitScope, asking.asker, { now, settings: c.var.config.settings });
   if (!within || !(await withinGeocodeCeiling(c, now))) return { ok: false, code: "busy" };
 
-  const answer = await c.var.deps.geocode.suggest(asking.q, asking.session);
+  const answer = await c.var.deps.geocode.suggest(
+    await nearPincode(c.env.DB, asking.q, asking.pincode),
+    asking.session,
+  );
   if (!answer.ok) {
     // The form carries on without suggestions: an address can always be typed.
     await lookupFailed(c, "address_suggest_failed", answer);

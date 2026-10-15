@@ -3179,6 +3179,8 @@ export interface components {
             q: string;
             /** @description One token for the whole search, sent again with the booking. */
             session: string;
+            /** @description The pincode the address is at, where it is known: the search keeps near its city. */
+            pincode?: string;
         };
         LeadLeft: Record<string, never>;
         Invite: {

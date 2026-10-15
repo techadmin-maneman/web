@@ -30,6 +30,13 @@ const addressSuggestionsRoute = clientRoute({
               .min(1)
               .max(100)
               .openapi({ description: "One token for the whole search, sent again when the address is saved." }),
+            pincode: z
+              .string()
+              .regex(/^\d{6}$/)
+              .optional()
+              .openapi({
+                description: "The pincode the address is at, where it is known: the search keeps near its city.",
+              }),
           })
           .strict()
           .openapi("AddressSuggestionsAsk"),
@@ -60,12 +67,13 @@ const addressRoute = clientRoute({
 
 export function registerClientAddress(app: App): void {
   app.openapi(addressSuggestionsRoute, async (c) => {
-    const { q, session } = c.req.valid("json");
+    const { q, session, pincode } = c.req.valid("json");
     const answer = await suggestBuildings(c, {
       limitScope: "address_suggest",
       asker: clientOf(c).subjectId,
       q,
       session,
+      pincode,
     });
     if (!answer.ok) return c.json(errorBody(answer.code, c.var.requestId), 503);
     return c.json({ suggestions: answer.suggestions, attribution: "Google Maps" as const }, 200);

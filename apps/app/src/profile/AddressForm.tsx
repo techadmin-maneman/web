@@ -18,6 +18,23 @@ import { whatsappWith } from "../lib/whatsapp.ts";
 import { BuildingSearch } from "./BuildingSearch.tsx";
 import styles from "./profile.module.css";
 
+/**
+ * The draft with a building chosen from the search, or typed over one. An empty ID means the client typed over the
+ * choice: the building stands as words, and the address saves without a pin. A chosen building's area fills an empty
+ * one.
+ */
+function withBuilding(
+  draft: Address,
+  { placeId, building, area }: { placeId: string; building: string; area: string | null },
+): Address {
+  return {
+    ...draft,
+    building: building === "" ? null : building,
+    locality: given(draft.locality) ? draft.locality : (area ?? draft.locality),
+    place_id: placeId === "" ? null : placeId,
+  };
+}
+
 const EMPTY: Address = {
   line1: "",
   line2: null,
@@ -126,14 +143,9 @@ export function AddressForm({
       <BuildingSearch
         value={editing.building ?? ""}
         sessionToken={sessionToken}
-        onChoose={({ placeId, building }) => {
-          setEditing((draft) => ({
-            ...draft,
-            building: building === "" ? null : building,
-            // An empty ID means the client typed over the choice: the
-            // building stands as words, and the address saves without a pin.
-            place_id: placeId === "" ? null : placeId,
-          }));
+        pincode={editing.pincode}
+        onChoose={(chosen) => {
+          setEditing((draft) => withBuilding(draft, chosen));
         }}
         onClear={() => {
           setEditing((draft) => ({ ...draft, place_id: null }));

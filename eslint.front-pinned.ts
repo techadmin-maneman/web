@@ -12,7 +12,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/app/src/booking/steps/PayStep.tsx": { fn: 87 },
   "apps/app/src/login/CodeScreen.tsx": { fn: 85 },
   "apps/app/src/login/Login.tsx": { fn: 120 },
-  "apps/app/src/profile/AddressForm.tsx": { fn: 121 },
+  "apps/app/src/profile/AddressForm.tsx": { fn: 118 },
   "apps/app/src/profile/ConsentList.tsx": { fn: 103 },
   "apps/app/src/profile/DataCard.tsx": { fn: 98 },
   "apps/app/src/profile/DeletionCard.tsx": { fn: 88 },

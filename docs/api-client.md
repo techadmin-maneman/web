@@ -7480,6 +7480,11 @@ Request body:
       "minLength": 1,
       "maxLength": 100,
       "description": "One token for the whole search, sent again when the address is saved."
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^\\d{6}$",
+      "description": "The pincode the address is at, where it is known: the search keeps near its city."
     }
   },
   "required": [

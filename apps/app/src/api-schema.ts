@@ -4693,6 +4693,8 @@ export interface components {
             q: string;
             /** @description One token for the whole search, sent again when the address is saved. */
             session: string;
+            /** @description The pincode the address is at, where it is known: the search keeps near its city. */
+            pincode?: string;
         };
         AddressSave: {
             line1: string;

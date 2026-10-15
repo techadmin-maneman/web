@@ -41,6 +41,25 @@ export function addressLine(parts: AddressParts): string {
     .join(", ");
 }
 
+/**
+ * The area a building Google suggested is in, from the suggestion's own words: "Sector 65" from "Sector 65, Gurugram,
+ * Haryana, India", or from the name "Nirvana Country, Sector 50" where the rest names only the city. Null where
+ * nothing does, and the client types it.
+ */
+export function areaOfSuggestion(primary: string, secondary: string): string | null {
+  const parts = secondary
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part !== "");
+  // "…, the city, the state, India": the area is what comes before the city.
+  const before = parts.at(-1)?.toLowerCase() === "india" ? parts.slice(0, -3) : parts.slice(0, -2);
+  const inName = primary
+    .split(",")
+    .map((part) => part.trim())
+    .slice(1);
+  return before.at(-1) ?? inName.at(-1) ?? null;
+}
+
 export type RequiredPart = "flat" | "line1" | "locality" | "city" | "pincode";
 
 /**
