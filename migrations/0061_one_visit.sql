@@ -13,7 +13,7 @@ ALTER TABLE slot_holds ADD COLUMN one_visit INTEGER NOT NULL DEFAULT 0 CHECK (on
 -- Where a visit booked as one stands: booked until the technician closes it, then fitted, the client having chosen
 -- a product and been fitted, or declined, the client having decided against it, when the visit is a consultation.
 -- NULL for every other visit. The mirror keeps a fitted visit's product and a declined visit's kind, which FSM's item
--- does not say (the FSM mirror, since removed: docs/decisions/0110-field-work-without-fsm.md).
+-- does not say (src/domain/fsm-mirror.ts).
 ALTER TABLE appointments ADD COLUMN one_visit TEXT CHECK (one_visit IN ('booked', 'fitted', 'declined'));
 
 -- A consultation and fit in one visit asked for while self-serve booking is off, which ops book by hand.

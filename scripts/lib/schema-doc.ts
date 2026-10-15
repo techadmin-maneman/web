@@ -6,7 +6,7 @@
 
 import { RESTORE_GROUPS, type RestoreGroup } from "./restore-groups.ts";
 import { DatabaseSync } from "node:sqlite";
-import { PURPOSES } from "./schema-purposes.ts";
+import { NOTES_NOW, PATHS_MOVED, PURPOSES } from "./schema-purposes.ts";
 import { columnNotes } from "./column-notes.ts";
 
 export interface MigrationFile {
@@ -129,6 +129,13 @@ function triggersOf(db: DatabaseSync, table: string): string[] {
   return rows.map((row) => row.name);
 }
 
+/** A column's note as the document gives it: today's where the migration's no longer holds, its paths as they are now. */
+function noteNow(table: string, column: string, notes: ReadonlyMap<string, string>): string {
+  const key = `${table}.${column}`;
+  const said = NOTES_NOW[key] ?? notes.get(key) ?? "";
+  return Object.entries(PATHS_MOVED).reduce((note, [from, to]) => note.replaceAll(from, to), said);
+}
+
 /** Every table the migrations leave, with the migration that made it and those that changed it since. */
 export function migratedTables(migrations: readonly MigrationFile[]): Table[] {
   const notes = columnNotes(migrations);
@@ -154,7 +161,7 @@ export function migratedTables(migrations: readonly MigrationFile[]): Table[] {
       name,
       createdIn,
       changedIn,
-      columns: columnsOf(db, name).map((column) => ({ ...column, note: notes.get(`${name}.${column.name}`) ?? "" })),
+      columns: columnsOf(db, name).map((column) => ({ ...column, note: noteNow(name, column.name, notes) })),
       indexes: indexesOf(db, name),
       triggers: triggersOf(db, name),
     }));

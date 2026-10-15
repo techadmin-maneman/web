@@ -4,7 +4,7 @@
 -- (docs/decisions/0074-hand-offs-and-messages.md).
 
 -- A visit the technician closed as a no-show is recorded as one, not as a
--- partial visit whose reason happens to say so (the FSM mirror, since removed: docs/decisions/0110-field-work-without-fsm.md).
+-- partial visit whose reason happens to say so (src/domain/fsm-mirror.ts).
 -- The outcome's CHECK cannot change in place, so visits is rebuilt: nothing
 -- points at it, so dropping it disturbs no reference (docs/migrations.md), and
 -- every row is copied, a partial visit whose reason was a no-show becoming one.
@@ -37,7 +37,7 @@ DROP TABLE visits;
 ALTER TABLE visits_next RENAME TO visits;
 
 -- A visit left partly done is a task until the client has another booked
--- (src/domain/ops/tasks.ts); the Tasks board reads only those.
+-- (src/domain/tasks.ts); the Tasks board reads only those.
 CREATE INDEX visits_partial ON visits (appointment_id) WHERE outcome = 'partial';
 
 -- One arrival notice a visit, however often the technician checks in: the
@@ -49,20 +49,20 @@ CREATE UNIQUE INDEX outbound_messages_one_arrival ON outbound_messages (subject_
 CREATE INDEX no_show_cases_by_appointment ON no_show_cases (appointment_id, created_at);
 
 -- The client's note on a visit to come, from the app's "Add a note", which the
--- technician reads on the client's card (src/domain/clients/client-notes.ts). The
+-- technician reads on the client's card (src/domain/client-notes.ts). The
 -- latest replaces any before it. Blanked when the client is erased.
 ALTER TABLE appointments ADD COLUMN client_note TEXT;
 ALTER TABLE appointments ADD COLUMN client_note_at TEXT;
 
 -- When a visit first reached our records, from a booking or from FSM, which
--- the address it still needs waits from on the Tasks board (src/domain/ops/tasks.ts).
+-- the address it still needs waits from on the Tasks board (src/domain/tasks.ts).
 -- Written once, on insert. A visit the Worker already deployed writes has none,
 -- and waits from when it was last synced instead.
 ALTER TABLE appointments ADD COLUMN first_seen_at TEXT;
 
 -- The friend's first name, kept with the referral when it is granted, so the
 -- referrer's tracker reads it without the friend's record, and an erasure,
--- which blanks it, shows "A friend" rather than "Erased" (src/routes/client/refer.ts).
+-- which blanks it, shows "A friend" rather than "Erased" (src/routes/client-refer.ts).
 -- Filled here for the grants already made to a friend not erased.
 ALTER TABLE referral_attributions ADD COLUMN friend_first_name TEXT;
 UPDATE referral_attributions
