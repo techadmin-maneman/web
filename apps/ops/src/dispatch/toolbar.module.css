@@ -2,5 +2,5 @@
 
 .find {
   flex: 1;
-  min-width: var(--local-tray);
+  min-width: var(--ops-tray);
 }

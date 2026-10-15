@@ -19,10 +19,17 @@
   --ops-cell: 88px; /* a day on the board, a figure with its unit */
   --ops-column: 96px; /* a date, a city */
   --ops-column-wide: calc(var(--ops-column) + var(--sp-24)); /* a date with its weekday, an amount */
+  --ops-piece-column: 116px; /* a client's hair system's fitted date and supplier lot, and a visit's code */
+  --ops-tray: 236px; /* the dispatch board's unassigned tray down the right */
   --ops-filter: 176px; /* a list's narrowest filter, and a date with its time */
   --ops-measure: 560px; /* the widest a line of words runs, and the narrowest a list of people goes */
 
   /* The shared parts' room, as the console draws them. */
   --drawer-width: var(--ops-panel);
   --table-row-height: var(--ops-row);
+  /* The shared boxes' widths, by what each holds (packages/ui/Field.tsx's BoxWidth). */
+  --box-figure: var(--ops-figure);
+  --box-amount: var(--ops-column-wide);
+  --box-date: var(--ops-date);
+  --box-area: var(--ops-area);
 }

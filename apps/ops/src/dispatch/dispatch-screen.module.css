@@ -13,7 +13,6 @@
  */
 
 .area {
-  --local-tray: 236px; /* the unassigned tray down the right */
   display: flex;
   flex: 1;
   min-width: 0;

@@ -68,6 +68,14 @@
     --filled-edge: 0;
     /* The column at its widest, which a sheet matches: the design's, unless the app grows it on a larger phone. */
     --column-max: var(--app-column);
+    /* A box's width by what it holds (./Field.tsx's BoxWidth), which the console sets: elsewhere a box fills its room. */
+    --box-figure: 100%;
+    --box-amount: 100%;
+    --box-date: 100%;
+    --box-area: 100%;
+    /* A note's distance from its panel's edge (./Note.tsx), which a group of fields the panel's edge already sets in
+       sets to nothing. */
+    --note-inset: var(--sp-20);
   }
 
   body {

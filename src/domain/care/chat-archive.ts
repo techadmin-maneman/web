@@ -7,7 +7,7 @@
 // The file is written before the rows go, and the rows go only if the thread is as it was read, so a run cut short or a
 // message arriving meanwhile loses nothing: the next run writes the file again, the messages merged by their IDs.
 // Like the photographs, the file is the platform's own and never leaves the account, so it is not encrypted beyond R2's
-// own encryption at rest, as the weekly backups are for the owner to take away.
+// own encryption at rest; the weekly backups are, being made to be taken away.
 
 import { z } from "zod";
 import { ARCHIVED_THREADS_PER_RUN, CHAT_ARCHIVE_MONTHS, monthsBefore } from "../../policy/retention.ts";
@@ -39,10 +39,7 @@ export async function archivedMessages(bucket: R2Bucket, key: string | null): Pr
 }
 
 /** Two sets of a thread's messages as one, by their IDs, the later set's copy of each kept; oldest first. */
-function mergedMessages(
-  earlier: readonly ArchivedMessage[],
-  later: readonly ArchivedMessage[],
-): ArchivedMessage[] {
+function mergedMessages(earlier: readonly ArchivedMessage[], later: readonly ArchivedMessage[]): ArchivedMessage[] {
   const byId = new Map([...earlier, ...later].map((message) => [message.id, message]));
   return [...byId.values()].sort(
     (one, other) => one.sent_at.localeCompare(other.sent_at) || one.id.localeCompare(other.id),

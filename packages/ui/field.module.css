@@ -91,28 +91,28 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* The console's widths for a box (./Field.tsx's BoxWidth), from its own sizes; a date's shows the whole date and the
-     picker's button, so the year is never cut. */
+  /* A box's width by what it holds (./Field.tsx's BoxWidth), each the app's own (./base.css); a date's shows the whole
+     date and the picker's button, so the year is never cut. */
   .widthFigure {
-    width: var(--ops-figure);
+    width: var(--box-figure);
     font-variant-numeric: tabular-nums;
   }
 
   .widthAmount {
-    width: var(--ops-column-wide);
+    width: var(--box-amount);
   }
 
   .widthDate {
-    width: var(--ops-date);
+    width: var(--box-date);
   }
 
   .widthArea {
-    width: var(--ops-area);
+    width: var(--box-area);
   }
 
   .widthChoice {
     width: auto;
-    min-width: var(--ops-area);
+    min-width: var(--box-area);
   }
 
   .select {

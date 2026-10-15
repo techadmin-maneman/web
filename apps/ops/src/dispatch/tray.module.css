@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: var(--local-tray);
+  width: var(--ops-tray);
   overflow-y: auto;
   border-left: var(--hairline) solid var(--text);
   background: var(--paper-light);

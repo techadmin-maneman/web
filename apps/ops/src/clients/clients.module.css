@@ -33,7 +33,6 @@
 
 /* The design draws the head, the tabs and the pieces table across the page; photographs and consents are panels within it. */
 .client {
-  --local-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
   flex: 1;
   min-width: 0;
 }
@@ -205,7 +204,7 @@
 
 .addressRow .metaKey {
   flex-shrink: 0;
-  width: var(--local-piece-column);
+  width: var(--ops-piece-column);
 }
 
 .addressValue {
@@ -335,7 +334,7 @@
 
 .numberField {
   display: block;
-  width: var(--local-piece-column);
+  width: var(--ops-piece-column);
   margin-top: var(--sp-8);
   font-variant-numeric: tabular-nums;
 }

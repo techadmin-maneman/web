@@ -1,10 +1,10 @@
-/* A note (./Note.tsx). A group of fields sets --note-inset to nothing, being in from the panel's edge already. */
+/* A note (./Note.tsx), --note-inset in from its panel's edge (./base.css). */
 
 @layer base, ui;
 
 @layer ui {
   .note {
-    margin: var(--sp-8) var(--note-inset, var(--sp-20)) 0;
+    margin: var(--sp-8) var(--note-inset) 0;
     font-size: var(--fs-14);
     line-height: var(--lh-160);
     color: var(--text-muted);

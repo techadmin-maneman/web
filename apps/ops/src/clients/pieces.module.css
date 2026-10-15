@@ -15,7 +15,7 @@
 
 .fitted,
 .lot {
-  width: var(--local-piece-column);
+  width: var(--ops-piece-column);
 }
 
 .due {
