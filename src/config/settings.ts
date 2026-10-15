@@ -40,8 +40,6 @@ export interface TryonSettings {
   readonly resultReadDailyCeiling: number;
   /** Days a result is kept once ready: 14 in production, the photo notice's limit; less on staging. */
   readonly resultRetentionDays: number;
-  /** Alert when YouCam's balance falls below this many units. */
-  readonly unitFloor: number;
   /** Signs upload and result links. */
   readonly linkSigningKey: SigningKeys;
   /** Present when IMAGE_PROVIDER is "youcam". */
@@ -279,7 +277,7 @@ export function readSettings(
 
   const zohoClients = readZohoClients(read, providers);
   const razorpay = readRazorpay(read, providers, environment, selfServeBooking);
-  const geocode = readGeocode(read, providers);
+  const geocode = readGeocode(read, providers, isLocal);
   const access = readAccess(read, providers, environment);
 
   const clientOn = environment !== undefined && ENABLED_SURFACES[environment].includes("client");

@@ -19,7 +19,7 @@ describe("the daily ceilings' committed figures", () => {
       login_code: FIXED_LIMITS.OTP_DAILY_CEILING,
       tech_code: FIXED_LIMITS.OTP_TECH_DAILY_CEILING,
       form_code: FIXED_LIMITS.OTP_DAILY_CEILING,
-      geocode: Number(production.GEOCODE_DAILY_CEILING),
+      geocode: FIXED_LIMITS.GEOCODE_DAILY_CEILING,
       route: RATE_LIMITS["ceiling:route"].limit,
       route_map: RATE_LIMITS["ceiling:route_map"].limit,
     });

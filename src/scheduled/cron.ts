@@ -10,6 +10,7 @@
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
 // invocation may send (docs/decisions/0112-workers-paid.md).
 
+import { YOUCAM_UNIT_FLOOR } from "../config/tryon.ts";
 import { tellOfBooksCalls } from "../domain/books/books-calls.ts";
 import { OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
@@ -349,7 +350,7 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
   if (written > 0) log.info("books_synced", done);
 }
 
-const youcamUnitsJob = (context: CronContext) => checkYoucamUnits(context, context.config.settings.tryon.unitFloor);
+const youcamUnitsJob = (context: CronContext) => checkYoucamUnits(context, YOUCAM_UNIT_FLOOR);
 const booksCallsJob = ({ env, deps }: CronContext) => tellOfBooksCalls(env.DB, deps, deps.now());
 
 /**

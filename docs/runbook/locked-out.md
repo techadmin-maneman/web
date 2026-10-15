@@ -7,7 +7,7 @@ The console is behind Cloudflare Access in both environments, and mm-api checks 
 - **Access will not let a person in.** Zero Trust → Access → Applications → the console's application (`ops.maneman.in`, `ops-staging.maneman.in`) → Policies: their e-mail must be in the Allow policy, and the login method they use must be switched on (Settings → Authentication). A change takes effect within a minute. It needs someone who can sign in to the Cloudflare account; if nobody can, that is Cloudflare's account recovery.
 - **The console opens, and every call fails with "access required"** (403). mm-api refused the token; Workers Logs say why, as `access_refused` with a reason:
   - `wrong_audience`: the application's audience tag is not `ACCESS_OPS_AUD` in `wrangler.jsonc`. The tag changes when the application is deleted and made again: copy the new one (provisioning, step 11, point 3) and deploy.
-  - `wrong_issuer`: `ACCESS_TEAM_DOMAIN` in `wrangler.jsonc` is not the team's domain, the `….cloudflareaccess.com` that Zero Trust's settings show.
+  - `wrong_issuer`: `ACCESS_TEAM_DOMAIN` in `src/config/environments.ts` is not the team's domain, the `….cloudflareaccess.com` that Zero Trust's settings show.
   - `missing`: the call reached mm-api without Access, so the host has no Access application: add it (step 11, point 2).
   - `expired`: sign in again.
 - **Every call answers 503**, with `access_keys_unavailable` in the logs: mm-api could not fetch Access's signing keys. That is on Cloudflare's side, and each call tries again.

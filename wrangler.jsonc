@@ -107,7 +107,6 @@
     "CRM_PROVIDER": "stub",
     "MESSAGING_PROVIDER": "stub",
     "ACCESS_PROVIDER": "stub",
-    "ACCESS_TEAM_DOMAIN": "summer-math-0275.cloudflareaccess.com",
     // The stub needs no audience.
     "ACCESS_OPS_AUD": "",
     "SMS_PROVIDER": "stub",
@@ -137,12 +136,7 @@
     "RENDER_DAILY_CEILING": "20",
     "UPLOAD_DAILY_CEILING": "40",
     "RESULT_READ_DAILY_CEILING": "400",
-    // Google requests a day, across every client. It refuses rather than spends
-    // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
-    "GEOCODE_DAILY_CEILING": "200",
     "RESULT_RETENTION_DAYS": "3",
-    // YouCam units left below which ops are told (docs/reference/youcam-api-notes.md).
-    "YOUCAM_UNIT_FLOOR": "500",
     // Where YouCam fetches each look's reference photograph: public, so production's host for staging too, whose
     // own sits behind Access. The path ends in the references' version (src/config/presets.ts).
     "TRYON_REFS_URL": "http://localhost:4321/refs/v1",
@@ -253,7 +247,6 @@
         "CRM_PROVIDER": "zoho",
         "MESSAGING_PROVIDER": "evolution",
         "ACCESS_PROVIDER": "cloudflare",
-        "ACCESS_TEAM_DOMAIN": "summer-math-0275.cloudflareaccess.com",
         // The ops-staging Access application's audience tag.
         "ACCESS_OPS_AUD": "c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4",
         "SMS_PROVIDER": "none",
@@ -286,12 +279,7 @@
         "RENDER_DAILY_CEILING": "20",
         "UPLOAD_DAILY_CEILING": "40",
         "RESULT_READ_DAILY_CEILING": "400",
-        // Google requests a day, across every client. It refuses rather than spends
-        // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
-        "GEOCODE_DAILY_CEILING": "200",
         "RESULT_RETENTION_DAYS": "3",
-        // YouCam units left below which ops are told (docs/reference/youcam-api-notes.md).
-        "YOUCAM_UNIT_FLOOR": "500",
         // Where YouCam fetches each look's reference photograph: public, so production's host for staging too, whose
         // own sits behind Access. The path ends in the references' version (src/config/presets.ts).
         "TRYON_REFS_URL": "https://maneman.in/refs/v1",
@@ -399,7 +387,6 @@
         "CRM_PROVIDER": "zoho",
         "MESSAGING_PROVIDER": "evolution",
         "ACCESS_PROVIDER": "cloudflare",
-        "ACCESS_TEAM_DOMAIN": "summer-math-0275.cloudflareaccess.com",
         // The ops Access application's audience tag; unused until ops is switched on in production.
         "ACCESS_OPS_AUD": "aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773",
         "SMS_PROVIDER": "none",
@@ -431,13 +418,8 @@
         "RENDER_DAILY_CEILING": "40",
         "UPLOAD_DAILY_CEILING": "80",
         "RESULT_READ_DAILY_CEILING": "800",
-        // Google requests a day, across every client. It refuses rather than spends
-        // (docs/decisions/0054-address-capture.md); at most GEOCODE_CEILING_MAX.
-        "GEOCODE_DAILY_CEILING": "200",
         // Fourteen days, not thirty, to leave R2 room for Phase 2's photographs (docs/decisions/0039-phase-2-budget.md).
         "RESULT_RETENTION_DAYS": "14",
-        // YouCam units left below which ops are told (docs/reference/youcam-api-notes.md).
-        "YOUCAM_UNIT_FLOOR": "500",
         // Where YouCam fetches each look's reference photograph: public, so production's host for staging too, whose
         // own sits behind Access. The path ends in the references' version (src/config/presets.ts).
         "TRYON_REFS_URL": "https://maneman.in/refs/v1",

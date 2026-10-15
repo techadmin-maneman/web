@@ -10,7 +10,6 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | --- | --- | --- | --- |
 | `ACCESS_OPS_AUD` | — | `c291b99aae607b12ae256176566169e7a50dcfa839ef0834ad807563353dcee4` | `aeb0323bfcacdaac2935265df92982ac031e2175fa6b111878d11dabd6de3773` |
 | `ACCESS_PROVIDER` | `stub` | `cloudflare` | `cloudflare` |
-| `ACCESS_TEAM_DOMAIN` | `summer-math-0275.cloudflareaccess.com` | `summer-math-0275.cloudflareaccess.com` | `summer-math-0275.cloudflareaccess.com` |
 | `ANALYTICS_PROVIDER` | `stub` | `none` | `none` |
 | `BOOKS_BILL_CONSUMABLES_ACCOUNT` | — | `4242595000000034057` | `4242595000000034057` |
 | `BOOKS_BILL_HAIR_SYSTEMS_ACCOUNT` | — | `4242595000000000567` | `4242595000000000567` |
@@ -22,7 +21,6 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `BOOKS_SAC` | — | — | — |
 | `CRM_PROVIDER` | `stub` | `zoho` | `zoho` |
 | `ENVIRONMENT` | `local` | `staging` | `production` |
-| `GEOCODE_DAILY_CEILING` | `200` | `200` | `200` |
 | `GEOCODE_PROVIDER` | `stub` | `google` | `none` |
 | `IMAGE_PROVIDER` | `stub` | `youcam` | `youcam` |
 | `MESSAGING_ENABLED` | `true` | `true` | `false` |
@@ -40,7 +38,6 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `TRYON_REFS_URL` | `http://localhost:4321/refs/v1` | `https://maneman.in/refs/v1` | `https://maneman.in/refs/v1` |
 | `TURNSTILE_ACCEPT_TEST_TOKEN` | `true` | `true` | `false` |
 | `UPLOAD_DAILY_CEILING` | `40` | `40` | `80` |
-| `YOUCAM_UNIT_FLOOR` | `500` | `500` | `500` |
 | `ZOHO_BOOKS_ACCOUNTS_HOST` | — | `accounts.zoho.in` | — |
 | `ZOHO_BOOKS_API_HOST` | — | `www.zohoapis.in` | — |
 | `ZOHO_BOOKS_ORG_ID` | — | `60088931635` | — |
@@ -99,6 +96,7 @@ In `src/config/limits.ts`: the same everywhere. Only a local run may raise one, 
 | `TRYON_GENERATE_IP_HOURLY_LIMIT` | 5 |
 | `TRYON_CLAIM_MOBILE_DAILY_LIMIT` | 3 |
 | `RESULT_MESSAGE_MOBILE_DAILY_LIMIT` | 3 |
+| `GEOCODE_DAILY_CEILING` | 200 |
 
 ## Per-environment constants
 
@@ -106,6 +104,7 @@ In `src/config/environments.ts`: hosts, origins and resource names, which change
 
 | Constant | Value |
 | --- | --- |
+| `ACCESS_TEAM_DOMAIN` | `summer-math-0275.cloudflareaccess.com` |
 | `CLIENT_ORIGIN` | `{"local":"http://app.localhost:4322","staging":"https://app-staging.maneman.in","production":"https://app.maneman.in"}` |
 | `ENABLED_SURFACES` | `{"local":["public","client","ops","tech"],"staging":["public","client","ops","tech"],"production":["public"]}` |
 | `ENVIRONMENTS` | `["local","staging","production"]` |

@@ -21,12 +21,8 @@ describe("validateStaticConfig: Cloudflare Access", () => {
     expect(problemsOf({ ...production, ACCESS_PROVIDER: "stub" })).toEqual(["ACCESS_PROVIDER is a stub in production"]);
   });
 
-  it("needs a team domain on Access's own domain", () => {
-    const { ACCESS_TEAM_DOMAIN: _omitted, ...withoutDomain } = production;
-    expect(problemsOf(withoutDomain)).toEqual(["ACCESS_TEAM_DOMAIN is not set"]);
-    expect(problemsOf({ ...production, ACCESS_TEAM_DOMAIN: "https://summer-math-0275.cloudflareaccess.com" })).toEqual([
-      "ACCESS_TEAM_DOMAIN must be a cloudflareaccess.com hostname, without https://",
-    ]);
+  it("signs staff in through the one Access team, in code, not a var", () => {
+    expect(validateStaticConfig(production).settings.access?.teamDomain).toBe("summer-math-0275.cloudflareaccess.com");
   });
 
   it("needs the ops audience wherever the ops surface is switched on, which includes staging", () => {
@@ -204,14 +200,10 @@ describe("the address search", () => {
     expect(validateStaticConfig(stagingBase).settings.geocode.dailyCeiling).toBe(200);
   });
 
-  it("refuses a ceiling that could reach Google's free allowance and start billing the card", () => {
-    expect(problemsOf({ ...stagingBase, GEOCODE_DAILY_CEILING: "5000" })).toEqual([
-      "GEOCODE_DAILY_CEILING must be at most 1800: a day above that could take a month past Google's free allowance",
+  it("takes the ceiling from the fixed limits, which only a local run may raise", () => {
+    expect(problemsOf({ ...stagingBase, GEOCODE_DAILY_CEILING: "1000" })).toEqual([
+      "GEOCODE_DAILY_CEILING is fixed in src/config/limits.ts: only a local run may set it",
     ]);
-  });
-
-  it("allows nought, which is the runbook's kill switch", () => {
-    expect(problemsOf({ ...stagingBase, GEOCODE_DAILY_CEILING: "0" })).toEqual([]);
   });
 });
 

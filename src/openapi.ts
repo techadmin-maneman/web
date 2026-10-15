@@ -62,7 +62,6 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
       uploadDailyCeiling: 0,
       resultReadDailyCeiling: 0,
       resultRetentionDays: 30,
-      unitFloor: 0,
       linkSigningKey: { current: "", previous: null },
       youcamApiKey: null,
       refsUrl: "http://localhost:4321/refs/v1",

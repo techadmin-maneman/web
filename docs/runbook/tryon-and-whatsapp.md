@@ -24,7 +24,7 @@ Symptoms: jobs fail as `render_failed`. A refused key or an empty balance pages 
 
 ## Units are low
 
-The sweeper reads YouCam's balance once an hour and alerts once when it is below `YOUCAM_UNIT_FLOOR`, not every hour; a top-up that lifts it over the floor closes the alert. Top up in the YouCam API console. A render takes 2 units; at zero, every render fails and the try-on shows as paused.
+The sweeper reads YouCam's balance once an hour and alerts once when it is below `YOUCAM_UNIT_FLOOR` (500, `src/config/tryon.ts`), not every hour; a top-up that lifts it over the floor closes the alert. Top up in the YouCam API console. A render takes 2 units; at zero, every render fails and the try-on shows as paused.
 
 `node --env-file=<secrets> scripts/staging/youcam-probe.ts units` reads the balance by hand.
 
