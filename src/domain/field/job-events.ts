@@ -295,7 +295,6 @@ export async function eventByClientId(
   return row === null ? null : eventOf(row);
 }
 
-/** Every event of a job that landed, oldest first. */
 /** Whether a one visit's client decided against the fit at its piece step. */
 async function declinedAtVisit(db: D1Database, appointmentId: string): Promise<boolean> {
   const piece = (await eventsOf(db, appointmentId)).findLast((event) => event.kind === "piece");
@@ -303,6 +302,7 @@ async function declinedAtVisit(db: D1Database, appointmentId: string): Promise<b
   return body !== null && "declined" in body;
 }
 
+/** Every event of a job that landed, oldest first. */
 export async function eventsOf(db: D1Database, appointmentId: string): Promise<JobEvent[]> {
   const { results } = await db
     .prepare(
