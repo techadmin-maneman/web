@@ -68,7 +68,7 @@ export async function startCount(
            'open', ?5, b.consumable_code, ?6
          FROM stock_balances b JOIN consumables i ON i.code = b.consumable_code
            LEFT JOIN hair_systems h ON h.code = b.consumable_code
-         WHERE b.place = ?2 AND b.consumable_code = ?3 AND b.quantity > 0`,
+         WHERE b.place = ?2 AND b.consumable_code = ?3 AND b.quantity <> 0`,
       )
       .bind(id, wanted.place, wanted.code, wanted.today, written.now.toISOString(), written.actor.id),
     auditStatementIfWritten(

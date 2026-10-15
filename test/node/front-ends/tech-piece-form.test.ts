@@ -35,6 +35,13 @@ describe("the piece step", () => {
     // With no signal to check it, the label goes as typed, and the API checks it once the phone is back.
     expect(stillMissing(typed, FIRST_FIT, "offline")).toBeNull();
     expect(stillMissing({ ...EMPTY, code: LABEL }, kit, "none")).toBeNull();
+    // A row picked whose pieces carry labels takes only one of theirs; one whose pieces carry none takes the piece's.
+    expect(stillMissing({ ...typed, stock: "hs_exact" }, kit, "unknown")).toBe(copy.piece.notInKitAction);
+    const unlabelledKit = {
+      ...FIRST_FIT,
+      kit_hair_systems: [{ code: "hs_exact", units: [] }],
+    } as unknown as typeof FIRST_FIT;
+    expect(stillMissing({ ...typed, stock: "hs_exact" }, unlabelledKit, "unknown")).toBeNull();
   });
 
   it("takes the piece that came off with or without why it failed, as a due one has no failure", () => {
