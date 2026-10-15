@@ -37,7 +37,7 @@ export const PHOTO_LINK_MS = 15 * MINUTE_MS;
  * to be closed. A visit stays the client's until it is closed, so it
  * never drops out of both lists.
  */
-type VisitStage = "booked" | "in_progress" | "done" | "closing";
+type VisitStage = "booked" | "in_progress" | "done" | "closing" | "missed";
 
 interface VisitSummary {
   readonly id: string;
@@ -138,13 +138,15 @@ async function contextOf(db: D1Database, personId: string): Promise<SummaryConte
 }
 
 /**
- * The technician's steps come before the visit's status, which follows them: a visit they closed as done is done; one they closed otherwise, or whose window has ended, is being closed; one they have begun is in progress.
+ * The technician's steps come before the visit's status, which follows them: a visit they closed as done is done; one
+ * they closed otherwise, or whose window has ended after they arrived, is being closed; one whose window ended with
+ * nobody arriving was missed; one they have begun is in progress.
  */
 function stageOf(row: AppointmentRow, now: Date): VisitStage | null {
   if (!NOT_CLOSED.includes(row.status)) return null;
   if (row.landed_outcome === "done") return "done";
   if (row.landed_outcome !== null) return "closing";
-  if (Date.parse(row.window_end) < now.getTime()) return "closing";
+  if (Date.parse(row.window_end) < now.getTime()) return row.begun === 1 ? "closing" : "missed";
   if (row.begun === 1 || row.status === "in_progress") return "in_progress";
   return "booked";
 }

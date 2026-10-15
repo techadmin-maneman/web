@@ -133,7 +133,7 @@ export const empty = {
   // A consultation and fit in one visit, booked with nothing paid.
   paymentsOneVisit: {
     title: "Payments",
-    lines: ["Nothing to pay yet.", "You pay once fitted, by a link we text you."],
+    lines: ["Nothing to pay yet.", "You pay once fitted."],
   },
   paymentsFitted: {
     title: "Payments",

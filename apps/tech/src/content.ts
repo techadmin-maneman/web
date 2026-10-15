@@ -501,6 +501,7 @@ export const steps = {
     stopScan: "Stop scanning",
     camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
     expired: "This piece has expired. Hand it in and use another.",
+    otherThanFitted: "Not the hair system this fit is for. Check with ops before you fit.",
     expiredAction: "That piece has expired",
     placeholder: "MM-ESS-0000123-K",
     // The board draws no label typed wrong.

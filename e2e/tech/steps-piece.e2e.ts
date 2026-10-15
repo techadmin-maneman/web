@@ -15,7 +15,7 @@ test.describe("the piece (board B3, step 4)", () => {
     const fake = await fakeTech(page);
     fake.type = "replacement";
     fake.pieces = [ROHITS_PIECE];
-    startedThrough(fake, "before_photos", "checklist", "consumables");
+    startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
     await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.piece })).toBeVisible();
     return fake;
@@ -64,7 +64,7 @@ test.describe("the piece (board B3, step 4)", () => {
     fake.type = "first_fit";
     fake.service = { tier: "natural", name: "Mane Man Natural" };
     fake.profile = ROHITS_PROFILE;
-    startedThrough(fake, "before_photos", "checklist", "consumables");
+    startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
 
     await expect(page.getByRole("region", { name: techCopy.job.piece.rows.paidFor })).toContainText("Mane Man Natural");
@@ -101,7 +101,7 @@ test.describe("the piece (board B3, step 4)", () => {
         units: [],
       },
     ];
-    startedThrough(fake, "before_photos", "checklist", "consumables");
+    startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
 
     const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
@@ -139,7 +139,7 @@ test.describe("the piece (board B3, step 4)", () => {
         ],
       },
     ];
-    startedThrough(fake, "before_photos", "checklist", "consumables");
+    startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
     const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
 
@@ -220,7 +220,7 @@ test.describe("the piece (board B3, step 4)", () => {
     expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: techCopy.steps.next }).click();
-    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.after_photos })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.replacement })).toBeVisible();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-STD-5120-A",

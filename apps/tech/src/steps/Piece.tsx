@@ -15,6 +15,7 @@ import {
   declinedTheFit,
   afterLabel,
   expiredInKit,
+  labelWarning,
   given,
   kitChoices,
   noticeFor,
@@ -180,7 +181,7 @@ function Fitting({
             code={code}
             looked={looked}
             looking={looking}
-            expired={expired}
+            warning={labelWarning(job, form)}
             pieces={(job.pieces ?? []).filter(toFit)}
             picking={picking === "new"}
             onCode={takeLabel}

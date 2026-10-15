@@ -151,3 +151,14 @@ describe("a fit booked", () => {
     expect(told).toEqual([]);
   });
 });
+
+describe("staging's test records", () => {
+  it("book a test client only with a test technician, and a real client never with one", async () => {
+    const everyone = await env.DB.prepare("SELECT id FROM technicians ORDER BY id").all<{ id: string }>();
+    await env.DB.prepare("UPDATE technicians SET test_record = 1 WHERE id = ?1").bind(IMRAN).run();
+    expect(await offered(null)).toEqual(everyone.results.map((row) => row.id).filter((id) => id !== IMRAN));
+
+    await env.DB.prepare("UPDATE people SET test_record = 1 WHERE id = ?1").bind(CLIENT).run();
+    expect(await offered(null)).toEqual([IMRAN]);
+  });
+});

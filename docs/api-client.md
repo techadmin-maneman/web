@@ -6586,14 +6586,15 @@ Request body:
             "booked",
             "in_progress",
             "done",
-            "closing"
+            "closing",
+            "missed"
           ]
         },
         {
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -7967,14 +7968,15 @@ Request body:
             "booked",
             "in_progress",
             "done",
-            "closing"
+            "closing",
+            "missed"
           ]
         },
         {
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",

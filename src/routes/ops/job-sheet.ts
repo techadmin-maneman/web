@@ -117,8 +117,8 @@ const ChecklistChangeSchema = z
 const SHEET = { description: "The job sheet as it now stands", ...json(JobSheetSchema) };
 const REFUSED = errorResponse(
   "invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one " +
-    "that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a " +
-    "checklist item's client words empty or too long",
+    "that is empty, too long, twice on the list, placeholder text, or a code the list never held, or " +
+    "items.N.client for a checklist item's client words empty, too long or placeholder text",
 );
 
 const sheetRoute = opsRoute({

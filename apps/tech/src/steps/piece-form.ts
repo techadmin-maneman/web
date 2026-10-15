@@ -44,6 +44,32 @@ function productFitted(job: Pick<Job, "profile" | "service" | "one_visit" | "typ
   return job.profile?.fit.product ?? null;
 }
 
+type Fit = NonNullable<NonNullable<Job["profile"]>["fit"]>;
+
+/** Whether a kit hair system is made to the profile's base, colour, grey and density exactly. */
+const madeTo = (each: KitHairSystem, fit: Fit): boolean =>
+  each.base_width_in === fit.base_width_in &&
+  each.base_length_in === fit.base_length_in &&
+  each.colour === fit.colour &&
+  each.grey_percent === fit.grey_percent &&
+  each.density_percent === fit.density_percent;
+
+/**
+ * Whether the kit hair system chosen is not the one this fit is for: another product than the one paid for or chosen,
+ * or, with a hair profile, made to another fit. False for none chosen, or a piece from elsewhere.
+ */
+export function otherThanFitted(
+  job: Pick<Job, "kit_hair_systems" | "profile" | "service" | "one_visit" | "type">,
+  choice: Choice,
+  stock: string | null,
+): boolean {
+  const hairSystem = job.kit_hair_systems.find((each) => each.code === stock);
+  if (hairSystem === undefined) return false;
+  const product = productFitted(job, choice);
+  const fit = job.profile?.fit ?? null;
+  return (product !== null && hairSystem.product !== product) || (fit !== null && !madeTo(hairSystem, fit));
+}
+
 /**
  * The kit's hair systems, those made to the client's profile first: the product the client chose on a one visit, paid
  * for on a first fit, or the profile's on a replacement, and the profile's base, colour, grey and density exactly.
@@ -54,14 +80,7 @@ export function kitChoices(
 ): { readonly hairSystem: KitHairSystem; readonly matches: boolean }[] {
   const fit = job.profile?.fit ?? null;
   const product = productFitted(job, choice);
-  const matches = (each: KitHairSystem) =>
-    fit !== null &&
-    each.product === product &&
-    each.base_width_in === fit.base_width_in &&
-    each.base_length_in === fit.base_length_in &&
-    each.colour === fit.colour &&
-    each.grey_percent === fit.grey_percent &&
-    each.density_percent === fit.density_percent;
+  const matches = (each: KitHairSystem) => fit !== null && each.product === product && madeTo(each, fit);
   const listed = job.kit_hair_systems.map((hairSystem) => ({ hairSystem, matches: matches(hairSystem) }));
   return [...listed.filter((each) => each.matches), ...listed.filter((each) => !each.matches)];
 }
@@ -94,6 +113,15 @@ function kitPieceOf(
 export function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string): boolean {
   const piece = kitPieceOf(job, label);
   return piece !== null && piece.expires_on !== null && piece.expires_on < job.date;
+}
+
+/** What the label warns of: a piece of the kit that has expired, or a hair system not the one this fit is for. */
+export function labelWarning(
+  job: Pick<Job, "kit_hair_systems" | "date" | "profile" | "service" | "one_visit" | "type">,
+  form: PieceForm,
+): string | null {
+  if (expiredInKit(job, form.code)) return copy.piece.expired;
+  return otherThanFitted(job, form.choice, form.stock) ? copy.piece.otherThanFitted : null;
 }
 
 /**

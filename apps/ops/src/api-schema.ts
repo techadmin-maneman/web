@@ -16097,7 +16097,7 @@ export interface paths {
                         "application/json": components["schemas"]["JobSheet"];
                     };
                 };
-                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long */
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -16173,7 +16173,7 @@ export interface paths {
                         "application/json": components["schemas"]["JobSheet"];
                     };
                 };
-                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long */
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -16249,7 +16249,7 @@ export interface paths {
                         "application/json": components["schemas"]["JobSheet"];
                     };
                 };
-                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long */
+                /** @description invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -20698,8 +20698,8 @@ export interface components {
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description Closed because nobody was home: a no-show. */
             not_home: boolean;
-            /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
-            stage: ("booked" | "in_progress" | "done" | "closing") | null;
+            /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed. */
+            stage: ("booked" | "in_progress" | "done" | "closing" | "missed") | null;
             /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;
@@ -20806,8 +20806,8 @@ export interface components {
             status: "scheduled" | "dispatched" | "in_progress" | "completed" | "cancelled" | "terminated";
             /** @description Closed because nobody was home: a no-show. */
             not_home: boolean;
-            /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed. */
-            stage: ("booked" | "in_progress" | "done" | "closing") | null;
+            /** @description For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed. */
+            stage: ("booked" | "in_progress" | "done" | "closing" | "missed") | null;
             /** @description Paid for ahead, or covered by a visit credit: the visit's Prepaid. */
             prepaid: boolean;
             technician: components["schemas"]["Technician"] | null;

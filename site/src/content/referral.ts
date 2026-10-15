@@ -250,7 +250,7 @@ export const referral = {
         { id: "one_visit", label: `Consultation and fit · ${visitLength.firstFit}` },
       ] satisfies readonly { id: OpenWindows["plan"]; label: string }[],
       // The first fit's three hours do not fit in the evening's half-slots, so the one visit starts earlier.
-      note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.",
+      note: "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted; decide against it and you pay nothing.",
     },
     /**
      * A discount code for the consultation and fit in one visit, on /book only
@@ -359,7 +359,7 @@ export const referral = {
     body: "Your technician arrives in those hours. Details are on WhatsApp at +91 {mobile}.",
     ready: {
       consultation: `${capitalised(visitLength.consultation)} at home, and free. Nothing is fitted.`,
-      oneVisit: `${capitalised(visitLength.firstFit)} at home. You pay once fitted, by a link to your phone.`,
+      oneVisit: `${capitalised(visitLength.firstFit)} at home. You pay once fitted.`,
     },
     calendar: {
       label: "Add to your calendar",

@@ -11,7 +11,7 @@ export const PHOTO_ANGLES = ["front", "top", "left", "right", "hair"] as const;
 export type PhotoAngle = (typeof PHOTO_ANGLES)[number];
 
 /**
- * The steps in the order the design's screens run, after the job is started.
+ * Every step, after the job is started, in the order a service visit runs those it takes; a fit runs FIT_STEPS.
  * A step may be sent again (the phone replays its outbox), but never before
  * the one ahead of it: the server checks the order so a job sheet cannot be
  * closed out of an empty screen.
@@ -30,29 +30,18 @@ export type JobEventKind = (typeof JOB_EVENT_KINDS)[number];
 const PIECE_STEP_TYPES = ["replacement", "first_fit"] as const;
 
 /**
- * A consultation and fit in one visit runs every step, however it closed. Its piece step records the product the
- * client chose, or that they decided against the fit, so it comes before the checklist: the checklist then lists the
- * fit's items only for a client who is being fitted.
+ * A fit chooses and checks its hair system first, at the piece step, so a fit that cannot go ahead ("Can't fit today")
+ * closes before anything is used from the kit. A consultation and fit in one visit runs every step, however it closed:
+ * its piece step records the product the client chose, or that they decided against the fit, and its checklist then
+ * lists the fit's items only for a client who is being fitted.
  */
-const ONE_VISIT_STEPS: readonly JobStep[] = [
-  "before_photos",
-  "piece",
-  "checklist",
-  "consumables",
-  "after_photos",
-  "outcome",
-];
+const FIT_STEPS: readonly JobStep[] = ["before_photos", "piece", "checklist", "consumables", "after_photos", "outcome"];
 
 /** The steps this visit type runs, in order. */
 export function stepsFor(type: VisitType, oneVisit = false): JobStep[] {
-  if (oneVisit) return [...ONE_VISIT_STEPS];
-  const takesPiece = isOneOf(PIECE_STEP_TYPES, type);
+  if (oneVisit || isOneOf(PIECE_STEP_TYPES, type)) return [...FIT_STEPS];
   const takesAfterPhotos = type !== "consultation";
-  return JOB_STEPS.filter((step) => {
-    if (step === "piece") return takesPiece;
-    if (step === "after_photos") return takesAfterPhotos;
-    return true;
-  });
+  return JOB_STEPS.filter((step) => step !== "piece" && (step !== "after_photos" || takesAfterPhotos));
 }
 
 /** Whether this visit's job takes the step at all. */

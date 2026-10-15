@@ -4788,8 +4788,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.",
-    "reviewed": true
+    "text": "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted; decide against it and you pay nothing.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.consultation.code.label",
@@ -5292,8 +5292,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "3 hours at home. You pay once fitted, by a link to your phone.",
-    "reviewed": true
+    "text": "3 hours at home. You pay once fitted.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.booked.calendar.label",
@@ -5694,6 +5694,22 @@
     "where": "visit_booked_credit_v1",
     "text": "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}, covered by one of your free service visits.",
     "reviewed": true
+  },
+  {
+    "key": "message:visit_booked_at_visit_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_booked_at_visit_v1",
+    "text": "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. Pay {{6}} by UPI to Mane Man at the visit.",
+    "reviewed": false
+  },
+  {
+    "key": "message:upi_received_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "upi_received_v1",
+    "text": "Hi {{1}}, thank you: payment received.\n{{6}} by UPI for your {{2}} (ref {{7}}). It's in the Mane Man app.",
+    "reviewed": false
   },
   {
     "key": "message:link_paid_v1",

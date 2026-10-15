@@ -262,12 +262,12 @@ describe("a visit not yet closed", () => {
     end: "2026-09-21T12:30:00+05:30",
   });
 
-  it("stays under upcoming once its window has passed, as being closed", async () => {
+  it("stays under upcoming once its window has passed, as missed while nobody arrived", async () => {
     await seed([yesterday, booked("ap-next")]);
     await signIn();
     const visits = await (await get("/api/visits")).json<{ upcoming: { date: string; stage: string }[] }>();
     expect(visits.upcoming.map(({ date, stage }) => ({ date, stage }))).toEqual([
-      { date: "2026-09-20", stage: "closing" },
+      { date: "2026-09-20", stage: "missed" },
       { date: "2026-09-24", stage: "booked" },
     ]);
   });
@@ -283,7 +283,7 @@ describe("a visit not yet closed", () => {
     await seed([yesterday]);
     await signIn();
     const me = await (await get("/api/me")).json<Record<string, unknown>>();
-    expect(me).toMatchObject({ state: "lead", next_visit: { date: "2026-09-20", stage: "closing" } });
+    expect(me).toMatchObject({ state: "lead", next_visit: { date: "2026-09-20", stage: "missed" } });
   });
 
   it("gives way on Home to a visit still to come", async () => {

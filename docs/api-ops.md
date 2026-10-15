@@ -21222,7 +21222,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
 
 ```json
 {
@@ -21315,7 +21315,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
 
 ```json
 {
@@ -21408,7 +21408,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
 
 ```json
 {
@@ -27832,14 +27832,15 @@ Request body:
             "booked",
             "in_progress",
             "done",
-            "closing"
+            "closing",
+            "missed"
           ]
         },
         {
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -28301,14 +28302,15 @@ Request body:
             "booked",
             "in_progress",
             "done",
-            "closing"
+            "closing",
+            "missed"
           ]
         },
         {
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
