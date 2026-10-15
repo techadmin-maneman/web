@@ -779,7 +779,7 @@ The run above proved the code request and a wrong code, and said plainly that **
 | One client           | "Staging test", a random `9xxxxxxxxx` test number, contactable                                                                                                |
 | One address          | Sector 45, Gurgaon, pincode 122003 (a served pincode), **no `lat` or `lng`**                                                                                  |
 | Three visits         | Service visits at 10:00 India on 24, 25 and 27 September, all `scheduled`: a job today, a job tomorrow, and a third that is still locked                      |
-| No device or session | On purpose. The point of this fixture is that a person signs in themselves, and the first sign-in enrols the phone (`openTechnicianSession`)                     |
+| No device or session | On purpose. The point of this fixture is that a person signs in themselves, and the first sign-in enrols the phone (`openTechnicianSession`)                  |
 
 The address has no coordinates deliberately. An address with none cannot be measured against, so the check-in is accepted wherever the phone is (`src/domain/visits/check-ins.ts`) and the owner is not obliged to stand in Sector 45 to see the rest of the app. The 200 m geofence stays `docs/tech-field-test.md`'s to measure, at real addresses.
 
