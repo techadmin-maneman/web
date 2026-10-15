@@ -130,6 +130,8 @@ test("checks in at the door, and records the time and the distance (board B5)", 
 
   await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
   await expect(page.getByText(/left of 15 minutes/)).toBeVisible();
+  // Checked in after the booked start, the wait runs from the check-in: never "the booked start" for a moment.
+  await expect(page.getByText(/the booked start/)).toHaveCount(0);
   const checkIn = fake.writes.find((write) => write.path.endsWith("/checkin"));
   expect(checkIn?.body).toMatchObject({ lat: 28.39, lng: 77.07 });
   // Every write carries the job's start as the phone holds it, so a job ops moved is refused.

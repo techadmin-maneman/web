@@ -92,7 +92,9 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
   const left = wait.endsAt === null ? 0 : wait.endsAt - now;
   const mayClose = wait.confirmed && wait.endsAt !== null && left <= 0;
   const receipt = evidenceOf(job);
-  const waitBegun = wait.endsAt === null || wait.endsAt - job.no_show_wait_min * 60_000 <= now;
+  // The wait runs from the later of the check-in and the booked start, so it is still to begin only while the booked
+  // start is ahead: reading it back from the wait's end would let a second's skew from the server say so after a late one.
+  const waitBegun = wait.endsAt === null || Date.parse(job.starts_at) <= now;
 
   const arrive = () =>
     once(async () => {
