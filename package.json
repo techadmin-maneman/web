@@ -11,7 +11,7 @@
     "node": ">=24.11.0"
   },
   "scripts": {
-    "gen": "npm run types && npm run openapi && npm run schema && npm run upkeep-sql && npm run adr-index",
+    "gen": "npm run types && npm run openapi && npm run schema && npm run upkeep-sql && npm run adr-index && npm run words && npm run settings",
     "texts:export": "node scripts/build/export-texts.ts",
     "dev": "node scripts/dev/dev-api.ts",
     "dev:all": "node scripts/dev/dev-all.ts",
@@ -42,7 +42,7 @@
     "schema": "node scripts/build/generate-schema-doc.ts",
     "settings": "node scripts/build/generate-settings-doc.ts",
     "upkeep-sql": "node scripts/build/generate-upkeep-sql.ts",
-    "words": "vitest run test/node/words -u",
+    "words": "node scripts/build/generate-words.ts",
     "words:reviewed": "node scripts/build/words-reviewed.ts",
     "openapi": "node scripts/build/generate-openapi.ts && openapi-typescript docs/openapi.json --output site/src/lib/api-schema.ts && openapi-typescript docs/openapi-client.json --output apps/app/src/api-schema.ts && openapi-typescript docs/openapi-ops.json --output apps/ops/src/api-schema.ts && openapi-typescript docs/openapi-tech.json --output apps/tech/src/api-schema.ts",
     "smoke": "node scripts/release/smoke.ts",

@@ -44,6 +44,7 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 | `make-house-card.ts`                            | the house referral card                                                     | by hand                  | the image                             |
 | `rules-alias.ts`                                | `@rules/`, the front ends' way into the backend's shared rules              | each bundler's config    | no                                    |
 | `subset-fonts.ts`                               | the rupee sign cut out of EB Garamond                                       | `npm run fonts`          | the font file                         |
+| `generate-words.ts`                             | `src/config/words.json`, every line the Words page may change               | `npm run words`          | `src/config/words.json`               |
 | `words-reviewed.ts`                             | marks every Words line reviewed in its wording now, after a copy review     | `npm run words:reviewed` | `src/config/words-reviewed.json`      |
 
 ## ci/

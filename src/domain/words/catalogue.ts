@@ -1,5 +1,5 @@
 // The lines the Words page may change (docs/decisions/0126-the-words-page.md), as src/config/words.json lists them:
-// each with its key, where it appears and its wording in the code. `npm run words` writes the file from the copy.
+// each with its key, where it appears and its wording in the code. `npm run words` (and `npm run gen`) writes the file from the copy.
 
 import WORDS from "../../config/words.json" with { type: "json" };
 

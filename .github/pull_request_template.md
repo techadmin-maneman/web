@@ -10,6 +10,6 @@
 
 - [ ] The title is `<area>: <what changes>`, 72 characters or fewer (CONTRIBUTING.md)
 - [ ] Every comment beside the code I changed is still true
-- [ ] `npm run gen` run, if a route's schema, a migration, a binding or an ADR's status changed
+- [ ] `npm run gen` run, if a route's schema, a migration, a binding, an ADR's status, the copy or a setting changed
 - [ ] Under 800 changed lines in files people wrote, or the description says why it cannot be split
 - [ ] `hold-for-review` added, if it should wait for a person whatever it touches
