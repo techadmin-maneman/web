@@ -23337,6 +23337,11 @@ export interface components {
             /** @description Null until Razorpay made the link. */
             url: string | null;
             product: string;
+            /**
+             * Format: uuid
+             * @description The one visit it is owed for, which a UPI payment may settle.
+             */
+            visit_id: string;
         } | {
             /** @enum {string} */
             group: "no_show_dispute";

@@ -10,7 +10,7 @@ import { createLogger } from "../../../src/log.ts";
 import { createPaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
-import { aPayment } from "../fixtures/index.ts";
+import { aPayment, aPaymentLink, aVisit } from "../fixtures/index.ts";
 import { IMRAN, NATURAL, ROHIT, bindings, rohit, technician } from "./ops-visits-fixtures.ts";
 
 /** The console where no payment can be taken online: PAYMENTS_PROVIDER is none. */
@@ -127,6 +127,29 @@ describe("a paid visit booked while online payment is off", () => {
     await env.DB.prepare("UPDATE slot_holds SET pay_at_visit = 0").run();
     const notDue = await post(`/api/visits/${visit}/upi-payment`, { utr: "412345678903" });
     expect(await notDue.json()).toMatchObject({ error: { code: "not_due" } });
+  });
+});
+
+describe("a one visit fitted whose link was never paid", () => {
+  it("is settled by a UPI payment under its UTR, which pays the link so nobody asks for it again", async () => {
+    const { id: fitted = "" } = await aVisit({
+      person_id: ROHIT,
+      type: "first_fit",
+      status: "completed",
+      one_visit: "fitted",
+    });
+    await aPaymentLink({ appointment_id: fitted, refused_at: NOW.toISOString(), short_url: null, sent_at: null });
+
+    const paid = await post(`/api/visits/${fitted}/upi-payment`, { utr: "412345678911" });
+    expect(paid.status).toBe(200);
+    const payment = await env.DB.prepare("SELECT amount, razorpay_payment_id FROM payments WHERE appointment_id = ?1")
+      .bind(fitted)
+      .first();
+    expect(payment).toEqual({ amount: 3_200_000, razorpay_payment_id: "upi:412345678911" });
+    const link = await env.DB.prepare("SELECT paid_at FROM payment_links WHERE appointment_id = ?1")
+      .bind(fitted)
+      .first();
+    expect(link).toEqual({ paid_at: NOW.toISOString() });
   });
 });
 

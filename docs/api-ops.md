@@ -39847,6 +39847,11 @@ Request body:
         },
         "product": {
           "type": "string"
+        },
+        "visit_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The one visit it is owed for, which a UPI payment may settle."
         }
       },
       "required": [
@@ -39854,7 +39859,8 @@ Request body:
         "state",
         "amount",
         "url",
-        "product"
+        "product",
+        "visit_id"
       ],
       "additionalProperties": false
     },

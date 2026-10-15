@@ -17,18 +17,25 @@ export type UpiRecorded =
   | { readonly kind: "recorded"; readonly paymentId: string }
   | { readonly kind: "not_due" | "already_paid" | "reference_used" };
 
-/** What a visit paid at the visit still owes: its hold's price, until a payment for it is held. Null for none. */
+/**
+ * What a visit paid by UPI still owes: a visit paid at the visit its hold's price, and a one visit fitted its unpaid
+ * link's, which a UPI payment settles where Razorpay's link never came or online payment is off. Until a payment for
+ * it is held; null for neither.
+ */
 async function dueAt(
   db: D1Database,
   visitId: string,
 ): Promise<{ personId: string; amount: number; amountExGst: number; gstPercent: number; paid: boolean } | null> {
   const row = await db
     .prepare(
-      `SELECT a.person_id, h.amount, h.amount_ex_gst, h.gst_percent,
+      `SELECT a.person_id, COALESCE(h.amount, l.amount) AS amount,
+         COALESCE(h.amount_ex_gst, l.amount_ex_gst) AS amount_ex_gst, COALESCE(h.gst_percent, l.gst_percent) AS gst_percent,
          EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id AND p.kind = 'visit'
                    AND ${statusIn("p.status", PAYMENT_HELD)}) AS paid
-       FROM appointments a JOIN slot_holds h ON h.appointment_id = a.id AND h.pay_at_visit = 1 AND h.state = 'booked'
-       WHERE a.id = ?1 AND a.deleted_at IS NULL`,
+       FROM appointments a
+         LEFT JOIN slot_holds h ON h.appointment_id = a.id AND h.pay_at_visit = 1 AND h.state = 'booked'
+         LEFT JOIN payment_links l ON l.appointment_id = a.id AND l.paid_at IS NULL
+       WHERE a.id = ?1 AND a.deleted_at IS NULL AND (h.id IS NOT NULL OR l.id IS NOT NULL)`,
     )
     .bind(visitId)
     .first<{ person_id: string; amount: number; amount_ex_gst: number; gst_percent: number; paid: number }>();
@@ -72,6 +79,10 @@ export async function recordUpiPayment(
       )
       .bind(paymentId, due.personId, asked.visitId, razorpayPaymentId, due.amount, at, due.amountExGst, due.gstPercent),
     referencePayment(db, paymentId, written.now),
+    // A one visit's link it settles is paid, so neither ops nor the client is asked for it again.
+    db
+      .prepare("UPDATE payment_links SET paid_at = ?2 WHERE appointment_id = ?1 AND paid_at IS NULL")
+      .bind(asked.visitId, at),
     queueMessage(db, {
       id: crypto.randomUUID(),
       personId: due.personId,

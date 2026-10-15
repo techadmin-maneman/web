@@ -151,7 +151,8 @@ export const home = {
     line: (product: string, amount: string) => `${product} · ${amount}`,
     pay: "Pay now",
     newTab: "opens Razorpay in a new tab",
-    onItsWay: "Your payment link is on its way by text.",
+    /** No link to pay by: Razorpay could not make one, or online payment is off. Ops are told, and settle it. */
+    onItsWay: "We’ll message you to settle this.",
   },
   /**
    * A visit paid for, or booked free, that is not booked yet (docs/decisions/0068-a-paid-hold-is-kept.md): the booking

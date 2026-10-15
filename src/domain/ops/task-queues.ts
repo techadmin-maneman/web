@@ -331,7 +331,7 @@ export const QUEUES: readonly Queue[] = [
            || ' ' || l.amount || ' ' || COALESCE(l.short_url, '-') || ' ' || COALESCE(s.name, l.tier) AS detail,
          json_object('state', CASE WHEN l.refused_at IS NOT NULL THEN 'refused' WHEN l.sent_at IS NULL THEN 'unsent'
               WHEN COALESCE(l.closes_at <= ?2, l.sent_at <= ?1) THEN 'closed' ELSE 'sent' END,
-           'amount', l.amount, 'url', l.short_url, 'product', COALESCE(s.name, l.tier)) AS facts,
+           'amount', l.amount, 'url', l.short_url, 'product', COALESCE(s.name, l.tier), 'visit_id', a.id) AS facts,
          l.created_at AS since, NULL AS due_by, '' AS episode
     FROM payment_links l JOIN appointments a ON a.id = l.appointment_id JOIN people pe ON pe.id = a.person_id
     LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier
