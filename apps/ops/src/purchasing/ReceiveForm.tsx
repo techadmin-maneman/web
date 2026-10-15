@@ -4,7 +4,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Field, Fieldset, TextInput } from "@maneman/ui/Field";
-import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { microRupeesFromRupees, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
@@ -65,8 +65,11 @@ const EXTRA_BOXES = {
   duty: "duty_paise",
   clearing: "clearing_paise",
 };
-/** Every box of the form: a line's by its list, so any line's refusal is said on that line. */
-const BOXES = ["lines", ...Object.values(EXTRA_BOXES)];
+/** Every box the form draws, each line's by its place in the list: lines.2.lot_code. */
+const boxesOf = (order: Order): string[] => [
+  ...order.lines.flatMap((_, index) => Object.values(LINE_BOXES).map((box) => `lines.${String(index)}.${box}`)),
+  ...Object.values(EXTRA_BOXES).filter((box) => box !== EXTRA_BOXES.rate || order.currency !== "INR"),
+];
 
 /** Words for the box the API refused, if it is this one. */
 type Refused = (box: string) => string | null;
@@ -249,7 +252,7 @@ export function ReceiveForm(props: {
           {copy.receive.cancel}
         </Button>
       </FormActions>
-      <FormRefusal className={form.error} said={formError(copy.errors, failure, BOXES)} />
+      <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={boxesOf(order)} />
     </div>
   );
 }

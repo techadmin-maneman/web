@@ -7,7 +7,7 @@ import { IconButton } from "@maneman/ui/IconButton";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
-import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
@@ -290,7 +290,9 @@ export function DraftOrder({
       </FormActions>
       <FormRefusal
         className={form.error}
-        said={formError(copy.errors, failure, ["supplier_id", "expected_on", "note"])}
+        errors={copy.errors}
+        failure={failure}
+        boxes={["supplier_id", "expected_on", "note"]}
       />
     </Panel>
   );

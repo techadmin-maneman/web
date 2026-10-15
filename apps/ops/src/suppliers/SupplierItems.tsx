@@ -42,9 +42,9 @@ const draftOf = (suppliers: Suppliers, item: Item | null): Draft => ({
   lead: item === null ? "" : String(item.lead_time_days),
 });
 
-function ItemEntry(props: { label: string; value: string; onChange: (text: string) => void }) {
+function ItemEntry(props: { label: string; value: string; onChange: (text: string) => void; box: string }) {
   return (
-    <Field label={props.label} className={form.field}>
+    <Field label={props.label} className={form.field} box={props.box}>
       {(control) => (
         <TextInput
           {...control}
@@ -74,7 +74,7 @@ function ItemBoxes(props: {
   return (
     <>
       <div className={form.fields}>
-        <Field label={words.consumable} className={form.field}>
+        <Field label={words.consumable} className={form.field} box="consumable_code">
           {(control) => (
             <Select
               {...control}
@@ -96,13 +96,18 @@ function ItemBoxes(props: {
             </Select>
           )}
         </Field>
-        <ItemEntry label={words.theirCode} value={draft.theirCode} onChange={edit("theirCode")} />
-        <ItemEntry label={words.price(supplier.currency, unit)} value={draft.price} onChange={edit("price")} />
+        <ItemEntry label={words.theirCode} value={draft.theirCode} onChange={edit("theirCode")} box="their_code" />
+        <ItemEntry
+          label={words.price(supplier.currency, unit)}
+          value={draft.price}
+          onChange={edit("price")}
+          box="unit_price"
+        />
       </div>
       <div className={form.fields}>
-        <ItemEntry label={words.pack(unit)} value={draft.pack} onChange={edit("pack")} />
-        <ItemEntry label={words.minimum} value={draft.minimum} onChange={edit("minimum")} />
-        <ItemEntry label={words.lead} value={draft.lead} onChange={edit("lead")} />
+        <ItemEntry label={words.pack(unit)} value={draft.pack} onChange={edit("pack")} box="pack_size" />
+        <ItemEntry label={words.minimum} value={draft.minimum} onChange={edit("minimum")} box="minimum_order" />
+        <ItemEntry label={words.lead} value={draft.lead} onChange={edit("lead")} box="lead_time_days" />
       </div>
     </>
   );
@@ -161,6 +166,7 @@ function ItemForm({
       ready={ready}
       errors={copy.errors}
       onCancel={null}
+      boxes={["consumable_code", "their_code", "unit_price", "pack_size", "minimum_order", "lead_time_days"]}
       checking={[before === null ? line : copy.form.confirm.line(name, before, line)].map((each) => (
         <CheckLine key={each}>{each}</CheckLine>
       ))}

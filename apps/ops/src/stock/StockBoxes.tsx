@@ -8,19 +8,18 @@ import form from "../components/forms.module.css";
 /** Words for a box the API refused, by the name it refused it by. */
 export type Refused = (box: string) => string | null;
 
-/** Every box a movement may have, by the names the API refuses them by. */
-export const STOCK_BOXES = [
-  "consumable_code",
-  "from",
-  "to",
-  "place_id",
-  "quantity",
-  "counted",
-  "note",
-  "lot_code",
-  "expires_on",
-  "lot_id",
-];
+/** The boxes a movement of this kind draws, by the names the API refuses them by; the rest are the form's to say. */
+export function stockBoxes(kind: string, scanned: boolean, lots: boolean): string[] {
+  return [
+    "consumable_code",
+    ...(kind === "transfer" ? ["from", "to"] : ["note"]),
+    ...(kind === "count" || kind === "write_off" ? ["place_id"] : []),
+    ...(kind === "count" ? ["counted"] : []),
+    ...(kind !== "count" && !scanned ? ["quantity"] : []),
+    ...(kind === "delivery" || kind === "count" ? ["lot_code", "expires_on"] : []),
+    ...(kind === "write_off" && lots ? ["lot_id"] : []),
+  ];
+}
 
 /** One of the consumables or the places, by name. */
 export function StockChoice(props: {

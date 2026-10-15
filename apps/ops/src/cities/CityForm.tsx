@@ -61,9 +61,16 @@ function changes(was: City, draft: Draft): string[] {
   return now.name === was.name ? lines : [...lines, formWords.renames(was.name, now.name)];
 }
 
-function Text(props: { label: string; value: string; max: number; hint?: string; onChange: (text: string) => void }) {
+function Text(props: {
+  label: string;
+  value: string;
+  max: number;
+  hint?: string;
+  onChange: (text: string) => void;
+  box: string;
+}) {
   return (
-    <Field label={props.label} hint={props.hint} className={form.field}>
+    <Field label={props.label} hint={props.hint} className={form.field} box={props.box}>
       {(control) => (
         <TextInput
           {...control}
@@ -86,6 +93,7 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
       <div className={form.fields}>
         <Text
           label={formWords.name}
+          box="name"
           value={draft.name}
           max={60}
           onChange={(name) => {
@@ -94,6 +102,7 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
         />
         <Text
           label={formWords.stateCode}
+          box="state_code"
           hint={formWords.stateCodeHint}
           value={draft.stateCode}
           max={2}
@@ -103,13 +112,14 @@ function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (chang
         />
         <Text
           label={formWords.state}
+          box="state"
           value={draft.state}
           max={60}
           onChange={(state) => {
             edit({ state });
           }}
         />
-        <Field label={formWords.zone} className={form.field}>
+        <Field label={formWords.zone} className={form.field} box="zone">
           {(control) => (
             <Select
               {...control}
@@ -181,6 +191,7 @@ export function CityForm(props: {
       ready={ready}
       errors={formWords.errors}
       onCancel={props.onCancel}
+      boxes={["name", "state_code", "state", "zone"]}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [formWords.nothing] : lines).map((line) => (
         <CheckLine key={line}>{line}</CheckLine>

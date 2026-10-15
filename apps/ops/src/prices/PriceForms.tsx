@@ -84,7 +84,7 @@ function PriceBoxes(props: {
   const { typed, firstDay, tooSoon, maxAmount, maxGst, onRupees, onGst, onFrom } = props;
   return (
     <div className={form.fields}>
-      <Field label={formWords.amount} className={form.field}>
+      <Field label={formWords.amount} className={form.field} box="amount_ex_gst">
         {(control) => (
           <NumberInput
             {...control}
@@ -100,7 +100,7 @@ function PriceBoxes(props: {
           />
         )}
       </Field>
-      <Field label={formWords.gst} className={form.field}>
+      <Field label={formWords.gst} className={form.field} box="gst_percent">
         {(control) => (
           <div className={form.fieldRow}>
             <NumberInput
@@ -119,7 +119,12 @@ function PriceBoxes(props: {
           </div>
         )}
       </Field>
-      <Field label={formWords.from} error={tooSoon ? formWords.fromTooSoon : null} className={form.field}>
+      <Field
+        label={formWords.from}
+        error={tooSoon ? formWords.fromTooSoon : null}
+        className={form.field}
+        box="valid_from"
+      >
         {(control) => (
           <DateInput
             {...control}
@@ -194,6 +199,7 @@ export function PriceForm(props: {
         gst_percent: copy.limits.gst(props.maxGst),
       }}
       onCancel={props.onCancel}
+      boxes={["amount_ex_gst", "gst_percent", "valid_from"]}
       checking={<PriceCheck target={target} correcting={correcting} was={was} change={change} sameDay={sameDay} />}
     >
       {inForce !== undefined && correcting === undefined && (

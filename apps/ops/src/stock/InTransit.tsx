@@ -8,7 +8,7 @@ import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { boxError, errorText, formError, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type Stock } from "../api.ts";
 import { stockTransit as copy } from "../content/stock-transit.ts";
@@ -101,7 +101,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
           {copy.cancel}
         </Button>
       </FormActions>
-      <FormRefusal className={form.error} said={formError(copy.errors, failure, ["received", "note", "units"])} />
+      <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={["received", "note"]} />
     </div>
   );
 }

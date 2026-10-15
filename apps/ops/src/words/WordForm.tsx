@@ -68,6 +68,7 @@ export function WordForm(props: {
       ready={text.trim() !== "" && text !== word.now}
       errors={copy.errors}
       onCancel={props.onCancel}
+      boxes={["text"]}
       above={<p className={styles.code}>{formWords.inCode(word.text)}</p>}
       checking={
         <>
@@ -77,7 +78,7 @@ export function WordForm(props: {
       }
     >
       <div className={form.fields}>
-        <Field label={formWords.wording} className={styles.wording}>
+        <Field label={formWords.wording} className={styles.wording} box="text">
           {(control) => (
             <TextArea
               {...control}

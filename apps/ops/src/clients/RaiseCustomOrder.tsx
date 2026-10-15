@@ -4,7 +4,7 @@
 import type { Success } from "@maneman/web-kit/api";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
-import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
@@ -176,7 +176,7 @@ export function RaiseCustomOrder({
           {copy.raise.keep}
         </Button>
       </FormActions>
-      <FormRefusal className={form.error} said={formError(copy.errors, failure, ORDER_BOXES)} />
+      <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={ORDER_BOXES} />
     </div>
   );
 }

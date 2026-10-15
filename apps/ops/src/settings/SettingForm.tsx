@@ -3,15 +3,15 @@
 // shows beneath, with the check still up to send again or go back to the boxes.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Fieldset } from "@maneman/ui/Field";
+import { Fieldset, RefusedBoxes } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import type { Answer } from "@maneman/web-kit/api";
-import { formError, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState, type ReactNode } from "react";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
 import { review } from "../content/common.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 
 /** What a send came to: what to hand on, or the refusal with the boxes it names. */
@@ -65,15 +65,13 @@ export function useSteps<T>(
 }
 
 /** The line a refused send leaves beneath its form. */
-/** A form's refusal, but for one its `boxes` say on their own Fields (boxError). */
+/** A form's refusal, but for one its `boxes` say on their own Fields (boxError), which is only announced. */
 export function Refused(props: {
   readonly failed: Failure | null;
   readonly errors: Readonly<Record<string, string>>;
   readonly boxes?: readonly string[];
 }) {
-  const said = formError(props.errors, props.failed, props.boxes ?? []);
-  if (said === null) return null;
-  return <Refusal className={form.error} said={said} />;
+  return <FormRefusal className={form.error} errors={props.errors} failure={props.failed} boxes={props.boxes ?? []} />;
 }
 
 /**
@@ -142,12 +140,16 @@ export function SettingForm(props: {
   readonly said?: string | null;
   /** The boxes. */
   readonly children: ReactNode;
+  /** The names the API refuses the boxes by, each a Field's `box`, which says its own refusal. */
+  readonly boxes?: readonly string[];
 }) {
   const { steps } = props;
   return (
     <Fieldset className={form.group} legend={props.title} legendLook="title">
       {props.above}
-      {props.children}
+      <RefusedBoxes.Provider value={(box) => boxError(props.errors, steps.failed, box)}>
+        {props.children}
+      </RefusedBoxes.Provider>
       {steps.step === "editing" ? (
         <FormActions>
           <Button variant="primary" size="small" disabled={!props.ready} onClick={steps.check}>
@@ -164,7 +166,7 @@ export function SettingForm(props: {
           {props.checking}
         </CheckPanel>
       )}
-      <Refused failed={steps.failed} errors={props.errors} />
+      <Refused failed={steps.failed} errors={props.errors} boxes={props.boxes} />
       {props.said !== undefined && props.said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {props.said}

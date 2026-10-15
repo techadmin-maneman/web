@@ -49,6 +49,7 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
       {draft.how === "typed" ? (
         <Field
           label={copy.code}
+          box="code"
 
           error={codeError(draft)}
           className={form.field}
@@ -67,7 +68,7 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
           )}
         </Field>
       ) : (
-        <Field label={copy.count} className={form.field}>
+        <Field label={copy.count} className={form.field} box="count">
           {(control) => (
             <NumberInput
               {...control}
@@ -90,7 +91,7 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
 function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
   return (
     <div className={form.fields}>
-      <Field label={copy.takesOff} className={form.field}>
+      <Field label={copy.takesOff} className={form.field} box="kind">
         {(control) => (
           <Select
             {...control}
@@ -105,7 +106,7 @@ function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
           </Select>
         )}
       </Field>
-      <Field label={draft.kind === "percent" ? copy.value : copy.rupeesOff} className={form.field}>
+      <Field label={draft.kind === "percent" ? copy.value : copy.rupeesOff} className={form.field} box="value">
         {(control) => (
           <NumberInput
             {...control}
@@ -120,7 +121,7 @@ function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
         )}
       </Field>
       {draft.kind === "percent" && (
-        <Field label={copy.cap} className={form.field}>
+        <Field label={copy.cap} className={form.field} box="cap">
           {(control) => (
             <NumberInput
               {...control}
@@ -165,7 +166,7 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
   return (
     <>
       <div className={form.fields}>
-        <Field label={copy.expires} className={form.field}>
+        <Field label={copy.expires} className={form.field} box="expires_on">
           {(control) => (
             <DateInput
               {...control}
@@ -179,7 +180,7 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
           )}
         </Field>
         {!isBatch(draft) && (
-          <Field label={copy.maxUses} className={form.field}>
+          <Field label={copy.maxUses} className={form.field} box="max_uses">
             {(control) => (
               <NumberInput
                 {...control}
@@ -243,6 +244,7 @@ export function DiscountCodeForm({
       ready={isReady(draft)}
       errors={copy.errors}
       onCancel={onClose}
+      boxes={["code", "count", "kind", "value", "cap", "expires_on", "max_uses"]}
       checking={
         steps.step === "editing"
           ? null

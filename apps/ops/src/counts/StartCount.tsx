@@ -4,7 +4,7 @@
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
-import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
@@ -69,7 +69,12 @@ export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; 
           </Button>
         </FormActions>
       </div>
-      <FormRefusal className={form.error} said={formError(copy.errors, failure, ["place_id", "consumable_code"])} />
+      <FormRefusal
+        className={form.error}
+        errors={copy.errors}
+        failure={failure}
+        boxes={["place_id", "consumable_code"]}
+      />
     </Panel>
   );
 }

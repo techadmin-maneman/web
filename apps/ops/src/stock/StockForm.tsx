@@ -5,7 +5,7 @@
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
-import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { Checkbox, ChoiceGroup, Radio } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
@@ -19,7 +19,7 @@ import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 import { FormRefusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
-import { NoteBox, Quantity, STOCK_BOXES, StockChoice, type Refused } from "./StockBoxes.tsx";
+import { NoteBox, Quantity, StockChoice, stockBoxes, type Refused } from "./StockBoxes.tsx";
 import { stockApi } from "./stock-api.ts";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
@@ -278,6 +278,10 @@ function WhatMoved(props: {
   );
 }
 
+/** The boxes the form draws for this movement, whose refusals their Fields say. */
+const drawnBoxes = (stock: Stock, draft: Draft) =>
+  stockBoxes(draft.kind, draft.units.length > 0, (holdingOf(stock, draft.code, draft.place)?.lots.length ?? 0) > 0);
+
 /** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 export function StockForm({
   stock,
@@ -379,7 +383,7 @@ export function StockForm({
             {copy.recorded}
           </InlineMessage>
         )}
-        <FormRefusal className={form.error} said={formError(copy.errors, failure, STOCK_BOXES)} />
+        <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={drawnBoxes(stock, draft)} />
       </div>
     </Panel>
   );

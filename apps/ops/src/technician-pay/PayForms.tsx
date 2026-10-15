@@ -29,7 +29,7 @@ interface FormProps {
 function NameField({ name, onName }: { name: string; onName: (name: string) => void }) {
   return (
     <div className={form.fields}>
-      <Field label={formWords.name} className={form.field}>
+      <Field label={formWords.name} className={form.field} box="name">
         {(control) => (
           <TextInput
             {...control}
@@ -61,6 +61,7 @@ export function AddGradeForm({ onDone, onCancel }: FormProps) {
       ready={name.trim() !== ""}
       errors={errors}
       onCancel={onCancel}
+      boxes={["name"]}
       checking={<CheckLine>{check.add(name.trim())}</CheckLine>}
     >
       <NameField
@@ -89,6 +90,7 @@ export function RenameGradeForm({ grade, onDone, onCancel }: FormProps & { reado
       ready={name.trim() !== "" && name.trim() !== grade.name}
       errors={errors}
       onCancel={onCancel}
+      boxes={["name"]}
       checking={<CheckLine>{check.rename(grade.name, name.trim())}</CheckLine>}
     >
       <NameField
@@ -121,7 +123,7 @@ interface DraftProps {
 function RateWhere({ pay, draft, edit }: DraftProps) {
   return (
     <>
-      <Field label={formWords.kind} className={form.field}>
+      <Field label={formWords.kind} className={form.field} box="kind">
         {(control) => (
           <Select
             {...control}
@@ -139,7 +141,7 @@ function RateWhere({ pay, draft, edit }: DraftProps) {
           </Select>
         )}
       </Field>
-      <Field label={formWords.city} className={form.field}>
+      <Field label={formWords.city} className={form.field} box="city">
         {(control) => (
           <Select
             {...control}
@@ -168,7 +170,7 @@ function RateFields({ pay, draft, edit }: DraftProps) {
     <>
       <div className={form.fields}>
         <RateWhere pay={pay} draft={draft} edit={edit} />
-        <Field label={formWords.amount} className={form.field}>
+        <Field label={formWords.amount} className={form.field} box="amount">
           {(control) => (
             <NumberInput
               {...control}
@@ -186,6 +188,7 @@ function RateFields({ pay, draft, edit }: DraftProps) {
           )}
         </Field>
         <Field
+          box="from"
           label={formWords.from}
           className={form.field}
           error={draft.from !== "" && draft.from < pay.today ? technicianPay.errors.from : undefined}
@@ -257,6 +260,7 @@ export function SetRateForm(props: FormProps & { readonly grade: Grade; readonly
       ready={amountOk && draft.from >= pay.today}
       errors={{ ...errors, amount: technicianPay.amountUpTo(rupees(pay.max_amount)) }}
       onCancel={props.onCancel}
+      boxes={["kind", "city", "amount", "from"]}
       checking={<CheckLine>{check.rate(where, was, now, shortDate(draft.from))}</CheckLine>}
     >
       <RateFields pay={pay} draft={draft} edit={edit} />
@@ -285,10 +289,11 @@ export function GradeOfForm(props: FormProps & { readonly technician: PayTechnic
       ready={grade !== (technician.grade_id ?? "")}
       errors={errors}
       onCancel={props.onCancel}
+      boxes={["grade_id"]}
       checking={<CheckLine>{check.grade(technician.name, nameOf(technician.grade_id), nameOf(grade))}</CheckLine>}
     >
       <div className={form.fields}>
-        <Field label={formWords.grade} className={form.field}>
+        <Field label={formWords.grade} className={form.field} box="grade_id">
           {(control) => (
             <Select
               {...control}

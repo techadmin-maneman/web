@@ -85,9 +85,10 @@ function SupplierEntry(props: {
   size?: string;
   max: number;
   onChange: (text: string) => void;
+  box: string;
 }) {
   return (
-    <Field label={props.label} className={form.field}>
+    <Field label={props.label} className={form.field} box={props.box}>
       {(control) => (
         <TextInput
           {...control}
@@ -103,14 +104,46 @@ function SupplierEntry(props: {
   );
 }
 
+/** How long the supplier gives to pay, and how long it stands behind what it supplies. */
+function SupplierTerms({ draft, edit }: { draft: Draft; edit: (field: keyof Draft) => (text: string) => void }) {
+  return (
+    <div className={form.fields}>
+      <SupplierEntry
+        label={formWords.terms}
+        box="payment_terms_days"
+        value={draft.terms}
+        size={form.figureBox}
+        max={3}
+        onChange={edit("terms")}
+      />
+      <SupplierEntry
+        label={formWords.warranty}
+        box="warranty_days"
+        value={draft.warranty}
+        size={form.figureBox}
+        max={4}
+        onChange={edit("warranty")}
+      />
+    </div>
+  );
+}
+
 /** The supplier's boxes, each holding text as typed. */
 function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draft) => (text: string) => void }) {
   return (
     <>
       <div className={form.fields}>
-        <SupplierEntry label={formWords.name} value={draft.name} size={form.areaBox} max={80} onChange={edit("name")} />
+        <SupplierEntry
+          label={formWords.name}
+          value={draft.name}
+          size={form.areaBox}
+          max={80}
+          onChange={edit("name")}
+          box="name"
+        />
         <SupplierEntry
           label={formWords.gstin}
+          box="gstin"
           value={draft.gstin}
           size={form.areaBox}
           max={15}
@@ -118,6 +151,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         />
         <SupplierEntry
           label={formWords.country}
+          box="country"
           value={draft.country}
           size={form.figureBox}
           max={2}
@@ -125,6 +159,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         />
         <SupplierEntry
           label={formWords.currency}
+          box="currency"
           value={draft.currency}
           size={form.figureBox}
           max={3}
@@ -134,6 +169,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
       <div className={form.fields}>
         <SupplierEntry
           label={formWords.contactName}
+          box="contact_name"
           value={draft.contactName}
           size={form.areaBox}
           max={80}
@@ -141,6 +177,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         />
         <SupplierEntry
           label={formWords.contactPhone}
+          box="contact_phone"
           value={draft.contactPhone}
           size={form.areaBox}
           max={16}
@@ -148,28 +185,14 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         />
         <SupplierEntry
           label={formWords.contactEmail}
+          box="contact_email"
           value={draft.contactEmail}
           size={form.areaBox}
           max={120}
           onChange={edit("contactEmail")}
         />
       </div>
-      <div className={form.fields}>
-        <SupplierEntry
-          label={formWords.terms}
-          value={draft.terms}
-          size={form.figureBox}
-          max={3}
-          onChange={edit("terms")}
-        />
-        <SupplierEntry
-          label={formWords.warranty}
-          value={draft.warranty}
-          size={form.figureBox}
-          max={4}
-          onChange={edit("warranty")}
-        />
-      </div>
+      <SupplierTerms draft={draft} edit={edit} />
     </>
   );
 }
@@ -217,6 +240,17 @@ export function SupplierForm({
       ready={ready}
       errors={copy.errors}
       onCancel={onCancel}
+      boxes={[
+        "name",
+        "gstin",
+        "country",
+        "currency",
+        "contact_name",
+        "contact_phone",
+        "contact_email",
+        "payment_terms_days",
+        "warranty_days",
+      ]}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [formWords.confirm.nothing] : lines).map((line) => (
         <CheckLine key={line}>{line}</CheckLine>

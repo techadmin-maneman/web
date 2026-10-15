@@ -3,7 +3,7 @@
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
-import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { ChoiceGroup, Field, Radio, TextArea, TextInput } from "@maneman/ui/Field";
@@ -132,7 +132,7 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
           {busy ? copy.closing : copy.confirm}
         </Button>
       </div>
-      <FormRefusal className={styles.error} said={formError(ERRORS, failure, BOXES)} />
+      <FormRefusal className={styles.error} errors={ERRORS} failure={failure} boxes={BOXES} />
     </form>
   );
 }

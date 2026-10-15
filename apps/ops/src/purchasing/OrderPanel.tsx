@@ -6,7 +6,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
-import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
@@ -210,7 +210,7 @@ export function OrderPanel({
           {copy.order.print}
         </Button>
       </FormActions>
-      <FormRefusal className={form.error} said={formError(copy.errors, failure, ["reason"])} />
+      <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={["reason"]} />
       {printing && (
         <OrderSheet
           orders={orders}
