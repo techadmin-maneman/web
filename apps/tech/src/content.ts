@@ -793,6 +793,8 @@ export const kit = {
     title: "In your kit",
     none: "Your kit is empty.",
     expires: (date: string) => `Expires ${date}`,
+    /** A lot inside the days ops are warned before it expires. */
+    useFirst: (date: string) => `Use first · expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
     pieces: (count: number) => `${String(count)} labelled`,
     /** At or below the level ops keep a kit at: ops send more, and the technician may ask. */

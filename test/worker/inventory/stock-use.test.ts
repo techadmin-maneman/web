@@ -108,6 +108,43 @@ describe("a job's use", () => {
     ]);
   });
 
+  it("keeps the kit's lots within what it holds once a top-up follows use it had no record of", async () => {
+    await job.workTo("consumables");
+    await job.post(`/api/tech/jobs/${JOB}/consumables`, { items: [{ code: "solvent", quantity: 30 }] }, "event-use-01");
+    // A lot ops are warned of, its expiry inside the 30 days before, and one well after.
+    await job.opsPost("/api/stock/deliveries", {
+      consumable_code: "solvent",
+      quantity: 100,
+      lot_code: "SV-SOON",
+      expires_on: "2026-10-10",
+    });
+    await job.opsPost("/api/stock/deliveries", {
+      consumable_code: "solvent",
+      quantity: 50,
+      lot_code: "SV-LATE",
+      expires_on: "2027-06-30",
+    });
+    await job.opsPost("/api/stock/transfers", {
+      consumable_code: "solvent",
+      quantity: 150,
+      from: "central",
+      to: IMRAN,
+    });
+
+    const kit = await (
+      await job.get("/api/tech/kit")
+    ).json<{
+      held: { code: string; quantity: number; lots: { lot_code: string; quantity: number; use_first: boolean }[] }[];
+    }>();
+    const solvent = kit.held.find((item) => item.code === "solvent");
+    expect(solvent?.quantity).toBe(120);
+    // The 30 used before came off the lot that expires first.
+    expect(solvent?.lots).toEqual([
+      { lot_code: "SV-SOON", expires_on: "2026-10-10", quantity: 70, use_first: true },
+      { lot_code: "SV-LATE", expires_on: "2027-06-30", quantity: 50, use_first: false },
+    ]);
+  });
+
   it("comes out of their kit as the step lands, with what the service expected and what one cost that day", async () => {
     await readyToRecord();
     const answer = await job.post(

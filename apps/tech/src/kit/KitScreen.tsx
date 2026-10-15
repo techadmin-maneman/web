@@ -157,7 +157,7 @@ function Held({ kit }: { kit: Kit }) {
                   const gone = (lot.expires_on ?? kit.today) < kit.today;
                   return (
                     <p className={gone ? styles.expired : styles.note} key={lot.lot_code}>
-                      {lot.lot_code} · {lot.quantity} · {gone ? copy.held.expired(on) : copy.held.expires(on)}
+                      {lot.lot_code} · {lot.quantity} · {lotWhen(lot, on, gone)}
                     </p>
                   );
                 })}
@@ -167,6 +167,12 @@ function Held({ kit }: { kit: Kit }) {
       )}
     </section>
   );
+}
+
+/** A lot's expiry as the kit says it: gone, to use first, or when. */
+function lotWhen(lot: { readonly use_first: boolean }, on: string, gone: boolean): string {
+  if (gone) return copy.held.expired(on);
+  return lot.use_first ? copy.held.useFirst(on) : copy.held.expires(on);
 }
 
 /** The pieces that came off clients, and the kit's expired stock, handed back together or apart. */
