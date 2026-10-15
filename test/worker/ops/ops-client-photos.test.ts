@@ -12,7 +12,9 @@ import { PERSON, OTHER, UNKNOWN, VISIT, FRONT, TOP, MOBILE, person, record } fro
 let ops: App;
 
 const auditRows = () =>
-  env.DB.prepare("SELECT action, actor, subject_kind, subject_id, detail FROM audit_log WHERE action != 'ops.call'")
+  env.DB.prepare(
+    "SELECT action, actor, subject_kind, subject_id, detail FROM audit_log WHERE action NOT IN ('ops.call', 'call.refused')",
+  )
     .all<{ action: string; actor: string; subject_kind: string; subject_id: string; detail: string | null }>()
     .then((rows) => rows.results);
 

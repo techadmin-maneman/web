@@ -36366,6 +36366,7 @@ Request body:
       "type": "string",
       "enum": [
         "ops.call",
+        "call.refused",
         "client.call",
         "tech.call",
         "consent.switch",

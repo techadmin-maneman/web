@@ -70,6 +70,8 @@ const theirs = CLIENTS_OWN.map(([kind, ids]) => `(a.subject_kind = '${kind}' AND
 
 const ACTIVITY_SQL = `
   SELECT a.id, a.at, a.surface, a.actor_kind, a.actor, a.action, a.subject_kind, a.subject_id, a.detail,
+    (SELECT r.detail FROM audit_log r INDEXED BY audit_log_by_request
+      WHERE r.request_id = a.request_id AND r.action = 'call.refused') AS refused,
     CASE a.actor_kind
       WHEN 'client' THEN (SELECT name FROM people WHERE id = a.actor AND erased_at IS NULL)
       WHEN 'technician' THEN (SELECT name FROM technicians WHERE id = a.actor)
@@ -86,16 +88,26 @@ const ACTIVITY_SQL = `
     AND (?6 IS NULL OR a.at >= ?6)
     AND (?7 IS NULL OR a.at < ?7)
     AND (?8 IS NULL OR a.id < ?8)
+    -- A refusal is told on the call it refused, never as a row of its own.
+    AND a.action <> 'call.refused'
+    -- A count's items are told by the count they were counted in.
+    AND (a.action <> 'stock.count' OR NOT EXISTS (SELECT 1 FROM audit_log t INDEXED BY audit_log_by_request
+                                                  WHERE t.request_id = a.request_id AND t.action = 'count_task.count'))
     AND (?10 = 1 OR a.action NOT IN ('ops.call', 'client.call', 'tech.call')
          OR (COALESCE(json_extract(a.detail, '$.method'), '') <> 'GET'
              AND COALESCE(json_extract(a.detail, '$.path'), '') NOT GLOB '*/find'
              AND COALESCE(json_extract(a.detail, '$.path'), '') NOT GLOB '*/search'
+             -- A link to upload a photograph to changes nothing until the photograph is recorded.
+             AND COALESCE(json_extract(a.detail, '$.path'), '') NOT GLOB '*/upload-url'
+             AND NOT EXISTS (SELECT 1 FROM audit_log o INDEXED BY audit_log_by_request
+                              WHERE o.request_id = a.request_id AND o.id <> a.id
+                                AND o.action NOT IN ('ops.call', 'client.call', 'tech.call', 'call.refused'))
              -- A call whose own action is logged beside it, by the same person within seconds, is that action.
              AND NOT EXISTS (SELECT 1 FROM audit_log d INDEXED BY audit_log_actor
                               WHERE d.actor_kind = a.actor_kind AND d.actor = a.actor
                                 AND d.at BETWEEN strftime('%Y-%m-%dT%H:%M:%fZ', a.at, '-5 seconds')
                                              AND strftime('%Y-%m-%dT%H:%M:%fZ', a.at, '+5 seconds')
-                                AND d.action NOT IN ('ops.call', 'client.call', 'tech.call'))))
+                                AND d.action NOT IN ('ops.call', 'client.call', 'tech.call', 'call.refused'))))
   ORDER BY a.id DESC
   LIMIT ?9`;
 
@@ -110,6 +122,8 @@ interface Row {
   subject_kind: string | null;
   subject_id: string | null;
   detail: string | null;
+  /** The refusal written under the same request, where the API refused the call. */
+  refused: string | null;
   actor_name: string | null;
 }
 
@@ -122,8 +136,17 @@ function entryOf(row: Row): ActivityEntry {
     action: row.action,
     subject:
       row.subject_kind === null || row.subject_id === null ? null : { kind: row.subject_kind, id: row.subject_id },
-    detail: row.detail === null ? null : storedJson(z.record(z.string(), z.unknown()), row.detail, "audit_log.detail"),
+    detail: detailOf(row),
   };
+}
+
+const DETAIL = z.record(z.string(), z.unknown());
+
+/** The entry's detail, with a refused call's status and code under `refused`. */
+function detailOf(row: Row): Record<string, unknown> | null {
+  const detail = row.detail === null ? null : storedJson(DETAIL, row.detail, "audit_log.detail");
+  if (row.refused === null) return detail;
+  return { ...detail, refused: storedJson(DETAIL, row.refused, "audit_log.detail") };
 }
 
 /** The India date's first instant, as the log writes its times. */

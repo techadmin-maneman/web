@@ -13,6 +13,8 @@ import type { Surface } from "../../config/environments.ts";
 /** Every action the log records. A new action is added here. */
 export const AUDIT_ACTIONS = [
   "ops.call",
+  // A change the API refused, under the request the call before it was written with (src/http/audit.ts).
+  "call.refused",
   // A signed-in client's change, and a technician's step or a job they opened (src/http/audit.ts, auditSessionCall).
   "client.call",
   "tech.call",
