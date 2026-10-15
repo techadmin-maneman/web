@@ -41,12 +41,13 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 
 ## Reference
 
-| Document                                                                                               | Read it for                                                                            |
-| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| [api.md](api.md), [api-client.md](api-client.md), [api-ops.md](api-ops.md), [api-tech.md](api-tech.md) | Every route, one page per surface, generated with `openapi*.json` by `npm run openapi` |
-| [schema.md](schema.md)                                                                                 | Every table in D1, written from the migrations by `npm run schema`                     |
-| [verification.md](verification.md)                                                                     | Each milestone's definition of done, with its evidence                                 |
-| [reference/](reference/README.md)                                                                      | The try-on providers' API notes, and the references' manifest                          |
+| Document                                                                                               | Read it for                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [api.md](api.md), [api-client.md](api-client.md), [api-ops.md](api-ops.md), [api-tech.md](api-tech.md) | Every route, one page per surface, generated with `openapi*.json` by `npm run openapi`                                                   |
+| [schema.md](schema.md)                                                                                 | Every table in D1, written from the migrations by `npm run schema`                                                                       |
+| [settings.md](settings.md)                                                                             | Every setting and where it lives: vars, secrets, fixed limits, constants, the rules ops set, dated tables; written by `npm run settings` |
+| [verification.md](verification.md)                                                                     | Each milestone's definition of done, with its evidence                                                                                   |
+| [reference/](reference/README.md)                                                                      | The try-on providers' API notes, and the references' manifest                                                                            |
 
 ## Archive
 

@@ -39,6 +39,7 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 | `generate-adr-index.ts`                         | `docs/decisions/README.md`                                                  | `npm run adr-index`      | the index                             |
 | `generate-openapi.ts`                           | each surface's OpenAPI document and its Markdown twin                       | `npm run openapi`        | `docs/openapi*.json`, `docs/api-*.md` |
 | `generate-schema-doc.ts`                        | `docs/schema.md`, from the migrations                                       | `npm run schema`         | `docs/schema.md`                      |
+| `generate-settings-doc.ts`                      | `docs/settings.md`, every setting and where it lives                        | `npm run settings`       | `docs/settings.md`                    |
 | `generate-upkeep-sql.ts`                        | the SQL the seeds run after the visits they write, from the domain's upkeep | `npm run upkeep-sql`     | `scripts/lib/every-visit-upkeep.ts`   |
 | `make-house-card.ts`                            | the house referral card                                                     | by hand                  | the image                             |
 | `rules-alias.ts`                                | `@rules/`, the front ends' way into the backend's shared rules              | each bundler's config    | no                                    |
