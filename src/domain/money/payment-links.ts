@@ -36,7 +36,7 @@ import { cityOfVisit } from "../cities/cities.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 
 /** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
-export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free";
+export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free" | "at_visit";
 
 export interface LinkDeps {
   readonly payments: PaymentsProvider;
@@ -179,6 +179,41 @@ async function settleFree(
       .bind(visit.appointmentId, now.toISOString()),
     ...(told === null ? [message.statement] : []),
   ]);
+}
+
+/**
+ * A fitted one visit while online payment is off (docs/decisions/0208-paid-at-the-visit-by-upi.md): no link, but its
+ * booking owes the product's price, less the visit's discount code, by UPI at the visit, as a paid visit ops booked
+ * then does; ops record it once it is in the account. A code that leaves nothing to pay settles it, as with a link.
+ */
+export async function oweAtVisit(db: D1Database, visit: FittedVisit, now: Date): Promise<LinkSent> {
+  const listed = await priceOf(db, "first_fit", {
+    on: visit.day,
+    tier: visit.tier,
+    city: await cityOfVisit(db, visit.appointmentId),
+  });
+  if (listed === null) return "unpriced";
+  const after = await priceAfterCode(db, visit.appointmentId, listed);
+  if (after.price.amount === 0) {
+    await settleFree(db, visit, after.fix, now);
+    return "free";
+  }
+  await db.batch([
+    ...after.fix,
+    db
+      .prepare(
+        `UPDATE slot_holds SET pay_at_visit = 1, amount = ?2, amount_ex_gst = ?3, gst_percent = ?4, updated_at = ?5
+         WHERE appointment_id = ?1 AND one_visit = 1 AND state = 'booked'`,
+      )
+      .bind(
+        visit.appointmentId,
+        after.price.amount,
+        after.price.amount_ex_gst,
+        after.price.gst_percent,
+        now.toISOString(),
+      ),
+  ]);
+  return "at_visit";
 }
 
 /** The visit's link at its close: written once, then asked of Razorpay once; what could not be made waits for the cron. */

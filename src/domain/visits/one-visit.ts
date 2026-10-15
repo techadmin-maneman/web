@@ -14,7 +14,8 @@ import type { Decision } from "../../policy/one-visit.ts";
 import { releaseDeclined } from "../money/discount-code-visits.ts";
 import { pieceBodyOf } from "../field/job-event-bodies.ts";
 import { eventsOf } from "../field/job-events.ts";
-import { sendPaymentLink, type LinkDeps, type LinkSent } from "../money/payment-links.ts";
+import { oweAtVisit, sendPaymentLink, type LinkDeps, type LinkSent } from "../money/payment-links.ts";
+import { takesPaymentsOnline } from "../../providers/payments/index.ts";
 import { boardMoved, visitUpkeep } from "./visit-upkeep.ts";
 
 /** The client's decision, from the piece step's body; null for a body that records neither. */
@@ -72,5 +73,5 @@ export async function closeOneVisit(
     tier: decision.product,
     day: indiaDate(job.windowStart),
   };
-  return sendPaymentLink(db, deps, visit, now);
+  return takesPaymentsOnline(deps.payments) ? sendPaymentLink(db, deps, visit, now) : oweAtVisit(db, visit, now);
 }
