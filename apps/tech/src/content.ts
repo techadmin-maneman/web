@@ -332,6 +332,8 @@ export const job = {
     mismatch: (inProfile: string) => `The hair profile says ${inProfile}. Check with ops before you fit.`,
     rows: {
       paidFor: "Paid for",
+      // A fit paid by UPI at the visit: nothing is paid yet, and the technician never handles the money.
+      bookedAs: "Booked as",
       piece: "Hair system",
       base: "Base",
       lot: "Supplier lot",
