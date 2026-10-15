@@ -271,14 +271,15 @@
         // gives it grants on Staff for a run and takes them away after; with none, the token changes nothing.
         "SERVICE_TOKEN_ACTS_AS": "test-operator@maneman.in",
         "BOOKS_SAC": "",
-        // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
-        "PAYMENTS_PROVIDER": "razorpay",
+        // As production launches: no online payment, so paid visits are booked by ops and paid by UPI at the visit (ADR
+        // 0209). Razorpay's test key stays, with its secrets, for the day online payment comes back: "razorpay" here.
+        "PAYMENTS_PROVIDER": "none",
         // The owner's key is in place (docs/provisioning.md, step 13); production waits for the release.
         "GEOCODE_PROVIDER": "google",
         "ANALYTICS_PROVIDER": "none",
         // Until the owner switches on the Routes and Maps Static APIs for the key (docs/provisioning.md, step 13).
         "ROUTES_PROVIDER": "none",
-        "SELF_SERVE_BOOKING": "true",
+        "SELF_SERVE_BOOKING": "false",
         "SELF_SERVE_CONSULTATIONS": "true",
         "REFERRER_NAME_ON_INVITE": "true",
         "RAZORPAY_KEY_ID": "rzp_test_Tf1Bf3ElRK6uNQ",

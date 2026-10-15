@@ -25,14 +25,14 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `IMAGE_PROVIDER` | `stub` | `youcam` | `youcam` |
 | `MESSAGING_ENABLED` | `true` | `true` | `false` |
 | `MESSAGING_PROVIDER` | `stub` | `evolution` | `evolution` |
-| `PAYMENTS_PROVIDER` | `stub` | `razorpay` | `none` |
+| `PAYMENTS_PROVIDER` | `stub` | `none` | `none` |
 | `RAZORPAY_KEY_ID` | — | `rzp_test_Tf1Bf3ElRK6uNQ` | — |
 | `REFERRER_NAME_ON_INVITE` | `true` | `true` | `true` |
 | `RENDER_DAILY_CEILING` | `20` | `20` | `40` |
 | `RESULT_READ_DAILY_CEILING` | `400` | `400` | `800` |
 | `RESULT_RETENTION_DAYS` | `3` | `3` | `14` |
 | `ROUTES_PROVIDER` | `stub` | `none` | `none` |
-| `SELF_SERVE_BOOKING` | `true` | `true` | `false` |
+| `SELF_SERVE_BOOKING` | `true` | `false` | `false` |
 | `SELF_SERVE_CONSULTATIONS` | `true` | `true` | `true` |
 | `SERVICE_TOKEN_ACTS_AS` | — | `test-operator@maneman.in` | — |
 | `SMS_PROVIDER` | `stub` | `none` | `none` |
