@@ -326,7 +326,7 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   ]);
 
   await page.goto("/waiting");
-  await expect(page.getByText("The piece’s label wasn’t accepted.")).toBeVisible();
+  await expect(page.getByText("The hair system’s label wasn’t accepted.")).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.correct }).click();
 
   // The step opens as it was sent, so only the label is typed again.

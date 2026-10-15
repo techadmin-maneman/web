@@ -190,8 +190,8 @@ const stopped: Readonly<Record<string, string>> = {
   stuck: "This couldn’t reach us after several tries. Send it again.",
   not_found: "This job is no longer on your list.",
   already_closed: "This job is closed.",
-  piece_code: "The piece’s label wasn’t accepted.",
-  old_piece: "The label of the piece that came off wasn’t accepted.",
+  piece_code: "The hair system’s label wasn’t accepted.",
+  old_piece: "The label of the hair system that came off wasn’t accepted.",
   // A one visit's product, no longer offered when the step reached us (ADR 0105).
   product: "That product isn’t offered that day.",
   done: "This job’s checklist changed. Open the job again.",
@@ -326,19 +326,19 @@ export const job = {
   // The board draws the profile's rows inside the piece card; they are a section of their own.
   profileTitle: "Hair profile",
   piece: {
-    title: "The piece",
+    title: "The hair system",
     // The board's piece card reads tier, colour, adhesive, template and scalp, which nothing records.
     // The board draws no "Paid for" row, nor a warning when the hair profile names another product.
     mismatch: (inProfile: string) => `The hair profile says ${inProfile}. Check with ops before you fit.`,
     rows: {
       paidFor: "Paid for",
-      piece: "Piece",
+      piece: "Hair system",
       base: "Base",
       lot: "Supplier lot",
       fitted: "Fitted",
       due: "Replacement due",
     },
-    none: "No piece recorded for this client yet.",
+    none: "No hair system recorded for this client yet.",
     lastVisit: (date: string, who: string | null) =>
       who === null ? `Last visit’s after photo · ${date}` : `Last visit’s after photo · ${date} · ${who}`,
     lastVisitImage: "Last visit’s after photo",
@@ -454,7 +454,7 @@ export const steps = {
     before_photos: "Before photos",
     checklist: "Service checklist",
     consumables: "Consumables used",
-    piece: "The piece",
+    piece: "The hair system",
     // No board draws the hair profile (ADR 0106).
     profile: "Hair profile",
     after_photos: "After photos",
@@ -493,21 +493,21 @@ export const steps = {
   },
   piece: {
     // A label is scanned by its QR code, or typed (docs/decisions/0163-pieces-scanned-from-the-kit.md).
-    label: "The new piece’s label",
+    label: "The new hair system’s label",
     // The board draws no way out of the fit; it closes as partly done, and ops book the refit.
     cannotFit: {
       action: "Can’t fit today",
       title: "Close without fitting?",
-      body: "The job closes as partly done, and ops book the refit with the right piece.",
+      body: "The job closes as partly done, and ops book the refit with the right hair system.",
       yes: "Close without fitting",
       no: "Keep fitting",
     },
     scan: "Scan the label",
     stopScan: "Stop scanning",
     camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
-    expired: "This piece has expired. Hand it in and use another.",
+    expired: "This hair system has expired. Hand it in and use another.",
     otherThanFitted: "Not the hair system this fit is for. Check with ops before you fit.",
-    expiredAction: "That piece has expired",
+    expiredAction: "That hair system has expired",
     placeholder: "MM-ESS-0000123-K",
     // The board draws no label typed wrong.
     malformed: "Type it as on the label, like MM-ESS-0000123-K.",
@@ -520,9 +520,9 @@ export const steps = {
       lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`,
     // The board draws no lookup with no signal.
     offline: "No signal, so it isn’t checked. It’s saved as you typed it.",
-    notThisClient: "That piece isn’t this client’s.",
-    notThisClientAction: "That piece isn’t this client’s",
-    rows: { piece: "Piece", base: "Base", lot: "Supplier lot" },
+    notThisClient: "That hair system isn’t this client’s.",
+    notThisClientAction: "That hair system isn’t this client’s",
+    rows: { piece: "Hair system", base: "Base", lot: "Supplier lot" },
     // The board draws the base as read, not typed; the pieces tab needs it and the lot (open point 28).
     base: "Base",
     lot: "Supplier lot",
@@ -531,8 +531,8 @@ export const steps = {
     listed: (code: string, fitted: string | null) => (fitted === null ? code : `${code} · fitted ${fitted}`),
     // The board draws no piece coming off. The pieces tab keeps why it failed.
     old: {
-      title: "The piece that came off",
-      label: "The label of the piece that came off",
+      title: "The hair system that came off",
+      label: "The label of the hair system that came off",
       reason: "Why it failed, if it did",
     },
     // The board draws no empty base; the piece may not be in the mirror yet.
@@ -796,7 +796,7 @@ export const kit = {
     title: "To hand back",
     /** "MM-ESS-0000007-H · came off Mon 21 Sep" */
     line: (code: string, date: string) => `${code} · came off ${date}`,
-    handBack: (count: number) => `Hand back ${String(count)} ${count === 1 ? "piece" : "pieces"}`,
+    handBack: (count: number) => `Hand back ${String(count)} ${count === 1 ? "hair system" : "hair systems"}`,
   },
   expired: { handBack: "Hand back expired stock" },
   handedBack: "Handed back. Your stockroom receives it.",
