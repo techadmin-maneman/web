@@ -2,7 +2,7 @@
 // use in each period of the latest run, with its high case; and beneath, how right the forecasts before it were.
 
 import type { Success } from "@maneman/web-kit/api";
-import { addDays, dayMonth, fullDate } from "@maneman/web-kit/dates";
+import { addDays, dayMonth, fullDate, todayInIndia } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
@@ -38,10 +38,16 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
     item.periods.set(line.period, line);
     items.set(line.consumable_code, item);
   }
-  const periods = Array.from({ length: run.horizon_periods }, (_, period) => period);
+  const ranOn = dayAfter(run.run_on, 0, true);
+  // The periods not yet over: one past is no longer a plan.
+  const today = todayInIndia(Date.now());
+  const periods = Array.from({ length: run.horizon_periods }, (_, period) => period).filter(
+    (period) => addDays(run.run_on, (period + 1) * run.period_days) > today,
+  );
+  if (periods.length === 0) return <Note>{copy.stale(ranOn)}</Note>;
   return (
     <>
-      <Note>{copy.note(run.period_days, dayAfter(run.run_on, 0, true))}</Note>
+      <Note>{copy.note(run.period_days, ranOn)}</Note>
       <TableScroll labelledBy="plan-forecast">
         <Table controls className={styles.forecast}>
           <thead>
