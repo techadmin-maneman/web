@@ -34,7 +34,7 @@ The words the code, the database and the API use for the same few things, and wh
 | **window label**      | Two meanings, by surface: on `/api/me` it is Phase 1's words for the booked page, "before noon" or "after four" (`WindowLabel`); on `/api/visits` and `/api/tech/jobs` it is the window, morning, afternoon or evening. The API fields keep their names; renaming them is a change to the contract. |
 | **window_start**      | An appointment's booked start, an instant; `window_end` its end. Not a window in the sense above.                                                                                                                                                                                                   |
 | **slot**              | One of the dispatch board's four columns a day (`SLOTS_PER_DAY`).                                                                                                                                                                                                                                   |
-| **unit**              | Half a slot, the grain the day is counted in: eight a day (`UNIT_STARTS`), so a replacement's slot and a half is three.                                                                                                                                                                             |
+| **unit**              | Two meanings, by part. Here, half a slot, the grain the day is counted in: eight a day (`UNIT_STARTS`), so a replacement's slot and a half is three. In stock, one labelled piece (below). Say **half-slot** for the first in new prose.                                                            |
 | **claim**             | A row in `slot_claims` holding one unit, or one window, of one technician's day, for a hold (ADR 0069).                                                                                                                                                                                             |
 | **rate-limit window** | The India hour or day a counter counts in (`src/domain/sign-in/rate-limit.ts`). Nothing to do with a visit's time.                                                                                                                                                                                  |
 
@@ -48,6 +48,31 @@ The words the code, the database and the API use for the same few things, and wh
 | **customer**   | The person's record in Books, where invoices and payments are (`books_customer_id`). Books' word, never ours.                                                                           |
 | **technician** | A field technician ops add in the console's Technicians, in `technicians`. They sign in on one phone at a time (ADR 0052).                                                              |
 | **staff**      | Whoever Cloudflare Access let into the ops console: a person's e-mail, or a service token (`staffOf`, `src/http/audit.ts`).                                                             |
+
+## Stock and purchasing
+
+| Word               | Means                                                                                                                                                                                                |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **place**          | Where stock is kept: the national warehouse, a zone's hub, a city's stockroom, or a technician's kit, each under one above it (`stock_places`, ADR 0155).                                            |
+| **kit**            | The stock a technician carries, a place of its own, checked each evening against tomorrow's visits (ADR 0181).                                                                                       |
+| **stock code**     | One product of hair system to the client's spec: base size, colour, grey and density (ADR 0156). A client is matched to exactly one, never a near one (ADR 0173).                                    |
+| **lot**            | A delivery of a stock code or a consumable, with the supplier's lot and the day it expires; stock leaves a place soonest-expiring first (ADR 0157).                                                  |
+| **unit**           | In stock, one hair system piece received, with its own label and QR code; each movement moves the units it takes (`stock_units`, ADR 0161). Not the day's half-slot.                                 |
+| **movement**       | A change in what a place holds, the ledger's only kind of row: a balance is always summed from them (`stock_movements`).                                                                             |
+| **purchase order** | What we order of a supplier, at the supplier's price, approved by an Operations manager, and a second above the amount ops set (ADR 0166). Its **receipt** takes what arrived into stock (ADR 0167). |
+| **recall**         | A lot blocked everywhere in one action: its wearers told, their replacements owed free (ADR 0187).                                                                                                   |
+| **cycle count**    | A place's stock counted on its period, the counter shown only what to count (ADR 0185).                                                                                                              |
+| **supply plan**    | What each city needs over its supplier's lead time, drafted from the forecast; approving a line sends its transfer or drafts its order (ADR 0180).                                                   |
+
+## Customer Care
+
+| Word            | Means                                                                                                                            |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **thread**      | Every message with one number, matched to its client where we know it (`conversations`, ADR 0129). Also called the chat.         |
+| **reply clock** | When a chat must be answered by, counted in Care's hours; past it, the chat is a task (ADR 0132).                                |
+| **City matter** | What Care send to a client's city because it needs the city: a technician's visit, a word with the city team (ADR 0135).         |
+| **remedy**      | Free service visits Care give a client, with why: at once within the limit ops set, above it once a manager approves (ADR 0143). |
+| **stranger**    | A chat from a number we do not know, until Care link it to a client or save the person (ADR 0138).                               |
 
 ## Removing a person
 
