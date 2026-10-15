@@ -42,7 +42,7 @@ Staging is watched hourly (`watch-staging.yml`) and its money path walked nightl
 
 1. The commit must be on main with a successful staging run.
 2. It records the version each Worker serves, checks the database's identity, uploads mm-api's new version with no traffic, then migrates and marks the database.
-3. It gives the new version a share of traffic (10% by default), smokes it with `Cloudflare-Workers-Version-Overrides`, soaks it (5 minutes by default) against the old version's error rate where Workers analytics can be read, smokes it again, promotes it to 100% and smokes it once more.
+3. It gives the new version a share of traffic (10% by default), smokes it with `Cloudflare-Workers-Version-Overrides`, soaks it (5 minutes by default) against the old version's errors and 5xx answers, and against each route's read ceiling and the latency budgets, smokes it again, promotes it to 100% and smokes it once more. A soak that cannot judge, for too little traffic or a reading Cloudflare would not give, stops the release, unless it was started with `accept_unjudged_soak`: a promotion on the smoke checks alone is someone's decision, never the default.
 4. It ships mm-site, then each app whose surface is on in production, smokes the site and every switched-on host, and opens every host's pages under their policy.
 
 Any failure after the first change of traffic returns every Worker to the version it recorded first.
