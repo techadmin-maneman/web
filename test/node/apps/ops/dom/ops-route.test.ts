@@ -1,98 +1,124 @@
-// The ops console's pages, by path (apps/ops/src/route.ts): one table names
-// every section, and the navigation, the router and the page titles all read
-// it, so a section cannot be listed in one and missed in another.
+// The ops console's pages, by path (apps/ops/src/route.ts): one table names every page of work, one the navigation's
+// entries over them and one Settings' pages, and the navigation, the router and the page titles all read them, so a
+// page cannot be listed in one and missed in another.
 
 import { describe, expect, it } from "vitest";
 import {
-  areasPath,
   clientPath,
   dispatchAsked,
   dispatchPath,
+  firstSetting,
   followsHere,
   keyOf,
   landingPath,
   mayOpen,
+  mayOpenSetting,
+  NAV,
+  NAV_NAMES,
   redirectOf,
   routeOf,
+  rulePath,
   SECTION_NAMES,
   SECTIONS,
   settingsPath,
+  SETTINGS_PAGE_NAMES,
+  SETTINGS_PAGES,
   technicianPath,
   titleOf,
 } from "../../../../../apps/ops/src/route.ts";
+import { RULE_GROUPS } from "../../../../../apps/ops/src/settings/rule-groups.ts";
 import { ROUTE_NEEDS } from "../../../../../src/policy/console-routes.ts";
 
 const CLIENT = "22000000-0000-4000-8000-000000000001";
 const TECHNICIAN = "88000000-0000-4000-8000-000000000001";
 const VISIT = "99000000-0000-4000-8000-000000000001";
 
-const namesIn = (department: string) =>
-  SECTIONS.filter((section) => section.department === department).map((section) => SECTION_NAMES[section.page]);
-
 describe("the ops console’s routes", () => {
-  it("opens every section at the path the navigation links to", () => {
+  it("opens every page of work at the path the navigation links to", () => {
     for (const section of SECTIONS) {
       expect(routeOf(section.path).page, section.path).toBe(section.page);
     }
   });
 
-  it("lists the sections by department, Tasks first", () => {
-    expect(namesIn("operations")).toEqual([
+  it("lists the work first, a job an entry, and every page under exactly one", () => {
+    expect(NAV.map((entry) => NAV_NAMES[entry.entry])).toEqual([
+      "Today",
       "Tasks",
       "Dispatch",
+      "Clients",
+      "Messages",
       "Technicians",
+      "Inventory",
+      "Requests",
+      "Money",
+      "Growth",
+      "Reports",
+    ]);
+    const listed = NAV.flatMap((entry) => entry.pages as readonly string[]);
+    expect([...listed].sort()).toEqual(SECTIONS.map((section) => section.page).sort());
+    expect(NAV.find((entry) => entry.entry === "inventory")?.pages.map((page) => SECTION_NAMES[page])).toEqual([
       "Stock",
       "Counts",
-      "Usage",
-      "Quality",
       "Purchasing",
       "Supply plan",
+      "Quality",
+      "Usage",
       "Items",
       "Suppliers",
     ]);
-    expect(namesIn("customer_care")).toEqual([
-      "Clients",
-      "Messages",
-      "Care settings",
-      "Care numbers",
-      "Concerns",
-      "Number changes",
-      "Deletion requests",
-    ]);
-    expect(namesIn("finance")).toEqual(["Charges", "Prices", "Discount codes", "Technician pay", "Partner commission"]);
-    expect(namesIn("growth")).toEqual(["Referrals", "Areas", "Spend", "Words"]);
-    expect(namesIn("admin")).toEqual(["Settings", "Staff", "Cities", "Targets", "Activity"]);
-    expect(SECTIONS.map((section) => section.department)).toEqual([
-      ...Array<string>(11).fill("operations"),
-      ...Array<string>(7).fill("customer_care"),
-      ...Array<string>(5).fill("finance"),
+  });
+
+  it("holds everything the console is set up with in Settings, by group, and none of it in the work", () => {
+    const work = SECTIONS.map((section) => section.path);
+    for (const old of ["/prices", "/discount-codes", "/staff", "/cities", "/targets", "/words", "/care-settings"]) {
+      expect(work, old).not.toContain(old);
+    }
+    expect(SETTINGS_PAGES.map((page) => page.group)).toEqual([
+      ...Array<string>(3).fill("business"),
+      ...Array<string>(3).fill("scheduling"),
+      ...Array<string>(4).fill("visits"),
+      ...Array<string>(3).fill("prices"),
       ...Array<string>(4).fill("growth"),
-      ...Array<string>(5).fill("admin"),
+      ...Array<string>(4).fill("care"),
+      ...Array<string>(3).fill("inventory"),
+      ...Array<string>(2).fill("team"),
+      ...Array<string>(3).fill("system"),
     ]);
+  });
+
+  it("draws every rule group on one of Settings' pages, and each on one alone", () => {
+    const drawn = SETTINGS_PAGES.flatMap((page) => ("rules" in page ? [...page.rules] : []));
+    for (const group of RULE_GROUPS)
+      expect(
+        drawn.filter((id) => id === group.id),
+        group.id,
+      ).toHaveLength(1);
   });
 
   // The day's money sat under "No-shows".
-  // Payments was a client's tab and the day's money and the no-shows at once: the section is Charges.
-  it("names the money section Charges, at the address it has always had", () => {
-    expect(SECTION_NAMES[routeOf("/payments").page]).toBe("Charges");
+  it("names the money page Charges, at the address it has always had", () => {
+    expect(routeOf("/payments")).toEqual({ page: "payments" });
+    expect(SECTION_NAMES.payments).toBe("Charges");
     expect(titleOf(routeOf("/payments"))).toBe("Charges · Mane Man operations");
   });
 
-  it("shows each section to those whose call opening its page is one the API lists", () => {
-    for (const section of SECTIONS) {
-      expect(Object.keys(ROUTE_NEEDS), section.page).toContain(section.reads);
-    }
+  it("shows each page to those whose call opening it is one the API lists", () => {
+    for (const section of SECTIONS) expect(Object.keys(ROUTE_NEEDS), section.page).toContain(section.reads);
+    for (const page of SETTINGS_PAGES) expect(Object.keys(ROUTE_NEEDS), page.tab).toContain(page.reads);
   });
 
-  it("opens Settings' tabs and a client’s tabs at their own paths", () => {
-    expect(routeOf("/settings")).toEqual({ page: "settings", tab: "rules" });
-    expect(routeOf(settingsPath("blackouts"))).toEqual({ page: "settings", tab: "blackouts" });
-    // The items and the suppliers are Inventory's now; their old Settings addresses still land.
-    expect(routeOf("/settings/consumables")).toEqual({ page: "items" });
-    expect(routeOf("/settings/suppliers")).toEqual({ page: "suppliers" });
+  it("opens each of Settings' pages and a client’s tabs at their own paths", () => {
+    expect(routeOf(settingsPath("closed-days"))).toEqual({ page: "settings", tab: "closed-days" });
     expect(routeOf("/settings/job-sheet")).toEqual({ page: "settings", tab: "job-sheet" });
+    expect(routeOf("/settings/nowhere")).toEqual({ page: "today" });
     expect(routeOf("/stock")).toEqual({ page: "stock" });
     expect(routeOf(`/clients/${CLIENT}/photos`)).toEqual({ page: "clients", clientId: CLIENT, tab: "photos" });
+  });
+
+  it("links to a rule on the page of Settings that holds it", () => {
+    expect(rulePath("late_change_charge")).toBe("/settings/moves#late_change_charge");
+    expect(rulePath("daily_ceilings")).toBe("/settings/limits#daily_ceilings");
+    expect(rulePath("task_sla_hours")).toBe("/settings/console#task_sla_hours");
   });
 
   // A client's page opened on an empty Pieces tab, and so did every bare link.
@@ -101,70 +127,51 @@ describe("the ops console’s routes", () => {
     expect(routeOf(`/clients/${CLIENT}`)).toEqual({ page: "clients", clientId: CLIENT, tab: "visits" });
     expect(clientPath(CLIENT, "visits")).toBe(`/clients/${CLIENT}/visits`);
     expect(routeOf(clientPath(CLIENT, "referrals"))).toEqual({ page: "clients", clientId: CLIENT, tab: "referrals" });
-    expect(routeOf(clientPath(CLIENT, "payments"))).toEqual({ page: "clients", clientId: CLIENT, tab: "payments" });
-  });
-
-  // Launching an area had two homes, Waitlist and Settings › Service area.
-  it("opens Areas on Waiting, and Served at its own path", () => {
-    expect(routeOf("/areas")).toEqual({ page: "areas", tab: "waiting" });
-    expect(routeOf(areasPath("served"))).toEqual({ page: "areas", tab: "served" });
-    expect(areasPath("waiting")).toBe("/areas");
-    expect(routeOf("/areas/nowhere")).toEqual({ page: "tasks" });
-    expect(titleOf(routeOf("/areas"))).toBe("Waiting · Areas · Mane Man operations");
-    expect(titleOf(routeOf("/areas/served"))).toBe("Served · Areas · Mane Man operations");
-    // Its tabs share one key, as Settings' do.
-    expect(keyOf(routeOf("/areas/served"))).toBe(keyOf(routeOf("/areas")));
   });
 
   it("opens a technician’s page on their week, and each of its tabs at its own path", () => {
     expect(routeOf("/technicians")).toEqual({ page: "technicians", technicianId: null, tab: "week" });
     expect(routeOf(technicianPath(TECHNICIAN))).toEqual({ page: "technicians", technicianId: TECHNICIAN, tab: "week" });
-    expect(technicianPath(TECHNICIAN)).toBe(`/technicians/${TECHNICIAN}`);
     expect(routeOf(technicianPath(TECHNICIAN, "kit"))).toEqual({
       page: "technicians",
       technicianId: TECHNICIAN,
       tab: "kit",
     });
-    expect(routeOf(`/technicians/${TECHNICIAN}/nowhere`)).toEqual({ page: "tasks" });
+    expect(routeOf(`/technicians/${TECHNICIAN}/nowhere`)).toEqual({ page: "today" });
     // Their tabs share one key, so moving between them does not read the roster again.
     expect(keyOf(routeOf(technicianPath(TECHNICIAN, "leave")))).toBe(keyOf(routeOf(technicianPath(TECHNICIAN))));
     expect(keyOf(routeOf("/technicians"))).not.toBe(keyOf(routeOf(technicianPath(TECHNICIAN))));
   });
 
-  it("links to the dispatch board on a week and a search, and reads them back", () => {
+  it("links to the dispatch board on a week, a city, a search and a visit, and reads every part back", () => {
     const nothing = { from: null, city: null, find: "", visit: null };
     expect(dispatchPath({})).toBe("/dispatch");
     expect(dispatchPath(nothing)).toBe("/dispatch");
-    expect(dispatchPath({ find: "Imran Qureshi" })).toBe("/dispatch?find=Imran+Qureshi");
-    const both = dispatchPath({ from: "2027-10-04", find: "Imran Qureshi" });
-    expect(both).toBe("/dispatch?from=2027-10-04&find=Imran+Qureshi");
-    expect(dispatchAsked(both.slice(both.indexOf("?")))).toEqual({
-      ...nothing,
-      from: "2027-10-04",
-      find: "Imran Qureshi",
-    });
-    expect(dispatchAsked("")).toEqual(nothing);
-    expect(dispatchAsked("?from=next-week")).toEqual(nothing);
-  });
-
-  // The board kept its week and city out of the address, and no link could open a visit on it.
-  it("links to the dispatch board on a city and a visit as well, and reads every part back", () => {
     const asked = { from: "2027-10-04", city: "Gurgaon", find: "Rohit", visit: VISIT };
     const path = dispatchPath(asked);
     expect(path).toBe(`/dispatch?from=2027-10-04&city=Gurgaon&find=Rohit&visit=${VISIT}`);
     expect(dispatchAsked(path.slice(path.indexOf("?")))).toEqual(asked);
-    expect(dispatchAsked("?visit=not-a-visit&city=%20")).toEqual({ from: null, city: null, find: "", visit: null });
+    expect(dispatchAsked("?from=next-week")).toEqual(nothing);
+    expect(dispatchAsked("?visit=not-a-visit&city=%20")).toEqual(nothing);
   });
 
   it("opens the pages that moved at their old addresses, and moves the address to the new one", () => {
     const moved = {
-      "/settings/prices": "/prices",
-      "/settings/discount-codes": "/discount-codes",
-      "/settings/area": "/areas/served",
-      "/settings/staff": "/staff",
-      "/waitlist": "/areas",
-      "/service-area": "/areas/served",
+      "/prices": "/settings/services",
+      "/settings/prices": "/settings/services",
+      "/discount-codes": "/settings/discount-codes",
+      "/staff": "/settings/staff",
+      "/cities": "/settings/cities",
+      "/targets": "/settings/targets",
+      "/words": "/settings/words",
+      "/care-settings": "/settings/care-team",
+      "/settings/blackouts": "/settings/closed-days",
+      "/settings/area": "/settings/areas",
+      "/service-area": "/settings/areas",
+      "/areas/served": "/settings/areas",
+      "/areas": "/waitlist",
       "/no-shows": "/payments",
+      "/settings/consumables": "/items",
     };
     for (const [old, now] of Object.entries(moved)) {
       expect(routeOf(old), old).toEqual(routeOf(now));
@@ -172,38 +179,62 @@ describe("the ops console’s routes", () => {
     }
   });
 
-  it("opens Tasks for a path it does not know, or a name every object carries", () => {
+  it("moves an old link to a rule to the page of Settings that holds it", () => {
+    expect(redirectOf("/settings", null, "#no_show_wait_min")).toBe("/settings/field#no_show_wait_min");
+  });
+
+  it("opens Today for a path it does not know, or a name every object carries", () => {
     for (const path of ["/", "/nowhere", "/settings/nowhere", "/constructor", "/__proto__", "/toString"]) {
-      expect(routeOf(path), path).toEqual({ page: "tasks" });
+      expect(routeOf(path), path).toEqual({ page: "today" });
     }
   });
 
-  it("titles each page by what it is, never by whom, so no two sections share a title (WCAG 2.4.2)", () => {
-    expect(titleOf(routeOf("/"))).toBe("Tasks · Mane Man operations");
-    expect(titleOf(routeOf("/settings/prices"))).toBe("Prices · Mane Man operations");
-    expect(titleOf(routeOf("/settings/blackouts"))).toBe("Closed days · Settings · Mane Man operations");
+  it("titles each page by what it is, never by whom, so no two share a title (WCAG 2.4.2)", () => {
+    expect(titleOf(routeOf("/"))).toBe("Today · Mane Man operations");
+    expect(titleOf(routeOf("/settings/services"))).toBe("Services · Settings · Mane Man operations");
+    expect(titleOf(routeOf("/settings/stock"))).toBe("Stock · Settings · Mane Man operations");
+    expect(titleOf(routeOf("/stock"))).toBe("Stock · Mane Man operations");
     expect(titleOf(routeOf(`/clients/${CLIENT}/consents`))).toBe("Consents · Clients · Mane Man operations");
     expect(titleOf(routeOf(technicianPath(TECHNICIAN, "phones")))).toBe("Phones · Technicians · Mane Man operations");
-    const titles = SECTIONS.map((section) => titleOf(routeOf(section.path)));
-    expect(new Set(titles).size).toBe(SECTIONS.length);
+    const titles = [
+      ...SECTIONS.map((section) => titleOf(routeOf(section.path))),
+      ...SETTINGS_PAGES.map((page) => titleOf(routeOf(settingsPath(page.tab)))),
+    ];
+    expect(new Set(titles).size).toBe(SECTIONS.length + SETTINGS_PAGES.length);
+    expect(Object.keys(SETTINGS_PAGE_NAMES)).toHaveLength(SETTINGS_PAGES.length);
   });
 });
 
 describe("what the console shows the person signed in", () => {
   const finance = new Set(["GET /api/health", "GET /api/whoami", "GET /api/no-shows", "GET /api/services"]);
+  const careViewer = new Set(["GET /api/health", "GET /api/whoami", "GET /api/conversations", "GET /api/care-team"]);
 
-  it("shows every section until the API has said what goes ahead", () => {
+  it("shows every page until the API has said what goes ahead", () => {
     for (const section of SECTIONS) expect(mayOpen(null, section.page)).toBe(true);
+    for (const page of SETTINGS_PAGES) expect(mayOpenSetting(null, page.tab)).toBe(true);
   });
 
-  it("shows only the sections whose opening call goes ahead for them", () => {
-    const open = SECTIONS.filter((section) => mayOpen(finance, section.page)).map((section) => section.page);
-    expect(open).toEqual(["payments", "prices"]);
+  it("shows only the pages whose opening call goes ahead for them", () => {
+    expect(SECTIONS.filter((section) => mayOpen(finance, section.page)).map((section) => section.page)).toEqual([
+      "payments",
+    ]);
+    expect(SETTINGS_PAGES.filter((page) => mayOpenSetting(finance, page.tab)).map((page) => page.tab)).toEqual([
+      "services",
+    ]);
   });
 
-  it("opens on Tasks, or for one who may not open it, the first section they may", () => {
-    expect(landingPath(null)).toBe("/tasks");
-    expect(landingPath(new Set(Object.keys(ROUTE_NEEDS)))).toBe("/tasks");
+  // Care holds no Admin grant: its own Settings page opens, the policies Admin keeps do not.
+  it("opens Settings on the first page the person may open, and nowhere for one who may open none", () => {
+    expect(firstSetting(careViewer)).toBe("care-team");
+    expect(firstSetting(finance)).toBe("services");
+    expect(firstSetting(new Set(["GET /api/whoami"]))).toBeNull();
+    expect(redirectOf("/settings", careViewer)).toBe("/settings/care-team");
+    expect(redirectOf("/settings", new Set(["GET /api/whoami", "GET /api/no-shows"]))).toBe("/payments");
+  });
+
+  it("opens on Today, or for one who may not open it, the first page they may", () => {
+    expect(landingPath(null)).toBe("/today");
+    expect(landingPath(new Set(Object.keys(ROUTE_NEEDS)))).toBe("/today");
     expect(landingPath(finance)).toBe("/payments");
     expect(landingPath(new Set(["GET /api/whoami"]))).toBeNull();
   });
@@ -211,8 +242,8 @@ describe("what the console shows the person signed in", () => {
   it("moves a path with no page to where the console opens, once the API has said", () => {
     expect(redirectOf("/", null)).toBeNull();
     expect(redirectOf("/", finance)).toBe("/payments");
-    expect(redirectOf("/nowhere", new Set(Object.keys(ROUTE_NEEDS)))).toBe("/tasks");
-    expect(redirectOf("/areas", finance)).toBeNull();
+    expect(redirectOf("/nowhere", new Set(Object.keys(ROUTE_NEEDS)))).toBe("/today");
+    expect(redirectOf("/waitlist", finance)).toBeNull();
     expect(redirectOf("/", new Set(["GET /api/whoami"]))).toBeNull();
   });
 });

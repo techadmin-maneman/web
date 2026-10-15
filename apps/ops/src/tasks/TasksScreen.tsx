@@ -8,7 +8,6 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
@@ -23,7 +22,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
 import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
-import { decidedAt, taskClientPath } from "../lib/task-links.ts";
+import { decidedAt, subjectOf, taskClientPath } from "../lib/task-links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
 import { subOf } from "./task-subs.ts";
@@ -33,17 +32,6 @@ import styles from "./tasks-screen.module.css";
 import { nameParts } from "../lib/who.ts";
 
 type Group = TaskGroup["group"];
-
-/**
- * The first line of a task with no client to name: an erased client has no
- * name left, so the visit heads a no-show, and a disputed charge says only that.
- */
-function unnamedSubject(group: Group, task: Task): string {
-  if (group === "no_show_dispute") return tasks.disputeErased;
-  // A chat from a number we don't know is named by the number.
-  if (task.facts.group === "unanswered_chat") return task.facts.mobile;
-  return tasks.visit(shortDate(indiaDate(task.since)));
-}
 
 /** "priya.sharma@maneman.in" reads "Priya", as the board names an owner in ops by their first name. */
 function ownerName(email: string): string {
@@ -80,7 +68,7 @@ interface RowProps {
 }
 
 function TaskRow({ group, task, now, acting, marked }: RowProps) {
-  const subject = task.person?.name ?? unnamedSubject(group, task);
+  const subject = subjectOf(group, task);
   const where = decidedAt(group, task);
   const action = tasks.decide[group];
   const { owner } = acting;

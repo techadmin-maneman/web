@@ -1,34 +1,32 @@
-/* ---- The rules, a section per subject ------------------------------------- */
-.jump {
-  margin: var(--sp-16) var(--sp-20) 0;
+/* A Settings page of policies (./Rules.tsx): what its rules add to the shared rows. */
+
+/* A rule a link led to takes focus, its ring inside the panel so the panel's edge never cuts it. */
+.rule:focus-visible {
+  outline: var(--focus-width) solid var(--focus-colour);
+  outline-offset: var(--focus-inset);
 }
 
-.jumpList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-8) var(--sp-20);
+.rule + .rule {
+  border-top: var(--hairline) solid var(--ui-line);
+}
+
+/* A rule of several figures, named over its rows. */
+.ruleTitle {
   margin: 0;
-  padding: 0;
-  list-style: none;
+  padding: var(--sp-16) var(--sp-20) var(--sp-4);
   font-size: var(--fs-14);
+  font-weight: var(--weight-medium);
+  color: var(--ui-text);
 }
 
-/* Each section is a link's target, not a control, so it takes focus without a ring. */
-.ruleGroup {
-  margin-top: var(--sp-24);
-  border-top: var(--hairline) solid var(--text);
+.refusal,
+.saved {
+  margin: 0 var(--sp-20) var(--sp-12);
 }
 
-.ruleGroup:focus {
-  outline: none;
-}
-
-.ruleGroupTitle {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20) 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-22);
+.check {
+  padding: var(--sp-16) var(--sp-20);
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
 .checkList {
@@ -39,12 +37,13 @@
   line-height: var(--lh-160);
 }
 
-/* What storage and the database hold, two plain lines under The console's heading; no board draws them. */
+/* What storage and the database hold, two plain lines under the console's heading. */
 .storage {
-  margin: var(--sp-8) var(--sp-20) var(--sp-4);
+  padding: var(--sp-12) var(--sp-20);
+  border-bottom: var(--hairline) solid var(--ui-line);
   font-size: var(--fs-14);
   line-height: var(--lh-160);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .storage p {

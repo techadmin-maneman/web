@@ -1,7 +1,7 @@
 // Settings: the rules, the services and their prices, discount codes, the consumables, the job sheet and staff.
 
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
-import { grantPhrasing, settingsTabs } from "./settings-shell.ts";
+import { grantPhrasing } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
 import { tasks } from "./tasks.ts";
 
@@ -22,7 +22,6 @@ export const settings = {
     `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
   /** Megabytes as Cloudflare counts them, a million bytes. */
   database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e9)} GB`,
-  tabs: settingsTabs,
   /** No board draws discount codes (docs/decisions/0108-discount-codes.md). */
   discountCodes: {
     title: "Discount codes",
@@ -133,7 +132,6 @@ export const settings = {
     },
   },
   rules: {
-    title: "Policies",
     groups: {
       moves: "Moves, cancels and no-shows",
       booking: "Booking and payment",
@@ -150,8 +148,7 @@ export const settings = {
       console: "The console",
       other: "Other policies",
     },
-    jump: "Jump to",
-    lateFees: "Late fees are set in Prices",
+    lateFees: "Late fees are set in Services",
     allowed: (min: number, max: number, unit: string) => `${String(min)}–${String(max)} ${unit}`,
     /** A figure read in words, its range as the words say it: "5 pm to 10 pm, on a 24-hour clock". */
     allowedWords: (min: string, max: string, how: string) => `${min} to ${max}, ${how}`,
@@ -168,12 +165,12 @@ export const settings = {
       ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][day] ?? String(day),
     /** A figure typed outside its bounds, said in the hint's place, since it leaves Save with nothing to send. */
     outOfBounds: (min: string, max: string) => `Enter ${min}–${max}.`,
-    /** A rule with many boxes, shut: "Show all 18". */
-    showAll: (count: number) => `Show all ${String(count)}`,
     save: "Save",
     saving: "Saving…",
     saved: "Saved.",
     reset: "Reset to default",
+    changes: (count: number) => (count === 1 ? "1 change" : `${String(count)} changes`),
+    discard: "Discard",
     /** The open-keyed rule's extra row: a base, and the cycle for it. */
     keyName: "Base, as the technician records it",
     keyValue: "Days",

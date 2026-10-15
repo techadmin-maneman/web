@@ -21,52 +21,63 @@ export const shell = {
   menu: "Menu",
   closeMenu: "Close menu",
   departments: DEPARTMENT_NAMES,
-  /** Our words where no board draws it: each section's name in the navigation, which the design draws flat. */
+  /** Each page's name, as its title and its tab say it. */
   sections: {
+    today: "Today",
     tasks: "Tasks",
     dispatch: "Dispatch",
+    clients: "Clients",
+    messages: "Messages",
     technicians: "Technicians",
     stock: "Stock",
     counts: "Counts",
-    usage: "Usage",
-    quality: "Quality",
     purchasing: "Purchasing",
     "supply-plan": "Supply plan",
+    quality: "Quality",
+    usage: "Usage",
     items: "Items",
     suppliers: "Suppliers",
-    clients: "Clients",
-    messages: "Messages",
-    "care-settings": "Care settings",
-    "care-numbers": "Care numbers",
-    spend: "Spend",
-    targets: "Targets",
     grievances: "Concerns",
     "number-changes": "Number changes",
     "deletion-requests": "Deletion requests",
     payments: "Charges",
-    prices: "Prices",
-    "discount-codes": "Discount codes",
     "technician-pay": "Technician pay",
     "partner-commission": "Partner commission",
     referrals: "Referrals",
-    areas: "Areas",
-    words: "Words",
-    settings: "Settings",
-    staff: "Staff",
-    cities: "Cities",
+    waitlist: "Waitlist",
+    spend: "Spend",
+    "care-numbers": "Care numbers",
     activity: "Activity",
   },
+  /** The navigation's entries. */
+  nav: {
+    today: "Today",
+    tasks: "Tasks",
+    dispatch: "Dispatch",
+    clients: "Clients",
+    messages: "Messages",
+    technicians: "Technicians",
+    inventory: "Inventory",
+    requests: "Requests",
+    money: "Money",
+    growth: "Growth",
+    reports: "Reports",
+  },
+  settings: "Settings",
+  fold: "Collapse",
+  unfold: "Expand",
+  search: "Search",
+  searchKeys: "Ctrl K",
+  crumbs: "Breadcrumb",
   /** Go to anything, by Ctrl K or ⌘K (../components/CommandPalette.tsx). */
   palette: {
     title: "Go to",
-    label: "A page, or a client",
-    hint: "A page’s name, or a client’s name or four digits of their number. Enter goes to the first.",
+    label: "Page or client",
     found: "Found",
     none: "Nothing matches.",
     client: (name: string, mobile: string) => `${name} · ${mobile}`,
+    setting: (page: string) => `Settings · ${page}`,
   },
-  /** A group of sections, as the navigation names its one entry (../route.ts, SECTION_GROUPS). */
-  groups: { inventory: "Inventory", care: "Care", "data-requests": "Data requests" },
   /** A section's name in the navigation, read out with the count of tasks waiting in it. */
   waiting: (section: string, count: number, overdue: boolean) =>
     overdue ? `${section}, ${String(count)} waiting, some overdue` : `${section}, ${String(count)} waiting`,
@@ -78,20 +89,12 @@ export const shell = {
   closed: "You don’t have access to this page. An admin can grant it on Staff.",
   /** The browser tab's title: "Blackout days · Settings · Mane Man operations". */
   documentTitle: (parts: readonly string[]) => [...parts, "Mane Man operations"].join(" · "),
-  /**
-   * Who is signed in, where the design draws "AK" in a box at the
-   * header's right, and a way out, which it does not draw. Signing out ends the
-   * Cloudflare Access session, which is the only session the console has.
-   */
+  /** Who is signed in, the theme, and the way out: Access's own session, which is the only one the console has. */
   account: {
-    signedInAs: (who: string) => `Signed in as ${who}`,
+    label: "Account",
     signOut: "Sign out",
-  },
-  /** The header's way to a client from any page, which the board does not draw. */
-  find: {
-    label: "Find a client by name or number",
-    placeholder: "Name or number",
-    submit: "Find client",
+    theme: "Theme",
+    themes: { system: "System", light: "Light", dark: "Dark" },
   },
   /**
    * Cloudflare Access ends a session after the time the team sets,

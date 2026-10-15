@@ -41,6 +41,23 @@ body {
   font-size: var(--fs-14);
 }
 
+/* A link with no look of its own: the words' colour over a quiet rule, which darkens under the pointer. In the base
+   layer, so every shared part's own look wins. */
+@layer base {
+  a {
+    color: inherit;
+    text-decoration-color: var(--ui-line-control);
+    text-decoration-thickness: var(--hairline);
+    text-underline-offset: var(--sp-4);
+  }
+
+  @media (hover: hover) {
+    a:hover {
+      text-decoration-color: currentcolor;
+    }
+  }
+}
+
 #root {
   min-height: 100dvh;
 }

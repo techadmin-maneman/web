@@ -46,8 +46,7 @@ describe("a console page that fails to draw", () => {
     await act(async () => {
       root.render(
         createElement(Shell, {
-          section: "/tasks",
-          title: shell.sections.tasks,
+          route: { page: "tasks" },
           children: createElement(PageBoundary, { children: createElement(Throws) }),
         }),
       );

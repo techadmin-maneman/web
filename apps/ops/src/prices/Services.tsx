@@ -14,10 +14,10 @@ import { rupees } from "@maneman/web-kit/money";
 import { useState, type ReactNode } from "react";
 import { type Kind, type LateFee, type OpsService, type ServiceCatalogue } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
+import { rulePath } from "../route.ts";
 import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { rulePath } from "../settings/index.ts";
 import { priceWords, type Priced } from "./PriceForms.tsx";
 import {
   CALL_OF,

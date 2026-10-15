@@ -126,7 +126,11 @@ function PayTechnicians({ pay, maySet, onChanged }: { pay: Pay; maySet: boolean;
   );
 }
 
-export function TechnicianPay() {
+/**
+ * Technician pay, in its two places: the grades, their rates and each technician's grade, which Settings holds; and
+ * the month's statements, which Money holds.
+ */
+export function TechnicianPay({ part }: { readonly part: "grades" | "statements" }) {
   const [loaded, retry] = useLoad(technicianPayApi.technicianPay);
   /** The pay as the last change left it, so the page follows a change without reading it again. */
   const [changed, setChanged] = useState<Pay | null>(null);
@@ -135,6 +139,7 @@ export function TechnicianPay() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const pay = changed ?? loaded.value;
+  if (part === "statements") return <PayStatement today={pay.today} />;
   const may = {
     grades: access.mayCall("POST /api/technician-pay/grades"),
     rates: access.mayCall("POST /api/technician-pay/rates"),
@@ -147,7 +152,6 @@ export function TechnicianPay() {
         maySet={access.mayCall("POST /api/technician-pay/technicians/{id}")}
         onChanged={setChanged}
       />
-      <PayStatement today={pay.today} />
     </>
   );
 }

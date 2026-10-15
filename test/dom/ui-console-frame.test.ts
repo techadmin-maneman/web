@@ -58,20 +58,30 @@ describe("where a page sits", () => {
 describe("the navigation", () => {
   const nav = (folded: boolean) =>
     renderToStaticMarkup(
-      createElement(
-        SideNav,
-        { label: "Console", folded },
-        createElement(NavItem, {
-          to: "/tasks",
-          icon: "M0 0",
-          name: "Tasks",
-          current: true,
-          count: 8,
-          urgent: true,
-          label: "Tasks, 8 waiting, some overdue",
-        }),
-        createElement(NavItem, { to: "/dispatch", icon: "M0 0", name: "Dispatch", current: false, count: 0 }),
-      ),
+      createElement(SideNav, {
+        label: "Console",
+        folded,
+        children: [
+          createElement(NavItem, {
+            key: "tasks",
+            to: "/tasks",
+            icon: "M0 0",
+            name: "Tasks",
+            current: true,
+            count: 8,
+            urgent: true,
+            label: "Tasks, 8 waiting, some overdue",
+          }),
+          createElement(NavItem, {
+            key: "dispatch",
+            to: "/dispatch",
+            icon: "M0 0",
+            name: "Dispatch",
+            current: false,
+            count: 0,
+          }),
+        ],
+      }),
     );
 
   it("is named, and marks the page open", () => {

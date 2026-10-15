@@ -1,135 +1,11 @@
 /*
- * The console's frame: a 196 px column on ink, a 56 px header, and the
- * section beneath it on paper. Only the section scrolls, so the navigation and
- * the header stay where a focused control can always be reached (WCAG 2.4.11).
+ * The console's frame: the navigation down the left, a bar across the top, and the page beneath it. Only the page
+ * scrolls, so the navigation and the bar stay where a focused control can always be reached (WCAG 2.4.11).
  */
 
 .console {
   display: flex;
   height: 100dvh;
-}
-
-.nav {
-  --local-nav: 196px; /* the navigation column down the left */
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  width: var(--local-nav);
-  /* The sections outgrow a short window, or one at 200% zoom: they scroll rather than run off the page. */
-  overflow-y: auto;
-  background: var(--ink);
-}
-
-/* The header's Menu, for a narrow window alone. */
-.menu {
-  display: none;
-}
-
-/* A window short of wide: the navigation folds away over the page's left edge, and Menu brings it back. */
-@media (max-width: 1023px) {
-  .nav {
-    position: fixed;
-    inset: 0 auto 0 0;
-    z-index: var(--z-header);
-    transform: translateX(-100%);
-    visibility: hidden;
-    transition:
-      transform var(--duration-travel) var(--ease-house),
-      visibility var(--duration-travel) var(--ease-house) allow-discrete;
-  }
-
-  .nav[data-open="true"] {
-    transform: none;
-    visibility: visible;
-  }
-
-  .menu {
-    display: inline-flex;
-    flex-shrink: 0;
-  }
-}
-
-/* Out of sight until the keyboard reaches it, first on every page. */
-
-.department {
-  padding-top: var(--sp-16);
-}
-
-.departmentName {
-  margin: 0;
-  padding: 0 var(--sp-20) var(--sp-4);
-  letter-spacing: var(--tracking-12);
-  font-size: var(--fs-13);
-  color: var(--ink-muted);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-12);
-  height: var(--header-h);
-  padding: 0 var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.mark {
-  width: var(--sp-24);
-  height: var(--sp-24);
-  fill: var(--gilt);
-}
-
-.brandName {
-  font-size: var(--fs-15);
-  color: var(--paper);
-}
-
-.sections {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-8);
-  min-height: var(--tap);
-  padding: 0 var(--sp-20);
-  border-left: var(--rule-strong) solid transparent;
-  font-size: var(--fs-14);
-  color: var(--ink-soft);
-  text-decoration: none;
-}
-
-.section[aria-current="page"] {
-  border-left-color: var(--gilt);
-  background: var(--ink-deep);
-  color: var(--paper);
-}
-
-.section:focus-visible {
-  outline: var(--focus-width) solid var(--paper);
-  outline-offset: var(--focus-inset);
-}
-
-/* How many tasks wait in a section; filled where any of them is overdue. */
-.count,
-.overdue {
-  min-width: var(--sp-24);
-  padding: 0 var(--sp-8);
-  font-size: var(--fs-13);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-
-.count {
-  color: var(--ink-tag);
-}
-
-.overdue {
-  background: var(--error-on-ink);
-  color: var(--ink);
 }
 
 .body {
@@ -139,81 +15,68 @@
   min-width: 0;
 }
 
-/* The header centres its two halves in its 56 px, and the title and its line keep one baseline, as the design sets them. */
-.header {
-  display: flex;
+.mark {
   flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  height: var(--header-h);
-  padding: 0 var(--sp-24);
-  border-bottom: var(--hairline) solid var(--paper-line);
+  width: var(--sp-24);
+  height: var(--sp-24);
+  fill: var(--nav-mark);
 }
 
-.heading {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-16);
-  min-width: 0;
+.brandName {
+  font-size: var(--fs-15);
 }
 
-.title {
+.footItems {
   margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-22);
+  padding: 0;
+  list-style: none;
 }
 
-.sub {
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
-/* Who is signed in: the board's box of initials, with the name beside it in the header's own muted line. */
-/* The header's client search, between the title and who is signed in. */
-.finder {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--sp-8);
-  min-width: 0;
-}
-
-/* The box's share of the row, which Field's wrapper holds. */
-.finderBox {
-  --local-finder: 240px; /* the header's client search */
-  flex: 1;
-  max-width: var(--local-finder);
-}
-
-.finderField {
-  width: 100%;
-}
-
-.account {
+/* The bar: where the page sits, the search, and who is signed in. */
+.bar {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--sp-16);
+  gap: var(--sp-12);
+  min-height: var(--sp-48);
+  padding: 0 var(--sp-24);
+  border-bottom: var(--hairline) solid var(--ui-line);
+}
+
+.crumbs {
+  flex: 1;
+  min-width: 0;
+}
+
+.search {
+  gap: var(--sp-8);
+}
+
+.keys {
+  padding: 0 var(--sp-4);
+  border: var(--hairline) solid var(--ui-line);
+  font-family: inherit;
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
-.initials {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--sp-32);
-  height: var(--sp-32);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
-  font-family: var(--font-serif);
-  color: var(--text);
+/* The bar's Menu, for a narrow window alone. */
+.menu {
+  display: none;
 }
 
-/* A spent Access session, said once under the header and over whichever section is open. */
+@media (max-width: 1023px) {
+  .menu {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  .keys {
+    display: none;
+  }
+}
+
+/* A spent Access session, said once under the bar and over whichever page is open. */
 .lapsed {
   display: flex;
   flex-shrink: 0;
@@ -221,9 +84,9 @@
   justify-content: space-between;
   gap: var(--sp-16);
   padding: var(--sp-8) var(--sp-24);
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
   border-left: var(--rule-strong) solid var(--status-warning);
-  background: var(--paper-light);
+  background: var(--ui-raised);
 }
 
 .lapsedLine {
@@ -233,22 +96,18 @@
 }
 
 /*
- * Each section pads itself, as its board does. The section is what anything positioned inside it, such as a visually
- * hidden legend, is placed against: placed against the window instead, it would stretch the document past the frame,
- * and the whole console would scroll, the navigation with it.
+ * The page scrolls, and is what anything positioned inside it, such as a visually hidden legend, is placed against:
+ * placed against the window instead, it would stretch the document past the frame, and the whole console would
+ * scroll, the navigation with it.
  */
 .page,
 .flushPage {
   position: relative;
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
   overflow-y: auto;
-}
-
-.closed {
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--text-muted);
 }
 
 /* The skip link's target: a region, not a control, so it has no ring. */
@@ -258,16 +117,29 @@
 }
 
 .page {
-  padding: var(--sp-24);
+  gap: var(--sp-20);
+  padding: var(--sp-24) var(--sp-32) var(--sp-48);
 }
 
-/* Why the page was just read again, above it. */
+.head {
+  max-width: var(--ops-list);
+}
+
+/* The dispatch board runs to the frame's edges beneath its head, and holds its own tray against the right. */
+.flushHead {
+  padding: var(--sp-20) var(--sp-24) var(--sp-12);
+}
+
+.actions {
+  display: contents;
+}
+
 .note {
-  margin: 0 0 var(--sp-16);
+  margin: 0;
 }
 
-/* The dispatch board runs to the frame's edges, and holds its own tray against the right. */
-.flushPage {
-  display: flex;
-  min-width: 0;
+.closed {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--ui-text-muted);
 }

@@ -77,6 +77,19 @@ export function PopoverNote({ children }: { readonly children: ReactNode }) {
   return <p className={styles.note}>{children}</p>;
 }
 
+/** A few controls in the panel under their name, as the theme's three are. */
+export function PopoverGroup({ label, children }: { readonly label: string; readonly children: ReactNode }) {
+  const id = useId();
+  return (
+    <div className={styles.group} role="group" aria-labelledby={id}>
+      <span className={styles.groupLabel} id={id}>
+        {label}
+      </span>
+      <div className={styles.groupControls}>{children}</div>
+    </div>
+  );
+}
+
 /** One action in the panel, a row of its width. */
 export function PopoverItem({
   onClick,

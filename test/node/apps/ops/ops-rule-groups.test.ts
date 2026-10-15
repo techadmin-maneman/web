@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import { settings } from "../../../../apps/ops/src/content/settings.ts";
-import { OTHER_GROUP, RULE_GROUPS, rulePath, sectionsOf } from "../../../../apps/ops/src/settings/rule-groups.ts";
+import { OTHER_GROUP, RULE_GROUPS, sectionsOf } from "../../../../apps/ops/src/settings/rule-groups.ts";
 import { OPS_SETTINGS } from "../../../../src/policy/ops-settings.ts";
 
 const rule = (name: string) => ({ name });
@@ -46,11 +46,5 @@ describe("the page’s sections", () => {
   it("show every rule the register holds exactly once", () => {
     const shown = sectionsOf(OPS_SETTINGS).flatMap((section) => section.rules.map((each) => each.name));
     expect(shown.sort()).toEqual(OPS_SETTINGS.map((setting) => setting.name).sort());
-  });
-});
-
-describe("a link to one rule", () => {
-  it("opens Settings at that rule", () => {
-    expect(rulePath("late_change_charge")).toBe("/settings#late_change_charge");
   });
 });

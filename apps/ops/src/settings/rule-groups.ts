@@ -67,8 +67,5 @@ export function sectionsOf<Rule extends { readonly name: string }>(rules: readon
   return sections.filter((section) => section.rules.length > 0);
 }
 
-/** A link to one rule, which Settings › Rules scrolls to once it has loaded. */
-export const rulePath = (name: OpsSettingName): string => `/settings#${name}`;
-
 /** The rules that charge a late fee, which is a price set in Prices, not a rule. */
 export const CHARGES_A_LATE_FEE: readonly string[] = ["late_change_charge", "no_show_charge"];

@@ -3,11 +3,16 @@
 // it, its client moved to another Care person or a matter sent to their city, and the Care team's days off. Every name,
 // number and address is made up.
 
-import { act, createElement } from "react";
+import { act, createElement, Fragment } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Conversation } from "../../apps/ops/src/care/care-api.ts";
-import { CareSettingsScreen, MessagesScreen } from "../../apps/ops/src/care/MessagesScreen.tsx";
+import {
+  CareTeamScreen,
+  MessagesScreen,
+  QuickRepliesScreen,
+  RemediesScreen,
+} from "../../apps/ops/src/care/MessagesScreen.tsx";
 import { care as copy } from "../../apps/ops/src/content/care.ts";
 import { shortDate } from "../../packages/web-kit/dates.ts";
 import { answered } from "./render-hook.ts";
@@ -207,10 +212,18 @@ async function show() {
   await settle();
 }
 
-/** Care settings, the tab beside the inbox: the team, the remedies and the quick replies. */
+/** Care's three Settings pages, drawn together: the team, the remedies and the quick replies. */
 async function showSettings() {
   act(() => {
-    root.render(createElement(CareSettingsScreen));
+    root.render(
+      createElement(
+        Fragment,
+        null,
+        createElement(CareTeamScreen),
+        createElement(RemediesScreen),
+        createElement(QuickRepliesScreen),
+      ),
+    );
   });
   await settle();
 }
