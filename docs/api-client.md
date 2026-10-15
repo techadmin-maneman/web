@@ -9951,6 +9951,10 @@ Request body:
         "replacement"
       ]
     },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit, whose product is chosen at the visit, not the service named."
+    },
     "service": {
       "allOf": [
         {
@@ -10147,6 +10151,7 @@ Request body:
   "required": [
     "id",
     "type",
+    "one_visit",
     "service",
     "date",
     "window",

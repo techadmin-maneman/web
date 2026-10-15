@@ -156,6 +156,7 @@ export async function holdAs(page: Page, terms: Hold): Promise<() => Hold> {
     last = {
       id: crypto.randomUUID(),
       type: asked.type,
+      one_visit: false,
       service: { tier: "standard", name: "Service visit", minutes: 90 },
       date: asked.date,
       window: asked.window,

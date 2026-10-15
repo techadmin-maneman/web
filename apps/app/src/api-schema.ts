@@ -5281,6 +5281,8 @@ export interface components {
             id: string;
             /** @enum {string} */
             type: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description A consultation and fit in one visit, whose product is chosen at the visit, not the service named. */
+            one_visit: boolean;
             service: components["schemas"]["VisitService"] & unknown;
             /** Format: date */
             date: string;

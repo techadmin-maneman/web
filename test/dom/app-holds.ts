@@ -9,6 +9,7 @@ export function holdOf(over: Partial<Hold> = {}): Hold {
   return {
     id: "a1b2c3d4-0000-4000-8000-000000000001",
     type: "service",
+    one_visit: false,
     service: { tier: "standard", name: "Service visit", minutes: 90 },
     date: "2026-10-20",
     window: "morning",

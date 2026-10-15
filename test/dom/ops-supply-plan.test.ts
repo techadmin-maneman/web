@@ -114,7 +114,7 @@ describe("the supply plan", () => {
     await press(button(copy.approve));
     expect(posted).toEqual([{ path: "/api/supply-plan/lines/pl-1/approve", body: { quantity: 4 } }]);
     expect(page.textContent).toContain(copy.approvedSaid);
-    expect(page.textContent).toContain(`Approved · ${copy.order(7)}`);
+    expect(page.textContent).toContain(copy.draftedAs(copy.order(7)));
   });
 
   it("rejects a line with why, and drafts the plan again", async () => {

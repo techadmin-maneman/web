@@ -28,6 +28,7 @@ import { cityOfPincode } from "../cities/cities.ts";
 interface HoldRow {
   id: string;
   type: VisitType;
+  one_visit: number;
   tier: string;
   minutes: number | null;
   /** The service's name as it is now; null only where no service is the hold's kind and tier. */
@@ -62,7 +63,7 @@ interface HoldRow {
 const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
     h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.grace_seconds, h.confirmed_at, h.late_fee_ex_gst,
     h.late_fee_gst_percent, h.change_notice_hours, h.late_change_charge, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
-    h.moves_appointment_id, h.use_credit, h.person_id, h.pincode,
+    h.moves_appointment_id, h.use_credit, h.person_id, h.pincode, h.one_visit,
     EXISTS (SELECT 1 FROM payments p WHERE p.razorpay_order_id = h.razorpay_order_id AND p.status = 'captured') AS paid
   FROM slot_holds h JOIN technicians t ON t.id = h.technician_id
   LEFT JOIN services s ON s.kind = h.type AND s.tier = h.tier
@@ -107,6 +108,7 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
   return {
     id: row.id,
     type: row.type,
+    one_visit: row.one_visit === 1,
     service: { tier: row.tier, name: row.service_name ?? VISIT_TYPE_NAMES[row.type], minutes },
     date: row.date,
     window: row.window_label,
