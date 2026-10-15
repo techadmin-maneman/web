@@ -89,7 +89,9 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
         `SELECT b.consumable_code, c.name, c.unit, b.quantity, c.reorder_kit,
            EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = b.consumable_code) AS hair_system
          FROM stock_balances b JOIN consumables c ON c.code = b.consumable_code
-         WHERE b.place = ?1 AND (b.quantity <> 0 OR c.reorder_kit IS NOT NULL) ORDER BY c.name COLLATE NOCASE`,
+         WHERE b.place = ?1 AND (b.quantity <> 0 OR (c.reorder_kit IS NOT NULL
+           AND NOT EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = b.consumable_code)))
+         ORDER BY c.name COLLATE NOCASE`,
       )
       .bind(kit)
       .all<HeldRow>(),
@@ -130,7 +132,8 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
       name: row.name,
       unit: row.unit,
       quantity: row.quantity,
-      low: isLow(row.quantity, row.reorder_kit),
+      // What runs low is what a technician uses up; a hair system comes for its own fit.
+      low: row.hair_system !== 1 && isLow(row.quantity, row.reorder_kit),
       hairSystem: row.hair_system === 1,
       lots: lots.results
         .filter((lot) => lot.code === row.consumable_code)
