@@ -29,9 +29,22 @@ import { sqlRow } from "../lib/sql-literal.ts";
 import { EVERY_VISIT_UPKEEP } from "../lib/every-visit-upkeep.ts";
 import { stockAndCare } from "./seed-stock-and-care.ts";
 
-/** The technician a developer signs in as, and their client: fixed, so a second run finds the same ones. */
-const TECHNICIAN = { id: "local-technician", fsmId: "local-resource-1", mobile: "9810099001", name: "Sandeep Yadav" };
-const CLIENT = { id: "local-client", addressId: "local-client-address", mobile: "9810099002", name: "Neha Kapoor" };
+/**
+ * The technician a developer signs in as, and their client: fixed, so a second run finds the same ones. UUIDs, as the
+ * API's answers promise of every ID, so the console's screens check out against its contract.
+ */
+const TECHNICIAN = {
+  id: "0000d001-0000-4000-8000-000000000001",
+  fsmId: "local-resource-1",
+  mobile: "9810099001",
+  name: "Sandeep Yadav",
+};
+const CLIENT = {
+  id: "0000d001-0000-4000-8000-000000000002",
+  addressId: "0000d001-0000-4000-8000-000000000003",
+  mobile: "9810099002",
+  name: "Neha Kapoor",
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
