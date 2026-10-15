@@ -87,7 +87,9 @@ const ACTIVITY_SQL = `
     AND (?7 IS NULL OR a.at < ?7)
     AND (?8 IS NULL OR a.id < ?8)
     AND (?10 = 1 OR a.action NOT IN ('ops.call', 'client.call', 'tech.call')
-         OR COALESCE(json_extract(a.detail, '$.method'), '') <> 'GET')
+         OR (COALESCE(json_extract(a.detail, '$.method'), '') <> 'GET'
+             AND COALESCE(json_extract(a.detail, '$.path'), '') NOT GLOB '*/find'
+             AND COALESCE(json_extract(a.detail, '$.path'), '') NOT GLOB '*/search'))
   ORDER BY a.id DESC
   LIMIT ?9`;
 

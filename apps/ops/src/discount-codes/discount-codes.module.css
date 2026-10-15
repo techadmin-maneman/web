@@ -18,10 +18,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.scroll {
-  overflow-x: auto;
-}
-
 .table {
   min-width: var(--ops-table-min);
 }

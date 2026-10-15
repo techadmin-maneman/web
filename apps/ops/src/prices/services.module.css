@@ -6,9 +6,7 @@
   border-top: 0;
 } /* A kind's prices, one table: a row a service, its Edit opening a strip beneath it. Narrow screens scroll the table. */
 
-.scroll {
-  overflow-x: auto;
-} /* Fixed columns, so every kind's table lines up with the next. */
+/* Fixed columns, so every kind's table lines up with the next. */
 .table {
   --local-prices-edit: 90px;
   --local-prices-next: 260px; /* "Rs. 25,000 + 18% GST from 10 Oct 2027" */

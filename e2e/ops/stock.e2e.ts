@@ -51,9 +51,9 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
   await expect(table.getByRole("columnheader", { name: "Sameer Bhatt (left)" })).toBeVisible();
 
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(0)).toContainText("120 strip");
+  await expect(tape.getByRole("cell").nth(0)).toContainText("120 strips");
   await expect(tape.getByRole("cell").nth(0)).toContainText("Counted Mon 20 Sep");
-  await expect(tape.getByRole("cell").nth(1)).toContainText("3 strip");
+  await expect(tape.getByRole("cell").nth(1)).toContainText("3 strips");
   await expect(tape.getByRole("cell").nth(1)).toContainText(stock.low);
   await expect(tape.getByRole("cell").nth(2)).not.toContainText(stock.low);
   const solvent = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Solvent" }) });
@@ -88,7 +88,7 @@ test("past six places, shows the warehouse and one place, picked, marking each p
   await kit.selectOption({ label: "Technician 5 · low" });
   await expect(table.getByRole("columnheader")).toHaveText([stock.record.consumable, WAREHOUSE, "Technician 5"]);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(1)).toContainText("5 strip");
+  await expect(tape.getByRole("cell").nth(1)).toContainText("5 strips");
   await expect(tape.getByRole("cell").nth(1)).toContainText(stock.low);
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -103,7 +103,7 @@ test("records a delivery into the store, showing what it holds before and after"
 
   const check = form.getByRole("group", { name: review.title });
   await expect(check).toBeFocused();
-  await expect(check).toContainText(`${WAREHOUSE}: 120 strip → 220 strip`);
+  await expect(check).toContainText(`${WAREHOUSE}: 120 strips → 220 strips`);
   const sent = posted(page, "/api/stock/deliveries");
   await check.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
@@ -214,7 +214,7 @@ test("a count shows the figure it finds, and one that agrees says it records onl
   await form.getByRole("button", { name: stockPlaces.edit }).click();
   await form.getByLabel(stock.record.counted).fill("2");
   await form.getByRole("button", { name: stock.record.check }).click();
-  await expect(form.getByRole("group", { name: review.title })).toContainText("Imran Qureshi: 3 strip → 2 strip");
+  await expect(form.getByRole("group", { name: review.title })).toContainText("Imran Qureshi: 3 strips → 2 strips");
   const sent = posted(page, "/api/stock/counts");
   await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
@@ -374,8 +374,8 @@ test("adds up every place, and each city, and lists the lots that expire soon", 
     stockViews.totals.noCity,
   ]);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
-  await expect(tape.getByRole("cell").nth(0)).toHaveText("129 strip");
-  await expect(tape.getByRole("cell").nth(1)).toHaveText("9 strip");
+  await expect(tape.getByRole("cell").nth(0)).toHaveText("129 strips");
+  await expect(tape.getByRole("cell").nth(1)).toHaveText("9 strips");
 
   const panel = page.getByRole("region", { name: stockViews.expiring.title });
   await expect(panel.getByRole("row").filter({ hasText: "SV-0930" })).toContainText("Imran Qureshi");

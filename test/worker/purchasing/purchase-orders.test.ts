@@ -156,7 +156,7 @@ describe("an approved order", () => {
 });
 
 describe("the letterhead a printed order carries", () => {
-  const LETTERHEAD = { legal_name: "Mane Man Grooming Services Private Limited", gstin: null, deliver_to: "Sector 37" };
+  const LETTERHEAD = { legal_name: "Mane Man Private Limited", gstin: null, deliver_to: "Sector 37" };
 
   it("is none until set, then is the one row each change replaces, the CIN and GSTIN taken in capitals", async () => {
     const read = async () =>

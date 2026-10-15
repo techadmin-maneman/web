@@ -178,9 +178,10 @@ export function fetchReferralReward(): Promise<Answer<ReferralReward>> {
   return call<ReferralReward>("/api/referral-reward");
 }
 
-/** The buildings matching what was typed into /book's address search, in one billed session. */
-export function suggestBuildings(q: string, session: string): Promise<Answer<BuildingSuggestions>> {
-  return post<BuildingSuggestions>("/api/buildings/suggestions", { q, session });
+/** The buildings matching what was typed into /book's address search, in one billed session, near its pincode. */
+export function suggestBuildings(q: string, session: string, pincode: string): Promise<Answer<BuildingSuggestions>> {
+  const near = /^\d{6}$/.test(pincode) ? { pincode } : {};
+  return post<BuildingSuggestions>("/api/buildings/suggestions", { q, session, ...near });
 }
 
 export function checkPincode(pincode: string): Promise<Answer<PincodeAnswer>> {

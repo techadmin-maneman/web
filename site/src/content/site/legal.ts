@@ -32,7 +32,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "What we keep",
         paragraphs: [
-          "Mane Man Grooming Services Private Limited collects only what it needs to arrange your visits and your simulation. When you book, we keep your name, mobile number, the address the visit is at, preferred visit time and the extent of your hair loss, with how you reached this site.",
+          "Mane Man Private Limited collects only what it needs to arrange your visits and your simulation. When you book, we keep your name, mobile number, the address the visit is at, preferred visit time and the extent of your hair loss, with how you reached this site.",
           "Once you are a client, we also keep what your visits need: the photographs taken at each visit; your hair profile, which records your fit and what you tell us of treatments you have tried, skin conditions and allergies; and your visits, payments, refunds and free service visits.",
         ],
       },
@@ -84,7 +84,7 @@ export const legalPages: { readonly privacy: LegalPage; readonly terms: LegalPag
       {
         heading: "These terms",
         paragraphs: [
-          "These terms cover the service Mane Man Grooming Services Private Limited provides: non-surgical hair systems, measured, fitted and serviced at your home across Delhi NCR. By booking a visit or using the try-on you agree to them. We may change them; the version on this page when you book is the one that applies to that booking.",
+          "These terms cover the service Mane Man Private Limited provides: non-surgical hair systems, measured, fitted and serviced at your home across Delhi NCR. By booking a visit or using the try-on you agree to them. We may change them; the version on this page when you book is the one that applies to that booking.",
         ],
       },
       {

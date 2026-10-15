@@ -10,7 +10,7 @@ import { readOpsInputs } from "../platform/ops-settings.ts";
 import type { RazorpayPayment, RazorpayPaymentLink } from "../../providers/payments/razorpay.ts";
 import { isRefusal } from "../../providers/provider-error.ts";
 import { draftCustomOrderPo } from "../purchasing/custom-order-po.ts";
-import { paymentsTab } from "../platform/alerts.ts";
+import { paymentsTab, resolveAlertStatement } from "../platform/alerts.ts";
 import type { LinkDeps } from "./payment-links.ts";
 import { recordPayment } from "./payments.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
@@ -73,6 +73,7 @@ export async function sendCustomOrderLink(
       notify,
     });
     await keep(db, order.id, made, now);
+    await resolveAlertStatement(db, `custom_order_link:${order.id}`, now).run();
     return "sent";
   } catch (error) {
     const reason = failureReason(error);

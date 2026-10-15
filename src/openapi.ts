@@ -22,8 +22,8 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     ANALYTICS_PROVIDER: "stub",
   },
   settings: {
-    leadMobileDailyLimit: 5,
-    leadIpDailyLimit: 20,
+    leadMobileDailyLimit: 15,
+    leadIpDailyLimit: 100,
     turnstileSecret: "",
     acceptTurnstileTestToken: false,
     selfServeBooking: false,
@@ -43,6 +43,7 @@ const DOCUMENTATION_CONFIG: StaticConfig = {
     analytics: { clientKeySecret: null },
     access: null,
     staffBootstrapAdmins: [],
+    serviceTokenActsAs: null,
     login: {
       codePepper: "",
       codeMobileDailyLimit: 0,

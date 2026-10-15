@@ -14,6 +14,8 @@ export const payments = {
   // A late fee's name, and a charge's row: its evidence, "cancelled 9:14 am, visit was 10 am", with the dates when
   // the two fall on different days.
   lateFeeOf: (what: string) => `${what} · late fee`,
+  /** The visit a payment was for, on its own day: "for 30 Aug". */
+  forVisit: (date: string) => `for ${date}`,
   charge: "Charge",
   charged: "Charged",
   evidence: (change: "cancelled" | "moved", at: string, visit: string) => `${change} ${at}, visit was ${visit}`,

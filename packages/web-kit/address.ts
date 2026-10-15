@@ -20,12 +20,44 @@ export interface AddressParts {
 
 /**
  * The address on one line, narrowest part first, as an envelope is written: the flat, the floor, the tower and the
- * building, then the street, the area, and the city with its pincode. A building that is also the first line is
- * written once, and an address saved before the flat and building fields existed reads as it did.
+ * building, then the street, the area, and the city with its pincode. Words already written are written once, as a
+ * building that is also the first line, or an area a client typed into the street ("Nirvana Country, Sector 50" in
+ * Sector 50); an address saved before the flat and building fields existed reads as it did.
  */
 export function addressLine(parts: AddressParts): string {
-  const house = [parts.flat, parts.floor, parts.tower, parts.building, parts.line1, parts.line2].filter(given);
-  return [...new Set(house), parts.locality, `${parts.city} ${parts.pincode}`].filter(given).join(", ");
+  const house = [parts.flat, parts.floor, parts.tower, parts.building, parts.line1, parts.line2];
+  const pieces = [...house, parts.locality, `${parts.city} ${parts.pincode}`]
+    .filter(given)
+    .flatMap((part) => part.split(",").map((piece) => piece.trim()))
+    .filter((piece) => piece !== "");
+  const seen = new Set<string>();
+  return pieces
+    .filter((piece) => {
+      const key = piece.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join(", ");
+}
+
+/**
+ * The area a building Google suggested is in, from the suggestion's own words: "Sector 65" from "Sector 65, Gurugram,
+ * Haryana, India", or from the name "Nirvana Country, Sector 50" where the rest names only the city. Null where
+ * nothing does, and the client types it.
+ */
+export function areaOfSuggestion(primary: string, secondary: string): string | null {
+  const parts = secondary
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part !== "");
+  // "…, the city, the state, India": the area is what comes before the city.
+  const before = parts.at(-1)?.toLowerCase() === "india" ? parts.slice(0, -3) : parts.slice(0, -2);
+  const inName = primary
+    .split(",")
+    .map((part) => part.trim())
+    .slice(1);
+  return before.at(-1) ?? inName.at(-1) ?? null;
 }
 
 export type RequiredPart = "flat" | "line1" | "locality" | "city" | "pincode";

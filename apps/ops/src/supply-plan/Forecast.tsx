@@ -7,7 +7,7 @@ import { quantity } from "@maneman/web-kit/figures";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useState } from "react";
 import type { paths } from "../api-schema.ts";
@@ -15,7 +15,6 @@ import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { AccuracyPart } from "./Accuracy.tsx";
-import shared from "./supply-plan.module.css";
 import styles from "./forecast.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 import { supplyPlanApi } from "./supply-plan-api.ts";
@@ -43,7 +42,7 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
   return (
     <>
       <Note>{copy.note(run.period_days, dayAfter(run.run_on, 0, true))}</Note>
-      <div className={shared.scroll}>
+      <TableScroll labelledBy="plan-forecast">
         <Table controls className={styles.forecast}>
           <thead>
             <tr>
@@ -74,7 +73,7 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
             ))}
           </tbody>
         </Table>
-      </div>
+      </TableScroll>
     </>
   );
 }

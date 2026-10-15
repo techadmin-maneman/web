@@ -144,7 +144,7 @@ describe("the activity log", () => {
   });
 
   // A minute of browsing filled the first screen with the pages opened.
-  it("shows what changed, and the pages opened only when asked for them", async () => {
+  it("shows what changed, and the pages opened and searches only when asked for them", async () => {
     await logged([
       {
         surface: "ops",
@@ -156,11 +156,21 @@ describe("the activity log", () => {
         surface: "ops",
         actor: staff("care@maneman.in"),
         action: "ops.call",
+        detail: { method: "POST", route: "/api/clients/find", path: "/api/clients/find" },
+      },
+      {
+        surface: "ops",
+        actor: staff("care@maneman.in"),
+        action: "ops.call",
         detail: { method: "POST", route: "/api/visits/{id}/cancel", path: `/api/visits/${VISIT}/cancel` },
       },
     ]);
     expect((await read()).entries.map((entry) => entry.detail?.method)).toEqual(["POST"]);
-    expect((await read("?reads=include")).entries.map((entry) => entry.detail?.method)).toEqual(["POST", "GET"]);
+    expect((await read("?reads=include")).entries.map((entry) => entry.detail?.method)).toEqual([
+      "POST",
+      "POST",
+      "GET",
+    ]);
   });
 
   it("is itself written to the log, under whoever read it", async () => {

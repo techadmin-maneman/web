@@ -21285,6 +21285,8 @@ export interface components {
             q: string;
             /** @description One token for the whole search, sent again when the address is saved. */
             session: string;
+            /** @description The pincode the address is at, where it is known: the search keeps near its city. */
+            pincode?: string;
         };
         AddressSave: {
             line1: string;
@@ -24388,6 +24390,7 @@ export interface components {
                 /** Format: date-time */
                 drafted_at: string;
                 approved_by: string | null;
+                approved_by_name: string | null;
                 second_approved_by: string | null;
                 sent_at: string | null;
                 cancel_reason: string | null;

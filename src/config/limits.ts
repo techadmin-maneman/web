@@ -14,9 +14,11 @@ export const FIXED_LIMITS = {
   OTP_IP_HOURLY_LIMIT: 10,
   OTP_DAILY_CEILING: 300,
   OTP_TECH_DAILY_CEILING: 100,
-  // Leads and bookings from the site (docs/decisions/0011-lead-api.md): per number and per address, a day.
-  LEAD_MOBILE_DAILY_LIMIT: 5,
-  LEAD_IP_DAILY_LIMIT: 20,
+  // Leads and bookings from the site (docs/decisions/0011-lead-api.md): per number and per address, a day. Each
+  // Continue and each booking counts, so a person who goes back and changes their mind a few times still books; and
+  // a mobile network puts many people behind one address, where Turnstile, not this count, keeps the robots out.
+  LEAD_MOBILE_DAILY_LIMIT: 15,
+  LEAD_IP_DAILY_LIMIT: 100,
   // The try-on (docs/decisions/0014-try-on-api.md): per address an hour, and per number a day.
   TRYON_UPLOAD_IP_HOURLY_LIMIT: 5,
   TRYON_GENERATE_IP_HOURLY_LIMIT: 5,

@@ -143,13 +143,14 @@ function documentCalls({ at, read }: BooksApi): Pick<BooksProvider, Exclude<Purc
     async createVendorCredit(credit: NewBooksVendorCredit) {
       const made = await read({
         step: "create_credit",
-        path: at("/vendorcredits"),
+        path: at("/vendorcredits", "&ignore_auto_number_generation=true"),
         schema: Credit,
         under: ["vendor_credit"],
         write: {
           method: "POST",
           body: {
             vendor_id: credit.vendorId,
+            vendor_credit_number: credit.creditNumber,
             reference_number: credit.reference,
             date: credit.date,
             exchange_rate: credit.exchangeRate,

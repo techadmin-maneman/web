@@ -29,6 +29,20 @@ export function Table({
   );
 }
 
+/**
+ * A table wider than its panel, scrolled sideways inside it. The keyboard can reach it, so the columns past the edge
+ * can be scrolled to with the arrow keys, and it is named by its panel's title (`labelledBy`).
+ */
+export function TableScroll({ labelledBy, children }: { readonly labelledBy: string; readonly children: ReactNode }) {
+  return (
+    // A region the keyboard must reach to scroll it (WCAG 2.1.1): it holds no control of its own to take the focus.
+    // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
+    <div className={styles.scroll} tabIndex={0} role="group" aria-labelledby={labelledBy}>
+      {children}
+    </div>
+  );
+}
+
 /** A column of figures, right aligned, as every board sets a count or an amount. */
 export const FIGURE = styles.figure;
 

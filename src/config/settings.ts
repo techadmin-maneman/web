@@ -217,6 +217,11 @@ export interface Settings {
    * cannot lock everyone out of the console (STAFF_BOOTSTRAP_ADMINS).
    */
   readonly staffBootstrapAdmins: readonly string[];
+  /**
+   * Staging alone: the person on the Staff list whose grants a listed service token acts with, so a test run can use
+   * the console's own controls. Null everywhere else, where a service token only views (SERVICE_TOKEN_ACTS_AS).
+   */
+  readonly serviceTokenActsAs: string | null;
   /** The address search: its key when there is one, and its daily ceiling always. */
   readonly geocode: GeocodeSettings;
   /** The dispatch board's drive times and day map: Google's key, or null unless ROUTES_PROVIDER is "google". */
@@ -235,6 +240,15 @@ export interface Settings {
    * the routes.
    */
   readonly devRoutes: boolean;
+}
+
+/** Staging's test operator, whom a service token may act as; refused anywhere else. */
+function readServiceTokenActsAs(read: Reader, environment: EnvironmentName | undefined): string | null {
+  const [actsAs = null] = read.emails("SERVICE_TOKEN_ACTS_AS");
+  if (actsAs !== null && environment !== "staging") {
+    read.problems.push("SERVICE_TOKEN_ACTS_AS is for staging alone: a service token only views anywhere else");
+  }
+  return actsAs;
 }
 
 export function readSettings(
@@ -312,6 +326,7 @@ export function readSettings(
     razorpay,
     access,
     staffBootstrapAdmins: read.emails("STAFF_BOOTSTRAP_ADMINS"),
+    serviceTokenActsAs: readServiceTokenActsAs(read, environment),
     geocode,
     routes: { apiKey: providers.ROUTES_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null },
     analytics: { clientKeySecret: readClientKeySecret(read, providers) },

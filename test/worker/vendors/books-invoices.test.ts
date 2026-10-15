@@ -287,6 +287,20 @@ describe("the invoice a finished visit gets", () => {
     });
   });
 
+  it("invoices a visit paid before its price went up at what the client paid, and sends it", async () => {
+    await env.DB.prepare(
+      `INSERT INTO price_book (item, tier, amount_ex_gst, gst_percent, valid_from)
+       VALUES ('service', 'standard', 250000, 0, '2026-09-23')`,
+    ).run();
+    await visit();
+    await paid(200_000);
+    const books = createStubBooks();
+
+    expect(await invoicePass(books)).toEqual({ raised: 1, issued: 1 });
+    expect(books.made.invoices[0]?.line).toMatchObject({ rate: 200_000, discount: 0 });
+    expect(alerted).toEqual([]);
+  });
+
   it("raises none for a consultation, nor for a one visit the client declined", async () => {
     await visit({ type: "consultation" });
     await visit({ id: NEXT, type: "first_fit", oneVisit: "declined" });

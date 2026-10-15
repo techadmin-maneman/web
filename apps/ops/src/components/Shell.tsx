@@ -7,9 +7,19 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Mark } from "@maneman/ui/Mark";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { Link, usePath, wasRedirected } from "@maneman/ui/router";
 import { useLoad } from "@maneman/ui/useLoad";
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { shell } from "../content.ts";
 import { useMayCall, whoami } from "../lib/access.ts";
 import { useLapsed } from "../lib/session.ts";
@@ -23,8 +33,13 @@ import { CommandPalette } from "./CommandPalette.tsx";
 import { GroupTabs, navEntries, type NavEntry } from "./SectionGroups.tsx";
 import styles from "./shell.module.css";
 
-/** A link within the console: the shared one, which leaves a click asking for a new tab to the browser. */
-export { Link as OpsLink } from "@maneman/ui/router";
+/**
+ * A link within the console: the shared one, which leaves a click asking for a new tab to the browser, in the shared
+ * link's look unless the caller gives its own.
+ */
+export function OpsLink(props: ComponentProps<typeof Link>) {
+  return <Link {...props} className={props.className ?? textLinkLook()} />;
+}
 
 /** Said once, over whichever screen is open, when Access stops letting the console's calls through. */
 function Lapsed() {

@@ -73,6 +73,7 @@ export async function creditClaim(pass: Pass, claimId: string, accounts: BillAcc
       (await pass.deps.books.createVendorCredit({
         vendorId,
         reference: claimId,
+        creditNumber: `${pass.label}${number}`,
         date: indiaDate(new Date(claim.decided_at)),
         exchangeRate: claim.rate_micro / MICRO_PER_RUPEE,
         currency: claim.currency,

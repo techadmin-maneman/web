@@ -5,7 +5,7 @@
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Checkbox, DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useWrite } from "../lib/write.ts";
@@ -345,7 +345,7 @@ export function CareTeam() {
   const columns = copy.columns;
   const me = team.find((member) => member.email === loaded.value.me);
   return (
-    <div className={styles.scroll}>
+    <TableScroll labelledBy="care-team">
       {me !== undefined && <ShiftSwitch me={me} onDone={retry} />}
       <Table controls className={styles.table}>
         <thead>
@@ -369,6 +369,6 @@ export function CareTeam() {
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }

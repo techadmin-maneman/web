@@ -49,13 +49,21 @@ describe("the building search", () => {
       sent.push({ url, init });
       return Promise.resolve(json(200, { suggestions: [], attribution: "Google Maps" }));
     });
-    await api.addressSuggestions("Sunrise Greens", "token-1");
+    await api.addressSuggestions("Sunrise Greens", "token-1", "1220");
+    await api.addressSuggestions("Sunrise Greens", "token-1", "122018");
     expect(sent).toEqual([
       {
         url: "/api/address/suggestions",
         init: expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ q: "Sunrise Greens", session: "token-1" }),
+        }) as RequestInit,
+      },
+      {
+        url: "/api/address/suggestions",
+        init: expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ q: "Sunrise Greens", session: "token-1", pincode: "122018" }),
         }) as RequestInit,
       },
     ]);

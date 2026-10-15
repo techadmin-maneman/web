@@ -45,7 +45,7 @@ test("lists what their kit holds, marking what is low, with the way to Stock", a
   const main = await pageOf(page, "Imran Qureshi", "Kit");
 
   const tape = main.getByRole("row").filter({ hasText: "Tape strips" });
-  await expect(tape).toContainText("3 strip");
+  await expect(tape).toContainText("3 strips");
   await expect(tape).toContainText(stock.low);
   await expect(main.getByRole("row").filter({ hasText: "Solvent" })).toContainText("150 ml");
   await expect(main.getByRole("row").filter({ hasText: "Solvent" })).toContainText("Mon 20 Sep");

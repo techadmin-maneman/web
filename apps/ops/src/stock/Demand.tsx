@@ -4,7 +4,7 @@
 
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { type Stock } from "../api.ts";
@@ -34,7 +34,7 @@ export function Demand({ stock }: { stock: Stock }) {
           {loaded.value.demand.length === 0 ? (
             <Note>{words.none}</Note>
           ) : (
-            <div className={shared.scroll}>
+            <TableScroll labelledBy="stock-demand">
               <Table controls>
                 <thead>
                   <tr>
@@ -61,7 +61,7 @@ export function Demand({ stock }: { stock: Stock }) {
                   ))}
                 </tbody>
               </Table>
-            </div>
+            </TableScroll>
           )}
           {loaded.value.at_risk.length > 0 && (
             <>

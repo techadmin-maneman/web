@@ -215,12 +215,12 @@ describe("the site's forms: the staging test token", () => {
 });
 
 describe("the site's forms: the day's limits", () => {
-  it("allows five a day per mobile number, then answers rate_limited", async () => {
+  it("allows fifteen a day per mobile number, then answers rate_limited", async () => {
     const app = appFor();
-    for (let i = 0; i < 5; i++) expect((await join(app)).status).toBe(201);
-    const sixth = await join(app);
-    expect(sixth.status).toBe(429);
-    expect((await errorOf(sixth)).code).toBe("rate_limited");
+    for (let i = 0; i < 15; i++) expect((await join(app)).status).toBe(201);
+    const sixteenth = await join(app);
+    expect(sixteenth.status).toBe(429);
+    expect((await errorOf(sixteenth)).code).toBe("rate_limited");
   });
 
   it("limits each address across different numbers", async () => {

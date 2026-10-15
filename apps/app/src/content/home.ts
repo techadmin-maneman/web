@@ -37,7 +37,7 @@ export const TOLD_WHEN_BOOKED = "We’ll message you on WhatsApp when it’s boo
 export const home = {
   /** The avatar's name begins with the initials it shows, so "tap RM" reaches it by voice. */
   profile: (initials: string) => `${initials}, your profile`,
-  reschedule: "Reschedule",
+  reschedule: "Change or cancel",
   /**
    * A move to another day ops asked the client to confirm (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
    * The card's Reschedule reads "Pick another time" beside it.

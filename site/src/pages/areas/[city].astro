@@ -1,7 +1,8 @@
 ---
 // A city's page, at /areas/<city>, for each city the FAQ names (src/content/guides.ts, cityPage). It is built with
-// its areas hidden: the site's Worker lists those it serves there, from the served pincodes, and shows them. Built
-// with the cities' page, so only while that page is shown.
+// its areas hidden: the site's Worker lists those it serves there, from the served pincodes, and shows them; it sends
+// a city served nowhere to /areas, and leaves such cities out of the list of others. Built with the cities' page, so
+// only while that page is shown.
 import { buttonLook } from "@maneman/ui/Button";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { areasPage, cityPage, guidesPage } from "../../content/guides.ts";
@@ -52,7 +53,7 @@ const trail = [
       <h2 id="other-cities">{cityPage.others}</h2>
       <ul>
         {others.map((other) => (
-          <li>
+          <li data-city={other}>
             <a class={textLinkLook({ inline: true })} href={`/areas/${citySlug(other)}`}>
               {fill(cityPage.title, { city: other })}
             </a>

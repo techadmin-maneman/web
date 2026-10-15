@@ -182,7 +182,7 @@ test.describe("what each service uses", () => {
     const check = uses.getByRole("group", { name: review.title });
     await expect(check).toContainText("Bonding glue: none → 3 ml");
     await expect(check).toContainText("Solvent: 10 ml → none");
-    await expect(check).toContainText("Tape strips: 4 strip → 6 strip");
+    await expect(check).toContainText("Tape strips: 4 strips → 6 strips");
     const sent = posted(page, "/api/service-usage");
     await check.getByRole("button", { name: review.send }).click();
     expect((await sent).postDataJSON()).toEqual({

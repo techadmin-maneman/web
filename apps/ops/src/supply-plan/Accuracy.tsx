@@ -4,7 +4,7 @@
 import type { Success } from "@maneman/web-kit/api";
 import { quantity } from "@maneman/web-kit/figures";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
 import type { paths } from "../api-schema.ts";
@@ -12,7 +12,6 @@ import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { dayAfter } from "./Forecast.tsx";
-import styles from "./supply-plan.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 import { supplyPlanApi } from "./supply-plan-api.ts";
 
@@ -39,7 +38,7 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
   return (
     <>
       <Note>{copy.note}</Note>
-      <div className={styles.scroll}>
+      <TableScroll labelledBy="plan-forecast">
         <Table controls>
           <Head columns={copy.periodColumns} />
           <tbody>
@@ -69,7 +68,7 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
             ))}
           </tbody>
         </Table>
-      </div>
+      </TableScroll>
     </>
   );
 }

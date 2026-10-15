@@ -38,8 +38,8 @@ import { fakeBatch } from "./batches.ts";
 export const TURNSTILE_TEST_SECRET = "1x0000000000000000000000000000000AA";
 
 export const LOCAL_SETTINGS: Settings = {
-  leadMobileDailyLimit: 5,
-  leadIpDailyLimit: 20,
+  leadMobileDailyLimit: 15,
+  leadIpDailyLimit: 100,
   turnstileSecret: TURNSTILE_TEST_SECRET,
   acceptTurnstileTestToken: false,
   selfServeBooking: true,
@@ -59,6 +59,7 @@ export const LOCAL_SETTINGS: Settings = {
   analytics: { clientKeySecret: "a-local-analytics-key-of-thirty-two-chars" },
   access: null,
   staffBootstrapAdmins: ["ops@localhost"],
+  serviceTokenActsAs: null,
   login: {
     codePepper: "test-login-code-pepper-that-is-long-enough",
     codeMobileDailyLimit: 5,

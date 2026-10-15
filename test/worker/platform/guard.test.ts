@@ -14,7 +14,7 @@ describe("validateStaticConfig: environment and providers", () => {
     const config = validateStaticConfig(production);
     expect(config.environment).toBe("production");
     expect(config.settings.zohoCrm?.apiHost).toBe("www.zohoapis.in");
-    expect(config.settings.leadMobileDailyLimit).toBe(5);
+    expect(config.settings.leadMobileDailyLimit).toBe(15);
   });
 
   it("allows staging to hold a stub, for a provider not yet chosen", () => {
@@ -85,6 +85,12 @@ describe("validateStaticConfig: settings and secrets", () => {
       ]);
     },
   );
+
+  it("refuses a service token acting as a person anywhere but staging", () => {
+    expect(problemsOf({ ...production, SERVICE_TOKEN_ACTS_AS: "test-operator@maneman.in" })).toEqual([
+      "SERVICE_TOKEN_ACTS_AS is for staging alone: a service token only views anywhere else",
+    ]);
+  });
 
   it("refuses the Turnstile test-token switch in production, and any value but true or false", () => {
     expect(problemsOf({ ...production, TURNSTILE_ACCEPT_TEST_TOKEN: "true" })).toEqual([
@@ -168,7 +174,7 @@ describe("validateStaticConfig: the limits fixed in src/config", () => {
       codeDailyCeiling: 300,
       techCodeDailyCeiling: 100,
     });
-    expect(settings).toMatchObject({ leadMobileDailyLimit: 5, leadIpDailyLimit: 20 });
+    expect(settings).toMatchObject({ leadMobileDailyLimit: 15, leadIpDailyLimit: 100 });
     expect(settings.tryon).toMatchObject({
       uploadIpHourlyLimit: 5,
       generateIpHourlyLimit: 5,

@@ -216,6 +216,7 @@ describe("a receipt in Books", () => {
       {
         vendorId: expect.stringMatching(/^stub-vendor-/) as string,
         reference: claim,
+        creditNumber: expect.stringMatching(/CL-\d{4,}$/) as string,
         date: "2026-09-21",
         exchangeRate: 83.25,
         currency: "USD",

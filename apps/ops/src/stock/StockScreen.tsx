@@ -7,7 +7,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
 import { type Stock } from "../api.ts";
@@ -156,7 +156,7 @@ function OnHand({ stock }: { stock: Stock }) {
     );
   }
   return (
-    <div className={styles.scroll}>
+    <TableScroll labelledBy="stock-on-hand">
       {many && <PlacePicker stock={stock} place={beside} onPlace={setPicked} />}
       <Table controls>
         <thead>
@@ -183,7 +183,7 @@ function OnHand({ stock }: { stock: Stock }) {
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }
 
@@ -217,7 +217,7 @@ function Movements({ stock }: { stock: Stock }) {
       ) : (
         <>
           <Narrowing view={view} label={words.narrow} />
-          <div className={styles.scroll}>
+          <TableScroll labelledBy="stock-movements">
             <Table controls>
               <thead>
                 <tr>
@@ -239,7 +239,7 @@ function Movements({ stock }: { stock: Stock }) {
                 ))}
               </tbody>
             </Table>
-          </div>
+          </TableScroll>
           <TableEnd view={view} />
         </>
       )}
