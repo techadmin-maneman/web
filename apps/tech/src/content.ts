@@ -799,5 +799,5 @@ export const kit = {
     handBack: (count: number) => `Hand back ${String(count)} ${count === 1 ? "hair system" : "hair systems"}`,
   },
   expired: { handBack: "Hand back expired stock" },
-  handedBack: "Handed back. Your stockroom receives it.",
+  handedBack: "Handed back. Ops receive it from you.",
 } as const;
