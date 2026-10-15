@@ -362,6 +362,8 @@ export const notHome = {
     opensAt: (time: string) => `Check-in opens at ${time}.`,
     // The board draws no screen for a phone that will not give its position.
     noPosition: "This phone won’t give its position. Check its permissions, then tap again.",
+    // An address saved without a building picked from the map has no pin: the check-in records the time alone.
+    noPin: "This address has no map pin, so the check-in records the time but can’t confirm you’re at the door.",
   },
   failed: {
     title: "Check-in failed",

@@ -204,7 +204,9 @@ function Arriving({ job, opensAt, noPosition }: { job: Job; opensAt: boolean; no
   return (
     <section className={styles.stage}>
       <p className={capsLook(styles.stageLabel)}>{copy.arrived.step}</p>
-      <p className={styles.stageBody}>{copy.arrived.body(job.checkin_radius_m)}</p>
+      <p className={styles.stageBody}>
+        {job.address?.lat === null ? copy.arrived.noPin : copy.arrived.body(job.checkin_radius_m)}
+      </p>
       {opensAt && (
         <p className={styles.stageOpens} role="status">
           {copy.arrived.opensAt(clock(job.checkin_from))}
