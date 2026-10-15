@@ -31,6 +31,8 @@ export interface PurchaseOrder {
   readonly draftedBy: string;
   readonly draftedAt: string;
   readonly approvedBy: string | null;
+  /** Who approved it, as the printed order names them. */
+  readonly approverName: string | null;
   readonly secondApprovedBy: string | null;
   readonly sentAt: string | null;
   readonly cancelReason: string | null;
@@ -47,6 +49,7 @@ type OrderRow = {
   drafted_by: string;
   drafted_at: string;
   approved_by: string | null;
+  approver_name: string | null;
   second_approved_by: string | null;
   sent_at: string | null;
   cancel_reason: string | null;
@@ -64,7 +67,9 @@ type LineRow = {
 /** How many closed and cancelled orders the page keeps beneath the open ones. */
 const SETTLED_SHOWN = 100;
 
+// The approver as a printed order names them: a service token by its label on the Staff list, a person by their email.
 const ORDER_COLUMNS = `id, number, supplier_id, currency, state, expected_on, note, drafted_by, drafted_at, approved_by,
+  COALESCE((SELECT label FROM staff_service_tokens WHERE client_id = approved_by), approved_by) AS approver_name,
   second_approved_by, sent_at, cancel_reason`;
 
 /** Each order read with its lines. */
@@ -99,6 +104,7 @@ async function withLines(db: D1Database, rows: readonly OrderRow[]): Promise<Pur
       draftedBy: row.drafted_by,
       draftedAt: row.drafted_at,
       approvedBy: row.approved_by,
+      approverName: row.approver_name,
       secondApprovedBy: row.second_approved_by,
       sentAt: row.sent_at,
       cancelReason: row.cancel_reason,

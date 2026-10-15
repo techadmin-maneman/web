@@ -33,6 +33,7 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `RESULT_RETENTION_DAYS` | `3` | `3` | `14` |
 | `ROUTES_PROVIDER` | `stub` | `none` | `none` |
 | `SELF_SERVE_BOOKING` | `true` | `true` | `false` |
+| `SERVICE_TOKEN_ACTS_AS` | — | `test-operator@maneman.in` | — |
 | `SMS_PROVIDER` | `stub` | `none` | `none` |
 | `STAFF_BOOTSTRAP_ADMINS` | `ops@localhost` | `tech@maneman.in,adwate@gmail.com` | `tech@maneman.in,adwate@gmail.com` |
 | `TRYON_REFS_URL` | `http://localhost:4321/refs/v1` | `https://maneman.in/refs/v1` | `https://maneman.in/refs/v1` |

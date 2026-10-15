@@ -5,7 +5,7 @@ import { whoWords } from "../lib/who.ts";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -133,7 +133,7 @@ function WordsTable({ view, row }: { view: TableView<Word>; row: RowProps }) {
   return (
     <>
       <Narrowing view={view} label={copy.narrow} className={styles.narrow} />
-      <div className={styles.scroll}>
+      <TableScroll labelledBy="words">
         <Table controls className={styles.table}>
           <thead>
             <tr>
@@ -149,7 +149,7 @@ function WordsTable({ view, row }: { view: TableView<Word>; row: RowProps }) {
             ))}
           </tbody>
         </Table>
-      </div>
+      </TableScroll>
       <TableEnd view={view} />
     </>
   );

@@ -104,6 +104,25 @@ describe("once the Staff list is enforced", () => {
     expect((await request(opsAs(token("other-token.access")), "/api/settings")).status).toBe(403);
   });
 
+  it("lets a listed token act as staging's test operator, with that person's grants and no more", async () => {
+    await allowToken("ci-token.access");
+    await listStaff("test-operator@maneman.in", ["admin:view:national"]);
+    const ci = token("ci-token.access");
+    const access = { verify: () => Promise.resolve({ ok: true as const, identity: ci }) };
+    const acting = appFor(
+      "local",
+      fakeDependencies({ access }),
+      { serviceTokenActsAs: "test-operator@maneman.in" },
+      "ops",
+    );
+    expect((await request(acting, "/api/staff")).status).toBe(200);
+    expect((await post(acting, "/api/staff/enforcement", { on: true })).status).toBe(403);
+
+    await env.DB.prepare("UPDATE staff_grants SET level = 'manage' WHERE email = 'test-operator@maneman.in'").run();
+    expect((await post(acting, "/api/staff/enforcement", { on: true })).status).toBe(200);
+    expect((await post(opsAs(ci), "/api/staff/enforcement", { on: true })).status).toBe(403);
+  });
+
   it("answers who is signed in, and the health check, to anyone Access lets in", async () => {
     const stranger = opsAs(person("stranger@maneman.in"));
     expect((await request(stranger, "/api/health")).status).toBe(200);

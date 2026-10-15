@@ -8,7 +8,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -216,7 +216,7 @@ function CodesTable({
         {find}
         <Narrowing view={view} label={copy.narrow} className={styles.narrow} />
       </div>
-      <div className={styles.scroll}>
+      <TableScroll labelledBy="discount-codes">
         <Table controls className={styles.table}>
           <thead>
             <tr>
@@ -232,7 +232,7 @@ function CodesTable({
             ))}
           </tbody>
         </Table>
-      </div>
+      </TableScroll>
       <TableEnd view={view} />
     </>
   );
@@ -277,7 +277,7 @@ function SwitchedOff({ codes, ...row }: { codes: readonly DiscountCode[] } & Row
       summaryClassName={styles.offSummary}
       summary={copy.switchedOffTitle(codes.length)}
     >
-      <div className={styles.scroll}>
+      <TableScroll labelledBy="discount-codes">
         <Table controls className={styles.table}>
           <thead>
             <tr>
@@ -297,7 +297,7 @@ function SwitchedOff({ codes, ...row }: { codes: readonly DiscountCode[] } & Row
             ))}
           </tbody>
         </Table>
-      </div>
+      </TableScroll>
     </Disclosure>
   );
 }

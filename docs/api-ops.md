@@ -45136,6 +45136,16 @@ Request body:
               }
             ]
           },
+          "approved_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "second_approved_by": {
             "anyOf": [
               {
@@ -45275,6 +45285,7 @@ Request body:
           "drafted_by",
           "drafted_at",
           "approved_by",
+          "approved_by_name",
           "second_approved_by",
           "sent_at",
           "cancel_reason",

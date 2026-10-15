@@ -4,7 +4,7 @@
 
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { fullDate } from "@maneman/web-kit/dates";
 import type { Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
@@ -31,7 +31,7 @@ export function Expiring({ stock }: { stock: Stock }) {
   return (
     <Panel titleId="stock-expiring" title={words.title}>
       <Note>{words.intro(stock.expiry_warning_days)}</Note>
-      <div className={styles.scroll}>
+      <TableScroll labelledBy="stock-expiring">
         <Table controls>
           <thead>
             <tr>
@@ -63,7 +63,7 @@ export function Expiring({ stock }: { stock: Stock }) {
             })}
           </tbody>
         </Table>
-      </div>
+      </TableScroll>
     </Panel>
   );
 }

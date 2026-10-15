@@ -24388,6 +24388,7 @@ export interface components {
                 /** Format: date-time */
                 drafted_at: string;
                 approved_by: string | null;
+                approved_by_name: string | null;
                 second_approved_by: string | null;
                 sent_at: string | null;
                 cancel_reason: string | null;

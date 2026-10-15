@@ -59,6 +59,7 @@ export const LOCAL_SETTINGS: Settings = {
   analytics: { clientKeySecret: "a-local-analytics-key-of-thirty-two-chars" },
   access: null,
   staffBootstrapAdmins: ["ops@localhost"],
+  serviceTokenActsAs: null,
   login: {
     codePepper: "test-login-code-pepper-that-is-long-enough",
     codeMobileDailyLimit: 5,

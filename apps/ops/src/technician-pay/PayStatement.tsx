@@ -5,7 +5,7 @@
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { classes } from "@maneman/ui/classes";
 import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -70,7 +70,7 @@ function byTechnician(lines: readonly Line[]) {
 
 function StatementTable({ lines }: { lines: readonly Line[] }) {
   return (
-    <div className={shared.scroll}>
+    <TableScroll labelledBy="pay-statement">
       <Table controls className={classes(shared.table, shared.people)}>
         <thead>
           <tr>
@@ -102,7 +102,7 @@ function StatementTable({ lines }: { lines: readonly Line[] }) {
           ])}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }
 

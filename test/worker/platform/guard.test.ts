@@ -86,6 +86,12 @@ describe("validateStaticConfig: settings and secrets", () => {
     },
   );
 
+  it("refuses a service token acting as a person anywhere but staging", () => {
+    expect(problemsOf({ ...production, SERVICE_TOKEN_ACTS_AS: "test-operator@maneman.in" })).toEqual([
+      "SERVICE_TOKEN_ACTS_AS is for staging alone: a service token only views anywhere else",
+    ]);
+  });
+
   it("refuses the Turnstile test-token switch in production, and any value but true or false", () => {
     expect(problemsOf({ ...production, TURNSTILE_ACCEPT_TEST_TOKEN: "true" })).toEqual([
       "TURNSTILE_ACCEPT_TEST_TOKEN is on in production",

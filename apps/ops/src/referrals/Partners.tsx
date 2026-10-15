@@ -7,7 +7,7 @@ import { TextLink } from "@maneman/ui/TextLink";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
@@ -168,7 +168,7 @@ function PartnerTable(row: RowProps) {
   const heads = copy.columns;
   const figures = [heads.commission, heads.opens, heads.referred, heads.fitted, heads.earned, heads.owed];
   return (
-    <div className={styles.scroll}>
+    <TableScroll labelledBy="partners">
       <Table controls className={styles.table}>
         <thead>
           <tr>
@@ -191,7 +191,7 @@ function PartnerTable(row: RowProps) {
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }
 

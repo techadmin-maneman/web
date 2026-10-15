@@ -123,6 +123,8 @@
     "BOOKS_BILL_CONSUMABLES_ACCOUNT": "",
     "BOOKS_GST_STATE": "",
     "STAFF_BOOTSTRAP_ADMINS": "ops@localhost",
+    // Empty: only staging's test runs act through a service token (env.staging.vars).
+    "SERVICE_TOKEN_ACTS_AS": "",
     "BOOKS_SAC": "",
     // Razorpay (docs/decisions/0044-payments-mirror.md). The stub takes no money and reaches nothing.
     "PAYMENTS_PROVIDER": "stub",
@@ -264,6 +266,9 @@
         "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
         "BOOKS_GST_STATE": "",
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
+        // Staging alone: the Staff list's test operator, whose grants the test runs' service token acts with. An admin
+        // gives it grants on Staff for a run and takes them away after; with none, the token changes nothing.
+        "SERVICE_TOKEN_ACTS_AS": "test-operator@maneman.in",
         "BOOKS_SAC": "",
         // Razorpay in test mode: no real money. The key secret and the webhook secret are secrets.
         "PAYMENTS_PROVIDER": "razorpay",
@@ -403,6 +408,7 @@
         "BOOKS_BILL_CONSUMABLES_ACCOUNT": "4242595000000034057",
         "BOOKS_GST_STATE": "",
         "STAFF_BOOTSTRAP_ADMINS": "tech@maneman.in,adwate@gmail.com",
+        "SERVICE_TOKEN_ACTS_AS": "",
         "BOOKS_SAC": "",
         // Razorpay stays off until Phase 2's release (docs/open-points.md, item 6).
         "PAYMENTS_PROVIDER": "none",

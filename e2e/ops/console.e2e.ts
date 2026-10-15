@@ -295,7 +295,9 @@ test("goes to a page by its name from anywhere, with Ctrl K", async ({ page }) =
   await expect(page.getByRole("heading", { level: 1, name: opsCopy.tasks.title })).toBeVisible();
   await page.keyboard.press("Control+k");
   const palette = page.getByRole("dialog", { name: opsCopy.shell.palette.title });
-  await palette.getByLabel(opsCopy.shell.palette.label).fill("disp");
+  // Typed straight away, as a person does: the box has the keyboard once the palette opens.
+  await expect(palette.getByLabel(opsCopy.shell.palette.label)).toBeFocused();
+  await page.keyboard.type("disp");
   await palette.getByRole("link", { name: opsCopy.dispatch.title }).click();
   await expect(page).toHaveURL(/\/dispatch$/);
   await expect(palette).toBeHidden();

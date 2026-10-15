@@ -103,24 +103,24 @@ const ZONED_CITIES = "SELECT name, zone FROM cities WHERE zone IS NOT NULL";
 /** Every department at its highest level, nationally: what a bootstrap admin holds. */
 const EVERYTHING: Grant[] = DEPARTMENTS.map((department) => ({ department, level: "manage", place: NATIONAL }));
 
+const PERSON_LISTED = `SELECT s.active, g.department, g.level, g.geography, g.place
+  FROM staff s LEFT JOIN staff_grants g ON g.email = s.email WHERE s.email = ?1`;
+
 /**
  * Who the caller is to the Staff list, with the switch and the zones. A bootstrap admin (STAFF_BOOTSTRAP_ADMINS)
- * holds everything whatever the list says. Three reads side by side, not a batch: a route's first batch is its own
- * change, which tests that fail the database once it commits count on.
+ * holds everything whatever the list says. On staging a listed service token may act as one person on the list,
+ * with that person's grants and no more (`tokenActsAs`). Three reads side by side, not a batch: a route's first batch
+ * is its own change, which tests that fail the database once it commits count on.
  */
 export async function callerAccessOf(
   db: D1Database,
   identity: AccessIdentity,
   bootstrapAdmins: readonly string[] = [],
+  tokenActsAs: string | null = null,
 ): Promise<CallerAccess> {
   const listed =
     identity.kind === "staff"
-      ? db
-          .prepare(
-            `SELECT s.active, g.department, g.level, g.geography, g.place
-             FROM staff s LEFT JOIN staff_grants g ON g.email = s.email WHERE s.email = ?1`,
-          )
-          .bind(identity.email)
+      ? db.prepare(PERSON_LISTED).bind(identity.email)
       : db.prepare("SELECT 1 AS active FROM staff_service_tokens WHERE client_id = ?1").bind(identity.clientId);
   const [mode, cities, rows] = await Promise.all([
     db.prepare(MODE).first<ModeRow>(),
@@ -130,6 +130,11 @@ export async function callerAccessOf(
   const found = rows.results;
   const enforced = modeOf(mode ?? undefined).enforced;
   const zoneOf = zoneMap(cities.results);
+  if (identity.kind === "service" && found.length > 0 && tokenActsAs !== null) {
+    const person = await db.prepare(PERSON_LISTED).bind(tokenActsAs).all<ListedRow>();
+    const active = person.results[0]?.active === 1;
+    return { enforced, zoneOf, caller: { kind: "person", active, grants: grantsOf(heldGrants(person.results)) } };
+  }
   if (identity.kind === "service") return { enforced, zoneOf, caller: { kind: "service", allowed: found.length > 0 } };
   if (bootstrapAdmins.includes(identity.email.toLowerCase())) {
     return { enforced, zoneOf, caller: { kind: "person", active: true, grants: EVERYTHING } };
