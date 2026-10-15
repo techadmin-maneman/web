@@ -35,7 +35,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/ops/src/items/ServiceUsage.tsx": { fn: 84 },
   "apps/ops/src/staff/Staff.tsx": { fn: 115 },
   "apps/ops/src/staff/StaffForm.tsx": { fn: 95 },
-  "apps/ops/src/stock/StockForm.tsx": { fn: 106 },
+  "apps/ops/src/stock/StockForm.tsx": { fn: 101 },
   "apps/ops/src/tasks/TaskActions.tsx": { fn: 130 },
   "apps/ops/src/tasks/TasksScreen.tsx": { fn: 85 },
   "apps/ops/src/technicians/TechnicianForms.tsx": { fn: 89 },
