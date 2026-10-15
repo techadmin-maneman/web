@@ -13,4 +13,6 @@ export const MEDIA = {
   wide: "(min-width: 1024px)",
   /** Anything short of wide. */
   belowWide: "(max-width: 1023px)",
+  /** Short of a desktop: a page's own side menu runs across its top, so its tables have the width. */
+  belowDesk: "(max-width: 1279px)",
 } as const;
