@@ -7,7 +7,7 @@ import { useWrite } from "../lib/write.ts";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type Stock, type StockPlaceChange } from "../api.ts";
@@ -248,9 +248,9 @@ export function PlacesPanel({ stock, onChanged }: { stock: Stock; onChanged: (st
   const place = stock.places.find((each) => each.id === editing);
   return (
     <Panel titleId="stock-places" title={copy.title}>
-      <div className={shared.scroll}>
+      <TableScroll labelledBy="stock-places">
         <PlaceRows stock={stock} onEdit={setEditing} />
-      </div>
+      </TableScroll>
       {place === undefined ? (
         <AddPlace stock={stock} onChanged={onChanged} />
       ) : (

@@ -9,10 +9,6 @@
   margin: var(--sp-16) var(--sp-20) var(--sp-8);
 }
 
-.scroll {
-  overflow-x: auto;
-}
-
 .people {
   min-width: var(--ops-measure);
 }

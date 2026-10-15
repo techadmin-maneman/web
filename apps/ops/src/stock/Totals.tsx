@@ -1,7 +1,7 @@
 // Stock · totals by zone or city (docs/decisions/0159-stock-views-and-expiry.md): what every place within reach holds
 // of each consumable, added up for all of them and for each zone or city, a kit counted in its technician's city.
 
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import type { Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
 import { stockViews } from "../content/stock-views.ts";
@@ -28,7 +28,7 @@ export function Totals({ stock, by }: { stock: Stock; by: Grouping }) {
       })
       .reduce((total, holding) => total + holding.quantity, 0);
   return (
-    <div className={styles.scroll}>
+    <TableScroll labelledBy="stock-on-hand">
       <Table controls>
         <thead>
           <tr>
@@ -55,6 +55,6 @@ export function Totals({ stock, by }: { stock: Stock; by: Grouping }) {
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }

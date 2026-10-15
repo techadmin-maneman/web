@@ -30603,6 +30603,11 @@ Request body:
       "minLength": 1,
       "maxLength": 100,
       "description": "One token for the whole search, sent again when the address is saved."
+    },
+    "pincode": {
+      "type": "string",
+      "pattern": "^\\d{6}$",
+      "description": "The pincode the address is at, where it is known: the search keeps near its city."
     }
   },
   "required": [
@@ -45136,6 +45141,16 @@ Request body:
               }
             ]
           },
+          "approved_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "second_approved_by": {
             "anyOf": [
               {
@@ -45275,6 +45290,7 @@ Request body:
           "drafted_by",
           "drafted_at",
           "approved_by",
+          "approved_by_name",
           "second_approved_by",
           "sent_at",
           "cancel_reason",

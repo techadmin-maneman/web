@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { whatsappChat } from "../../../../packages/web-kit/whatsapp.ts";
 import { callLink, wayTo } from "../../../../apps/tech/src/lib/navigate.ts";
-import { addressLine } from "../../../../packages/web-kit/address.ts";
+import { addressLine, areaOfSuggestion } from "../../../../packages/web-kit/address.ts";
 
 const WITH_PIN = {
   line1: "Tower C, 14th floor",
@@ -25,6 +25,19 @@ const WITH_PIN = {
 const TYPED = { ...WITH_PIN, lat: null, lng: null };
 
 describe("addressLine", () => {
+  // "House 22, Nirvana Country, Sector 50, Sector 50, Gurgaon 122018" on a client's profile.
+  it("writes an area once, though the client typed it into the street too", () => {
+    expect(
+      addressLine({
+        flat: "House 22",
+        line1: "Nirvana Country, Sector 50",
+        locality: "Sector 50",
+        city: "Gurgaon",
+        pincode: "122018",
+      }),
+    ).toBe("House 22, Nirvana Country, Sector 50, Gurgaon 122018");
+  });
+
   it("joins the parts the API keeps an address in", () => {
     expect(addressLine(WITH_PIN)).toBe("Tower C, 14th floor, Sector 65, Gurgaon 122018");
   });
@@ -82,5 +95,16 @@ describe("the way to the client", () => {
   it("calls the number on the card, and opens WhatsApp on it without the plus", () => {
     expect(callLink("+919810000000")).toBe("tel:+919810000000");
     expect(whatsappChat("+919810000000")).toBe("https://wa.me/919810000000");
+  });
+});
+
+describe("areaOfSuggestion", () => {
+  it("reads the area a suggested building is in, from its place or its name", () => {
+    expect(areaOfSuggestion("M3M Heights", "Sector 65, Gurugram, Haryana, India")).toBe("Sector 65");
+    expect(areaOfSuggestion("M3M Heights, Tower 6", "M3M 65th AVenue, Sector 65, Gurugram, Haryana, India")).toBe(
+      "Sector 65",
+    );
+    expect(areaOfSuggestion("Nirvana Country, Sector 50", "Gurugram, Haryana, India")).toBe("Sector 50");
+    expect(areaOfSuggestion("Tulip Ivory", "Gurugram, Haryana, India")).toBeNull();
   });
 });

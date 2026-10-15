@@ -5,12 +5,24 @@
 }
 
 @media print {
+  /* An A4 page with a margin a supplier's file punch clears. */
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+
   .sheet {
     display: block;
     color: var(--ink);
     background: var(--white);
     font-family: var(--font-sans);
   }
+}
+
+.sheetMark {
+  display: block;
+  height: var(--sp-32);
+  margin-bottom: var(--sp-16);
 }
 
 .sheetTitle {

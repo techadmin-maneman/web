@@ -5,7 +5,7 @@
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
@@ -90,7 +90,7 @@ function ByPerson({ numbers }: { numbers: CareNumbers }) {
 
 function PeopleTable({ numbers }: { numbers: CareNumbers }) {
   return (
-    <div className={shared.scroll}>
+    <TableScroll labelledBy="care-numbers">
       <Table controls className={shared.table}>
         <thead>
           <tr>
@@ -119,7 +119,7 @@ function PeopleTable({ numbers }: { numbers: CareNumbers }) {
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }
 

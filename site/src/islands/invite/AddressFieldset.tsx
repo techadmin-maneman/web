@@ -7,7 +7,7 @@
 import { Fieldset } from "@maneman/ui/Field";
 import { AddressFields } from "@maneman/ui/AddressFields";
 import { AddressSearch } from "@maneman/ui/AddressSearch";
-import type { AddressPart } from "@maneman/web-kit/address";
+import { areaOfSuggestion, given, type AddressPart } from "@maneman/web-kit/address";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
 import type { AddressFields as Address, RequiredPart } from "../../lib/address.ts";
@@ -58,7 +58,7 @@ export function AddressFieldset(props: {
         <AddressSearch
           value={address.building}
           search={async (query) => {
-            const answer = await suggestBuildings(query, address.session);
+            const answer = await suggestBuildings(query, address.session, props.pincode);
             return answer.ok ? { ok: true, suggestions: answer.body.suggestions } : { ok: false };
           }}
           onType={(typed) => {
@@ -66,7 +66,11 @@ export function AddressFieldset(props: {
             props.onChange({ ...address, building: typed, placeId: "" });
           }}
           onChoose={(chosen) => {
-            props.onChange({ ...address, building: chosen.primary, placeId: chosen.place_id });
+            // The area the suggestion names, where the client has not typed one.
+            const locality = given(address.locality)
+              ? address.locality
+              : (areaOfSuggestion(chosen.primary, chosen.secondary) ?? "");
+            props.onChange({ ...address, building: chosen.primary, placeId: chosen.place_id, locality });
           }}
           words={{
             ...copy.building,

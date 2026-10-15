@@ -170,7 +170,10 @@ export interface NewBooksBill {
  * A claim's credit from its supplier: a vendor credit on the receipt's accounts, found again by our claim's ID
  * (docs/decisions/0171-vendor-credits.md). Books numbers it.
  */
-export type NewBooksVendorCredit = Omit<NewBooksBill, "billNumber" | "dueDate">;
+export type NewBooksVendorCredit = Omit<NewBooksBill, "billNumber" | "dueDate"> & {
+  /** Our claim's number, as Books numbers no vendor credit itself. */
+  readonly creditNumber: string;
+};
 
 /** What erasing a customer left: nothing, or a blank, inactive customer a document or payment still names. */
 export type BooksErasure = "deleted" | "blanked";

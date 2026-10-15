@@ -29,6 +29,13 @@ const buildingSuggestionsRoute = createRoute({
               .min(1)
               .max(100)
               .openapi({ description: "One token for the whole search, sent again with the booking." }),
+            pincode: z
+              .string()
+              .regex(/^\d{6}$/)
+              .optional()
+              .openapi({
+                description: "The pincode the address is at, where it is known: the search keeps near its city.",
+              }),
           })
           .strict()
           .openapi("BuildingSuggestionsAsk"),
@@ -46,9 +53,15 @@ const buildingSuggestionsRoute = createRoute({
 
 export function registerBuildingSuggestions(app: App): void {
   app.openapi(buildingSuggestionsRoute, async (c) => {
-    const { q, session } = c.req.valid("json");
+    const { q, session, pincode } = c.req.valid("json");
     const visitor = await visitorOf(c);
-    const answer = await suggestBuildings(c, { limitScope: "site_address_suggest", asker: visitor.ipHash, q, session });
+    const answer = await suggestBuildings(c, {
+      limitScope: "site_address_suggest",
+      asker: visitor.ipHash,
+      q,
+      session,
+      pincode,
+    });
     if (!answer.ok) return c.json(errorBody(answer.code, c.var.requestId), 503);
     return c.json({ suggestions: answer.suggestions, attribution: "Google Maps" as const }, 200);
   });

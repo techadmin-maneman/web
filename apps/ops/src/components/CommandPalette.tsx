@@ -7,7 +7,7 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { go, Link, usePath } from "@maneman/ui/router";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { typeLook } from "@maneman/ui/type";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { shell } from "../content.ts";
 import { useAccess, useMayCall } from "../lib/access.ts";
@@ -60,6 +60,11 @@ function Palette({ onClose }: { onClose: () => void }) {
   const mayCall = useMayCall();
   const mayFind = useAccess().mayCall("POST /api/clients/find");
   const [text, setText] = useState("");
+  // Once the dialog has taken the keyboard to read out its name, the box takes it, so typing searches at once.
+  const box = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    box.current?.focus();
+  }, []);
   const asked = text.trim().toLowerCase();
   const pages: Place[] = [
     ...SECTIONS.filter((each) => mayOpen(mayCall, each.page)).map((each) => ({
@@ -96,7 +101,7 @@ function Palette({ onClose }: { onClose: () => void }) {
           {(control) => (
             <TextInput
               {...control}
-              autoFocus
+              ref={box}
               autoComplete="off"
               value={text}
               onChange={(event) => {

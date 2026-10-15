@@ -6,7 +6,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
 import { Note } from "@maneman/ui/Note";
@@ -138,7 +138,7 @@ function GradeRows({ grade, ...row }: { grade: Grade } & RowProps) {
 
 function RatesTable(row: RowProps) {
   return (
-    <div className={shared.scroll}>
+    <TableScroll labelledBy="pay-rates">
       <Table controls className={classes(shared.table, styles.rates)}>
         <thead>
           <tr>
@@ -162,7 +162,7 @@ function RatesTable(row: RowProps) {
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }
 

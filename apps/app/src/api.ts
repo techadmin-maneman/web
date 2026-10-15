@@ -129,8 +129,10 @@ export const api = {
   profile: () => client.get("/api/profile"),
   saveAddress: (address: AddressSave) => client.patch("/api/profile/address", { body: address }),
   /** One session token for every keystroke of a search, so Google bills the session and not the letters. */
-  addressSuggestions: (query: string, session: string) =>
-    client.post("/api/address/suggestions", { body: { q: query, session } }),
+  addressSuggestions: (query: string, session: string, pincode: string) =>
+    client.post("/api/address/suggestions", {
+      body: { q: query, session, ...(/^\d{6}$/.test(pincode) ? { pincode } : {}) },
+    }),
   switchConsent: (purpose: ConsentPurpose, granted: boolean, source: ConsentScreen) =>
     client.patch("/api/consents/{purpose}", { path: { purpose }, body: { granted, source } }),
   startNumberChange: (newMobile: string) => client.post("/api/number-change", { body: { new_mobile: newMobile } }),

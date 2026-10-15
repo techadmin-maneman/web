@@ -1,6 +1,7 @@
 // Operations · Purchasing (docs/decisions/0166-purchase-orders.md, 0169-supplier-claims.md). No design draws it;
 // every word here is ours. Only the Purchasing page reads it, loaded when it opens.
 
+import { amountOf } from "@maneman/web-kit/figures";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 export const purchasing = {
@@ -45,9 +46,9 @@ export const purchasing = {
     quantity: "Quantity",
     addLine: "Add a line",
     removeLine: (name: string) => `Remove ${name}`,
-    /** "Minimum 1000 ml, packs of 250 ml · Rs. 5 per ml" */
+    /** "Minimum 1,000 ml, packs of 250 ml · Rs. 5 per ml" */
     minimum: (minimum: number, pack: number, unit: string, price: string) =>
-      `Minimum ${String(minimum)} ${unit}, packs of ${String(pack)} ${unit} · ${price} per ${unit}`,
+      `Minimum ${amountOf(minimum, unit)}, packs of ${amountOf(pack, unit)} · ${price} per ${unit}`,
     /** A price far above what Settings say the item costs: most often a pack's price typed as one unit's. */
     farAbove: (price: string, unit: string, times: number, cost: string) =>
       `${price} per ${unit} is ${String(times)} times what Settings say one costs (${cost}). Check the supplier’s price is per ${unit}, not per pack.`,
@@ -68,11 +69,11 @@ export const purchasing = {
     registeredOffice: "Registered office",
     cin: (cin: string) => `CIN ${cin}`,
     deliverTo: "Deliver to",
-    /** "24 strip (2 packs of 12)" */
+    /** "24 strips (2 packs of 12)" */
     quantity: (quantity: number, unit: string, pack: number | null) =>
       pack === null || pack <= 1 || quantity % pack !== 0
-        ? `${String(quantity)} ${unit}`
-        : `${String(quantity)} ${unit} (${String(quantity / pack)} ${quantity / pack === 1 ? "pack" : "packs"} of ${String(pack)})`,
+        ? amountOf(quantity, unit)
+        : `${amountOf(quantity, unit)} (${amountOf(quantity / pack, "pack")} of ${String(pack)})`,
     columns: ["Their code", "Item", "Quantity", "Price each", "Line total"],
     payment: (days: number) => (days === 0 ? "Payment: on delivery" : `Payment: ${String(days)} days`),
     approvedBy: (who: string) => `Approved by ${who}`,

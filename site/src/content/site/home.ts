@@ -54,7 +54,7 @@ export const footer = {
     { label: "Try-on", href: "/try" },
   ],
   area: `${serviceArea} · home service only`,
-  entity: "Mane Man Grooming Services Private Limited",
+  entity: "Mane Man Private Limited",
 };
 
 export const placeholderTag = "Placeholder";

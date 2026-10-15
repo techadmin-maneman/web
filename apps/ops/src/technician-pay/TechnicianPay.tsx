@@ -5,7 +5,7 @@
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
 import { Note } from "@maneman/ui/Note";
@@ -107,7 +107,7 @@ function PayTechnicians({ pay, maySet, onChanged }: { pay: Pay; maySet: boolean;
       {pay.technicians.length === 0 ? (
         <Note>{copy.none}</Note>
       ) : (
-        <div className={styles.scroll}>
+        <TableScroll labelledBy="pay-technicians">
           <Table controls className={classes(styles.table, styles.people)}>
             <thead>
               <tr>
@@ -125,7 +125,7 @@ function PayTechnicians({ pay, maySet, onChanged }: { pay: Pay; maySet: boolean;
               ))}
             </tbody>
           </Table>
-        </div>
+        </TableScroll>
       )}
     </Panel>
   );

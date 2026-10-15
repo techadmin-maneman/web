@@ -56,12 +56,21 @@ const routeOf = (method: string, path: string): string =>
   TEMPLATES.find((each) => each.method === method && each.pattern.test(path))?.template ??
   path.replace(/[0-9a-f-]{36}/g, "{id}");
 
+/** The app each kind of call was made from. */
+const CALL_SURFACES: Readonly<Record<string, keyof typeof copy.surfaces>> = {
+  "ops.call": "ops",
+  "client.call": "client",
+  "tech.call": "tech",
+};
+
 /** What the entry was, and for a call the method and the route it reached, never an ID. */
 function What({ action, detail }: Pick<ActivityEntry, "action" | "detail">) {
   const method = typeof detail?.method === "string" ? detail.method : null;
   const path = typeof detail?.path === "string" ? routeOf(method ?? "", detail.path) : null;
   // The log keeps actions an earlier build wrote under names this one no longer has words for.
-  const said = Object.hasOwn(copy.actions, action) ? copy.actions[action] : action;
+  const named = Object.hasOwn(copy.actions, action) ? copy.actions[action] : action;
+  const surface = CALL_SURFACES[action];
+  const said = surface !== undefined && method === "GET" ? copy.opened(copy.surfaces[surface]) : named;
   return (
     <>
       <span>{said}</span>
@@ -81,9 +90,10 @@ function Record({ subject }: Pick<ActivityEntry, "subject">) {
   if (subject.kind === "appointment") {
     return <OpsLink to={dispatchPath({ visit: subject.id })}>{copy.records.appointment}</OpsLink>;
   }
+  const kind = copy.kinds[subject.kind] ?? subject.kind;
   return (
     <span className={styles.sub}>
-      {subject.kind} {subject.id.slice(0, 8)}
+      {kind} {subject.id.slice(0, 8)}
     </span>
   );
 }

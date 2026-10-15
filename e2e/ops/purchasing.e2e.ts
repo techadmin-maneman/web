@@ -21,6 +21,7 @@ const ORDER = {
   drafted_by: "ops@maneman.in",
   drafted_at: "2026-09-21T06:30:00.000Z",
   approved_by: null,
+  approved_by_name: null,
   second_approved_by: null,
   sent_at: null,
   cancel_reason: null,
@@ -54,14 +55,17 @@ const BOOK = {
 } satisfies OpsReply<"/api/purchase-orders">;
 
 const LETTERHEAD = {
-  legal_name: "Mane Man Grooming Services Private Limited",
+  legal_name: "Mane Man Private Limited",
   registered_office: "Plot 12, Okhla Phase II\nNew Delhi 110020",
   cin: "U74999DL2026PTC123456",
   gstin: "06AABCM1234A1Z5",
   deliver_to: "Warehouse 4, Sector 37\nGurgaon 122001",
 };
 
-const FIRST_APPROVED = { ...BOOK, orders: [{ ...ORDER, approved_by: "ops@maneman.in" }] };
+const FIRST_APPROVED = {
+  ...BOOK,
+  orders: [{ ...ORDER, approved_by: "ops@maneman.in", approved_by_name: "ops@maneman.in" }],
+};
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, {
@@ -245,7 +249,11 @@ test("a manager sets the letterhead, and a printed order carries it with what th
   await page.addInitScript(() => {
     window.print = () => undefined;
   });
-  const set = { ...BOOK, letterhead: LETTERHEAD, orders: [{ ...ORDER, approved_by: "ops@maneman.in" }] };
+  const set = {
+    ...BOOK,
+    letterhead: LETTERHEAD,
+    orders: [{ ...ORDER, approved_by: "ops@maneman.in", approved_by_name: "Ops desk" }],
+  };
   await open(page, { "POST /api/purchase-orders/letterhead": json(set) });
   const letterhead = page.getByRole("region", { name: copy.letterhead.title });
   await expect(letterhead).toContainText(copy.letterhead.missing);
@@ -272,6 +280,6 @@ test("a manager sets the letterhead, and a printed order carries it with what th
   await expect(sheet).toContainText("KS-SOL-500");
   await expect(sheet).toContainText("48 ml (4 packs of 12)");
   await expect(sheet).toContainText("Payment: 30 days");
-  await expect(sheet).toContainText("Approved by ops@maneman.in");
+  await expect(sheet).toContainText("Approved by Ops desk");
   await expect(sheet).toContainText("Date: 21 Sep 2026");
 });

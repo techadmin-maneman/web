@@ -33,4 +33,10 @@
   :global(body > :not(#order-sheet)) {
     display: none;
   }
+
+  /* White paper under the sheet, never the console's ground. */
+  :global(html),
+  :global(body) {
+    background: var(--white);
+  }
 }

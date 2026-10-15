@@ -1,5 +1,6 @@
 // Settings: the rules, the services and their prices, discount codes, the consumables, the job sheet and staff.
 
+import { amountOf } from "@maneman/web-kit/figures";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 import { grantPhrasing } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
@@ -643,7 +644,7 @@ export const settings = {
       /** "INR 5.00 per ml" */
       perUnit: (price: string, unit: string) => `${price} per ${unit}`,
       /** "250 ml" */
-      amount: (figure: number, unit: string) => `${String(figure)} ${unit}`,
+      amount: (figure: number, unit: string) => amountOf(figure, unit),
       /** "Pack 250 ml", as the line under review reads it. */
       packOf: (amount: string) => `Pack ${amount}`,
       minimum: "Minimum order",

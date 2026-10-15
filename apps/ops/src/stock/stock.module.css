@@ -15,10 +15,6 @@
   min-width: 0;
 }
 
-.scroll {
-  overflow-x: auto;
-}
-
 /* The place shown beside the warehouse, once there are too many for a column each. */
 .kitPicker {
   max-width: var(--measure-form);

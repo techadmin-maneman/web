@@ -3,6 +3,7 @@
 // last the IDs and days to act on: never a client's name, number or address, since the chat that hears them is
 // outside the console. The kinds are src/policy/alerts.ts's.
 
+import { amountOf } from "@maneman/web-kit/figures";
 import { rupees } from "@maneman/web-kit/money";
 
 /** A refund Razorpay would not make, or would not say it made, for ops to settle by hand. */
@@ -172,7 +173,7 @@ export const ALERT_WORDS = {
     readonly unit: string;
     readonly level: number;
   }) =>
-    `Record a transfer or a delivery of ${a.item} for ${a.at} on the Stock page: ${String(a.held)} ${a.unit} left, ` +
+    `Record a transfer or a delivery of ${a.item} for ${a.at} on the Stock page: ${amountOf(a.held, a.unit)} left, ` +
     `at or below its level of ${String(a.level)}.`,
   kit_short: (a: {
     readonly kit: string;
@@ -205,7 +206,7 @@ export const ALERT_WORDS = {
     readonly to: string;
     readonly day: string;
   }) =>
-    `Receive or send back on the Stock page the ${String(a.quantity)} ${a.unit} of ${a.item} sent from ${a.from} ` +
+    `Receive or send back on the Stock page the ${amountOf(a.quantity, a.unit)} of ${a.item} sent from ${a.from} ` +
     `to ${a.to} on ${a.day}: it has not arrived.`,
   count_differs: (a: { readonly place: string; readonly lines: number }) =>
     `Sign off ${a.place}'s count on Counts: it still differs on ${String(a.lines)} after a recount.`,

@@ -102,3 +102,8 @@
     }
   }
 }
+
+/* A table wider than its panel, scrolled inside it (TableScroll). */
+.scroll {
+  overflow-x: auto;
+}

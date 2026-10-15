@@ -8,7 +8,7 @@ import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullMonth, shortDate } from "@maneman/web-kit/dates";
@@ -180,7 +180,7 @@ function StatementRows({ statement, ...row }: { statement: PartnerStatement } & 
 function StatementsTable(row: RowProps) {
   const figures = [columns.fitted, columns.earned, columns.takenBack, columns.due, columns.paid, columns.owed];
   return (
-    <div className={styles.scroll}>
+    <TableScroll labelledBy="partner-commission">
       <Table controls className={styles.table}>
         <thead>
           <tr>
@@ -201,7 +201,7 @@ function StatementsTable(row: RowProps) {
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }
 

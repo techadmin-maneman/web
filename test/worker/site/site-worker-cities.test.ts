@@ -66,6 +66,17 @@ describe("the site Worker on a page that names the cities", () => {
     }
   });
 
+  it("leaves out of its list of cities each one with no pincode served", async () => {
+    const { env: siteBindings } = siteEnv(
+      () => Response.json({ cities: ["Gurgaon"] }),
+      `<!doctype html><html><head></head><body><ul><li data-city="Gurgaon">Gurgaon</li><li data-city="Delhi">Delhi</li></ul></body></html>`,
+    );
+    const response = await createSiteWorker().fetch(new Request("https://maneman.in/areas"), siteBindings);
+    const html = await response.text();
+    expect(html).toContain('<li data-city="Gurgaon">Gurgaon</li>');
+    expect(html).not.toContain("Delhi");
+  });
+
   it("asks nothing for a page that names no city", async () => {
     const page = await visit("/guides", () => Response.json({ cities: ["Gurgaon"] }));
     expect(page.asked).toEqual([]);
@@ -77,11 +88,11 @@ describe("the site Worker on a city's page", () => {
 <section data-city-areas="Gurgaon" hidden><h2>Where we come in Gurgaon</h2><ul class="areas" data-areas-of="Gurgaon"></ul></section>
 </body></html>`;
 
-  async function visit(api: Api) {
+  async function opened(api: Api) {
     const { env } = siteEnv(api, PAGE);
-    const response = await createSiteWorker().fetch(new Request("https://maneman.in/areas/gurgaon"), env);
-    return response.text();
+    return createSiteWorker().fetch(new Request("https://maneman.in/areas/gurgaon"), env);
   }
+  const visit = async (api: Api) => (await opened(api)).text();
 
   // The city pages were the five names on /areas alone, with nothing of each city's own.
   it("lists the areas served there, each written as text, and shows them", async () => {
@@ -92,16 +103,17 @@ describe("the site Worker on a city's page", () => {
     expect(html).toContain("<li>DLF Phase 2</li><li>Sector &#60;65&#62;</li>");
   });
 
-  it("keeps the areas hidden for a city with none served, or while mm-api cannot say", async () => {
+  // Delhi's page said a technician comes to your home in Delhi, where no pincode was served.
+  it("sends a city with no pincode served to the cities we come to", async () => {
+    const response = await opened(() => Response.json({ cities: ["Noida"], areas: { Noida: ["Sector 18"] } }));
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("https://maneman.in/areas");
+  });
+
+  it("keeps the areas hidden while mm-api cannot say", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const answers: Api[] = [
-      () => Response.json({ cities: ["Noida"], areas: { Noida: ["Sector 18"] } }),
-      () => new Response(null, { status: 503 }),
-    ];
-    for (const api of answers) {
-      const html = await visit(api);
-      expect(html).toContain('<section data-city-areas="Gurgaon" hidden>');
-      expect(html).toContain('<ul class="areas" data-areas-of="Gurgaon"></ul>');
-    }
+    const html = await visit(() => new Response(null, { status: 503 }));
+    expect(html).toContain('<section data-city-areas="Gurgaon" hidden>');
+    expect(html).toContain('<ul class="areas" data-areas-of="Gurgaon"></ul>');
   });
 });

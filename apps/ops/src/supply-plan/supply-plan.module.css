@@ -1,5 +1,1 @@
 /* The Supply plan's forecast: one row an item, one column a period, scrolled sideways on a narrow screen. */
-
-.scroll {
-  overflow-x: auto;
-}

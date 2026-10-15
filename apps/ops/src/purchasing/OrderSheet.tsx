@@ -4,6 +4,7 @@
 // prints as soon as it is drawn, alone.
 
 import { fullDate, indiaDate } from "@maneman/web-kit/dates";
+import { Mark } from "@maneman/ui/Mark";
 import { Table } from "@maneman/ui/Table";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useEffect, useRef } from "react";
@@ -61,6 +62,7 @@ export function OrderSheet({ orders, order, onPrinted }: { orders: Orders; order
   const listed = (code: string) => supplier?.items.find((each) => each.consumable_code === code);
   return createPortal(
     <div id="order-sheet" className={styles.sheet}>
+      <Mark className={styles.sheetMark} />
       <h1 className={styles.sheetTitle}>
         {sheet.title} {copy.number(order.number)}
       </h1>
@@ -104,7 +106,7 @@ export function OrderSheet({ orders, order, onPrinted }: { orders: Orders; order
         {copy.order.total}: {inCurrency(order.total, order.currency)}
       </p>
       {supplier !== undefined && <p>{sheet.payment(supplier.payment_terms_days)}</p>}
-      {order.approved_by !== null && <p>{sheet.approvedBy(order.approved_by)}</p>}
+      {order.approved_by_name !== null && <p>{sheet.approvedBy(order.approved_by_name)}</p>}
     </div>,
     document.body,
   );

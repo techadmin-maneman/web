@@ -7,7 +7,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { boxError, errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -150,7 +150,7 @@ export function InTransit({ stock, onChanged }: { stock: Stock; onChanged: (stoc
   };
   return (
     <Panel titleId="stock-in-transit" title={copy.title}>
-      <div className={styles.scroll}>
+      <TableScroll labelledBy="stock-in-transit">
         <Table controls>
           <thead>
             <tr>
@@ -175,7 +175,7 @@ export function InTransit({ stock, onChanged }: { stock: Stock; onChanged: (stoc
             ))}
           </tbody>
         </Table>
-      </div>
+      </TableScroll>
       {transfer !== undefined && (
         <Receiving
           key={transfer.id}

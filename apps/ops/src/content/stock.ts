@@ -1,5 +1,6 @@
 // Stock: what each place holds, and a delivery, transfer, count or write-off recorded.
 
+import { amountOf } from "@maneman/web-kit/figures";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
 
 /**
@@ -21,8 +22,8 @@ export const stock = {
   byPlace: "Each place",
   byZone: "Totals by zone",
   byCity: "Totals by city",
-  /** "12 strip", and a mark for a place at or below its level. */
-  held: (quantity: number, unit: string) => `${String(quantity)} ${unit}`,
+  /** "12 strips", and a mark for a place at or below its level. */
+  held: (quantity: number, unit: string) => amountOf(quantity, unit),
   low: "Low",
   none: "No consumables yet. Add them in",
   retired: "retired",

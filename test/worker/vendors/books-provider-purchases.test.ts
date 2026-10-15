@@ -152,7 +152,7 @@ describe("Books: a claim's vendor credit", () => {
     expect(await books.findVendorCredit("claim-2")).toBeNull();
   });
 
-  it("is made on its vendor, numbered by Books, its line's price in the currency's main unit", async () => {
+  it("is made on its vendor under our claim's number, its line's price in the currency's main unit", async () => {
     const { books, calls } = zohoBooks({
       [ZOHO_TOKEN_URL]: () => tokenIssued(),
       [`${BOOKS_API}/vendorcredits`]: () =>
@@ -161,14 +161,17 @@ describe("Books: a claim's vendor credit", () => {
     const credit = await books.createVendorCredit({
       vendorId: "v-1",
       reference: "claim-1",
+      creditNumber: "CL-0001",
       date: "2026-10-01",
       exchangeRate: 83.25,
       currency: "USD",
       lines: [{ description: "Solvent (CL-0001, PO-0001)", accountId: "acc-raw", unitPrice: 400, quantity: 1 }],
     });
     expect(credit).toEqual({ id: "vc-2", reference: "claim-1" });
+    expect(new URL(booksCalls(calls)[0]?.url ?? "").searchParams.get("ignore_auto_number_generation")).toBe("true");
     expect(sent(booksCalls(calls)[0])).toEqual({
       vendor_id: "v-1",
+      vendor_credit_number: "CL-0001",
       reference_number: "claim-1",
       date: "2026-10-01",
       exchange_rate: 83.25,

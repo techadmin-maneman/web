@@ -81,9 +81,10 @@ export async function stockView(
     allPlaces(db),
     db
       .prepare(
-        // A service token by its label on the Staff list, as Activity names it.
+        // A service token by its label on the Staff list, as Activity names it, and a technician by name.
         `SELECT m.created_at, m.consumable_code, ${ROW_PLACE} AS place, m.quantity, m.reason, m.note,
-           COALESCE((SELECT label FROM staff_service_tokens WHERE client_id = m.actor), m.actor) AS actor
+           COALESCE((SELECT label FROM staff_service_tokens WHERE client_id = m.actor),
+             (SELECT name FROM technicians WHERE id = m.actor), m.actor) AS actor
          FROM stock_movements m
          WHERE ?2 IS NULL OR ${ROW_PLACE} IN (SELECT value FROM json_each(?2))
          ORDER BY m.created_at DESC, m.rowid DESC LIMIT ?1`,

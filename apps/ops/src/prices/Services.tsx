@@ -5,7 +5,7 @@
 
 import { RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -276,7 +276,7 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
       <h3 className={styles.kindTitle} id={titleId}>
         {name}
       </h3>
-      <div className={styles.scroll}>
+      <TableScroll labelledBy={titleId}>
         <Table controls className={styles.table}>
           <caption>
             <VisuallyHidden>{name}</VisuallyHidden>
@@ -300,7 +300,7 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
             {fee !== undefined && <LateFeeRow fee={fee} opened={opened} />}
           </tbody>
         </Table>
-      </div>
+      </TableScroll>
       <OpenAction opened={opened} where={kind} />
       <Outcome opened={opened} where={kind} />
       {opened.may("add") && (opened.action === null || actionWhere(opened.action) !== kind) && (

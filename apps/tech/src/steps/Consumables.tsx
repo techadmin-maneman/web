@@ -23,6 +23,7 @@ import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
 import shared from "./steps.module.css";
 import styles from "./consumables.module.css";
+import { declinedTheFit } from "../lib/progress.ts";
 
 type Offered = Job["consumables"][number];
 
@@ -213,11 +214,15 @@ function Counting({
 }
 
 export function Consumables({ id }: { id: string }) {
-  const { loaded, retry, refused, finish, back } = useStep(id, "consumables");
+  const { loaded, retry, refused, queued, finish, back } = useStep(id, "consumables");
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") {
     return <Failed message={jobCopy.failed} retry={jobCopy.retry} onRetry={retry} requestId={loaded.requestId} />;
   }
-  return <Counting job={loaded.value} refused={refused} onFinish={(body) => void finish(body)} onBack={back} />;
+  // A consultation and fit the client said no to: nothing was fitted, so nothing is expected of the kit.
+  const job = declinedTheFit(loaded.value, queued)
+    ? { ...loaded.value, consumables: loaded.value.consumables.map((each) => ({ ...each, expected: 0 })) }
+    : loaded.value;
+  return <Counting job={job} refused={refused} onFinish={(body) => void finish(body)} onBack={back} />;
 }

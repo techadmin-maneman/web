@@ -6,7 +6,7 @@ import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { Table, TableScroll } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -217,7 +217,7 @@ function ConversationTable(props: {
 }) {
   const columns = copy.columns;
   return (
-    <div className={shared.scroll}>
+    <TableScroll labelledBy="messages">
       <Table controls className={shared.table}>
         <thead>
           <tr>
@@ -248,7 +248,7 @@ function ConversationTable(props: {
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }
 

@@ -43,6 +43,13 @@ const suggestionsRoute = opsRoute({
               .min(1)
               .max(100)
               .openapi({ description: "One token for the whole search, sent again when the address is saved." }),
+            pincode: z
+              .string()
+              .regex(/^\d{6}$/)
+              .optional()
+              .openapi({
+                description: "The pincode the address is at, where it is known: the search keeps near its city.",
+              }),
           })
           .strict()
           .openapi("OpsAddressSuggestionsAsk"),
@@ -73,11 +80,17 @@ const saveRoute = opsRoute({
 export function registerOpsClientAddress(app: App): void {
   app.openapi(suggestionsRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const { q, session } = c.req.valid("json");
+    const { q, session, pincode } = c.req.valid("json");
     if ((await clientInReach(c, id)) === null) return refuse(c, "not_found");
 
     // Each member of staff has a day's suggestions of their own, as each client has.
-    const answer = await suggestBuildings(c, { limitScope: "ops_address_suggest", asker: actorOf(c).id, q, session });
+    const answer = await suggestBuildings(c, {
+      limitScope: "ops_address_suggest",
+      asker: actorOf(c).id,
+      q,
+      session,
+      pincode,
+    });
     if (!answer.ok) return c.json(errorBody(answer.code, c.var.requestId), 503);
     return c.json({ suggestions: answer.suggestions, attribution: "Google Maps" as const }, 200);
   });

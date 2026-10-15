@@ -174,6 +174,18 @@ describe("a custom order's money, wherever it goes", () => {
       await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL ORDER BY key").all<{ key: string }>()
     ).results.map((row) => row.key);
 
+  it("whose link could not be made, stops asking ops to send it once it is cancelled", async () => {
+    const make = payments.createPaymentLink.bind(payments);
+    Object.assign(payments, { createPaymentLink: () => Promise.reject(new Error("amount exceeds maximum")) });
+    const [order] = (await (await raise()).json<Orders>()).orders;
+    const id = order?.id ?? "";
+    expect(await alertKeys()).toContain(`custom_order_link:${id}`);
+
+    Object.assign(payments, { createPaymentLink: make });
+    await job.opsPost(`/api/custom-orders/${id}/cancel`);
+    expect(await alertKeys()).not.toContain(`custom_order_link:${id}`);
+  });
+
   it("paid on its link after it was cancelled, is ops' to give back, and orders nothing", async () => {
     const [order] = (await (await raise()).json<Orders>()).orders;
     const id = order?.id ?? "";
