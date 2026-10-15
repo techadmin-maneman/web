@@ -35,8 +35,8 @@ One page on getting a change from your laptop to staging. `README.md` says what 
 
 ## Keep it small
 
-- One change a pull request, and never several squashed into one: each should be revertable on its own.
-- Aim for under 800 changed lines in files people wrote. CI warns past that; generated files do not count (`.gitattributes`).
+- A pull request is one batch of related work, as the owner asked: a phase of a plan, or one area of an audit's findings, rather than one a fix. It lands as a merge commit, never squashed, so each commit in it stays a step that can be reverted on its own: give each its own subject, one thing each.
+- CI warns past 800 changed lines in files people wrote; generated files do not count (`.gitattributes`). A batch past it says in its description what it holds, so a reader knows where to start.
 - Split a large change into steps that each leave `main` working: the migration that adds a column, then the code that writes it, then the code that reads it (`docs/migrations.md`).
 
 ## When a person must look
