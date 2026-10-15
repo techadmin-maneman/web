@@ -582,7 +582,7 @@ export const closeOut = {
   lastJob: "Back to today",
   // The evidence chain's close: the evidence summary, and what happens to it.
   noShow: {
-    ops: "This goes to ops with the charge.",
+    ops: "This goes to ops.",
     checkedIn: "Checked in",
     distance: "Distance",
     whatsApp: "WhatsApp",
