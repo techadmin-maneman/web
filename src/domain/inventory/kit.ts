@@ -7,6 +7,7 @@
 
 import { auditStatement } from "../platform/audit.ts";
 import { indiaDate } from "../../lib/india-time.ts";
+import { isLow } from "../../policy/stock.ts";
 import { placeById, WAREHOUSE, type Place } from "./stock-places.ts";
 import { sendStock } from "./stock-transit.ts";
 import { kitUnits } from "./stock-units.ts";
@@ -24,6 +25,8 @@ interface KitItem {
   readonly name: string;
   readonly unit: string;
   readonly quantity: number;
+  /** At or below the kit level ops set for it: time to ask for more. */
+  readonly low: boolean;
   readonly hairSystem: boolean;
   readonly lots: readonly KitLot[];
   /** Its pieces the kit holds labelled, of a hair system. */
@@ -58,7 +61,14 @@ export interface KitView {
   readonly returned: readonly Returned[];
 }
 
-type HeldRow = { consumable_code: string; name: string; unit: string; quantity: number; hair_system: number };
+type HeldRow = {
+  consumable_code: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  reorder_kit: number | null;
+  hair_system: number;
+};
 type LotRow = { code: string; lot_code: string; expires_on: string | null; quantity: number };
 type ComingRow = {
   id: string;
@@ -76,7 +86,7 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
   const [held, lots, units, coming, returned] = await Promise.all([
     db
       .prepare(
-        `SELECT b.consumable_code, c.name, c.unit, b.quantity,
+        `SELECT b.consumable_code, c.name, c.unit, b.quantity, c.reorder_kit,
            EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = b.consumable_code) AS hair_system
          FROM stock_balances b JOIN consumables c ON c.code = b.consumable_code
          WHERE b.place = ?1 AND b.quantity <> 0 ORDER BY c.name COLLATE NOCASE`,
@@ -119,6 +129,7 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
       name: row.name,
       unit: row.unit,
       quantity: row.quantity,
+      low: isLow(row.quantity, row.reorder_kit),
       hairSystem: row.hair_system === 1,
       lots: lots.results
         .filter((lot) => lot.code === row.consumable_code)

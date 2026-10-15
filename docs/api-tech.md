@@ -6565,6 +6565,10 @@ Request body:
           "quantity": {
             "type": "integer"
           },
+          "low": {
+            "type": "boolean",
+            "description": "At or below the kit level ops set for it."
+          },
           "hair_system": {
             "type": "boolean"
           },
@@ -6645,6 +6649,7 @@ Request body:
           "name",
           "unit",
           "quantity",
+          "low",
           "hair_system",
           "lots",
           "units"

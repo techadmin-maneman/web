@@ -791,6 +791,8 @@ export const kit = {
     expires: (date: string) => `Expires ${date}`,
     expired: (date: string) => `Expired ${date}`,
     pieces: (count: number) => `${String(count)} labelled`,
+    /** At or below the level ops keep a kit at: ops send more, and the technician may ask. */
+    low: "Running low. Ask ops for more.",
   },
   returned: {
     title: "To hand back",

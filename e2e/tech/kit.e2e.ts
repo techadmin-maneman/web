@@ -19,6 +19,7 @@ function withAKit(fake: Fake): void {
         name: "Solvent",
         unit: "ml",
         quantity: 120,
+        low: false,
         hair_system: false,
         lots: [
           { lot_code: "SV-1", expires_on: "2020-01-31", quantity: 20 },

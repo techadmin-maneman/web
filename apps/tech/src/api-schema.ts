@@ -3252,6 +3252,8 @@ export interface components {
                 name: string;
                 unit: string;
                 quantity: number;
+                /** @description At or below the kit level ops set for it. */
+                low: boolean;
                 hair_system: boolean;
                 /** @description The lots it holds some of, soonest to expire first. */
                 lots: {

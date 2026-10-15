@@ -148,6 +148,7 @@ function Held({ kit }: { kit: Kit }) {
               <p className={styles.line}>
                 {item.name} · {amountOf(item.quantity, item.unit)}
               </p>
+              {item.low && <p className={styles.note}>{copy.held.low}</p>}
               {item.hair_system && <p className={styles.note}>{copy.held.pieces(item.units.length)}</p>}
               {item.lots
                 .filter((lot) => lot.expires_on !== null)
