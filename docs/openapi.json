@@ -400,12 +400,59 @@
               "type": "string"
             },
             "description": "Each changed line's key, as src/config/words.json names it, and its words."
+          },
+          "lengths": {
+            "type": "object",
+            "properties": {
+              "consultation": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "first_fit": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "service": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "replacement": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "description": "Each kind's visit length in minutes, as ops set it on its standard service, else its first offered today; null for a kind offering nothing."
           }
         },
         "required": [
           "id",
           "published_at",
-          "words"
+          "words",
+          "lengths"
         ],
         "additionalProperties": false
       },

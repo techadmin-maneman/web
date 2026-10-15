@@ -1,6 +1,10 @@
 // The words the Words page published for an environment, which the site's build lays over its copy
 // (docs/decisions/0127-publishing-the-words.md): read from that environment's own site, past Access on staging. A
-// build that cannot read them stops, so a deploy never puts the code's wording back over what was published.
+// build that cannot read them stops, so a deploy never puts the code's wording back over what was published. With
+// them come the lengths ops gave each kind's service, which become the site's length lines where no words were
+// published for one, so its prose says what a visit is booked for.
+
+import { lengthWords } from "../../packages/web-kit/visit-length.ts";
 
 /** Where each environment's site answers, mm-api behind it. A local build lays nothing over the copy. */
 export const SITE_ORIGINS: Readonly<Record<string, string>> = {
@@ -34,7 +38,28 @@ export async function fetchSiteWords(
   if (!isRecord(body) || !isRecord(body.words)) {
     throw new Error(`the published words from ${url} came back in a shape the build does not know`);
   }
-  return Object.fromEntries(
+  const words = Object.fromEntries(
     Object.entries(body.words).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+  );
+  return { ...lengthLines(body.lengths), ...words };
+}
+
+/** The site's length line for each kind of visit, by its key in src/config/words.json. */
+const LENGTH_LINES = {
+  consultation: "site:service/visitLength.consultation",
+  service: "site:service/visitLength.service",
+  first_fit: "site:service/visitLength.firstFit",
+} as const;
+
+/** A line for each kind the API gave a length for, in the site's words. */
+function lengthLines(lengths: unknown): Record<string, string> {
+  if (!isRecord(lengths)) return {};
+  return Object.fromEntries(
+    Object.entries(LENGTH_LINES).flatMap(([kind, key]) => {
+      const minutes = lengths[kind];
+      return typeof minutes === "number" && Number.isInteger(minutes) && minutes > 0
+        ? [[key, lengthWords(minutes)]]
+        : [];
+    }),
   );
 }

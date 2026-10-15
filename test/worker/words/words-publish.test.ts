@@ -27,7 +27,12 @@ const post = (path: string, body?: unknown) =>
 
 const listed = async () => (await request(ops, "/api/words")).json<Listed>();
 const onSite = async (key: string) => (await listed()).words.find((word) => word.key === key)?.on_site;
-const siteWords = async () => (await request(site, "/api/site-words")).json<{ id: string | null; words: object }>();
+const siteWords = async () =>
+  (await request(site, "/api/site-words")).json<{
+    id: string | null;
+    words: object;
+    lengths: Record<string, number | null>;
+  }>();
 
 beforeEach(async () => {
   await markDatabase();
@@ -37,7 +42,7 @@ beforeEach(async () => {
 
 describe("publishing the site's words", () => {
   it("gives the site's build nothing before any publish", async () => {
-    expect(await siteWords()).toEqual({ id: null, published_at: null, words: {} });
+    expect(await siteWords()).toMatchObject({ id: null, published_at: null, words: {} });
     expect((await listed()).published).toBeNull();
     expect(await onSite(HERO)).toBe(true);
   });
@@ -69,5 +74,14 @@ describe("publishing the site's words", () => {
     await post("/api/words/publish");
     expect((await siteWords()).words).toEqual({});
     expect(await onSite(HERO)).toBe(true);
+  });
+
+  // A length changed in the console stayed the code's on the site, whose build read lengths from the code alone.
+  it("tells the site's build how long each kind of visit is booked for, as ops last set it", async () => {
+    const before = (await siteWords()).lengths;
+    expect(before).toMatchObject({ consultation: expect.any(Number), service: expect.any(Number) });
+    const longer = (before.service ?? 0) + 30;
+    expect((await post("/api/services/service/standard/length", { minutes: longer })).status).toBe(200);
+    expect((await siteWords()).lengths.service).toBe(longer);
   });
 });

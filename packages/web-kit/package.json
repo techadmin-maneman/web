@@ -21,6 +21,7 @@
     "./whatsapp": "./whatsapp.ts",
     "./small-jpeg": "./small-jpeg.ts",
     "./turnstile": "./turnstile.ts",
+    "./visit-length": "./visit-length.ts",
     "./names": "./names.ts",
     "./refusal": "./refusal.ts",
     "./service-area": "./service-area.ts",

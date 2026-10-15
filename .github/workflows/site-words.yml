@@ -1,6 +1,7 @@
-# Rebuilds staging's site once the Words page publishes new words (docs/decisions/0127-publishing-the-words.md):
-# on a ten-minute schedule, which GitHub runs about every half hour, it asks staging for its latest publish, and builds
-# and deploys mm-site only for one no run here has built yet. It builds the commit staging's mm-api runs, as
+# Rebuilds staging's site once the Words page publishes new words (docs/decisions/0127-publishing-the-words.md), or ops
+# change how long a kind of visit is booked for, which its prose says: on a ten-minute schedule, which GitHub runs about
+# every half hour, it asks staging for its latest publish and its lengths, and builds and deploys mm-site only for a
+# pair no run here has built yet. It builds the commit staging's mm-api runs, as
 # /api/health names it, never main's head, which may not have passed its checks; and it ships only while staging still
 # runs that commit, since a staging deploy that lands meanwhile builds with the published words itself. Production takes
 # them with a release.
@@ -36,13 +37,16 @@ jobs:
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
     steps:
-      - name: Staging's latest publish
+      # The publish and the lengths together, so a length ops change is built as a publish is.
+      - name: Staging's latest publish, and its visit lengths
         id: latest
         run: |
-          id=$(curl -fsS --retry 3 \
+          answer=$(curl -fsS --retry 3 \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            https://staging.maneman.in/api/site-words | jq -r '.id // "none"')
-          echo "id=$id" >> "$GITHUB_OUTPUT"
+            https://staging.maneman.in/api/site-words)
+          publish=$(echo "$answer" | jq -r '.id // "none"')
+          lengths=$(echo "$answer" | jq -c '.lengths // {}' | sha256sum | cut -c1-12)
+          echo "id=$publish-$lengths" >> "$GITHUB_OUTPUT"
 
       - name: The commit staging runs
         id: running

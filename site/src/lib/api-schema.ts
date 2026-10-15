@@ -2293,6 +2293,13 @@ export interface components {
             words: {
                 [key: string]: string;
             };
+            /** @description Each kind's visit length in minutes, as ops set it on its standard service, else its first offered today; null for a kind offering nothing. */
+            lengths: {
+                consultation?: number | null;
+                first_fit?: number | null;
+                service?: number | null;
+                replacement?: number | null;
+            };
         };
         /** @description The code is on its way to the number on WhatsApp. */
         NumberCode: {
