@@ -25,6 +25,7 @@ const technician = (
   // Imran's two visits to come, which switching them off leaves with nobody.
   visits_to_come: n === 1 ? 2 : 0,
   sign_in_stopped_at: null,
+  out_of_codes: false,
   devices,
   leave,
 });

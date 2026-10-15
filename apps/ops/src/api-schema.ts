@@ -10478,7 +10478,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Let a technician sign in again, on any phone, after ops revoked one of theirs */
+        /** Let a technician sign in again, on any phone: after ops revoked one of theirs, or once their number has had its login codes for today */
         post: {
             parameters: {
                 query?: never;
@@ -10520,7 +10520,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description not_found: no such technician stopped signing in, or they are not in the caller's cities */
+                /** @description not_found: no such technician stopped signing in or out of codes, or they are not in the caller's cities */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -22958,6 +22958,8 @@ export interface components {
                 visits_to_come: number;
                 /** @description When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again. */
                 sign_in_stopped_at: string | null;
+                /** @description Their number has had its login codes for today. Ops may give them back. */
+                out_of_codes: boolean;
                 devices: {
                     device_id: string;
                     label: string | null;

@@ -26,6 +26,7 @@ const IMRAN = "33333333-3333-4333-8333-333333333331";
 const RETIRED = "33333333-3333-4333-8333-333333333333";
 const TESTER = "33333333-3333-4333-8333-333333333334";
 const DEVICE = "phone-abc-123";
+const CODE_COUNT = { salt: LOCAL_SETTINGS.ipHashSalt, settings: LOCAL_SETTINGS };
 
 let tech: App;
 let deps: TestDependencies;
@@ -213,8 +214,9 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     expect(deps.sentCodes).toHaveLength(1);
     expect(deps.alerts).toEqual([
       'The daily tech_code ceiling (1) is reached; the technician app\'s login codes answer "busy" until midnight IST. Raise it in Settings · Rules if the day calls for more.',
-      `Technician ${IMRAN} was refused a login code: today's 1 technician login codes are spent, so no technician ` +
-        "can sign in on a new phone until midnight IST. http://ops.localhost:4323/technicians",
+      `Technician Imran Qureshi was refused a login code: today's 1 technician login codes are spent, so no technician ` +
+        "can sign in on a new phone until midnight IST. " +
+        `http://ops.localhost:4323/technicians/${IMRAN}/phones`,
     ]);
   });
 
@@ -239,15 +241,33 @@ describe("POST /api/tech/auth/otp, its limits", () => {
       await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
 
     expect(deps.alerts).toEqual([
-      `Technician ${IMRAN} was refused a login code: their number has had its 5 codes for today, so they can sign in ` +
-        "again after midnight IST. If they did not ask for them all, someone else is asking for codes for their number. " +
-        "http://ops.localhost:4323/technicians",
+      "Technician Imran Qureshi was refused a login code: their number has had its 5 codes for today. If they asked " +
+        "for them, give them back on their Phones tab to let them sign in now. If not, someone else is asking for " +
+        `codes for their number. http://ops.localhost:4323/technicians/${IMRAN}/phones`,
     ]);
 
     clock = new Date(NOW.getTime() + 24 * 60 * 60_000);
     expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
     const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
     expect(open).toEqual({ n: 0 });
+  });
+
+  it("lets them ask for codes again the same day once ops give their codes back", async () => {
+    for (let sent = 0; sent < 6; sent += 1)
+      await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE });
+    expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(429);
+
+    const audit = {
+      surface: "ops",
+      actor: { kind: "staff", id: "ops@maneman.test" },
+      action: "technician.allow_sign_in",
+      subject: { kind: "technician", id: IMRAN },
+      requestId: null,
+    } as const;
+    expect(await allowSignIn(env.DB, IMRAN, { audit, count: CODE_COUNT }, NOW)).toBe(true);
+    expect((await post("/api/tech/auth/otp", { mobile: "98100 00009", device_id: DEVICE })).status).toBe(202);
+    // Nothing more stops them now: a second give-back has nothing to give.
+    expect(await allowSignIn(env.DB, IMRAN, { audit, count: CODE_COUNT }, NOW)).toBe(false);
   });
 
   it("tells ops when a technician's network has asked for its codes this hour", async () => {
@@ -259,8 +279,9 @@ describe("POST /api/tech/auth/otp, its limits", () => {
 
     expect(refused.status).toBe(429);
     expect(deps.alerts).toEqual([
-      `Technician ${IMRAN} was refused a login code: their network has asked for 10 codes this hour. They can sign in ` +
-        "on mobile data now, or on this network from the next hour. http://ops.localhost:4323/technicians",
+      "Technician Imran Qureshi was refused a login code: their network has asked for 10 codes this hour. They can " +
+        "sign in on mobile data now, or on this network from the next hour. " +
+        `http://ops.localhost:4323/technicians/${IMRAN}/phones`,
     ]);
   });
 
@@ -424,8 +445,8 @@ describe("after ops revoke a phone of theirs", () => {
       subject: { kind: "technician", id: IMRAN },
       requestId: null,
     } as const;
-    expect(await allowSignIn(env.DB, IMRAN, allow, NOW)).toBe(true);
-    expect(await allowSignIn(env.DB, IMRAN, allow, NOW)).toBe(false);
+    expect(await allowSignIn(env.DB, IMRAN, { audit: allow, count: CODE_COUNT }, NOW)).toBe(true);
+    expect(await allowSignIn(env.DB, IMRAN, { audit: allow, count: CODE_COUNT }, NOW)).toBe(false);
     expect((await signIn("a-new-phone")).status).toBe(200);
   });
 });

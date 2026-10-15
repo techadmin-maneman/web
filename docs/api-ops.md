@@ -13759,7 +13759,7 @@ Revoke a phone. Its session ends, and it drops its cached jobs on its next conta
 
 ### POST /api/technicians/{id}/allow-sign-in
 
-Let a technician sign in again, on any phone, after ops revoked one of theirs
+Let a technician sign in again, on any phone: after ops revoked one of theirs, or once their number has had its login codes for today
 
 **200**: They may sign in again
 
@@ -13818,7 +13818,7 @@ Let a technician sign in again, on any phone, after ops revoked one of theirs
 }
 ```
 
-**404**: not_found: no such technician stopped signing in, or they are not in the caller's cities
+**404**: not_found: no such technician stopped signing in or out of codes, or they are not in the caller's cities
 
 ```json
 {
@@ -38291,6 +38291,10 @@ Request body:
             ],
             "description": "When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again."
           },
+          "out_of_codes": {
+            "type": "boolean",
+            "description": "Their number has had its login codes for today. Ops may give them back."
+          },
           "devices": {
             "type": "array",
             "items": {
@@ -38357,6 +38361,7 @@ Request body:
           "fits_trained",
           "visits_to_come",
           "sign_in_stopped_at",
+          "out_of_codes",
           "devices",
           "leave"
         ],

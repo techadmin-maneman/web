@@ -6,7 +6,10 @@
 // the number is looked up among the technicians and nowhere else, and their
 // session is bound to one phone.
 
+import type { Settings } from "../../config/settings.ts";
 import { sha256Hex } from "../../lib/hash.ts";
+import { mobileHashOf } from "../clients/number-codes.ts";
+import { forgetUses, spentAmong } from "../sign-in/rate-limit.ts";
 import { auditStatement, type AuditEntry } from "../platform/audit.ts";
 import { checkLoginCode } from "../sign-in/one-time-codes.ts";
 import { newSessionToken, sessionExpiry } from "../sign-in/sessions.ts";
@@ -201,20 +204,55 @@ export async function revokeDevice(
   };
 }
 
-/** Ops let a technician sign in again after a revoke, with their audit entry. False when they were not stopped. */
+/** What a technician's login codes are counted by: their number's salted hash, under the day's limit. */
+export interface CodeCount {
+  readonly salt: string;
+  readonly settings: Settings;
+}
+
+const TECH_CODES = "tech:code:mobile";
+
+/** Those of these technicians whose number has had its login codes for today. */
+export async function outOfCodesToday(
+  db: D1Database,
+  technicians: readonly { readonly id: string; readonly mobile: string | null }[],
+  { count, now }: { readonly count: CodeCount; readonly now: Date },
+): Promise<Set<string>> {
+  const keyed = await Promise.all(
+    technicians.flatMap(({ id, mobile }) =>
+      mobile === null ? [] : [mobileHashOf(count.salt, mobile).then((key) => ({ id, key }))],
+    ),
+  );
+  const keys = keyed.map(({ key }) => key);
+  const spent = await spentAmong(db, TECH_CODES, keys, { now, settings: count.settings });
+  return new Set(keyed.filter(({ key }) => spent.has(key)).map(({ id }) => id));
+}
+
+/**
+ * Ops let a technician sign in again, with their audit entry: after a revoke stopped them, or once their number has
+ * had its login codes for today, which it gives back. False when neither stops them.
+ */
 export async function allowSignIn(
   db: D1Database,
   technicianId: string,
-  audit: AuditEntry,
+  { audit, count }: { readonly audit: AuditEntry; readonly count: CodeCount },
   now: Date,
 ): Promise<boolean> {
-  const stopped = await db
-    .prepare("SELECT 1 FROM technicians WHERE id = ?1 AND sign_in_stopped_at IS NOT NULL")
+  const row = await db
+    .prepare("SELECT mobile_e164, sign_in_stopped_at FROM technicians WHERE id = ?1")
     .bind(technicianId)
-    .first();
-  if (stopped === null) return false;
+    .first<{ mobile_e164: string | null; sign_in_stopped_at: string | null }>();
+  if (row === null) return false;
+  const mobile = row.mobile_e164;
+  const outOfCodes = await outOfCodesToday(db, [{ id: technicianId, mobile }], { count, now });
+  const codes =
+    mobile !== null && outOfCodes.has(technicianId)
+      ? [forgetUses(db, TECH_CODES, await mobileHashOf(count.salt, mobile), now)]
+      : [];
+  if (row.sign_in_stopped_at === null && codes.length === 0) return false;
   await db.batch([
     db.prepare("UPDATE technicians SET sign_in_stopped_at = NULL WHERE id = ?1").bind(technicianId),
+    ...codes,
     auditStatement(db, audit, now),
   ]);
   return true;

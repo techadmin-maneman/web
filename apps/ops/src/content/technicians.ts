@@ -75,6 +75,7 @@ export const technicians = {
     warning: "Signs the phone out. They can’t sign in again until you allow it.",
     // The board draws no revoke, so nothing writes what follows one.
     stopped: (date: string) => `Sign-in blocked since ${date}, when a phone was revoked.`,
+    outOfCodes: "Out of login codes for today.",
     allow: "Allow sign-in",
     allowing: "Allowing…",
     allowed: "They can sign in again.",

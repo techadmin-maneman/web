@@ -1,6 +1,7 @@
 // A technician's Phones tab: each phone they have logged in on, when it was last used, and whether it is signed in,
 // signed out or revoked. Revoking a phone ends its session and makes it drop its cached jobs, so it asks before it
-// sends (src/domain/dispatch/technicians.ts). It also stops them signing in on any phone until ops let them again.
+// sends (src/domain/dispatch/technicians.ts). It also stops them signing in on any phone until ops let them again, as
+// does their number using up its login codes for the day.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -119,8 +120,11 @@ type Allowing =
   | { readonly step: "allowed" }
   | { readonly step: "failed"; readonly code: string };
 
-/** Since a revoke, no phone of theirs signs in until ops let them: their code reaches a lost phone's WhatsApp too. */
-function SignInStopped({ technician, since }: { technician: Technician; since: string }) {
+/**
+ * What stops them signing in until ops let them: a revoke, since their code reaches a lost phone's WhatsApp too, or
+ * their number's login codes used up for today.
+ */
+function SignInStopped({ technician, why }: { technician: Technician; why: string }) {
   const [allowing, setAllowing] = useState<Allowing>({ step: "stopped" });
   const mayAllow = useAccess().mayCall("POST /api/technicians/{id}/allow-sign-in");
 
@@ -139,7 +143,7 @@ function SignInStopped({ technician, since }: { technician: Technician; since: s
   }
   return (
     <div className={styles.phone}>
-      <p className={shared.warning}>{copy.stopped(longDate(since))}</p>
+      <p className={shared.warning}>{why}</p>
       {mayAllow && (
         <div className={shared.actions}>
           <Button
@@ -162,9 +166,10 @@ function SignInStopped({ technician, since }: { technician: Technician; since: s
 
 export function Phones({ technician }: { technician: Technician }) {
   const stopped = technician.sign_in_stopped_at;
+  const why = stopped === null ? (technician.out_of_codes ? copy.outOfCodes : null) : copy.stopped(longDate(stopped));
   return (
     <>
-      {stopped !== null && <SignInStopped technician={technician} since={stopped} />}
+      {why !== null && <SignInStopped technician={technician} why={why} />}
       {technician.devices.length === 0 ? (
         <EmptyState look="panel" line={copy.none} />
       ) : (

@@ -7,7 +7,7 @@ import { z } from "@hono/zod-openapi";
 import { listCities } from "../../domain/cities/cities.ts";
 import { leaveFrom } from "../../domain/dispatch/leave.ts";
 import { roster, type RosterTechnician } from "../../domain/dispatch/technician-roster.ts";
-import { devicesByTechnician } from "../../domain/dispatch/technicians.ts";
+import { devicesByTechnician, outOfCodesToday } from "../../domain/dispatch/technicians.ts";
 import type { App } from "../../http/context.ts";
 import { json } from "../../http/openapi.ts";
 import { reachOf, routeReach } from "../../http/staff-access.ts";
@@ -57,6 +57,9 @@ const TechniciansSchema = z
           sign_in_stopped_at: z.union([z.iso.datetime(), z.null()]).openapi({
             description:
               "When revoking a phone of theirs stopped them signing in; null while they may. Ops let them again.",
+          }),
+          out_of_codes: z.boolean().openapi({
+            description: "Their number has had its login codes for today. Ops may give them back.",
           }),
           devices: z.array(
             z
@@ -126,6 +129,11 @@ export function registerOpsField(app: App): void {
       visitsToComeBy(c.env.DB, c.var.deps.now()),
     ]);
     const everyone = roll.filter((technician) => reachesCity(reach, technician.city));
+    const { settings } = c.var.config;
+    const outOfCodes = await outOfCodesToday(c.env.DB, everyone, {
+      count: { salt: settings.ipHashSalt, settings },
+      now: c.var.deps.now(),
+    });
     const given = cities.map((city) => city.name).filter((city) => reachesCity(managed, city));
     const summaryOf = (technician: RosterTechnician) => ({
       id: technician.id,
@@ -142,6 +150,7 @@ export function registerOpsField(app: App): void {
         ...summaryOf(technician),
         initials: technician.initials,
         sign_in_stopped_at: technician.signInStoppedAt,
+        out_of_codes: outOfCodes.has(technician.id),
         devices: devices.get(technician.id) ?? [],
         leave: leave
           .filter((period) => period.technician_id === technician.id)
