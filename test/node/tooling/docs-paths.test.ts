@@ -1,7 +1,7 @@
 // Every repository path the docs and the code's comments name, as `src/…` or `docs/…`, is there: a path left behind
 // by a move sends the next engineer to nothing. A path may be the start of one, as an ADR named by its number or a
 // family of files, and one an app's own doc or comment names from the app's root. The record of what was decided and
-// said, the ADRs, the archive and the owner's prompts, keeps the paths of its day.
+// said, the ADRs, the archive and the prompts, keeps the paths of its day.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
