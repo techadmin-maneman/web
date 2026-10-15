@@ -151,14 +151,25 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=4096
         run: npm run lint
-      - name: Workflows
+      # actionlint's own release, checked against its published sum and kept between runs: no image to pull from a
+      # registry that can be down.
+      - name: actionlint, from the cache
+        id: actionlint
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .actionlint
+          key: actionlint-1.7.12-linux-amd64
+      - name: actionlint, fetched once
+        if: steps.actionlint.outputs.cache-hit != 'true'
         run: |
-          if command -v actionlint > /dev/null; then
-            actionlint -color
-          else
-            docker run --rm -v "$PWD:/repo" --workdir /repo \
-              rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
-          fi
+          release=https://github.com/rhysd/actionlint/releases/download/v1.7.12
+          curl -sSfL -o actionlint.tar.gz "$release/actionlint_1.7.12_linux_amd64.tar.gz"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz" | sha256sum -c -
+          mkdir -p .actionlint
+          tar -xzf actionlint.tar.gz -C .actionlint actionlint
+          rm actionlint.tar.gz
+      - name: Workflows
+        run: ./.actionlint/actionlint -color
       - name: Format
         run: npm run format:check
       - name: No dead code in mm-api
@@ -192,14 +203,15 @@ jobs:
             npm run check:migrations -- --base "$BASE"
           fi
 
+      # Only where a pull request changes what is installed: a new advisory against a package already here is the
+      # daily audit's (.github/workflows/audit.yml), and fails no unrelated pull request.
       - name: Dependency audit
+        if: needs.changes.outputs.dependencies == 'true'
         run: npm run audit
-      # npm now and then fails this with EMISSINGSIGNATUREKEY, a registry blip a later try clears; on 28 September
-      # 2026 one more try 15 seconds on was not enough three runs in a row. So it tries four times, half a minute
-      # apart, and fails the step only if every try fails. On 29 September four tries were not enough either, so it
-      # runs only when a pull request changes what is installed: a signature is verified as the lockfile brings a
-      # package in, and the lockfile's integrity hash holds every later install to those bytes
-      # (test/node/tooling/ci-workflow.test.ts).
+      # npm now and then fails this with EMISSINGSIGNATUREKEY, a registry blip a later try clears, and at times for
+      # days. So it tries four times, half a minute apart, failing only if every try fails, and runs only when a pull
+      # request changes what is installed: a signature is verified as the lockfile brings a package in, and the
+      # lockfile's integrity hash holds every later install to those bytes (test/node/tooling/ci-workflow.test.ts).
       - name: Registry signatures
         if: needs.changes.outputs.dependencies == 'true'
         run: |

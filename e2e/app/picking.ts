@@ -1,10 +1,11 @@
 // The booking sheet's window step, for the tests that go on to pay.
 //
-// Three technicians serve every test in this suite (e2e/global-setup.ts), and
-// the tests that book all reach for the same first free day, so a window the
-// sheet offered can be held by another of them before this one asks for it. The
-// API then answers `taken` and the sheet says so and offers what is left, which
-// is what the window picker asks of it. A client picks another; so does this.
+// Three technicians serve every test in this suite (e2e/global-setup.ts). Each
+// worker books on a day of its own (toWindows, ./booking-fixtures.ts), but a day
+// can fill, and its next free day can be another worker's, so a window the sheet
+// offered can be held by another test before this one asks for it. The API then
+// answers `taken` and the sheet says so and offers what is left, which is what the
+// window picker asks of it. A client picks another; so does this.
 
 import type { Page, Response } from "@playwright/test";
 import { expect } from "../support.ts";

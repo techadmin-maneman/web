@@ -1,7 +1,7 @@
 // What the app's booking tests share (booking*.e2e.ts): a client's profile and what they have agreed to, a hold the
 // API answers, the sheet opened and walked to its pay step, and the prices it shows.
 
-import type { Page } from "@playwright/test";
+import { test, type Page } from "@playwright/test";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { WINDOW_TIMES } from "../../src/config/scheduling.ts";
 import { expect } from "../support.ts";
@@ -52,14 +52,20 @@ export async function openSheet(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Book your next visit" }).click();
 }
 
-/** Logs in and picks the first free day, as far as the window step. */
+/**
+ * Logs in and picks a free day of this worker's own, as far as the window step. Each worker runs one test at a time,
+ * so a day of its own is one no other test is booking at the same moment. None is the first free day, tomorrow at the
+ * soonest, so every window on it is more than a day away, whatever the time the test runs.
+ */
 export async function toWindows(page: Page): Promise<void> {
   await openSheet(page);
   const sheet = page.getByRole("dialog", { name: "Pick a date" });
   // The sheet asks the API for the services and the free days first; a busy machine can leave it "Loading" past the
   // five seconds an expectation waits by default.
   await expect(sheet.getByText("Step 1 of 3")).toBeVisible({ timeout: 30_000 });
-  await sheet.getByRole("radio").and(page.locator(":enabled")).first().click();
+  const free = sheet.getByRole("radio").and(page.locator(":enabled"));
+  const days = await free.count();
+  await free.nth(Math.min(days - 1, 1 + test.info().parallelIndex)).click();
   await sheet.getByRole("button", { name: "Continue" }).click();
 }
 

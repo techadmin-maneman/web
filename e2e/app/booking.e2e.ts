@@ -23,9 +23,6 @@ const REMIND = "Send me visit updates on WhatsApp";
 
 const REMINDED = "We’ll remind you on WhatsApp the day before.";
 
-const INSIDE_NOTICE =
-  /^This visit is less than 24 hours away: if you move or cancel it, the Rs\. [\d,]+ paid isn’t refunded\.$/;
-
 /** A booking with nothing to pay: the API books it at once, and the hold's poll finds it booked. */
 async function bookedWithoutPaying(page: Page, hold: () => Hold): Promise<void> {
   await page.route("**/api/bookings", (route) =>
@@ -48,8 +45,8 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(pay.getByText("Rs. 2,000", { exact: true })).toBeVisible();
   // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it.
   await expect(pay.getByText(/GST/)).toHaveCount(0);
-  // The first window open may already be inside the notice, by the time of day the test runs.
-  await expect(pay.getByText(new RegExp(`${FREE_UNTIL.source}|${INSIDE_NOTICE.source}`))).toBeVisible();
+  // The day picked is never tomorrow, so its window is outside the notice whatever the time of day.
+  await expect(pay.getByText(FREE_UNTIL)).toBeVisible();
   // Checkout lists the ways to pay, so the sheet offers no choice Checkout would ignore.
   await expect(pay.getByRole("radiogroup")).toHaveCount(0);
   // Whoever the hold names: never the technician of the client's last visit (docs/decisions/0111).
