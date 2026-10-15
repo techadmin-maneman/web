@@ -48,6 +48,11 @@ const OwedSchema = z
 export const OpsAvailabilitySchema = z
   .object({
     kind: z.enum(VISIT_TYPES),
+    needs_profile: z.boolean().openapi({
+      description:
+        "A first fit for a client with no hair profile, which booking refuses: record it first. A one visit measures " +
+        "it there and then, so is not held back by it.",
+    }),
     services: z.array(ServiceOfferSchema).openapi({ description: "The kind's services offered on the first day." }),
     service: ServiceSchema.openapi({
       description:

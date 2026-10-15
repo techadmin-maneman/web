@@ -21186,6 +21186,8 @@ export interface components {
         OpsAvailability: {
             /** @enum {string} */
             kind: "consultation" | "first_fit" | "service" | "replacement";
+            /** @description A first fit for a client with no hair profile, which booking refuses: record it first. A one visit measures it there and then, so is not held back by it. */
+            needs_profile: boolean;
             /** @description The kind's services offered on the first day. */
             services: components["schemas"]["ServiceOffer"][];
             service: components["schemas"]["VisitService"];

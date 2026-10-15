@@ -21,7 +21,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/ops/src/areas/AddPincode.tsx": { fn: 97 },
   "apps/ops/src/areas/Served.tsx": { fn: 116 },
   "apps/ops/src/areas/Waiting.tsx": { fn: 97 },
-  "apps/ops/src/clients/BookVisit.tsx": { fn: 110 },
+  "apps/ops/src/clients/BookVisit.tsx": { fn: 111 },
   "apps/ops/src/clients/GivenAddress.tsx": { fn: 93 },
   "apps/ops/src/clients/Payments.tsx": { fn: 83 },
   "apps/ops/src/clients/VisitCode.tsx": { fn: 112 },

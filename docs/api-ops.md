@@ -29900,6 +29900,10 @@ Request body:
         "replacement"
       ]
     },
+    "needs_profile": {
+      "type": "boolean",
+      "description": "A first fit for a client with no hair profile, which booking refuses: record it first. A one visit measures it there and then, so is not held back by it."
+    },
     "services": {
       "type": "array",
       "items": {
@@ -29999,6 +30003,7 @@ Request body:
   },
   "required": [
     "kind",
+    "needs_profile",
     "services",
     "service",
     "recommended",

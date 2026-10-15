@@ -31,6 +31,7 @@ const SERVICE_PRICE = { amount_ex_gst: 200_000, amount: 200_000, gst_percent: 0 
 /** Two days of windows: Thursday's morning is full, its afternoon has both technicians. */
 const WINDOWS = {
   kind: "service",
+  needs_profile: false,
   services: [{ tier: "standard", name: "Service visit", minutes: 90, price: SERVICE_PRICE }],
   service: { tier: "standard", name: "Service visit", minutes: 90 },
   recommended: null,
@@ -125,6 +126,17 @@ test("opens on the replacement the app offers next, naming the hair system it re
   const booking = panel(page);
   await expect(booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true })).toHaveValue("replacement");
   await expect(booking).toContainText(opsCopy.clients.visits.book.replaces("MM-STD-4417-C"));
+});
+
+// The refusal for a first fit with no hair profile came only once the whole form was filled and sent.
+test("says a first fit needs the hair profile as soon as First fit is chosen, and holds Book", async ({ page }) => {
+  const firstFit = { ...WINDOWS, kind: "first_fit" as const, needs_profile: true };
+  await openVisits(page, { [AVAILABILITY]: json(firstFit) });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  const booking = panel(page);
+  await booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true }).selectOption("first_fit");
+  await expect(booking.getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.no_profile);
+  await expect(booking.getByRole("button", { name: opsCopy.clients.visits.book.book })).toBeDisabled();
 });
 
 test("says why a booking was refused, and books nothing", async ({ page }) => {
