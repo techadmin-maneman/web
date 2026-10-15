@@ -56,7 +56,6 @@ function DemandEntry(props: {
   );
 }
 
-/** An event added: its name, its city or every city, its days, and how much it changes demand. */
 /** The city an event is for, or every one. */
 function CityPick(props: {
   cities: readonly string[];
@@ -87,6 +86,7 @@ function CityPick(props: {
   );
 }
 
+/** An event added: its name, its city or every city, its days, and how much it changes demand. */
 function AddEvent({
   cities,
   failure,

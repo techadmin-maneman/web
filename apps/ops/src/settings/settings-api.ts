@@ -1,4 +1,5 @@
-// Settings' calls to mm-api: the rules, what storage and the database hold, blackout days, and the job sheet's lists.
+// Settings' calls to mm-api: the rules, what storage and the database hold, blackout days, the day's half-slot times,
+// and the job sheet's lists.
 // Each is the console's client's (../api.ts), one function a route, so a call is found, and changed, in one place.
 
 import {
@@ -9,6 +10,7 @@ import {
   type VisitType,
   type BlackoutAdd,
   type BlackoutRemove,
+  type SlotTimesChange,
 } from "../api.ts";
 
 export const settingsApi = {
@@ -21,6 +23,8 @@ export const settingsApi = {
     client.post("/api/settings/{name}", { path: { name }, body: { value } }),
   /** Every day from today on that no visit is offered, with what is still booked on each. */
   blackouts: () => client.get("/api/blackouts"),
+  slotTimes: () => client.get("/api/slot-times"),
+  setSlotTimes: (change: SlotTimesChange) => client.post("/api/slot-times", { body: change }),
   /** The visits still booked on the days from the first to the last, which closing them strands. */
   blackoutsBooked: (period: BlackoutRemove) => client.get("/api/blackouts/booked", { query: period }),
   /** Every day from the first to the last, both included. A day already blacked out takes this reason. */

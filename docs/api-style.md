@@ -33,6 +33,7 @@ test cannot see it, and names it.
 - Fields are snake_case, and every object is strict: a field the document does not name is never sent.
 - An instant is ISO 8601 in UTC; a day is India's date, `YYYY-MM-DD`; money is whole paise.
 - A refusal is the error body of `src/http/errors.ts`: a stable code and the request ID, and the fields at fault.
+- A route documents its refusals with `errorResponse`, whose description names each code it answers (`"busy: …; unavailable: …"`): the document then holds the route to those codes, and what any route may answer besides stands in `test/any-route.ts`. The console has words for each code its routes answer (`test/node/api/ops-error-words.test.ts`). _Checked._
 - A code check answers `verified`, and `attempts_left` when the code was wrong. _Checked._
 
 ## Lists

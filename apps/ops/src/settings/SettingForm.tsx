@@ -64,8 +64,10 @@ export function useSteps<T>(
   };
 }
 
-/** The line a refused send leaves beneath its form. */
-/** A form's refusal, but for one its `boxes` say on their own Fields (boxError), which is only announced. */
+/**
+ * The line a refused send leaves beneath its form, but for a refusal its `boxes` say on their own Fields (boxError),
+ * which is only announced.
+ */
 export function Refused(props: {
   readonly failed: Failure | null;
   readonly errors: Readonly<Record<string, string>>;

@@ -306,10 +306,47 @@ export const settings = {
     outside: (field: string, range: string) => `${field}: ${range}`,
     /** A choice refused: where the field is one of a list. */
     chooseOne: "Choose one of its options.",
-    conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”.`,
+    figures_conflict: (field: string, reached: string) => `“${field}” must be at least “${reached}”.`,
     errors: {
       not_permitted: NOT_PERMITTED,
       invalid_request: "Out of range.",
+      offline: OFFLINE,
+      unconfirmed: UNCONFIRMED,
+      unknown: FAILED,
+    },
+  },
+  /**
+   * The day's half-slot times, from which the windows are read (docs/decisions/0102-window-times.md). No board draws
+   * them. A change applies from a day nothing is booked or bookable on, and none is ever taken back.
+   */
+  windowTimes: {
+    title: "Window times",
+    inForce: "In force",
+    window: { morning: "Morning", afternoon: "Afternoon", evening: "Evening" },
+    /** "From Mon 2 Nov", or the times the console started with. */
+    since: (date: string | null) => (date === null ? "As first set" : `From ${date}`),
+    formTitle: "Change the times",
+    appliesFrom: "From",
+    /** The first day a change may take, after the last a client can book and the last visit booked. */
+    earliest: (date: string) => `The earliest is ${date}.`,
+    start: (slot: number) => `Half-slot ${String(slot)} starts`,
+    dayEnd: "The day ends",
+    /** The check's line for a window: "Morning: 9 am–12 noon → 9:30 am–12:30 pm". */
+    change: (window: string, was: string, now: string) =>
+      was === now ? `${window}: ${now}` : `${window}: ${was} → ${now}`,
+    from: (date: string) => `From ${date}.`,
+    set: "Set.",
+    history: "Changes",
+    setBy: (from: string, who: string, when: string) => `From ${from}, set by ${who} on ${when}`,
+    none: "No changes yet.",
+    errors: {
+      not_permitted: NOT_PERMITTED,
+      slot_times_too_soon: "That day is too soon: pick one from the earliest.",
+      not_eight_starts: "Give all eight starts.",
+      not_a_time: "Give each time as hh:mm.",
+      not_in_order: "Each start must follow the one before.",
+      half_slot_too_short: "Each half-slot needs 45 minutes, the last one to the day’s end included.",
+      outside_the_day: "Keep the day between 6 am and 10 pm.",
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,
       unknown: FAILED,

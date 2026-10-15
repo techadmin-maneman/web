@@ -6,6 +6,7 @@ import { DEPARTMENT_NAMES } from "./shell.ts";
 export const settingsTabs = {
   rules: "Policies",
   blackouts: "Closed days",
+  "window-times": "Window times",
   "job-sheet": "Job sheet",
 };
 

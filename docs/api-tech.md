@@ -55,7 +55,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -63,7 +91,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "rate_limited"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -91,7 +147,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -99,7 +183,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "rate_limited"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -107,7 +219,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "busy"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -135,7 +275,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -143,7 +311,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "sign_in_stopped"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -151,7 +347,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "code_expired"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -165,7 +389,36 @@ End this session on this phone
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -185,7 +438,37 @@ Who is signed in, and the phone this session is bound to
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -205,15 +488,73 @@ The technician's jobs on a date. Today and tomorrow in full; later dates only ti
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -229,11 +570,41 @@ One of the technician's jobs, with the day-before unlock enforced
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -241,7 +612,35 @@ One of the technician's jobs, with the day-before unlock enforced
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -251,11 +650,41 @@ The client's last visit, after: one photograph, under the card's own unlock, nev
 
 **200**: The image
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -263,7 +692,35 @@ The client's last visit, after: one photograph, under the card's own unlock, nev
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -291,15 +748,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -307,7 +822,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -315,7 +858,39 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "out_of_order",
+                "not_today",
+                "too_early_to_arrive",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -335,15 +910,73 @@ Start the job. The duration runs from here to the outcome
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -351,7 +984,35 @@ Start the job. The duration runs from here to the outcome
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -359,7 +1020,39 @@ Start the job. The duration runs from here to the outcome
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "out_of_order",
+                "not_today",
+                "too_early_to_arrive",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -379,15 +1072,73 @@ Close the job as a no-show, once the wait has run
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -395,7 +1146,35 @@ Close the job as a no-show, once the wait has run
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -403,7 +1182,39 @@ Close the job as a no-show, once the wait has run
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "out_of_order",
+                "already_started",
+                "too_early_to_close",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -431,15 +1242,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -447,7 +1316,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -455,7 +1352,36 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -471,11 +1397,41 @@ The photograph itself: a JPEG or PNG, at most 2 MB
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -483,7 +1439,35 @@ The photograph itself: a JPEG or PNG, at most 2 MB
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -491,7 +1475,35 @@ The photograph itself: a JPEG or PNG, at most 2 MB
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -499,7 +1511,35 @@ The photograph itself: a JPEG or PNG, at most 2 MB
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "photo_invalid_file"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -507,7 +1547,35 @@ The photograph itself: a JPEG or PNG, at most 2 MB
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "busy"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -517,11 +1585,41 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 
 **204**: Received, or held already
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -529,7 +1627,35 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -537,7 +1663,37 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "upload_missing",
+                "taken",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -545,7 +1701,35 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "photo_invalid_file"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -553,7 +1737,35 @@ The photograph's small copy, for the client app's rows: a JPEG of at most 64 KB 
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "busy"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -581,15 +1793,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -597,7 +1867,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -605,7 +1903,37 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "out_of_order",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -633,15 +1961,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -649,7 +2035,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -657,7 +2071,37 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "out_of_order",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -685,15 +2129,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -701,7 +2203,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -709,7 +2239,37 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "out_of_order",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -737,15 +2297,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -753,7 +2371,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -761,7 +2407,38 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "out_of_order",
+                "piece_code",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -789,15 +2466,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -805,7 +2540,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -813,7 +2576,37 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "out_of_order",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -841,15 +2634,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs
+**401**: session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -857,7 +2708,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -865,7 +2744,37 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "superseded",
+                "out_of_order",
+                "already_closed"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -902,15 +2811,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -918,7 +2885,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -934,11 +2929,41 @@ The piece a label names
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -946,7 +2971,35 @@ The piece a label names
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -970,11 +3023,41 @@ Request body:
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -982,7 +3065,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -990,7 +3101,36 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "already_discounted",
+                "price_settled"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -998,7 +3138,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "code_not_applicable"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -1006,7 +3174,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "rate_limited"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -1022,11 +3218,41 @@ What the kit holds, what is on its way to it, and the pieces to hand back
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -1054,15 +3280,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -1070,7 +3354,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -1078,7 +3390,35 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "transfer_settled"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
@@ -1106,15 +3446,73 @@ Request body:
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 
-**401**: session_required; device_revoked
+**401**: session_required; device_revoked; technician_inactive: ops switched the technician off
 
 ```json
 {
-  "$ref": "#/components/schemas/ErrorResponse"
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "session_required",
+                "device_revoked",
+                "technician_inactive"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
 }
 ```
 

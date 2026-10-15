@@ -82,7 +82,9 @@ const KitSchema = z
   .openapi("TechnicianKit");
 
 const KIT = { description: "The technician's kit", ...json(KitSchema) };
-const SIGNED_IN = errorResponse("session_required; device_revoked");
+const SIGNED_IN = errorResponse(
+  "session_required; device_revoked; technician_inactive: ops switched the technician off",
+);
 
 const kitRoute = techRoute({
   method: "get",

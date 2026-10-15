@@ -31,10 +31,10 @@ function monthsOf(list: SpendList): string[] {
   return months;
 }
 
-/** Whole rupees, one or more, as typed. */
 /** The boxes of an entry, by the names the API refuses them by. */
 const SPEND_BOXES = ["month", "city", "channel", "campaign", "amount", "note"];
 
+/** Whole rupees, one or more, as typed. */
 const isRupees = (typed: string): boolean => /^\d+$/.test(typed.trim()) && Number(typed) >= 1;
 
 function SpendChoice(props: {

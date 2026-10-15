@@ -82,6 +82,8 @@ export type SettingValue = OpsSetting["value"];
 /** The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). */
 export type Blackout = Body<paths["/api/blackouts"]["get"]>["blackouts"][number];
 export type BlackoutAdd = Sent<paths["/api/blackouts"]["post"]>;
+export type SlotTimes = Body<paths["/api/slot-times"]["get"]>;
+export type SlotTimesChange = Sent<paths["/api/slot-times"]["post"]>;
 export type BlackoutRemove = Sent<paths["/api/blackouts/remove"]["post"]>;
 /** Partners who send us clients on their own code (docs/decisions/0123-partner-referral-channels.md). */
 export type Partners = Body<paths["/api/referral-channels"]["get"]>;

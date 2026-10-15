@@ -106,7 +106,7 @@ export const TECHNICIAN_TABS = ["week", "leave", "phones", "kit"] as const;
 export type TechnicianTab = (typeof TECHNICIAN_TABS)[number];
 
 /** What Settings holds, in the order the section lists it. Rules has the section's own path. */
-export const SETTINGS_TABS = ["rules", "blackouts", "job-sheet"] as const;
+export const SETTINGS_TABS = ["rules", "blackouts", "window-times", "job-sheet"] as const;
 export type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 /** Areas, a tab at a time: who waits in each pincode, then the pincodes we serve. Waiting has the section's own path. */
@@ -119,7 +119,7 @@ export type AreaTab = (typeof AREA_TABS)[number];
  *   /clients/:id/:tab       a client's page, a tab at a time
  *   /technicians/:id/:tab   a technician's page: their week, leave, phones and kit
  *   /areas/:tab             who waits where, and the pincodes we serve
- *   /settings/:tab          the rules, closed days and the job sheet
+ *   /settings/:tab          the rules, closed days, window times and the job sheet
  *
  * Anything else, "/" included, is where the console opens: Tasks, or the first section the person may open.
  */
