@@ -7,7 +7,8 @@ import { Consultation } from "./Consultation.tsx";
 import { Booked, Listed } from "./Done.tsx";
 import type { FormProps } from "./fields.tsx";
 import { HowItWorks } from "./HowItWorks.tsx";
-import styles from "./Invite.module.css";
+import inviteSheet from "./Invite.module.css";
+import styles from "./page-parts.module.css";
 import { PincodePanel } from "./PincodePanel.tsx";
 import type { PageFlow } from "./usePageFlow.ts";
 import { Waitlist } from "./Waitlist.tsx";
@@ -16,9 +17,9 @@ import { Waitlist } from "./Waitlist.tsx";
 export function Arrival(props: { children: ComponentChildren; aside?: ComponentChildren }) {
   return (
     <section class={styles.arrival}>
-      <div class={`${styles.inner} ${styles.grid}`}>
-        <div class={styles.lead}>{props.children}</div>
-        <div class={styles.aside}>
+      <div class={`${styles.inner} ${inviteSheet.grid}`}>
+        <div class={inviteSheet.lead}>{props.children}</div>
+        <div class={inviteSheet.aside}>
           {props.aside}
           <HowItWorks />
         </div>

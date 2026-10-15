@@ -28,6 +28,15 @@ export const STRANGER_CHAT_MONTHS = 12;
 /** A message we sent, unless a no-show or a move holds it as its evidence. */
 export const SENT_MESSAGE_MONTHS = 24;
 
+/**
+ * A client's Care thread, closed and quiet this long, has its messages moved out of D1 into the backups bucket
+ * (docs/decisions/0207-closed-chats-archived.md). They are kept there as long as the client is, as the rows were.
+ */
+export const CHAT_ARCHIVE_MONTHS = 12;
+
+/** How many threads one run archives at most: each is a read of its messages, a file written and one batch. */
+export const ARCHIVED_THREADS_PER_RUN = 20;
+
 /** How many rows of each one run deletes at most. */
 export const PURGED_PER_RUN = 500;
 

@@ -4,9 +4,9 @@
 
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Checkbox, DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useWrite } from "../lib/write.ts";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
@@ -59,7 +59,7 @@ function DaysOffForm(props: { member: CareMember; onDone: () => void; onCancel: 
         >
           {copy.save}
         </Button>
-        <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
+        <Button variant="outline" size="small" narrow onClick={props.onCancel}>
           {copy.cancel}
         </Button>
       </FormActions>
@@ -108,7 +108,7 @@ function LeaveForm(props: { member: CareMember; onDone: () => void; onCancel: ()
         >
           {copy.add}
         </Button>
-        <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
+        <Button variant="outline" size="small" narrow onClick={props.onCancel}>
           {copy.cancel}
         </Button>
       </FormActions>
@@ -145,7 +145,7 @@ function NameForm(props: { member: CareMember; onDone: () => void; onCancel: () 
         >
           {copy.save}
         </Button>
-        <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
+        <Button variant="outline" size="small" narrow onClick={props.onCancel}>
           {copy.cancel}
         </Button>
       </FormActions>
@@ -165,7 +165,7 @@ function LeaveList(props: { leave: readonly Leave[]; mayManage: boolean; onChang
             {periodOf(leave)}
             {props.mayManage && (
               <RowButton
-                className={form.inline}
+                beside
                 disabled={busy}
                 aria-label={copy.takeBackLabel(periodOf(leave))}
                 onClick={() => void send(() => careApi.deleteLeave(leave.id))}
@@ -198,7 +198,7 @@ function ShiftSwitch(props: { me: CareMember; onDone: () => void }) {
   const since = props.me.on_shift_since;
   return (
     <div className={styles.tools}>
-      <p className={form.note}>{since === null ? copy.you.off : copy.you.on(indiaClock(since))}</p>
+      <Note>{since === null ? copy.you.off : copy.you.on(indiaClock(since))}</Note>
       <Button
         variant={since === null ? "primary" : "outline"}
         size="small"
@@ -229,7 +229,7 @@ function MoveAllForm(props: {
           {(control) => (
             <Select
               {...control}
-              className={form.choiceBox}
+              width="choice"
               value={to}
               onChange={(event) => {
                 setTo(event.target.value);
@@ -251,7 +251,7 @@ function MoveAllForm(props: {
         >
           {copy.move}
         </Button>
-        <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
+        <Button variant="outline" size="small" narrow onClick={props.onCancel}>
           {copy.cancel}
         </Button>
       </div>
@@ -278,7 +278,7 @@ function MemberActions(props: { member: CareMember; acting: Acting; onActing: (a
   return actions.map(([acting, label, aria]) => (
     <RowButton
       key={acting}
-      className={form.inline}
+      beside
       aria-label={aria}
       onClick={() => {
         props.onActing(props.acting === acting ? null : acting);
@@ -341,13 +341,13 @@ export function CareTeam() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const { team } = loaded.value;
-  if (team.length === 0) return <p className={form.note}>{care.carePerson.noTeam}</p>;
+  if (team.length === 0) return <Note>{care.carePerson.noTeam}</Note>;
   const columns = copy.columns;
   const me = team.find((member) => member.email === loaded.value.me);
   return (
     <div className={styles.scroll}>
       {me !== undefined && <ShiftSwitch me={me} onDone={retry} />}
-      <Table className={classes(form.table, styles.table)}>
+      <Table controls className={styles.table}>
         <thead>
           <tr>
             <th scope="col">{columns.member}</th>

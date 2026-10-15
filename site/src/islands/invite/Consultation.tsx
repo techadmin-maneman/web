@@ -215,7 +215,7 @@ function AddressPart(
  * consultation is at, so nothing is booked without one (ADR 0081). It may book the
  * consultation and fit in one visit instead: three hours, in the morning or the
  * afternoon, paid for once the client is fitted (ADR 0105), and, on the site's own page, with a discount code that
- * comes off the hair system's price when they pay (ADR 0108). That one is booked only once the WhatsApp code sent to
+ * comes off the hair system's price when they pay. That one is booked only once the WhatsApp code sent to
  * the number has been entered.
  */
 export function Consultation(props: ConsultationProps) {
@@ -242,7 +242,7 @@ export function Consultation(props: ConsultationProps) {
   const slot = chosenSlot(open.days, windowIds, picked);
   const days = dayStrip(open.days?.[0]?.date ?? indiaTomorrow(), open.days?.length ?? BOOKING_DAYS);
   const nothingOpen = !anyOpen(open.days, windowIds);
-  // The site's own page takes a discount code for the one visit; an invite's page is the invite's offer (ADR 0108).
+  // The site's own page takes a discount code for the one visit; an invite's page is the invite's offer.
   const takesCode = plan === "one_visit" && !props.invited;
   const sentCode = takesCode && code.trim() !== "" ? code.trim() : null;
   const codeRefused = takesCode && form.refusedFields.includes("discount_code");

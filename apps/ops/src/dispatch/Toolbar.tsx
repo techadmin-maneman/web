@@ -7,7 +7,8 @@ import { Button } from "@maneman/ui/Button";
 import { classes } from "@maneman/ui/classes";
 import type { Board, BoardQuery } from "../api.ts";
 import { dispatch } from "../content.ts";
-import styles from "./dispatch.module.css";
+import shared from "./dispatch.module.css";
+import styles from "./toolbar.module.css";
 import { addDays } from "@maneman/web-kit/dates";
 
 interface Props {
@@ -26,8 +27,8 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
   };
 
   return (
-    <div className={styles.tools} role="group" aria-label={copy.label}>
-      <div className={styles.weeks}>
+    <div className={shared.tools} role="group" aria-label={copy.label}>
+      <div className={shared.weeks}>
         <Button
           variant="outline"
           size="compact"
@@ -59,7 +60,7 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
           {copy.next}
         </Button>
       </div>
-      <Field label={copy.city} className={styles.field}>
+      <Field label={copy.city} className={shared.field}>
         {(control) => (
           <Select
             {...control}
@@ -77,7 +78,7 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
           </Select>
         )}
       </Field>
-      <Field label={copy.find} className={classes(styles.field, styles.find)}>
+      <Field label={copy.find} className={classes(shared.field, styles.find)}>
         {(control) => (
           <TextInput
             {...control}

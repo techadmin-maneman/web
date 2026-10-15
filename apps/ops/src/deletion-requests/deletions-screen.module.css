@@ -1,0 +1,11 @@
+/* What ./DeletionsScreen.tsx alone draws; what it shares is in ../components/erasure.module.css. */
+
+.reasonField {
+  min-height: var(--sp-48);
+  resize: vertical;
+}
+
+.settleOn {
+  color: inherit;
+  text-decoration: underline;
+}

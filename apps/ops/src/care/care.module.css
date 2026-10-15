@@ -9,25 +9,8 @@
   margin: var(--sp-16) var(--sp-20) var(--sp-8);
 }
 
-/* A chat found by name or number: the box, then Find and Clear beside it. */
-.search {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: var(--sp-12);
-}
-
 .scroll {
   overflow-x: auto;
-}
-
-/* Past the latest page: how many are shown, and the older ones on asking. */
-.more {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-12) var(--sp-24);
-  margin: var(--sp-12) var(--sp-20) var(--sp-16);
 }
 
 .table {
@@ -65,54 +48,6 @@
 .table .acting > td {
   padding: 0 0 var(--sp-16);
   background: var(--paper-light);
-}
-
-.items {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
-  margin: var(--sp-12) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.theirs,
-.ours {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  max-width: var(--ops-measure);
-  padding: var(--sp-8) var(--sp-12);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper);
-}
-
-.ours {
-  align-self: flex-end;
-}
-
-.auto {
-  align-self: center;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
-.when {
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
-.text {
-  white-space: pre-line;
-}
-
-.overdue {
-  color: var(--status-warning);
-}
-
-.failed {
-  font-size: var(--fs-13);
-  color: var(--status-error);
 }
 
 /* The Care team: a member's leave as a short list, and the forms that set their days off and add leave. */
@@ -158,10 +93,6 @@
 
 .panel .link + .link {
   margin-left: var(--sp-16);
-}
-
-.figureRow {
-  display: contents;
 }
 
 .quick {

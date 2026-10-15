@@ -5,7 +5,7 @@ import { TextLink } from "@maneman/ui/TextLink";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { clients } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
-import styles from "./queue.module.css";
+import styles from "./reach.module.css";
 
 export function Reach({ name, mobile }: { name: string; mobile: string }) {
   const words = phoneWords(mobile);

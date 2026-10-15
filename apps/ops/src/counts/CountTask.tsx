@@ -6,6 +6,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -62,12 +63,12 @@ function Counting({
   };
   return (
     <div className={form.group}>
-      <p className={form.note}>{recount ? copy.recountNote : copy.countNote}</p>
+      <Note>{recount ? copy.recountNote : copy.countNote}</Note>
       {items.map((item) => (
         <div key={item.consumable_code} className={form.group}>
           {item.labelled && (
             <>
-              <p className={form.note}>{copy.scanEach(item.name)}</p>
+              <Note>{copy.scanEach(item.name)}</Note>
               <PieceScans
                 units={scans[item.consumable_code] ?? []}
                 onUnits={(units) => {
@@ -108,7 +109,7 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   return (
     <div className={form.group}>
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             {copy.differencesColumns.map((column) => (
@@ -132,10 +133,10 @@ function SignOff({ task, onAnswer }: { task: Task; onAnswer: (answer: Answer, sa
       {loaded.value.lines.map(
         (line) =>
           (line.missing_labels.length > 0 || line.unknown_labels.length > 0) && (
-            <p className={form.note} key={line.consumable_code}>
+            <Note key={line.consumable_code}>
               {line.name}: {line.missing_labels.length > 0 && copy.notScanned(line.missing_labels)}{" "}
               {line.unknown_labels.length > 0 && copy.notHeld(line.unknown_labels)}
-            </p>
+            </Note>
           ),
       )}
       <Field label={copy.why} className={form.field}>
@@ -177,9 +178,9 @@ function Step({
 }) {
   const access = useAccess();
   const { state } = task.task;
-  if (state === "done") return <p className={form.note}>{copy.done}</p>;
+  if (state === "done") return <Note>{copy.done}</Note>;
   if (state === "sign_off") {
-    if (!access.mayCall("POST /api/count-tasks/{id}/sign-off")) return <p className={form.note}>{copy.waiting}</p>;
+    if (!access.mayCall("POST /api/count-tasks/{id}/sign-off")) return <Note>{copy.waiting}</Note>;
     return <SignOff task={task} onAnswer={onAnswer} />;
   }
   if (!access.mayCall("POST /api/count-tasks/{id}/counts")) return null;
@@ -215,9 +216,9 @@ export function CountTaskPanel({ id, panelId, onChanged }: { id: string; panelId
       {current.items.map(
         (item) =>
           item.unknown_labels.length > 0 && (
-            <p className={form.note} key={item.consumable_code}>
+            <Note key={item.consumable_code}>
               {item.name}: {copy.notHeld(item.unknown_labels)}
-            </p>
+            </Note>
           ),
       )}
       {said !== null && (

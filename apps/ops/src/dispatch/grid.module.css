@@ -1,0 +1,255 @@
+/* What ./Grid.tsx alone draws; what it shares is in ./dispatch.module.css. */
+
+.grid {
+  --local-tech: 104px; /* the column the technician and their zone stand in */
+  width: 100%;
+  min-width: calc(var(--local-tech) + 7 * var(--ops-column));
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: var(--fs-13);
+}
+
+.corner,
+.tech {
+  width: var(--local-tech);
+  padding: var(--sp-8) var(--sp-8);
+  font-weight: var(--weight-regular);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* The header row stays at the top of the scroll, and the technicians' column at its left edge. */
+.corner,
+.day {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  border-bottom: var(--hairline) solid var(--text);
+  background: var(--paper);
+}
+
+.tech {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-raised);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+}
+
+.corner {
+  left: 0;
+  z-index: var(--z-sticky-corner);
+}
+
+.day {
+  padding: var(--sp-8) var(--sp-8);
+  border-left: var(--hairline) solid var(--paper-line);
+  font-weight: var(--weight-regular);
+  text-align: left;
+  vertical-align: top;
+}
+
+.dayName,
+.util,
+.peak,
+.zone {
+  display: block;
+}
+
+.util,
+.peak {
+  margin-top: var(--sp-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.util {
+  color: var(--text-muted);
+}
+
+/* The day the week turns on, which the board letters in brass so the peak reads without a chart. */
+.peak {
+  color: var(--status-attention);
+}
+
+.zone {
+  margin-top: var(--sp-4);
+  color: var(--text-muted);
+}
+
+.cell {
+  height: var(--ops-cell);
+  padding: var(--sp-4);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  border-left: var(--hairline) solid var(--paper-line);
+  vertical-align: top;
+}
+
+/*
+ * A day ops recorded leave on (ADR 0062). It is shaded and labelled rather than
+ * merely greyed: nothing can be dropped on it, and the server refuses it by name
+ * even if something is.
+ */
+.away {
+  background: var(--paper-shade);
+}
+
+/* The "Leave" mark, in the console's label (components/label.module.css), not sans capitals. */
+.awayMark {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-13);
+}
+
+/*
+ * A day off with jobs still booked on it: the same label, in the
+ * oxblood the board gives what needs doing. Two classes, so it outranks the
+ * shared label's muted ink whichever stylesheet loads last.
+ */
+.awayMark.stranded {
+  color: var(--status-warning);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+  margin-bottom: var(--sp-2);
+  padding: var(--sp-4) var(--sp-4);
+  border: 0;
+  border-left: var(--rule-strong) solid transparent;
+  font: inherit;
+  font-size: var(--fs-13);
+  text-align: left;
+  cursor: grab;
+}
+
+/* A visit done, or one the technician has begun, stays where it is, and opens its drawer rather than being dragged. */
+.finished {
+  cursor: pointer;
+}
+
+/* As tall as its slots, about 42, 63 and 84 px (open point 67): a slot's size reads from the block's height. */
+.slots1 {
+  min-height: var(--ops-slot);
+}
+
+.slots15 {
+  min-height: calc(1.5 * var(--ops-slot));
+}
+
+.slots2 {
+  min-height: calc(2 * var(--ops-slot));
+}
+
+.svc {
+  border-left-color: var(--paper-line);
+  background: var(--paper-light);
+  color: var(--text);
+}
+
+.repl {
+  border-left-color: var(--brass);
+  background: var(--paper-shade);
+  color: var(--text);
+}
+
+/* The board's rule is gilt; gold marks only the one primary action (ADR 0025, item 59), so it is the ink's own line. */
+.fit {
+  border-left-color: var(--ink-line-strong);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.who,
+.what {
+  display: block;
+  line-height: var(--lh-115);
+  overflow-wrap: anywhere;
+}
+
+/* The client's name and the block's start share one line, so a block stays as tall as its slots. */
+.who {
+  display: flex;
+  gap: var(--sp-4);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.at {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.svc .what,
+.repl .what {
+  color: var(--text-muted);
+}
+
+.fit .what {
+  color: var(--ink-soft);
+}
+
+/* A block the search found. */
+.block[data-match] {
+  outline: var(--rule-strong) solid var(--ink);
+  outline-offset: calc(-1 * var(--rule-strong));
+}
+
+.block:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-inset);
+}
+
+.fit:focus-visible {
+  outline-color: var(--paper);
+}
+
+.targets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.target {
+  min-height: var(--sp-28);
+  padding: 0 var(--sp-4);
+  border: var(--hairline) dashed var(--paper-placeholder);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.target:hover {
+  border-style: solid;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.target:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-inset);
+}
+
+/* A day the job in hand has no room on: nothing to drop on, and it says so. */
+.noRoom {
+  display: block;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.dayMap {
+  margin-top: var(--sp-4);
+}

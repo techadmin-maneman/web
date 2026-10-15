@@ -7,7 +7,8 @@ import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
 import { MobileField, NameField } from "../PersonFields.tsx";
 import type { FormRef } from "../useInvalidFocus.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
-import styles from "./TryOn.module.css";
+import shared from "./TryOn.module.css";
+import styles from "./gate.module.css";
 
 /** The WhatsApp code's field, on the gate's ink. */
 const CODE_FIELD: CodeFieldClasses = { hint: styles.codeHint, error: styles.error, again: styles.codeAgain };
@@ -77,7 +78,7 @@ export function Gate(props: {
       </div>
       <form ref={props.form} onSubmit={props.onSubmit} noValidate>
         <Title heading={props.heading}>{words.title}</Title>
-        <p class={styles.body}>{words.body}</p>
+        <p class={shared.body}>{words.body}</p>
         <div class={styles.fields}>
           <NameField id="gate-name" value={props.name} bad={nameBad} words={tryOn.gate} onInk onInput={props.onName} />
           <MobileField

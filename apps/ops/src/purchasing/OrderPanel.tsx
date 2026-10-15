@@ -5,6 +5,7 @@ import { fullDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
@@ -140,7 +141,7 @@ function Steps({
 /** The order's lines: what, how many, at what price each, and each line's total. */
 function LinesTable({ order, named }: { order: Order; named: (code: string) => string }) {
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.order.lines.map((column) => (
@@ -187,16 +188,16 @@ export function OrderPanel({
   };
   return (
     <Panel id={id} opened titleId="order-panel" title={`${copy.number(order.number)} · ${supplier}`}>
-      <p className={form.note}>
+      <Note>
         {copy.states[order.state]}
         {order.state === "drafted" && order.approved_by !== null && ` · ${copy.awaitingSecond}`}
         {order.expected_on !== null && ` · ${copy.order.expected(fullDate(order.expected_on))}`}
         {order.cancel_reason !== null && ` · ${copy.order.cancelledWhy(order.cancel_reason)}`}
-      </p>
+      </Note>
       <LinesTable order={order} named={named} />
-      <p className={form.note}>
+      <Note>
         {copy.order.total}: {inCurrency(order.total, order.currency)}
-      </p>
+      </Note>
       <Steps order={order} onAnswer={answered} failure={failure} />
       <Receiving orders={orders} order={order} onChanged={onChanged} />
       <FormActions>

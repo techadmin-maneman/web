@@ -17,7 +17,7 @@ import { DataCard } from "./DataCard.tsx";
 import { DeletionCard } from "./DeletionCard.tsx";
 import { NumberChangeCard } from "./NumberChangeCard.tsx";
 import { SupportCard } from "./SupportCard.tsx";
-import styles from "./profile.module.css";
+import styles from "./profile-screen.module.css";
 
 /** How often the profile is read again while it is open, and as soon as it comes back into view. */
 const PROFILE_FRESH_MS = 5 * 60_000;

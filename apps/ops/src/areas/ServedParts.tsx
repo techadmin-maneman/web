@@ -5,12 +5,13 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Field, Checkbox, DateInput, Fieldset, FileInput, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import type { AreaChange, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import form from "../components/forms.module.css";
-import styles from "./areas.module.css";
+import styles from "./served-parts.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import type { Draft, FileChange, Row } from "./served-draft.ts";
 import { Refusal } from "../components/Refusal.tsx";
@@ -143,7 +144,7 @@ function FilePreview({
       <InlineMessage tone="saved" className={form.saved}>
         {copy.upload.read(rows.length)}
       </InlineMessage>
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             {copy.upload.columns.map((column) => (
@@ -168,7 +169,7 @@ function FilePreview({
         <Button variant="primary" size="small" onClick={onApply}>
           {copy.upload.apply}
         </Button>
-        <Button variant="outline" size="small" className={form.quiet} onClick={onCancel}>
+        <Button variant="outline" size="small" narrow onClick={onCancel}>
           {copy.upload.cancel}
         </Button>
       </FormActions>
@@ -190,7 +191,12 @@ export function UploadFile({
 }) {
   return (
     <Fieldset className={form.group} legend={copy.upload.title} legendLook="title">
-      <Field label={copy.upload.label} hint={copy.upload.hint} className={form.field} look={{ hint: form.hint }}>
+      <Field
+        label={copy.upload.label}
+        hint={copy.upload.hint}
+        className={form.field}
+        look={{ hint: styles.uploadHint }}
+      >
         {(control) => (
           <FileInput
             {...control}
@@ -266,7 +272,7 @@ export function CityTabs({
               variant="outline"
               size="small"
               key={String(served)}
-              className={form.quiet}
+              narrow
               onClick={() => {
                 onBulk(served);
               }}
@@ -298,7 +304,7 @@ export function SaveNotes({
     <>
       {badName !== undefined && <Refusal className={form.error} said={copy.badName(badName.pincode)} />}
       {later !== undefined && <Refusal className={form.error} said={copy.later(later.pincode)} />}
-      {mayChange && changes.length === 0 && saving.step === "editing" && <p className={form.hint}>{copy.nothing}</p>}
+      {mayChange && changes.length === 0 && saving.step === "editing" && <Note>{copy.nothing}</Note>}
       {saving.step === "saved" && (
         <InlineMessage tone="saved" className={form.saved}>
           {copy.saved(saving.changed, saving.alerted)}

@@ -1,0 +1,12 @@
+/* A note (./Note.tsx), --note-inset in from its panel's edge (./base.css). */
+
+@layer base, ui;
+
+@layer ui {
+  .note {
+    margin: var(--sp-8) var(--note-inset) 0;
+    font-size: var(--fs-14);
+    line-height: var(--lh-160);
+    color: var(--text-muted);
+  }
+}

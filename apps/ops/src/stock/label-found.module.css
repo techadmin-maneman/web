@@ -1,0 +1,18 @@
+/* What ./LabelFound.tsx alone draws; what it shares is in ./labels.module.css. */
+
+/* A piece a label found: where it is, then its history, oldest first. */
+.found {
+  display: grid;
+  gap: var(--sp-8);
+  margin-top: var(--sp-12);
+}
+
+.history {
+  display: grid;
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}

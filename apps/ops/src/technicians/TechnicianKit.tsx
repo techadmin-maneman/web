@@ -11,7 +11,8 @@ import { OpsLink } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { stock } from "../content/stock.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "./technicians.module.css";
+import shared from "./technicians.module.css";
+import styles from "./technician-kit.module.css";
 
 const copy = technicians.kit;
 
@@ -24,7 +25,7 @@ function KitRow({ kitStock, holding }: { kitStock: Stock; holding: Holding }) {
     <tr>
       <th scope="row">{consumable?.name ?? holding.consumable_code}</th>
       <td className={FIGURE}>
-        <span className={holding.quantity < 0 ? styles.over : undefined}>
+        <span className={holding.quantity < 0 ? shared.over : undefined}>
           {stock.held(holding.quantity, consumable?.unit ?? "")}
         </span>
         {holding.low && <span className={styles.low}>{stock.low}</span>}
@@ -64,8 +65,8 @@ export function Kit({ technician }: { technician: TechnicianSummary }) {
           </tbody>
         </Table>
       )}
-      <div className={styles.actions}>
-        <OpsLink className={buttonLook({ variant: "outline", size: "small", className: styles.quiet })} to="/stock">
+      <div className={shared.actions}>
+        <OpsLink className={buttonLook({ variant: "outline", size: "small", className: shared.quiet })} to="/stock">
           {copy.stock}
         </OpsLink>
       </div>

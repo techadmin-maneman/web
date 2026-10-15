@@ -7,7 +7,8 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { type ReactNode } from "react";
 import { areas, BOOKING_URL } from "../content.ts";
-import styles from "./areas.module.css";
+import shared from "./areas.module.css";
+import styles from "./launch-panel.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 
 const copy = areas.launch;
@@ -42,11 +43,11 @@ export function LaunchPanel(props: Props) {
   const panel = useFocusOnMount<HTMLElement>();
   // It opens beneath a list, so it is brought into view and read from its head.
   return (
-    <section className={styles.launch} aria-labelledby="launch" ref={panel} tabIndex={-1}>
-      <p className={capsLook(styles.launchLabel)} id="launch">
+    <section className={shared.launch} aria-labelledby="launch" ref={panel} tabIndex={-1}>
+      <p className={capsLook(shared.launchLabel)} id="launch">
         {label}
       </p>
-      <p className={styles.launchTitle}>{copy.title(alerts)}</p>
+      <p className={shared.launchTitle}>{copy.title(alerts)}</p>
       {lines !== undefined && (
         <ul className={styles.lines}>
           {lines.map((line) => (
@@ -55,14 +56,14 @@ export function LaunchPanel(props: Props) {
         </ul>
       )}
       {props.children}
-      <p className={styles.message}>{copy.message(area ?? copy.eachArea, bookingUrl)}</p>
+      <p className={shared.message}>{copy.message(area ?? copy.eachArea, bookingUrl)}</p>
       {done !== null && (
-        <p className={styles.done} role="status">
+        <p className={shared.done} role="status">
           {done}
         </p>
       )}
       {done === null && (
-        <div className={styles.actions}>
+        <div className={shared.actions}>
           {sendLabel !== null && (
             <Button variant="primary" size="small" disabled={sending || !ready} onClick={onSend}>
               {sending ? copy.sending : sendLabel}
@@ -73,8 +74,8 @@ export function LaunchPanel(props: Props) {
           </Button>
         </div>
       )}
-      {error !== null && <Refusal className={styles.error} said={error} />}
-      {note !== null && <p className={styles.note}>{note}</p>}
+      {error !== null && <Refusal className={shared.error} said={error} />}
+      {note !== null && <p className={shared.note}>{note}</p>}
     </section>
   );
 }

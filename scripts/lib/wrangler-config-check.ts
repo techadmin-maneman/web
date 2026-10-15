@@ -475,9 +475,22 @@ export function checkSiteConfig(config: JsonObject): string[] {
     entry: {
       main: "./src/worker.ts",
       assetsBinding: "ASSETS",
-      // "/" and "/areas" name the cities ops serve, and each city's page its areas, written in by the Worker
-      // (site/src/lib/cities.ts).
-      runWorkerFirst: ["/", "/areas", "/areas/*", "/book", "/r", "/r/*", "/_astro/*.mp4"],
+      // Every page, for the nonce its policy is given; "/" and "/areas" also name the cities ops serve, and each city's
+      // page its areas, written in by the Worker (site/src/lib/cities.ts).
+      runWorkerFirst: [
+        "/",
+        "/areas",
+        "/areas/*",
+        "/book",
+        "/guides/*",
+        "/privacy",
+        "/r",
+        "/r/*",
+        "/stop",
+        "/terms",
+        "/try",
+        "/_astro/*.mp4",
+      ],
       service: { binding: "API", worker: "mm-api" },
     },
   });

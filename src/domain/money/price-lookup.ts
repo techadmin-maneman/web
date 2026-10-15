@@ -17,7 +17,7 @@ export interface Price {
 /**
  * The price in force for an item's tier on a day in a city, as SQL over the expressions given, answering
  * json_array(amount_ex_gst, gst_percent), or null: the city's own price where it sets one (city_prices), else the
- * book's (docs/decisions/0198-cities-as-data.md). A null city reads the book alone.
+ * book's. A null city reads the book alone.
  */
 export const priceInForce = (item: string, tier: string, on: string, city: string): string => `COALESCE(
   (SELECT json_array(c.amount_ex_gst, c.gst_percent) FROM city_prices c

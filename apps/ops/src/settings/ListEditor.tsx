@@ -290,7 +290,7 @@ export function ListEditor(props: Props) {
         <Button
           variant="outline"
           size="small"
-          className={form.quiet}
+          narrow
           disabled={lines.length >= most}
           onClick={() => {
             added.current += 1;

@@ -9,7 +9,8 @@ import { Mark } from "@maneman/ui/Mark";
 import { mobileDigits } from "@maneman/web-kit/mobile";
 import { useState, type RefCallback } from "react";
 import { login } from "../content.ts";
-import styles from "./login.module.css";
+import shared from "./login.module.css";
+import styles from "./mobile-screen.module.css";
 import { MessageUs } from "./MessageUs.tsx";
 
 const ERRORS: Readonly<Record<string, string>> = login.mobile.errors;
@@ -34,17 +35,17 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
   const shown = invalid ? copy.errors.invalid : refused;
 
   return (
-    <main className={styles.screen}>
-      <div className={classes(styles.body, styles.first)}>
-        <Mark className={styles.mark} />
-        <h1 className={styles.title}>{copy.title}</h1>
+    <main className={shared.screen}>
+      <div className={classes(shared.body, shared.first)}>
+        <Mark className={shared.mark} />
+        <h1 className={shared.title}>{copy.title}</h1>
         {ended && (
-          <p className={styles.notice} role="alert">
+          <p className={shared.notice} role="alert">
             {copy.ended}
           </p>
         )}
         <form
-          className={styles.form}
+          className={shared.form}
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
@@ -59,13 +60,13 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
             announce
             label={copy.label}
             error={shown}
-            look={{ error: messageLook({ tone: "error", ground: "ink", className: styles.error }) }}
+            look={{ error: messageLook({ tone: "error", ground: "ink", className: shared.error }) }}
           >
             {(control) => (
               <MobileInput
                 {...control}
                 onInk
-                className={styles.field}
+                className={shared.field}
                 prefix={copy.prefix}
                 name="mobile"
                 value={typed}
@@ -76,9 +77,9 @@ export function MobileScreen({ initial, busy, error, ended, turnstileBox, onSubm
             )}
           </Field>
           {!invalid && error === "rate_limited" && <MessageUs />}
-          <div ref={turnstileBox} className={styles.turnstile} />
-          <div className={styles.foot}>
-            <Button variant="light" size="action" className={styles.primary} type="submit" disabled={busy} busy={busy}>
+          <div ref={turnstileBox} className={shared.turnstile} />
+          <div className={shared.foot}>
+            <Button variant="light" size="action" className={shared.primary} type="submit" disabled={busy} busy={busy}>
               {copy.send}
             </Button>
             <p className={styles.hint}>{copy.hint}</p>

@@ -6,6 +6,7 @@
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Checkbox, ChoiceGroup, Field, NumberInput, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -52,7 +53,7 @@ function Batches({ units, name }: { units: readonly Unit[]; name: string }) {
   const batches = batchesOf(units);
   const [ticked, setTicked] = useState<ReadonlySet<string>>(() => new Set(batches.slice(0, 1).map((each) => each.at)));
   const [printing, setPrinting] = useState<readonly PrintedLabel[] | null>(null);
-  if (batches.length === 0) return <p className={form.note}>{copy.noUnits}</p>;
+  if (batches.length === 0) return <Note>{copy.noUnits}</Note>;
   const toPrint = batches.filter((batch) => ticked.has(batch.at)).flatMap((batch) => batch.units);
   const toggle = (batch: string) => {
     const next = new Set(ticked);
@@ -128,14 +129,14 @@ function PieceLabels({ name, at }: { name: string; at: LabelsFor }) {
   return (
     <>
       {units.unlabelled > 0 && (
-        <p className={form.note}>
+        <Note>
           {copy.unlabelled(units.unlabelled)}{" "}
           {access.mayCall("POST /api/stock/units") && (
             <Button variant="outline" size="small" disabled={labelling === "busy"} onClick={() => void label()}>
               {labelling === "busy" ? copy.labelling : copy.labelThem(toLabel)}
             </Button>
           )}
-        </p>
+        </Note>
       )}
       {labelling === "failed" && <Refusal className={form.error} said={copy.notLabelled} />}
       <Batches key={String(after?.times ?? 0)} units={units.units} name={name} />
@@ -156,7 +157,7 @@ function LotLabels({ stock, name, at }: { stock: Stock; name: string; at: Labels
   const [printing, setPrinting] = useState<readonly PrintedLabel[] | null>(null);
   const lot = lots.find((each) => each.id === lotId);
   const count = /^\d{1,3}$/.test(copies) ? Number(copies) : 0;
-  if (lots.length === 0) return <p className={form.note}>{copy.noLots}</p>;
+  if (lots.length === 0) return <Note>{copy.noLots}</Note>;
 
   const print = async () => {
     if (lot === undefined) return;

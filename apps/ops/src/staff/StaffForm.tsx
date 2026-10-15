@@ -21,7 +21,7 @@ import {
   whereValue,
 } from "../lib/grants.ts";
 import form from "../components/forms.module.css";
-import styles from "./staff.module.css";
+import styles from "./staff-form.module.css";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
@@ -75,7 +75,7 @@ function GrantRow(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.select}
+            width="choice"
             value={grant.department}
             onChange={(event) => {
               onChange({ ...grant, department: departmentOf(event.target.value, grant.department) });
@@ -93,7 +93,7 @@ function GrantRow(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.select}
+            width="choice"
             value={grant.level}
             onChange={(event) => {
               onChange({ ...grant, level: levelOf(event.target.value, grant.level) });
@@ -111,7 +111,7 @@ function GrantRow(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.select}
+            width="choice"
             value={whereValue(grant)}
             onChange={(event) => {
               onChange({ ...grant, ...whereOf(event.target.value) });
@@ -138,7 +138,7 @@ function GrantRow(props: {
       <Button
         variant="outline"
         size="small"
-        className={form.quiet}
+        narrow
         aria-label={copy.form.removeGrantLabel(grantWords(grant))}
         onClick={onRemove}
       >
@@ -190,7 +190,7 @@ export function StaffForm(props: {
           {(control) => (
             <TextInput
               {...control}
-              className={form.text}
+              width="area"
               type="email"
               autoComplete="off"
               maxLength={254}
@@ -233,7 +233,7 @@ export function StaffForm(props: {
         <Button
           variant="outline"
           size="small"
-          className={form.quiet}
+          narrow
           onClick={() => {
             edit({ grants: [...draft.grants, NEW_GRANT] });
           }}

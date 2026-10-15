@@ -10,7 +10,7 @@ const DAY_MS = 86_400_000;
 
 /**
  * How long this browser remembers an invite once it is opened. It decides only that: who is attributed is the API's
- * rule, so this is not an ops setting (ADR 0089).
+ * rule, so this is not an ops setting.
  */
 export const INVITE_REMEMBERED_DAYS = 30;
 

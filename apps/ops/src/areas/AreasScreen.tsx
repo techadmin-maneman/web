@@ -7,7 +7,7 @@ import { OpsLink } from "../components/Shell.tsx";
 import { areas } from "../content.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { AREA_TAB_NAMES, AREA_TABS, areasPath, type AreaTab } from "../route.ts";
-import styles from "./areas.module.css";
+import styles from "./areas-screen.module.css";
 import { Served } from "./Served.tsx";
 import { Waiting } from "./Waiting.tsx";
 

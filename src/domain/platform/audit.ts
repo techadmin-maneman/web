@@ -64,7 +64,7 @@ export const AUDIT_ACTIONS = [
   // A month's offline spend added, or taken off the figures (docs/decisions/0150-spend.md).
   "spend.add",
   "spend.remove",
-  // Ops opening one of a client's photographs (docs/decisions/0031-access-and-audit.md).
+  // Ops opening one of a client's photographs.
   "photo.view",
   // A client's rights over their data (docs/decisions/0049-dpdp.md).
   "pincode.launch",
@@ -401,7 +401,7 @@ export function auditStatementIfRuled(
 /**
  * The entry for a row stamped earlier in the same batch, by a statement that stamps nothing when another request
  * stamped it a moment before: written only if the row carries this entry's own time. A discount code switched off,
- * or a use taken off its booking (docs/decisions/0108-discount-codes.md).
+ * or a use taken off its booking.
  */
 export function auditStatementIfStamped(
   db: D1Database,

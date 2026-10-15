@@ -1,0 +1,45 @@
+/* What ./Thread.tsx alone draws; what it shares is in ./care.module.css. */
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin: var(--sp-12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.theirs,
+.ours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-width: var(--ops-measure);
+  padding: var(--sp-8) var(--sp-12);
+  border: var(--hairline) solid var(--paper-line);
+  background: var(--paper);
+}
+
+.ours {
+  align-self: flex-end;
+}
+
+.auto {
+  align-self: center;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.when {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.text {
+  white-space: pre-line;
+}
+
+.failed {
+  font-size: var(--fs-13);
+  color: var(--status-error);
+}

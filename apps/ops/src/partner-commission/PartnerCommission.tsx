@@ -6,10 +6,10 @@
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullMonth, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -74,7 +74,7 @@ function StatementActions({
   };
   const offer = (kind: NonNullable<Acting>["kind"], words: string, label: string) => (
     <RowButton
-      className={form.inline}
+      beside
       aria-label={label}
       disabled={acting !== null}
       onClick={() => {
@@ -87,7 +87,7 @@ function StatementActions({
   return (
     <td className={styles.actions}>
       <RowButton
-        className={form.inline}
+        beside
         aria-label={copy.statementLabel(statement.name)}
         onClick={() => {
           saveFile(
@@ -181,7 +181,7 @@ function StatementsTable(row: RowProps) {
   const figures = [columns.fitted, columns.earned, columns.takenBack, columns.due, columns.paid, columns.owed];
   return (
     <div className={styles.scroll}>
-      <Table className={classes(form.table, styles.table)}>
+      <Table controls className={styles.table}>
         <thead>
           <tr>
             <th scope="col">{columns.partner}</th>
@@ -212,7 +212,7 @@ function MonthChoice({ statements, onMonth }: { statements: PartnerStatements; o
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={statements.month}
             onChange={(event) => {
               onMonth(event.target.value);
@@ -266,13 +266,13 @@ export function PartnerCommission() {
     <Panel
       titleId="partner-commission"
       title={copy.title}
-      className={form.panel}
+      padded
       actions={
         statements.statements.length > 0 && (
           <Button
             variant="outline"
             size="small"
-            className={form.quiet}
+            narrow
             onClick={() => {
               saveFile(copy.downloadName(statements.month), monthCsv(statements.statements), "text/csv");
             }}
@@ -288,7 +288,7 @@ export function PartnerCommission() {
           {said}
         </InlineMessage>
       )}
-      {statements.statements.length === 0 ? <p className={form.note}>{copy.none}</p> : <StatementsTable {...row} />}
+      {statements.statements.length === 0 ? <Note>{copy.none}</Note> : <StatementsTable {...row} />}
     </Panel>
   );
 }

@@ -1,0 +1,22 @@
+/* What ./ErasureLists.tsx alone draws; what it shares is in ./erasure.module.css. */
+
+.what {
+  margin-top: var(--sp-12);
+}
+
+.whatTitle {
+  margin: 0;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.whatItems {
+  margin: var(--sp-4) 0 0;
+  padding-left: var(--sp-16);
+}
+
+.whatItem {
+  font-size: var(--fs-14);
+  line-height: var(--lh-145);
+}

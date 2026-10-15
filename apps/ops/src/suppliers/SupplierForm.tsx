@@ -4,7 +4,7 @@
 
 import { CheckLine } from "../components/CheckPanel.tsx";
 import type { Success } from "@maneman/web-kit/api";
-import { Field, TextInput } from "@maneman/ui/Field";
+import { Field, TextInput, type BoxWidth } from "@maneman/ui/Field";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
 import { settings } from "../content/settings.ts";
@@ -82,7 +82,7 @@ function changes(was: Supplier, draft: Draft): string[] {
 function SupplierEntry(props: {
   label: string;
   value: string;
-  size?: string;
+  width?: BoxWidth;
   max: number;
   onChange: (text: string) => void;
   box: string;
@@ -92,7 +92,7 @@ function SupplierEntry(props: {
       {(control) => (
         <TextInput
           {...control}
-          className={props.size}
+          width={props.width}
           maxLength={props.max}
           value={props.value}
           onChange={(event) => {
@@ -112,7 +112,7 @@ function SupplierTerms({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         label={formWords.terms}
         box="payment_terms_days"
         value={draft.terms}
-        size={form.figureBox}
+        width="figure"
         max={3}
         onChange={edit("terms")}
       />
@@ -120,7 +120,7 @@ function SupplierTerms({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         label={formWords.warranty}
         box="warranty_days"
         value={draft.warranty}
-        size={form.figureBox}
+        width="figure"
         max={4}
         onChange={edit("warranty")}
       />
@@ -136,7 +136,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
         <SupplierEntry
           label={formWords.name}
           value={draft.name}
-          size={form.areaBox}
+          width="area"
           max={80}
           onChange={edit("name")}
           box="name"
@@ -145,7 +145,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
           label={formWords.gstin}
           box="gstin"
           value={draft.gstin}
-          size={form.areaBox}
+          width="area"
           max={15}
           onChange={edit("gstin")}
         />
@@ -153,7 +153,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
           label={formWords.country}
           box="country"
           value={draft.country}
-          size={form.figureBox}
+          width="figure"
           max={2}
           onChange={edit("country")}
         />
@@ -161,7 +161,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
           label={formWords.currency}
           box="currency"
           value={draft.currency}
-          size={form.figureBox}
+          width="figure"
           max={3}
           onChange={edit("currency")}
         />
@@ -171,7 +171,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
           label={formWords.contactName}
           box="contact_name"
           value={draft.contactName}
-          size={form.areaBox}
+          width="area"
           max={80}
           onChange={edit("contactName")}
         />
@@ -179,7 +179,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
           label={formWords.contactPhone}
           box="contact_phone"
           value={draft.contactPhone}
-          size={form.areaBox}
+          width="area"
           max={16}
           onChange={edit("contactPhone")}
         />
@@ -187,7 +187,7 @@ function SupplierBoxes({ draft, edit }: { draft: Draft; edit: (field: keyof Draf
           label={formWords.contactEmail}
           box="contact_email"
           value={draft.contactEmail}
-          size={form.areaBox}
+          width="area"
           max={120}
           onChange={edit("contactEmail")}
         />

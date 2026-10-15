@@ -1,0 +1,6 @@
+/* What ./StockForm.tsx alone draws; what it shares is in ./stock.module.css. */
+
+/* The kinds of movement, as a row of choices above the form's boxes. */
+.kinds {
+  margin-top: var(--sp-8);
+}

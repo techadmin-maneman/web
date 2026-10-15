@@ -2,6 +2,7 @@
 // check-in coordinates blanked, waitlist entries of areas launched a year ago deleted, and the rows past their periods
 // of the tables that only grew.
 
+import { archiveQuietThreads } from "../domain/care/chat-archive.ts";
 import { eraseAndQueue } from "../domain/privacy/erasure.ts";
 import { blankOldCoordinates, dormantPeople, dropExpired, dropLaunchedWaitlist } from "../domain/privacy/retention.ts";
 import { ERASED_PER_RUN } from "../policy/retention.ts";
@@ -33,4 +34,10 @@ export async function retentionJob({ env, deps, log, inputs }: CronContext): Pro
   }
   if (blanked + dropped + erased + expired > 0)
     log.info("retention", { erased, coordinates_blanked: blanked, waitlist_dropped: dropped, rows_expired: expired });
+}
+
+/** The cron's archive job (src/domain/care/chat-archive.ts): clients' Care threads quiet a year, moved out of D1. */
+export async function chatArchiveJob({ env, deps, log }: CronContext): Promise<void> {
+  const threads = await archiveQuietThreads(env.DB, env.BACKUPS, deps.now());
+  if (threads > 0) log.info("chats_archived", { threads });
 }

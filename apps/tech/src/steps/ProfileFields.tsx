@@ -7,7 +7,8 @@ import { capsLook } from "@maneman/ui/Caps";
 import type { Typed } from "@maneman/web-kit/hair-profile";
 import { useId, type KeyboardEvent } from "react";
 import { profile as copy } from "../content.ts";
-import styles from "./steps.module.css";
+import shared from "./steps.module.css";
+import styles from "./profile-fields.module.css";
 
 export interface Option<T> {
   readonly id: T;
@@ -45,8 +46,8 @@ export function Chips<T extends string | number>({
 }) {
   const titleId = useId();
   return (
-    <section className={styles.field} aria-labelledby={titleId}>
-      <h2 className={capsLook(styles.fieldTitle)} id={titleId}>
+    <section className={shared.field} aria-labelledby={titleId}>
+      <h2 className={capsLook(shared.fieldTitle)} id={titleId}>
         {title}
       </h2>
       <div
@@ -108,13 +109,13 @@ export function Figure({
       label={label}
       hint={invalid ? undefined : hint}
       error={invalid ? hint : null}
-      look={{ label: styles.fieldLabel, hint: styles.range, error: styles.hint }}
+      look={{ label: shared.fieldLabel, hint: styles.range, error: shared.hint }}
     >
       {(control) => (
         <TextInput
           {...control}
           onInk
-          className={styles.box64}
+          className={shared.box64}
           value={value}
           inputMode="decimal"
           autoComplete="off"

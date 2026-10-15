@@ -2,6 +2,7 @@
 // all be used before it expires at its place's pace, valued at its landed cost, with what to do about it.
 
 import type { Success } from "@maneman/web-kit/api";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -24,11 +25,11 @@ const todo = (lot: Lot) =>
   lot.suggestion === "move" && lot.move_to !== null ? copy.moveTo(lot.move_to) : copy.suggestions[lot.suggestion];
 
 function Lots({ risk }: { risk: Risk }) {
-  if (risk.lots.length === 0) return <p className={form.note}>{copy.noRisk}</p>;
+  if (risk.lots.length === 0) return <Note>{copy.noRisk}</Note>;
   return (
     <>
-      <p className={form.note}>{copy.riskTotal(rupees(risk.total_value))}</p>
-      <Table className={form.table}>
+      <Note>{copy.riskTotal(rupees(risk.total_value))}</Note>
+      <Table controls>
         <thead>
           <tr>
             {copy.riskColumns.map((column) => (

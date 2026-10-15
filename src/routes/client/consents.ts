@@ -78,7 +78,7 @@ export function registerClientConsents(app: App): void {
     // "You can switch it off at any time, and new opens will show our house example instead."
     if (purpose === "photos_referral_cards" && !granted) await revokeCard(db, c.env.REFERRAL_CARDS, personId, now);
     // A request that changed nothing is answered with the date the ledger holds, not with its own
-    // moment: the client is told when they agreed, which is not necessarily now (ADR 0058).
+    // moment: the client is told when they agreed, which is not necessarily now.
     const written = switched?.results[0]?.created_at;
     const since = written ?? (await consentsOf(db, personId)).find((one) => one.purpose === purpose)?.since;
     return c.json({ purpose, granted, since: since ?? now.toISOString() }, 200);

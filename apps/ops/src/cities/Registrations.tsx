@@ -6,6 +6,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Note } from "@maneman/ui/Note";
 import { useState } from "react";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -37,7 +38,7 @@ function RegistrationEntry(props: {
       {(control) => (
         <TextInput
           {...control}
-          className={form.areaBox}
+          width="area"
           maxLength={props.max}
           value={props.value}
           onChange={(event) => {
@@ -119,11 +120,11 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
   };
   return (
     <Panel titleId="gst-registrations" title={copy.panel} count={cities.registrations.length}>
-      <p className={form.note}>{copy.note}</p>
+      <Note>{copy.note}</Note>
       {cities.registrations.length === 0 ? (
-        <p className={form.note}>{copy.none}</p>
+        <Note>{copy.none}</Note>
       ) : (
-        <Table className={form.table}>
+        <Table controls>
           <thead>
             <tr>
               {copy.columns.map((column) => (

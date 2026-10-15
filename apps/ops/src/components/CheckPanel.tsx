@@ -65,7 +65,7 @@ export function CheckPanel({
         <Button variant="primary" size="small" disabled={busy || !ready} onClick={onSend}>
           {busy ? review.sending : review.send}
         </Button>
-        <Button variant="outline" size="small" className={form.quiet} disabled={busy} onClick={onBack}>
+        <Button variant="outline" size="small" narrow disabled={busy} onClick={onBack}>
           {question === undefined ? review.edit : review.cancel}
         </Button>
       </FormActions>

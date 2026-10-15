@@ -1,0 +1,9 @@
+/* What ./Demand.tsx alone draws; what it shares is in ./stock.module.css. */
+
+/* The fits at risk, a list in a note's words. */
+.atRisk {
+  margin: var(--sp-8) var(--sp-20) 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}

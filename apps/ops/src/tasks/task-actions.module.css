@@ -1,0 +1,18 @@
+/* What ./TaskActions.tsx alone draws; what it shares is in ./tasks.module.css. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin-top: var(--sp-8);
+}
+
+.reason {
+  min-height: var(--sp-48);
+  resize: vertical;
+}
+
+.formActions {
+  display: flex;
+  gap: var(--sp-8);
+}

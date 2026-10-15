@@ -4,6 +4,7 @@
 import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { quantity } from "@maneman/web-kit/figures";
@@ -37,7 +38,7 @@ function Head({ columns }: { columns: readonly string[] }) {
 
 function Items({ technician }: { technician: Technician }) {
   return (
-    <Table className={form.table}>
+    <Table controls>
       <Head columns={copy.itemColumns} />
       <tbody>
         {technician.items.map((item) => (
@@ -58,18 +59,18 @@ function Technicians({ usage }: { usage: Usage }) {
   const opened = usage.technicians.find((technician) => technician.technician_id === open);
   return (
     <Panel titleId="usage-technicians" title={copy.technicians}>
-      <p className={form.note}>{copy.techniciansNote}</p>
+      <Note>{copy.techniciansNote}</Note>
       {usage.technicians.length === 0 ? (
-        <p className={form.note}>{copy.noTechnicians}</p>
+        <Note>{copy.noTechnicians}</Note>
       ) : (
-        <Table className={form.table}>
+        <Table controls>
           <Head columns={copy.technicianColumns} />
           <tbody>
             {usage.technicians.map((technician) => (
               <tr key={technician.technician_id}>
                 <RowHead>
                   {technician.name}
-                  {technician.flagged && <p className={form.note}>{copy.flagged}</p>}
+                  {technician.flagged && <Note>{copy.flagged}</Note>}
                 </RowHead>
                 <td className={form.figure}>{technician.visits}</td>
                 <td className={form.figure}>{rupees(technician.expected_value)}</td>
@@ -105,18 +106,18 @@ function Technicians({ usage }: { usage: Usage }) {
 function Places({ usage }: { usage: Usage }) {
   return (
     <Panel titleId="usage-places" title={copy.places}>
-      <p className={form.note}>{copy.placesNote}</p>
+      <Note>{copy.placesNote}</Note>
       {usage.places.length === 0 ? (
-        <p className={form.note}>{copy.noPlaces}</p>
+        <Note>{copy.noPlaces}</Note>
       ) : (
-        <Table className={form.table}>
+        <Table controls>
           <Head columns={copy.placeColumns} />
           <tbody>
             {usage.places.map((place) => (
               <tr key={place.place_id}>
                 <RowHead>
                   {place.place}
-                  {place.flagged && <p className={form.note}>{copy.flagged}</p>}
+                  {place.flagged && <Note>{copy.flagged}</Note>}
                 </RowHead>
                 <td className={form.figure}>{rupees(place.left_value)}</td>
                 <td className={form.figure}>{rupees(place.lost_value)}</td>
@@ -140,7 +141,7 @@ export function UsageScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && (
         <div className={form.screen}>
-          <p className={form.note}>{copy.since(loaded.value.since)}</p>
+          <Note>{copy.since(loaded.value.since)}</Note>
           <Technicians usage={loaded.value} />
           <Places usage={loaded.value} />
         </div>

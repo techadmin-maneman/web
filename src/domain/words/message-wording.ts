@@ -6,7 +6,7 @@ import type { Wording } from "../../config/message-templates.ts";
 
 /**
  * The words set for a message, and for its stop line where it carries one, where they differ from the code's
- * (docs/decisions/0128-messages-with-the-words-set.md); undefined while neither was changed.
+ *; undefined while neither was changed.
  */
 export async function messageWording(
   db: D1Database,

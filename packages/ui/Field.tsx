@@ -120,27 +120,50 @@ export function Field({
 }
 
 /**
+ * How wide the console draws a box, by what it holds: a figure, an amount, a date, a line of words, or a choice as wide
+ * as its longest. Without one, a box fills the room it is given.
+ */
+export type BoxWidth = "figure" | "amount" | "date" | "area" | "choice";
+
+const WIDTHS: Record<BoxWidth, string | undefined> = {
+  figure: styles.widthFigure,
+  amount: styles.widthAmount,
+  date: styles.widthDate,
+  area: styles.widthArea,
+  choice: styles.widthChoice,
+};
+
+/**
  * A box's height, which each app sets (--field-height, ./base.css): the tap's, or compact inside a table row, which
  * keeps the row at its height. On the ink, as the technician app's screens are, its edge and words are the ink's.
  */
 interface Sized {
   readonly compact?: boolean;
   readonly onInk?: boolean;
+  readonly width?: BoxWidth | undefined;
 }
 
-const lineOf = ({ compact, onInk }: Sized) =>
-  classes(compact === true ? styles.compact : styles.line, onInk === true && styles.onInk);
+const lineOf = ({ compact, onInk, width }: Sized) =>
+  classes(
+    compact === true ? styles.compact : styles.line,
+    onInk === true && styles.onInk,
+    width !== undefined && WIDTHS[width],
+  );
 
 /** A line of text to type, the app's height; its width is the caller's. An icon may stand at its start. */
 export function TextInput({
   className,
   compact,
   onInk,
+  width,
   icon,
   ref,
   ...rest
-}: InputHTMLAttributes<HTMLInputElement> & Sized & { readonly icon?: string; readonly ref?: Ref<HTMLInputElement> }) {
-  const input = <input {...rest} ref={ref} className={classes(styles.box, lineOf({ compact, onInk }), className)} />;
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "width"> &
+  Sized & { readonly icon?: string; readonly ref?: Ref<HTMLInputElement> }) {
+  const input = (
+    <input {...rest} ref={ref} className={classes(styles.box, lineOf({ compact, onInk, width }), className)} />
+  );
   if (icon === undefined) return input;
   return (
     <div className={styles.withIcon}>
@@ -159,13 +182,14 @@ export function NumberInput({
   type = "number",
   compact,
   onInk,
+  width,
   ...rest
-}: InputHTMLAttributes<HTMLInputElement> & Sized) {
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "width"> & Sized) {
   return (
     <input
       {...rest}
       type={type}
-      className={classes(styles.box, lineOf({ compact, onInk }), styles.figure, className)}
+      className={classes(styles.box, lineOf({ compact, onInk, width }), styles.figure, className)}
     />
   );
 }
@@ -175,20 +199,23 @@ export function DateInput({
   className,
   compact,
   onInk,
+  width,
   ...rest
-}: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & Sized) {
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "width"> & Sized) {
   return (
     <input
       {...rest}
       type="date"
-      className={classes(styles.box, lineOf({ compact, onInk }), styles.figure, className)}
+      className={classes(styles.box, lineOf({ compact, onInk, width }), styles.figure, className)}
     />
   );
 }
 
 /** One of a few, with the one arrow every select in the apps draws. */
-export function Select({ className, compact, onInk, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & Sized) {
-  return <select {...rest} className={classes(styles.box, lineOf({ compact, onInk }), styles.select, className)} />;
+export function Select({ className, compact, onInk, width, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & Sized) {
+  return (
+    <select {...rest} className={classes(styles.box, lineOf({ compact, onInk, width }), styles.select, className)} />
+  );
 }
 
 /** A label of its own, for a control a `Field` cannot hold: one beside another in a row, or named by a table's head. */

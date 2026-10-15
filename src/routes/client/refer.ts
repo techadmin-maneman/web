@@ -101,7 +101,7 @@ const INVITE_CREDITS: Readonly<Record<string, "checking" | "refused">> = { held:
 
 /**
  * Where the credits of the invite the client came with stand, when not simply in the balance. A friend the reward it
- * was held under gave nothing has no credits to check or refuse (docs/decisions/0107-referral-rewards-in-the-console.md);
+ * was held under gave nothing has no credits to check or refuse;
  * one held before rewards were kept, whose figure is null, may have some.
  */
 function inviteCredits(

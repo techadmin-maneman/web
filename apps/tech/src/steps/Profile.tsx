@@ -42,7 +42,8 @@ import { BaseInCentimetres, Chips, Figure, type Option } from "./ProfileFields.t
 import { useDraft, type Draft as DraftOf } from "./drafts.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
-import styles from "./steps.module.css";
+import shared from "./steps.module.css";
+import styles from "./profile.module.css";
 
 type Page = "fit" | "history";
 
@@ -136,14 +137,14 @@ function FitFields({
         isChosen={chosen("norwood_stage")}
         onChoose={choose("norwood_stage")}
       />
-      <section className={styles.field} aria-labelledby={headId}>
-        <h2 className={capsLook(styles.fieldTitle)} id={headId}>
+      <section className={shared.field} aria-labelledby={headId}>
+        <h2 className={capsLook(shared.fieldTitle)} id={headId}>
           {copy.sections.head}
         </h2>
         <div className={styles.figures}>{HEAD.map(figure)}</div>
       </section>
-      <section className={styles.field} aria-labelledby={baseId}>
-        <h2 className={capsLook(styles.fieldTitle)} id={baseId}>
+      <section className={shared.field} aria-labelledby={baseId}>
+        <h2 className={capsLook(shared.fieldTitle)} id={baseId}>
           {copy.sections.base}
         </h2>
         <div className={styles.figures}>{BASE.map(figure)}</div>
@@ -155,7 +156,7 @@ function FitFields({
         isChosen={chosen("colour")}
         onChoose={choose("colour")}
       />
-      <div className={styles.field}>
+      <div className={shared.field}>
         <Figure
           label={copy.sections.grey}
           value={form.figures.grey_percent}
@@ -223,7 +224,7 @@ function HistoryFields({
         many
       />
       {form.remedies.includes("transplant") && (
-        <div className={styles.field}>
+        <div className={shared.field}>
           <Figure
             label={copy.history.year}
             value={form.year}
@@ -235,12 +236,12 @@ function HistoryFields({
           />
         </div>
       )}
-      <Field onInk className={styles.field} label={copy.history.skin} look={{ label: styles.fieldLabel }}>
+      <Field onInk className={shared.field} label={copy.history.skin} look={{ label: shared.fieldLabel }}>
         {(control) => (
           <TextInput
             {...control}
             onInk
-            className={styles.box64}
+            className={shared.box64}
             value={form.skin}
             maxLength={200}
             autoComplete="off"

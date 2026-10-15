@@ -3,7 +3,8 @@
 //
 // The content security policy allows only the site itself, Turnstile and the
 // analytics tags in use. Astro's inline scripts and styles are allowed by their hashes, which
-// the build reads from the finished pages, so no 'unsafe-inline' is needed.
+// the build reads from the finished pages, so no 'unsafe-inline' is needed. The site's Worker adds a nonce of each
+// request's own to every page's policy (site/src/worker.ts), for a script Cloudflare adds at its edge.
 // Only the live production site is indexed: staging, local and production's coming-soon page never are, and the smoke
 // check looks for it.
 
@@ -26,12 +27,6 @@ const REPORTING: readonly Directive[] = [
   ["report-uri", [REPORTS]],
   ["report-to", ["csp"]],
 ];
-
-/**
- * Trusted Types, reported on and not yet enforced: Turnstile's and the analytics tags' scripts may write HTML in ways
- * it refuses, and the reports say which before it is switched on.
- */
-const TRUSTED_TYPES_REPORTED: readonly Directive[] = [["require-trusted-types-for", ["'script'"]], ...REPORTING];
 
 const policyOf = (directives: readonly Directive[]): string =>
   directives.map(([name, sources]) => [name, ...new Set(sources)].join(" ")).join("; ");
@@ -93,6 +88,9 @@ export function contentSecurityPolicy(inline: { scripts: string[]; styles: strin
     ["base-uri", ["'self'"]],
     ["form-action", ["'self'"]],
     ["frame-ancestors", ["'none'"]],
+    // A script's address set from code comes through a policy (packages/web-kit/trusted-scripts.ts), and no string is
+    // written into a page as HTML or script.
+    ["require-trusted-types-for", ["'script'"]],
     ...REPORTING,
   ];
   return policyOf(directives);
@@ -105,7 +103,6 @@ const PERMISSIONS = (camera: string) => `camera=${camera}, microphone=(), geoloc
 export function headersFile(indexed: boolean, csp: string): string {
   const everyPage = [
     `Content-Security-Policy: ${csp}`,
-    `Content-Security-Policy-Report-Only: ${policyOf(TRUSTED_TYPES_REPORTED)}`,
     `Reporting-Endpoints: csp="${REPORTS}"`,
     // No page the site opens, WhatsApp's or a calendar's, can reach back into it.
     "Cross-Origin-Opener-Policy: same-origin",

@@ -5,9 +5,9 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
-import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullMonth } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
@@ -49,7 +49,7 @@ function SpendChoice(props: {
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -152,7 +152,7 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
         maxLength={120}
         onChange={setCampaign}
       />
-      <p className={form.note}>{copy.campaignNote}</p>
+      <Note>{copy.campaignNote}</Note>
       <Typed label={copy.amount} error={refused("amount")} value={amount} maxLength={12} onChange={setAmount} />
       <Typed label={copy.note} error={refused("note")} value={note} maxLength={200} onChange={setNote} />
       <Button variant="outline" size="small" disabled={busy || !isRupees(amount)} onClick={() => void add()}>
@@ -164,9 +164,9 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
 }
 
 function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean; onRemove: (id: string) => void }) {
-  if (props.entries.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (props.entries.length === 0) return <Note>{copy.none}</Note>;
   return (
-    <Table className={classes(form.table)}>
+    <Table controls>
       <thead>
         <tr>
           {Object.values(copy.columns).map((column) => (
@@ -193,7 +193,7 @@ function SpendTable(props: { entries: readonly SpendEntry[]; mayRemove: boolean;
             {props.mayRemove && (
               <td>
                 <RowButton
-                  className={form.inline}
+                  beside
                   aria-label={copy.removeLabel(
                     fullMonth(entry.month),
                     entry.city ?? copy.national,
@@ -251,8 +251,8 @@ function Spend() {
 export function SpendScreen() {
   return (
     <div className={form.screen}>
-      <Panel titleId="spend" title={copy.title} className={form.panel}>
-        <p className={form.note}>{copy.intro}</p>
+      <Panel titleId="spend" title={copy.title} padded>
+        <Note>{copy.intro}</Note>
         <Spend />
       </Panel>
     </div>

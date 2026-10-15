@@ -3,6 +3,7 @@
 
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextArea, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
@@ -52,7 +53,7 @@ export function QuickReplyPick(props: {
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value=""
           onChange={(event) => {
             const reply = replies.find((each) => each.id === event.target.value);
@@ -116,7 +117,7 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
           )}
         </Field>
       </div>
-      <p className={form.note}>{copy.holes}</p>
+      <Note>{copy.holes}</Note>
       <FormActions>
         <Button
           variant="primary"
@@ -143,7 +144,7 @@ export function QuickRepliesPanel() {
   return (
     <div className={styles.quick}>
       {replies.length === 0 ? (
-        <p className={form.note}>{copy.none}</p>
+        <Note>{copy.none}</Note>
       ) : (
         <ul className={styles.leave}>
           {replies.map((reply) => (
@@ -151,7 +152,7 @@ export function QuickRepliesPanel() {
               <span className={styles.who}>{reply.title}</span> · {reply.text}{" "}
               {mayKeep && (
                 <RowButton
-                  className={form.inline}
+                  beside
                   aria-label={copy.retireLabel(reply.title)}
                   onClick={() => void careApi.retireQuickReply(reply.id).then(retry)}
                 >

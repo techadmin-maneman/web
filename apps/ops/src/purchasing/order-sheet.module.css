@@ -1,0 +1,43 @@
+/* What ./OrderSheet.tsx alone draws; what it shares is in ./purchasing.module.css. */
+
+.sheet {
+  display: none;
+}
+
+@media print {
+  .sheet {
+    display: block;
+    color: var(--ink);
+    background: var(--white);
+    font-family: var(--font-sans);
+  }
+}
+
+.sheetTitle {
+  margin: 0 0 var(--sp-16);
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+}
+
+.sheetTable {
+  width: 100%;
+  margin-top: var(--sp-16);
+  border-collapse: collapse;
+}
+
+.sheetTable th,
+.sheetTable td {
+  padding: var(--sp-8);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  text-align: left;
+}
+
+.sheetTotal {
+  margin-top: var(--sp-16);
+  font-weight: var(--weight-medium);
+}
+
+/* The delivery address, a line at a time as ops typed it. */
+.sheetAddress {
+  white-space: pre-line;
+}

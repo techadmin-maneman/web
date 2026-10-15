@@ -1,0 +1,27 @@
+/* What ./Disputes.tsx alone draws; what it shares is in ./no-shows.module.css. */
+
+.disputeLabel {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+.disputeTitle {
+  margin: var(--sp-16) 0 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-22);
+  line-height: var(--lh-115);
+}
+
+/* The client's own words, as they wrote them. */
+.disputeWords {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+}
+
+.disputeName {
+  color: inherit;
+  text-decoration: underline;
+}

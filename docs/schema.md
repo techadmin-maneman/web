@@ -712,7 +712,7 @@ Indexes:
 
 The Care inbox: one thread for each number that writes to our WhatsApp number, matched to its client where we know the number (ADR 0129).
 
-Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`, `0124_care_numbers_indexes.sql`.
+Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`, `0124_care_numbers_indexes.sql`, `0179_chat_archives.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -728,6 +728,9 @@ Made by `0114_conversations.sql`; changed by `0115_chat_replies.sql`, `0124_care
 | `created_at` | TEXT | no |  |  |  |
 | `updated_at` | TEXT | no |  |  |  |
 | `close_reason` | TEXT | yes |  |  | What the chat was about, as Care closed it. |
+| `archive_key` | TEXT | yes |  |  | A client's Care thread, closed and quiet for a year, has its messages moved out of D1 into the backups bucket, one file for the thread (docs/decisions/0207-closed-chats-archived.md). Where that file is, how many messages it holds, and the thread's last message when it was written: a thread written to again since is archived again once it is quiet a year more. |
+| `archived_messages` | INTEGER | no | `0` |  |  |
+| `archived_through` | TEXT | yes |  |  |  |
 
 Indexes:
 
@@ -735,6 +738,7 @@ Indexes:
 - `conversations_by_opened`: on (`opened_at`)
 - `conversations_by_person`: on (`person_id`), where `person_id IS NOT NULL`
 - `conversations_by_state`: on (`state`, `last_message_at`)
+- `conversations_to_archive`: on (`last_message_at`), where `state = 'closed' AND person_id IS NOT NULL AND (archived_through IS NULL OR archived_through <> last_message_at)`
 
 ## count_lines
 

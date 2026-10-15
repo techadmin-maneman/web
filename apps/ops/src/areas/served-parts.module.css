@@ -1,0 +1,32 @@
+/* What ./ServedParts.tsx alone draws; what it shares is in ./areas.module.css. */
+.cities {
+  margin: var(--sp-16) var(--sp-20) 0;
+}
+
+/* A row's own boxes, as tall as the row allows. */
+.cellText {
+  width: 100%;
+  min-width: var(--ops-area);
+}
+
+.cellDate {
+  width: var(--ops-date);
+  font-variant-numeric: tabular-nums;
+}
+
+.uploaded {
+  margin-top: var(--sp-12);
+}
+
+/* The file's rows start at the panel's edge, as the table above them does. */
+.uploaded table th:first-child,
+.uploaded table td:first-child {
+  padding-left: 0;
+}
+
+/* The upload's hint, as long as a form's line and a size smaller than the field's own. */
+.uploadHint {
+  max-width: var(--measure-form);
+  font-size: var(--fs-13);
+  line-height: var(--lh-160);
+}

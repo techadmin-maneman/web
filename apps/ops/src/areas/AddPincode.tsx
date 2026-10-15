@@ -8,7 +8,8 @@ import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { type ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
-import styles from "./areas.module.css";
+import shared from "./areas.module.css";
+import styles from "./add-pincode.module.css";
 import { AREA_NAME, PINCODE } from "./rules.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { areasApi } from "./areas-api.ts";
@@ -66,17 +67,17 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
 
   if (cities.length === 0) {
     return (
-      <div className={styles.addForm}>
-        <p className={styles.note}>{copy.noCity}</p>
+      <div className={shared.addForm}>
+        <p className={shared.note}>{copy.noCity}</p>
         {cancel}
       </div>
     );
   }
 
   return (
-    <div className={styles.addForm}>
+    <div className={shared.addForm}>
       {pincode === null && (
-        <Field label={copy.pincode} className={styles.field} error={refusals.pincode} announce>
+        <Field label={copy.pincode} className={shared.field} error={refusals.pincode} announce>
           {(control) => (
             <TextInput
               {...control}
@@ -91,7 +92,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
           )}
         </Field>
       )}
-      <Field label={copy.area} className={styles.field} error={refusals.area} announce>
+      <Field label={copy.area} className={shared.field} error={refusals.area} announce>
         {(control) => (
           <TextInput
             {...control}
@@ -104,7 +105,7 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
           />
         )}
       </Field>
-      <Field label={copy.city} className={styles.field}>
+      <Field label={copy.city} className={shared.field}>
         {(control) => (
           <Select
             {...control}
@@ -123,13 +124,13 @@ export function AddPincode({ pincode, cities, onAdded, onCancel }: Props) {
           </Select>
         )}
       </Field>
-      <div className={styles.actions}>
+      <div className={shared.actions}>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {busy ? copy.adding : copy.add}
         </Button>
         {cancel}
       </div>
-      {code !== null && <Refusal className={styles.error} said={errorText(copy.errors, { code })} />}
+      {code !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code })} />}
     </div>
   );
 }

@@ -591,13 +591,13 @@ export const badges = {
   prepaid: "Prepaid",
   credit: "Free visit",
   free: "No charge",
-  // No board draws a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
+  // No board draws a consultation and fit in one visit, paid for once the client is fitted.
   at_visit: "Pays once fitted",
 } as const;
 
 /**
  * No board draws a consultation and fit in one visit
- * (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md). The client chooses the product with the technician
+ *. The client chooses the product with the technician
  * at the piece step, before the checklist, or decides against it; closing the visit as done then texts them a payment
  * link, or ends it as a free consultation. Never an amount.
  */
@@ -650,7 +650,7 @@ export const oneVisit = {
 type Words<Field extends keyof FitSpec> = Record<NonNullable<FitSpec[Field]>, string>;
 
 /**
- * No board draws the client's hair profile (docs/decisions/0106-a-clients-hair-profile.md). The codes are the
+ * No board draws the client's hair profile. The codes are the
  * API's.
  */
 export const profile = {

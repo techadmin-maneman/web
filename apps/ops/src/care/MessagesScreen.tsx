@@ -4,10 +4,10 @@
 import { RowButton } from "@maneman/ui/Button";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { classes } from "@maneman/ui/classes";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
@@ -19,7 +19,8 @@ import { QuickRepliesPanel } from "./QuickReplies.tsx";
 import { RemediesPanel } from "./Remedies.tsx";
 import { Thread, whenOf, whoOf } from "./Thread.tsx";
 import form from "../components/forms.module.css";
-import styles from "./care.module.css";
+import shared from "./care.module.css";
+import styles from "./messages-screen.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { ActionRow } from "../components/ActionRow.tsx";
 
@@ -36,7 +37,7 @@ function ViewChoice({ view, onView }: { view: ConversationView; onView: (view: C
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={view}
           onChange={(event) => {
             if (isView(event.target.value)) onView(event.target.value);
@@ -85,7 +86,7 @@ function Search({ search, onSearch }: { search: string; onSearch: (search: strin
         <Button
           variant="outline"
           size="small"
-          className={form.quiet}
+          narrow
           onClick={() => {
             setTyped("");
             onSearch("");
@@ -126,21 +127,21 @@ function ConversationRows(props: {
   return (
     <>
       <tr>
-        <th scope="row" className={styles.who}>
+        <th scope="row" className={shared.who}>
           {conversation.technician === null
             ? (conversation.person?.name ?? copy.unknown)
             : copy.technicianName(conversation.technician.name)}
         </th>
-        <td className={styles.number}>{phoneWords(conversation.mobile)}</td>
+        <td className={shared.number}>{phoneWords(conversation.mobile)}</td>
         <td>{carePersonOf(conversation)}</td>
-        <td className={styles.line}>{conversation.last_line ?? copy.noLine}</td>
-        <td className={styles.figure}>
+        <td className={shared.line}>{conversation.last_line ?? copy.noLine}</td>
+        <td className={shared.figure}>
           <ReplyBy at={conversation.reply_by} />
         </td>
-        <td className={styles.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
-        <td className={styles.actions}>
+        <td className={shared.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
+        <td className={shared.actions}>
           <RowButton
-            className={form.inline}
+            beside
             aria-label={copy.openLabel(who)}
             aria-expanded={props.open}
             onClick={() => {
@@ -152,7 +153,7 @@ function ConversationRows(props: {
         </td>
       </tr>
       {props.open && (
-        <ActionRow className={styles.acting}>
+        <ActionRow className={shared.acting}>
           <Thread
             conversation={conversation}
             onClose={() => {
@@ -187,7 +188,7 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const conversations = shownOf(loaded.value.conversations, older);
-  if (conversations.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (conversations.length === 0) return <Note>{copy.none}</Note>;
   const next = older === null ? loaded.value.next_cursor : older.next;
   const showOlder = async (cursor: string) => {
     setLoadingOlder(true);
@@ -204,7 +205,7 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
       <ConversationTable conversations={conversations} opened={opened} onOpen={setOpened} onChanged={refresh} />
       {next !== null && (
         <div className={styles.more}>
-          <p className={form.note}>{copy.latest(conversations.length)}</p>
+          <Note>{copy.latest(conversations.length)}</Note>
           <Button variant="outline" size="small" busy={loadingOlder} onClick={() => void showOlder(next)}>
             {loadingOlder ? copy.loadingMore : copy.more}
           </Button>
@@ -222,18 +223,18 @@ function ConversationTable(props: {
 }) {
   const columns = copy.columns;
   return (
-    <div className={styles.scroll}>
-      <Table className={classes(form.table, styles.table)}>
+    <div className={shared.scroll}>
+      <Table controls className={shared.table}>
         <thead>
           <tr>
             <th scope="col">{columns.client}</th>
             <th scope="col">{columns.number}</th>
             <th scope="col">{columns.carePerson}</th>
             <th scope="col">{columns.said}</th>
-            <th scope="col" className={styles.figure}>
+            <th scope="col" className={shared.figure}>
               {columns.replyBy}
             </th>
-            <th scope="col" className={styles.figure}>
+            <th scope="col" className={shared.figure}>
               {columns.at}
             </th>
             <th scope="col">
@@ -262,8 +263,8 @@ export function MessagesScreen() {
   const [search, setSearch] = useState("");
   return (
     <div className={form.screen}>
-      <Panel titleId="messages" title={copy.title} className={form.panel}>
-        <div className={styles.tools}>
+      <Panel titleId="messages" title={copy.title} padded>
+        <div className={shared.tools}>
           <ViewChoice view={view} onView={setView} />
           <Search search={search} onSearch={setSearch} />
         </div>
@@ -277,13 +278,13 @@ export function MessagesScreen() {
 export function CareSettingsScreen() {
   return (
     <div className={form.screen}>
-      <Panel titleId="care-team" title={copy.team.title} className={form.panel}>
+      <Panel titleId="care-team" title={copy.team.title} padded>
         <CareTeam />
       </Panel>
-      <Panel titleId="remedies" title={copy.remedy.panel} className={form.panel}>
+      <Panel titleId="remedies" title={copy.remedy.panel} padded>
         <RemediesPanel />
       </Panel>
-      <Panel titleId="quick-replies" title={copy.quick.panel} className={form.panel}>
+      <Panel titleId="quick-replies" title={copy.quick.panel} padded>
         <QuickRepliesPanel />
       </Panel>
     </div>

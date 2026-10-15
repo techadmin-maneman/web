@@ -9,7 +9,7 @@ import { type Word } from "../api.ts";
 import { words as copy } from "../content/words.ts";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
-import styles from "./words.module.css";
+import styles from "./word-form.module.css";
 import { wordsApi } from "./words-api.ts";
 
 const { form: formWords, check } = copy;

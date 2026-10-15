@@ -29,7 +29,7 @@ function PayoutFields(props: { draft: Draft; month: string; today: string; edit:
         {(control) => (
           <NumberInput
             {...control}
-            className={form.amountBox}
+            width="amount"
             inputMode="decimal"
             min={0}
             value={draft.amount}
@@ -43,7 +43,7 @@ function PayoutFields(props: { draft: Draft; month: string; today: string; edit:
         {(control) => (
           <DateInput
             {...control}
-            className={form.dateBox}
+            width="date"
             min={`${props.month}-01`}
             max={props.today}
             value={draft.paidOn}
@@ -57,7 +57,7 @@ function PayoutFields(props: { draft: Draft; month: string; today: string; edit:
         {(control) => (
           <TextInput
             {...control}
-            className={form.areaBox}
+            width="area"
             maxLength={60}
             value={draft.reference}
             onChange={(event) => {

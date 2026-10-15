@@ -18,7 +18,8 @@ import { clients } from "../content.ts";
 import { ErasureLists } from "../components/ErasureLists.tsx";
 import deletionStyles from "../components/erasure.module.css";
 import { useAccess } from "../lib/access.ts";
-import styles from "./clients.module.css";
+import shared from "./clients.module.css";
+import styles from "./erase.module.css";
 import { MoneyRecords } from "./Payments.tsx";
 import { VisitRecords } from "./Visits.tsx";
 import { Refusal } from "../components/Refusal.tsx";
@@ -174,8 +175,8 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
 export function Erased() {
   return (
     <section className={styles.erased} aria-label={copy.done.title}>
-      <h2 className={styles.name}>{copy.done.title}</h2>
-      <p className={styles.note}>{copy.done.body}</p>
+      <h2 className={shared.name}>{copy.done.title}</h2>
+      <p className={shared.note}>{copy.done.body}</p>
       <OpsLink className={styles.erasedBack} to="/clients">
         {copy.done.back}
       </OpsLink>
@@ -189,12 +190,12 @@ export function Erased() {
  */
 export function ErasedRecord({ record, onChanged }: { record: ErasedClientRecord; onChanged: () => void }) {
   return (
-    <div className={styles.client}>
-      <div className={styles.head}>
-        <h2 className={styles.name}>{copy.record.title}</h2>
-        <p className={styles.note}>{copy.record.on(longDate(record.erased_at))}</p>
+    <div className={shared.client}>
+      <div className={shared.head}>
+        <h2 className={shared.name}>{copy.record.title}</h2>
+        <p className={shared.note}>{copy.record.on(longDate(record.erased_at))}</p>
       </div>
-      <div className={classes(styles.panel, styles.visits)}>
+      <div className={classes(shared.panel, shared.visits)}>
         <VisitRecords visits={record.visits} name={copy.record.whose} onChanged={onChanged} />
         <MoneyRecords payments={record.payments} links={record.payment_links} invoices={record.invoices} />
       </div>

@@ -119,6 +119,8 @@ If nothing is left worth carrying (the export failed, or nothing in it can be tr
 
 What each group of tables means if it is left as it was at `<T>`, and how it is put back, is in `docs/schema.md`, "What a restore undoes". `npm run schema` writes it from `RESTORE_GROUPS` in `scripts/lib/schema-doc.ts`, and its test fails on a table in no group, so a new table cannot leave the list behind.
 
+Care threads quiet a year keep their messages in a file in the backups bucket, under `archive/chats/` (ADR 0207), not in D1, so no restore touches them: a restored thread still names its file. A thread archived after `<T>` comes back with its messages in D1 as well as in its file; the next `chat_archive` run merges them by their IDs.
+
 ---
 
 ## From a weekly backup

@@ -20,6 +20,8 @@
     "./mobile": "./mobile.ts",
     "./whatsapp": "./whatsapp.ts",
     "./small-jpeg": "./small-jpeg.ts",
+    "./script-origins": "./script-origins.ts",
+    "./trusted-scripts": "./trusted-scripts.ts",
     "./turnstile": "./turnstile.ts",
     "./visit-length": "./visit-length.ts",
     "./names": "./names.ts",

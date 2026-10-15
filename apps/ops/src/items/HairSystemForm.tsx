@@ -4,6 +4,7 @@
 
 import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -47,7 +48,7 @@ function HairSystemChoice(props: {
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -70,7 +71,7 @@ function Figure(props: { label: string; value: string; onChange: (value: string)
       {(control) => (
         <NumberInput
           {...control}
-          className={form.figureBox}
+          width="figure"
           type="text"
           inputMode="decimal"
           maxLength={10}
@@ -209,10 +210,10 @@ export function HairSystemForm({
   };
   const productName = products.find((each) => each.tier === draft.product)?.name ?? draft.product;
   return (
-    <Panel titleId="hair-systems" title={copy.title} className={form.panel}>
-      <p className={form.note}>{copy.intro}</p>
+    <Panel titleId="hair-systems" title={copy.title} padded>
+      <Note>{copy.intro}</Note>
       {products.length === 0 ? (
-        <p className={form.note}>{copy.noProducts}</p>
+        <Note>{copy.noProducts}</Note>
       ) : (
         <SettingForm
           title={copy.formTitle}

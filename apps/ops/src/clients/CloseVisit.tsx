@@ -11,7 +11,8 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { useId, useState } from "react";
 import { type HandClose } from "../api.ts";
 import { clients } from "../content.ts";
-import styles from "../components/visit-dialog.module.css";
+import shared from "../components/visit-dialog.module.css";
+import styles from "./close-visit.module.css";
 import { FormRefusal } from "../components/Refusal.tsx";
 import { clientsApi } from "./clients-api.ts";
 
@@ -84,9 +85,9 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
       }}
     >
       <OutcomeChoice outcome={outcome} onChoose={setOutcome} />
-      {!timed && <p className={styles.note}>{copy.noShowNote}</p>}
+      {!timed && <p className={shared.note}>{copy.noShowNote}</p>}
       <div className={styles.times} hidden={!timed}>
-        <Field className={styles.field} label={copy.started} error={boxError(ERRORS, failure, "started_at")}>
+        <Field className={shared.field} label={copy.started} error={boxError(ERRORS, failure, "started_at")}>
           {(control) => (
             <TextInput
               {...control}
@@ -99,7 +100,7 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
             />
           )}
         </Field>
-        <Field className={styles.field} label={copy.ended} error={boxError(ERRORS, failure, "ended_at")}>
+        <Field className={shared.field} label={copy.ended} error={boxError(ERRORS, failure, "ended_at")}>
           {(control) => (
             <TextInput
               {...control}
@@ -113,11 +114,11 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
           )}
         </Field>
       </div>
-      <Field className={styles.field} label={copy.reason} error={boxError(ERRORS, failure, "reason")}>
+      <Field className={shared.field} label={copy.reason} error={boxError(ERRORS, failure, "reason")}>
         {(control) => (
           <TextArea
             {...control}
-            className={styles.reason}
+            className={shared.reason}
             maxLength={REASON_MAX_CHARS}
             value={reason}
             disabled={busy}
@@ -127,12 +128,12 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
           />
         )}
       </Field>
-      <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.primary} type="submit" busy={busy} disabled={!ready}>
+      <div className={shared.actions}>
+        <Button variant="primary" size="small" className={shared.primary} type="submit" busy={busy} disabled={!ready}>
           {busy ? copy.closing : copy.confirm}
         </Button>
       </div>
-      <FormRefusal className={styles.error} errors={ERRORS} failure={failure} boxes={BOXES} />
+      <FormRefusal className={shared.error} errors={ERRORS} failure={failure} boxes={BOXES} />
     </form>
   );
 }
@@ -159,7 +160,7 @@ export function CloseVisit({
       titleId="close-visit-title"
       title={copy.title(name)}
       aside={
-        <Button variant="outline" size="small" className={styles.quiet} onClick={dismiss}>
+        <Button variant="outline" size="small" className={shared.quiet} onClick={dismiss}>
           {copy.close}
         </Button>
       }
@@ -169,7 +170,7 @@ export function CloseVisit({
       {closed === null ? (
         <ClosingForm visitId={visitId} date={date} onClosed={setClosed} />
       ) : (
-        <p className={styles.done} role="status">
+        <p className={shared.done} role="status">
           {copy.done[closed]}
         </p>
       )}

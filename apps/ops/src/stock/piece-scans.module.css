@@ -1,0 +1,22 @@
+/* What ./PieceScans.tsx alone draws; what it shares is in ./labels.module.css. */
+
+/* The pieces a movement names, each with its Remove. */
+.scans {
+  display: grid;
+  gap: var(--sp-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scan {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  font-size: var(--fs-15);
+}
+
+.scanCode {
+  font-variant-numeric: tabular-nums;
+}

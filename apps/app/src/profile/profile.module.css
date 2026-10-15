@@ -1,13 +1,5 @@
 /* The design, on paper. */
 
-/* Under the profile's header the page starts 24 px down. */
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-24);
-  padding: var(--sp-24) var(--sp-20);
-}
-
 .label,
 .cardLabel {
   margin: 0;
@@ -225,17 +217,6 @@ a.secondary {
   margin-top: var(--sp-16);
 }
 
-.lines {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
-  margin: 0 0 var(--sp-16);
-  padding-left: var(--sp-16);
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--text-soft);
-}
-
 .card {
   padding: var(--sp-20);
   border: var(--hairline) solid var(--paper-line);
@@ -260,15 +241,6 @@ a.secondary {
   color: var(--text-muted);
 }
 
-.whatsapp {
-  justify-content: flex-start;
-  gap: var(--sp-16);
-}
-
-.logout {
-  width: 100%;
-}
-
 .failed {
   display: flex;
   flex-direction: column;
@@ -283,14 +255,4 @@ a.secondary {
 /* Taking a number change back, before ops decide it: a quiet way, beneath the card's own action. */
 .withdraw {
   margin-top: var(--sp-8);
-}
-
-/* The building search (docs/decisions/0054-address-capture.md). The list sits
-   in the flow rather than floating over the fields below it: at 390 px an
-   overlay covers the flat number, and a list that pushes the form down is
-   easier to reach by touch and by screen reader. */
-.searchField {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
 }

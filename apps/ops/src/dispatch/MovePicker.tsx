@@ -13,7 +13,7 @@ import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { MoveReason } from "../api.ts";
 import { dispatch } from "../content.ts";
-import styles from "./dispatch.module.css";
+import styles from "./move-picker.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import {
   asksTheClientOf,

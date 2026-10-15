@@ -15,7 +15,8 @@ import { OpsLink } from "../components/Shell.tsx";
 import { needsAHand as copy } from "../content.ts";
 import { alertNeed, markDoneNeed, useAccess, type Access } from "../lib/access.ts";
 import { PanelFailed } from "../states/States.tsx";
-import styles from "./tasks.module.css";
+import shared from "./tasks.module.css";
+import styles from "./needs-ahand.module.css";
 import { tasksApi } from "./tasks-api.ts";
 
 /** The few words that name what went wrong. */
@@ -52,14 +53,14 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
     });
 
   return (
-    <li className={styles.alert}>
-      <div className={styles.what}>
-        <span className={styles.subject}>{title}</span>
-        <span className={styles.sub}>{alert.message}</span>
+    <li className={shared.alert}>
+      <div className={shared.what}>
+        <span className={shared.subject}>{title}</span>
+        <span className={shared.sub}>{alert.message}</span>
 
-        <span className={styles.acts}>
+        <span className={shared.acts}>
           {alert.link !== null && (
-            <OpsLink className={styles.decide} to={alert.link}>
+            <OpsLink className={shared.decide} to={alert.link}>
               {copy.open}
               <VisuallyHidden>{` · ${title}`}</VisuallyHidden>
             </OpsLink>
@@ -78,7 +79,7 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
           )}
         </span>
         {failed !== null && (
-          <span className={styles.error} role="alert">
+          <span className={shared.error} role="alert">
             {errorText(copy.errors, { code: failed })}
           </span>
         )}
@@ -108,7 +109,7 @@ function AlertList({ access }: { access: Access }) {
   };
   return (
     <Panel titleId="needs-a-hand" title={copy.title} count={count} headingRef={heading}>
-      <ul className={styles.tasks}>
+      <ul className={shared.tasks}>
         {alerts.map((alert) => (
           <AlertRow
             key={alert.id}
@@ -121,7 +122,7 @@ function AlertList({ access }: { access: Access }) {
           />
         ))}
       </ul>
-      {count > alerts.length && <p className={styles.shown}>{copy.shown(alerts.length, count)}</p>}
+      {count > alerts.length && <p className={shared.shown}>{copy.shown(alerts.length, count)}</p>}
     </Panel>
   );
 }

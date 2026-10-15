@@ -4,6 +4,7 @@
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { purchasing } from "../content/purchasing.ts";
@@ -29,7 +30,7 @@ export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next
 
   return (
     <Panel titleId="letterhead" title={copy.title}>
-      <p className={form.note}>{set === null ? copy.missing : copy.intro}</p>
+      <Note>{set === null ? copy.missing : copy.intro}</Note>
       <form
         className={form.group}
         onSubmit={(event) => {

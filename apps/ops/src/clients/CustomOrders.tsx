@@ -7,6 +7,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
@@ -114,9 +115,9 @@ function OrdersTable({
   customOrders: CustomOrders;
   onAnswer: (answer: Answer, said: string) => void;
 }) {
-  if (customOrders.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (customOrders.orders.length === 0) return <Note>{copy.none}</Note>;
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.columns.map((column) => (

@@ -4,12 +4,13 @@
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Field, FileInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
 import { smallJpeg } from "@maneman/web-kit/small-jpeg";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
-import styles from "./purchasing.module.css";
+import styles from "./stock-photo.module.css";
 import { purchasingApi } from "./purchasing-api.ts";
 
 /** The file made small and stored: its ID, or the refusal's code. */
@@ -76,11 +77,7 @@ export function StockPhoto({
           )
         }
       </Field>
-      {busy && (
-        <p className={form.hint} role="status">
-          {copy.photo.storing}
-        </p>
-      )}
+      {busy && <Note role="status">{copy.photo.storing}</Note>}
     </>
   );
 }

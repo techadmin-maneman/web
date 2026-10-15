@@ -120,6 +120,8 @@ Care, dispatch and city staff sign in to the console with Google Workspace, neve
 5. **Who gets in:** the Allow policy names the staff by their maneman.in emails, or a Google group, never `@maneman.in` as a whole. The console's own Staff list ([ADR 0189](decisions/0189-the-staff-list-on-by-default.md)) still decides what each can do once in.
 6. **Check:** in a private window, open the console: Google's sign-in comes up at once, a personal Gmail is refused, and a maneman.in account without 2-Step Verification cannot finish signing in.
 
+Staging, 15 October 2026: Google Workspace is `ops-staging.maneman.in`'s only login method, and Google takes its client, for `maneman.in` accounts. Instant Auth is not on yet, so the login page still shows the Google button rather than going straight to Google.
+
 ## 4. Database
 
 ```sh
@@ -652,7 +654,7 @@ The board's Routes, from each column's head: a map of each technician's day and 
 Cloudflare can add two scripts to a page at its edge, where no local run sees them:
 
 - **Web Analytics' beacon,** from `static.cloudflareinsights.com`, which it added to every host of the zone (`docs/open-points-settled.md`, item 144).
-- **JavaScript detections,** an inline script that loads `/cdn-cgi/challenge-platform/`, different with every request, so no hash could allow it (ADR 0023, section 2; item 111). Turnstile's own check, on the forms that ask for it, loads from `challenges.cloudflare.com` under the same path, and is allowed.
+- **JavaScript detections,** an inline script that loads `/cdn-cgi/challenge-platform/`, different with every request, so no hash could allow it (ADR 0023, section 2; item 111). On the public site it would now run: every page's policy carries a nonce of its request's own, which Cloudflare puts on the script ([ADR 0206](decisions/0206-trusted-types-and-a-nonce-per-page.md)). The apps' policies carry none, so it stays off. Turnstile's own check, on the forms that ask for it, loads from `challenges.cloudflare.com` under the same path, and is allowed.
 
 **If either comes back,** the staging deploy's last step fails: `npm run smoke:csp -- --environment staging` opens every host's pages in Chromium and fails on any refusal. The production release runs the same check on production's pages after mm-site is deployed, and every visitor's browser reports a refusal to mm-api, which logs it as `csp_refused`. Switch it off again as above. JavaScript detections have no dashboard switch on the free plan: `PUT /zones/<zone>/bot_management` with `{"enable_js": false}`, from a token with Bot Management · Edit on the zone.
 

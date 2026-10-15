@@ -20,7 +20,8 @@ import { Failed, Loading } from "../states/States.tsx";
 import { keptArrival, keptClosed } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
 import frame from "../components/frame.module.css";
-import styles from "./steps.module.css";
+import shared from "./steps.module.css";
+import styles from "./close-out.module.css";
 
 /** Five angles before and five after: the ten the board counts. */
 const IN_A_SET = 5;
@@ -42,9 +43,9 @@ const linkState = (link: NonNullable<Job["payment_link"]>): string =>
 
 function Row({ name, value }: { name: string; value: string }) {
   return (
-    <div className={styles.row}>
-      <dt className={styles.rowKey}>{name}</dt>
-      <dd className={styles.rowValue}>{value}</dd>
+    <div className={shared.row}>
+      <dt className={shared.rowKey}>{name}</dt>
+      <dd className={shared.rowValue}>{value}</dd>
     </div>
   );
 }
@@ -65,7 +66,7 @@ function Evidence({ job }: { job: Job }) {
   const distance = job.progress.distance_m ?? measured;
   return (
     <>
-      <dl className={styles.rows}>
+      <dl className={shared.rows}>
         {checkedIn !== null && <Row name={copy.noShow.checkedIn} value={clock(checkedIn)} />}
         <Row name={copy.noShow.distance} value={distance === null ? copy.noShow.unmeasured : metres(distance)} />
         <Row name={copy.noShow.whatsApp} value={receiptOf(job)} />
@@ -121,16 +122,16 @@ export function CloseOut({ id }: { id: string }) {
 
   return (
     <main className={frame.screen}>
-      <section className={styles.close}>
-        <p className={capsLook(styles.closeLabel)}>{copy.label}</p>
-        <Icon className={styles.closeTick} d={ICONS.tick} size="xl" weight="heavy" />
-        <h1 className={styles.closeWho} ref={heading} tabIndex={-1}>
+      <section className={shared.close}>
+        <p className={capsLook(shared.closeLabel)}>{copy.label}</p>
+        <Icon className={shared.closeTick} d={ICONS.tick} size="xl" weight="heavy" />
+        <h1 className={shared.closeWho} ref={heading} tabIndex={-1}>
           {copy.who(who, closedAs(job, outcome, waiting.events))}
         </h1>
         {outcome === "no_show" ? (
           <Evidence job={job} />
         ) : (
-          <dl className={styles.rows}>
+          <dl className={shared.rows}>
             {took !== null && <Row name={copy.duration} value={copy.length(took.hours, took.minutes)} />}
             <Row name={copy.photos} value={queuedFrames > 0 ? copy.queued(queuedFrames) : copy.sent(sets * IN_A_SET)} />
             {/* A card the phone kept from before one visits names neither. */}

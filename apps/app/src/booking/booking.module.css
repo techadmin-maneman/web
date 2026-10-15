@@ -118,18 +118,6 @@
   margin-top: var(--sp-12);
 }
 
-/* A visit's price, where a window's note sits: the ex-GST figure, and the inclusive one muted beneath it. */
-.serviceMoney {
-  flex-shrink: 0;
-  text-align: right;
-}
-
-/* The line ops wrote for a service, under its name: a row that carries one grows to hold it. */
-
-.serviceCard {
-  padding-block: var(--sp-12);
-}
-
 .serviceLine,
 .serviceTime {
   display: block;
@@ -331,31 +319,6 @@
   margin: var(--sp-16) auto 0;
 }
 
-/*
- * A discount code at the pay step (docs/decisions/0108-discount-codes.md), which no board draws: quiet until it is
- * asked for, as the move sheet's way to the cancel sheet is, then a box and its button on one line.
- */
-.code {
-  margin-top: var(--sp-12);
-}
-
-.codeApplied {
-  margin: 0;
-  font-size: var(--fs-15);
-}
-
-.codeRow {
-  display: flex;
-  gap: var(--sp-8);
-  margin-top: var(--sp-8);
-}
-
-.codeInput {
-  flex: 1;
-  min-width: 0;
-  text-transform: uppercase;
-}
-
 .sheet .moneyNote {
   margin-top: var(--sp-16);
   font-size: var(--fs-14);
@@ -382,11 +345,6 @@
   margin-bottom: var(--sp-16);
   font-size: var(--fs-14);
   color: var(--text-muted);
-}
-
-.failed {
-  padding-left: var(--sp-16);
-  border-left: var(--rule-strong) solid var(--error-on-paper);
 }
 
 .outcome {
@@ -416,33 +374,6 @@
   margin-top: 0;
 }
 
-/* The hair system the consultation recommended, named beneath its name in the chooser. */
-.recommended {
-  display: block;
-  margin-top: var(--sp-4);
-  font-size: var(--fs-13);
-  color: var(--brass-text);
-}
-
-.confirmed {
-  margin: calc(-1 * var(--sp-24)) calc(-1 * var(--sp-20)) calc(-1 * var(--sp-24));
-  padding: var(--sp-24) var(--sp-20);
-  background: var(--ink);
-  color: var(--paper);
-  --focus-colour: var(--paper);
-}
-
-.confirmedLabel {
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
-}
-
-.confirmedTick {
-  display: block;
-  margin-top: var(--sp-16);
-  color: var(--gilt);
-}
-
 .sheet .confirmedTitle {
   margin-top: var(--sp-16);
   font-family: var(--font-serif);
@@ -465,27 +396,4 @@
   border-top: var(--hairline) solid var(--ink-rule);
   font-size: var(--fs-15);
   color: var(--ink-soft);
-}
-
-.paidAmount {
-  font-variant-numeric: tabular-nums;
-  color: var(--paper);
-}
-
-.note,
-.done {
-  justify-content: center;
-  width: 100%;
-}
-
-.confirmedCalendar {
-  margin-top: var(--sp-24);
-}
-
-.note {
-  margin-top: var(--sp-24);
-}
-
-.done {
-  margin-top: var(--sp-8);
 }

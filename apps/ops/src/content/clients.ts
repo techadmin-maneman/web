@@ -117,7 +117,7 @@ export const clients = {
     address: "Visits go to",
     noAddress: "No address yet.",
     access: "Access",
-    // The address a client gave ops on the phone, which no board draws (docs/decisions/0092-task-owners.md).
+    // The address a client gave ops on the phone, which no board draws.
     landmark: "Landmark",
     givenToOps: "Given on the phone",
     /** "To priya@maneman.in, 28 Sep 2026". */
@@ -428,10 +428,10 @@ export const clients = {
     /** What a late change or a no-show's charge kept of the payment: "Rs. 1,234 kept, cancelled late". */
     kept: (amount: string, why: string) => `${amount} kept, ${why}`,
     keptFor: { cancelled: "cancelled late", moved: "moved late", no_show: "not home" },
-    // A discount code on a payment, which no board draws (docs/decisions/0108-discount-codes.md).
+    // A discount code on a payment, which no board draws.
     /** "Code AUDTEST, Rs. 100 off", beneath what the payment was for. */
     code: (applied: string) => `Code ${applied}`,
-    /** A payment refunded by ops, with why: one made twice (docs/decisions/0192-free-remakes.md). */
+    /** A payment refunded by ops, with why: one made twice. */
     refundOpen: "Refund",
     refundLabel: (amount: string) => `Refund ${amount} of this payment`,
     refundReason: "Why",

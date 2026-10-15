@@ -1,0 +1,11 @@
+/* What ./BuildingSearch.tsx alone draws; what it shares is in ./profile.module.css. */
+
+/* The building search (docs/decisions/0054-address-capture.md). The list sits
+   in the flow rather than floating over the fields below it: at 390 px an
+   overlay covers the flat number, and a list that pushes the form down is
+   easier to reach by touch and by screen reader. */
+.searchField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}

@@ -1,0 +1,126 @@
+/* What ./Tray.tsx alone draws; what it shares is in ./dispatch.module.css. */
+
+.tray {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--ops-tray);
+  overflow-y: auto;
+  border-left: var(--hairline) solid var(--text);
+  background: var(--paper-light);
+}
+
+/* Nothing waiting: a rail, its title running down it. */
+.trayRail {
+  width: var(--sp-40);
+}
+
+.trayRail .trayHead {
+  flex-direction: column;
+  align-items: center;
+  padding: var(--sp-12) 0;
+  border-bottom: 0;
+  writing-mode: vertical-rl;
+}
+
+.trayHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-8);
+  padding: var(--sp-12) var(--sp-16);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+.trayTitle {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+.count {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trayList {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The board draws no control on a tray job; the job is the control that places it. */
+.trayJob {
+  display: block;
+  width: 100%;
+  padding: var(--sp-12) var(--sp-16);
+  border: 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-13);
+  color: var(--text);
+  text-align: left;
+  cursor: grab;
+}
+
+.trayTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-8);
+}
+
+.trayType {
+  letter-spacing: var(--tracking-12);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.trayLine,
+.trayOffered,
+.trayWas {
+  display: block;
+  line-height: var(--lh-145);
+  color: var(--text-muted);
+}
+
+/*
+ * An offered window the client did not ask for, lettered in oxblood as the board draws it, and a job left on a
+ * technician who was switched off, which needs someone as much.
+ */
+.trayOffered,
+.trayWas {
+  color: var(--status-warning);
+}
+
+.trayTop + .trayLine {
+  margin-top: var(--sp-4);
+}
+
+.trayJob:hover {
+  background: var(--paper-shade);
+}
+
+.trayJob:focus-visible {
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-inset);
+}
+
+@media (max-width: 1023px) {
+  .tray,
+  .trayRail {
+    width: auto;
+    overflow-y: visible;
+    border-top: var(--hairline) solid var(--text);
+    border-left: 0;
+  }
+
+  .trayRail .trayHead {
+    flex-direction: row;
+    padding: var(--sp-12) var(--sp-16);
+    writing-mode: horizontal-tb;
+  }
+}

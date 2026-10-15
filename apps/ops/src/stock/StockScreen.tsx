@@ -6,6 +6,7 @@
 import { Panel } from "@maneman/ui/Panel";
 import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { Suspense, useState } from "react";
@@ -149,15 +150,15 @@ function OnHand({ stock }: { stock: Stock }) {
     : stock.places;
   if (stock.consumables.length === 0) {
     return (
-      <p className={form.note}>
+      <Note>
         {copy.none} <ToSettings />
-      </p>
+      </Note>
     );
   }
   return (
     <div className={styles.scroll}>
       {many && <PlacePicker stock={stock} place={beside} onPlace={setPicked} />}
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             <th scope="col">{copy.consumable}</th>
@@ -212,12 +213,12 @@ function Movements({ stock }: { stock: Stock }) {
   return (
     <Panel titleId="stock-movements" title={words.title}>
       {stock.movements.length === 0 ? (
-        <p className={form.note}>{words.none}</p>
+        <Note>{words.none}</Note>
       ) : (
         <>
           <Narrowing view={view} label={words.narrow} />
           <div className={styles.scroll}>
-            <Table className={form.table}>
+            <Table controls>
               <thead>
                 <tr>
                   <SortHeads view={view} />

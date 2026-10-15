@@ -5,7 +5,7 @@ import { Button } from "@maneman/ui/Button";
 import { Checkbox, DateInput, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { activity } from "../content/activity.ts";
-import styles from "./activity.module.css";
+import styles from "./narrow.module.css";
 import { ACTIONS, ACTOR_KINDS, type Filters } from "./filters.ts";
 
 const copy = activity.filters;

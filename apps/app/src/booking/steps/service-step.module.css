@@ -1,0 +1,21 @@
+/* What ./ServiceStep.tsx alone draws; what it shares is in ../booking.module.css. */
+
+/* A visit's price, where a window's note sits: the ex-GST figure, and the inclusive one muted beneath it. */
+.serviceMoney {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* The line ops wrote for a service, under its name: a row that carries one grows to hold it. */
+
+.serviceCard {
+  padding-block: var(--sp-12);
+}
+
+/* The hair system the consultation recommended, named beneath its name in the chooser. */
+.recommended {
+  display: block;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-13);
+  color: var(--brass-text);
+}

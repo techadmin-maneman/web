@@ -1,0 +1,8 @@
+/* What ./CloseOut.tsx alone draws; what it shares is in ./steps.module.css. */
+
+.closeNote {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-17);
+  line-height: var(--lh-160);
+  color: var(--ink-soft);
+}

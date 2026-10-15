@@ -19,7 +19,7 @@ import { ALERT_WORDS } from "../config/alert-words.ts";
  * day, once it is reached. Every call is counted, free SKU or not: the free
  * ones are free only while the session token does its work, and a ceiling that
  * assumed that would be no ceiling at all
- * (docs/decisions/0054-address-capture.md).
+ *.
  */
 async function withinGeocodeCeiling(c: Context<AppEnv>, now: Date): Promise<boolean> {
   return withinCeiling(c.env.DB, c.var.deps.alert, "geocode", { now, settings: c.var.config.settings });

@@ -1,0 +1,38 @@
+/* What ./CardFrame.tsx alone draws; what it shares is in ./job.module.css. */ /*
+ * The job card, and the evidence chain beneath it. The screen
+ * is the phone's height: the head at the top, the one action fixed at the
+ * foot, and the card scrolling between them.
+ */
+
+.back {
+  --icon-button-size: var(--tech-min);
+
+  margin-left: calc(-1 * var(--sp-12));
+  color: var(--paper);
+}
+.headWho {
+  min-width: 0;
+}
+.name {
+  margin: 0;
+  font-size: var(--fs-18);
+  font-weight: var(--weight-regular);
+  color: var(--paper);
+}
+.name:focus {
+  outline: none;
+}
+.when {
+  margin: 0;
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+.badge {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-left: auto;
+}
+.body {
+  flex: 1;
+  overflow-y: auto;
+}

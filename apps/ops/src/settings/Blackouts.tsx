@@ -6,6 +6,7 @@ import { CheckLine, CheckWarning } from "../components/CheckPanel.tsx";
 import { Field, DateInput, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { buttonLook } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { addDays, longDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -99,7 +100,7 @@ function DraftBoxes(props: {
         {(control) => (
           <DateInput
             {...control}
-            className={form.date}
+            width="date"
             min={today}
             value={draft.from}
             onChange={(event) => {
@@ -112,7 +113,7 @@ function DraftBoxes(props: {
         {(control) => (
           <DateInput
             {...control}
-            className={form.date}
+            width="date"
             min={draft.from === "" ? today : draft.from}
             value={draft.to}
             onChange={(event) => {
@@ -125,7 +126,7 @@ function DraftBoxes(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.date}
+            width="date"
             value={draft.city}
             onChange={(event) => {
               onEdit("city", event.target.value);
@@ -144,7 +145,7 @@ function DraftBoxes(props: {
         {(control) => (
           <TextInput
             {...control}
-            className={form.text}
+            width="area"
             maxLength={60}
             value={draft.reason}
             onChange={(event) => {
@@ -239,7 +240,7 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
       {period.booked > 0 && mayShow && (
         <FormActions>
           <OpsLink
-            className={buttonLook({ variant: "outline", size: "small", className: form.quiet })}
+            className={buttonLook({ variant: "outline", size: "small", narrow: true })}
             to={dispatchPath({ from: period.from })}
             label={copy.showLabel(words)}
           >
@@ -279,10 +280,10 @@ export function Blackouts() {
   const periods = periodsOf(changed ?? loaded.value.blackouts);
 
   return (
-    <Panel titleId="blackouts" title={copy.title} className={form.panel}>
+    <Panel titleId="blackouts" title={copy.title} padded>
       {mayAdd && <AddForm today={loaded.value.today} cities={loaded.value.cities} onAdded={setChanged} />}
       {periods.length === 0 ? (
-        <p className={form.note}>{copy.none}</p>
+        <Note>{copy.none}</Note>
       ) : (
         <ul className={form.rules}>
           {periods.map((period) => (

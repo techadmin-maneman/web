@@ -84,13 +84,15 @@ Each environment's database may hold 10 GB on Workers Paid (ADR 0112). Past it e
 
 **What already lets go.** The hourly `retention` job deletes, a few hundred rows a run (`src/policy/retention.ts`): the audit log after two years, messages we sent after two years unless a no-show or a move holds one as evidence, resolved alerts and Razorpay's event IDs after a year, strangers' closed chats after a year, dormant people who never became clients after a year, and the counters after three days.
 
+**What already moves out.** The hourly `chat_archive` job moves the messages of clients' Care threads closed and quiet for a year into the backups bucket, one file a thread, read back where the thread is shown ([ADR 0207](../decisions/0207-closed-chats-archived.md)). `SELECT COUNT(*), SUM(archived_messages) FROM conversations WHERE archive_key IS NOT NULL` says how many threads, and how many messages, it has moved.
+
 **What only grows.** Clients' records and the history of their money stay as long as the client does: visits, payments, `credit_ledger`, `stock_movements`, `job_events` (each technician step, read again for the visit's record), `chat_messages`, `task_spans` and `stored_objects` (a row for each object in R2). Never delete them by hand to make room: the audit log and the credit ledger refuse it by trigger, and the rest are records someone will ask for.
 
 **The plan, by mark.**
 
 - **At 50%**, run `table-sizes.ts` and tell the developers which tables lead. If it is the audit log or the messages, the retention job is behind: check `cron_job:retention` has not been failing.
 - **At 80%**, the owner decides between these, in this order. Each is a few days' work, built when it is chosen; neither runs today.
-  1. **Archive closed rows to R2.** `job_events` of visits closed over a year ago, and `chat_messages` of threads closed over a year ago, written to the backups bucket as the weekly backup writes its files, encrypted, then deleted from D1 by a cron job, a few thousand a run; the pages that show them read the archive for anything that old.
+  1. **Archive closed rows to R2.** Built for Care threads (ADR 0207), which the `chat_archive` job already moves. `job_events` would follow the same way, once each visit carries the outcome, start time and checklist now read from those rows (ADR 0207, Context).
   2. **Move the high-volume append-only tables to a second D1 database.** A second database (`maneman-prod-history`), bound as `HISTORY_DB` and checked like the first by `scripts/ci/check-wrangler-config.ts`; for each table moved, its module reads and writes through the new binding, the rows are copied over with `wrangler d1 export --table` and imported, and the old table is dropped in a later contract migration (docs/migrations.md). `job_events`, `outbound_messages` and `chat_messages` move first: nothing joins them to a booking or a payment in the same statement.
 - **At 95%**, the console and bookings are days from stopping: archive first, as it frees the most for the least change.
 

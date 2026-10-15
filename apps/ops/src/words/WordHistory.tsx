@@ -3,6 +3,7 @@
 
 import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
@@ -11,7 +12,7 @@ import { words as copy } from "../content/words.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeOf } from "./WordForm.tsx";
 import form from "../components/forms.module.css";
-import styles from "./words.module.css";
+import styles from "./word-history.module.css";
 import { FormActions } from "../components/FormActions.tsx";
 import { wordsApi } from "./words-api.ts";
 
@@ -19,7 +20,7 @@ const versions = copy.versions;
 
 function UseButton({ label, onUse }: { label: string; onUse: () => void }) {
   return (
-    <RowButton className={form.inline} aria-label={label} onClick={onUse}>
+    <RowButton beside aria-label={label} onClick={onUse}>
       {versions.use}
     </RowButton>
   );
@@ -40,7 +41,7 @@ export function WordHistory(props: {
   return (
     <section className={form.group} aria-label={versions.title(placeOf(word))}>
       <h3 className={form.ruleTitle}>{versions.title(placeOf(word))}</h3>
-      {kept.length === 0 && <p className={form.note}>{versions.none}</p>}
+      {kept.length === 0 && <Note>{versions.none}</Note>}
       <ol className={styles.versions}>
         {kept.map((version) => {
           const day = shortDate(indiaDate(version.set_at));
@@ -76,7 +77,7 @@ export function WordHistory(props: {
         )}
       </ol>
       <FormActions>
-        <Button variant="outline" size="small" className={form.quiet} onClick={props.onClose}>
+        <Button variant="outline" size="small" narrow onClick={props.onClose}>
           {versions.close}
         </Button>
       </FormActions>

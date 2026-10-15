@@ -4,6 +4,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -15,7 +16,8 @@ import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
-import styles from "./clients.module.css";
+import shared from "./clients.module.css";
+import styles from "./client-list.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 import { clientsApi } from "./clients-api.ts";
 
@@ -108,10 +110,10 @@ function nextVisitOf(client: Listed["clients"][number]): string {
 }
 
 function Rows({ listed }: { listed: Listed }) {
-  if (listed.clients.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (listed.clients.length === 0) return <Note>{copy.none}</Note>;
   return (
     <div className={styles.listScroll}>
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             <th scope="col">{copy.name}</th>
@@ -160,7 +162,7 @@ export function ClientList() {
   const page = later && trail.length === 0 ? null : trail.length + 1;
   return (
     <section className={styles.list} aria-labelledby="all-clients">
-      <h2 className={styles.foundTitle} id="all-clients">
+      <h2 className={shared.foundTitle} id="all-clients">
         {copy.title}
       </h2>
       {loaded.state === "loading" && <Loading />}

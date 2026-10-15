@@ -76,7 +76,7 @@ export const tasks = {
     replacement_order: "Replacement order",
     stock_at_risk: "Stock at risk",
     at_risk_client: "At-risk client",
-    // A group the board does not draw (docs/decisions/0074-hand-offs-and-messages.md).
+    // A group the board does not draw.
     partial_visit: "Partly done visit",
     referral_review: "Referral review",
     no_show_decision: "No-show decision",
@@ -149,7 +149,7 @@ export const tasks = {
     consultation_request: (day: string, when: string) => `Asked for ${day}, ${when}`,
     /**
      * "+ consultation and fit in one visit", after the day and window asked for: book it from the row,
-     * paid for once the client is fitted (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
+     * paid for once the client is fitted.
      */
     withOneVisit: "+ consultation and fit together",
     /**
@@ -159,7 +159,7 @@ export const tasks = {
     withCode: (code: string) => `, code ${code}`,
     /**
      * "+ first fit, afternoon", after the consultation asked for: the site's form asked for the fit
-     * too, which the client books and pays for in the app once the consultation is done (ADR 0086).
+     * too, which the client books and pays for in the app once the consultation is done.
      */
     withFirstFit: (when: string | null) => (when === null ? "+ first fit" : `+ first fit, ${when.toLowerCase()}`),
     /**
@@ -219,7 +219,7 @@ export const tasks = {
     /**
      * "Mane Man Natural, Rs. 12,345; link sent": a one visit's client was fitted and has not paid. A
      * link not sent yet is asked of Razorpay again by the cron; one Razorpay refused, or closed unpaid, is sent again
-     * from the row or from Razorpay's dashboard (ADR 0105).
+     * from the row or from Razorpay's dashboard.
      */
     payment_owed: (product: string, amount: string, link: LinkState) =>
       `${product}, ${amount} · ${PAYMENT_LINK_STATES[link]}`,
@@ -230,7 +230,7 @@ export const tasks = {
     unknown: "Held for review",
   },
   /**
-   * Whose each task is (docs/decisions/0092-task-owners.md). The board writes each owner in ops by their first name,
+   * Whose each task is. The board writes each owner in ops by their first name,
    * "Priya", in its own column; our words: it draws no way to take a task, give it to someone or hand it back.
    */
   owner: {
@@ -257,7 +257,7 @@ export const tasks = {
   },
   /**
    * A visit left partly done closed without a follow-up, with why
-   * (docs/decisions/0092-task-owners.md).
+   *.
    */
   close: {
     open: "Close without follow-up",

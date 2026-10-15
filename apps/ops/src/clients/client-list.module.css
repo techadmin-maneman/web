@@ -1,0 +1,31 @@
+/* What ./ClientList.tsx alone draws; what it shares is in ./clients.module.css. */
+/* Every client, beneath the search: how they are narrowed, the table, and its pages. */
+.list {
+  margin-top: var(--sp-32);
+  max-width: var(--ops-list);
+}
+
+/* A visit left partly done that ops closed without a follow-up, beneath its state. */
+
+.listNarrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-16);
+  margin: var(--sp-12) 0 var(--sp-16);
+}
+
+.listScroll {
+  overflow-x: auto;
+}
+
+.listPages {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  margin-top: var(--sp-16);
+}
+
+.listPage {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}

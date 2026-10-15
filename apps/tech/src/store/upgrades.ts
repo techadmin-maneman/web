@@ -141,7 +141,7 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       at.continue();
     };
   },
-  // Version 4: a card carries why a client may not go ahead after a consultation (docs/decisions/0149-lost-reasons.md).
+  // Version 4: a card carries why a client may not go ahead after a consultation.
   // One kept before has none to offer, so its consultation closes without asking why.
   (_db, upgrade) => {
     const cursor = upgrade.objectStore("cards").openCursor();

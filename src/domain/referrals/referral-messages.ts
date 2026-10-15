@@ -66,7 +66,7 @@ export async function composeFriendFitted(
 /**
  * The friend's message: the invite's credits are theirs, and until when, a client's invite or a partner's
  * (docs/decisions/0123-partner-referral-channels.md). It does not name the referrer, whose
- * name the invite itself shows only with their consent (ADR 0048). Sent with the friend's consent to WhatsApp
+ * name the invite itself shows only with their consent. Sent with the friend's consent to WhatsApp
  * about visits, which the landing's consultation line records; the credits are service visits.
  */
 export async function composeFriendCredited(

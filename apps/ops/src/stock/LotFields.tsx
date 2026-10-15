@@ -70,7 +70,7 @@ export function LotFields({
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={draft.lotId}
             onChange={(event) => {
               onEdit("lotId")(event.target.value);

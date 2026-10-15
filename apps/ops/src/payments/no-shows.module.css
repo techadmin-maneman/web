@@ -247,15 +247,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/*
- * A fact that was never measured, in the ink the panel keeps for something
- * wrong: ops are about to rule on evidence that has a hole in it, and the row
- * must not be read past as though it held a figure.
- */
-.unmeasured {
-  color: var(--status-warning);
-}
-
 /* A case closed before the booked start's wait had run: it argues for the client, in the ink kept for that. */
 .closedEarly {
   margin: var(--sp-12) 0 0;
@@ -271,37 +262,4 @@
 
 .error {
   margin: var(--sp-12) 0 0;
-}
-
-/* ---- A disputed charge, the Payments page's second card, one a row of its queue */
-
-.disputeLabel {
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.disputeTitle {
-  margin: var(--sp-16) 0 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-22);
-  line-height: var(--lh-115);
-}
-
-/* The client's own words, as they wrote them. */
-.disputeWords {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-}
-
-/* A distance over the radius in force: the one fact that argues for the client, in oxblood, as the board draws it. */
-.over {
-  color: var(--status-warning);
-}
-
-.disputeName {
-  color: inherit;
-  text-decoration: underline;
 }

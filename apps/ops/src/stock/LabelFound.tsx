@@ -2,6 +2,7 @@
 // where it is now, and every change to it, oldest first.
 
 import type { Success } from "@maneman/web-kit/api";
+import { Note } from "@maneman/ui/Note";
 import { ScanField } from "@maneman/ui/ScanField";
 import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -11,7 +12,7 @@ import { stockLabels as copy } from "../content/stock-labels.ts";
 import form from "../components/forms.module.css";
 import { recordedBy } from "../lib/who.ts";
 import { placeName } from "./StockForm.tsx";
-import styles from "./labels.module.css";
+import styles from "./label-found.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { stockApi } from "./stock-api.ts";
 
@@ -34,12 +35,12 @@ function Found(props: {
   const { unit, named, place, state, by } = props;
   return (
     <div className={styles.found} role="status">
-      <p className={form.note}>
+      <Note>
         <strong>{unit.code}</strong> · {named(unit.consumable_code)}
         {unit.lot_code !== null && ` · ${unit.lot_code}`}
         {unit.expires_on !== null && ` · ${copy.expires(fullDate(unit.expires_on))}`}
-      </p>
-      <p className={form.note}>{copy.where(state(unit.state), place(unit.place_id))}</p>
+      </Note>
+      <Note>{copy.where(state(unit.state), place(unit.place_id))}</Note>
       <ul className={styles.history} aria-label={copy.history}>
         {unit.history.map((line, index) => (
           <li key={`${line.at}-${String(index)}`}>

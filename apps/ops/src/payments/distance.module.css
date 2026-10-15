@@ -1,0 +1,15 @@
+/* What ./Distance.tsx alone draws; what it shares is in ./no-shows.module.css. */
+
+/*
+ * A fact that was never measured, in the ink the panel keeps for something
+ * wrong: ops are about to rule on evidence that has a hole in it, and the row
+ * must not be read past as though it held a figure.
+ */
+.unmeasured {
+  color: var(--status-warning);
+}
+
+/* A distance over the radius in force: the one fact that argues for the client, in oxblood, as the board draws it. */
+.over {
+  color: var(--status-warning);
+}

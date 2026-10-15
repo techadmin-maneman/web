@@ -7,25 +7,26 @@ import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { states, whatsapp } from "../content.ts";
 import { titled } from "../lib/arrival.ts";
 import { useScreenTitle } from "@maneman/ui/useScreenTitle";
-import styles from "./states.module.css";
+import shared from "./states.module.css";
+import styles from "./load-failed.module.css";
 
 export function LoadFailed({ booked, onRetry }: { booked: boolean; onRetry: () => void }) {
   const copy = states.error;
   useScreenTitle(titled(copy.title));
   return (
-    <main className={styles.failed}>
+    <main className={shared.failed}>
       <div role="alert">
-        <h1 className={styles.title}>{copy.title}</h1>
+        <h1 className={shared.title}>{copy.title}</h1>
         {booked && <p className={styles.booked}>{copy.booked}</p>}
       </div>
-      <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.retry} onClick={onRetry}>
+      <div className={shared.actions}>
+        <Button variant="primary" size="small" className={shared.retry} onClick={onRetry}>
           {copy.retry}
         </Button>
         <ButtonLink
           variant="outline"
           size="small"
-          className={styles.message}
+          className={shared.message}
           href={whatsappChat(whatsapp.number)}
           rel="noopener"
         >

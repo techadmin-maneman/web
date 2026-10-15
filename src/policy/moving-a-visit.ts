@@ -21,7 +21,7 @@ export const noticeAt = (windowStarts: Date, now: Date, noticeHours: number = FR
 /**
  * The time a client's own move or cancel counts its notice from: the visit's time before ops moved it,
  * so the client keeps the free change they had, unless the visit now starts later, which gives them more
- * (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+ *.
  */
 export const noticeCountsFrom = (start: Date, startBeforeMove: Date | null): Date =>
   startBeforeMove !== null && startBeforeMove.getTime() > start.getTime() ? startBeforeMove : start;
@@ -65,7 +65,7 @@ export const chargesFor = (type: VisitType): readonly Charge[] =>
   LATE_FEES[type] === undefined ? ["nothing", "visit"] : CHARGES;
 
 /**
- * The terms a booking is sold under, kept on its hold as it is made (docs/decisions/0088-every-policy-in-the-console.md):
+ * The terms a booking is sold under, kept on its hold as it is made:
  * the notice, what its kind costs inside it, and what it costs if the client is not home (src/policy/no-show.ts).
  */
 export interface SoldTerms {

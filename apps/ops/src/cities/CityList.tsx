@@ -30,7 +30,7 @@ export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => v
   const changing = doing.kind === "change" ? cities.cities.find((city) => city.name === doing.name) : undefined;
   return (
     <Panel titleId="cities" title={copy.panel} count={cities.cities.length}>
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             {copy.columns.map((column) => (
@@ -50,7 +50,7 @@ export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => v
               <td>
                 {mayChange && (
                   <RowButton
-                    className={form.inline}
+                    beside
                     aria-label={copy.changeLabel(city.name)}
                     onClick={() => {
                       setSaid(null);

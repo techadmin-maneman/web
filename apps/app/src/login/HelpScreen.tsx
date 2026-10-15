@@ -8,16 +8,17 @@ import { ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { BOOKING_URL, login, whatsapp } from "../content.ts";
-import styles from "./login.module.css";
+import shared from "./login.module.css";
+import styles from "./help-screen.module.css";
 
 export function HelpScreen({ onBack }: { onBack: () => void }) {
   const copy = login.help;
   return (
-    <main className={styles.screen}>
-      <div className={styles.top}>
-        <IconButton className={styles.back} d={ICONS.back} size="md" label={copy.back} onClick={onBack} />
+    <main className={shared.screen}>
+      <div className={shared.top}>
+        <IconButton className={shared.back} d={ICONS.back} size="md" label={copy.back} onClick={onBack} />
       </div>
-      <div className={styles.body}>
+      <div className={shared.body}>
         <h1 className={styles.helpTitle}>{copy.title}</h1>
         <p className={styles.helpBody}>{copy.body}</p>
         <p className={styles.helpBox}>{copy.hint}</p>
@@ -25,7 +26,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
           <ButtonLink
             variant="light"
             size="action"
-            className={styles.primary}
+            className={shared.primary}
             href={BOOKING_URL[import.meta.env.MM_ENV]}
           >
             {copy.book}
@@ -33,7 +34,7 @@ export function HelpScreen({ onBack }: { onBack: () => void }) {
           <ButtonLink
             variant="outlineOnInk"
             size="action"
-            className={styles.secondary}
+            className={shared.secondary}
             href={whatsappChat(whatsapp.number)}
             rel="noopener"
           >

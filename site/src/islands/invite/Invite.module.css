@@ -1,24 +1,4 @@
-/*
- * The referral landing, and /book, which is the same page without
- * the invite. On a phone it is one column: who sent it, the card, the headline and offer, the prices, the pincode
- * block, the form, then how it works, so the one field a friend must fill is above the fold. From 1024 px it is
- * the desktop design: the prices, the pincode block and the form on the left, the card and how it works on the right.
- *
- * Fields and checkboxes are edged in --paper-control and the pincode field in --ink-line-strong, 3:1 against their
- * ground (WCAG 1.4.11), where the boards draw 1.3:1 and 1.75:1 (ADR 0022).
- */
-
-.inner {
-  max-width: var(--page-max);
-  margin: 0 auto;
-  padding-inline: var(--gutter);
-}
-
 /* ---- The page, one column on a phone ------------------------------------------ */
-
-.arrival {
-  padding-block: var(--landing-pad-top) var(--sp-28);
-}
 
 .grid {
   display: flex;
@@ -289,15 +269,6 @@
   color: var(--text-soft);
 }
 
-.windows {
-  display: grid;
-  gap: var(--sp-8);
-}
-
-.window {
-  min-height: var(--btn-lg);
-}
-
 .windowLabel {
   font-size: var(--fs-16);
 }
@@ -366,10 +337,6 @@
   margin-top: var(--sp-8);
 }
 
-.submit {
-  width: 100%;
-}
-
 .hint {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
@@ -394,110 +361,9 @@
   margin: 0;
 }
 
-/* ---- The confirmations ------------------------------------------------ */
-
-.done {
-  max-width: calc(var(--measure-column) + 2 * var(--gutter));
-  padding: var(--landing-pad-top) var(--gutter) var(--sp-48);
-}
-
-/* Booked: the ink block. */
-.doneBlock {
-  padding: var(--sp-24) var(--sp-20);
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.doneBlockLabel {
-  margin-bottom: var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
-}
-
-.doneBlock svg {
-  display: block;
-  color: var(--gilt);
-}
-
-.doneBlockTitle {
-  margin: var(--sp-16) 0 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-28);
-  line-height: var(--lh-115);
-  text-wrap: balance;
-}
-
-.doneBlockBody {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-}
-
-/* On the list, and the invite that has expired: the paper frames. */
-.doneFrame {
-  padding: var(--sp-24) var(--sp-20);
-  border: var(--hairline) solid var(--paper-line);
-}
-
-.doneLabel {
-  margin-bottom: var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.frameTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-26);
-  line-height: var(--lh-115);
-}
-
-.frameBody {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-}
-
-.doneAfter {
-  margin-top: var(--sp-20);
-  display: grid;
-  gap: var(--sp-20);
-}
-
-.doneNote {
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
-.doneActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-12);
-}
-
-/* Add to your calendar: its label over Google and the .ics file. */
-.calendar {
-  display: grid;
-  gap: var(--sp-12);
-}
-
-.calendarLabel {
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
 /* ---- Desktop: prices, pincode and form left; card and how it works right ---- */
 
 @media (min-width: 1024px) {
-  .arrival {
-    padding-bottom: var(--landing-pad-top);
-  }
-
   .grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -576,12 +442,4 @@
   .form {
     margin-top: var(--sp-36);
   }
-}
-
-/* Beneath a form's agreement: the terms and privacy notice that apply, each a link (fields.tsx). */
-.legal {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
 }

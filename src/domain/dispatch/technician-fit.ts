@@ -8,8 +8,8 @@ import type { LiveJob } from "./dispatch-landing.ts";
 
 /**
  * Why a technician may not take the visit; null where they may. Its own technician always may. Another must work in
- * the visit's city, where that is known (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md), and be
- * trained to fit for a first fit (docs/decisions/0119-blackouts-by-city-and-trained-fitters.md).
+ * the visit's city, where that is known, and be
+ * trained to fit for a first fit.
  */
 export async function whyNotThem(
   db: D1Database,

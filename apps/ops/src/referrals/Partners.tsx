@@ -5,10 +5,10 @@
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { TextLink } from "@maneman/ui/TextLink";
 import { Button, RowButton } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees } from "@maneman/web-kit/money";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -73,7 +73,7 @@ function PauseCheck({ partner, onDone, onBack }: { partner: Partner; onDone: Row
 function QrButton({ partner }: { partner: Partner }) {
   return (
     <RowButton
-      className={form.inline}
+      beside
       aria-label={copy.qrLabel(partner.name)}
       onClick={() => {
         saveFile(copy.qrName(partner.code), partnerQr(`${SITE.origin}/r/${partner.code}`), "image/svg+xml");
@@ -95,7 +95,7 @@ function PartnerActions({ partner, acting, onAct }: { partner: Partner } & Pick<
   return actions.map(([kind, words, label]) => (
     <RowButton
       key={kind}
-      className={form.inline}
+      beside
       aria-label={label}
       disabled={acting !== null}
       onClick={() => {
@@ -169,7 +169,7 @@ function PartnerTable(row: RowProps) {
   const figures = [heads.commission, heads.opens, heads.referred, heads.fitted, heads.earned, heads.owed];
   return (
     <div className={styles.scroll}>
-      <Table className={classes(form.table, styles.table)}>
+      <Table controls className={styles.table}>
         <thead>
           <tr>
             <th scope="col">{heads.name}</th>
@@ -220,14 +220,14 @@ export function Partners() {
     <Panel
       titleId="partners"
       title={copy.title}
-      className={form.panel}
+      padded
       actions={
         mayChange &&
         !adding && (
           <Button
             variant="outline"
             size="small"
-            className={form.quiet}
+            narrow
             onClick={() => {
               act(null);
               setAdding(true);
@@ -256,7 +256,7 @@ export function Partners() {
         </InlineMessage>
       )}
       {list.channels.length === 0 ? (
-        <p className={form.note}>{copy.none}</p>
+        <Note>{copy.none}</Note>
       ) : (
         <PartnerTable list={list} mayChange={mayChange} acting={acting} onAct={act} onDone={done} />
       )}

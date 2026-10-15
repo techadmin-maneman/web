@@ -8,6 +8,7 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -39,10 +40,10 @@ function Enforcement({ staff, onChanged }: PanelProps) {
   const on = staff.enforced.on;
   const { set_by: setBy, set_at: setAt } = staff.enforced;
   return (
-    <Panel titleId="staff-enforcement" title={words.title} className={form.panel}>
-      <p className={form.note}>{on ? words.on : words.off}</p>
-      {setBy !== null && setAt !== null && <p className={form.note}>{words.setBy(whoWords(setBy), longDate(setAt))}</p>}
-      {!staff.may_run_access && <p className={form.note}>{words.onlyNational}</p>}
+    <Panel titleId="staff-enforcement" title={words.title} padded>
+      <Note>{on ? words.on : words.off}</Note>
+      {setBy !== null && setAt !== null && <Note>{words.setBy(whoWords(setBy), longDate(setAt))}</Note>}
+      {!staff.may_run_access && <Note>{words.onlyNational}</Note>}
       {staff.may_run_access && (
         <ActionCheck
           key={String(on)}
@@ -82,8 +83,8 @@ function People({ staff, onChanged }: PanelProps) {
   };
 
   return (
-    <Panel titleId="staff-people" title={copy.title} className={form.panel}>
-      <Table className={form.table}>
+    <Panel titleId="staff-people" title={copy.title} padded>
+      <Table controls>
         <thead>
           <tr>
             <th scope="col">{copy.columns.person}</th>
@@ -113,7 +114,7 @@ function People({ staff, onChanged }: PanelProps) {
                   <Button
                     variant="outline"
                     size="small"
-                    className={form.quiet}
+                    narrow
                     aria-label={copy.changeLabel(each.email)}
                     onClick={() => {
                       open(each.email);
@@ -132,7 +133,7 @@ function People({ staff, onChanged }: PanelProps) {
           <Button
             variant="outline"
             size="small"
-            className={form.quiet}
+            narrow
             onClick={() => {
               open("new");
             }}
@@ -244,7 +245,7 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
           {(control) => (
             <TextInput
               {...control}
-              className={form.text}
+              width="area"
               autoComplete="off"
               maxLength={100}
               value={clientId}
@@ -259,7 +260,7 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
           {(control) => (
             <TextInput
               {...control}
-              className={form.text}
+              width="area"
               maxLength={60}
               value={label}
               onChange={(event) => {
@@ -277,9 +278,9 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
 function ServiceTokens({ staff, onChanged }: PanelProps) {
   const words = copy.tokens;
   return (
-    <Panel titleId="staff-tokens" title={words.title} className={form.panel}>
+    <Panel titleId="staff-tokens" title={words.title} padded>
       {staff.service_tokens.length === 0 ? (
-        <p className={form.note}>{words.none}</p>
+        <Note>{words.none}</Note>
       ) : (
         <ul className={form.rules}>
           {staff.service_tokens.map((token) => (
@@ -287,7 +288,7 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
           ))}
         </ul>
       )}
-      {staff.may_run_access ? <TokenForm onChanged={onChanged} /> : <p className={form.note}>{words.onlyNational}</p>}
+      {staff.may_run_access ? <TokenForm onChanged={onChanged} /> : <Note>{words.onlyNational}</Note>}
     </Panel>
   );
 }

@@ -5,7 +5,8 @@ import { TextLink } from "@maneman/ui/TextLink";
 import { consentCopy, tryOn, type Notice } from "../../content/site.ts";
 import { useState } from "preact/hooks";
 import { Title, type HeadingRef } from "./Title.tsx";
-import styles from "./TryOn.module.css";
+import shared from "./TryOn.module.css";
+import styles from "./consent.module.css";
 
 /** Before we begin: how the photograph is used, as the photo notice says, and the agreement to it. */
 export function Consent(props: {
@@ -43,7 +44,7 @@ export function Consent(props: {
       <Button
         variant="light"
         size="action"
-        className={styles.next}
+        className={shared.next}
         aria-disabled={!consent}
         onClick={() => {
           if (consent) props.onAgree();

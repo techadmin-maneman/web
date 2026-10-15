@@ -3,6 +3,7 @@
 // the API names as the earliest, and is kept for good, so the list of changes only grows.
 
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate, shortDate } from "@maneman/web-kit/dates";
@@ -40,9 +41,9 @@ function InForce({ times }: { times: SlotTimes }) {
   const since = times.in_force.applies_from === null ? null : shortDate(times.in_force.applies_from);
   return (
     <>
-      <p className={form.note}>
+      <Note>
         {copy.inForce} · {copy.since(since)}
-      </p>
+      </Note>
       <ul className={form.rules}>
         {WINDOWS.map((window) => (
           <li key={window} className={form.rule}>{`${copy.window[window]}: ${hours(window)}`}</li>
@@ -155,7 +156,7 @@ function ChangeForm({ times, said, onSet }: { times: SlotTimes; said: string | n
 
 /** Every change set, each from its day, by whom. */
 function Changes({ times }: { times: SlotTimes }) {
-  if (times.changes.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (times.changes.length === 0) return <Note>{copy.none}</Note>;
   return (
     <ul className={form.rules}>
       {times.changes.map((change) => (
@@ -175,7 +176,7 @@ export function WindowTimes() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const times = loaded.value;
   return (
-    <Panel titleId="window-times" title={copy.title} className={form.panel}>
+    <Panel titleId="window-times" title={copy.title} padded>
       <InForce times={times} />
       {access.mayCall("POST /api/slot-times") && (
         <ChangeForm

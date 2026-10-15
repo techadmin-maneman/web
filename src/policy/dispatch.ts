@@ -54,7 +54,7 @@ export const keepsTheClientsNotice = (reason: MoveReason): boolean => reason !==
 
 /**
  * Whether a move ops make must be asked of the client rather than made
- * (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md): one to another day that the client did not
+ *: one to another day that the client did not
  * ask for. Within the visit's own day the board moves at once.
  */
 export const asksTheClient = (move: { reason: MoveReason; sameDay: boolean }): boolean =>

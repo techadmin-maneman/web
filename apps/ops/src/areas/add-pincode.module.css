@@ -1,0 +1,16 @@
+/* What ./AddPincode.tsx alone draws; what it shares is in ./areas.module.css. */
+
+.box {
+  display: block;
+  width: 100%;
+  max-width: var(--ops-area);
+  height: var(--tap);
+  margin-top: var(--sp-8);
+  padding: 0 var(--sp-8);
+  border: var(--hairline) solid var(--paper-control);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-15);
+}

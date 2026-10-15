@@ -5,6 +5,7 @@ import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Note } from "@maneman/ui/Note";
 import { useState } from "react";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -37,7 +38,7 @@ function RuleForm(props: { city: string; rule: CityRuleName; now: number | null;
         {(control) => (
           <NumberInput
             {...control}
-            className={form.figureBox}
+            width="figure"
             value={figure}
             onChange={(event) => {
               setFigure(event.target.value);
@@ -93,7 +94,7 @@ export function CityRules({ cities, onSaved }: { cities: Cities; onSaved: () => 
   };
   return (
     <Panel titleId="city-rules" title={copy.panel}>
-      <p className={form.note}>{copy.note}</p>
+      <Note>{copy.note}</Note>
       <Field label={copy.city} className={form.field}>
         {(control) => (
           <Select

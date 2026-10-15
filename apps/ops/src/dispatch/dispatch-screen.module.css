@@ -1,0 +1,48 @@
+/* What ./DispatchScreen.tsx alone draws; what it shares is in ./dispatch.module.css. */ /*
+ * The dispatch board: the week's board, the reason a move carries, and the
+ * drawer a block opens. The board is 13 px type on 34 px of line, as the
+ * console's opening note asks, and gold is kept for the navigation's selection,
+ * so the one primary action here is on ink.
+ *
+ * A first fit is a block on ink, a replacement a shaded one, and a consultation
+ * or a service visit sits on light paper, each sized by the slots it takes.
+ *
+ * The grid scrolls under its header row and its technicians' column, which stay
+ * put, and a day never narrows past --local-day: on a narrow window, or
+ * at 200% zoom, the grid scrolls sideways and the tray goes beneath it.
+ */
+
+.area {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.area:focus {
+  outline: none;
+}
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+@media (max-width: 1023px) {
+  .area {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .main {
+    flex: none;
+  }
+
+  .scroll {
+    flex: none;
+    max-height: var(--ops-scroll-max-h);
+  }
+}

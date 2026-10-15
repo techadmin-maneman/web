@@ -1,8 +1,9 @@
 // An erased person's files deleted from R2 (./erasure.ts): their try-ons, their visits' photographs, the copies kept
-// of their invoices and receipts, and their referral card, each before the row that names it; and, by the cron, what
-// a failed run left.
+// of their invoices and receipts, their archived Care threads and their referral card, each before the row that names
+// it; and, by the cron, what a failed run left.
 
 import type { Logger } from "../../log.ts";
+import { deleteArchivedChats } from "../care/chat-archive.ts";
 import { deleteCounted, deleteUnder } from "../platform/storage-meter.ts";
 import { copyKey, keptLookKey } from "../try-on/kept-try-ons.ts";
 import { documentsOf } from "../clients/client-documents.ts";
@@ -10,12 +11,12 @@ import { documentsOf } from "../clients/client-documents.ts";
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;
 /**
- * Most erased people whose files one cron run finishes. Each costs about fifteen calls to D1 and R2 and one list for
+ * Most erased people whose files one cron run finishes. Each costs about eighteen calls to D1 and R2 and one list for
  * each of their visits, and a run shares Cloudflare's 1,000 such calls an invocation with every other cron job: five
  * clients of five years' monthly visits come to under 400.
  */
 const LEFT_FILES_PER_RUN = 5;
-export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS" | "REFERRAL_CARDS">;
+export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS" | "REFERRAL_CARDS" | "BACKUPS">;
 /**
  * An erased person's files: their try-on photographs, results, small copies and kept looks, their visit
  * photographs (docs/decisions/0049-dpdp.md) and their referral card. Each is
@@ -27,6 +28,7 @@ export async function deleteErasedFiles(env: ErasureEnv, personId: string, now: 
   await deleteVisitPhotos(env, personId);
   // Books keeps its own for the tax record.
   await deleteUnder(env.DB, env.CLIENT_PHOTOS, [documentsOf(personId)]);
+  await deleteArchivedChats(env.DB, env.BACKUPS, personId);
   await deleteReferralCard(env, personId);
   await env.DB.prepare("UPDATE people SET files_erased_at = ?2 WHERE id = ?1").bind(personId, now.toISOString()).run();
 }

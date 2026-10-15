@@ -1,0 +1,6 @@
+/* What ./Consumables.tsx alone draws; what it shares is in ./steps.module.css. */
+
+/* A stepper's minus and plus: the shared IconButton, at the stepper's square. */
+.step {
+  --icon-button-size: var(--tech-stepper);
+}

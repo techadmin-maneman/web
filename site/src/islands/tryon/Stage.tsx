@@ -4,7 +4,8 @@ import { Fieldset } from "@maneman/ui/Field";
 import { stageOptions, tryOn } from "../../content/site.ts";
 import { StageDrawing } from "../Drawings.tsx";
 import { Title, type HeadingRef } from "./Title.tsx";
-import styles from "./TryOn.module.css";
+import shared from "./TryOn.module.css";
+import styles from "./stage.module.css";
 
 /** Step two: where the hair loss is. */
 export function Stage(props: {
@@ -16,7 +17,7 @@ export function Stage(props: {
   return (
     <div class={styles.medium}>
       <Title heading={props.heading}>{tryOn.stage.title}</Title>
-      <p class={styles.body}>{tryOn.stage.body}</p>
+      <p class={shared.body}>{tryOn.stage.body}</p>
       <Fieldset legend={tryOn.stage.title} legendLook="hidden" className={styles.stageGrid}>
         {stageOptions.map((option, index) => (
           <ChoiceCard
@@ -40,7 +41,7 @@ export function Stage(props: {
           </ChoiceCard>
         ))}
       </Fieldset>
-      <Button variant="light" size="action" className={`${styles.next} ${styles.nextSpaced}`} onClick={props.onDone}>
+      <Button variant="light" size="action" className={`${shared.next} ${shared.nextSpaced}`} onClick={props.onDone}>
         {tryOn.stage.continue}
       </Button>
     </div>

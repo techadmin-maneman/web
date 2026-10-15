@@ -1,0 +1,38 @@
+/* What ./History.tsx alone draws; what it shares is in ./clients.module.css. */
+
+.history {
+  max-width: var(--ops-panel);
+  border: var(--hairline) solid var(--paper-line);
+  padding: var(--sp-24);
+}
+
+.historyList {
+  margin: 0;
+  border-top: var(--hairline) solid var(--text);
+}
+
+.historyRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-16);
+  min-height: var(--ops-row);
+  padding: var(--sp-8) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+  font-size: var(--fs-14);
+}
+
+.historyKey {
+  color: var(--text-muted);
+}
+
+.historyValue {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.historyActivity {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-14);
+}

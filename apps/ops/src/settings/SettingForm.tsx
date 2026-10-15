@@ -102,7 +102,7 @@ export function ActionCheck<T>(props: {
           <Button
             variant={props.primary === true ? "primary" : "outline"}
             size="small"
-            className={props.primary === true ? undefined : form.quiet}
+            narrow={props.primary !== true}
             aria-label={props.ariaLabel}
             onClick={steps.check}
           >
@@ -158,7 +158,7 @@ export function SettingForm(props: {
             {review.next}
           </Button>
           {props.onCancel !== null && (
-            <Button variant="outline" size="small" className={form.quiet} onClick={props.onCancel}>
+            <Button variant="outline" size="small" narrow onClick={props.onCancel}>
               {review.cancel}
             </Button>
           )}

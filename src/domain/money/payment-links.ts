@@ -100,7 +100,7 @@ const LINK_TRIES = 3;
  * The visit's link, or a new one for the product at its price on the visit's day, less the visit's discount code
  * before GST. What the code takes off is fixed in the batch that writes the link, which is written only while the code
  * is still the one read. A code that leaves nothing to pay settles the visit instead, with no link and nothing owed,
- * and the client told on WhatsApp (docs/decisions/0108-discount-codes.md).
+ * and the client told on WhatsApp.
  */
 async function linkFor(db: D1Database, visit: FittedVisit, now: Date): Promise<LinkFor> {
   const current = () =>

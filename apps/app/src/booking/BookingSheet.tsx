@@ -62,7 +62,7 @@ interface Props {
   moving?: MoveTerms;
   /** The strip's first day, where it should not start from the first day open. */
   from?: string;
-  /** The day and window the visit is offered on (ADR 0086), chosen where they are free. */
+  /** The day and window the visit is offered on, chosen where they are free. */
   offer?: Offered;
   /** `changed`: money moved or a visit was booked, so Home is out of date. */
   onClose: (changed: boolean) => void;

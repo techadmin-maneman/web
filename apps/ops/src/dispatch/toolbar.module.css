@@ -1,0 +1,6 @@
+/* What ./Toolbar.tsx alone draws; what it shares is in ./dispatch.module.css. */
+
+.find {
+  flex: 1;
+  min-width: var(--ops-tray);
+}

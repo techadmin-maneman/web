@@ -169,9 +169,21 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     erasure: { blanks: ["note"], why: "Care's words about them go; that a matter went to their city stays." },
   },
   conversations: {
-    leftOut: ["id", "person_id", "mobile_e164", "state", "opened_at", "last_inbound_at", "closed_by", "updated_at"],
+    leftOut: [
+      "id",
+      "person_id",
+      "mobile_e164",
+      "state",
+      "opened_at",
+      "last_inbound_at",
+      "closed_by",
+      "updated_at",
+      "archive_key",
+      "archived_messages",
+      "archived_through",
+    ],
     whyLeftOut:
-      "Our keys and their own number; how the thread stands for the team and who closed it. What was said is in their chats.",
+      "Our keys and their own number; how the thread stands for the team and who closed it; where a quiet thread's messages are kept. What was said is in their chats, the archived messages with the rest.",
     erasure: {
       blanks: ["mobile_e164"],
       why: "The words of every message go, and the thread's number becomes nobody's; that a thread was kept stays.",

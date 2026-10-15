@@ -106,7 +106,7 @@ export interface CodeBooking {
 
 /**
  * Why a code does not apply to a booking; null when it does. Whoever entered it is told only that it does not apply
- * (docs/decisions/0108-discount-codes.md); the reason is logged. A visit's code moves with it, but a move takes no
+ *; the reason is logged. A visit's code moves with it, but a move takes no
  * code of its own: neither its late fee nor the visit a late move books.
  */
 export type CodeRefusal = "switched_off" | "expired" | "not_covered" | "used_up" | "used_by_client" | "credit" | "move";
@@ -130,7 +130,7 @@ export const creditComesFirst = (type: VisitType, creditsHeld: number): boolean 
   takesCredit(type, null) && creditsHeld > 0;
 
 /**
- * How often a code may be checked (docs/decisions/0108-discount-codes.md): a client's number ten times a day, and
+ * How often a code may be checked: a client's number ten times a day, and
  * one address thirty times an hour, every check counted, so a code cannot be found by guessing.
  */
 export const CODE_CHECKS = { perNumberDaily: 10, perAddressHourly: 30 } as const;

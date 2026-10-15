@@ -285,6 +285,9 @@ export interface Rows {
     readonly created_at: string;
     readonly updated_at: string;
     readonly close_reason: string | null;
+    readonly archive_key: string | null;
+    readonly archived_messages: number;
+    readonly archived_through: string | null;
   };
   readonly count_lines: {
     readonly task_id: string;

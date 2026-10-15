@@ -3,14 +3,3 @@
 .scroll {
   overflow-x: auto;
 }
-
-.forecast {
-  min-width: var(--ops-table-min);
-}
-
-/* The high case, beneath each period's expected use. */
-.high {
-  display: block;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}

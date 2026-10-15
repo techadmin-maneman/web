@@ -18,7 +18,7 @@ import { ENVIRONMENT } from "../../lib/build.ts";
 import { longDay } from "../../lib/dates.ts";
 import { fill } from "../../lib/text.ts";
 import { Icon } from "@maneman/ui/Icon";
-import styles from "./Invite.module.css";
+import styles from "./done.module.css";
 import type { Booking, Listing } from "./outcomes.ts";
 
 type HeadingRef = { current: HTMLHeadingElement | null };

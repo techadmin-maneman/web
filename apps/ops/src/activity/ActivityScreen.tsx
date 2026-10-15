@@ -16,7 +16,7 @@ import { OpsLink } from "../components/Shell.tsx";
 import { activity } from "../content/activity.ts";
 import { activityPath, clientPath, dispatchPath, technicianPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "./activity.module.css";
+import styles from "./activity-screen.module.css";
 import { askedOf, filtersOf, type Filters } from "./filters.ts";
 import { Narrow } from "./Narrow.tsx";
 import { activityApi } from "./activity-api.ts";

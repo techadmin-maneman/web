@@ -65,7 +65,7 @@ export function CityMatter({ conversationId }: { readonly conversationId: string
         <Button
           variant="outline"
           size="small"
-          className={form.quiet}
+          narrow
           onClick={() => {
             setOpen(true);
           }}

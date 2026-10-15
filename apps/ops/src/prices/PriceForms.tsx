@@ -11,7 +11,7 @@ import { useState } from "react";
 import { type Price } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import form from "../components/forms.module.css";
-import styles from "./prices.module.css";
+import styles from "./price-forms.module.css";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import { Refusal } from "../components/Refusal.tsx";
 
@@ -88,7 +88,7 @@ function PriceBoxes(props: {
         {(control) => (
           <NumberInput
             {...control}
-            className={form.amountBox}
+            width="amount"
             inputMode="numeric"
             step={1}
             min={0}
@@ -105,7 +105,7 @@ function PriceBoxes(props: {
           <div className={form.fieldRow}>
             <NumberInput
               {...control}
-              className={form.figureBox}
+              width="figure"
               inputMode="numeric"
               step={1}
               min={0}
@@ -128,7 +128,7 @@ function PriceBoxes(props: {
         {(control) => (
           <DateInput
             {...control}
-            className={form.dateBox}
+            width="date"
             min={firstDay}
             value={typed.from}
             onChange={(event) => {

@@ -16,7 +16,7 @@
 //   added to APPROVED_NOTICES.
 // - The legal pages carry `approved` too: the production build stops until
 //   counsel has signed their wording off.
-// - The site gives no prices (docs/decisions/0103-the-home-pages-first-copy-round.md),
+// - The site gives no prices,
 //   and the production build stops on a price typed into a sentence.
 //
 // Images are file names in design/assets; src/lib/images.ts resolves them.

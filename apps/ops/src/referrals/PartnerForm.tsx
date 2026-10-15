@@ -2,7 +2,7 @@
 // every setting does: its boxes, then what it is now beside what it will be, and only the second press sends it
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
-import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
+import { Field, NumberInput, TextInput, type BoxWidth } from "@maneman/ui/Field";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type Partner, type Partners, type PartnerTerms } from "../api.ts";
@@ -79,19 +79,13 @@ interface Box {
   readonly onValue: (value: string) => void;
 }
 
-function NumberBox({
-  label,
-  value,
-  onValue,
-  className,
-  box,
-}: Box & { readonly className: string | undefined; readonly box: string }) {
+function NumberBox({ label, value, onValue, width, box }: Box & { readonly width: BoxWidth; readonly box: string }) {
   return (
     <Field label={label} className={form.field} box={box}>
       {(control) => (
         <NumberInput
           {...control}
-          className={className}
+          width={width}
           inputMode="numeric"
           step={1}
           min={0}
@@ -112,7 +106,7 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
         {(control) => (
           <TextInput
             {...control}
-            className={form.areaBox}
+            width="area"
             maxLength={60}
             value={draft.name}
             onChange={(event) => {
@@ -125,7 +119,7 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
         label={formWords.friendVisits}
         box="friend_visits"
         value={draft.friendVisits}
-        className={form.figureBox}
+        width="figure"
         onValue={(friendVisits) => {
           edit({ friendVisits });
         }}
@@ -134,7 +128,7 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
         label={formWords.validDays}
         box="valid_days"
         value={draft.validDays}
-        className={form.figureBox}
+        width="figure"
         onValue={(validDays) => {
           edit({ validDays });
         }}
@@ -143,7 +137,7 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
         label={formWords.commission}
         box="commission"
         value={draft.commission}
-        className={form.amountBox}
+        width="amount"
         onValue={(commission) => {
           edit({ commission });
         }}
@@ -152,7 +146,7 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
         {(control) => (
           <TextInput
             {...control}
-            className={form.choiceBox}
+            width="choice"
             maxLength={40}
             value={draft.discountCode}
             onChange={(event) => {

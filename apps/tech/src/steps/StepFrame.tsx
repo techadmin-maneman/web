@@ -15,7 +15,8 @@ import { steps as copy } from "../content.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import frame from "../components/frame.module.css";
 import { classes } from "@maneman/ui/classes";
-import styles from "./steps.module.css";
+import shared from "./steps.module.css";
+import styles from "./step-frame.module.css";
 
 /** The slide's 300 ms and a little: a second tap of a gloved double tap lands inside it. */
 const SETTLE_MS = 350;
@@ -75,17 +76,17 @@ export function StepFrame({
   const settled = useSettled();
 
   return (
-    <main className={still ? frame.screen : styles.sliding}>
+    <main className={still ? frame.screen : shared.sliding}>
       <header className={classes(frame.head, styles.head)}>
         <IconButton
-          className={styles.back}
+          className={shared.back}
           d={ICONS.back}
           size="lg"
           weight="heavy"
           label={copy.back}
           onClick={onBack}
         />
-        <h1 className={styles.title} ref={heading} tabIndex={-1}>
+        <h1 className={shared.title} ref={heading} tabIndex={-1}>
           {title}
         </h1>
         {at !== undefined && of !== undefined && (

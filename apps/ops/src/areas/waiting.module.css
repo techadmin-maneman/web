@@ -1,0 +1,6 @@
+/* What ./Waiting.tsx alone draws; what it shares is in ./areas.module.css. */
+
+/* The table's search, flush with the table beneath. */
+.narrow {
+  margin-inline: 0;
+}

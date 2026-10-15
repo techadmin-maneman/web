@@ -1,0 +1,89 @@
+/* What ./Gate.tsx alone draws; what it shares is in ./TryOn.module.css. */
+
+.gate {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--split-min-mid)), 1fr));
+  gap: var(--flow-split-gap);
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  .gateImage {
+    order: 2;
+  }
+}
+.gateFrame {
+  width: 100%;
+  height: var(--gate-frame-h);
+  background: var(--ink-frame);
+  position: relative;
+  display: flex;
+}
+.gateLeft {
+  flex: 1;
+  border-right: var(--hairline) solid var(--gilt);
+}
+.gateRight {
+  flex: 1;
+  background: var(--ink-raised);
+  filter: blur(var(--gate-blur));
+}
+.gateFrameLabel {
+  position: absolute;
+  left: var(--sp-20);
+  right: calc(50% + var(--sp-20));
+  bottom: var(--sp-20);
+  font-size: var(--fs-15);
+  color: var(--ink-muted);
+}
+.gateCaption {
+  margin: var(--sp-20) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+  color: var(--ink-muted);
+  max-width: var(--measure-form);
+  text-wrap: pretty;
+}
+@media (max-width: 600px) {
+  .gateFrame {
+    display: none;
+  }
+  .gateCaption {
+    margin-top: 0;
+  }
+}
+.fields {
+  margin-top: var(--space-s);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  max-width: var(--measure-form);
+}
+.error {
+  margin-top: var(--sp-8);
+}
+.gateFailure {
+  margin-top: var(--sp-20);
+  max-width: var(--measure-form);
+}
+.codeHint {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--ink-muted);
+}
+.codeAgain {
+  margin-top: var(--sp-12);
+}
+.gateSubmit {
+  width: 100%;
+  max-width: var(--measure-form);
+  margin-top: var(--sp-24);
+}
+.reassurance {
+  margin-top: var(--sp-16);
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+  line-height: var(--lh-160);
+  max-width: var(--measure-form);
+}

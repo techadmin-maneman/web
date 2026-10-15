@@ -41,6 +41,31 @@
     text-align: right;
   }
 
+  /* Rows of controls (./Table.tsx's `controls`): the boxes and buttons in them make each row's height. */
+  .controls {
+    margin-top: var(--sp-8);
+  }
+
+  .controls th,
+  .controls td {
+    padding: 0 var(--sp-8);
+    vertical-align: middle;
+  }
+
+  .controls th:first-child,
+  .controls td:first-child {
+    padding-left: var(--sp-20);
+  }
+
+  .controls th:last-child,
+  .controls td:last-child {
+    padding-right: var(--sp-20);
+  }
+
+  .controls thead th {
+    white-space: nowrap;
+  }
+
   /* A column head that sorts: its name, in the head's own look, and the arrow of its order. */
   .sort {
     display: inline-flex;

@@ -17,7 +17,8 @@ import { useAccess } from "../lib/access.ts";
 import { dispatchPath } from "../route.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "./technicians.module.css";
+import shared from "./technicians.module.css";
+import styles from "./technician-leave.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { techniciansApi } from "./technicians-api.ts";
 
@@ -50,9 +51,9 @@ function StrandedJob({ job, technician }: { job: JobOnLeave; technician: Technic
 /** The jobs still booked on a period's days, behind the oxblood rule the console gives what needs doing. */
 function Stranded({ jobs, technician }: { jobs: readonly JobOnLeave[]; technician: TechnicianSummary }) {
   return (
-    <div className={styles.stranded}>
-      <p className={styles.strandedTitle}>{copy.stranded.title(jobs.length)}</p>
-      <ul className={styles.leaveList}>
+    <div className={shared.stranded}>
+      <p className={shared.strandedTitle}>{copy.stranded.title(jobs.length)}</p>
+      <ul className={shared.leaveList}>
         {jobs.map((job) => (
           <StrandedJob key={job.appointment_id} job={job} technician={technician} />
         ))}
@@ -91,14 +92,14 @@ function Period({
 
   return (
     <li className={styles.period}>
-      <div className={styles.leaveRow}>
+      <div className={shared.leaveRow}>
         <span className={styles.leavePeriod}>{period}</span>
         {leave.note !== null && <span className={styles.leaveNote}>{leave.note}</span>}
         {mayTakeBack && step === "listed" && (
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={shared.quiet}
             aria-label={copy.takeLabel(period, technician.name)}
             onClick={() => {
               setStep("checking");
@@ -121,7 +122,7 @@ function Period({
         />
       )}
       {leave.jobs.length > 0 && <Stranded jobs={leave.jobs} technician={technician} />}
-      {failed !== null && <Refusal className={styles.error} said={failed} />}
+      {failed !== null && <Refusal className={shared.error} said={failed} />}
     </li>
   );
 }
@@ -163,7 +164,7 @@ function LeaveForm({
 
   return (
     <form
-      className={styles.leaveForm}
+      className={shared.leaveForm}
       onSubmit={(event) => {
         event.preventDefault();
         void send();
@@ -209,15 +210,15 @@ function LeaveForm({
           />
         )}
       </Field>
-      <div className={styles.actions}>
-        <Button variant="primary" size="small" className={styles.save} type="submit" disabled={sending}>
+      <div className={shared.actions}>
+        <Button variant="primary" size="small" className={shared.save} type="submit" disabled={sending}>
           {sending ? copy.saving : copy.save}
         </Button>
-        <Button variant="outline" size="small" className={styles.quiet} disabled={sending} onClick={onCancel}>
+        <Button variant="outline" size="small" className={shared.quiet} disabled={sending} onClick={onCancel}>
           {copy.cancel}
         </Button>
       </div>
-      {failed !== null && <Refusal className={styles.error} said={failed} />}
+      {failed !== null && <Refusal className={shared.error} said={failed} />}
     </form>
   );
 }
@@ -245,23 +246,23 @@ export function Leave({ technician }: { technician: TechnicianSummary }) {
       {leave.length === 0 ? (
         <EmptyState look="panel" line={copy.none} />
       ) : (
-        <ul className={styles.leaveList}>
+        <ul className={shared.leaveList}>
           {leave.map((period) => (
             <Period key={period.id} leave={period} technician={technician} onTakenBack={readAgain} />
           ))}
         </ul>
       )}
       {recorded && (
-        <p className={styles.notice} role="status">
+        <p className={shared.notice} role="status">
           {copy.recorded}
         </p>
       )}
       {!recording && mayRecord && (
-        <div className={styles.actions}>
+        <div className={shared.actions}>
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={shared.quiet}
             aria-label={copy.addLabel(technician.name)}
             onClick={() => {
               setRecorded(false);

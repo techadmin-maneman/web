@@ -4,7 +4,8 @@ import { Fieldset } from "@maneman/ui/Field";
 import { looks, tryOn } from "../../content/site.ts";
 import { lookLabel } from "./machine.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
-import styles from "./TryOn.module.css";
+import shared from "./TryOn.module.css";
+import styles from "./looks.module.css";
 
 /**
  * Step three: the six looks. Continue goes on to the gate, which asks where to send the look before it is made.
@@ -21,7 +22,7 @@ export function Looks(props: {
   return (
     <div>
       <Title heading={props.heading}>{tryOn.looks.title}</Title>
-      <p class={styles.body}>{tryOn.looks.body}</p>
+      <p class={shared.body}>{tryOn.looks.body}</p>
       <Fieldset legend={tryOn.looks.title} legendLook="hidden" className={styles.lookGrid}>
         {looks.map((option, index) => (
           <ChoiceCard
@@ -51,7 +52,7 @@ export function Looks(props: {
       <Button
         variant="light"
         size="action"
-        className={`${styles.next} ${styles.nextSpaced}`}
+        className={`${shared.next} ${shared.nextSpaced}`}
         aria-disabled={look < 0}
         onClick={props.onContinue}
       >

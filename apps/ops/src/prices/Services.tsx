@@ -32,7 +32,7 @@ import {
   type Action,
 } from "./service-actions.ts";
 import form from "../components/forms.module.css";
-import styles from "./prices.module.css";
+import styles from "./services.module.css";
 import { FormActions } from "../components/FormActions.tsx";
 import { type Opened, OpenAction, Outcome, ActionButton } from "./ServiceActions.tsx";
 import { pricesApi } from "./prices-api.ts";
@@ -80,7 +80,7 @@ function Strip(props: {
             {copy.toCome(priceWords(row), longDate(row.valid_from))}
             {opened.may("correct") && (
               <RowButton
-                className={form.inline}
+                beside
                 aria-label={copy.labels.correct(target.name, longDate(row.valid_from))}
                 disabled={busy}
                 onClick={() => {
@@ -92,7 +92,7 @@ function Strip(props: {
             )}
             {opened.may("takeBack") && (
               <RowButton
-                className={form.inline}
+                beside
                 aria-label={copy.labels.takeBack(target.name, longDate(row.valid_from))}
                 disabled={busy}
                 onClick={() => {
@@ -158,7 +158,7 @@ function PriceRow(props: {
         </td>
         <td className={styles.edit}>
           <RowButton
-            className={form.inline}
+            beside
             aria-label={copy.labels.edit(target.name)}
             aria-expanded={open}
             aria-controls={open ? stripId : undefined}
@@ -277,7 +277,7 @@ function KindSection({ kind, opened }: { kind: Kind; opened: Opened }) {
         {name}
       </h3>
       <div className={styles.scroll}>
-        <Table className={classes(form.table, styles.table)}>
+        <Table controls className={styles.table}>
           <caption>
             <VisuallyHidden>{name}</VisuallyHidden>
           </caption>
@@ -360,7 +360,7 @@ export function Services() {
   };
 
   return (
-    <Panel titleId="services" title={copy.title} className={form.panel}>
+    <Panel titleId="services" title={copy.title} padded>
       {current.kinds.map(({ kind }) => (
         <KindSection key={kind} kind={kind} opened={opened} />
       ))}

@@ -3,6 +3,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -17,7 +18,6 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { review } from "../content/common.ts";
 import { Refused, sentOf, useSteps } from "../settings/index.ts";
-import form from "../components/forms.module.css";
 import { pricesApi } from "./prices-api.ts";
 
 type Product = Success<paths["/api/standard-costs"]["get"]>["products"][number];
@@ -99,9 +99,9 @@ export function StandardCosts() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const shown = products ?? loaded.value.products;
   return (
-    <Panel titleId="standard-costs" title={copy.title} className={form.panel}>
-      <p className={form.note}>{copy.note}</p>
-      <Table className={form.table}>
+    <Panel titleId="standard-costs" title={copy.title} padded>
+      <Note>{copy.note}</Note>
+      <Table controls>
         <thead>
           <tr>
             <th scope="col">{copy.columns.product}</th>

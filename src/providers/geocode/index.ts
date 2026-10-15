@@ -62,7 +62,7 @@ export interface GeocodeProvider {
   /**
    * The chosen building's coordinate. Closes the autocomplete session first,
    * then geocodes the Place ID, because only the Geocoding API's coordinates
-   * may be kept (ADR 0054).
+   * may be kept.
    */
   resolve(placeId: string, sessionToken: string): Promise<ResolveResult>;
 }

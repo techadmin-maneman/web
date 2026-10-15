@@ -25,7 +25,7 @@ export type JobEventKind = (typeof JOB_EVENT_KINDS)[number];
 
 /**
  * "The piece: replacement jobs only." A first fit takes the step as well, since it fits the client's first piece
- * (docs/decisions/0038-offline-writes.md).
+ *.
  */
 const PIECE_STEP_TYPES = ["replacement", "first_fit"] as const;
 

@@ -1,0 +1,6 @@
+/* What ./ServiceActions.tsx alone draws; what it shares is in ./prices.module.css. */
+
+/* A row's actions and the add button: the table's own small buttons, side by side. */
+.action {
+  margin-left: 0;
+}

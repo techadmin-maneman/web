@@ -8,18 +8,25 @@ import styles from "./table.module.css";
 
 /**
  * `plain` keeps a table's meaning and none of the console's look, for a table that is a drawing of its own: the
- * dispatch board's week, or a sheet printed for a supplier.
+ * dispatch board's week, or a sheet printed for a supplier. `controls` is for rows that hold boxes and buttons, which
+ * make the row's height: its cells have no room above or below, and the first and last sit in from the panel's edge.
  */
 export function Table({
   className,
   plain = false,
+  controls = false,
   children,
 }: {
-  className?: string;
+  className?: string | undefined;
   plain?: boolean;
+  controls?: boolean;
   children: ReactNode;
 }) {
-  return <table className={classes(plain ? styles.plain : styles.table, className)}>{children}</table>;
+  return (
+    <table className={classes(plain ? styles.plain : styles.table, controls && styles.controls, className)}>
+      {children}
+    </table>
+  );
 }
 
 /** A column of figures, right aligned, as every board sets a count or an amount. */

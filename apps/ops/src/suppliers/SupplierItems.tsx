@@ -6,6 +6,7 @@ import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { inCurrency, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -48,7 +49,7 @@ function ItemEntry(props: { label: string; value: string; onChange: (text: strin
       {(control) => (
         <TextInput
           {...control}
-          className={form.figureBox}
+          width="figure"
           maxLength={12}
           value={props.value}
           onChange={(event) => {
@@ -78,7 +79,7 @@ function ItemBoxes(props: {
           {(control) => (
             <Select
               {...control}
-              className={form.choiceBox}
+              width="choice"
               value={draft.code}
               onChange={(event) => {
                 // A stock code already listed starts from what it holds; a new one from nothing.
@@ -196,7 +197,7 @@ function RemoveItem(props: {
   if (!asking) {
     return (
       <RowButton
-        className={form.inline}
+        beside
         aria-label={words.removeLabel(props.name)}
         onClick={() => {
           setAsking(true);
@@ -240,9 +241,9 @@ export function SupplierItems({
   return (
     <Panel titleId="supplier-items" title={words.title(supplier.name)}>
       {supplier.items.length === 0 ? (
-        <p className={form.note}>{words.none}</p>
+        <Note>{words.none}</Note>
       ) : (
-        <Table className={form.table}>
+        <Table controls>
           <thead>
             <tr>
               {words.columns.map((column) => (

@@ -99,7 +99,7 @@ const SURFACE_ROUTES: Readonly<Record<Surface, readonly ((app: App) => void)[]>>
     registerClientErrors,
     // What the site's pages' content security policy refused.
     registerCspReports,
-    // Webhooks sit on the public host (ADR 0026).
+    // Webhooks sit on the public host.
     registerEvolutionHook,
     registerMsg91Hook,
     registerRazorpayHook,

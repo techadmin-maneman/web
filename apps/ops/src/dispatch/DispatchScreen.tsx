@@ -11,7 +11,7 @@ import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { useAddressKeeps } from "./address.ts";
-import styles from "./dispatch.module.css";
+import styles from "./dispatch-screen.module.css";
 import { Grid, type InHand } from "./Grid.tsx";
 import { dispatchAsked } from "../route.ts";
 import { idOf, type Job } from "./job.ts";

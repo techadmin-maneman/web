@@ -27,13 +27,6 @@
   line-height: var(--lh-115);
 }
 
-/* Refer's credit tile, ruled above and below. */
-.credit {
-  padding: var(--sp-20) 0;
-  border-top: var(--hairline) solid var(--paper-line);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
 .creditLabel {
   font-size: var(--fs-16);
 }
@@ -42,12 +35,6 @@
   margin-top: var(--sp-4);
   font-size: var(--fs-14);
   color: var(--text-muted);
-}
-
-/* Where the credits of the invite the client came with stand, while they are not in the balance. */
-.inviteCredits {
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
 }
 
 /* The two ways on, at the foot of the screen. */
@@ -149,12 +136,6 @@
   font-size: var(--fs-15);
   line-height: var(--lh-160);
   color: var(--text-muted);
-}
-
-.shareSmall {
-  align-self: flex-start;
-  margin-top: var(--sp-8);
-  padding: 0 var(--sp-20);
 }
 
 .tracker > .quiet {
@@ -465,17 +446,8 @@ img.card {
   color: var(--text);
 }
 
-.bubblePreview {
-  background: var(--wa-preview);
-}
-
 .bubbleText {
   padding: var(--sp-8) var(--sp-12);
-}
-
-.bubbleTitle {
-  font-size: var(--fs-14);
-  line-height: var(--lh-130);
 }
 
 .bubble .bubbleLine,
@@ -500,12 +472,6 @@ img.card {
   overflow-wrap: anywhere;
 }
 
-.inkProblem {
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--error-on-ink);
-}
-
 .failed p + p {
   font-size: var(--fs-16);
   line-height: var(--lh-160);
@@ -523,16 +489,4 @@ img.card {
 
 .via .eyebrow {
   margin-bottom: var(--sp-16);
-}
-
-.ways {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
-}
-
-.way {
-  justify-content: flex-start;
-  gap: var(--sp-16);
-  width: 100%;
 }

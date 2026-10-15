@@ -19,16 +19,17 @@ import { ANGLES, PhotoRow, type OpenPhoto } from "./PhotoRow.tsx";
 import { PhotoSheet } from "./PhotoSheet.tsx";
 import { LINKS_FRESH_MS, type Relink, useRelink } from "./relink.ts";
 import { TryOnGroup } from "./TryOnGroup.tsx";
-import styles from "./photos.module.css";
+import shared from "./photos.module.css";
+import styles from "./photos-screen.module.css";
 
 /** Photos' loading: the row's five blocks, before anything has arrived. */
 function PhotosLoading() {
   return (
-    <div className={styles.timeline} role="status">
+    <div className={shared.timeline} role="status">
       <VisuallyHidden>{states.loading}</VisuallyHidden>
-      <div className={styles.row}>
+      <div className={shared.row}>
         {ANGLES.map((angle) => (
-          <div key={angle} className={styles.cell} />
+          <div key={angle} className={shared.cell} />
         ))}
       </div>
     </div>
@@ -36,7 +37,7 @@ function PhotosLoading() {
 }
 
 /**
- * Each visit's photographs, newest first, beneath the try-ons still kept (ADR 0082); before the first
+ * Each visit's photographs, newest first, beneath the try-ons still kept; before the first
  * fit, Photos' empty state, or its lines beneath a try-on.
  */
 function Timeline({
@@ -59,18 +60,18 @@ function Timeline({
   }
   return (
     <>
-      <div className={styles.timeline}>
+      <div className={shared.timeline}>
         {tryOns.map((tryOn) => (
           <TryOnGroup key={tryOn.id} tryOn={tryOn} onOpen={onOpen} relink={relink} />
         ))}
-        {visits.length > 0 && <p className={styles.basis}>{photos.basis}</p>}
+        {visits.length > 0 && <p className={shared.basis}>{photos.basis}</p>}
         {visits.map((visit) => (
           <section key={visit.visit_id} aria-labelledby={`visit-${visit.visit_id}`}>
-            <div className={styles.group}>
-              <h2 className={styles.groupDate} id={`visit-${visit.visit_id}`}>
+            <div className={shared.group}>
+              <h2 className={shared.groupDate} id={`visit-${visit.visit_id}`}>
                 {fullDate(visit.date)}
               </h2>
-              <p className={styles.groupWhat}>{visitName(visit.type)}</p>
+              <p className={shared.groupWhat}>{visitName(visit.type)}</p>
             </div>
             <PhotoRow set={visit.photos} date={visit.date} onOpen={onOpen} relink={relink} />
           </section>
@@ -88,7 +89,7 @@ export function PhotosScreen() {
   const visits = loaded.state === "loaded" ? loaded.value.visits : [];
   const compare =
     visits.length >= 2 ? (
-      <AppLink className={styles.compareLink} to="/photos/compare">
+      <AppLink className={shared.compareLink} to="/photos/compare">
         <span>{photos.compare}</span>
       </AppLink>
     ) : undefined;

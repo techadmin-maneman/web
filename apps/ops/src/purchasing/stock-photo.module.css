@@ -1,0 +1,10 @@
+/* What ./StockPhoto.tsx alone draws; what it shares is in ./purchasing.module.css. */
+
+/* A photograph of stock, once stored. */
+.photo {
+  --local-purchasing-photo: 160px; /* a photograph of stock, small enough to sit in a row's form */
+  display: block;
+  max-width: var(--local-purchasing-photo);
+  height: auto;
+  margin: var(--sp-8) 0;
+}

@@ -38,7 +38,7 @@ import {
   missingInvoice,
   refundIsLate,
 } from "./entry.ts";
-import styles from "./payments.module.css";
+import styles from "./entry-screen.module.css";
 
 type Missing = "invoice" | "invoiceAfterVisit" | "invoiceLate" | "receipt";
 

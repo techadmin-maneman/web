@@ -1,0 +1,6 @@
+/* What ./BookVisit.tsx alone draws; what it shares is in ../components/visit-dialog.module.css. */
+
+/* The link Razorpay texted, whole, so ops can read it out or send it again. */
+.link {
+  overflow-wrap: anywhere;
+}

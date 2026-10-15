@@ -17,7 +17,8 @@ import { CardPreview, type Shown } from "./CardPreview.tsx";
 import { rewardOf } from "./reward.ts";
 import { HOUSE, type ShareFlow, type Which } from "./share-flow.ts";
 import { withCard } from "./share.ts";
-import styles from "./refer.module.css";
+import referSheet from "./refer.module.css";
+import styles from "./share-steps.module.css";
 
 export const TITLE_ID = "share-title";
 
@@ -41,10 +42,10 @@ function Choice(props: { which: Which; chosen: boolean; shown: Shown; onChoose: 
   return (
     <ChoiceCard look="ticked" name="refer-card" checked={chosen} onChange={props.onChoose}>
       <CardPreview shown={props.shown} />
-      <span className={styles.choiceText}>
+      <span className={referSheet.choiceText}>
         <span>
-          <span className={styles.choiceName}>{refer.card[which].name}</span>
-          <span className={styles.choiceNote}>{refer.card[which].note}</span>
+          <span className={referSheet.choiceName}>{refer.card[which].name}</span>
+          <span className={referSheet.choiceNote}>{refer.card[which].note}</span>
         </span>
         <TickBox checked={chosen} />
       </span>
@@ -56,17 +57,17 @@ function Choice(props: { which: Which; chosen: boolean; shown: Shown; onChoose: 
 export function ChoiceStep({ flow, onClose }: StepProps) {
   const { which, made, pair } = flow;
   return (
-    <div className={styles.screen}>
-      <div className={styles.screenHead}>
-        <IconButton className={styles.back} d={ICONS.back} size="md" label={refer.close} onClick={onClose} />
-        <h2 className={styles.screenTitle} id={TITLE_ID}>
+    <div className={referSheet.screen}>
+      <div className={referSheet.screenHead}>
+        <IconButton className={referSheet.back} d={ICONS.back} size="md" label={refer.close} onClick={onClose} />
+        <h2 className={referSheet.screenTitle} id={TITLE_ID}>
           {refer.card.title}
         </h2>
       </div>
-      <div className={styles.screenBody}>
-        <p className={styles.lead}>{refer.card.what}</p>
-        {!flow.offerTheirOwn && <p className={styles.lead}>{refer.card.mineNotYet}</p>}
-        <div className={styles.choices} role="radiogroup" aria-labelledby={TITLE_ID}>
+      <div className={referSheet.screenBody}>
+        <p className={referSheet.lead}>{refer.card.what}</p>
+        {!flow.offerTheirOwn && <p className={referSheet.lead}>{refer.card.mineNotYet}</p>}
+        <div className={referSheet.choices} role="radiogroup" aria-labelledby={TITLE_ID}>
           {flow.offerTheirOwn && (
             <Choice
               which="mine"
@@ -88,11 +89,11 @@ export function ChoiceStep({ flow, onClose }: StepProps) {
             }}
           />
         </div>
-        <Problem line={flow.problem} className={styles.problem} />
+        <Problem line={flow.problem} className={referSheet.problem} />
         <Button
           variant="primary"
           size="action"
-          className={styles.primary}
+          className={referSheet.primary}
           disabled={flow.busy}
           onClick={flow.continueToShare}
         >
@@ -108,29 +109,29 @@ export function ConsentStep({ flow, onClose }: StepProps) {
   return (
     <>
       <SheetClose onClose={onClose}>{refer.close}</SheetClose>
-      <SheetPanel className={styles.sheet}>
-        <h2 className={styles.sheetTitle} id={TITLE_ID}>
+      <SheetPanel className={referSheet.sheet}>
+        <h2 className={referSheet.sheetTitle} id={TITLE_ID}>
           {refer.consent.title}
         </h2>
-        <ul className={styles.lines}>
+        <ul className={referSheet.lines}>
           {profile.referralCards.lines.map((line) => (
-            <li key={line} className={styles.line}>
-              <span className={styles.bullet} aria-hidden="true" />
+            <li key={line} className={referSheet.line}>
+              <span className={referSheet.bullet} aria-hidden="true" />
               <span>{line}</span>
             </li>
           ))}
         </ul>
-        <Problem line={flow.problem} className={styles.problem} />
+        <Problem line={flow.problem} className={referSheet.problem} />
         {flow.step === "composing" && (
-          <p className={styles.composing} role="status">
+          <p className={referSheet.composing} role="status">
             {refer.composing}
           </p>
         )}
-        <div className={styles.stack}>
+        <div className={referSheet.stack}>
           <Button
             variant="primary"
             size="action"
-            className={styles.primary}
+            className={referSheet.primary}
             disabled={flow.busy}
             onClick={() => void flow.makeTheirOwn(true)}
           >
@@ -139,7 +140,7 @@ export function ConsentStep({ flow, onClose }: StepProps) {
           <Button
             variant="outline"
             size="action"
-            className={styles.outline}
+            className={referSheet.outline}
             disabled={flow.busy}
             onClick={() => void flow.takeTheExample()}
           >
@@ -155,16 +156,16 @@ export function ConsentStep({ flow, onClose }: StepProps) {
 function Bubble({ state, card }: { state: Refer; card: Shown }) {
   const { me } = useSession();
   return (
-    <div className={styles.bubble}>
+    <div className={referSheet.bubble}>
       <div className={styles.bubblePreview}>
         <CardPreview shown={card} />
-        <div className={styles.bubbleText}>
+        <div className={referSheet.bubbleText}>
           <p className={styles.bubbleTitle}>{refer.preview.heading(state.named ? me.first_name : null)}</p>
-          <p className={styles.bubbleLine}>{refer.preview.body(rewardOf(me))}</p>
-          <p className={styles.bubbleDomain}>{refer.preview.domain}</p>
+          <p className={referSheet.bubbleLine}>{refer.preview.body(rewardOf(me))}</p>
+          <p className={referSheet.bubbleDomain}>{refer.preview.domain}</p>
         </div>
       </div>
-      <p className={styles.bubbleMessage}>{refer.preview.message(state.link)}</p>
+      <p className={referSheet.bubbleMessage}>{refer.preview.message(state.link)}</p>
     </div>
   );
 }
@@ -173,32 +174,32 @@ function Bubble({ state, card }: { state: Refer; card: Shown }) {
 export function ShareStep({ flow, onClose }: StepProps) {
   const { shareFailed, file, message } = flow;
   return (
-    <div className={classes(styles.screen, styles.inkScreen)}>
+    <div className={classes(referSheet.screen, referSheet.inkScreen)}>
       <SheetClose quiet onClose={onClose}>
         {refer.close}
       </SheetClose>
-      <div className={styles.screenBody}>
-        <h2 className={capsLook(styles.eyebrow)} id={TITLE_ID}>
+      <div className={referSheet.screenBody}>
+        <h2 className={capsLook(referSheet.eyebrow)} id={TITLE_ID}>
           {refer.preview.title}
         </h2>
         <Bubble state={flow.state} card={flow.card} />
         <Problem line={flow.problem} className={styles.inkProblem} />
         {shareFailed !== null && (
-          <div className={styles.failed} role="alert">
-            <p className={capsLook(styles.failedLabel)}>{refer.preview.failed.label}</p>
+          <div className={referSheet.failed} role="alert">
+            <p className={capsLook(referSheet.failedLabel)}>{refer.preview.failed.label}</p>
             <p>{refer.preview.failed.line}</p>
             <Button
               variant="outline"
               size="small"
-              className={styles.retry}
+              className={referSheet.retry}
               onClick={() => void flow.sharing(shareFailed)}
             >
               {refer.preview.failed.retry}
             </Button>
           </div>
         )}
-        <section className={styles.via} aria-labelledby="share-via">
-          <h3 className={capsLook(styles.eyebrow)} id="share-via">
+        <section className={referSheet.via} aria-labelledby="share-via">
+          <h3 className={capsLook(referSheet.eyebrow)} id="share-via">
             {refer.preview.via}
           </h3>
           <div className={styles.ways}>

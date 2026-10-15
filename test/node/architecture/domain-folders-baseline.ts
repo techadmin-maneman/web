@@ -85,6 +85,7 @@ export const FOLDER_EDGES: readonly string[] = [
   "ops -> platform",
   "platform -> sign-in",
   "privacy -> booking",
+  "privacy -> care",
   "privacy -> clients",
   "privacy -> field",
   "privacy -> messages",

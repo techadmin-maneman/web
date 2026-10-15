@@ -4,6 +4,7 @@
 
 import { replyBy, type CareHours } from "../../policy/care-hours.ts";
 import { AUTO_REPLY } from "./after-hours.ts";
+import { archivedMessages } from "./chat-archive.ts";
 import { giveCarePerson } from "./care-people.ts";
 import { read, readAll } from "../../lib/read-all.ts";
 
@@ -221,12 +222,20 @@ export interface Thread {
 /** How far back a thread reads, so a long-standing client's opens quickly. */
 const THREAD_ITEMS = 300;
 
-/** A thread with its chat and our automatic messages to the client, in order; null for one we do not have. */
-export async function conversationThread(db: D1Database, id: string, context: InboxContext): Promise<Thread | null> {
+/**
+ * A thread with its chat and our automatic messages to the client, in order; null for one we do not have. A thread
+ * quiet a year has its older messages in its archive file (./chat-archive.ts), read with the rows.
+ */
+export async function conversationThread(
+  db: D1Database,
+  archive: R2Bucket,
+  id: string,
+  context: InboxContext,
+): Promise<Thread | null> {
   const row = await db
     .prepare(
       `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, t.id AS technician_id,
-         t.name AS technician_name, c.last_message_at,
+         t.name AS technician_name, c.last_message_at, c.archive_key,
          c.last_inbound_at, NULL AS last_line,
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'
             AND m.author <> ?2) AS last_reply_at
@@ -235,13 +244,13 @@ export async function conversationThread(db: D1Database, id: string, context: In
        WHERE c.id = ?1`,
     )
     .bind(id, AUTO_REPLY)
-    .first<ListRow>();
+    .first<ListRow & { archive_key: string | null }>();
   if (row === null) return null;
   const { chat, auto } = await readAll(db, {
-    chat: read<ThreadItem>(
+    chat: read<ThreadItem & { id: string }>(
       db
         .prepare(
-          `SELECT direction AS kind, sent_at AS at, author, text, delivery FROM chat_messages WHERE conversation_id = ?1
+          `SELECT id, direction AS kind, sent_at AS at, author, text, delivery FROM chat_messages WHERE conversation_id = ?1
          ORDER BY sent_at DESC LIMIT ?2`,
         )
         .bind(id, THREAD_ITEMS),
@@ -256,6 +265,20 @@ export async function conversationThread(db: D1Database, id: string, context: In
         .bind(row.person_id, THREAD_ITEMS),
     ),
   });
-  const items = [...chat, ...auto].sort((one, other) => one.at.localeCompare(other.at)).slice(-THREAD_ITEMS);
-  return { conversation: rowOf({ ...row, last_line: null }, context), items };
+  const inD1 = new Set(chat.map((message) => message.id));
+  const archived: ThreadItem[] = (await archivedMessages(archive, row.archive_key))
+    .filter((message) => !inD1.has(message.id))
+    .map((message) => ({
+      kind: message.direction,
+      at: message.sent_at,
+      author: message.author,
+      text: message.text,
+      delivery: message.delivery,
+    }));
+  const said: ThreadItem[] = chat.map(({ id: _id, ...item }) => item);
+  const items = [...archived, ...said, ...auto]
+    .sort((one, other) => one.at.localeCompare(other.at))
+    .slice(-THREAD_ITEMS);
+  const { archive_key: _key, ...listed } = row;
+  return { conversation: rowOf({ ...listed, last_line: null }, context), items };
 }

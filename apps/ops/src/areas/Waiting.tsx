@@ -22,7 +22,8 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddPincode } from "./AddPincode.tsx";
-import styles from "./areas.module.css";
+import shared from "./areas.module.css";
+import styles from "./waiting.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { areasApi } from "./areas-api.ts";
@@ -86,31 +87,31 @@ function LaunchOne({ launching, today, launchOn, mayRename, onLaunchOn, onCancel
       onSend={onSend}
       onCancel={onCancel}
     >
-      <dl className={styles.figures}>
-        <div className={styles.figureRow}>
+      <dl className={shared.figures}>
+        <div className={shared.figureRow}>
           <dt>{copy.rows.waiting}</dt>
           <dd>{preview.waiting}</dd>
         </div>
-        <div className={styles.figureRow}>
+        <div className={shared.figureRow}>
           <dt>{copy.rows.alerts}</dt>
           <dd>{preview.alerts}</dd>
         </div>
-        <div className={styles.figureRow}>
+        <div className={shared.figureRow}>
           <dt>{copy.rows.referred}</dt>
           <dd>{area.referred}</dd>
         </div>
       </dl>
       {mayRename && (
-        <p className={styles.named}>
+        <p className={shared.named}>
           <OpsLink to={areasPath("served")}>{waitlist.rename}</OpsLink>
         </p>
       )}
       {!area.served && step !== "done" && (
-        <Field label={waitlist.date} className={styles.field}>
+        <Field label={waitlist.date} className={shared.field}>
           {(control) => (
             <DateInput
               {...control}
-              className={styles.launchDate}
+              className={shared.launchDate}
               max={today}
               value={launchOn}
               onChange={(event) => {
@@ -138,8 +139,8 @@ function AddPanel({
 }) {
   const panel = useFocusOnMount<HTMLElement>();
   return (
-    <section className={styles.launch} aria-labelledby="add" ref={panel} tabIndex={-1}>
-      <p className={capsLook(styles.launchLabel)} id="add">
+    <section className={shared.launch} aria-labelledby="add" ref={panel} tabIndex={-1}>
+      <p className={capsLook(shared.launchLabel)} id="add">
         {areas.add.label(area.pincode)}
       </p>
       <AddPincode pincode={area.pincode} cities={cities} onAdded={onAdded} onCancel={onCancel} />
@@ -156,7 +157,7 @@ function AddPanel({
 function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; onChoose: (() => void) | null }) {
   return (
     <tr>
-      <th scope="row" className={styles.pincode}>
+      <th scope="row" className={shared.pincode}>
         {onChoose === null ? (
           area.pincode
         ) : (
@@ -165,16 +166,16 @@ function AreaRow({ area, thisYear, onChoose }: { area: Area; thisYear: number; o
           </TextButton>
         )}
       </th>
-      <td className={styles.area}>
-        {isHeld(area) ? areaName(area) : <span className={styles.notHeld}>{waitlist.notHeld}</span>}
-        {area.served && <span className={capsLook(styles.live)}>{waitlist.live}</span>}
+      <td className={shared.area}>
+        {isHeld(area) ? areaName(area) : <span className={shared.notHeld}>{waitlist.notHeld}</span>}
+        {area.served && <span className={capsLook(shared.live)}>{waitlist.live}</span>}
       </td>
-      <td className={styles.count}>{area.waiting}</td>
-      <td className={styles.oldest}>
+      <td className={shared.count}>{area.waiting}</td>
+      <td className={shared.oldest}>
         {area.oldest === null ? waitlist.unknown : listDate(indiaDate(area.oldest), thisYear)}
       </td>
-      <td className={styles.referred}>{area.referred}</td>
-      <td className={styles.alerts}>{area.alerts}</td>
+      <td className={shared.referred}>{area.referred}</td>
+      <td className={shared.alerts}>{area.alerts}</td>
     </tr>
   );
 }
@@ -194,19 +195,19 @@ function Pincodes({
 }) {
   const [pin, name, waiting, oldest, referred, alerts] = waitlist.columns;
   const columns: readonly Column<Area>[] = [
-    { label: pin, sort: (row) => row.pincode, className: styles.pincode },
-    { label: name, sort: areaName, className: styles.area },
-    { label: waiting, sort: (row) => row.waiting, className: styles.count },
-    { label: oldest, sort: (row) => row.oldest ?? "", className: styles.oldest },
-    { label: referred, sort: (row) => row.referred, className: styles.referred },
-    { label: alerts, sort: (row) => row.alerts, className: styles.alerts },
+    { label: pin, sort: (row) => row.pincode, className: shared.pincode },
+    { label: name, sort: areaName, className: shared.area },
+    { label: waiting, sort: (row) => row.waiting, className: shared.count },
+    { label: oldest, sort: (row) => row.oldest ?? "", className: shared.oldest },
+    { label: referred, sort: (row) => row.referred, className: shared.referred },
+    { label: alerts, sort: (row) => row.alerts, className: shared.alerts },
   ];
   const view = useTableView(listed, columns, { search: (row) => `${row.pincode} ${areaName(row)}` });
   if (listed.length === 0) return <EmptyState look="panel" line={waitlist.empty} />;
   return (
-    <section className={styles.panel}>
+    <section className={shared.panel}>
       <Narrowing view={view} label={waitlist.narrow} className={styles.narrow} />
-      <Table className={styles.table}>
+      <Table className={shared.table}>
         <thead>
           <tr>
             <SortHeads view={view} />
@@ -219,7 +220,7 @@ function Pincodes({
         </tbody>
       </Table>
       <TableEnd view={view} />
-      {more && <p className={styles.more}>{waitlist.more}</p>}
+      {more && <p className={shared.more}>{waitlist.more}</p>}
     </section>
   );
 }
@@ -290,8 +291,8 @@ export function Waiting() {
   }, [launching, launchOn, today, retry]);
 
   return (
-    <div className={styles.column}>
-      {refused !== null && <Refusal className={styles.error} said={errorText(copy.errors, { code: refused })} />}
+    <div className={shared.column}>
+      {refused !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: refused })} />}
       {whenLoaded(loaded, {
         loading: <Loading />,
         failed: <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />,

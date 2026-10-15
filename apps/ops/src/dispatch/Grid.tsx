@@ -15,7 +15,7 @@ import { memo, useMemo } from "react";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
 import label from "../components/label.module.css";
-import styles from "./dispatch.module.css";
+import styles from "./grid.module.css";
 import { begunWord, isMovable, nameOf, type Job, type Target, windowWord } from "./job.ts";
 
 /** A job in hand, and the windows each technician's day would take it in; null while the board is asking. */

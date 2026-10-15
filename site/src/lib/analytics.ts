@@ -16,6 +16,7 @@
 // Google's tags start with every kind of consent denied, so they set no cookie,
 // and the Meta Pixel loads only once the visitor has agreed (CONSENT_KEY).
 
+import { scriptAddress } from "@maneman/web-kit/trusted-scripts";
 import type { LossExtent } from "@rules/config/booking.ts";
 import type { BookingWindow } from "@rules/config/scheduling.ts";
 import { ANALYTICS_IDS } from "./analytics-ids.ts";
@@ -80,7 +81,7 @@ function gtag(..._args: unknown[]): void {
 function loadScript(src: string): void {
   const script = document.createElement("script");
   script.async = true;
-  script.src = src;
+  script.src = scriptAddress(src);
   document.head.append(script);
 }
 

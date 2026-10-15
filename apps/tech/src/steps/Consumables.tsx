@@ -21,7 +21,8 @@ import { Failed, Loading } from "../states/States.tsx";
 import type { Queued } from "../store/outbox.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
-import styles from "./steps.module.css";
+import shared from "./steps.module.css";
+import styles from "./consumables.module.css";
 
 type Offered = Job["consumables"][number];
 
@@ -55,12 +56,12 @@ function Stepper({
     onChange(Math.min(MOST, Math.max(0, count + by)));
   };
   return (
-    <li className={styles.count}>
-      <span className={styles.countLabel}>
+    <li className={shared.count}>
+      <span className={shared.countLabel}>
         {name}
-        <span className={styles.countUnit}>{copy.consumables.unit(consumable.unit, consumable.expected)}</span>
+        <span className={shared.countUnit}>{copy.consumables.unit(consumable.unit, consumable.expected)}</span>
       </span>
-      <span className={styles.stepper}>
+      <span className={shared.stepper}>
         <IconButton
           edged
           className={styles.step}
@@ -73,7 +74,7 @@ function Stepper({
             change(-1);
           }}
         />
-        <span className={styles.number} aria-hidden="true">
+        <span className={shared.number} aria-hidden="true">
           {count}
         </span>
         <IconButton
@@ -105,13 +106,13 @@ function Picks({
   onPick: (code: string) => void;
 }) {
   return (
-    <ul className={styles.picks}>
+    <ul className={shared.picks}>
       {others.map((each) => (
         <li key={each.code}>
           <Button
             variant="outlineOnInk"
             size="control"
-            className={styles.pick}
+            className={shared.pick}
             aria-label={copy.consumables.addOne(each.name)}
             onClick={() => {
               onPick(each.code);
@@ -164,7 +165,7 @@ function Counting({
         onFinish({ items: used });
       }}
     >
-      <ul className={styles.list}>
+      <ul className={shared.list}>
         {shown.flatMap((code) => {
           const consumable = offered.find((each) => each.code === code);
           if (consumable === undefined) return [];
@@ -180,13 +181,13 @@ function Counting({
           ];
         })}
       </ul>
-      {offered.length === 0 && <p className={styles.note}>{copy.consumables.nothingOffered}</p>}
+      {offered.length === 0 && <p className={shared.note}>{copy.consumables.nothingOffered}</p>}
       {others.length > 0 && (
-        <div className={styles.field}>
+        <div className={shared.field}>
           <Button
             variant="outlineOnInk"
             size="control"
-            className={styles.second}
+            className={shared.second}
             aria-expanded={adding}
             onClick={() => {
               setAdding(!adding);
@@ -206,7 +207,7 @@ function Counting({
           )}
         </div>
       )}
-      {used.length === 0 && <p className={styles.note}>{copy.consumables.none}</p>}
+      {used.length === 0 && <p className={shared.note}>{copy.consumables.none}</p>}
     </StepFrame>
   );
 }

@@ -5,7 +5,6 @@ import { Table } from "@maneman/ui/Table";
 import type { Stock } from "../api.ts";
 import { stock as copy } from "../content/stock.ts";
 import { stockViews } from "../content/stock-views.ts";
-import form from "../components/forms.module.css";
 import styles from "./stock.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 
@@ -30,7 +29,7 @@ export function Totals({ stock, by }: { stock: Stock; by: Grouping }) {
       .reduce((total, holding) => total + holding.quantity, 0);
   return (
     <div className={styles.scroll}>
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             <th scope="col">{copy.consumable}</th>

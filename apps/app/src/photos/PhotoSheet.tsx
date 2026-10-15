@@ -13,7 +13,8 @@ import { useEffect, useRef, useState } from "react";
 import { photos } from "../content.ts";
 import { Thumb, type OpenPhoto } from "./PhotoRow.tsx";
 import type { Relink } from "./relink.ts";
-import styles from "./photos.module.css";
+import shared from "./photos.module.css";
+import styles from "./photo-sheet.module.css";
 
 const onIphone = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
 
@@ -75,7 +76,7 @@ export function PhotoSheet({ photo, onClose, relink }: { photo: OpenPhoto; onClo
           <Thumb
             link={photo.link}
             alt={photo.alt}
-            className={styles.large}
+            className={shared.large}
             eager
             onFailed={() => {
               setFailed(true);

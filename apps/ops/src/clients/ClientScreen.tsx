@@ -19,7 +19,8 @@ import { rememberClient } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath, type ClientTab } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "./clients.module.css";
+import shared from "./clients.module.css";
+import styles from "./client-screen.module.css";
 import { Consents } from "./Consents.tsx";
 import { Erased, ErasedRecord } from "./Erase.tsx";
 import { History, replacementDueOf } from "./History.tsx";
@@ -62,35 +63,35 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
     { key: clients.meta.credits, value: creditsOf(credits) },
   ];
   return (
-    <div className={styles.head}>
-      <div className={styles.headLine}>
-        <h2 className={styles.name}>{record.name}</h2>
+    <div className={shared.head}>
+      <div className={shared.headLine}>
+        <h2 className={shared.name}>{record.name}</h2>
         <ButtonLink
           variant="outline"
           size="small"
-          className={styles.whatsapp}
+          className={shared.whatsapp}
           href={whatsappChat(record.mobile)}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={clients.whatsappLabel(record.name)}
         >
-          <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
+          <Icon d={ICONS.whatsapp} size="sm" className={shared.icon} />
           {clients.whatsapp}
         </ButtonLink>
       </div>
-      <dl className={styles.meta}>
+      <dl className={shared.meta}>
         {meta.map((each) => (
           <div key={each.key}>
-            <dt className={styles.metaKey}>{each.key}</dt>
+            <dt className={shared.metaKey}>{each.key}</dt>
             <dd className={styles.metaValue}>{each.value}</dd>
           </div>
         ))}
         <div>
-          <dt className={styles.metaKey}>{clients.meta.replacement}</dt>
+          <dt className={shared.metaKey}>{clients.meta.replacement}</dt>
           <dd className={classes(styles.metaValue, styles.metaBrass)}>{replacementDueOf(record.history)}</dd>
         </div>
         <div>
-          <dt className={styles.metaKey}>{clients.meta.mobile}</dt>
+          <dt className={shared.metaKey}>{clients.meta.mobile}</dt>
           <dd className={styles.metaValue}>
             <TextLink href={`tel:${record.mobile}`} aria-label={clients.callLabel(record.name, mobile)}>
               {mobile}
@@ -99,7 +100,7 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
         </div>
         {invite !== null && (
           <div>
-            <dt className={styles.metaKey}>{clients.meta.invitedBy}</dt>
+            <dt className={shared.metaKey}>{clients.meta.invitedBy}</dt>
             <dd className={styles.metaValue}>
               <InvitedBy invite={invite} />
             </dd>
@@ -155,7 +156,7 @@ function Tab({
   }
   if (tab === "referrals") {
     return (
-      <div className={styles.visits}>
+      <div className={shared.visits}>
         <Invite
           clientId={clientId}
           invite={attached?.invite ?? record.invite}
@@ -196,12 +197,12 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
     <>
       {whenLoaded(loaded, {
         loading: (
-          <div className={styles.waiting}>
+          <div className={shared.waiting}>
             <Loading />
           </div>
         ),
         failed: (
-          <div className={styles.waiting}>
+          <div className={shared.waiting}>
             <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />
           </div>
         ),
@@ -209,14 +210,14 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
           isErased(record) ? (
             <ErasedRecord record={record} onChanged={retry} />
           ) : (
-            <div className={styles.client}>
+            <div className={shared.client}>
               <Head
                 record={record}
                 credits={adjusted?.credits ?? record.credits}
                 invite={attached?.invite ?? record.invite}
               />
               <OpenTasks clientId={clientId} />
-              <Tabs className={styles.tabs} label={record.name}>
+              <Tabs className={shared.tabs} label={record.name}>
                 {clients.tabs.map((each) => (
                   <OpsLink
                     key={each.tab}
@@ -228,7 +229,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                   </OpsLink>
                 ))}
               </Tabs>
-              <div className={styles.panel}>
+              <div className={shared.panel}>
                 <Tab
                   clientId={clientId}
                   tab={tab}

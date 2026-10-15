@@ -51,14 +51,14 @@ function GrievanceField({ text, onText }: { text: string; onText: (text: string)
   );
 }
 
-/** The client's rights over their data: a copy of it, and a way to raise a concern (docs/decisions/0049-dpdp.md). */
+/** The client's rights over their data: a copy of it, and a way to raise a concern. */
 export function DataCard({ grievances, onRaised }: { grievances: Profile["grievances"]; onRaised: () => void }) {
   const copy = profile.data;
   const [writing, setWriting] = useState(false);
   const [text, setText] = useState("");
   const [state, setState] = useState<"idle" | "sent" | "failed" | "limited">("idle");
   // One concern per intent: every grievance ops see carries its own answer-time clock, and two
-  // rows would be one client's one concern counted twice (docs/decisions/0049-dpdp.md).
+  // rows would be one client's one concern counted twice.
   const [busy, once] = useOneAtATime();
 
   const send = () =>

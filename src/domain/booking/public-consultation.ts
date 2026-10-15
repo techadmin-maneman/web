@@ -123,7 +123,7 @@ export interface ConsultationRequest {
   readonly plan: Plan;
   /**
    * A discount code for the one visit, as typed on /book; null for none. It comes off the product's price at the
-   * payment link (docs/decisions/0108-discount-codes.md).
+   * payment link.
    */
   readonly discountCode: string | null;
   /** The WhatsApp code that proved the number, which the one visit needs; null for none. */

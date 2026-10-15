@@ -7,6 +7,7 @@ import { fullDate } from "@maneman/web-kit/dates";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
@@ -29,9 +30,9 @@ const loadOrders = () => purchasingApi.orders();
 
 function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) {
   const supplierOf = (id: string) => orders.suppliers.find((each) => each.id === id)?.name ?? id;
-  if (orders.orders.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (orders.orders.length === 0) return <Note>{copy.none}</Note>;
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.columns.map((column) => (
@@ -45,11 +46,7 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
         {orders.orders.map((order) => (
           <tr key={order.id}>
             <RowHead>
-              <RowButton
-                className={form.inline}
-                aria-label={copy.open(copy.number(order.number))}
-                {...opener(order.id)}
-              >
+              <RowButton beside aria-label={copy.open(copy.number(order.number))} {...opener(order.id)}>
                 {copy.number(order.number)}
               </RowButton>
             </RowHead>

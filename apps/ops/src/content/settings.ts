@@ -191,7 +191,7 @@ export const settings = {
       // What a waiver gives back (docs/decisions/0088-every-policy-in-the-console.md).
       no_show_waiver: { payment: "The visit’s payment", credit: "The free service visit used" },
       task_sla_hours: tasks.groups,
-      // The phone's two bounds (docs/decisions/0088-every-policy-in-the-console.md).
+      // The phone's two bounds.
       phone_clock: {
         before_start: "Earliest check-in before the start",
         held_offline: "Longest a phone may stay offline",
@@ -280,7 +280,7 @@ export const settings = {
         answered_by: "After-hours messages answered by",
       },
     } as Readonly<Record<string, Readonly<Record<string, string>>>>,
-    /** Each choice a rule of choices offers, by the rule's name (docs/decisions/0088-every-policy-in-the-console.md). */
+    /** Each choice a rule of choices offers, by the rule's name. */
     choiceNames: {
       late_change_charge: { nothing: "Nothing", late_fee: "Late fee", visit: "The full visit" },
       no_show_charge: { nothing: "Nothing", late_fee: "Late fee", visit: "The full visit" },
@@ -352,7 +352,7 @@ export const settings = {
       unknown: FAILED,
     },
   },
-  /** No board draws the days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md). */
+  /** No board draws the days no visit is offered. */
   blackouts: {
     title: "Closed days",
     from: "From",
@@ -421,7 +421,7 @@ export const settings = {
   },
   /**
    * No board draws the services (docs/decisions/0085-services-ops-can-edit.md). What a price or a change was is
-   * shown beside what it will be before anything is sent (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+   * shown beside what it will be before anything is sent.
    */
   services: {
     title: "Services and prices",

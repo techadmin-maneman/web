@@ -1,0 +1,31 @@
+/* What ./StepFrame.tsx alone draws; what it shares is in ./steps.module.css. */
+
+/* The frame's head (../components/frame.module.css), closer set: the step's count sits beside its title. */
+.head {
+  gap: var(--sp-12);
+}
+
+.progress {
+  margin-left: auto;
+  font-size: var(--fs-18);
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* The API refused what this step sent, and the technician is putting it right. */
+.notice {
+  margin: 0;
+  padding: var(--sp-16) var(--sp-20);
+  border-top: var(--rule-strong) solid var(--error-on-ink);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+  font-size: var(--fs-17);
+  line-height: var(--lh-145);
+  color: var(--paper);
+}

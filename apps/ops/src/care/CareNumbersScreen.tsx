@@ -3,9 +3,9 @@
 // about, the remedies given, and the replies of each Care person.
 
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
-import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
@@ -13,7 +13,8 @@ import { care } from "../content/care.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
 import form from "../components/forms.module.css";
-import styles from "./care.module.css";
+import shared from "./care.module.css";
+import styles from "./care-numbers-screen.module.css";
 
 const copy = care.numbers;
 const PERIODS: readonly CarePeriod[] = ["7", "30", "90"];
@@ -36,7 +37,7 @@ function Figures({ numbers }: { numbers: CareNumbers }) {
     [copy.waitingOnClient, String(numbers.backlog.waiting_on_client)],
   ];
   return (
-    <dl className={styles.facts}>
+    <dl className={shared.facts}>
       {figures.map(([label, value]) => (
         <div key={label} className={styles.figureRow}>
           <dt>{label}</dt>
@@ -48,20 +49,20 @@ function Figures({ numbers }: { numbers: CareNumbers }) {
 }
 
 function ByPerson({ numbers }: { numbers: CareNumbers }) {
-  if (numbers.by_person.length === 0) return <p className={form.note}>{copy.noPeople}</p>;
+  if (numbers.by_person.length === 0) return <Note>{copy.noPeople}</Note>;
   return (
-    <div className={styles.scroll}>
-      <Table className={classes(form.table, styles.table)}>
+    <div className={shared.scroll}>
+      <Table controls className={shared.table}>
         <thead>
           <tr>
             <th scope="col">{copy.columns.person}</th>
-            <th scope="col" className={styles.figure}>
+            <th scope="col" className={shared.figure}>
               {copy.chats}
             </th>
-            <th scope="col" className={styles.figure}>
+            <th scope="col" className={shared.figure}>
               {copy.firstReply}
             </th>
-            <th scope="col" className={styles.figure}>
+            <th scope="col" className={shared.figure}>
               {copy.withinTarget}
             </th>
           </tr>
@@ -69,12 +70,12 @@ function ByPerson({ numbers }: { numbers: CareNumbers }) {
         <tbody>
           {numbers.by_person.map((row) => (
             <tr key={row.email}>
-              <th scope="row" className={styles.who}>
+              <th scope="row" className={shared.who}>
                 {row.email}
               </th>
-              <td className={styles.figure}>{row.chats}</td>
-              <td className={styles.figure}>{minutes(row.median_minutes)}</td>
-              <td className={styles.figure}>{percent(row.within_target)}</td>
+              <td className={shared.figure}>{row.chats}</td>
+              <td className={shared.figure}>{minutes(row.median_minutes)}</td>
+              <td className={shared.figure}>{percent(row.within_target)}</td>
             </tr>
           ))}
         </tbody>
@@ -85,12 +86,12 @@ function ByPerson({ numbers }: { numbers: CareNumbers }) {
 
 function Lists({ numbers }: { numbers: CareNumbers }) {
   return (
-    <div className={styles.quick}>
+    <div className={shared.quick}>
       <h3 className={form.ruleTitle}>{copy.reasons}</h3>
       {numbers.reasons.length === 0 ? (
-        <p className={form.note}>{copy.nothing}</p>
+        <Note>{copy.nothing}</Note>
       ) : (
-        <ul className={styles.leave}>
+        <ul className={shared.leave}>
           {numbers.reasons.map((row) => (
             <li key={row.reason}>{copy.counted(care.reasons[row.reason as keyof typeof care.reasons], row.chats)}</li>
           ))}
@@ -98,9 +99,9 @@ function Lists({ numbers }: { numbers: CareNumbers }) {
       )}
       <h3 className={form.ruleTitle}>{copy.remedies}</h3>
       {numbers.remedies.length === 0 ? (
-        <p className={form.note}>{copy.nothing}</p>
+        <Note>{copy.nothing}</Note>
       ) : (
-        <ul className={styles.leave}>
+        <ul className={shared.leave}>
           {numbers.remedies.map((row) => (
             <li key={row.reason}>
               {copy.remedied(
@@ -124,7 +125,7 @@ function Numbers({ period }: { period: CarePeriod }) {
   const numbers = loaded.value;
   return (
     <>
-      <p className={styles.quick}>{copy.span(shortDate(numbers.from), shortDate(numbers.to))}</p>
+      <p className={shared.quick}>{copy.span(shortDate(numbers.from), shortDate(numbers.to))}</p>
       <Figures numbers={numbers} />
       <Lists numbers={numbers} />
       <ByPerson numbers={numbers} />
@@ -136,13 +137,13 @@ export function CareNumbersScreen() {
   const [period, setPeriod] = useState<CarePeriod>("7");
   return (
     <div className={form.screen}>
-      <Panel titleId="care-numbers" title={copy.title} className={form.panel}>
-        <div className={styles.tools}>
+      <Panel titleId="care-numbers" title={copy.title} padded>
+        <div className={shared.tools}>
           <Field label={copy.period}>
             {(control) => (
               <Select
                 {...control}
-                className={form.choiceBox}
+                width="choice"
                 value={period}
                 onChange={(event) => {
                   if (isPeriod(event.target.value)) setPeriod(event.target.value);

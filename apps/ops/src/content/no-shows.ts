@@ -111,7 +111,7 @@ export const noShows = {
         : `${String(metres)} m · inside ${String(radius)} m fence`,
     /**
      * An address with no coordinates cannot be measured against, so the route
-     * carries no distance (ADR 0036). Words rather than a number, because ops
+     * carries no distance. Words rather than a number, because ops
      * charge a client on these facts and nothing was measured here at all.
      */
     unmeasured: "Not measured · address has no location",
@@ -204,7 +204,7 @@ export const noShows = {
   /**
    * The second card, a disputed charge, one card a dispute. The design
    * draws its label, its four rows of evidence, its note and its two buttons; the
-   * rest is placeholder (docs/decisions/0096-a-no-shows-charge-and-its-dispute.md).
+   * rest is placeholder.
    */
   dispute: {
     /** The board's own label. */

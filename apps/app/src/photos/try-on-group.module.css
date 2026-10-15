@@ -1,0 +1,13 @@
+/* What ./TryOnGroup.tsx alone draws; what it shares is in ./photos.module.css. */
+
+/* A try-on's two images, the photograph beside the look (TryOnGroup.tsx); no board draws them. */
+.pair {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.kept {
+  margin: var(--sp-12) 0 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}

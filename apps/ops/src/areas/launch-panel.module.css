@@ -1,0 +1,9 @@
+/* What ./LaunchPanel.tsx alone draws; what it shares is in ./areas.module.css. */
+
+/* One line a pincode, where a save on Served marks several live. */
+.lines {
+  margin: var(--sp-12) 0 0;
+  padding-left: var(--sp-20);
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+}
