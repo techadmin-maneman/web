@@ -89,22 +89,16 @@ export function productionDependencies(config: StaticConfig): DependencyFactory 
   // Each provider is made the first time it is used. Making every one on every invocation was half the CPU time of a
   // cron run that had nothing to do (docs/decisions/0009, "the cron's CPU time").
   return (env, log, caller) => {
-    const zoho = {
-      db: env.DB,
-      fetch: httpFetch,
-      now,
-      log,
-      timeoutMs: caller === "request" ? WAITED_TIMEOUT_MS : BACKGROUND_TIMEOUT_MS,
-    };
+    const timeoutMs = caller === "request" ? WAITED_TIMEOUT_MS : BACKGROUND_TIMEOUT_MS;
+    const zoho = { db: env.DB, fetch: httpFetch, now, log, timeoutMs };
     const messaging = lazily(() => createMessagingProvider(settings.messaging, { fetch: httpFetch, log }));
     const { alert, alertOnce, resolveAlert } = alertsFor(config, { db: env.DB, fetch: httpFetch, now, log });
     const notifyLead = lazily(() =>
       createLeadNotice({ webhookUrl: settings.leadWebhookUrl, environment, fetch: httpFetch, log }),
     );
     const crm = lazily(() => createCrmProvider(settings.zohoCrm, zoho));
-    const image = lazily(() =>
-      createImageProvider(settings.tryon.youcamApiKey, { fetch: httpFetch, now, log, refsUrl: settings.tryon.refsUrl }),
-    );
+    const { youcamApiKey, refsUrl } = settings.tryon;
+    const image = lazily(() => createImageProvider(youcamApiKey, { fetch: httpFetch, now, log, refsUrl }));
     const codes = lazily(() =>
       createCodeSender(providers.SMS_PROVIDER, settings.login.sms, { messaging: messaging(), fetch: httpFetch, log }),
     );

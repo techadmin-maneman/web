@@ -12,7 +12,7 @@ import type { OpsSetting } from "./ops-settings.ts";
  * lookups within Google's free calls (GEOCODE_CEILING_MAX), the drive times and day maps within Google's free 70,000 a
  * month, and the codes at a figure no real day reaches short of a flood of them.
  */
-const MOST: Readonly<Record<Ceiling, number>> = {
+export const CEILING_MAXIMA: Readonly<Record<Ceiling, number>> = {
   upload: 1000,
   render: 500,
   result_read: 10_000,
@@ -44,9 +44,9 @@ export const CEILING_SETTINGS = [
     note: "The most the whole country may use in a day, past which each answers “busy” until midnight. Raise one before a launch or a campaign; ops are told at 80%.",
     unit: "a day",
     min: 0,
-    max: Math.max(...Object.values(MOST)),
+    max: Math.max(...Object.values(CEILING_MAXIMA)),
     keys: CEILINGS,
-    bounds: Object.fromEntries(CEILINGS.map((ceiling) => [ceiling, { min: 0, max: MOST[ceiling] }])),
+    bounds: Object.fromEntries(CEILINGS.map((ceiling) => [ceiling, { min: 0, max: CEILING_MAXIMA[ceiling] }])),
     fallback: PRODUCTION_CEILINGS,
   },
 ] as const satisfies readonly OpsSetting[];
