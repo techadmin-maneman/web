@@ -27,7 +27,7 @@ The owner ruled on two of these on 27 September 2026:
 - Every write to and delete from those buckets goes through `putCounted` or `deleteCounted`, which write the object's row and the figure in one D1 batch, after R2 has taken the write or the delete.
 - **An object stored again under its key counts once.** R2 replaces it, and its row gives what it held, so the figure moves by the difference. A sweep stopped after keeping a look and run again, an FSM copy retried from its queue, and a card sent again each rewrite a key.
 - **A delete takes off what the rows say,** and removes them in the same batch. D1 runs each batch as one transaction, so two deletes of one key at once, an erasure's and the sweeper's, take it off once. A key with no row, never stored or stored before the meter, takes nothing off. No delete reads an object to learn its size.
-- It is never read by listing a bucket. Listing is a Class A operation, and the cron runs 288 times a day.
+- It is never read by listing a bucket. Listing is a Class A operation, and the cron runs 1,440 times a day.
 - **The backfill** (migration 0055):
   - a photograph counts at the size its row records;
   - a referral card counts at 300 KB, a try-on's small copy at 250 KB, and a kept look at 5 MB. These are their upload limits, since no row records their sizes, so the figure starts high rather than low;

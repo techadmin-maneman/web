@@ -17,7 +17,7 @@ flowchart LR
   API["mm-api<br/>every /api/* request"] --> D1[("D1 database<br/>people, visits, technicians, pieces,<br/>money mirror, services, prices, rules, stock")]
   API --> R2[("R2 files<br/>photographs, try-ons, cards")]
   API --> Q["Queues<br/>CRM, messages, renders"]
-  CRON["Cron, every 5 minutes"] --> Q
+  CRON["Cron, every minute"] --> Q
   Q --> CRM["Zoho CRM<br/>leads"]
   CRON --> BOOKS["Zoho Books<br/>customers, items, invoices,<br/>receipts, refunds"]
   BOOKS --> CRM
@@ -175,7 +175,7 @@ Ops change these in the console, and each is in force within a minute: services 
 
 **The queues.** One carries leads and erasures to the CRM; one carries every WhatsApp message except login codes, checking consent at the moment it sends; one runs the try-on's renders.
 
-**The cron, every five minutes.** It puts back on a queue what went quiet; lets go, each hour, of holds nobody paid for, and books a paid one whose booking stopped part-way; makes Books' customers; checks Books' items each hour against the services and their prices, and pushes the differences where that is on; raises and sends invoices; records payments and refunds in Books; catches up any payment whose webhook Razorpay never delivered; sends tomorrow's visit reminders and the next service's reminders from 6 pm; settles referrals; checks the WhatsApp bridge; and alerts ops once when something needs a person.
+**The cron, every minute.** Each job runs at its own pace within it (`src/scheduled/schedule.ts`): every five minutes, every hour, or once a day. It puts back on a queue what went quiet; lets go, each hour, of holds nobody paid for, and books a paid one whose booking stopped part-way; makes Books' customers; checks Books' items each hour against the services and their prices, and pushes the differences where that is on; raises and sends invoices; records payments and refunds in Books; catches up any payment whose webhook Razorpay never delivered; sends tomorrow's visit reminders and the next service's reminders from 6 pm; settles referrals; checks the WhatsApp bridge; and alerts ops once when something needs a person.
 
 **Alerts.** A failure that needs a person is an alert, told once to the team's chat, and closed when it is put right: a Books item missing or different, stock low in a kit or the store, an invoice that does not match what was paid. `docs/runbook.md` says what each one means and what to do.
 
