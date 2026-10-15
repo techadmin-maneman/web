@@ -3,7 +3,8 @@
 
 import { isPieceCode } from "../config/pieces.ts";
 
-type OldPiece = { readonly piece_code: string; readonly failure_reason: string };
+/** The piece that came off, with why it failed where it did; with none, it was due. */
+type OldPiece = { readonly piece_code: string; readonly failure_reason?: string };
 
 /**
  * A piece step as the phone sends it: the piece, its base and lot, the hair system it came out of the kit as, and on a

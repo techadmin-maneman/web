@@ -233,7 +233,6 @@ test.describe("the piece (board B3, step 4)", () => {
     await page.getByRole("button", { name: techCopy.steps.piece.pick }).click();
     await page.getByRole("button", { name: /MM-STD-4417-B/ }).click();
     await expect(page.getByRole("textbox", { name: techCopy.steps.piece.old.label })).toHaveValue("MM-STD-4417-B");
-    await expect(page.getByRole("button", { name: techCopy.steps.piece.old.needsReason })).toBeDisabled();
     await page.getByRole("textbox", { name: techCopy.steps.piece.old.reason }).fill("Lifted at the front");
     expect(await axeViolations(page)).toEqual([]);
 

@@ -96,6 +96,22 @@ describe("the piece", () => {
     ]);
   });
 
+  it("takes a due piece off as replaced, not failed, where it is named with no reason", async () => {
+    await upToThePiece(minutesAfterStart(60));
+    const answer = await postAt(
+      minutesAfterStart(60),
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", old_piece: { piece_code: "MM-STD-4417-B" } },
+      uuidv7At(50),
+    );
+    expect(answer.status).toBe(202);
+
+    const old = await env.DB.prepare(
+      "SELECT failed_at, replaced_at IS NOT NULL AS replaced FROM pieces WHERE id = 'piece-old'",
+    ).first();
+    expect(old).toEqual({ failed_at: null, replaced: 1 });
+  });
+
   it("leaves a piece named as failed unmarked as replaced", async () => {
     await upToThePiece(minutesAfterStart(60));
     await postAt(

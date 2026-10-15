@@ -164,10 +164,14 @@ export function stillMissing(
   const fromKit = form.stock !== null || kitPieceOf(job, form.code) !== null;
   if (!fromKit && checked === "none") return copy.piece.checkFirst;
   if (!fromKit && checked === "unknown") return copy.piece.notInKitAction;
-  if (!given(form.oldCode)) return null;
-  if (!isLabel(form.oldCode)) return copy.piece.checkFirst;
-  return given(form.oldReason) ? null : copy.piece.old.needsReason;
+  return given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;
 }
+
+/** The piece that came off: why it failed where it did; with no reason, it was due, and is replaced. */
+const oldPieceOf = (form: PieceForm) =>
+  given(form.oldReason)
+    ? { piece_code: form.oldCode, failure_reason: form.oldReason.trim() }
+    : { piece_code: form.oldCode };
 
 /** The step's body: against the fit, or the piece with what was said of it, and on a replacement the one off. */
 export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBody<"piece"> {
@@ -178,6 +182,6 @@ export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBo
     ...(given(form.base) ? { base: form.base.trim() } : {}),
     ...(given(form.lot) ? { supplier_lot: form.lot.trim() } : {}),
     ...(form.stock === null ? {} : { stock_code: form.stock }),
-    ...(given(form.oldCode) ? { old_piece: { piece_code: form.oldCode, failure_reason: form.oldReason.trim() } } : {}),
+    ...(given(form.oldCode) ? { old_piece: oldPieceOf(form) } : {}),
   };
 }

@@ -37,10 +37,12 @@ describe("the piece step", () => {
     expect(stillMissing({ ...EMPTY, code: LABEL }, kit, "none")).toBeNull();
   });
 
-  it("asks why a piece that came off failed, once its label is given", () => {
+  it("takes the piece that came off with or without why it failed, as a due one has no failure", () => {
     const off = { ...EMPTY, code: LABEL, oldCode: "MM-STD-1201-A" };
-    expect(stillMissing(off, FIRST_FIT, "found")).toBe(copy.piece.old.needsReason);
+    expect(stillMissing(off, FIRST_FIT, "found")).toBeNull();
     expect(stillMissing({ ...off, oldReason: "lifted at the front" }, FIRST_FIT, "found")).toBeNull();
+    expect(stillMissing({ ...off, oldCode: "MM-STD-12" }, FIRST_FIT, "found")).toBe(copy.piece.checkFirst);
+    expect(pieceBody(off, FIRST_FIT)).toEqual({ piece_code: LABEL, old_piece: { piece_code: "MM-STD-1201-A" } });
   });
 
   it("on a one visit, waits for the client’s choice, and asks for no label once they decline", () => {

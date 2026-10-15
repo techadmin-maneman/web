@@ -41,8 +41,8 @@ export const PARTIAL_OWED = `SELECT a.id, 'partial' AS why, a.type AS kind, NULL
     AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)`;
 
 /**
- * Client ?1's pieces of an open recall, and those that failed, with no piece fitted after them and no replacement on
- * its way: booked, or paid for and still to be booked.
+ * Client ?1's pieces of an open recall, and those that failed, with no piece fitted after them, or since the failure,
+ * as at the replacement that recorded it, and no replacement on its way: booked, or paid for and still to be booked.
  */
 export const PIECES_OWED = `SELECT p.id,
     CASE WHEN r.id IS NULL THEN 'failed' ELSE 'recall' END AS why, 'replacement' AS kind, p.piece_code,
@@ -53,7 +53,9 @@ export const PIECES_OWED = `SELECT p.id,
   WHERE p.person_id = ?1 AND p.deleted_at IS NULL AND p.fitted_at IS NOT NULL AND p.replaced_at IS NULL
     AND (r.id IS NOT NULL OR p.failed_at IS NOT NULL)
     AND NOT EXISTS (SELECT 1 FROM pieces n
-                     WHERE n.person_id = p.person_id AND n.deleted_at IS NULL AND n.fitted_at > p.fitted_at)
+                     WHERE n.person_id = p.person_id AND n.deleted_at IS NULL AND n.id <> p.id
+                       AND (n.fitted_at > p.fitted_at
+                            OR (p.failed_at IS NOT NULL AND n.fitted_at >= substr(p.failed_at, 1, 10))))
     AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.person_id = p.person_id AND a.type = 'replacement'
                      AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_LIVE)})
     AND NOT EXISTS (SELECT 1 FROM slot_holds h WHERE h.person_id = p.person_id AND h.type = 'replacement'

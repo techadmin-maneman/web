@@ -24,11 +24,14 @@ const PieceFittedSchema = z
     }),
     failure_reason: z.string().min(1).max(200).nullable().optional(),
     old_piece: z
-      .object({ piece_code: z.string().min(3).max(40), failure_reason: z.string().min(1).max(200) })
+      .object({ piece_code: z.string().min(3).max(40), failure_reason: z.string().min(1).max(200).optional() })
       .strict()
       .nullable()
       .optional()
-      .openapi({ description: "On a replacement: the piece that came off, and why it failed." }),
+      .openapi({
+        description:
+          "On a replacement: the piece that came off, and why it failed where it did; with no reason, it was due and is replaced.",
+      }),
     product: z.string().min(1).max(32).optional().openapi({
       description:
         "On a one visit, and only there: the product the client chose, by its tier from the card's products.",

@@ -6271,11 +6271,10 @@ Request body:
         }
       },
       "required": [
-        "piece_code",
-        "failure_reason"
+        "piece_code"
       ],
       "additionalProperties": false,
-      "description": "On a replacement: the piece that came off, and why it failed."
+      "description": "On a replacement: the piece that came off, and why it failed where it did; with no reason, it was due and is replaced."
     },
     "product": {
       "type": "string",

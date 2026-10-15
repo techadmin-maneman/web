@@ -3182,10 +3182,10 @@ export interface components {
             /** @description The hair system fitted, by the stock code the card's kit list gives it, which comes out of the technician's kit; none for a piece from elsewhere. */
             stock_code?: string | null;
             failure_reason?: string | null;
-            /** @description On a replacement: the piece that came off, and why it failed. */
+            /** @description On a replacement: the piece that came off, and why it failed where it did; with no reason, it was due and is replaced. */
             old_piece?: {
                 piece_code: string;
-                failure_reason: string;
+                failure_reason?: string;
             } | null;
             /** @description On a one visit, and only there: the product the client chose, by its tier from the card's products. */
             product?: string;

@@ -528,8 +528,7 @@ export const steps = {
     old: {
       title: "The piece that came off",
       label: "The label of the piece that came off",
-      reason: "Why it failed",
-      needsReason: "Say why it failed to continue",
+      reason: "Why it failed, if it did",
     },
     // The board draws no empty base; the piece may not be in the mirror yet.
     unnamed: "Not recorded",
