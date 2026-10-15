@@ -375,7 +375,7 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   await page.getByRole("button", { name: techCopy.steps.next }).click();
 
   // The close-out.
-  await expect(page.getByText("Rohit M. · partial")).toBeVisible();
+  await expect(page.getByText("Rohit M. · partly done")).toBeVisible();
   await expect(page.getByText(techCopy.closeOut.duration)).toBeVisible();
   await expect(page.getByRole("button", { name: /Next job · 11:30/ })).toBeVisible();
 

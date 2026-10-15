@@ -546,7 +546,7 @@ export const steps = {
   },
   outcome: {
     // The board draws Done chosen already; nothing is chosen for the technician here.
-    choose: "Choose Done or Partial",
+    choose: "Choose Done or Partly done",
     pickReason: "Pick a reason to continue",
     done: "Done",
     partial: "Partly done · pick a reason",
@@ -563,7 +563,7 @@ export const steps = {
 export const closeOut = {
   label: "Closed out",
   who: (name: string, outcome: string) => `${name} · ${outcome}`,
-  outcomes: { done: "done", partial: "partial", no_show: "no-show" },
+  outcomes: { done: "done", partial: "partly done", no_show: "no-show" },
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
   duration: "Duration",

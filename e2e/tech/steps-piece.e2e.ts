@@ -51,7 +51,7 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await page.getByRole("button", { name: words.action }).click();
     await page.getByRole("dialog", { name: words.title }).getByRole("button", { name: words.yes }).click();
-    await expect(page.getByText("Rohit M. · partial")).toBeVisible();
+    await expect(page.getByText("Rohit M. · partly done")).toBeVisible();
     expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({
       outcome: "partial",
       reason: "no_piece",
