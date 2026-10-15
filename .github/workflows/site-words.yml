@@ -1,7 +1,9 @@
 # Rebuilds staging's site once the Words page publishes new words (docs/decisions/0127-publishing-the-words.md):
 # on a ten-minute schedule, which GitHub runs about every half hour, it asks staging for its latest publish, and builds
-# and deploys mm-site only for one no run here has built yet. A staging deploy builds with the published words too;
-# production takes them with a release.
+# and deploys mm-site only for one no run here has built yet. It builds the commit staging's mm-api runs, as
+# /api/health names it, never main's head, which may not have passed its checks; and it ships only while staging still
+# runs that commit, since a staging deploy that lands meanwhile builds with the published words itself. Production takes
+# them with a release.
 #
 # Secrets, on the GitHub Environment "staging":
 #   CLOUDFLARE_API_TOKEN                            staging's deploy token (docs/runbook.md)
@@ -16,9 +18,9 @@ on:
 permissions:
   contents: read
 
-# One deploy of staging at a time, a merge's or a publish's.
+# A queue of its own: in the deploy's, a run waiting behind a deploy would cancel the next merge's waiting deploy.
 concurrency:
-  group: deploy-staging
+  group: site-words
   cancel-in-progress: false
 
 jobs:
@@ -33,7 +35,6 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-      SHA: ${{ github.sha }}
     steps:
       - name: Staging's latest publish
         id: latest
@@ -42,6 +43,16 @@ jobs:
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             https://staging.maneman.in/api/site-words | jq -r '.id // "none"')
           echo "id=$id" >> "$GITHUB_OUTPUT"
+
+      - name: The commit staging runs
+        id: running
+        if: steps.latest.outputs.id != 'none'
+        run: |
+          sha=$(curl -fsS --retry 3 \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            https://staging.maneman.in/api/health | jq -r '.commit // empty')
+          if [ -z "$sha" ]; then echo "::error::staging's health names no commit"; exit 1; fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
       # The key is the publish: a hit means a run here built it already. The key is saved only once this job passes.
       - name: Built already?
@@ -56,6 +67,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.latest.outputs.id != 'none' && steps.built.outputs.cache-hit != 'true'
         with:
+          ref: ${{ steps.running.outputs.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.latest.outputs.id != 'none' && steps.built.outputs.cache-hit != 'true'
@@ -64,10 +76,19 @@ jobs:
         if: steps.latest.outputs.id != 'none' && steps.built.outputs.cache-hit != 'true'
         run: npm run build:site -- --env staging --words
 
-      - name: Deploy mm-site
+      # A staging deploy that landed while this built carries the words already, and is newer than this build.
+      - name: Deploy mm-site, while staging still runs the commit built
         if: steps.latest.outputs.id != 'none' && steps.built.outputs.cache-hit != 'true'
         env:
           PUBLISH: ${{ steps.latest.outputs.id }}
+          SHA: ${{ steps.running.outputs.sha }}
         run: |
+          now=$(curl -fsS --retry 3 \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            https://staging.maneman.in/api/health | jq -r '.commit // empty')
+          if [ "$now" != "$SHA" ]; then
+            echo "::notice::staging moved to $now while this built $SHA: its own deploy carries the words"
+            exit 0
+          fi
           node scripts/release/release.ts ship --worker mm-site --env staging --tag "$SHA" --message "words $PUBLISH on $SHA"
           echo "$PUBLISH" > .site-words-built
