@@ -37,11 +37,12 @@ test("answers any page path with the app, as a single-page app", async ({ page }
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
-test("keeps the design’s column on a wide screen, centred", async ({ page }) => {
+// The column stopped at the design's 390 px where the client app's grows to 480 on the same phones.
+test("keeps the phone apps' column on a wide screen, centred", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   const box = await page.locator("#root").boundingBox();
-  expect(box?.width).toBe(390);
+  expect(box?.width).toBe(480);
   expect(Math.round((box?.x ?? 0) * 2 + (box?.width ?? 0))).toBe(1440);
 });
 
