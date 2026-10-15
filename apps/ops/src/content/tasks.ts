@@ -369,6 +369,8 @@ export const needsAHand = {
   seen: (times: number, since: string) => (times === 1 ? `Since ${since}` : `${String(times)} times since ${since}`),
   open: "Open",
   sendAgain: "Send again",
+  /** An alert's whole words, its IDs and vendor's answer among them, beneath the first sentence. */
+  details: "Details",
   sending: "Sending…",
   done: "Mark done",
   closing: "Closing…",
