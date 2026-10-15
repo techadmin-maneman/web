@@ -44,7 +44,7 @@ export async function moveTermsFor({
   on?: string;
 }): Promise<{ terms: ChangeTerms; moving: Moving } | null> {
   const now = c.var.deps.now();
-  const visit = await changeableVisit(c.env.DB, personId, visitId, now);
+  const visit = await changeableVisit(c.env.DB, personId, { id: visitId }, now);
   if (visit === null || (type !== null && visit.type !== type) || visit.technicianId === null) return null;
   const inForce = termsInForce(await opsInputs(c), visit.type);
   return {
