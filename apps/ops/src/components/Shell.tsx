@@ -2,71 +2,38 @@
 // an entry for each job with how many tasks wait in it and Settings at its foot; a bar across the top with where the
 // page sits, the search and the person signed in; and the page's head, its title, figures, actions and tabs.
 
-import { GLYPHS, TAB_ICONS } from "@maneman/brand/icons";
+import { GLYPHS } from "@maneman/brand/icons";
 import { Breadcrumbs, type Crumb } from "@maneman/ui/Breadcrumbs";
 import { Button } from "@maneman/ui/Button";
-import { capsLook } from "@maneman/ui/Caps";
-import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Mark } from "@maneman/ui/Mark";
 import { PageHeader, PageTitle } from "@maneman/ui/PageHeader";
 import { usePath, wasRedirected } from "@maneman/ui/router";
-import { FOLDS, NavButton, NavItem, SideNav } from "@maneman/ui/SideNav";
 import { SkipLink } from "@maneman/ui/SkipLink";
 import { useLoad } from "@maneman/ui/useLoad";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type RefObject,
-} from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { shell } from "../content.ts";
-import { useMayCall, whoami } from "../lib/access.ts";
+import { whoami } from "../lib/access.ts";
 import { useLapsed } from "../lib/session.ts";
-import { useTaskBoard } from "../lib/waiting.ts";
 import {
-  firstSetting,
-  mayOpen,
   NAV_NAMES,
   navOf,
   SECTION_NAMES,
   sectionOf,
-  settingsPath,
   SETTINGS_GROUP_NAMES,
   settingsPageOf,
   SETTINGS_PAGE_NAMES,
-  type NavKey,
   type Route,
-  type SectionPath,
 } from "../route.ts";
-import { waitingIn, type Waiting } from "../tasks/decided.ts";
 import { Account } from "./Account.tsx";
 import { CommandPalette } from "./CommandPalette.tsx";
-import { GroupTabs, navLines } from "./SectionGroups.tsx";
+import { Navigation, NAV_ID } from "./Navigation.tsx";
+import { PageHead } from "./PageHead.tsx";
+import { GroupTabs } from "./SectionGroups.tsx";
 import styles from "./shell.module.css";
 
 /** A link within the console: the shared one, which leaves a click asking for a new tab to the browser. */
 export { Link as OpsLink } from "@maneman/ui/router";
-
-const ICONS: Readonly<Record<NavKey, string>> = {
-  today: TAB_ICONS.home,
-  tasks: GLYPHS.tasks,
-  dispatch: GLYPHS.board,
-  clients: GLYPHS.person,
-  messages: GLYPHS.bubble,
-  technicians: GLYPHS.people,
-  inventory: GLYPHS.box,
-  requests: GLYPHS.tray,
-  money: TAB_ICONS.payments,
-  growth: GLYPHS.rise,
-  reports: GLYPHS.bars,
-};
 
 /** Said once, over whichever screen is open, when Access stops letting the console's calls through. */
 function Lapsed() {
@@ -101,97 +68,6 @@ function NotListed() {
     <div className={styles.lapsed} role="status">
       <p className={styles.lapsedLine}>{shell.notListed}</p>
     </div>
-  );
-}
-
-const NOTHING_WAITING: ReadonlyMap<SectionPath, Waiting> = new Map();
-const NAV_ID = "console-nav";
-const FOLDED = "mm-ops-nav-folded";
-
-/** Whether the navigation is folded to its icons, kept in this browser. */
-function useFolded(): [boolean, () => void] {
-  const [folded, setFolded] = useState(() => {
-    try {
-      return localStorage.getItem(FOLDED) === "true";
-    } catch {
-      return false;
-    }
-  });
-  return [
-    folded,
-    () => {
-      setFolded((now) => {
-        try {
-          localStorage.setItem(FOLDED, String(!now));
-        } catch {
-          // Folded for this page alone.
-        }
-        return !now;
-      });
-    },
-  ];
-}
-
-function waitingLabel(name: string, waiting: Waiting): string {
-  return waiting.of === "low_places"
-    ? shell.lowPlaces(name, waiting.count)
-    : shell.waiting(name, waiting.count, waiting.overdue);
-}
-
-function Navigation({ route, open }: { route: Route; open: boolean }) {
-  const mayCall = useMayCall();
-  const [folded, fold] = useFolded();
-  const board = useTaskBoard(mayCall !== null && mayOpen(mayCall, "tasks"));
-  const waiting = board === null ? NOTHING_WAITING : waitingIn(board, new Date());
-  const page = route.page === "settings" ? null : route.page;
-  const setting = firstSetting(mayCall);
-  return (
-    <SideNav
-      id={NAV_ID}
-      label={shell.title}
-      folded={folded}
-      open={open}
-      head={
-        <>
-          <Mark className={styles.mark} />
-          <span className={capsLook(classes(FOLDS, styles.brandName))}>{shell.title}</span>
-        </>
-      }
-      foot={
-        <>
-          {setting !== null && (
-            <ul className={styles.footItems}>
-              <NavItem
-                to={settingsPath(setting)}
-                icon={GLYPHS.sliders}
-                name={shell.settings}
-                current={route.page === "settings"}
-              />
-            </ul>
-          )}
-          <NavButton
-            icon={GLYPHS.fold}
-            name={folded ? shell.unfold : shell.fold}
-            expanded={!folded}
-            controls={NAV_ID}
-            onClick={fold}
-          />
-        </>
-      }
-    >
-      {navLines(mayCall, page, waiting).map((line) => (
-        <NavItem
-          key={line.entry}
-          to={line.to}
-          icon={ICONS[line.entry]}
-          name={line.name}
-          current={line.current}
-          count={line.waiting?.count}
-          urgent={line.waiting?.overdue === true}
-          label={line.waiting === undefined ? undefined : waitingLabel(line.name, line.waiting)}
-        />
-      ))}
-    </SideNav>
   );
 }
 
@@ -238,43 +114,6 @@ function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: 
   }, [heading, page, path]);
 }
 
-/** What a page tells its head while it is open: figures beside the title, a record's own name, its actions' place. */
-interface Head {
-  readonly setSub: (sub: string | undefined) => void;
-  readonly setRecord: (name: string | undefined) => void;
-  readonly actions: HTMLElement | null;
-}
-
-const PageHead = createContext<Head>({ setSub: () => undefined, setRecord: () => undefined, actions: null });
-
-/** A line of figures beside the title for as long as the page is open, as the dispatch board puts its week there. */
-export function useHeaderSub(sub: string | undefined): void {
-  const { setSub } = useContext(PageHead);
-  useEffect(() => {
-    setSub(sub);
-    return () => {
-      setSub(undefined);
-    };
-  }, [setSub, sub]);
-}
-
-/** A record's own name as the page's title, its section a step above it: a client's, a technician's. */
-export function useRecordTitle(name: string | undefined): void {
-  const { setRecord } = useContext(PageHead);
-  useEffect(() => {
-    setRecord(name);
-    return () => {
-      setRecord(undefined);
-    };
-  }, [setRecord, name]);
-}
-
-/** The page's own actions, drawn at the right of its head. */
-export function PageActions({ children }: { readonly children: ReactNode }) {
-  const { actions } = useContext(PageHead);
-  return actions === null ? null : createPortal(children, actions);
-}
-
 /** Where the page sits: its entry above a page of several, its section above a record, Settings' group above its page. */
 function crumbsOf(route: Route, record: string | undefined): Crumb[] {
   if (route.page === "settings") {
@@ -287,7 +126,8 @@ function crumbsOf(route: Route, record: string | undefined): Crumb[] {
   return entry.pages.length > 1 ? [{ label: NAV_NAMES[entry.entry] }] : [];
 }
 
-function titleOf(route: Route, record: string | undefined): string {
+/** The page's title: a record's own name, Settings' page, or the page's. */
+function pageTitleOf(route: Route, record: string | undefined): string {
   if (record !== undefined) return record;
   return route.page === "settings" ? SETTINGS_PAGE_NAMES[route.tab] : SECTION_NAMES[route.page];
 }
@@ -318,7 +158,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
   const menu = useMenu();
   useFocusOnArrival(heading, main);
   const crumbs = crumbsOf(route, record);
-  const title = titleOf(route, record);
+  const title = pageTitleOf(route, record);
   return (
     <div className={styles.console}>
       <SkipLink

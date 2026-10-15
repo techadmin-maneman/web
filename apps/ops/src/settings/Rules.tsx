@@ -16,6 +16,7 @@ import { type OpsSetting } from "../api.ts";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { Refusal } from "../components/Refusal.tsx";
+import { useHeaderSub } from "../components/PageHead.tsx";
 import { OpsLink } from "../components/Shell.tsx";
 import { review as reviewWords } from "../content/common.ts";
 import { settings } from "../content/settings.ts";
@@ -272,6 +273,7 @@ export function Rules({ groups }: { readonly groups: readonly RuleGroupId[] }) {
   };
   // A link to a rule, as Services' to the late-fee rule, lands on it once the rules are on the page.
   useTargetRow(loaded.state === "loaded", "start");
+  useHeaderSub(allowed.mayChange ? undefined : copy.viewOnly);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;

@@ -171,6 +171,8 @@ export const settings = {
     reset: "Reset to default",
     changes: (count: number) => (count === 1 ? "1 change" : `${String(count)} changes`),
     discard: "Discard",
+    /** Beside the title of a page of policies the person may read and not change. */
+    viewOnly: "View only",
     /** The open-keyed rule's extra row: a base, and the cycle for it. */
     keyName: "Base, as the technician records it",
     keyValue: "Days",
@@ -404,7 +406,6 @@ export const settings = {
     kinds: { first_fit: "First fit", replacement: "Replacement" },
     notSet: "Not set",
     saved: "Saved.",
-    costLabel: (product: string) => `Cost of ${product}, Rs.`,
     reviewLabel: (product: string) => `Review the cost of ${product}`,
     change: (product: string, was: string, now: string) => `${product}: ${was} → ${now}, from today`,
     errors: {

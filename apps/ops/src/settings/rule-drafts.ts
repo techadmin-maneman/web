@@ -1,4 +1,4 @@
-// A rule as ops type it in Settings › Rules (./Rules.tsx): its draft, held as text, never as a number, since an empty
+// A rule as ops type it in Settings' policies (./Rules.tsx): its draft, held as text, never as a number, since an empty
 // box read as nought would be a radius no arrival passes; whether the draft is whole; what it would send; and each
 // figure it moves, old beside new, for the check.
 

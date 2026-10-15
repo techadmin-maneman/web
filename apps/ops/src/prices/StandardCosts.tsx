@@ -49,7 +49,7 @@ function CostRow(props: { product: Product; mayChange: boolean; onSaved: (produc
     return <SettingValue label={label} value={since === null ? standing : `${standing} · ${since}`} />;
   return (
     <>
-      <SettingRow label={label} unit={copy.unit}>
+      <SettingRow label={label} unit={since === null ? copy.unit : `${copy.unit} · ${since}`}>
         {(control) => (
           <>
             <TextInput

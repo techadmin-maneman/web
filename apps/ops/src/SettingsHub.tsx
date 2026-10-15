@@ -15,12 +15,11 @@ import {
   SETTINGS_GROUPS,
   SETTINGS_PAGE_NAMES,
   SETTINGS_PAGES,
+  type ScreenTab,
   type SettingsTab,
 } from "./route.ts";
 import { Rules } from "./settings/Rules.tsx";
 import { Loading } from "./states/States.tsx";
-
-type ScreenTab = Exclude<SettingsTab, Extract<(typeof SETTINGS_PAGES)[number], { rules: unknown }>["tab"]>;
 
 /** Each page that is a screen of its own, loaded the first time it opens. */
 const SCREENS: Readonly<Record<ScreenTab, ComponentType>> = {

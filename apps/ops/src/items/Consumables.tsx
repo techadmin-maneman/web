@@ -1,4 +1,4 @@
-// Settings, Consumables (docs/decisions/0087-consumables-and-stock.md): what a technician may record using on a job,
+// Items (docs/decisions/0087-consumables-and-stock.md): what a technician may record using on a job,
 // what each costs us, its low levels, and what each service is expected to use. No client's invoice carries a
 // consumable, so its cost is read only here. Hair systems are listed too, counted in pieces
 // (docs/decisions/0156-hair-systems-in-stock.md).

@@ -18,7 +18,8 @@ import {
   type TechnicianSummary,
   type TechnicianWork,
 } from "../api.ts";
-import { OpsLink, PageActions, useHeaderSub } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
+import { PageActions, useHeaderSub } from "../components/PageHead.tsx";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { technicianPath } from "../route.ts";

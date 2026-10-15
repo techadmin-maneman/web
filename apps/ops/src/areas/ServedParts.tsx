@@ -1,4 +1,4 @@
-// The Served tab's parts (./Served.tsx): the city tabs with their bulk pair, one pincode's row, who a save would
+// Settings › Areas' parts (./Served.tsx): the city tabs with their bulk pair, one pincode's row, who a save would
 // message, what sits beneath Save, and a file read with its changes shown before they go into the table.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";

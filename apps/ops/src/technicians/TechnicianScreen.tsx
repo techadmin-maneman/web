@@ -9,7 +9,8 @@ import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { type ReturnedVisit, type Roster, type Technician, type TechnicianSummary } from "../api.ts";
-import { OpsLink, useRecordTitle } from "../components/Shell.tsx";
+import { OpsLink } from "../components/Shell.tsx";
+import { useRecordTitle } from "../components/PageHead.tsx";
 import { technicians } from "../content.ts";
 import {
   dispatchPath,

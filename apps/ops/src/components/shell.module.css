@@ -15,23 +15,6 @@
   min-width: 0;
 }
 
-.mark {
-  flex-shrink: 0;
-  width: var(--sp-24);
-  height: var(--sp-24);
-  fill: var(--nav-mark);
-}
-
-.brandName {
-  font-size: var(--fs-15);
-}
-
-.footItems {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 /* The bar: where the page sits, the search, and who is signed in. */
 .bar {
   display: flex;

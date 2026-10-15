@@ -25,7 +25,6 @@ export const stock = {
   held: (quantity: number, unit: string) => `${String(quantity)} ${unit}`,
   low: "Low",
   none: "No consumables yet. Add them in",
-  settings: "Settings, Consumables",
   retired: "retired",
   counted: (when: string) => `Counted ${when}`,
   /** The soonest a lot held there expires. */

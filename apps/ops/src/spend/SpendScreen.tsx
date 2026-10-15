@@ -20,7 +20,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { spendApi, type SpendChannel, type SpendEntry, type SpendList } from "./spend-api.ts";
 import form from "../components/forms.module.css";
 import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/Shell.tsx";
+import { PageActions } from "../components/PageHead.tsx";
 
 /** Each month from the first the page takes to this one, the latest first. */
 function monthsOf(list: SpendList): string[] {

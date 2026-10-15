@@ -1,4 +1,4 @@
-// Areas' Served tab: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md). The pincodes live in a
+// Settings › Areas: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md). The pincodes live in a
 // spreadsheet (data/pincodes/README.md), so the tab does two things: launch one area, and take the whole file back,
 // shown pincode by pincode before the one Save. A save that would message people waiting opens the launch panel first
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).

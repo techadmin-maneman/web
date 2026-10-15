@@ -25,7 +25,7 @@ import { SupplierScores } from "./SupplierScores.tsx";
 import type { Orders } from "./types.ts";
 import { RowHead } from "../components/RowHead.tsx";
 import { purchasingApi } from "./purchasing-api.ts";
-import { PageActions } from "../components/Shell.tsx";
+import { PageActions } from "../components/PageHead.tsx";
 import { DrawerButton } from "../components/DrawerButton.tsx";
 
 const loadOrders = () => purchasingApi.orders();

@@ -56,15 +56,20 @@ const words = activity.filters;
 
 /** Each filter that is set, in the order the form asks for them, the client or visit a link set first. */
 export function appliedOf(filters: Filters): Applied[] {
-  const said: [keyof Filters, string | undefined][] = [
-    ["person", filters.person === undefined ? undefined : `${words.person} · ${filters.person.slice(0, 8)}`],
-    ["visit", filters.visit === undefined ? undefined : `${words.visit} · ${filters.visit.slice(0, 8)}`],
-    ["actor_kind", filters.actor_kind === undefined ? undefined : `${words.kind} · ${words.kinds[filters.actor_kind]}`],
-    ["actor", filters.actor === undefined ? undefined : `${words.kind} · ${filters.actor}`],
-    ["action", filters.action === undefined ? undefined : `${words.action} · ${activity.actions[filters.action]}`],
-    ["from", filters.from === undefined ? undefined : `${words.from} · ${filters.from}`],
-    ["to", filters.to === undefined ? undefined : `${words.to} · ${filters.to}`],
-    ["reads", filters.reads === undefined ? undefined : words.reads],
-  ];
-  return said.flatMap(([name, text]) => (text === undefined ? [] : [{ name, words: text }]));
+  const applied: Applied[] = [];
+  if (filters.person !== undefined)
+    applied.push({ name: "person", words: `${words.person} · ${filters.person.slice(0, 8)}` });
+  if (filters.visit !== undefined)
+    applied.push({ name: "visit", words: `${words.visit} · ${filters.visit.slice(0, 8)}` });
+  if (filters.actor_kind !== undefined) {
+    applied.push({ name: "actor_kind", words: `${words.kind} · ${words.kinds[filters.actor_kind]}` });
+  }
+  if (filters.actor !== undefined) applied.push({ name: "actor", words: `${words.kind} · ${filters.actor}` });
+  if (filters.action !== undefined) {
+    applied.push({ name: "action", words: `${words.action} · ${activity.actions[filters.action]}` });
+  }
+  if (filters.from !== undefined) applied.push({ name: "from", words: `${words.from} · ${filters.from}` });
+  if (filters.to !== undefined) applied.push({ name: "to", words: `${words.to} · ${filters.to}` });
+  if (filters.reads !== undefined) applied.push({ name: "reads", words: words.reads });
+  return applied;
 }

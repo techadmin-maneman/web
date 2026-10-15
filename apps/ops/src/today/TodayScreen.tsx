@@ -28,28 +28,32 @@ type Group = TaskGroup["group"];
 const countOf = (board: Tasks, groups: readonly Group[]): number =>
   board.groups.filter((each) => groups.includes(each.group)).reduce((sum, each) => sum + each.count, 0);
 
+/**
+ * A tile: what it counts, the page it opens, and the tone a figure above nought takes. A tile counts the board's groups
+ * it names, or one of the board's own totals.
+ */
 interface Tile {
   readonly key: keyof typeof copy.tiles;
   readonly page: Page;
-  readonly value: (board: Tasks) => number;
-  readonly tone?: (value: number) => StatTone;
+  readonly counts: readonly Group[] | "overdue" | "open" | "low_stock";
+  readonly tone: StatTone;
 }
 
-const attentionIfAny = (value: number): StatTone => (value > 0 ? "attention" : "plain");
-
 const TILES: readonly Tile[] = [
-  { key: "unassigned", page: "dispatch", value: (board) => countOf(board, ["unassigned_visit"]), tone: attentionIfAny },
-  {
-    key: "overdue",
-    page: "tasks",
-    value: (board) => board.overdue,
-    tone: (value) => (value > 0 ? "warning" : "plain"),
-  },
-  { key: "open", page: "tasks", value: (board) => board.groups.reduce((sum, each) => sum + each.count, 0) },
-  { key: "chats", page: "messages", value: (board) => countOf(board, ["unanswered_chat"]), tone: attentionIfAny },
-  { key: "lowStock", page: "stock", value: (board) => board.low_stock_places, tone: attentionIfAny },
-  { key: "charges", page: "payments", value: (board) => countOf(board, ["no_show_decision", "no_show_dispute"]) },
+  { key: "unassigned", page: "dispatch", counts: ["unassigned_visit"], tone: "attention" },
+  { key: "overdue", page: "tasks", counts: "overdue", tone: "warning" },
+  { key: "open", page: "tasks", counts: "open", tone: "plain" },
+  { key: "chats", page: "messages", counts: ["unanswered_chat"], tone: "attention" },
+  { key: "lowStock", page: "stock", counts: "low_stock", tone: "attention" },
+  { key: "charges", page: "payments", counts: ["no_show_decision", "no_show_dispute"], tone: "plain" },
 ];
+
+function figureOf(tile: Tile, board: Tasks): number {
+  if (tile.counts === "overdue") return board.overdue;
+  if (tile.counts === "low_stock") return board.low_stock_places;
+  if (tile.counts === "open") return board.groups.reduce((sum, each) => sum + each.count, 0);
+  return countOf(board, tile.counts);
+}
 
 /** How many visits today's routes hold, once they have loaded. */
 function VisitsToday() {
@@ -69,13 +73,13 @@ function Figures({ board }: { board: Tasks }) {
     <Columns>
       {mayRoute && <VisitsToday />}
       {shown.map((tile) => {
-        const value = tile.value(board);
+        const figure = figureOf(tile, board);
         return (
           <StatTile
             key={tile.key}
             label={copy.tiles[tile.key]}
-            value={value}
-            tone={tile.tone?.(value) ?? "plain"}
+            value={figure}
+            tone={figure > 0 ? tile.tone : "plain"}
             to={sectionOf(tile.page).path}
           />
         );

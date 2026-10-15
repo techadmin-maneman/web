@@ -1,4 +1,4 @@
-// Areas' Waiting tab: who waits in each pincode, longest first. Choosing one shows what launching it would send, and
+// The Waitlist: who waits in each pincode, longest first. Choosing one shows what launching it would send, and
 // only the panel's press serves it and messages its waitlist (docs/decisions/0048-referrals.md). A pincode already live
 // can be chosen too, for a waitlist a launch from Settings left untold
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).

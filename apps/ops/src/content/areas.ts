@@ -149,7 +149,7 @@ export const areas = {
   },
 } as const;
 
-/** Areas' Waiting tab: who waits in each pincode, the longest wait first. */
+/** The Waitlist: who waits in each pincode, the longest wait first. */
 export const waitlist = {
   columns: ["Pincode", "Area", "Waiting", "Oldest", "Referred", "Opted in"],
   narrow: "Filter the waitlist",

@@ -22,7 +22,7 @@ import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { settingsApi } from "./settings-api.ts";
 import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/Shell.tsx";
+import { PageActions } from "../components/PageHead.tsx";
 
 const copy = settings.blackouts;
 

@@ -1,6 +1,6 @@
-// Settings, Consumables, Hair systems (docs/decisions/0156-hair-systems-in-stock.md): a stock code for each product,
+// Items' hair systems (docs/decisions/0156-hair-systems-in-stock.md): a stock code for each product,
 // base size, colour, grey and density kept, counted in pieces in the stock ledger beside the consumables. Its name is
-// made from its spec; its cost and levels change in the list above, as any consumable's do.
+// made from its spec; its cost and levels change in the list, as any consumable's do.
 
 import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";

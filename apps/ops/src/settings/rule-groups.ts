@@ -1,9 +1,10 @@
-// Settings › Rules, by subject: each group is a section of its own, with its own anchor and its own Save.
+// Settings' policies, by subject: each group is a panel of its own on the Settings page that names it (../route.ts,
+// SETTINGS_PAGES), with its own anchor and its own change bar.
 
 import type { OpsSettingName } from "@rules/policy/ops-settings.ts";
 
 interface RuleGroup {
-  /** The section's anchor: "/settings#moves". */
+  /** The panel's anchor: "/settings/moves#moves". */
   readonly id: string;
   /** Its rules, in the order the section shows them. */
   readonly rules: readonly OpsSettingName[];

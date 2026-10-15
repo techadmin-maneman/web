@@ -141,7 +141,7 @@ export function App() {
     [path],
   );
   useEffect(() => {
-    // The hash names a row to land on, as "/no-shows#case-…" from an older task, or a rule, as "/settings#…".
+    // The hash names a row to land on, as "/no-shows#case-…" from an older task, or a rule, as "/settings/moves#…".
     const to = redirectOf(path, mayCall, window.location.hash);
     if (to !== null) redirect(to.includes("#") ? to : `${to}${window.location.hash}`);
   }, [path, mayCall]);

@@ -124,6 +124,10 @@ export const SETTINGS_PAGES = [
 
 export type SettingsPage = (typeof SETTINGS_PAGES)[number];
 export type SettingsTab = SettingsPage["tab"];
+/** A page of policies, which draws its rule groups. */
+export type RulesTab = Extract<SettingsPage, { rules: unknown }>["tab"];
+/** A page that is a screen of its own. */
+export type ScreenTab = Exclude<SettingsTab, RulesTab>;
 export type SettingsGroup = SettingsPage["group"];
 
 /** Settings' groups, in their menu's order. */

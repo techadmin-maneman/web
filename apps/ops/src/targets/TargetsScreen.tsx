@@ -21,7 +21,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import { targetsApi } from "./targets-api.ts";
 import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/Shell.tsx";
+import { PageActions } from "../components/PageHead.tsx";
 
 type Targets = Success<paths["/api/targets"]["get"]>;
 type Measure = Targets["measures"][number];

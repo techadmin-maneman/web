@@ -1,0 +1,18 @@
+/* The navigation's head and foot (./Navigation.tsx): the mark beside the console's name, and Settings. */
+
+.mark {
+  flex-shrink: 0;
+  width: var(--sp-24);
+  height: var(--sp-24);
+  fill: var(--nav-mark);
+}
+
+.brandName {
+  font-size: var(--fs-15);
+}
+
+.footItems {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

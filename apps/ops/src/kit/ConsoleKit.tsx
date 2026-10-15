@@ -174,7 +174,7 @@ function Navigation() {
   return (
     <>
       <div className={styles.row}>
-        <Popover label={words.account} button={<span>AK</span>}>
+        <Popover label={words.account} button={<span>PN</span>}>
           {(close) => (
             <>
               <PopoverNote>{words.signedIn}</PopoverNote>

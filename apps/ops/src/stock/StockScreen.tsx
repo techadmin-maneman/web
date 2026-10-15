@@ -12,6 +12,7 @@ import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dat
 import { Suspense, useState } from "react";
 import { type Stock } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
+import { shell } from "../content/shell.ts";
 import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
@@ -26,7 +27,7 @@ import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
 import { RowHead } from "../components/RowHead.tsx";
 import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/Shell.tsx";
+import { PageActions } from "../components/PageHead.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
 const PlacesPanel = lazyScreen(() => import("./PlacesPanel.tsx").then((module) => module.PlacesPanel));
@@ -100,12 +101,12 @@ function Held({ stock, code, place }: { stock: Stock; code: string; place: strin
   );
 }
 
-/** "Settings, Consumables", where each consumable and its low level is set. The sentence before it ends with it. */
-function ToSettings() {
+/** Items, where each consumable and its low level is set. The sentence before it ends with it. */
+function ToItems() {
   return (
     <>
       <OpsLink className={form.link} to="/items">
-        {copy.settings}
+        {shell.sections.items}
       </OpsLink>
       .
     </>
@@ -154,7 +155,7 @@ function OnHand({ stock }: { stock: Stock }) {
   if (stock.consumables.length === 0) {
     return (
       <Note>
-        {copy.none} <ToSettings />
+        {copy.none} <ToItems />
       </Note>
     );
   }
@@ -281,7 +282,7 @@ export function StockScreen() {
           {firstKind !== undefined && current.consumables.length > 0 && (
             <PageActions>
               <DrawerButton primary label={copy.record.title}>
-                {() => (
+                {(close) => (
                   <StockForm
                     stock={current}
                     kinds={[firstKind, ...otherKinds]}
@@ -295,6 +296,7 @@ export function StockScreen() {
                           at: { code: recorded.code, place: "central" },
                           time: (labelsFor?.time ?? 0) + 1,
                         });
+                        close();
                       }
                     }}
                   />
