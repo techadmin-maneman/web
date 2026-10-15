@@ -1,7 +1,7 @@
 // Operations · Counts (docs/decisions/0185-cycle-counts.md): the count tasks in the caller's places, each opened to be
 // counted, counted again or signed off; and each item's count class.
 
-import { fullDate } from "@maneman/web-kit/dates";
+import { fullDate, todayInIndia } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
@@ -39,7 +39,11 @@ function Tasks({ countTasks, opener }: { countTasks: CountTasks; opener: RowOpen
           <tr key={task.id}>
             <RowHead>{task.place}</RowHead>
             <td>{whatOf(task)}</td>
-            <td>{fullDate(task.due_on)}</td>
+            <td>
+              {task.state !== "done" && task.due_on < todayInIndia(Date.now())
+                ? copy.overdue(fullDate(task.due_on))
+                : fullDate(task.due_on)}
+            </td>
             <td>{copy.states[task.state]}</td>
             <td>
               <Button
