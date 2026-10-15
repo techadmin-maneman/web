@@ -46,6 +46,17 @@ test.describe("the services and their prices", () => {
     await expect(page.getByRole("main")).not.toContainText("No description");
   });
 
+  // At 1024 px the settings menu beside the page left the tables 486 px: GST, the next price and Edit were past the edge.
+  test("keeps every row's Edit in view on a 1024 px screen", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await open(page, "/settings/services");
+    const edit = (await page.getByRole("button", { name: "Edit Service visit", exact: true }).boundingBox()) ?? null;
+    expect(edit).not.toBeNull();
+    expect((edit?.x ?? 0) + (edit?.width ?? 0)).toBeLessThanOrEqual(1024);
+    const table = page.getByRole("table", { name: "Service visit" });
+    expect((await table.boundingBox())?.width ?? 0).toBeGreaterThan(600);
+  });
+
   test("keeps a row’s prices still to come and its earlier ones under its Edit", async ({ page }) => {
     await open(page, "/settings/services");
     await expect(page.getByText(/Rs\. 1,500/)).toBeHidden();

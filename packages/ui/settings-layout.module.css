@@ -87,13 +87,32 @@
     gap: var(--sp-8);
   }
 
-  @media (max-width: 1023px) {
+  /* Below a wide screen the menu runs across the top, each group a line of its pages, so a page's tables have the
+     width. */
+  @media (max-width: 1279px) {
     .layout {
       grid-template-columns: minmax(0, 1fr);
+      gap: var(--sp-20);
     }
 
     .menu {
       position: static;
+      flex-flow: row wrap;
+      gap: var(--sp-8) var(--sp-24);
+    }
+
+    .items {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .item {
+      border-bottom: var(--rule-strong) solid transparent;
+      border-left: 0;
+    }
+
+    .item[aria-current="page"] {
+      border-bottom-color: var(--ui-strong);
     }
   }
 }
