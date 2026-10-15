@@ -1,0 +1,78 @@
+{
+  "as_of": "2026-10-15",
+  "inr_per_usd": 84,
+  "lines": [
+    {
+      "id": "cloudflare",
+      "what": "Cloudflare Workers Paid: the Worker, D1, R2, queues, Workflows",
+      "basis": "national",
+      "usd": 5,
+      "source": "https://developers.cloudflare.com/workers/platform/pricing/",
+      "note": "The base fee; R2 at plan scale stays within the budget scripts/lib/usage-budget.ts holds it to."
+    },
+    {
+      "id": "supabase",
+      "what": "Supabase, the reporting copy",
+      "basis": "national",
+      "usd": 0,
+      "source": "https://supabase.com/pricing",
+      "note": "Free up to 500 MB; the Pro plan, $25 a month, once the copy passes it."
+    },
+    {
+      "id": "zoho_books",
+      "what": "Zoho Books Professional, one organisation",
+      "basis": "national",
+      "inr": 1499,
+      "source": "https://www.zoho.com/in/books/pricing/",
+      "note": "Before 18% GST; confirm against Zoho's invoice."
+    },
+    {
+      "id": "zoho_crm",
+      "what": "Zoho CRM Professional, a seat a month",
+      "basis": "per_seat",
+      "inr": 1400,
+      "source": "https://www.zoho.com/in/crm/zohocrm-pricing.html",
+      "note": "Annual billing, before 18% GST; confirm against Zoho's invoice."
+    },
+    {
+      "id": "whatsapp_utility",
+      "what": "WhatsApp utility message: a booking, a reminder, an arrival, a check-in",
+      "basis": "per_utility_message",
+      "inr": 0.115,
+      "source": "https://developers.facebook.com/docs/whatsapp/pricing",
+      "note": "Meta's India rate before GST, through MSG91, which adds its own fee; free on the Evolution bridge."
+    },
+    {
+      "id": "whatsapp_authentication",
+      "what": "WhatsApp authentication message: a login code",
+      "basis": "per_authentication_message",
+      "inr": 0.115,
+      "source": "https://developers.facebook.com/docs/whatsapp/pricing",
+      "note": "Meta's India rate before GST, through MSG91; free on the Evolution bridge."
+    },
+    {
+      "id": "whatsapp_marketing",
+      "what": "WhatsApp marketing message: a launch alert, a campaign",
+      "basis": "per_marketing_message",
+      "inr": 0.8631,
+      "source": "https://developers.facebook.com/docs/whatsapp/pricing",
+      "note": "Meta's India rate from 1 January 2026, before GST, through MSG91."
+    },
+    {
+      "id": "youcam",
+      "what": "YouCam hair transfer, a look rendered",
+      "basis": "per_render",
+      "usd": 0.11,
+      "source": "https://www.perfectcorp.com/business/blog/ai-clothes/virtual-try-on-api-pricing",
+      "note": "Two units a look (ADR 0201) at $27.50 for 500 units, pay as you go; confirm against YouCam's console."
+    },
+    {
+      "id": "google_maps",
+      "what": "Google Maps Platform: address lookups, drive times, day maps",
+      "basis": "national",
+      "inr": 0,
+      "source": "https://mapsplatform.google.com/pricing/",
+      "note": "Nothing while the daily ceilings hold every call inside Google's free monthly calls (src/policy/ops-settings-ceilings.ts)."
+    }
+  ]
+}

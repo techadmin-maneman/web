@@ -47,6 +47,7 @@ Where to read, by what you are here to do. The repository's own `README.md` says
 | [schema.md](schema.md)                                                                                 | Every table in D1, written from the migrations by `npm run schema`                                                                       |
 | [settings.md](settings.md)                                                                             | Every setting and where it lives: vars, secrets, fixed limits, constants, the rules ops set, dated tables; written by `npm run settings` |
 | [how-it-works/](how-it-works/README.md)                                                                | How each part of the business works today: booking, money, field work, stock, Care, reporting                                            |
+| [cost-model.md](cost-model.md)                                                                         | What a city costs to run a month: the vendors' dated prices, and `scripts/ops/cost-model.ts`                                             |
 | [verification.md](verification.md)                                                                     | Each milestone's definition of done, with its evidence                                                                                   |
 | [reference/](reference/README.md)                                                                      | The try-on providers' API notes, and the references' manifest                                                                            |
 
