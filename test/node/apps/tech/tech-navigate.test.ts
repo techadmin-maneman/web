@@ -25,6 +25,19 @@ const WITH_PIN = {
 const TYPED = { ...WITH_PIN, lat: null, lng: null };
 
 describe("addressLine", () => {
+  // "House 22, Nirvana Country, Sector 50, Sector 50, Gurgaon 122018" on a client's profile.
+  it("writes an area once, though the client typed it into the street too", () => {
+    expect(
+      addressLine({
+        flat: "House 22",
+        line1: "Nirvana Country, Sector 50",
+        locality: "Sector 50",
+        city: "Gurgaon",
+        pincode: "122018",
+      }),
+    ).toBe("House 22, Nirvana Country, Sector 50, Gurgaon 122018");
+  });
+
   it("joins the parts the API keeps an address in", () => {
     expect(addressLine(WITH_PIN)).toBe("Tower C, 14th floor, Sector 65, Gurgaon 122018");
   });
