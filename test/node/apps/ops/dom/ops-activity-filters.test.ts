@@ -48,7 +48,7 @@ describe("Activity’s filters", () => {
       { name: "person", words: `Client · ${CLIENT.slice(0, 8)}` },
       { name: "actor_kind", words: "Who · Technician" },
       { name: "to", words: "To · 2026-10-07" },
-      { name: "reads", words: "Show pages opened too" },
+      { name: "reads", words: "Show pages opened and searches too" },
     ]);
     expect(appliedOf({})).toEqual([]);
   });
