@@ -28,12 +28,16 @@ export interface Remake {
   readonly since: string;
 }
 
-/** The first fits and replacements of client ?1's left partly done, whose Tasks row ops have not closed. */
+/**
+ * The first fits and replacements of client ?1's left partly done, whose Tasks row ops have not closed. A consultation
+ * and fit in one visit that fitted nothing owes nothing free, since nothing was paid: its fit is booked as any first fit.
+ */
 export const PARTIAL_OWED = `SELECT a.id, 'partial' AS why, a.type AS kind, NULL AS piece_code,
     a.window_start AS since
   FROM visit_outcomes v JOIN appointments a ON a.id = v.appointment_id
   WHERE a.person_id = ?1 AND a.deleted_at IS NULL AND a.type IN ('first_fit', 'replacement')
     AND v.outcome = 'partial' AND v.followed_up = 0 AND COALESCE(v.partial_reason, '') <> 'no_show'
+    AND COALESCE(a.one_visit, '') <> 'booked'
     AND NOT EXISTS (SELECT 1 FROM task_closures c WHERE c.task_group = 'partial_visit' AND c.subject_id = a.id)`;
 
 /**

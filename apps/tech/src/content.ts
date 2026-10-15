@@ -509,7 +509,8 @@ export const steps = {
     malformed: "Type it as on the label, like MM-ESS-0000123-K.",
     checkFirst: "Check the label to continue",
     look: "Check the label",
-    unknown: "Unknown label. It’s saved as you typed it.",
+    unknown: "Not in your kit. Check the label, or close with Can’t fit today.",
+    notInKitAction: "That label isn’t in your kit",
     inKit: (name: string, lot: string | null) =>
       lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`,
     // The board draws no lookup with no signal.

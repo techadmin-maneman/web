@@ -10,11 +10,28 @@ import { fakeTech, type Fake } from "./fake-tech.ts";
 import { startedThrough, writesTo, checklistItems } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
+/** A hair system in the technician's kit, held under the one label given: what a fit goes on with. */
+const holding = (product: string, label: string): Fake["kitHairSystems"] => [
+  {
+    product,
+    base_width_in: 8,
+    base_length_in: 10,
+    colour: "1B",
+    grey_percent: 20,
+    density_percent: 100,
+    code: `hs_${product}`,
+    name: `Mane Man ${product} 8x10 1B, 20% grey, 100%`,
+    held: 1,
+    units: [{ code: label, lot_code: null, expires_on: null }],
+  },
+];
+
 test.describe("the piece (board B3, step 4)", () => {
   async function onThePiece(page: Page): Promise<Fake> {
     const fake = await fakeTech(page);
     fake.type = "replacement";
     fake.pieces = [ROHITS_PIECE];
+    fake.kitHairSystems = holding("standard", "MM-STD-5120-A");
     startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
     await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.piece })).toBeVisible();
@@ -29,7 +46,8 @@ test.describe("the piece (board B3, step 4)", () => {
 
     await label.fill("mm-std-7193 c");
     await expect(label).toHaveValue("MM-STD-7193-C");
-    await expect(page.getByRole("button", { name: techCopy.steps.next })).toBeEnabled();
+    // Not in the kit, so it is checked before the fit goes on.
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.checkFirst })).toBeDisabled();
 
     await label.fill("MM-STD-71");
     await expect(page.getByRole("button", { name: techCopy.steps.piece.checkFirst })).toBeDisabled();
@@ -220,12 +238,15 @@ test.describe("the piece (board B3, step 4)", () => {
     expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: techCopy.steps.next }).click();
-    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.replacement })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.replacement }),
+    ).toBeVisible();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-STD-5120-A",
       base: "PLACEHOLDER_STANDARD",
       supplier_lot: "LOT-5120",
+      stock_code: "hs_standard",
       old_piece: { piece_code: "MM-STD-4417-B", failure_reason: "Lifted at the front" },
     });
   });
@@ -240,6 +261,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     fake.type = "first_fit";
     fake.oneVisit = true;
     fake.checklist = ONE_VISIT_CHECKLIST;
+    fake.kitHairSystems = holding("natural", "MM-NAT-5120-A");
     startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
     await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.piece })).toBeVisible();
@@ -273,7 +295,11 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("button", { name: techCopy.steps.next }).click();
 
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
-    expect(writesTo(fake, "piece")[0]?.body).toEqual({ piece_code: "MM-NAT-5120-A", product: "natural" });
+    expect(writesTo(fake, "piece")[0]?.body).toEqual({
+      piece_code: "MM-NAT-5120-A",
+      product: "natural",
+      stock_code: "hs_natural",
+    });
   });
 
   test("records that the client decided against it, and asks for no label", async ({ page }) => {
