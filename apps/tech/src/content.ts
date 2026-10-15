@@ -60,6 +60,8 @@ export const today = {
   offline: {
     title: "No signal · working offline",
     body: "Today’s jobs and cards are on the phone.",
+    /** On a job's step: what the technician does is kept, and goes once the signal is back. */
+    step: "This job’s steps and photographs are kept on the phone and send when the signal is back.",
   },
   // The board draws no failure for the day's list.
   failed: "The day’s jobs didn’t load.",

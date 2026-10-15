@@ -11,7 +11,9 @@ import { IconButton } from "@maneman/ui/IconButton";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { useEffect, useState, type ReactNode } from "react";
-import { steps as copy } from "../content.ts";
+import { steps as copy, today } from "../content.ts";
+import { Offline } from "../components/Banners.tsx";
+import { useSession } from "../session.ts";
 import { useScreen } from "../lib/useScreen.ts";
 import frame from "../components/frame.module.css";
 import { classes } from "@maneman/ui/classes";
@@ -74,9 +76,11 @@ export function StepFrame({
 }) {
   const heading = useScreen(title);
   const settled = useSettled();
+  const { offline } = useSession();
 
   return (
     <main className={still ? frame.screen : shared.sliding}>
+      {offline && <Offline body={today.offline.step} />}
       <header className={classes(frame.head, styles.head)}>
         <IconButton
           className={shared.back}
