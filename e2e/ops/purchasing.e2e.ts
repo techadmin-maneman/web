@@ -54,7 +54,7 @@ const BOOK = {
 } satisfies OpsReply<"/api/purchase-orders">;
 
 const LETTERHEAD = {
-  legal_name: "Mane Man Grooming Services Private Limited",
+  legal_name: "Mane Man Private Limited",
   registered_office: "Plot 12, Okhla Phase II\nNew Delhi 110020",
   cin: "U74999DL2026PTC123456",
   gstin: "06AABCM1234A1Z5",

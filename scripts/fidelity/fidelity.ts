@@ -114,7 +114,7 @@ async function markDesign(page: Page): Promise<void> {
       child.setAttribute("data-fidelity", String(index));
     });
     const entity = [...document.querySelectorAll("span")].find((span) =>
-      span.textContent.includes("Grooming Services"),
+      span.textContent.includes("Private Limited"),
     );
     let footer: HTMLElement | null | undefined = entity;
     while (footer && getComputedStyle(footer).marginTop === "0px") footer = footer.parentElement;

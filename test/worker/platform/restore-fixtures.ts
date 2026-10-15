@@ -211,7 +211,7 @@ export const ROWS_AT_T: readonly string[] = [
   // A setting changed in the console: ops_settings_snapshot follows it.
   `INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('grace_minutes', '15', 'ops@example.com', '${AT}')`,
   `INSERT INTO po_letterhead (id, legal_name, gstin, deliver_to, set_by, set_at)
-   VALUES (1, 'Mane Man Grooming Services Private Limited', NULL, 'Sector 37', 'ops@example.com', '${AT}')`,
+   VALUES (1, 'Mane Man Private Limited', NULL, 'Sector 37', 'ops@example.com', '${AT}')`,
   `INSERT INTO technician_leave (id, technician_id, from_date, to_date, actor, created_at)
      VALUES ('tl1', 't1', '2026-10-10', '2026-10-11', 'ops@example.com', '${AT}')`,
   `INSERT INTO alerts (id, key, message, count, first_seen_at, last_seen_at)
