@@ -17,6 +17,9 @@ export const shell = {
    * departments beneath it.
    */
   title: "Console",
+  /** The header's way to the navigation, in a window too narrow to keep it beside the page. */
+  menu: "Menu",
+  closeMenu: "Close menu",
   departments: DEPARTMENT_NAMES,
   /** Our words where no board draws it: each section's name in the navigation, which the design draws flat. */
   sections: {

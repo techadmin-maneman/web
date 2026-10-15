@@ -1,13 +1,13 @@
 // What every step of the booking sheet (../BookingSheet.tsx) draws alike: its heading with the sheet's title id,
 // the countdown, the late fee, and the step that is still loading.
 
+import { GLYPHS } from "@maneman/brand/icons";
 import { capsLook } from "@maneman/ui/Caps";
 import { apiNow } from "@maneman/web-kit/clock";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import type { Hold, Price } from "../../api.ts";
 import { booking, states } from "../../content.ts";
-import { CLOCK } from "../../icons.ts";
 import { priceFigures } from "../../lib/money.ts";
 import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import styles from "../booking.module.css";
@@ -40,7 +40,7 @@ export function Heading({ title, step, aside }: { title: string; step?: string; 
       {step !== undefined && <p className={capsLook(styles.step)}>{step}</p>}
       {aside !== undefined && (
         <p className={styles.held}>
-          <Icon d={CLOCK} size={16} />
+          <Icon d={GLYPHS.clock} size="sm" />
           {aside}
         </p>
       )}

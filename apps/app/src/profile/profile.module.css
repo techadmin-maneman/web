@@ -111,7 +111,6 @@
 
 .secondary {
   flex: 1;
-  border-color: var(--paper-line);
 }
 
 /* The data card: a link that looks like its buttons, and a concern written in a few lines. */
@@ -268,7 +267,6 @@ a.secondary {
 
 .logout {
   width: 100%;
-  border-color: var(--paper-line);
 }
 
 .failed {

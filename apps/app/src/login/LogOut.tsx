@@ -17,7 +17,7 @@ export function LogOut({ className }: { className?: string }) {
   return (
     <>
       <Button
-        variant="outline"
+        variant="quiet"
         size="control"
         className={className}
         disabled={offline || busy}

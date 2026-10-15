@@ -42,12 +42,12 @@
   max-width: var(--measure-column);
   margin-top: var(--sp-16);
   padding: var(--sp-16) var(--sp-16);
-  border: var(--hairline) solid var(--error-on-paper);
+  border: var(--hairline) solid var(--status-warning);
 }
 
 /* The panel takes focus as it opens, so the outline has to be its own. */
 .confirm:focus-visible {
-  outline: var(--focus-width) solid var(--error-on-paper);
+  outline: var(--focus-width) solid var(--status-warning);
   outline-offset: var(--focus-offset);
 }
 
@@ -55,7 +55,7 @@
   margin: 0;
   font-size: var(--fs-15);
   line-height: var(--lh-145);
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .what {

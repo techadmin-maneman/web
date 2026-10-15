@@ -12,15 +12,8 @@
  * at 200% zoom, the grid scrolls sideways and the tray goes beneath it.
  */
 
-/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-tech: 104px; /* the column the technician and their zone stand in */
-  --local-tray: 236px; /* the unassigned tray down the right */
-  --local-cell: var(--ops-cell); /* one technician's day */
-  --local-day: var(--ops-column); /* the narrowest a day's column goes before the grid scrolls sideways */
-}
-
 .area {
+  --local-tray: 236px; /* the unassigned tray down the right */
   display: flex;
   flex: 1;
   min-width: 0;
@@ -78,8 +71,9 @@
 /* ---- The week: technicians down, seven days across ----------------------- */
 
 .grid {
+  --local-tech: 104px; /* the column the technician and their zone stand in */
   width: 100%;
-  min-width: calc(var(--local-tech) + 7 * var(--local-day));
+  min-width: calc(var(--local-tech) + 7 * var(--ops-column));
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
@@ -100,7 +94,7 @@
 .day {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: var(--z-sticky);
   border-bottom: var(--hairline) solid var(--text);
   background: var(--paper);
 }
@@ -108,14 +102,14 @@
 .tech {
   position: sticky;
   left: 0;
-  z-index: 1;
+  z-index: var(--z-raised);
   border-bottom: var(--hairline) solid var(--paper-line);
   background: var(--paper);
 }
 
 .corner {
   left: 0;
-  z-index: 3;
+  z-index: var(--z-sticky-corner);
 }
 
 .day {
@@ -145,7 +139,7 @@
 
 /* The day the week turns on, which the board letters in brass so the peak reads without a chart. */
 .peak {
-  color: var(--brass-text);
+  color: var(--status-attention);
 }
 
 .zone {
@@ -154,7 +148,7 @@
 }
 
 .cell {
-  height: var(--local-cell);
+  height: var(--ops-cell);
   padding: var(--sp-4);
   border-bottom: var(--hairline) solid var(--paper-line);
   border-left: var(--hairline) solid var(--paper-line);
@@ -183,7 +177,7 @@
  * shared label's muted ink whichever stylesheet loads last.
  */
 .awayMark.stranded {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 /* ---- One job on the board ------------------------------------------------ */
@@ -385,7 +379,7 @@
 }
 
 .refusal {
-  color: var(--error-on-paper);
+  color: var(--status-error);
 }
 
 /* ---- The unassigned tray ------------------------------------------------- */
@@ -483,7 +477,7 @@
  */
 .trayOffered,
 .trayWas {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .trayTop + .trayLine {
@@ -582,7 +576,7 @@
   gap: var(--sp-8);
   margin-top: var(--sp-16);
   padding-left: var(--sp-16);
-  border-left: var(--rule-strong) solid var(--error-on-paper);
+  border-left: var(--rule-strong) solid var(--status-warning);
 }
 
 .untoldLine {
@@ -604,7 +598,7 @@
 
 /* ---- A narrow window, or 200% zoom: the tray goes beneath the grid --- */
 
-@media (max-width: 1000px) {
+@media (max-width: 1023px) {
   .area {
     flex-direction: column;
     overflow-y: auto;
@@ -693,7 +687,7 @@
 
 /* A drive longer than the gap the board left: ops move a visit, or call ahead. */
 .legTight {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .dayMap {

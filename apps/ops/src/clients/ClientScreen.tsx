@@ -74,7 +74,7 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
           rel="noopener noreferrer"
           aria-label={clients.whatsappLabel(record.name)}
         >
-          <Icon d={ICONS.whatsapp} size={16} className={styles.icon} />
+          <Icon d={ICONS.whatsapp} size="sm" className={styles.icon} />
           {clients.whatsapp}
         </ButtonLink>
       </div>

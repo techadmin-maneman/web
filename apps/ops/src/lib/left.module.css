@@ -12,5 +12,5 @@
 }
 
 .late {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }

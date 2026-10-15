@@ -107,20 +107,20 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   await expect(page.getByLabel("To", { exact: true })).toHaveValue(client.service.id);
 
   const divider = page.getByRole("slider", { name: appCopy.photos.divider });
-  await expect(divider).toHaveAttribute("aria-valuenow", "50");
+  await expect(divider).toHaveValue("50");
   await divider.press("ArrowLeft");
-  await expect(divider).toHaveAttribute("aria-valuenow", "48");
+  await expect(divider).toHaveValue("49");
   await divider.press("End");
-  await expect(divider).toHaveAttribute("aria-valuenow", "100");
+  await expect(divider).toHaveValue("100");
 
-  // The divider follows the finger, with no snap: dragged a quarter of the way across, it stays there.
+  // The divider follows the finger: dragged a quarter of the way across, it stays there, give or take the handle.
   const box = await divider.locator("..").boundingBox();
   if (box === null) throw new Error("the compare has no stage");
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 4, box.y + box.height / 2, { steps: 5 });
   await page.mouse.up();
-  await expect(divider).toHaveAttribute("aria-valuenow", "25");
+  await expect.poll(async () => Math.abs(Number(await divider.inputValue()) - 25)).toBeLessThanOrEqual(2);
 
   // The first fit has no hairline photograph: its side stays empty.
   await page.getByRole("button", { name: appCopy.photos.compareAngles.hair }).click();

@@ -2,6 +2,7 @@
 // off before GST, what it covers, and its limits. The draft and the check's lines are ./discount-draft.ts; nothing is
 // made until the check has been read and the second press made (ADR 0071).
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Checkbox, ChoiceGroup, DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { CODE_LENGTH } from "@rules/policy/discount-codes.ts";
@@ -245,11 +246,7 @@ export function DiscountCodeForm({
       checking={
         steps.step === "editing"
           ? null
-          : checkLines(draft, requestOf(draft)).map((line) => (
-              <p className={form.checkLine} key={line}>
-                {line}
-              </p>
-            ))
+          : checkLines(draft, requestOf(draft)).map((line) => <CheckLine key={line}>{line}</CheckLine>)
       }
     >
       <WhatIsMade draft={draft} most={most} edit={edit} />

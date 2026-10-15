@@ -9,7 +9,6 @@ import { Icon } from "@maneman/ui/Icon";
 import { Link } from "@maneman/ui/router";
 import type { JobSummary } from "../api.ts";
 import { badges, job as copy } from "../content.ts";
-import { STROKE } from "../icons.ts";
 import { kindName } from "../lib/kind.ts";
 import { clock, where } from "../lib/when.ts";
 import styles from "./today.module.css";
@@ -44,7 +43,7 @@ export function JobRow({
         <span className={styles.where}>{where(job.sector)}</span>
         {state !== null && <span className={styles.state}>{state}</span>}
       </span>
-      <Icon className={styles.chevron} d={GLYPHS.chevron} size={19} stroke={STROKE} />
+      <Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" weight="heavy" />
     </Link>
   );
 }

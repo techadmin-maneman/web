@@ -2,6 +2,7 @@
 // base size, colour, grey and density kept, counted in pieces in the stock ledger beside the consumables. Its name is
 // made from its spec; its cost and levels change in the list above, as any consumable's do.
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
@@ -220,9 +221,7 @@ export function HairSystemForm({
           errors={copy.errors}
           onCancel={null}
           checking={checkLines(draft, productName).map((line) => (
-            <p className={form.checkLine} key={line}>
-              {line}
-            </p>
+            <CheckLine key={line}>{line}</CheckLine>
           ))}
         >
           <SpecFields products={products.map((each) => [each.tier, each.name] as const)} draft={draft} edit={edit} />

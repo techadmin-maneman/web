@@ -55,6 +55,14 @@ describe("the console’s own widths", () => {
     const values = local.map(({ value }) => value);
     expect(local.filter(({ value }, index) => values.indexOf(value) !== index || tokenValues.has(value))).toEqual([]);
   });
+
+  // Declared on :root in a module, all 46 were global, every page carrying them as the console loaded.
+  it("are declared on the class that draws them, never on :root", () => {
+    const modules = execFileSync("git", ["ls-files", "apps", "packages/ui", "site/src"], { encoding: "utf8" })
+      .split("\n")
+      .filter((path) => path.endsWith(".module.css"));
+    expect(modules.filter((path) => /:root\s*\{[^}]*--local-/.test(readFileSync(path, "utf8")))).toEqual([]);
+  });
 });
 
 describe("the colour roles", () => {

@@ -44,7 +44,7 @@ type Missing = "invoice" | "invoiceAfterVisit" | "invoiceLate" | "receipt";
 
 function Document(props: { name: string; href: string | null; missing: Missing; entry: string }) {
   const [asked, setAsked] = useState(false);
-  const icon = <Icon className={styles.documentIcon} d={ICONS.download} size={18} />;
+  const icon = <Icon className={styles.documentIcon} d={ICONS.download} size="sm" />;
   if (props.href !== null) {
     return (
       <OpenDocument url={props.href} notReady={payments.unavailable[props.missing]}>

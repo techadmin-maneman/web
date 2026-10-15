@@ -17,7 +17,6 @@ import { useState } from "react";
 import { Offline } from "../components/Banners.tsx";
 import { ConfirmSheet } from "@maneman/ui/ConfirmSheet";
 import { atRisk as atRiskCopy, queue as copy, reference, whatStopped } from "../content.ts";
-import { STROKE } from "../icons.ts";
 import { jobLabel } from "../lib/kind.ts";
 import { useHeldJobs } from "../lib/useDay.ts";
 import { useOutbox } from "../lib/useOutbox.ts";
@@ -181,8 +180,8 @@ export function WaitingScreen() {
         <IconButton
           className={styles.back}
           d={ICONS.back}
-          size={24}
-          stroke={STROKE}
+          size="lg"
+          weight="heavy"
           label={copy.back}
           onClick={() => {
             go("/");
@@ -206,7 +205,7 @@ export function WaitingScreen() {
             </div>
           )}
           <div className={styles.sets}>
-            <Icon className={styles.setsIcon} d={APP_ICONS.uploadQueue} size={20} stroke={STROKE} />
+            <Icon className={styles.setsIcon} d={APP_ICONS.uploadQueue} size="md" weight="heavy" />
             <span className={styles.setsLine}>{copy.waiting(sets.length)}</span>
           </div>
           <ul className={styles.list}>

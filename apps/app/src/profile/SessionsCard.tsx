@@ -106,7 +106,7 @@ function Others(props: { asking: boolean; busy: boolean; onAsk: (asking: boolean
   if (!props.asking) {
     return (
       <Button
-        variant="outline"
+        variant="quiet"
         size="control"
         className={styles.secondary}
         disabled={props.busy}
@@ -126,7 +126,7 @@ function Others(props: { asking: boolean; busy: boolean; onAsk: (asking: boolean
           {copy.yes}
         </Button>
         <Button
-          variant="outline"
+          variant="quiet"
           size="control"
           className={styles.secondary}
           disabled={props.busy}

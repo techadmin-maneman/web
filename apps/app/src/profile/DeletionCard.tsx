@@ -88,7 +88,7 @@ export function DeletionCard({
             {copy.yes}
           </Button>
           <Button
-            variant="outline"
+            variant="quiet"
             size="control"
             className={styles.secondary}
             disabled={busy}

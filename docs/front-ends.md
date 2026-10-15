@@ -29,7 +29,7 @@ Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` se
 | Package            | What it holds                                                                                                                                                                               | Used by                                                |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | `packages/brand`   | Every colour, size, space, weight, leading and motion as tokens; the fonts; the icons and the marks (`packages/brand/README.md`, ADR 0077)                                                  | All four                                               |
-| `packages/ui`      | The React components and hooks the apps draw alike: buttons, sheets, dialogs, fields, tables, tabs, page states, the router, `useLoad`, `useOneAtATime` (`packages/ui/README.md`, ADR 0076) | The three apps                                         |
+| `packages/ui`      | The React components and hooks the apps draw alike: buttons, sheets, dialogs, fields, tables, tabs, page states, the router, `useLoad`, `useOneAtATime` (`packages/ui/README.md`, ADR 0076) | The three apps, and the site's islands (ADR 0121)      |
 | `packages/web-kit` | The API client, the apps' security headers, India's dates, rupees, a mobile number as typed, and WhatsApp's number and links                                                                | The three apps, and the site's dates, rupees and links |
 
 - **Tokens only.** No stylesheet writes a colour, length, duration, curve, weight or leading of its own; `test/node/site/site-tokens.test.ts` and `test/node/apps/app/app-tokens.test.ts` fail on one.
@@ -82,7 +82,7 @@ What a technician needs at a client's door, in a basement, with gloves on (ADR 0
 
 ## The public site
 
-The site is an Astro build of `design/Mane Man Site v2.dc.html`, served as static assets by mm-site. Its Worker answers first only on `/`, `/book` and `/r/*`: it writes the price book's figures into the pages and answers an invite's landing (ADRs 0027 and 0073). The try-on and the booking form are Preact islands in `site/src/islands/`. It uses the brand's tokens and `packages/web-kit`'s dates, rupees and links, but not `packages/ui`. Everything else about it is in `docs/site.md`.
+The site is an Astro build of `design/Mane Man Site v2.dc.html`, served as static assets by mm-site. Its Worker answers first only on `/`, `/areas`, `/book` and `/r/*`, and on the films: it names the cities served and a city's areas, writes what a referral earns, answers an invite's landing (ADRs 0027 and 0107), and serves a film a byte range at a time. The try-on and the booking form are Preact islands in `site/src/islands/`. It uses the brand's tokens, `packages/web-kit`'s dates, rupees and links, and `packages/ui`'s parts: its islands draw every control, the booking's day strip, windows and address, the code field and the compare from it through Preact's compatibility layer, and its Astro pages take the package's looks (ADR 0121). Everything else about it is in `docs/site.md`.
 
 ## Running them
 

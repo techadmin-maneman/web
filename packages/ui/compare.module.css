@@ -1,0 +1,57 @@
+/*
+ * A before and an after (./Compare.tsx): the stage on the frame's ink, the before layer clipped at the divider, a gilt
+ * line, and the handle on it, which takes the range's focus ring. A surface sets the stage's size and the handle's.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .stage {
+    --at: 50%;
+    --compare-handle: var(--tap);
+
+    position: relative;
+    overflow: hidden;
+    background: var(--ink-frame);
+    touch-action: none;
+    user-select: none;
+  }
+
+  .before {
+    clip-path: inset(0 calc(100% - var(--at)) 0 0);
+  }
+
+  .divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--at);
+    width: var(--hairline);
+    background: var(--gilt);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .handle {
+    position: absolute;
+    top: 50%;
+    left: var(--at);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-4);
+    width: var(--compare-handle);
+    height: var(--compare-handle);
+    border: var(--hairline) solid var(--gilt);
+    background: var(--ink-deep);
+    color: var(--gilt);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  /* The range covers the stage, unseen; its focus ring is drawn on the handle. */
+  .stage:has(input:focus-visible) .handle {
+    outline: var(--focus-width) solid var(--paper);
+    outline-offset: var(--focus-offset);
+  }
+}

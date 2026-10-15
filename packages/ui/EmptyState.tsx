@@ -22,7 +22,7 @@ export function EmptyState(
   const [first, second] = props.lines;
   return (
     <div className={classes(styles.page, props.tight === true ? styles.tight : undefined)}>
-      {props.icon !== undefined && <Icon className={styles.icon} d={props.icon} size={24} />}
+      {props.icon !== undefined && <Icon className={styles.icon} d={props.icon} size="lg" />}
       <p className={styles.first}>{first}</p>
       <p className={styles.line}>{second}</p>
       {props.action}

@@ -22,7 +22,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
-import { GLYPHS } from "@maneman/brand/icons";
+import { ICONS } from "@maneman/brand/icons";
 import { capsLook } from "./Caps.tsx";
 import { Icon } from "./Icon.tsx";
 import { classes } from "./classes.ts";
@@ -131,7 +131,7 @@ export function TextInput({
   if (icon === undefined) return input;
   return (
     <div className={styles.withIcon}>
-      <Icon className={styles.icon} d={icon} size={21} />
+      <Icon className={styles.icon} d={icon} size="md" />
       {input}
     </div>
   );
@@ -219,7 +219,7 @@ export function Checkbox({
   const box = (
     <span className={classes(styles.tick, onInk && styles.tickOnInk, label === undefined && className)}>
       <input {...rest} className={styles.tickInput} type="checkbox" />
-      <Icon className={styles.tickMark} d={GLYPHS.check} size={13} />
+      <Icon className={styles.tickMark} d={ICONS.tick} size="xs" />
     </span>
   );
   if (label === undefined) return box;

@@ -1,7 +1,9 @@
-// A filter that is on, as a chip with a way to take it off: "Client · 2c41a8f0 ×".
+// A filter that is on, as a chip with the set's cross to take it off: "Client · 2c41a8f0".
 
+import { ICONS } from "@maneman/brand/icons";
 import type { ReactNode } from "react";
 import { classes } from "./classes.ts";
+import { Icon } from "./Icon.tsx";
 import styles from "./chip.module.css";
 
 export function Chip({
@@ -20,7 +22,7 @@ export function Chip({
     <span className={classes(styles.chip, className)}>
       {children}
       <button type="button" className={styles.remove} aria-label={removeLabel} onClick={onRemove}>
-        ×
+        <Icon d={ICONS.cross} size="xs" />
       </button>
     </span>
   );

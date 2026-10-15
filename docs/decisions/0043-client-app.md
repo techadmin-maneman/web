@@ -68,7 +68,7 @@ mm-api therefore answers as the client surface, and a write's `Origin` matches t
   - WebOTP is asked for whenever the code goes by SMS.
   - The resend's countdown is shown, not spoken.
 - **Home, for a lead, is board B2.** The consultation's date, window and place come from `GET /api/me`, which gains `place` (the saved address, else the booking's city) and `initials` for the profile button. While self-serve booking is off, Reschedule and Add a note open WhatsApp to ops with a message ready, as the prompt's `409 ops_assisted` fallback would.
-- **The tabs.** Visits lists the consultation. Photos, Payments and Refer show the design's empty states. The tab glyphs, from the design's tab bar, are in `apps/app/src/icons.ts`, pinned by `test/node/apps/app/app-content.test.ts`.
+- **The tabs.** Visits lists the consultation. Photos, Payments and Refer show the design's empty states. The tab glyphs, from the design's tab bar, are `TAB_ICONS` in `packages/brand/icons.ts`, pinned by `test/node/apps/app/app-content.test.ts`.
 - **Placeholder copy.** `apps/app/src/content.ts` marks the lines the design does not draw: A1's errors, A2's neutral line, the void and failed states, the WhatsApp messages, and Home with nothing booked. Each awaits the owner's wording.
 - **Tests log in for real.** Locally only, `OTP_FIXED_CODE` makes every code a known one, so the browser tests go from a booking made through the public API to Home. The guard refuses it in staging and production.
 

@@ -1,15 +1,10 @@
-// The before/after comparison: drag the handle, or use the arrow keys, to
-// reveal more of one image. A native range input does the work, so it is
-// keyboard-operable and announced as a slider.
-//
-// The position reaches CSS as --position. The starting value comes from a
-// class, so the server-rendered HTML carries no inline style.
+// The before/after teaser: the shared compare (@maneman/ui/Compare), the two images from the Astro page, its labels
+// in the corners. The stylesheet draws the divider at 46% before the page runs, so the first paint matches.
 
 import { capsLook } from "@maneman/ui/Caps";
-import { RangeInput } from "@maneman/ui/Field";
+import { classes } from "@maneman/ui/classes";
+import { Compare, COMPARE_BEFORE } from "@maneman/ui/Compare";
 import type { ComponentChildren } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
-import { ICONS } from "@maneman/brand/icons";
 import { fill } from "../lib/text.ts";
 import styles from "./BeforeAfter.module.css";
 
@@ -17,7 +12,7 @@ interface Props {
   /** The two images, named slots from the Astro page. */
   before?: ComponentChildren;
   after?: ComponentChildren;
-  /** Where the handle starts: 46%, as the stylesheet draws it before the page runs, so the first paint matches. */
+  /** Where the handle starts, as the stylesheet draws it before the page runs. */
   start: 46;
   beforeLabel: string;
   afterLabel: string;
@@ -29,49 +24,18 @@ interface Props {
 }
 
 export default function BeforeAfter(props: Props) {
-  const frame = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<number>(props.start);
-
-  useEffect(() => {
-    frame.current?.style.setProperty("--position", `${String(position)}%`);
-  }, [position]);
-
   return (
-    <div ref={frame} class={`${styles.frame} ${styles.teaser} ${styles.from46}`}>
+    <Compare
+      className={styles.teaser}
+      start={props.start}
+      label={props.sliderLabel}
+      valueText={(at) => fill(props.sliderValue, { before: String(at), after: String(100 - at) })}
+    >
       <div class={styles.layer}>{props.after}</div>
-      <div class={`${styles.layer} ${styles.before}`}>{props.before}</div>
+      <div class={classes(styles.layer, COMPARE_BEFORE)}>{props.before}</div>
       <span class={capsLook(`label ${styles.corner} ${styles.left}`)}>{props.beforeLabel}</span>
       <span class={capsLook(`label ${styles.corner} ${styles.right}`)}>{props.afterLabel}</span>
       {props.tag !== undefined && <span class={capsLook(`label ${styles.tag}`)}>{props.tag}</span>}
-      <div class={styles.line} />
-      <div class={styles.handle}>
-        {[ICONS.handleLeft, ICONS.handleRight].map((path) => (
-          <svg
-            key={path}
-            viewBox="0 0 24 24"
-            width={15}
-            height={15}
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            aria-hidden="true"
-          >
-            <path d={path} />
-          </svg>
-        ))}
-      </div>
-      <RangeInput
-        over
-        min={0}
-        max={100}
-        value={position}
-        aria-label={props.sliderLabel}
-        aria-valuetext={fill(props.sliderValue, { before: String(position), after: String(100 - position) })}
-        onInput={(event) => {
-          setPosition(Number(event.currentTarget.value));
-        }}
-      />
-    </div>
+    </Compare>
   );
 }

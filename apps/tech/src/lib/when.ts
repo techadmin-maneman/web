@@ -2,6 +2,7 @@
 // counts the evidence chain and the close-out show: what is left of the wait, and how long the
 // job took.
 
+import { distance } from "@maneman/web-kit/figures";
 import { apiNow } from "@maneman/web-kit/clock";
 import { addDays, indiaClock, todayInIndia as indiaToday } from "@maneman/web-kit/dates";
 
@@ -24,9 +25,7 @@ export const clock = indiaClock;
 export const where = (sector: string | null): string => sector ?? "";
 
 /** "1.4 km", "240 m": how far the check-in measured the phone from the door. */
-export function metres(distance: number): string {
-  return distance < 1000 ? `${String(Math.round(distance))} m` : `${(distance / 1000).toFixed(1)} km`;
-}
+export const metres = distance;
 
 /** "11:42", the minutes and seconds left of the no-show wait; "0:00" once it has run. */
 export function countdown(msLeft: number): string {

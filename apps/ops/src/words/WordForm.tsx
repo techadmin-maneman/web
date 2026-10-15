@@ -2,6 +2,7 @@
 // fills to keep and the length the layout holds beneath it, then what the line is now beside what it will be, and only
 // the second press saves it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, TextArea } from "@maneman/ui/Field";
 import { useState } from "react";
 import { type Word } from "../api.ts";
@@ -70,8 +71,8 @@ export function WordForm(props: {
       above={<p className={styles.code}>{formWords.inCode(word.text)}</p>}
       checking={
         <>
-          <p className={form.checkLine}>{check.was(word.now)}</p>
-          <p className={form.checkLine}>{check.now(text)}</p>
+          <CheckLine>{check.was(word.now)}</CheckLine>
+          <CheckLine>{check.now(text)}</CheckLine>
         </>
       }
     >

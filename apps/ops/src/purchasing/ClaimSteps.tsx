@@ -48,7 +48,7 @@ function Withdraw({
   return (
     <>
       <Button
-        variant="destructive"
+        variant="danger"
         size="small"
         disabled={note === ""}
         onClick={() =>

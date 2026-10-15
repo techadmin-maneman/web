@@ -2,6 +2,7 @@
 // a contact, and its payment terms and warranty. The check shows each field that changes, old beside new, before
 // anything is sent (ADR 0071).
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import type { Success } from "@maneman/web-kit/api";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
@@ -218,9 +219,7 @@ export function SupplierForm({
       onCancel={onCancel}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [formWords.confirm.nothing] : lines).map((line) => (
-        <p className={form.checkLine} key={line}>
-          {line}
-        </p>
+        <CheckLine key={line}>{line}</CheckLine>
       ))}
     >
       <SupplierBoxes draft={draft} edit={edit} />

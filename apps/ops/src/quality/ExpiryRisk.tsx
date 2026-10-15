@@ -11,6 +11,7 @@ import form from "../components/forms.module.css";
 import { quality as copy } from "../content/quality.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { fullDate } from "@maneman/web-kit/dates";
+import { quantity } from "@maneman/web-kit/figures";
 import { RowHead } from "../components/RowHead.tsx";
 import { qualityApi } from "./quality-api.ts";
 
@@ -18,8 +19,6 @@ type Risk = Success<paths["/api/stock/expiry-risk"]["get"]>;
 type Lot = Risk["lots"][number];
 
 const loadRisk = () => qualityApi.expiryRisk();
-
-const quantity = (value: number) => value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
 
 const todo = (lot: Lot) =>
   lot.suggestion === "move" && lot.move_to !== null ? copy.moveTo(lot.move_to) : copy.suggestions[lot.suggestion];

@@ -2,6 +2,7 @@
 // the label with its lookup and the client's pieces to pick from, the base and the lot, and on a replacement the piece
 // that came off.
 
+import { GLYPHS } from "@maneman/brand/icons";
 import { Field, TextInput, type FieldControl } from "@maneman/ui/Field";
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { capsLook } from "@maneman/ui/Caps";
@@ -10,7 +11,6 @@ import { QrCamera } from "@maneman/ui/ScanField";
 import { useState, type ReactNode } from "react";
 import type { Job, PieceLookup } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
-import { TAG } from "../icons.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
@@ -235,7 +235,7 @@ export function LabelField(props: {
             <TextInput
               {...control}
               onInk
-              icon={TAG}
+              icon={GLYPHS.tag}
               className={styles.labelInput}
               value={code}
               placeholder={copy.piece.placeholder}

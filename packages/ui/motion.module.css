@@ -1,7 +1,11 @@
 /*
- * The apps' one fade (./motion.ts): a page, or an image replacing another,
- * arriving on the house curve. Under prefers-reduced-motion nothing moves
- * (./base.css).
+ * Motion, one spec for every surface, on the house curve (--ease-house):
+ *
+ *   - Something crossing a distance takes --duration-travel, both ways: a sheet rises from the foot and sinks back
+ *     (./sheet.module.css), a drawer slides in from the right and back out (./drawer.module.css).
+ *   - A state changing takes --duration-quick: a button's or a field's colours and edge (./button.module.css,
+ *     ./field.module.css), and the one fade below, a page or an image replacing another arriving (./motion.ts).
+ *   - Under prefers-reduced-motion nothing moves, in the apps (./base.css) as on the site (site/src/styles/global.css).
  */
 
 @layer base, ui;

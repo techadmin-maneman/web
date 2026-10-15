@@ -20,8 +20,22 @@ import {
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fieldDigits, formatMobileField, mobileDigits, typedDigits } from "../../../packages/web-kit/mobile.ts";
+import { distance, quantity } from "../../../packages/web-kit/figures.ts";
 import { rupees } from "../../../packages/web-kit/money.ts";
 import { WHATSAPP_NUMBER, whatsappChat, whatsappShare } from "../../../packages/web-kit/whatsapp.ts";
+
+describe("web-kit figures", () => {
+  it("groups a quantity as India does, to one decimal at most", () => {
+    expect(quantity(1234.56)).toBe("1,234.6");
+    expect(quantity(100000)).toBe("1,00,000");
+    expect(quantity(3)).toBe("3");
+  });
+
+  it("says a distance in metres under a kilometre, else in kilometres", () => {
+    expect(distance(240.4)).toBe("240 m");
+    expect(distance(1400)).toBe("1.4 km");
+  });
+});
 
 describe("web-kit dates", () => {
   it.each([

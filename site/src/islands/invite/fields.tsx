@@ -217,7 +217,7 @@ export function StepLine(props: { at: number; of: number; name: string; focus: b
     line.current?.scrollIntoView({ block: "start" });
   }, [props.focus]);
   return (
-    <p ref={line} tabIndex={-1} class={capsLook(styles.step)}>
+    <p ref={line} tabIndex={-1} data-says-where class={capsLook(styles.step)}>
       {fill(booking.step, { at: String(props.at), of: String(props.of), name: props.name })}
     </p>
   );

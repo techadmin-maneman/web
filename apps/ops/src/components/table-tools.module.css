@@ -1,13 +1,9 @@
 /* A long table's bar of search and lists, its heads that sort, and the line beneath it (./TableTools.tsx). */
 
 /* This bar's own size, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-table-filter: var(--ops-filter); /* a list's narrowest: "Used on a job" and its arrow */
-}
-
 .bar {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--local-table-filter), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--ops-filter), 1fr));
   gap: var(--sp-12) var(--sp-16);
   align-items: end;
   margin: var(--sp-12) var(--sp-20) var(--sp-8);

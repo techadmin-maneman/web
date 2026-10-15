@@ -5,13 +5,6 @@
  * the gap between them is visible.
  */
 
-/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-waitlist-count: 54px; /* the waitlist's three narrower columns of figures, count, Ref and Alerts */
-  --local-waitlist-ref: 60px;
-  --local-waitlist-alerts: 62px;
-}
-
 .screen {
   display: flex;
   flex-direction: column;
@@ -88,6 +81,7 @@
 
 /* The board's own widths for the four columns of figures and dates. */
 .count {
+  --local-waitlist-count: 54px; /* the waitlist's three narrower columns of figures, count, Ref and Alerts */
   width: var(--local-waitlist-count);
 }
 
@@ -97,10 +91,12 @@
 }
 
 .referred {
+  --local-waitlist-ref: 60px;
   width: var(--local-waitlist-ref);
 }
 
 .alerts {
+  --local-waitlist-alerts: 62px;
   width: var(--local-waitlist-alerts);
 }
 
@@ -135,7 +131,7 @@
   margin-left: var(--sp-8);
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  color: var(--brass-text);
+  color: var(--status-attention);
 }
 
 /* ---- Marking a pincode live --------------------------------------------- */
@@ -222,6 +218,7 @@
 .done {
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-15);
+  color: var(--status-done);
 }
 
 .error {

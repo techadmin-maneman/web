@@ -15,8 +15,8 @@
 :root {
   /* ---- Colour: the brand ------------------------------------------------ */
   --ink: #16233a; /* ink navy */
-  --gilt: #c9a363; /* on ink only: the mark, one rule */
-  --brass: #b98b45; /* on paper only */
+  --gilt: #c9a363; /* on ink only: the mark, one rule; never text on paper (1.86:1) */
+  --brass: #b98b45; /* on paper only, for rules and marks: never text (2.42:1); --brass-text is its text */
   --paper: #e9e4d8;
   --text: #1a1714;
 
@@ -141,8 +141,20 @@
   --duration-phrase: 1200ms; /* one phrase of the hero's opening line, faded in, held and faded out */
   --ease-house: cubic-bezier(0.22, 0.61, 0.36, 1);
 
+  /* ---- Layers: what sits over what, from low to high ---------------------- */
+  --z-raised: 1; /* a part over its neighbour: a radio over its card, the hero's words over its film */
+  --z-sticky: 2; /* a table's head or first column, held as it scrolls */
+  --z-sticky-corner: 3; /* where a held head and a held column meet */
+  --z-consent: 30; /* the cookie bar, beneath the header */
+  --z-header: 40; /* the site's header */
+  --z-bar: 50; /* a bar fixed at the foot */
+  --z-skip: 100; /* the skip link, over any bar a page fixes in place */
+
+  /* ---- Opacity ---------------------------------------------------------------- */
+  --dim: 0.85; /* a photo held back behind what is laid over it */
+
   /* ---- The viewport: no board draws these; each lets a layout reach past its column -------------- */
-  --app-column-max: 480px; /* the client app's column, filling a phone wider than the design's 390 px */
+  --app-column-max: 480px; /* the phone apps' column, filling a phone wider than the design's 390 px */
   --photo-max-h: 56dvh; /* a photograph opened large, with room for its caption beneath */
 
   /* ---- The frame the site and the apps share ----------------------------------------------- */
@@ -163,8 +175,10 @@
   --on-surface-muted: var(--text-muted);
   --border-subtle: var(--paper-line);
   --border-control: var(--paper-control);
-  --status-error: var(--error-on-paper);
+  --status-error: var(--error-on-paper); /* something went wrong, or was refused */
+  --status-warning: var(--error-on-paper); /* something to act on: overdue, late, low, below its target, stranded */
   --status-saved: var(--text);
+  --status-done: var(--text); /* finished, and nothing to do: as calm as the words around it */
   --status-note: var(--text-muted);
 }
 
@@ -175,6 +189,8 @@
   --border-subtle: var(--ink-line);
   --border-control: var(--ink-line-strong);
   --status-error: var(--error-on-ink);
+  --status-warning: var(--error-on-ink);
   --status-saved: var(--paper);
+  --status-done: var(--paper);
   --status-note: var(--ink-muted);
 }

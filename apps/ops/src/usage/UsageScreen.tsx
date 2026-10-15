@@ -6,6 +6,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
+import { quantity } from "@maneman/web-kit/figures";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
@@ -19,8 +20,6 @@ type Usage = Success<paths["/api/stock/usage"]["get"]>;
 type Technician = Usage["technicians"][number];
 
 const loadUsage = () => usageApi.usage();
-
-const quantity = (value: number) => value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
 
 function Head({ columns }: { columns: readonly string[] }) {
   return (

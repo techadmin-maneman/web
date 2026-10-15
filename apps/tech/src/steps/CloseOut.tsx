@@ -10,7 +10,6 @@ import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useCallback } from "react";
 import type { Job, JobSummary } from "../api.ts";
 import { closeOut as copy, job as jobCopy, oneVisit, titles } from "../content.ts";
-import { STROKE } from "../icons.ts";
 import { declinedTheFit, outcomeOf, type Outcome } from "../lib/progress.ts";
 import { useDay, useJob, useNames } from "../lib/useDay.ts";
 import { signatureOf, useOutbox } from "../lib/useOutbox.ts";
@@ -124,7 +123,7 @@ export function CloseOut({ id }: { id: string }) {
     <main className={frame.screen}>
       <section className={styles.close}>
         <p className={capsLook(styles.closeLabel)}>{copy.label}</p>
-        <Icon className={styles.closeTick} d={ICONS.tick} size={28} stroke={STROKE} />
+        <Icon className={styles.closeTick} d={ICONS.tick} size="xl" weight="heavy" />
         <h1 className={styles.closeWho} ref={heading} tabIndex={-1}>
           {copy.who(who, closedAs(job, outcome, waiting.events))}
         </h1>

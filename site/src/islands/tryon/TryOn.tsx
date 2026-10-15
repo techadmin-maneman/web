@@ -175,7 +175,7 @@ function TryOnFlow(props: Props) {
       <div class={styles.inner}>
         <div class={styles.topline}>
           <TextButton tone="ink" className={styles.back} onClick={back}>
-            <Icon d={ICONS.back} size={17} />
+            <Icon d={ICONS.back} size="sm" />
             {backFrom(screen) === "home" ? tryOn.backToSite : tryOn.back}
           </TextButton>
           <span class={capsLook(styles.stepLabel)}>

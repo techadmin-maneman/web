@@ -1,8 +1,8 @@
 /*
  * Labels for the warehouse's thermal printer, 50 by 25 mm, one to a page: the QR code beside the label, the item and
- * its lot. The sheet never shows on screen; while it prints, nothing else on the page does.
+ * its lot. The sheet never shows on screen; while it prints, nothing else on the page does. A label is measured in
+ * millimetres and its words in points, as the printer's stock is.
  */
-
 .sheet {
   display: none;
 }
@@ -23,15 +23,22 @@
 }
 
 .label {
+  --local-label-code: 7.5pt;
+  --local-label-text: 6.5pt;
+  --local-label-line-gap: 0.5mm;
+  --local-label-qr: 22mm;
+  --local-label-pad: 1.5mm;
+  --local-label-height: 25mm;
+  --local-label-width: 50mm;
   page: label;
   break-after: page;
   box-sizing: border-box;
-  inline-size: 50mm;
-  block-size: 25mm;
-  padding: 1.5mm;
+  inline-size: var(--local-label-width);
+  block-size: var(--local-label-height);
+  padding: var(--local-label-pad);
   display: grid;
-  grid-template-columns: 22mm 1fr;
-  gap: 1.5mm;
+  grid-template-columns: var(--local-label-qr) 1fr;
+  gap: var(--local-label-pad);
   align-items: center;
   overflow: hidden;
   color: var(--ink);
@@ -40,20 +47,20 @@
 }
 
 .qr {
-  inline-size: 22mm;
-  block-size: 22mm;
+  inline-size: var(--local-label-qr);
+  block-size: var(--local-label-qr);
   fill: currentColor;
 }
 
 .words {
   display: grid;
-  gap: 0.5mm;
+  gap: var(--local-label-line-gap);
   min-inline-size: 0;
-  font-size: 6.5pt;
+  font-size: var(--local-label-text);
 }
 
 .code {
-  font-size: 7.5pt;
+  font-size: var(--local-label-code);
   font-weight: var(--weight-medium);
   overflow-wrap: anywhere;
 }

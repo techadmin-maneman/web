@@ -95,7 +95,7 @@ function Buttons() {
           {row(onPaper)}
           <div className={styles.row}>
             <RowButton>{words.rowButton}</RowButton>
-            <IconButton d={ICONS.cross} size={16} label={words.iconButton} />
+            <IconButton d={ICONS.cross} size="sm" label={words.iconButton} />
             <TextLink href="#kit">{words.textLink}</TextLink>
             <TextButton>{words.textButton}</TextButton>
             <TextButton tone="danger">{words.textButton}</TextButton>

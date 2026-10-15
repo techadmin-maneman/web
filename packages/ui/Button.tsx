@@ -5,6 +5,7 @@
 // its width -- and wins over everything here, so it never colours one: that
 // would erase the button's states (./README.md).
 
+import type { IconSize } from "@maneman/brand/icons";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, MouseEvent, Ref } from "react";
 import { classes } from "./classes.ts";
 import { Icon } from "./Icon.tsx";
@@ -21,9 +22,13 @@ export const BUTTON_VARIANTS = [
   "outline",
   /** Any other action on ink: a lighter ink edge, with paper words. */
   "outlineOnInk",
-  /** An action that takes something away, on paper: oxblood edge and words. */
+  /** A quieter action on paper beside the others: edged in the paper's own line, as the profile's and a sheet's Close. */
+  "quiet",
+  /** An answer on ink that can cost the client: the error's line, with paper words, never the gold. */
+  "dangerOnInk",
+  /** An action that takes something away that can be put back or made again, on paper: oxblood edge and words. */
   "danger",
-  /** The one that cannot be undone, as the console's deletion: oxblood, with paper words. */
+  /** One that cannot be undone, as deleting, erasing or refunding: oxblood, with paper words. */
   "destructive",
 ] as const;
 
@@ -47,7 +52,7 @@ interface Look {
  */
 interface Leading {
   readonly icon?: string | undefined;
-  readonly iconSize?: number;
+  readonly iconSize?: IconSize;
 }
 
 /** A button's classes, for a link the app draws with its own link component, as an in-app link drawn as a button. */
@@ -76,7 +81,7 @@ export function Button({
   settling = false,
   type = "button",
   icon,
-  iconSize = 15,
+  iconSize = "xs",
   onClick,
   children,
   ...rest
@@ -114,7 +119,7 @@ type ButtonLinkProps = Look &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "className"> & { readonly ref?: Ref<HTMLAnchorElement> };
 
 /** A link that looks like a button: somewhere to go, such as WhatsApp or a document, rather than something to do. */
-export function ButtonLink({ variant, size, className, icon, iconSize = 15, children, ...rest }: ButtonLinkProps) {
+export function ButtonLink({ variant, size, className, icon, iconSize = "xs", children, ...rest }: ButtonLinkProps) {
   return (
     <a {...rest} className={buttonLook({ variant, size, className })}>
       {icon !== undefined && <Icon d={icon} size={iconSize} />}

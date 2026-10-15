@@ -56,7 +56,7 @@ export function ShareButton({
           setSharing(true);
         }}
       >
-        {!small && <Icon d={APP_ICONS.share} size={19} />}
+        {!small && <Icon d={APP_ICONS.share} size="sm" />}
         {refer.share}
       </Button>
       {sharing && (

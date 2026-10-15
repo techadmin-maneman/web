@@ -43,11 +43,27 @@ describe("icons", () => {
     expect(Object.values(GLYPHS).filter((path) => sets.has(path))).toEqual([]);
   });
 
-  // The technician app re-declared five of the set's glyphs, and both apps the chevron and the tick.
-  it.each(["apps/app/src/icons.ts", "apps/tech/src/icons.ts"])("%s declares no glyph the brand holds", (file) => {
-    const held = new Set<string>([...Object.values(ICONS), ...Object.values(APP_ICONS), ...Object.values(GLYPHS)]);
-    const declared = [...readFileSync(file, "utf8").matchAll(/"(M[^"]+)"/g)].map((match) => match[1] ?? "");
-    expect(declared.filter((path) => held.has(path))).toEqual([]);
+  // The technician app re-declared five of the set's glyphs, both apps the chevron and the tick, and each kept a
+  // file of its own glyphs beside the brand's.
+  it("is the one set: no app or island keeps a glyph of its own", () => {
+    const sources = ["apps/app/src", "apps/ops/src", "apps/tech/src", "site/src"].flatMap(filesUnder);
+    const glyphs = sources.filter(
+      (path) =>
+        /\.(tsx?|astro)$/.test(path) &&
+        /"M(?:1?\d|2[0-4])(?:\.\d+)? (?:1?\d|2[0-4])(?:\.\d+)? [LHVCA]/.test(readFileSync(path, "utf8")),
+    );
+    expect(glyphs.filter((path) => !/site\/src\/content\/site\/(home|tryon)\.ts$|Drawings\.tsx$/.test(path))).toEqual(
+      [],
+    );
+  });
+
+  // A drawing's line was written as 1.4, 1.5, 1.6, 1.65, 1.7, 1.8, 2 or 2.6, wherever it was drawn.
+  it("is drawn at the set's strokes, never one written out", () => {
+    const drawn = ["apps/app/src", "apps/ops/src", "apps/tech/src", "packages/ui", "site/src"]
+      .flatMap(filesUnder)
+      .filter((path) => /\.(tsx|astro)$/.test(path))
+      .filter((path) => /stroke-?[wW]idth=\{?"?\d/.test(readFileSync(path, "utf8")));
+    expect(drawn).toEqual([]);
   });
 
   it("ICONS is frozen as the Phase 1 site draws it", () => {
@@ -184,3 +200,12 @@ describe("the scale", () => {
     expect(missing).toEqual([]);
   });
 });
+
+/** Every file under a directory, past the built and installed ones. */
+function filesUnder(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = `${directory}/${entry.name}`;
+    if (["node_modules", "dist", ".astro"].includes(entry.name)) return [];
+    return entry.isDirectory() ? filesUnder(path) : [path];
+  });
+}

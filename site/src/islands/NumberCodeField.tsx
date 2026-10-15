@@ -2,9 +2,9 @@
 // /try's ink, with each page's own words beneath it.
 
 import "./refs-as-props.ts";
-import { Label, TextInput } from "@maneman/ui/Field";
+import { CodeField } from "@maneman/ui/CodeField";
+import { Label } from "@maneman/ui/Field";
 import { TextButton } from "@maneman/ui/TextLink";
-import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { useEffect, useRef } from "preact/hooks";
 import { numberCode as words } from "../content/site.ts";
 
@@ -38,24 +38,18 @@ export function NumberCodeField(props: {
   }, []);
 
   return (
-    <div>
+    <div data-ground={onInk ? "ink" : undefined}>
       <Label htmlFor={`${idPrefix}-code`} onInk={onInk}>
         {words.label}
       </Label>
-      <TextInput
-        onInk={onInk}
-        ref={field}
+      <CodeField
         id={`${idPrefix}-code`}
+        ref={field}
+        label={words.label}
         value={props.code}
-        inputMode="numeric"
-        autocomplete="one-time-code"
-        maxLength={ONE_TIME_CODE.digits}
-        aria-required="true"
-        aria-invalid={bad}
-        aria-describedby={bad ? `${hintId} ${errorId}` : hintId}
-        onInput={(event) => {
-          props.onInput(event.currentTarget.value);
-        }}
+        invalid={bad}
+        describedBy={bad ? `${hintId} ${errorId}` : hintId}
+        onChange={props.onInput}
       />
       <p id={hintId} class={classes.hint}>
         {`${words.sentTo}${props.mobile}. ${words.hint}`}

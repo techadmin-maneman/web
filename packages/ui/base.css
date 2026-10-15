@@ -47,8 +47,8 @@
     --action-pad: var(--sp-16);
     --control-pad: var(--sp-16);
     --small-pad: var(--sp-16);
-    /* An outline's edge on the ink: the boards' line, which the technician app strengthens for the sun. */
-    --edge-on-ink: var(--ink-line);
+    /* An outline's edge on the ink, 3:1 or more on every ink ground (WCAG 1.4.11), where the boards draw a fainter line. */
+    --edge-on-ink: var(--ink-line-strong);
     /* A field's box: the tap's height, which the technician app raises on its body. */
     --field-height: var(--tap);
     --field-text: var(--fs-15);

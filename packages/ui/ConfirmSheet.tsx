@@ -43,7 +43,7 @@ export function ConfirmSheet({
           {title}
         </h2>
         <p className={styles.body}>{body}</p>
-        <Button variant="outlineOnInk" size="action" className={styles.yes} onClick={onYes}>
+        <Button variant="dangerOnInk" size="action" className={styles.yes} onClick={onYes}>
           {yes}
         </Button>
         <Button ref={safe} variant="outlineOnInk" size="action" className={styles.no} onClick={onNo}>

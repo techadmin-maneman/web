@@ -2,6 +2,7 @@
 // in. No board draws it, so it is laid out as the other Settings panels are. The API narrows the list to the places
 // its viewer may see, and refuses a change beyond their own.
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
@@ -235,7 +236,7 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
       ready={ready}
       errors={words.errors}
       onCancel={null}
-      checking={<p className={form.checkLine}>{words.adding(label.trim(), clientId.trim())}</p>}
+      checking={<CheckLine>{words.adding(label.trim(), clientId.trim())}</CheckLine>}
     >
       <div className={form.fields}>
         <Field label={words.clientId} className={form.field}>

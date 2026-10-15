@@ -1,11 +1,5 @@
 /* Technician pay: the rates as a table of grades by kind of visit, and the technicians with their grades. */
 
-/* This page's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-pay-table: 1040px; /* the narrowest the rates go before they scroll */
-  --local-pay-people: var(--ops-measure); /* the narrowest the technicians go before they scroll */
-}
-
 /* The city the rates are shown for, on a line above the table. */
 .tools {
   display: flex;
@@ -25,11 +19,11 @@
 }
 
 .rates {
-  min-width: var(--local-pay-table);
+  min-width: var(--ops-table-min);
 }
 
 .people {
-  min-width: var(--local-pay-people);
+  min-width: var(--ops-measure);
 }
 
 .grade {

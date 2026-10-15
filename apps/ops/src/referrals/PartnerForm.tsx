@@ -8,6 +8,7 @@ import { useState } from "react";
 import { type Partner, type Partners, type PartnerTerms } from "../api.ts";
 import { partners as copy } from "../content/partners.ts";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
+import { CheckLine } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
 import { referralsApi } from "./referrals-api.ts";
 
@@ -187,9 +188,7 @@ export function PartnerForm(props: {
       onCancel={props.onCancel}
       sendable={lines.length > 0}
       checking={(lines.length > 0 ? lines : [check.nothing]).map((line) => (
-        <p key={line} className={form.checkLine}>
-          {line}
-        </p>
+        <CheckLine key={line}>{line}</CheckLine>
       ))}
     >
       <PartnerFields

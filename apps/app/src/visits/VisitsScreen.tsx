@@ -11,6 +11,7 @@
 // often they have been served, what they have bought, what they have paid, and
 // the month their piece falls due (docs/fidelity-method.md).
 
+import { GLYPHS } from "@maneman/brand/icons";
 import { BookNext } from "../booking/index.ts";
 import { hasBegun, stageText } from "../home/index.ts";
 import { capsLook } from "@maneman/ui/Caps";
@@ -23,7 +24,6 @@ import { rupees } from "@maneman/web-kit/money";
 import { api, type Me, type VisitSummary, type Visits } from "../api.ts";
 import { home, ONE_VISIT, VISIT_TYPES, visits, windowHours } from "../content.ts";
 import { AppLink, Shell } from "../components/Shell.tsx";
-import { CHEVRON } from "../icons.ts";
 import { bookingName, oneVisitOf, technicianOf, visitTitle } from "../lib/visit.ts";
 import { useSession } from "../session.ts";
 import { Loading } from "../states/Loading.tsx";
@@ -191,7 +191,7 @@ function VisitList({ list, me }: { list: Visits; me: Me }) {
                     <span className={styles.rowDate}>{fullDate(visit.date)}</span>
                     <span className={styles.rowWhat}>{pastLine(visit)}</span>
                   </span>
-                  <Icon className={styles.chevron} d={CHEVRON} size={17} />
+                  <Icon className={styles.chevron} d={GLYPHS.chevron} size="sm" />
                 </AppLink>
               </li>
             ))}

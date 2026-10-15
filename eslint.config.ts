@@ -33,6 +33,12 @@ const HAND_BUSY = {
     "Run a write through useOneAtATime (@maneman/ui/useOneAtATime): a busy flag alone lets a second tap through.",
 };
 
+/** A button is drawn by the shared package: Button, TextButton, IconButton or ToggleButton keep its states. */
+const RAW_BUTTON = {
+  selector: "JSXOpeningElement[name.name='button']",
+  message: "Draw a button with @maneman/ui: Button, TextButton, IconButton or ToggleButton.",
+};
+
 /** What the front ends may not import: the backend's own code, but for the rules it shares with them. */
 const FRONT_IMPORTS = [
   {
@@ -301,8 +307,12 @@ export default defineConfig(
     rules: { "no-nested-ternary": "error", "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY] },
   },
   {
+    files: ["site/src/**/*.{ts,tsx}"],
+    rules: { "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY, RAW_BUTTON] },
+  },
+  {
     files: ["apps/app/src/**/*.{ts,tsx}", "apps/tech/src/**/*.{ts,tsx}", "apps/ops/src/**/*.{ts,tsx}"],
-    rules: { "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY, HAND_BUSY] },
+    rules: { "no-restricted-syntax": ["error", INLINE_LOADER, BARE_LAZY, HAND_BUSY, RAW_BUTTON] },
   },
   {
     files: ["packages/ui/lazyScreen.ts"],

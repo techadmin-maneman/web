@@ -21,9 +21,8 @@ export function WindowChoice<Id extends string>(props: {
   readonly name: string;
   readonly options: readonly WindowOption<Id>[];
   readonly chosen: Id | null;
+  /** Said in place of a full window's hours, on every surface. */
   readonly fullWord: string;
-  /** "Full" in place of a full window's hours, as the site draws it, rather than beneath them. */
-  readonly fullInPlaceOfHours?: boolean;
   /** A legend of the choice's own; without one, `labelledBy` names the heading above it. */
   readonly legend?: string;
   readonly labelledBy?: string;
@@ -31,7 +30,6 @@ export function WindowChoice<Id extends string>(props: {
   /** The choice's place on its screen. */
   readonly className?: string | undefined;
 }) {
-  const { fullInPlaceOfHours = false } = props;
   const options = props.options.map((option) => (
     <ChoiceCard
       key={option.id}
@@ -44,12 +42,9 @@ export function WindowChoice<Id extends string>(props: {
     >
       <span className={styles.text}>
         <span className={styles.name}>{option.name}</span>
-        <span className={classes(styles.hours, CARD_NOTE)}>
-          {!option.open && fullInPlaceOfHours ? props.fullWord : option.hours}
-        </span>
+        <span className={classes(styles.hours, CARD_NOTE)}>{option.open ? option.hours : props.fullWord}</span>
         {option.note !== undefined && <span className={classes(styles.hours, styles.late)}>{option.note}</span>}
       </span>
-      {!option.open && !fullInPlaceOfHours && <span className={classes(styles.full, CARD_NOTE)}>{props.fullWord}</span>}
     </ChoiceCard>
   ));
   if (props.legend === undefined) {

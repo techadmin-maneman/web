@@ -13,6 +13,7 @@
     "./Caps": "./Caps.tsx",
     "./CheckRow": "./CheckRow.tsx",
     "./Chip": "./Chip.tsx",
+    "./Compare": "./Compare.tsx",
     "./ChoiceCard": "./ChoiceCard.tsx",
     "./classes": "./classes.ts",
     "./CodeField": "./CodeField.tsx",

@@ -1,6 +1,7 @@
 // Adding a member of staff, or changing their grants and whether they are let in. The whole list of grants is sent
 // and replaces theirs; the check names each grant given or taken away before anything is saved.
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, Checkbox, Fieldset, Select, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -180,9 +181,7 @@ export function StaffForm(props: {
       onCancel={onCancel}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [review.nothing] : lines).map((line) => (
-        <p className={form.checkLine} key={line}>
-          {line}
-        </p>
+        <CheckLine key={line}>{line}</CheckLine>
       ))}
     >
       <div className={form.fields}>

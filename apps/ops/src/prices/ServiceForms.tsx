@@ -3,7 +3,7 @@
 // press sends it (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
-import { CheckPanel } from "../components/CheckPanel.tsx";
+import { CheckLine, CheckPanel } from "../components/CheckPanel.tsx";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { type Kind, type OpsService, type Price, type ServiceCatalogue } from "../api.ts";
@@ -46,7 +46,7 @@ export function RenameForm(props: {
       ready={name.trim() !== "" && name.trim() !== service.name}
       errors={copy.errors}
       onCancel={props.onCancel}
-      checking={<p className={form.checkLine}>{check.rename(service.name, name.trim(), service.tier)}</p>}
+      checking={<CheckLine>{check.rename(service.name, name.trim(), service.tier)}</CheckLine>}
     >
       <div className={form.fields}>
         <Field label={formWords.name} className={form.field}>
@@ -89,7 +89,7 @@ export function DescribeForm(props: {
       ready={line.trim() !== was}
       errors={{ ...copy.errors, description: copy.limits.description(props.maxLength) }}
       onCancel={props.onCancel}
-      checking={<p className={form.checkLine}>{check.describe(service.name, was, line.trim())}</p>}
+      checking={<CheckLine>{check.describe(service.name, was, line.trim())}</CheckLine>}
     >
       <div className={form.fields}>
         <Field label={formWords.description} className={form.field}>
@@ -131,7 +131,7 @@ export function LengthForm(props: {
       ready={minutes.trim() !== "" && Number(minutes) !== service.minutes}
       errors={{ ...copy.errors, minutes: copy.limits.minutes(bounds.min, bounds.max) }}
       onCancel={props.onCancel}
-      checking={<p className={form.checkLine}>{check.length(service.name, service.minutes, Number(minutes))}</p>}
+      checking={<CheckLine>{check.length(service.name, service.minutes, Number(minutes))}</CheckLine>}
     >
       <div className={form.fields}>
         <Field label={formWords.minutes} className={form.field}>
@@ -176,7 +176,7 @@ export function RetireForm(props: {
       ready={from !== ""}
       errors={copy.errors}
       onCancel={props.onCancel}
-      checking={<p className={form.checkLine}>{check.retire(service.name, longDate(from))}</p>}
+      checking={<CheckLine>{check.retire(service.name, longDate(from))}</CheckLine>}
     >
       <div className={form.fields}>
         <Field label={formWords.retireFrom} className={form.field}>
@@ -278,7 +278,7 @@ export function AddForm(props: {
       ready={ready}
       errors={{ ...copy.errors, minutes: copy.limits.minutes(bounds.min, bounds.max) }}
       onCancel={props.onCancel}
-      checking={<p className={form.checkLine}>{check.add(kindName, name.trim(), Number(minutes), codeSent)}</p>}
+      checking={<CheckLine>{check.add(kindName, name.trim(), Number(minutes), codeSent)}</CheckLine>}
     >
       <div className={form.fields}>
         <Field label={formWords.name} className={form.field}>

@@ -19,7 +19,7 @@ function PincodeAnswerBlock(props: { answer: PincodeAnswer; heading: { current: 
   if (answer.served) {
     return (
       <h2 ref={props.heading} tabIndex={-1} class={styles.answer}>
-        <Icon d={ICONS.tick} size={21} stroke={1.7} />
+        <Icon d={ICONS.tick} size="md" />
         {fill(referral.consultation.served, { area: placeOf(answer) })}
       </h2>
     );

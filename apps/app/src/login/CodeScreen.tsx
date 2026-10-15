@@ -6,14 +6,13 @@ import { IconButton } from "@maneman/ui/IconButton";
 import { apiNow } from "@maneman/web-kit/clock";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
 import { classes } from "@maneman/ui/classes";
-import { ICONS } from "@maneman/brand/icons";
+import { GLYPHS, ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useEffect, useRef, useState, type RefCallback } from "react";
 import type { LoginChallenge } from "../api.ts";
 import { login } from "../content.ts";
-import { BUBBLE } from "../icons.ts";
 import { useSecondsLeft } from "@maneman/ui/useSecondsLeft";
 import { CodeField } from "@maneman/ui/CodeField";
 import styles from "./login.module.css";
@@ -158,7 +157,7 @@ export function CodeScreen(props: Props) {
   return (
     <main className={styles.screen}>
       <div className={styles.top}>
-        <IconButton className={styles.back} d={ICONS.back} size={22} label={copy.back} onClick={props.onBack} />
+        <IconButton className={styles.back} d={ICONS.back} size="md" label={copy.back} onClick={props.onBack} />
       </div>
       <form
         className={classes(styles.body, styles.form)}
@@ -196,7 +195,7 @@ export function CodeScreen(props: Props) {
         {message !== null && problem?.kind === "limited" && <MessageUs />}
         {challenge.channel === "sms" && (
           <div className={styles.automatic}>
-            <Icon d={BUBBLE} size={17} />
+            <Icon d={GLYPHS.bubble} size="sm" />
             {copy.automatic}
           </div>
         )}

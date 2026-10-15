@@ -5,17 +5,6 @@
  * the client page's design, narrowed to what the ops routes answer.
  */
 
-/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack */
-  --local-piece-base: 84px;
-  --local-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
-  --local-piece-due: var(--ops-column-wide);
-  --local-consent-state: 92px; /* a consent's state, date and source, beside the purpose */
-  --local-consent-date: var(--ops-column);
-  --local-consent-source: var(--ops-column-narrow);
-}
-
 /* ---- Finding a client ---------------------------------------------------- */
 
 .find {
@@ -44,6 +33,7 @@
 
 /* The design draws the head, the tabs and the pieces table across the page; photographs and consents are panels within it. */
 .client {
+  --local-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
   flex: 1;
   min-width: 0;
 }
@@ -104,7 +94,7 @@
 
 /* The board letters the replacement due in brass, as it does the live piece's date. */
 .metaBrass {
-  color: var(--brass-text);
+  color: var(--status-attention);
 }
 
 /* What waits on Tasks for the client, beneath the head and set in as it is. */
@@ -409,18 +399,21 @@
 .done {
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
+  color: var(--status-done);
 }
 
 /* ---- The pieces ---------------------------------------------------------- */
 
 /* The board's own column widths; the failure and its reason take the slack. */
 .code {
+  --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack */
   width: var(--local-piece-code);
   padding-inline: 0 var(--sp-8);
   font-variant-numeric: tabular-nums;
 }
 
 .base {
+  --local-piece-base: 84px;
   width: var(--local-piece-base);
 }
 
@@ -430,7 +423,7 @@
 }
 
 .due {
-  width: var(--local-piece-due);
+  width: var(--ops-column-wide);
 }
 
 .base,
@@ -456,7 +449,7 @@
 }
 
 .dueSoon {
-  color: var(--brass-text);
+  color: var(--status-attention);
 }
 
 /* ---- The photographs ----------------------------------------------------- */
@@ -517,7 +510,7 @@
   grid-column: span 5;
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--error-on-paper);
+  color: var(--status-error);
 }
 
 .caption {
@@ -568,15 +561,16 @@
 }
 
 .state {
+  --local-consent-state: 92px; /* a consent's state, date and source, beside the purpose */
   width: var(--local-consent-state);
 }
 
 .date {
-  width: var(--local-consent-date);
+  width: var(--ops-column);
 }
 
 .source {
-  width: var(--local-consent-source);
+  width: var(--ops-column-narrow);
 }
 
 .date,
@@ -587,7 +581,7 @@
 
 /* A consent the client has taken back, in oxblood, as the board marks it. */
 .withdrawn {
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 /* The client's own erasure request, which the board draws nowhere and the route answers with. */
@@ -595,7 +589,7 @@
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-14);
   line-height: var(--lh-160);
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 .note {
@@ -707,5 +701,5 @@
   flex-basis: 100%;
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
-  color: var(--error-on-paper);
+  color: var(--status-error);
 }

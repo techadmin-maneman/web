@@ -12,7 +12,6 @@ import { CheckRow } from "@maneman/ui/CheckRow";
 import { useEffect, useState } from "react";
 import type { EventBody, Job } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
-import { BOX_TICK_STROKE } from "../icons.ts";
 import { declinedTheFit } from "../lib/progress.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { put, remove } from "../store/db.ts";
@@ -82,7 +81,7 @@ function Ticking({
             <li key={item.id}>
               <CheckRow
                 done={ticked}
-                tickStroke={BOX_TICK_STROKE}
+                tickWeight="heavy"
                 onToggle={() => {
                   setDone((already) =>
                     already.includes(item.id) ? already.filter((one) => one !== item.id) : [...already, item.id],

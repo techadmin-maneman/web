@@ -1,6 +1,7 @@
 // A one-time code's boxes, as one labelled field: assistive technology sees a single input, and the boxes
-// only draw what is typed into it. The client app's login and the technician app's draw it; each sets its boxes'
-// height and gap with --code-box-height and --code-box-gap on its own class.
+// only draw what is typed into it. The client app's login, the technician app's and the site's number checks draw it;
+// each sets its boxes' height and gap with --code-box-height and --code-box-gap on its own class, and its ground's
+// roles (data-ground) colour the boxes.
 
 import type { Ref } from "react";
 import { ONE_TIME_CODE } from "@rules/policy/one-time-code.ts";
@@ -11,6 +12,8 @@ import styles from "./code-field.module.css";
 export const codeDigits = (typed: string): string => typed.replace(/\D/g, "").slice(0, ONE_TIME_CODE.digits);
 
 interface Props {
+  /** The input's id, where a visible label above it names it too. */
+  readonly id?: string | undefined;
   readonly value: string;
   readonly label: string;
   readonly invalid?: boolean;
@@ -29,6 +32,7 @@ interface Props {
 
 export function CodeField(props: Props) {
   const {
+    id,
     value,
     label,
     invalid = false,
@@ -44,6 +48,7 @@ export function CodeField(props: Props) {
     <div className={classes(styles.field, className)} data-invalid={invalid}>
       <input
         ref={ref}
+        id={id}
         className={styles.input}
         value={value}
         disabled={disabled}

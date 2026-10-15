@@ -77,7 +77,7 @@ function Invoice({ visit }: { visit: VisitDetail }) {
         <OpenDocument url={documentUrl(visit.document_id)} notReady={payments.unavailable.invoice}>
           <span>{copy.open}</span>
           <VisuallyHidden>{copy.newTab}</VisuallyHidden>
-          <Icon className={styles.invoiceIcon} d={ICONS.download} size={18} />
+          <Icon className={styles.invoiceIcon} d={ICONS.download} size="sm" />
         </OpenDocument>
       );
   }

@@ -140,13 +140,6 @@
   flex: 1;
 }
 
-/* Offline: Reschedule waits for the connection, drawn in the card's own quiet words. */
-.action:disabled {
-  border-color: var(--ink-line);
-  background: none;
-  color: var(--ink-muted);
-}
-
 .expect {
   padding-top: var(--sp-20);
   border-top: var(--hairline) solid var(--paper-line);

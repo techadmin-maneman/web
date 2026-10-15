@@ -2,6 +2,8 @@
 // use in each period of the latest run, with its high case; and beneath, how right the forecasts before it were.
 
 import type { Success } from "@maneman/web-kit/api";
+import { addDays, dayMonth, fullDate } from "@maneman/web-kit/dates";
+import { quantity } from "@maneman/web-kit/figures";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
@@ -19,19 +21,11 @@ import { supplyPlanApi } from "./supply-plan-api.ts";
 type Forecast = Success<paths["/api/stock/forecast"]["get"]>;
 
 const copy = supplyPlan.forecast;
-const DAY = 24 * 60 * 60 * 1000;
-
 /** "21 Sep", or with its year, of the day `days` after an ISO date. */
 export function dayAfter(date: string, days: number, year = false): string {
-  return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    ...(year ? { year: "numeric" } : {}),
-    timeZone: "UTC",
-  });
+  const day = addDays(date, days);
+  return year ? fullDate(day) : dayMonth(day);
 }
-
-const figure = (value: number) => value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
 
 function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
   const { run } = forecast;
@@ -67,9 +61,9 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
                   const line = item.periods.get(period);
                   return (
                     <td key={period} className={form.figure}>
-                      {figure(line?.expected ?? 0)}
+                      {quantity(line?.expected ?? 0)}
                       {line !== undefined && line.high > line.expected && (
-                        <span className={styles.high}>{copy.high(figure(line.high))}</span>
+                        <span className={styles.high}>{copy.high(quantity(line.high))}</span>
                       )}
                     </td>
                   );

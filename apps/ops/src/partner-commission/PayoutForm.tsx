@@ -2,6 +2,7 @@
 // its boxes, then the payment as it will be recorded, and only the second press records it
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { CheckLine, CheckWarning } from "../components/CheckPanel.tsx";
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
@@ -117,8 +118,8 @@ export function PayoutForm(props: {
       onCancel={props.onCancel}
       checking={
         <>
-          <p className={form.checkLine}>{check.line(rupees(amount), shortDate(draft.paidOn), reference)}</p>
-          {amount < statement.due && <p className={form.checkWarning}>{check.short(rupees(statement.due))}</p>}
+          <CheckLine>{check.line(rupees(amount), shortDate(draft.paidOn), reference)}</CheckLine>
+          {amount < statement.due && <CheckWarning>{check.short(rupees(statement.due))}</CheckWarning>}
         </>
       }
     >

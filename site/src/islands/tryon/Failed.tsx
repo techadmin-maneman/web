@@ -13,7 +13,7 @@ export function Failed(props: { kind: ErrorKind; heading: HeadingRef; onAgain: (
   return (
     <div class={styles.notice}>
       <div class={styles.noticeFrame}>
-        <Icon d={ICONS.noPhoto} size={28} stroke={1.5} />
+        <Icon d={ICONS.noPhoto} size="xl" />
         <div class={capsLook()}>{copy.frame}</div>
       </div>
       <Title heading={props.heading} className={styles.noticeTitle}>

@@ -2,6 +2,7 @@
 // a day; the list runs together the days one press added, each run naming who added it. Closing a day moves nothing
 // booked on it, so the check counts the visits it strands, and each run links to the board to move them.
 
+import { CheckLine, CheckWarning } from "../components/CheckPanel.tsx";
 import { Field, DateInput, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { buttonLook } from "@maneman/ui/Button";
@@ -200,16 +201,14 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
       onCancel={null}
       checking={
         <>
-          <p className={form.checkLine}>
+          <CheckLine>
             {copy.closing(
               ready ? periodWords(draft) : "",
               draft.city === "" ? copy.everyCity : draft.city,
               draft.reason.trim(),
             )}
-          </p>
-          {booked !== 0 && (
-            <p className={form.checkWarning}>{booked === null ? copy.uncounted : copy.stranded(booked)}</p>
-          )}
+          </CheckLine>
+          {booked !== 0 && <CheckWarning>{booked === null ? copy.uncounted : copy.stranded(booked)}</CheckWarning>}
         </>
       }
     >
@@ -235,7 +234,7 @@ function PeriodRow({ period, mayRemove, mayShow, onRemoved }: PeriodRowProps) {
         {words} · {period.city ?? copy.everyCity} · {period.reason}
       </p>
       <p className={form.set}>{setLine(period)}</p>
-      {period.booked > 0 && <p className={form.checkWarning}>{copy.booked(period.booked)}</p>}
+      {period.booked > 0 && <CheckWarning>{copy.booked(period.booked)}</CheckWarning>}
       {period.booked > 0 && mayShow && (
         <FormActions>
           <OpsLink

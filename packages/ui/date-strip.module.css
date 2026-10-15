@@ -79,11 +79,11 @@
   .day:has(.radio:disabled) {
     border-color: var(--paper-shade);
     background: var(--paper-shade);
-    color: var(--paper-placeholder);
+    color: var(--text-muted);
     cursor: default;
   }
 
   .day:has(.radio:disabled) .weekday {
-    color: var(--paper-placeholder);
+    color: var(--text-muted);
   }
 }

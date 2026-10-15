@@ -1,30 +1,30 @@
-import { ICON_STROKE } from "@maneman/brand/icons";
+import { ICON_SIZES, ICON_STROKES, type IconSize, type IconWeight } from "@maneman/brand/icons";
 
 /**
- * A line icon in a 24 px box, drawn in the surrounding text colour. The icon
- * set is drawn at a 1.6 stroke; the technician board draws heavier ones for
- * reading in the sun, which it passes as `stroke`.
+ * A line icon in a 24 px box, drawn in the surrounding text colour, at one of the set's sizes. The technician app
+ * draws the heavy stroke, for reading in the sun.
  */
 export function Icon({
   d,
   size,
-  stroke = ICON_STROKE,
+  weight = "regular",
   className,
 }: {
   d: string;
-  size: number;
-  stroke?: number;
+  size: IconSize;
+  weight?: IconWeight;
   className?: string;
 }) {
+  const px = ICON_SIZES[size];
   return (
     <svg
       className={className}
       viewBox="0 0 24 24"
-      width={size}
-      height={size}
+      width={px}
+      height={px}
       fill="none"
       stroke="currentColor"
-      strokeWidth={stroke}
+      strokeWidth={ICON_STROKES[weight]}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

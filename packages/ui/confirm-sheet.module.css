@@ -37,11 +37,6 @@
     width: 100%;
   }
 
-  /* The answer that can cost the client, drawn in the error's line and never in gold. */
-  .yes {
-    border: var(--rule-strong) solid var(--error-on-ink);
-  }
-
   .no {
     margin-top: var(--sp-12);
   }

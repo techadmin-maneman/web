@@ -8,6 +8,7 @@
     "./tokens.css": "./tokens.css",
     "./tokens-apps.css": "./tokens-apps.css",
     "./fonts.css": "./fonts.css",
+    "./breakpoints": "./breakpoints.ts",
     "./icons": "./icons.ts",
     "./marks": "./marks.ts",
     "./colours": "./colours.ts",

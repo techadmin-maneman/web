@@ -1,26 +1,27 @@
 ---
-// A line icon from @maneman/brand/icons, drawn in the surrounding text colour.
-import { ICONS } from "@maneman/brand/icons";
+// A line icon from @maneman/brand/icons, drawn in the surrounding text colour at one of the set's sizes, as the
+// shared Icon draws it in the islands and the apps.
+import { ICON_SIZES, ICON_STROKES, ICONS, type IconSize, type IconWeight } from "@maneman/brand/icons";
 
 interface Props {
   name: keyof typeof ICONS;
-  size: number;
-  /** The design's stroke width for this use. */
-  stroke?: number;
+  size: IconSize;
+  weight?: IconWeight;
   class?: string;
 }
 
-const { name, size, stroke = 1.6, class: className } = Astro.props;
+const { name, size, weight = "regular", class: className } = Astro.props;
+const px = ICON_SIZES[size];
 ---
 
 <svg
   class={className}
   viewBox="0 0 24 24"
-  width={size}
-  height={size}
+  width={px}
+  height={px}
   fill="none"
   stroke="currentColor"
-  stroke-width={stroke}
+  stroke-width={ICON_STROKES[weight]}
   stroke-linecap="round"
   stroke-linejoin="round"
   aria-hidden="true"

@@ -17,7 +17,7 @@ import { iconButtonLook } from "@maneman/ui/IconButton";
         href={whatsappChat(whatsapp.number)}
         aria-label={stickyBar.whatsappLabel}
       >
-        <Icon name="whatsapp" size={22} />
+        <Icon name="whatsapp" size="md" />
       </a>
     )}
     <a class={buttonLook({ variant: "light", size: "control", className: "book" })} href="/book">
@@ -36,7 +36,7 @@ import { iconButtonLook } from "@maneman/ui/IconButton";
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: var(--z-bar);
     height: var(--bar-h);
     background: var(--ink-deep);
     border-top: var(--hairline) solid var(--ink-rule);

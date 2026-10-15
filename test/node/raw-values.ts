@@ -49,19 +49,30 @@ const PATTERNS = [
   /\bline-height\s*:\s*\d*\.?\d+(?![\w%])/g,
   // A line's weight in a drawing, which a size names as any other does.
   /\bstroke-width\s*:\s*\d/g,
+  // A print or a type unit: points, millimetres, centimetres, characters and x-heights.
+  /\b\d+(?:\.\d+)?(?:pt|mm|cm|ch|ex)\b/g,
+  // A layer, and an opacity that is neither none nor all.
+  /\bz-index\s*:\s*-?\d+/g,
+  /\bopacity\s*:\s*(?!(?:0|1)\s*[;}])\d*\.?\d+/g,
 ] as const;
 
-/** Comments and media conditions, which cannot use custom properties, taken out. */
+/**
+ * Comments, media conditions and @page rules taken out: a condition, and a printed page's size, cannot use custom
+ * properties. A condition's widths are held to the one list in packages/brand/breakpoints.ts instead.
+ */
 export function withoutCommentsAndConditions(css: string): string {
-  return css.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@media[^{]*\{/g, "@media {");
+  return css
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/@media[^{]*\{/g, "@media {")
+    .replace(/@page[^{]*\{[^}]*\}/g, "");
 }
 
 /**
- * A screen's own sizes, which nothing else draws: a :root block of --local-* properties at the top of its stylesheet,
- * where each value is written once, named and explained (ADR 0077, as amended), rather than in the shared brand
- * package. Nowhere else may a stylesheet write a value.
+ * A screen's own sizes, which nothing else draws: --local-* properties, each written once, named and explained, on
+ * the class that draws it, or the parent of the two that do (ADR 0077, as amended), rather than in the shared brand
+ * package; never on :root, where every page would carry them. Nowhere else may a stylesheet write a value.
  */
-const LOCAL_SIZES = /^\s*:root\s*\{(?:\s*--local-[\w-]+\s*:[^;{}]*;)+\s*\}/;
+const LOCAL_SIZES = /--local-[\w-]+\s*:[^;{}]*;/g;
 
 /** Every raw value in a stylesheet: a colour, a length, a duration, a curve, a weight or a leading. */
 export function rawValues(css: string): string[] {

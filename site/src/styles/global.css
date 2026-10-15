@@ -25,9 +25,17 @@
     /* Whatever the page scrolls to, a section or a focused control, stops below the fixed header. */
     scroll-padding-top: var(--header-h);
   }
+  /* Under prefers-reduced-motion nothing moves, as in the apps (packages/ui/base.css). */
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
     }
   }
 
@@ -75,8 +83,12 @@
     --focus-colour: var(--paper);
   }
 
-  /* A heading focused by the page, to say where a step has moved to, is not a control and draws no ring. */
-  [tabindex="-1"]:focus {
+  /*
+   * A heading or a step's line focused by the page, to say where a step has moved to, is not a control and draws no
+   * ring, nor is the main the skip link lands in; anything else that takes focus keeps its ring, as in the apps
+   * (packages/ui/base.css).
+   */
+  :is(h1, h2, h3, h4, h5, h6, main, [data-says-where])[tabindex="-1"]:focus {
     outline: none;
   }
 }
@@ -105,7 +117,7 @@
   gap: var(--three-up-gap);
   grid-template-columns: 1fr;
 }
-@media (min-width: 700px) {
+@media (min-width: 761px) {
   .three-up {
     grid-template-columns: repeat(3, 1fr);
     gap: var(--sp-16);

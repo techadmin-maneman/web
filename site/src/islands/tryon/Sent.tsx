@@ -15,7 +15,7 @@ export function Sent(props: { mobile: string; returning: boolean; heading: Headi
   return (
     <div class={styles.notice}>
       <div class={styles.noticeFrame}>
-        <Icon d={ICONS.whatsapp} size={28} stroke={1.5} />
+        <Icon d={ICONS.whatsapp} size="xl" />
         <div class={capsLook()}>{sent.frame}</div>
       </div>
       <Title heading={props.heading} className={styles.noticeTitle}>

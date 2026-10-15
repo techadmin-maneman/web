@@ -8,12 +8,6 @@
  * (docs/decisions/0092-task-owners.md).
  */
 
-/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-task-owner: var(--ops-column-narrow); /* a task's owner, and how long it has left, beside what it is */
-  --local-task-due: var(--ops-column-wide); /* "18 days overdue" on one line */
-}
-
 .board {
   display: flex;
   flex-direction: column;
@@ -30,7 +24,7 @@
 /* The one figure the board sets in oxblood: how many have run over. */
 .overdue {
   font-size: var(--fs-14);
-  color: var(--error-on-paper);
+  color: var(--status-warning);
 }
 
 /* ---- The board, by department --------------------------------------------- */
@@ -119,7 +113,7 @@
 .task,
 .marked {
   display: grid;
-  grid-template-columns: 1fr var(--local-task-owner) var(--local-task-due);
+  grid-template-columns: 1fr var(--ops-column-narrow) var(--ops-column-wide);
   align-items: center;
   gap: var(--sp-12);
   min-height: var(--ops-row);
@@ -237,7 +231,7 @@ a.subject {
 
 .error {
   font-size: var(--fs-14);
-  color: var(--error-on-paper);
+  color: var(--status-error);
 }
 
 /* What copying or sending a payment link came to; empty until then. */

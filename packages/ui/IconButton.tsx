@@ -2,6 +2,7 @@
 // a sheet's way out. The client app's tap is --tap, the technician app's --tech-min; an app sets
 // --icon-button-size, the colour and the edge's margin on its own class.
 
+import type { IconSize, IconWeight } from "@maneman/brand/icons";
 import type { ButtonHTMLAttributes } from "react";
 import { classes } from "./classes.ts";
 import { Icon } from "./Icon.tsx";
@@ -15,7 +16,7 @@ export function IconButton({
   d,
   label,
   size,
-  stroke,
+  weight,
   edged = false,
   className,
   type = "button",
@@ -27,12 +28,12 @@ export function IconButton({
   readonly d: string;
   /** What it does, for a screen reader: "Back". */
   readonly label: string;
-  readonly size: number;
-  readonly stroke?: number;
+  readonly size: IconSize;
+  readonly weight?: IconWeight;
 }) {
   return (
     <button {...rest} type={type} className={iconButtonLook(className, edged)} aria-label={label}>
-      <Icon d={d} size={size} stroke={stroke} />
+      <Icon d={d} size={size} weight={weight} />
     </button>
   );
 }

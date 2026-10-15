@@ -52,19 +52,11 @@
 
 /* The select that takes the focus is unseen, so the global ring is drawn on the box around it. */
 
-/* --at, where the divider stands, is set by the page as the finger or the keyboard moves it. */
+/* The shared compare's stage (@maneman/ui/Compare), as tall as the screen leaves it. */
 .stage {
-  --at: 50%;
-
-  position: relative;
   flex: 1;
   min-height: 0;
   margin: 0 var(--sp-20) var(--sp-16);
-  overflow: hidden;
-  background: var(--ink-frame);
-  cursor: ew-resize;
-  touch-action: none;
-  user-select: none;
 }
 
 .sides,
@@ -80,7 +72,6 @@
 
 .earlier {
   background: var(--ink-frame);
-  clip-path: inset(0 calc(100% - var(--at)) 0 0);
 }
 
 .sides img {
@@ -106,31 +97,6 @@
 .earlier .date {
   left: var(--sp-16);
   color: var(--ink-muted);
-}
-
-.divider {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--at);
-  width: var(--hairline);
-  background: var(--gilt);
-}
-
-.handle {
-  position: absolute;
-  top: 50%;
-  left: var(--at);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-4);
-  width: var(--tap);
-  height: var(--tap);
-  border: var(--hairline) solid var(--gilt);
-  background: var(--ink-deep);
-  color: var(--gilt);
-  transform: translate(-50%, -50%);
 }
 
 .angles {

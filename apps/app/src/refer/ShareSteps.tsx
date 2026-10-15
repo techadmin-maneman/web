@@ -6,13 +6,12 @@ import { capsLook } from "@maneman/ui/Caps";
 import { SheetClose, SheetPanel } from "@maneman/ui/Sheet";
 import { IconButton } from "@maneman/ui/IconButton";
 import { classes } from "@maneman/ui/classes";
-import { ICONS } from "@maneman/brand/icons";
+import { GLYPHS, ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappShare } from "@maneman/web-kit/whatsapp";
 import type { Refer } from "../api.ts";
 import { profile, refer } from "../content.ts";
-import { COPY_LINK, OTHER_APPS } from "../icons.ts";
 import { useSession } from "../session.ts";
 import { CardPreview, type Shown } from "./CardPreview.tsx";
 import { rewardOf } from "./reward.ts";
@@ -59,7 +58,7 @@ export function ChoiceStep({ flow, onClose }: StepProps) {
   return (
     <div className={styles.screen}>
       <div className={styles.screenHead}>
-        <IconButton className={styles.back} d={ICONS.back} size={22} label={refer.close} onClick={onClose} />
+        <IconButton className={styles.back} d={ICONS.back} size="md" label={refer.close} onClick={onClose} />
         <h2 className={styles.screenTitle} id={TITLE_ID}>
           {refer.card.title}
         </h2>
@@ -218,7 +217,7 @@ export function ShareStep({ flow, onClose }: StepProps) {
                 void flow.sharing(() => navigator.share(shared));
               }}
             >
-              <Icon d={ICONS.whatsapp} size={21} />
+              <Icon d={ICONS.whatsapp} size="md" />
               <span>{refer.preview.whatsapp}</span>
             </ButtonLink>
             <Button
@@ -227,7 +226,7 @@ export function ShareStep({ flow, onClose }: StepProps) {
               className={styles.way}
               onClick={() => void flow.sharing(flow.otherApps)}
             >
-              <Icon d={OTHER_APPS} size={21} />
+              <Icon d={GLYPHS.otherApps} size="md" />
               <span>{refer.preview.other}</span>
             </Button>
             <Button
@@ -236,7 +235,7 @@ export function ShareStep({ flow, onClose }: StepProps) {
               className={styles.way}
               onClick={() => void flow.sharing(flow.copyLink)}
             >
-              <Icon d={COPY_LINK} size={21} />
+              <Icon d={GLYPHS.copyLink} size="md" />
               <span>{flow.copied ? refer.preview.copied : refer.preview.copy}</span>
             </Button>
           </div>
