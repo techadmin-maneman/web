@@ -22,6 +22,8 @@ export function TellClient({ job }: { job: Job }) {
   if (client === null || job.progress.outcome !== null) return null;
   const who = firstNameOf(client.name);
   if (!client.whatsapp) return <p className={styles.access}>{copy.tell.noWhatsApp(who)}</p>;
+  // At the door, only "At the gate" is left to say: the minutes would push the wait below the fold.
+  const arrived = job.progress.checked_in_at !== null;
   const tell = async (preset: Preset) => {
     await queue("update", job.id, { preset, minutes: preset === "at_gate" ? null : minutes });
     void replay();
@@ -30,27 +32,33 @@ export function TellClient({ job }: { job: Job }) {
   return (
     <section className={styles.tell} aria-label={copy.tell.title(who)}>
       <p className={styles.landmarkLabel}>{copy.tell.title(who)}</p>
-      <div className={styles.minutes} role="group" aria-label={copy.tell.minutes}>
-        {MINUTES.map((each) => (
-          <ToggleButton
-            key={each}
-            onInk
-            pressed={each === minutes}
-            onClick={() => {
-              setMinutes(each);
-            }}
-          >
-            {copy.tell.minute(each)}
-          </ToggleButton>
-        ))}
-      </div>
+      {!arrived && (
+        <div className={styles.minutes} role="group" aria-label={copy.tell.minutes}>
+          {MINUTES.map((each) => (
+            <ToggleButton
+              key={each}
+              onInk
+              pressed={each === minutes}
+              onClick={() => {
+                setMinutes(each);
+              }}
+            >
+              {copy.tell.minute(each)}
+            </ToggleButton>
+          ))}
+        </div>
+      )}
       <div className={styles.reach}>
-        <Button variant="outlineOnInk" size="control" onClick={() => void tell("on_the_way")}>
-          {copy.tell.onTheWay(minutes)}
-        </Button>
-        <Button variant="outlineOnInk" size="control" onClick={() => void tell("running_late")}>
-          {copy.tell.late(minutes)}
-        </Button>
+        {!arrived && (
+          <>
+            <Button variant="outlineOnInk" size="control" onClick={() => void tell("on_the_way")}>
+              {copy.tell.onTheWay(minutes)}
+            </Button>
+            <Button variant="outlineOnInk" size="control" onClick={() => void tell("running_late")}>
+              {copy.tell.late(minutes)}
+            </Button>
+          </>
+        )}
         <Button variant="outlineOnInk" size="control" onClick={() => void tell("at_gate")}>
           {copy.tell.atGate}
         </Button>
