@@ -301,6 +301,11 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Bundle every Worker for every environment (dry run)
         run: npm run build
+      # The browser tests run local builds; production's pages are opened here, as built, before a release ships them.
+      - name: Chromium for production's pages
+        run: npx playwright install --with-deps chromium
+      - name: Production's pages open without an error
+        run: node scripts/ci/production-pages.ts
 
   # In two halves on two runners; Lighthouse runs in the first, after its tests.
   browser:

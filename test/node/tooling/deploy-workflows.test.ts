@@ -152,4 +152,13 @@ describe("deploy-staging.yml", () => {
     expect(check).not.toContain("continue-on-error");
     expect(text.indexOf("smoke:csp")).toBeGreaterThan(text.indexOf("--surfaces --version-tag"));
   });
+
+  // The check ran before the apps' Workers shipped, so a release's own pages there went unchecked.
+  it("opens every production host's pages once every Worker has shipped and been smoked", () => {
+    const text = workflow("deploy-production.yml");
+    expect(text.indexOf("smoke:csp -- --environment production")).toBeGreaterThan(text.indexOf("Deploy mm-tech"));
+    expect(text.indexOf("smoke:csp -- --environment production")).toBeGreaterThan(
+      text.indexOf("--surfaces --version-tag"),
+    );
+  });
 });
