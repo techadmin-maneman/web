@@ -25,6 +25,35 @@
   background: var(--ink);
 }
 
+/* The header's Menu, for a narrow window alone. */
+.menu {
+  display: none;
+}
+
+/* A window short of wide: the navigation folds away over the page's left edge, and Menu brings it back. */
+@media (max-width: 1023px) {
+  .nav {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: var(--z-header);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform var(--duration-travel) var(--ease-house),
+      visibility var(--duration-travel) var(--ease-house) allow-discrete;
+  }
+
+  .nav[data-open="true"] {
+    transform: none;
+    visibility: visible;
+  }
+
+  .menu {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+}
+
 /* Out of sight until the keyboard reaches it, first on every page. */
 
 .department {

@@ -44,7 +44,7 @@ body {
 #root {
   display: flex;
   flex-direction: column;
-  max-width: var(--app-column);
+  max-width: var(--app-column-max);
   height: 100dvh;
   margin: 0 auto;
   overflow-x: hidden;

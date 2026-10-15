@@ -154,7 +154,7 @@
   --dim: 0.85; /* a photo held back behind what is laid over it */
 
   /* ---- The viewport: no board draws these; each lets a layout reach past its column -------------- */
-  --app-column-max: 480px; /* the client app's column, filling a phone wider than the design's 390 px */
+  --app-column-max: 480px; /* the phone apps' column, filling a phone wider than the design's 390 px */
   --photo-max-h: 56dvh; /* a photograph opened large, with room for its caption beneath */
 
   /* ---- The frame the site and the apps share ----------------------------------------------- */

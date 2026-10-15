@@ -132,9 +132,13 @@ test("keeps every day readable, and the navigation in reach, at 200% zoom", asyn
   for (const head of await page.getByRole("columnheader").all()) {
     expect((await head.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(96);
   }
+  // Too narrow to keep the navigation beside the page, the header's Menu brings it in.
+  await page.getByRole("button", { name: opsCopy.shell.menu }).click();
   const settings = page.getByRole("link", { name: "Settings" });
   await settings.scrollIntoViewIfNeeded();
   await expect(settings).toBeInViewport();
+  await page.keyboard.press("Escape");
+  await expect(settings).toBeHidden();
 });
 
 test("meets WCAG 2.2 AA on the board, the drawer, a job in hand, the picker and a refusal", async ({ page }) => {

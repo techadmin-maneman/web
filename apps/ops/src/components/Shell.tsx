@@ -118,12 +118,14 @@ function DepartmentSections({ department, current, mayCall, waiting }: Departmen
 
 const NOTHING_WAITING: ReadonlyMap<SectionPath, Waiting> = new Map();
 
-function Navigation({ current }: { current: SectionPath }) {
+const NAV_ID = "console-nav";
+
+function Navigation({ current, open }: { current: SectionPath; open: boolean }) {
   const mayCall = useMayCall();
   const board = useTaskBoard(mayCall !== null && mayOpen(mayCall, "tasks"));
   const waiting = board === null ? NOTHING_WAITING : waitingIn(board, new Date());
   return (
-    <nav className={styles.nav} aria-label={shell.title}>
+    <nav id={NAV_ID} className={styles.nav} data-open={open} aria-label={shell.title}>
       <div className={styles.brand}>
         <Mark className={styles.mark} />
         <span className={capsLook(styles.brandName)}>{shell.title}</span>
@@ -138,6 +140,50 @@ function Navigation({ current }: { current: SectionPath }) {
         />
       ))}
     </nav>
+  );
+}
+
+/**
+ * The navigation's place in a narrow window: folded away until Menu opens it, and folded again as a page opens or
+ * Escape is pressed. In a wide one it stands beside the page and the button is not drawn.
+ */
+function useMenu(): { open: boolean; toggle: () => void } {
+  const path = usePath();
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(false);
+  }, [path]);
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", close);
+    return () => {
+      window.removeEventListener("keydown", close);
+    };
+  }, [open]);
+  return {
+    open,
+    toggle: () => {
+      setOpen((now) => !now);
+    },
+  };
+}
+
+/** The header's button to the navigation, drawn only in a narrow window. */
+function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <Button
+      variant="quiet"
+      size="small"
+      className={styles.menu}
+      aria-expanded={open}
+      aria-controls={NAV_ID}
+      onClick={onToggle}
+    >
+      {open ? shell.closeMenu : shell.menu}
+    </Button>
   );
 }
 
@@ -187,6 +233,7 @@ export function Shell({ section, title, flush, finder = true, note = null, child
   const heading = useRef<HTMLHeadingElement>(null);
   const main = useRef<HTMLElement>(null);
   const [sub, setSub] = useState<string | undefined>();
+  const menu = useMenu();
   useFocusOnArrival(heading, main);
   return (
     <div className={styles.console}>
@@ -197,10 +244,11 @@ export function Shell({ section, title, flush, finder = true, note = null, child
       >
         {shell.skip}
       </SkipLink>
-      <Navigation current={section} />
+      <Navigation current={section} open={menu.open} />
       <CommandPalette />
       <div className={styles.body}>
         <header className={styles.header}>
+          <MenuButton open={menu.open} onToggle={menu.toggle} />
           <div className={styles.heading}>
             <h1 className={styles.title} ref={heading} tabIndex={-1}>
               {title}
