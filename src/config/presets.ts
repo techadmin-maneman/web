@@ -23,4 +23,3 @@ export const PRESET_IDS = PRESETS.map((preset) => preset.id) as [PresetId, ...Pr
 export function findPreset(id: string): (typeof PRESETS)[number] | undefined {
   return PRESETS.find((preset) => preset.id === id);
 }
-
