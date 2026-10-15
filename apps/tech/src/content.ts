@@ -308,7 +308,7 @@ export const job = {
   start: "Start job",
   continueJob: "Continue",
   // The board draws no job's state on its card or its row.
-  states: { inProgress: "In progress", closed: "Closed out" },
+  states: { inProgress: "In progress", closed: "Closed out", atTheDoor: "At the door" },
   closedAs: (outcome: string) => `Closed out · ${outcome}`,
   seeCloseOut: "See the close-out",
   notToday: {

@@ -15,7 +15,7 @@ import { Mark } from "@maneman/ui/Mark";
 import { Link } from "@maneman/ui/router";
 import { useAsync, valueOr } from "@maneman/ui/useAsync";
 import { useEffect, useState, type Ref } from "react";
-import type { JobState, JobSummary } from "../api.ts";
+import type { JobSummary } from "../api.ts";
 import { Offline } from "../components/Banners.tsx";
 import {
   atRisk as atRiskCopy,
@@ -33,7 +33,7 @@ import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, dayBefore, todayInIndia, where } from "../lib/when.ts";
 import { useSession } from "../session.ts";
 import { Failed, Loading } from "../states/States.tsx";
-import { keptStates } from "../store/jobs.ts";
+import { type Heard, keptStates } from "../store/jobs.ts";
 import { replay, type Queued } from "../store/outbox.ts";
 import { photoSets } from "../lib/sets.ts";
 import { JobRow } from "./JobRow.tsx";
@@ -45,9 +45,10 @@ type Leaving = "asking" | "going" | "stayed" | null;
 const ROW_STATES: Readonly<Record<RowState, string>> = {
   closed: jobCopy.states.closed,
   in_progress: jobCopy.states.inProgress,
+  at_the_door: jobCopy.states.atTheDoor,
 };
 
-function stateOf(job: JobSummary, queued: readonly Queued[], heard: ReadonlyMap<string, JobState>): string | null {
+function stateOf(job: JobSummary, queued: readonly Queued[], heard: ReadonlyMap<string, Heard>): string | null {
   const state = rowState(job, queued, heard.get(job.id));
   return state === null ? null : ROW_STATES[state];
 }
@@ -63,14 +64,13 @@ const stillOpen = (jobs: readonly JobSummary[], queued: readonly Queued[]): JobS
 const clientOf = (job: JobSummary, kept: ReadonlyMap<string, string>): string | undefined =>
   job.client_name ?? kept.get(job.id);
 
-const NOTHING_HEARD: ReadonlyMap<string, JobState> = new Map();
+const NOTHING_HEARD: ReadonlyMap<string, Heard> = new Map();
 
 /**
  * Where each job the phone holds stood when last heard of, read again whenever the outbox changes. A store that will
  * not open has nothing newer than the list, and the rows go by it.
  */
-const useHeard = (watch: unknown): ReadonlyMap<string, JobState> =>
-  valueOr(useAsync(keptStates, watch)[0], NOTHING_HEARD);
+const useHeard = (watch: unknown): ReadonlyMap<string, Heard> => valueOr(useAsync(keptStates, watch)[0], NOTHING_HEARD);
 
 /** Each day's cards kept on the phone as they come fresh from the API, so a basement opens them; the names they hold. */
 function useKeptCards(...days: readonly ReturnType<typeof useDay>[0][]): ReadonlyMap<string, string> {
@@ -176,7 +176,7 @@ function Jobs(props: {
   readonly jobs: readonly JobSummary[];
   readonly names: ReadonlyMap<string, string>;
   readonly queued: readonly Queued[];
-  readonly heard: ReadonlyMap<string, JobState>;
+  readonly heard: ReadonlyMap<string, Heard>;
 }) {
   return (
     <ul className={styles.list}>

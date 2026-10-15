@@ -17,7 +17,9 @@ import { useScreen } from "../lib/useScreen.ts";
 import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
-import { keptArrival, keptClosed, keptStates } from "../store/jobs.ts";
+import { type Heard, keptArrival, keptClosed, keptStates } from "../store/jobs.ts";
+
+const NOTHING_HEARD: ReadonlyMap<string, Heard> = new Map();
 import type { Queued } from "../store/outbox.ts";
 import frame from "../components/frame.module.css";
 import shared from "./steps.module.css";
@@ -27,13 +29,16 @@ import styles from "./close-out.module.css";
 const IN_A_SET = 5;
 
 /** The next job of the day after this one's time still to work, which the board's last action opens. */
-function nextAfter(jobs: readonly JobSummary[], after: string): JobSummary | null {
+function nextAfter(jobs: readonly JobSummary[], after: Job, heard: ReadonlyMap<string, Heard>): JobSummary | null {
   const open = (job: JobSummary) =>
+    job.id !== after.id &&
     job.status !== "completed" &&
     job.status !== "terminated" &&
     job.status !== "cancelled" &&
-    job.progress.outcome === null;
-  return jobs.find((job) => job.starts_at > after && open(job)) ?? null;
+    (heard.get(job.id)?.outcome ?? job.progress.outcome) === null;
+  // A job they checked in at and left waiting, at whatever time, comes before the next one booked.
+  const atTheDoor = jobs.find((job) => open(job) && heard.get(job.id)?.arrived === true);
+  return atTheDoor ?? jobs.find((job) => job.starts_at > after.starts_at && open(job)) ?? null;
 }
 
 /** How the job closed, in the heading's words: a one visit done once the client declined is a free consultation. */
@@ -82,8 +87,12 @@ function Evidence({ job }: { job: Job }) {
 }
 
 /** How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed. */
-function useOutcome(job: Job | null, queued: readonly Queued[], signature: unknown): Outcome | null {
-  const heard = valueOr(useAsync(keptStates, signature)[0], null)?.get(job?.id ?? "")?.outcome ?? null;
+function useOutcome(
+  job: Job | null,
+  queued: readonly Queued[],
+  states: ReadonlyMap<string, Heard> | null,
+): Outcome | null {
+  const heard = states?.get(job?.id ?? "")?.outcome ?? null;
   if (job === null) return null;
   return outcomeOf({ id: job.id, progress: { ...job.progress, outcome: job.progress.outcome ?? heard } }, queued);
 }
@@ -91,7 +100,8 @@ function useOutcome(job: Job | null, queued: readonly Queued[], signature: unkno
 export function CloseOut({ id }: { id: string }) {
   const waiting = useOutbox();
   const [loaded, retry] = useJob(id, signatureOf(waiting));
-  const outcome = useOutcome(loaded.state === "loaded" ? loaded.value : null, waiting.events, signatureOf(waiting));
+  const states = valueOr(useAsync(keptStates, signatureOf(waiting))[0], null);
+  const outcome = useOutcome(loaded.state === "loaded" ? loaded.value : null, waiting.events, states);
   const [day] = useDay(todayInIndia());
   const names = useNames();
   const heading = useScreen(titles.closeOut);
@@ -130,7 +140,7 @@ export function CloseOut({ id }: { id: string }) {
   const sets = job.progress.steps_done.filter((step) => step === "before_photos" || step === "after_photos").length;
   const queuedFrames = waiting.frames.filter((frame) => frame.job_id === id).length;
 
-  const later = day.state === "loaded" ? nextAfter(day.value, job.starts_at) : null;
+  const later = day.state === "loaded" ? nextAfter(day.value, job, states ?? NOTHING_HEARD) : null;
 
   return (
     <main className={frame.screen}>
