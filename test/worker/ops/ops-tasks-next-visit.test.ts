@@ -179,6 +179,20 @@ describe("GET /api/tasks, the next visit", () => {
     expect((await opsSet({ first_fit_to_book: 14 })).groups).toEqual([]);
   });
 
+  // A client who said yes at the consultation waited a week for anyone to book their fit, though only ops could.
+  it("lists a client consulted today at once while only ops book first fits", async () => {
+    await visitOf(CONSULTATION, "consultation", "2026-09-21T04:30:00.000Z", "completed");
+    expect(groupNames(await tasks())).toEqual([]);
+    const opsBook = appFor(
+      "local",
+      fakeDependencies(),
+      { selfServeBooking: false, selfServeConsultations: true },
+      "ops",
+    );
+    const board = await (await request(opsBook, "/api/tasks")).json<Body>();
+    expect(groupNames(board)).toEqual(["first_fit_to_book"]);
+  });
+
   it("names no window after a consultation in the evening, which a first fit cannot start in", async () => {
     // 6 pm in India.
     await visitOf(CONSULTATION, "consultation", "2026-09-10T12:30:00.000Z", "completed");

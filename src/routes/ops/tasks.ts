@@ -42,6 +42,8 @@ import { callerAccess, permits } from "../../http/staff-access.ts";
 import { placesReached, type Level } from "../../policy/access.ts";
 import { callerMeetsNeed, TASK_DEPARTMENTS, taskNeed } from "../../policy/console-routes.ts";
 import { TaskFactsSchema } from "./tasks.schemas.ts";
+import { boardDays } from "../../policy/next-visit.ts";
+import { selfServeKinds } from "../../policy/self-serve.ts";
 
 /** The tasks each group lists, the longest waits; its count is the whole queue's. */
 export const TASKS_SHOWN = 50;
@@ -243,8 +245,9 @@ const closeRoute = opsRoute({
  */
 async function readTheBoard(c: Context<AppEnv>, level: Level, person?: string) {
   const [inputs, access] = await Promise.all([opsInputs(c), callerAccess(c)]);
+  const fitsSelfBooked = selfServeKinds(c.var.config.settings).includes("first_fit");
   return outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, {
-    days: inputs.nextVisitDays,
+    days: boardDays(inputs.nextVisitDays, fitsSelfBooked),
     hours: inputs.careHours,
     lostAfter: inputs.lostAfterDays,
     reach: (group: TaskGroup) => placesReached(access, TASK_DEPARTMENTS[group], level),

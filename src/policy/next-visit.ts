@@ -178,6 +178,13 @@ export const atRiskIfDoneBy = (today: string, days: NextVisitDays): string =>
 export const firstFitToBookFrom = (consultationDay: string, days: NextVisitDays): string =>
   addDays(consultationDay, days.first_fit_to_book);
 
+/**
+ * The days the board reads with: a consulted client waits `first_fit_to_book` days to book their first fit themselves
+ * before ops are asked to, and none while they cannot, when only ops book it (src/policy/self-serve.ts).
+ */
+export const boardDays = (days: NextVisitDays, fitsSelfBooked: boolean): NextVisitDays =>
+  fitsSelfBooked ? days : { ...days, first_fit_to_book: 0 };
+
 /** The latest day a consultation may have been done on for its first fit to be a task today. */
 export const firstFitToBookIfConsultedBy = (today: string, days: NextVisitDays): string =>
   addDays(today, -days.first_fit_to_book);
