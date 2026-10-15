@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
-import { keepUpVisits } from "../fixtures/index.ts";
+import { aVisit } from "../fixtures/index.ts";
 import {
   PERSON,
   REFERRED,
@@ -146,15 +146,7 @@ describe("POST /api/tasks/{group}/{id}/close", () => {
   });
 
   it("closes an at-risk client with what came of the call", async () => {
-    await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, window_start, window_end, status, fsm_status,
-         fsm_modified_at, synced_at)
-       VALUES (?1, ?2, ?3, 'service', '2026-08-01T04:30:00.000Z', '2026-08-01T04:30:00.000Z', 'completed',
-         'Completed', ?4, ?4)`,
-    )
-      .bind(VISIT, `fsm-${VISIT}`, PERSON, NOW.toISOString())
-      .run();
-    await keepUpVisits();
+    await aVisit({ id: VISIT, person_id: PERSON, window_start: "2026-08-01T04:30:00.000Z", status: "completed" });
     const board = await tasks();
     expect(board.groups.find((each) => each.group === "at_risk_client")?.closable).toBe(true);
     expect((await close("at_risk_client", VISIT, { reason: "Moved abroad; no visits for now." })).status).toBe(204);

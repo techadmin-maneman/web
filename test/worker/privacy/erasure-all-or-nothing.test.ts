@@ -36,7 +36,13 @@ describe("erasure, all or nothing", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ visit_photos_deleted: 1, sessions_ended: 1, addresses_removed: 2 });
-    expect(await filesLeft()).toEqual({ upload: false, result: false, visitPhoto: false, card: false });
+    expect(await filesLeft()).toEqual({
+      upload: false,
+      result: false,
+      visitPhoto: false,
+      card: false,
+      document: false,
+    });
     const left = await env.DB.prepare(
       `SELECT (SELECT COUNT(*) FROM number_change_requests) AS changes, (SELECT COUNT(*) FROM otp_challenges) AS codes,
          (SELECT COUNT(*) FROM photos) AS photos, (SELECT COUNT(*) FROM photo_sets) AS sets,
@@ -164,7 +170,7 @@ describe("erasure, all or nothing", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log WHERE action = 'person.erase'").first()).toEqual({
       n: 0,
     });
-    expect(await filesLeft()).toEqual({ upload: true, result: true, visitPhoto: true, card: true });
+    expect(await filesLeft()).toEqual({ upload: true, result: true, visitPhoto: true, card: true, document: true });
     const person = await env.DB.prepare("SELECT name, erased_at FROM people WHERE mobile_e164 = ?1")
       .bind(MOBILE_E164)
       .first();
@@ -206,7 +212,13 @@ describe("erasure, all or nothing", () => {
     });
 
     expect(outcomes).toEqual([{ job: "erased_files", ok: true }]);
-    expect(await filesLeft()).toEqual({ upload: false, result: false, visitPhoto: false, card: false });
+    expect(await filesLeft()).toEqual({
+      upload: false,
+      result: false,
+      visitPhoto: false,
+      card: false,
+      document: false,
+    });
     expect(await env.DB.prepare("SELECT COUNT(*) AS photos FROM photos").first()).toEqual({ photos: 0 });
     const done = await env.DB.prepare("SELECT files_erased_at FROM people WHERE id = ?1").bind(personId).first();
     expect(done).toEqual({ files_erased_at: later.toISOString() });

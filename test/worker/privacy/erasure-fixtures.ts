@@ -140,6 +140,7 @@ export async function clientWithEverything(): Promise<string> {
     ).bind(personId, at),
   ]);
   await env.CLIENT_PHOTOS.put(VISIT_PHOTO, syntheticJpeg(600, 800));
+  await env.CLIENT_PHOTOS.put(`documents/${personId}/invoice-books-inv-1.pdf`, "%PDF-1.4");
   await env.REFERRAL_CARDS.put(CARD, syntheticJpeg(1200, 630));
   return personId;
 }
@@ -151,6 +152,7 @@ export async function filesLeft() {
     result: (await env.RESULTS.head("results/ready.png")) !== null,
     visitPhoto: (await env.CLIENT_PHOTOS.head(VISIT_PHOTO)) !== null,
     card: (await env.REFERRAL_CARDS.head(CARD)) !== null,
+    document: (await env.CLIENT_PHOTOS.list({ prefix: "documents/" })).objects.length > 0,
   };
 }
 

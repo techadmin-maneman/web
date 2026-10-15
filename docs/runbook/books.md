@@ -18,6 +18,14 @@ Symptoms: `books_…_failed` and `invoice_failed` alerts, each on its third fail
 
 Nothing a client or a technician does waits on Books. Customers, invoices, payments and refunds wait, and each is tried again an hour later; once Books answers, the pass catches up and the alerts close.
 
+## Books calls run high
+
+Zoho Books allows the organisation 5,000 API calls a day on the Professional plan, and refuses every call past them until the day resets. The Worker counts each call it makes, by India's day, and the cron says so at 70% (`books_calls_high`, "Books has used _n_ of its 5,000 API calls a day"). Staging counts its own, and still writes to the same organisation until it has one of its own (ADR 0200), so look at both.
+
+- A client's issued invoice or receipt is kept after its first view, so opening one again never calls Books.
+- Most calls are the cron's Books pass. If the day is unusual, a backlog after Books was down, it passes; nothing to do.
+- If it is every day, the business has outgrown the plan: move Books to a plan with more calls a day, in Zoho's billing.
+
 ## Invoices and Books
 
 The cron makes each finished visit's invoice in Books from our own figures: one line on its service's item, at the price book's price on the day, with a discount code as the line's discount before tax, under the visit's ID as its reference (ADR 0110). It sends the invoice once Books' total equals what the client was sold the visit for; only then can the client open it. It records each payment and refund in Books and sets a visit's payment against its invoice. Nothing here ever sends a draft made by hand, so a draft ops correct is sent by ops.

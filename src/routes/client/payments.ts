@@ -7,6 +7,7 @@
 // failed attempt is not a payment and is left out. A payment kept under the
 // 24-hour rule is a charge, and carries its evidence.
 
+import { documentPdf } from "../../domain/clients/client-documents.ts";
 import { z } from "@hono/zod-openapi";
 import { VISIT_TYPES } from "../../config/visit-types.ts";
 import {
@@ -273,9 +274,15 @@ export function registerClientPayments(app: App): void {
     const session = clientOf(c);
     const payment = await receiptOf(c.env.DB, session.subjectId, c.req.valid("param").id);
     if (payment === null) return refuse(c, "not_found");
-    const pdf = payment.books_payment_id === null ? null : await c.var.deps.books.receiptPdf(payment.books_payment_id);
+    const booksId = payment.books_payment_id;
+    const pdf =
+      booksId === null
+        ? null
+        : await documentPdf(c.env, { personId: session.subjectId, kind: "receipt", booksId }, () =>
+            c.var.deps.books.receiptPdf(booksId),
+          );
     if (pdf === null) return refuse(c, "not_ready");
-    return pdfResponse(pdf.body, "receipt.pdf");
+    return pdfResponse(pdf, "receipt.pdf");
   });
 
   app.openapi(documentRoute, async (c) => {
@@ -283,13 +290,19 @@ export function registerClientPayments(app: App): void {
     // A draft invoice answers "not ready", as it did before it was raised (ADR 0056).
     const visit = await issuedInvoiceOf(c.env.DB, session.subjectId, c.req.valid("param").id);
     if (visit === null) return refuse(c, "not_found");
-    const pdf = visit.invoiceId === null ? null : await c.var.deps.books.invoicePdf(visit.invoiceId);
+    const booksId = visit.invoiceId;
+    const pdf =
+      booksId === null
+        ? null
+        : await documentPdf(c.env, { personId: session.subjectId, kind: "invoice", booksId }, () =>
+            c.var.deps.books.invoicePdf(booksId),
+          );
     if (pdf === null) return refuse(c, "not_ready");
-    return pdfResponse(pdf.body, "invoice.pdf");
+    return pdfResponse(pdf, "invoice.pdf");
   });
 }
 
-const pdfResponse = (body: ReadableStream<Uint8Array>, filename: string) =>
+const pdfResponse = (body: ReadableStream<Uint8Array> | Uint8Array, filename: string) =>
   new Response(body, {
     headers: {
       "Content-Type": "application/pdf",

@@ -260,6 +260,9 @@ export const ALERT_WORDS = {
   google_refused: (a: { readonly detail: string }) =>
     `Check the Google key, its APIs and its quotas (provisioning, step 13): Google refused the address search ` +
     `(${a.detail}), so clients' addresses get no pin.`,
+  books_calls_high: (a: { readonly calls: number; readonly allowance: number }) =>
+    `Slow what calls Books, or raise its plan (runbook, "Books calls run high"): ${String(a.calls)} of its ` +
+    `${String(a.allowance)} API calls a day used today. Past them, invoices, receipts and documents fail until midnight.`,
   youcam_units_low: (a: { readonly units: number; readonly floor: number }) =>
     `Buy YouCam units before try-ons stop: ${String(a.units)} left, below the floor of ${String(a.floor)}.`,
   cron_job: (a: { readonly job: string; readonly runs: number; readonly reason: string }) =>
