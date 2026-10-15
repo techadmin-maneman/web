@@ -13,6 +13,8 @@
 
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { Button, ButtonLink } from "@maneman/ui/Button";
+import { weekdayDate } from "@maneman/web-kit/dates";
+import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { BookableType, Me } from "../api.ts";
 import { booking } from "../content.ts";
@@ -29,6 +31,39 @@ function recommendationOf(me: Me): Recommended | undefined {
   if (tier === null) return undefined;
   const technician = me.consulted?.technician ?? null;
   return { tier, by: technician === null ? null : firstNameOf(technician.name) };
+}
+
+/**
+ * A paid visit booked with ops on WhatsApp: the message names the service and the day the app offered, and the main
+ * button says it is paid by UPI at the visit.
+ */
+function WithOps(props: {
+  label: string;
+  className: string | undefined;
+  message: string;
+  services: Me["booking"]["services"];
+  tier: string | null | undefined;
+  offer: Offered | undefined;
+  quiet: boolean;
+}) {
+  const service = props.services.find((each) => each.tier === props.tier) ?? props.services[0];
+  const day = props.offer === undefined ? null : weekdayDate(props.offer.date);
+  const href = whatsappWith(booking.asking(props.message, service?.name ?? null, day));
+  if (props.quiet) {
+    return (
+      <TextLink tone="brass" className={props.className} href={href}>
+        {props.label}
+      </TextLink>
+    );
+  }
+  return (
+    <>
+      <ButtonLink variant="primary" size="action" className={props.className} href={href} rel="noopener">
+        {props.label}
+      </ButtonLink>
+      {service !== undefined && <p>{booking.withOps(rupees(service.price.amount))}</p>}
+    </>
+  );
 }
 
 export function BookButton({
@@ -77,15 +112,7 @@ export function BookButton({
   }
   // A kind the client may not book themselves goes to ops on WhatsApp: every paid visit, while online payment is off.
   if (kind === undefined || !me.booking.self_serve_kinds.includes(kind)) {
-    return quiet ? (
-      <TextLink tone="brass" className={className} href={whatsappWith(message)}>
-        {label}
-      </TextLink>
-    ) : (
-      <ButtonLink variant="primary" size="action" className={className} href={whatsappWith(message)} rel="noopener">
-        {label}
-      </ButtonLink>
-    );
+    return <WithOps {...{ label, className, message, services, tier, offer, quiet }} />;
   }
   const onClick = () => {
     setOpen(true);
