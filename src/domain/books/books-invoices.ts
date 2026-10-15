@@ -208,7 +208,13 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
   if (customerId === null) return null;
 
   const code = await codeOff(db, visit.id, price);
-  const sold = discounted(price, code?.off ?? 0);
+  const listed = discounted(price, code?.off ?? 0);
+  // A visit paid for before its price changed was sold at what was paid, so that is its line.
+  const { soldFor } = await soldVisit(db, visit, code?.off ?? 0);
+  const line =
+    soldFor === null || soldFor === listed.amount
+      ? { rate: price.amount, discount: price.amount - listed.amount }
+      : { rate: soldFor, discount: 0 };
   const day = indiaDate(new Date(visit.window_start));
   const label = options.labelAsTest ? "Staging test: " : "";
   const supply = (await supplyFor(db, options.gst))(visit.service_city);
@@ -222,8 +228,7 @@ async function raiseInvoice(pass: Pass, visit: Visit): Promise<BooksInvoice | nu
       itemId: item.itemId,
       name: item.name,
       description: `${label}${VISIT_TYPE_NAMES[visit.type]}, ${shortDate(day)}`,
-      rate: price.amount,
-      discount: price.amount - sold.amount,
+      ...line,
     },
   };
   const raised = await deps.books.createInvoice(invoice);
