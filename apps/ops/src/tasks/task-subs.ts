@@ -76,6 +76,7 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   first_fit_to_book: (facts) =>
     copy.first_fit_to_book(shortDate(indiaDate(facts.consulted_at)), fitWindow(facts.fit_window)),
   payment_owed: (facts) => copy.payment_owed(facts.product, rupees(facts.amount), facts.state),
+  upi_due: (facts) => copy.upi_due(dispatch.typeNames[facts.kind], dayAndTime(facts.starts_at), rupees(facts.amount)),
   // What the charge kept, or, where it kept no money, the credit it spent.
   no_show_dispute: (facts) =>
     copy.no_show_dispute(facts.kept !== null && facts.kept > 0 ? rupees(facts.kept) : copy.disputedCredit),

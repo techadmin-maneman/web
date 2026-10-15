@@ -2020,6 +2020,173 @@ Request body:
 }
 ```
 
+### POST /api/visits/{id}/upi-payment
+
+Record the client's UPI payment for a visit paid at the visit, which sends them their receipt
+
+Request body:
+
+```json
+{
+  "$ref": "#/components/schemas/UpiPayment"
+}
+```
+
+**200**: Recorded
+
+```json
+{
+  "$ref": "#/components/schemas/UpiRecorded"
+}
+```
+
+**400**: invalid_request: fields names utr
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "invalid_request"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no such visit in the caller's cities
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: not_due: the visit is not one paid at the visit; already_paid: its payment is recorded; reference_used: that UTR is recorded against another payment
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_due",
+                "already_paid",
+                "reference_used"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### POST /api/clients/{id}/referral
 
 Attach an invite to a client who booked away from its page, with the reason
@@ -26841,7 +27008,10 @@ Request body:
             "claim_state",
             "return_settled",
             "out_of_warranty",
-            "refund_not_due"
+            "refund_not_due",
+            "not_due",
+            "already_paid",
+            "reference_used"
           ]
         },
         "request_id": {
@@ -30335,6 +30505,42 @@ Request body:
 }
 ```
 
+### UpiRecorded
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "payment_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "payment_id"
+  ],
+  "additionalProperties": false
+}
+```
+
+### UpiPayment
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "utr": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]{6,35}$",
+      "description": "The UPI transaction's reference (UTR), as the bank's statement or the client's app shows it."
+    }
+  },
+  "required": [
+    "utr"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### AlreadyInvited
 
 ```json
@@ -30444,7 +30650,10 @@ Request body:
             "claim_state",
             "return_settled",
             "out_of_warranty",
-            "refund_not_due"
+            "refund_not_due",
+            "not_due",
+            "already_paid",
+            "reference_used"
           ]
         },
         "request_id": {
@@ -36245,6 +36454,7 @@ Request body:
         "custom_order.cancel",
         "custom_order.refund",
         "payment.refund",
+        "payment.upi_record",
         "plan_line.approve",
         "plan_line.reject",
         "demand_event.add",
@@ -38791,6 +39001,7 @@ Request body:
               "grievance",
               "draft_invoice",
               "payment_owed",
+              "upi_due",
               "payment_to_refund"
             ]
           },
@@ -39510,6 +39721,41 @@ Request body:
         "group",
         "consulted_at",
         "fit_window"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "upi_due"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "consultation",
+            "first_fit",
+            "service",
+            "replacement"
+          ]
+        },
+        "starts_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "integer",
+          "description": "Paid by UPI at the visit, in paise."
+        }
+      },
+      "required": [
+        "group",
+        "kind",
+        "starts_at",
+        "amount"
       ],
       "additionalProperties": false
     },

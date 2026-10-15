@@ -9,7 +9,14 @@ import type { TaskGroup } from "../../policy/tasks.ts";
 import { CARE_QUEUES } from "../care/chat-tasks.ts";
 import { paidNotBooked } from "../booking/hold-stages.ts";
 import { STOCK_RISKS_OPEN } from "../inventory/stock-risks.ts";
-import { statusIn, statusNotIn, VISIT_CALLED_OFF, VISIT_LIVE, VISIT_NOT_BEGUN } from "../../config/statuses.ts";
+import {
+  PAYMENT_HELD,
+  statusIn,
+  statusNotIn,
+  VISIT_CALLED_OFF,
+  VISIT_LIVE,
+  VISIT_NOT_BEGUN,
+} from "../../config/statuses.ts";
 import type { SqlValue } from "../../lib/sql.ts";
 import { REFUND_OWED_FAILED, REFUND_OWED_LET_GO } from "../money/payment-refunds.ts";
 import { UNASSIGNED_VISITS, VISITS_LEFT_OPEN } from "../dispatch/unassigned.ts";
@@ -330,6 +337,20 @@ export const QUEUES: readonly Queue[] = [
     LEFT JOIN services s ON s.kind = 'first_fit' AND s.tier = l.tier
    WHERE l.paid_at IS NULL AND pe.erased_at IS NULL`,
     binds: (at) => [at.linksClosedIfSentBy, at.now],
+  },
+  // A visit paid by UPI at the visit, done and not yet recorded paid (docs/decisions/0208-paid-at-the-visit-by-upi.md):
+  // ops record it once the money reaches the account. It waits from the visit's start, and falls due 12 hours on.
+  {
+    group: "upi_due",
+    sql: `SELECT 'upi_due' AS "group", a.id AS id, a.person_id AS person_id, pe.name AS person_name,
+         a.type || ' ' || h.amount AS detail,
+         json_object('kind', a.type, 'starts_at', a.window_start, 'amount', h.amount) AS facts,
+         a.window_start AS since, strftime('%Y-%m-%dT%H:%M:%fZ', a.window_start, '+12 hours') AS due_by, '' AS episode
+    FROM slot_holds h JOIN appointments a ON a.id = h.appointment_id JOIN people pe ON pe.id = a.person_id
+   WHERE h.pay_at_visit = 1 AND h.state = 'booked' AND a.status = 'completed' AND a.deleted_at IS NULL
+     AND pe.erased_at IS NULL
+     AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.appointment_id = a.id AND p.kind = 'visit'
+                       AND ${statusIn("p.status", PAYMENT_HELD)})`,
   },
   // A client's dispute of a no-show's charge, still to rule on: what the charge kept, in paise. It waits from when the
   // client raised it. The index on the open disputes reads only those.

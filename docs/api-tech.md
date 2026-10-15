@@ -3627,7 +3627,10 @@ Request body:
             "claim_state",
             "return_settled",
             "out_of_warranty",
-            "refund_not_due"
+            "refund_not_due",
+            "not_due",
+            "already_paid",
+            "reference_used"
           ]
         },
         "request_id": {

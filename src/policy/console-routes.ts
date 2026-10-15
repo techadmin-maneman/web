@@ -346,6 +346,7 @@ export const TASK_DEPARTMENTS: Readonly<Record<TaskGroup, Department>> = {
   grievance: "customer_care",
   draft_invoice: "finance",
   payment_owed: "finance",
+  upi_due: "finance",
   payment_to_refund: "finance",
 };
 

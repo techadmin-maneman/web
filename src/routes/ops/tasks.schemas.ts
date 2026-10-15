@@ -57,6 +57,11 @@ export const TaskFactsSchema = z
         .nullable()
         .openapi({ description: "The consultation's; null where a fit cannot start in it." }),
     }),
+    facts("upi_due", {
+      kind,
+      starts_at: instant,
+      amount: paise.openapi({ description: "Paid by UPI at the visit, in paise." }),
+    }),
     facts("payment_owed", {
       state: z.enum(["sent", "unsent", "refused", "closed"]),
       amount: paise,

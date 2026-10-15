@@ -90,6 +90,8 @@ export const tasks = {
     draft_invoice: "Draft invoice",
     // A group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
     payment_owed: "Payment owed",
+    // A visit paid by UPI at the visit, to record once the money is in the account (ADR 0208).
+    upi_due: "UPI to record",
     // A group the board does not draw: money owed back that no refund has reached.
     payment_to_refund: "Payment to refund",
   } satisfies Readonly<Record<Group, string>>,
@@ -223,6 +225,8 @@ export const tasks = {
      */
     payment_owed: (product: string, amount: string, link: LinkState) =>
       `${product}, ${amount} · ${PAYMENT_LINK_STATES[link]}`,
+    /** "Service visit, Wed 23 Sep · Rs. 2,200 by UPI": record it once it is in the account. */
+    upi_due: (visit: string, when: string, amount: string) => `${visit}, ${when} · ${amount} by UPI`,
     /** "Rs. 1,234 owed back on pay_Q1x; Razorpay refused the refund": refunded from Razorpay's dashboard. */
     payment_to_refund: (amount: string, payment: string, why: string) =>
       `${amount} to refund on ${payment} · ${why === "refund_failed" ? "refund failed" : "refund refused"}`,
@@ -281,6 +285,22 @@ export const tasks = {
    * A one visit's payment link, copied to send by hand, or texted to the client again by Razorpay. No
    * board draws it.
    */
+  /** A visit paid by UPI at the visit, recorded from its row (ADR 0208). */
+  upi: {
+    open: "Record UPI",
+    title: "Record UPI payment",
+    sub: (visit: string, amount: string) => `${visit} · ${amount}`,
+    utr: "UPI reference (UTR)",
+    record: "Record",
+    recording: "Recording…",
+    cancel: "Cancel",
+    errors: {
+      invalid_request: "Enter the UTR as the bank shows it: letters and digits.",
+      not_due: "This visit isn’t paid at the visit.",
+      already_paid: "This visit’s payment is already recorded.",
+      reference_used: "That UTR is already recorded against another payment.",
+    },
+  },
   link: {
     copy: "Copy link",
     copied: "Link copied",

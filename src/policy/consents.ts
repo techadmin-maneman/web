@@ -23,8 +23,8 @@ export function isMessagePurpose(value: unknown): value is MessagePurpose {
 
 /**
  * The messages that confirm a payment, ask for one at the visit, or say money is on its way back. They are
- * transactional, so they go whatever
- * the person's consent to WhatsApp about their visits; every other message about a visit needs that consent.
+ * transactional, so they go whatever the person's consent to WhatsApp about their visits; every other message about a
+ * visit needs that consent.
  */
 const TRANSACTIONAL_TEMPLATES: ReadonlySet<string> = new Set([
   "visit_booked_v1",
