@@ -109,6 +109,34 @@ async function checkedReceipt(
   return { ok: true, order, rate, matched };
 }
 
+/** The receipt's own row, its rate in micro-rupees and in the whole paise code deployed before them still reads. */
+function receiptRow(
+  db: D1Database,
+  row: { readonly id: string; readonly receipt: Parameters<typeof receiveOrder>[1]; readonly rate: number },
+  written: Written,
+): D1PreparedStatement {
+  const { id, receipt, rate } = row;
+  return db
+    .prepare(
+      `INSERT INTO receipts (id, po_id, received_by, received_at, supplier_invoice, rupee_rate, rate_micro,
+         freight_paise, duty_paise, clearing_paise, note)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`,
+    )
+    .bind(
+      id,
+      receipt.poId,
+      written.actor.id,
+      written.now.toISOString(),
+      receipt.supplierInvoice,
+      Math.max(1, Math.round(rate / MICRO_PER_PAISA)),
+      rate,
+      receipt.extras.freight,
+      receipt.extras.duty,
+      receipt.extras.clearing,
+      receipt.note,
+    );
+}
+
 /**
  * A receipt against an order sent or part received. Refused, naming the field, for a line not of the order, nothing
  * received at all, or an order in another currency with no rupee rate; or for an order past receiving.
@@ -158,26 +186,7 @@ export async function receiveOrder(
   }
   const batch = [
     receivedAudit(db, { poId: receipt.poId, id, lines: receipt.lines.length }, written),
-    db
-      .prepare(
-        `INSERT INTO receipts (id, po_id, received_by, received_at, supplier_invoice, rupee_rate, rate_micro,
-           freight_paise, duty_paise, clearing_paise, note)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?11, ?7, ?8, ?9, ?10)`,
-      )
-      .bind(
-        id,
-        receipt.poId,
-        written.actor.id,
-        written.now.toISOString(),
-        receipt.supplierInvoice,
-        // Whole paise beside the micro-rupees, which code deployed before them still reads.
-        Math.max(1, Math.round(rate / MICRO_PER_PAISA)),
-        freight,
-        duty,
-        clearing,
-        receipt.note,
-        rate,
-      ),
+    receiptRow(db, { id, receipt, rate }, written),
     ...lines,
     // What arrived settles the order: received once every line has all it ordered, part received until then.
     db

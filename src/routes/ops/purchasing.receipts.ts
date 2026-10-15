@@ -84,6 +84,12 @@ const closeRoute = opsRoute({
   },
 });
 
+/** The rate sent, in micro-rupees: the console's own, or a console built before it sending whole paise. */
+const rateOf = (body: { rate_micro_rupees?: number | null; rupee_rate?: number | null }): number | null => {
+  if (body.rate_micro_rupees !== undefined && body.rate_micro_rupees !== null) return body.rate_micro_rupees;
+  return body.rupee_rate === undefined || body.rupee_rate === null ? null : body.rupee_rate * MICRO_PER_PAISA;
+};
+
 export function registerOpsReceipts(app: App): void {
   app.openapi(receiptRoute, async (c) => {
     const body = c.req.valid("json");
@@ -100,7 +106,7 @@ export function registerOpsReceipts(app: App): void {
           expiresOn: line.expires_on,
         })),
         supplierInvoice: body.supplier_invoice,
-        rateMicro: body.rate_micro_rupees ?? (body.rupee_rate == null ? null : body.rupee_rate * MICRO_PER_PAISA),
+        rateMicro: rateOf(body),
         extras: { freight: body.freight_paise, duty: body.duty_paise, clearing: body.clearing_paise },
         note: body.note,
       },
