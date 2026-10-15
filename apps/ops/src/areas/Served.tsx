@@ -65,7 +65,7 @@ function PincodeTable(props: {
   return (
     <>
       <Narrowing view={view} label={copy.narrow} />
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             <SortHeads view={view} />
@@ -180,9 +180,9 @@ function Area({ pincodes: loadedPincodes, cities }: { pincodes: readonly ServedP
     <Panel
       titleId="area"
       title={copy.title}
-      className={form.panel}
+      padded
       actions={
-        <Button variant="outline" size="small" className={form.quiet} onClick={download}>
+        <Button variant="outline" size="small" narrow onClick={download}>
           {copy.download}
         </Button>
       }

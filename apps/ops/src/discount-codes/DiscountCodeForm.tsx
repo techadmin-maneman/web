@@ -35,7 +35,7 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={draft.how}
             onChange={(event) => {
               edit({ how: event.target.value === "generated" ? "generated" : "typed" });
@@ -57,7 +57,7 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
           {(control) => (
             <TextInput
               {...control}
-              className={form.areaBox}
+              width="area"
               autoCapitalize="characters"
               maxLength={CODE_LENGTH.max}
               value={draft.code}
@@ -72,7 +72,7 @@ function WhatIsMade({ draft, most, edit }: { draft: Draft; most: number; edit: E
           {(control) => (
             <NumberInput
               {...control}
-              className={form.figureBox}
+              width="figure"
               min={1}
               max={most}
               value={draft.count}
@@ -95,7 +95,7 @@ function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={draft.kind}
             onChange={(event) => {
               edit({ kind: event.target.value === "amount" ? "amount" : "percent", cap: "" });
@@ -110,7 +110,7 @@ function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
         {(control) => (
           <NumberInput
             {...control}
-            className={draft.kind === "amount" ? form.amountBox : form.figureBox}
+            width={draft.kind === "amount" ? "amount" : "figure"}
             min={1}
             max={draft.kind === "percent" ? 100 : undefined}
             value={draft.value}
@@ -125,7 +125,7 @@ function WhatItTakesOff({ draft, edit }: { draft: Draft; edit: Edit }) {
           {(control) => (
             <NumberInput
               {...control}
-              className={form.amountBox}
+              width="amount"
               min={1}
               value={draft.cap}
               onChange={(event) => {
@@ -170,7 +170,7 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
           {(control) => (
             <DateInput
               {...control}
-              className={form.dateBox}
+              width="date"
               min={today}
               value={draft.expiresOn}
               onChange={(event) => {
@@ -184,7 +184,7 @@ function Limits({ draft, today, edit }: { draft: Draft; today: string; edit: Edi
             {(control) => (
               <NumberInput
                 {...control}
-                className={form.figureBox}
+                width="figure"
                 min={1}
                 value={draft.maxUses}
                 onChange={(event) => {

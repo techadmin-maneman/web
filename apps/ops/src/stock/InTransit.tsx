@@ -6,6 +6,7 @@
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { boxError, errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -59,7 +60,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
           {(control) => (
             <NumberInput
               {...control}
-              className={form.figureBox}
+              width="figure"
               type="text"
               inputMode="numeric"
               maxLength={6}
@@ -84,9 +85,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
           )}
         </Field>
       </div>
-      {ready && figure < transfer.quantity && (
-        <p className={form.note}>{copy.short(transfer.quantity - figure, unit)}</p>
-      )}
+      {ready && figure < transfer.quantity && <Note>{copy.short(transfer.quantity - figure, unit)}</Note>}
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void record()}>
           {copy.confirm}
@@ -125,12 +124,12 @@ function TransferRow(props: { stock: Stock; transfer: Transfer; onReceive: () =>
       <td className={form.figure}>{shortDate(indiaDate(transfer.sent_at))}</td>
       <td className={styles.held}>
         {access.mayCall("POST /api/stock/transfers/{id}/receive") && (
-          <RowButton className={form.inline} aria-label={copy.receiveLabel(what, to)} onClick={props.onReceive}>
+          <RowButton beside aria-label={copy.receiveLabel(what, to)} onClick={props.onReceive}>
             {copy.receive}
           </RowButton>
         )}{" "}
         {access.mayCall("POST /api/stock/transfers/{id}/send-back") && (
-          <RowButton className={form.inline} aria-label={copy.sendBackLabel(what, from)} onClick={props.onSendBack}>
+          <RowButton beside aria-label={copy.sendBackLabel(what, from)} onClick={props.onSendBack}>
             {copy.sendBack}
           </RowButton>
         )}
@@ -152,7 +151,7 @@ export function InTransit({ stock, onChanged }: { stock: Stock; onChanged: (stoc
   return (
     <Panel titleId="stock-in-transit" title={copy.title}>
       <div className={styles.scroll}>
-        <Table className={form.table}>
+        <Table controls>
           <thead>
             <tr>
               {copy.columns.map((column, index) => (

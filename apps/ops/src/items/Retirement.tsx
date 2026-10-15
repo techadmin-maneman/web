@@ -64,7 +64,7 @@ export function Retiring({ consumable, today, onSaved, onCancel }: Props & { rea
           {(control) => (
             <DateInput
               {...control}
-              className={form.date}
+              width="date"
               min={today}
               value={from}
               onChange={(event) => {

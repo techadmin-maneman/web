@@ -3,7 +3,6 @@
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";
-import { classes } from "@maneman/ui/classes";
 import { type ReactNode } from "react";
 import { type ServiceCatalogue } from "../api.ts";
 import {
@@ -103,7 +102,8 @@ export function ActionButton(props: {
   if (!props.opened.may(props.kind)) return null;
   return (
     <RowButton
-      className={classes(form.inline, styles.action)}
+      beside
+      className={styles.action}
       aria-label={props.label}
       disabled={props.opened.action !== null}
       onClick={props.onClick}

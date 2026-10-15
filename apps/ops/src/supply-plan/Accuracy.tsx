@@ -3,6 +3,7 @@
 
 import type { Success } from "@maneman/web-kit/api";
 import { quantity } from "@maneman/web-kit/figures";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
@@ -34,12 +35,12 @@ function Head({ columns }: { columns: readonly string[] }) {
 }
 
 function Measured({ accuracy }: { accuracy: Accuracy }) {
-  if (accuracy.periods.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (accuracy.periods.length === 0) return <Note>{copy.none}</Note>;
   return (
     <>
-      <p className={form.note}>{copy.note}</p>
+      <Note>{copy.note}</Note>
       <div className={styles.scroll}>
-        <Table className={form.table}>
+        <Table controls>
           <Head columns={copy.periodColumns} />
           <tbody>
             {accuracy.periods.map((period) => (
@@ -54,7 +55,7 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
             ))}
           </tbody>
         </Table>
-        <Table className={form.table}>
+        <Table controls>
           <Head columns={copy.itemColumns} />
           <tbody>
             {accuracy.items.map((item) => (

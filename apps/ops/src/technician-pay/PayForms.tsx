@@ -33,7 +33,7 @@ function NameField({ name, onName }: { name: string; onName: (name: string) => v
         {(control) => (
           <TextInput
             {...control}
-            className={form.areaBox}
+            width="area"
             maxLength={40}
             value={name}
             onChange={(event) => {
@@ -127,7 +127,7 @@ function RateWhere({ pay, draft, edit }: DraftProps) {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={draft.kind}
             onChange={(event) => {
               edit({ kind: pay.kinds.find((kind) => kind === event.target.value) ?? draft.kind });
@@ -145,7 +145,7 @@ function RateWhere({ pay, draft, edit }: DraftProps) {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={draft.city}
             onChange={(event) => {
               edit({ city: event.target.value });
@@ -174,7 +174,7 @@ function RateFields({ pay, draft, edit }: DraftProps) {
           {(control) => (
             <NumberInput
               {...control}
-              className={form.amountBox}
+              width="amount"
               inputMode="numeric"
               step={1}
               min={0}
@@ -196,7 +196,7 @@ function RateFields({ pay, draft, edit }: DraftProps) {
           {(control) => (
             <DateInput
               {...control}
-              className={form.dateBox}
+              width="date"
               min={pay.today}
               value={draft.from}
               onChange={(event) => {
@@ -297,7 +297,7 @@ export function GradeOfForm(props: FormProps & { readonly technician: PayTechnic
           {(control) => (
             <Select
               {...control}
-              className={form.choiceBox}
+              width="choice"
               value={grade}
               onChange={(event) => {
                 setGrade(event.target.value);

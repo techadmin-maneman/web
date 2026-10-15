@@ -8,7 +8,6 @@ import { type ClientRecord } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
-import form from "../components/forms.module.css";
 import styles from "./clients.module.css";
 import { clientsApi } from "./clients-api.ts";
 
@@ -53,7 +52,7 @@ export function LostReason({
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={kept?.code ?? ""}
             onChange={(event) => void set(event.target.value)}
           >

@@ -7,9 +7,9 @@ import { Disclosure } from "@maneman/ui/Disclosure";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
@@ -99,7 +99,7 @@ function CodeActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit
     <td className={styles.actions}>
       {may.off && code.switched_off === null && (
         <RowButton
-          className={form.inline}
+          beside
           aria-label={copy.switchOffLabel(code.code)}
           disabled={acting !== null}
           onClick={() => {
@@ -111,7 +111,7 @@ function CodeActions({ code, acting, may, onAct }: { code: DiscountCode } & Omit
       )}
       {may.delete && code.deletable && (
         <RowButton
-          className={form.inline}
+          beside
           aria-label={copy.deleteLabel(code.code)}
           disabled={acting !== null}
           onClick={() => {
@@ -217,7 +217,7 @@ function CodesTable({
         <Narrowing view={view} label={copy.narrow} className={styles.narrow} />
       </div>
       <div className={styles.scroll}>
-        <Table className={classes(form.table, styles.table)}>
+        <Table controls className={styles.table}>
           <thead>
             <tr>
               <SortHeads view={view} />
@@ -278,7 +278,7 @@ function SwitchedOff({ codes, ...row }: { codes: readonly DiscountCode[] } & Row
       summary={copy.switchedOffTitle(codes.length)}
     >
       <div className={styles.scroll}>
-        <Table className={classes(form.table, styles.table)}>
+        <Table controls className={styles.table}>
           <thead>
             <tr>
               {heads.map(([label, figure]) => (
@@ -351,14 +351,14 @@ export function DiscountCodes() {
     <Panel
       titleId="discount-codes"
       title={copy.title}
-      className={form.panel}
+      padded
       actions={
         mayMake &&
         !making && (
           <Button
             variant="outline"
             size="small"
-            className={form.quiet}
+            narrow
             onClick={() => {
               setMaking(true);
             }}
@@ -387,7 +387,7 @@ export function DiscountCodes() {
       {codes.codes.length === 0 ? (
         <>
           <div className={styles.tools}>{findForm}</div>
-          <p className={form.note}>{finding === null ? copy.none : copy.noneFound}</p>
+          <Note>{finding === null ? copy.none : copy.noneFound}</Note>
         </>
       ) : (
         <>

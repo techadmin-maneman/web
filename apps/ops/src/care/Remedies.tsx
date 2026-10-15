@@ -37,7 +37,7 @@ function Choices(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={String(props.visits)}
             onChange={(event) => {
               props.onVisits(Number(event.target.value));
@@ -55,7 +55,7 @@ function Choices(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={props.reason}
             onChange={(event) => {
               if (isReason(event.target.value)) props.onReason(event.target.value);
@@ -103,7 +103,7 @@ export function RemedyForm({ personId }: { readonly personId: string }) {
         <Button
           variant="outline"
           size="small"
-          className={form.quiet}
+          narrow
           onClick={() => {
             setOpen(true);
           }}
@@ -158,14 +158,14 @@ export function RemediesPanel() {
           {mayDecide && remedy.state === "awaiting" && (
             <>
               <RowButton
-                className={form.inline}
+                beside
                 aria-label={copy.approveLabel(remedy.person.name)}
                 onClick={() => void careApi.decideRemedy(remedy.id, true).then(retry)}
               >
                 {copy.approve}
               </RowButton>{" "}
               <RowButton
-                className={form.inline}
+                beside
                 aria-label={copy.declineLabel(remedy.person.name)}
                 onClick={() => void careApi.decideRemedy(remedy.id, false).then(retry)}
               >

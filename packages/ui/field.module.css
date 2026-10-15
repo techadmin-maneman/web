@@ -91,6 +91,30 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* The console's widths for a box (./Field.tsx's BoxWidth), from its own sizes; a date's shows the whole date and the
+     picker's button, so the year is never cut. */
+  .widthFigure {
+    width: var(--ops-figure);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .widthAmount {
+    width: var(--ops-column-wide);
+  }
+
+  .widthDate {
+    width: var(--ops-date);
+  }
+
+  .widthArea {
+    width: var(--ops-area);
+  }
+
+  .widthChoice {
+    width: auto;
+    min-width: var(--ops-area);
+  }
+
   .select {
     padding-right: var(--sp-32);
     appearance: none;

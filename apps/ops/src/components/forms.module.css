@@ -1,6 +1,8 @@
 /*
- * The console's forms and tables, as most screens draw them: a panel's room, a rule and its fields, the boxes' widths,
- * what a form says once sent, and the tables' rows. A class one screen alone draws is in that screen's own sheet.
+ * Where the console's forms set their parts, as most screens lay them out: a rule and its fields, the group they make,
+ * where a form's actions and what it says once sent stand, and a table's figures. The parts themselves, a box's width,
+ * a note, a table of controls, are the shared package's (@maneman/ui). A class one screen alone draws is in that
+ * screen's own sheet.
  */
 
 .screen {
@@ -8,20 +10,6 @@
   flex-direction: column;
   gap: var(--sp-20);
   max-width: var(--ops-list);
-}
-
-/* The shared panel (@maneman/ui/Panel), with room beneath what it holds. */
-.panel {
-  min-width: 0;
-  padding-bottom: var(--sp-16);
-}
-
-.note,
-.hint {
-  margin: var(--sp-8) var(--sp-20) 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
 }
 
 .link {
@@ -52,6 +40,7 @@
 
 /* A rule's fields are one question, so they are grouped and the rule names the group. */
 .group {
+  --note-inset: 0; /* its notes (@maneman/ui/Note) sit at its edge, which is in from the panel's already */
   min-width: 0;
   margin: var(--sp-20) var(--sp-20) 0;
   padding: var(--sp-16) 0 0;
@@ -69,11 +58,6 @@
   padding: 0;
   font-family: var(--font-serif);
   font-size: var(--fs-18);
-}
-
-.group .note {
-  margin-left: 0;
-  margin-right: 0;
 }
 
 .fields {
@@ -99,39 +83,11 @@
   gap: var(--sp-8);
 }
 
-/* The form's boxes are @maneman/ui/Field's; these set only how wide each kind is. */
-
-.number {
-  width: var(--ops-figure);
-  font-variant-numeric: tabular-nums;
-}
-
-.text {
-  width: var(--ops-area);
-}
-
-/* Wide enough for the whole date and the picker's button, so the year is never cut. */
-.date {
-  width: var(--ops-date);
-  font-variant-numeric: tabular-nums;
-}
-
-/* The browser's own arrow is drawn in the system's colours; this one is the text's, in two strokes. */
-.select {
-  min-width: var(--ops-area);
-}
-
 /* The unit beside the box, so nobody has to guess whether 15 is minutes or hours. */
 .unit {
   margin-top: var(--sp-8);
   font-size: var(--fs-14);
   color: var(--text-muted);
-}
-
-.field .hint {
-  max-width: var(--measure-form);
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-13);
 }
 
 .set {
@@ -183,42 +139,12 @@
   margin-right: 0;
 }
 
-/* ---- The tables: 13 px heads over 14 px rows 34 px tall ------------------- */
-
-/* packages/ui/Table.tsx's rows; its cells hold controls, which make the row's height, so none has padding above or below. */
-.table {
-  margin-top: var(--sp-8);
-}
-
-.table th,
-.table td {
-  padding: 0 var(--sp-8);
-  vertical-align: middle;
-}
-
-.table th:first-child,
-.table td:first-child {
-  padding-left: var(--sp-20);
-}
-
-.table th:last-child,
-.table td:last-child {
-  padding-right: var(--sp-20);
-}
-
-.table thead th {
-  white-space: nowrap;
-}
+/* ---- In a table ----------------------------------------------------------- */
 
 .rowHead,
 .figure {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-
-/* A compact button inside a row, set off from the words before it. */
-.inline {
-  margin-left: var(--sp-8);
 }
 
 .file {
@@ -228,11 +154,6 @@
 
 .file::file-selector-button {
   margin-right: var(--sp-12);
-}
-
-/* The quieter buttons (packages/ui/Button.tsx), a little narrower than Save. */
-.quiet {
-  padding: 0 var(--sp-16);
 }
 
 /* ---- A period ------------------------------------------------------------ */
@@ -253,26 +174,4 @@
 
 .once {
   margin-top: var(--sp-16);
-}
-
-/* The widths of the shared boxes (@maneman/ui/Field) on these forms: the box itself is the package's. */
-.figureBox {
-  width: var(--ops-figure);
-}
-
-.amountBox {
-  width: var(--ops-column-wide);
-}
-
-.dateBox {
-  width: var(--ops-date);
-}
-
-.areaBox {
-  width: var(--ops-area);
-}
-
-.choiceBox {
-  width: auto;
-  min-width: var(--ops-area);
 }

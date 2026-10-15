@@ -4,6 +4,7 @@
 import type { Success } from "@maneman/web-kit/api";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
@@ -25,7 +26,7 @@ const groupsOf = (rates: Rates, way: Way) =>
 
 function Groups({ rates }: { rates: Rates }) {
   const [way, setWay] = useState<Way>("code");
-  if (rates.by_code.length === 0) return <p className={form.note}>{copy.noFailures}</p>;
+  if (rates.by_code.length === 0) return <Note>{copy.noFailures}</Note>;
   const columns = [copy.ways[way], ...copy.failureColumns.slice(1)];
   return (
     <>
@@ -33,7 +34,7 @@ function Groups({ rates }: { rates: Rates }) {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={way}
             onChange={(event) => {
               setWay(event.target.value as Way);
@@ -47,7 +48,7 @@ function Groups({ rates }: { rates: Rates }) {
           </Select>
         )}
       </Field>
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             {columns.map((column, index) => (
@@ -76,7 +77,7 @@ export function FailuresPanel() {
   const [loaded, retry] = useLoad(loadRates);
   return (
     <Panel titleId="quality-failures" title={copy.failures}>
-      <p className={form.note}>{copy.failuresNote}</p>
+      <Note>{copy.failuresNote}</Note>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Groups rates={loaded.value} />}

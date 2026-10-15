@@ -74,7 +74,7 @@ function Text(props: {
       {(control) => (
         <TextInput
           {...control}
-          className={form.areaBox}
+          width="area"
           maxLength={props.max}
           value={props.value}
           onChange={(event) => {

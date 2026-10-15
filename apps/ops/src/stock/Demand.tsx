@@ -2,6 +2,7 @@
 // use, by city, beside what each city holds, a shortfall marked; and the fits whose hair system is not in their city,
 // each a link to its visit's day on the board. Nothing here blocks a booking.
 
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -10,7 +11,8 @@ import { type Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "./stock.module.css";
+import shared from "./stock.module.css";
+import styles from "./demand.module.css";
 import { unitOf } from "./holdings.ts";
 import { RowHead } from "../components/RowHead.tsx";
 import { stockApi } from "./stock-api.ts";
@@ -30,10 +32,10 @@ export function Demand({ stock }: { stock: Stock }) {
       {loaded.state === "loaded" && (
         <>
           {loaded.value.demand.length === 0 ? (
-            <p className={form.note}>{words.none}</p>
+            <Note>{words.none}</Note>
           ) : (
-            <div className={styles.scroll}>
-              <Table className={form.table}>
+            <div className={shared.scroll}>
+              <Table controls>
                 <thead>
                   <tr>
                     {words.columns.map((column) => (
@@ -52,7 +54,7 @@ export function Demand({ stock }: { stock: Stock }) {
                       <td className={form.figure}>
                         {`${String(row.held)} ${unit(row.consumable_code)}`}
                         {row.held < row.expected && (
-                          <span className={styles.low}>{words.short(row.expected - row.held)}</span>
+                          <span className={shared.low}>{words.short(row.expected - row.held)}</span>
                         )}
                       </td>
                     </tr>
@@ -64,7 +66,7 @@ export function Demand({ stock }: { stock: Stock }) {
           {loaded.value.at_risk.length > 0 && (
             <>
               <h3 className={form.ruleTitle}>{words.atRisk}</h3>
-              <ul className={form.note}>
+              <ul className={styles.atRisk}>
                 {loaded.value.at_risk.map((fit) => (
                   <li key={fit.appointment_id}>
                     {words.fit(

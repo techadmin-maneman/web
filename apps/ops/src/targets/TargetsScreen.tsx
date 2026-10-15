@@ -4,6 +4,7 @@
 import { whoWords } from "../lib/who.ts";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -47,7 +48,7 @@ function TargetChoice(props: {
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -122,7 +123,7 @@ function TargetForm({ list, onSaved }: { list: Targets; onSaved: (list: Targets)
 function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets) => void }) {
   const mayRemove = useAccess().mayCall("POST /api/targets/remove");
   const [failure, setFailure] = useState<Failure | null>(null);
-  if (list.targets.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (list.targets.length === 0) return <Note>{copy.none}</Note>;
   const remove = async (city: string, measure: Measure) => {
     setFailure(null);
     const answer = await targetsApi.removeTarget({ month: list.month, city, measure });
@@ -132,7 +133,7 @@ function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets
   return (
     <>
       <Refused failed={failure} errors={copy.errors} />
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             {Object.values(copy.columns).map((column) => (
@@ -153,7 +154,7 @@ function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets
               {mayRemove && (
                 <td>
                   <RowButton
-                    className={form.inline}
+                    beside
                     aria-label={copy.removeLabel(target.city, copy.measures[target.measure])}
                     onClick={() => void remove(target.city, target.measure)}
                   >
@@ -195,8 +196,8 @@ export function TargetsScreen() {
   const [month, setMonth] = useState<string | null>(null);
   return (
     <div className={form.screen}>
-      <Panel titleId="targets" title={copy.title} className={form.panel}>
-        <p className={form.note}>{copy.intro}</p>
+      <Panel titleId="targets" title={copy.title} padded>
+        <Note>{copy.intro}</Note>
         <MonthTargets key={month ?? "now"} month={month} onMonth={setMonth} />
       </Panel>
     </div>

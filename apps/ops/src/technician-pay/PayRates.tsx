@@ -9,6 +9,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
+import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type TechnicianPay } from "../api.ts";
@@ -58,7 +59,7 @@ function RateActions({ grade, acting, may, onAct }: { grade: Grade } & Pick<RowP
         .map(([, kind, words, label]) => (
           <RowButton
             key={kind}
-            className={form.inline}
+            beside
             aria-label={label}
             disabled={acting !== null}
             onClick={() => {
@@ -139,7 +140,7 @@ function GradeRows({ grade, ...row }: { grade: Grade } & RowProps) {
 function RatesTable(row: RowProps) {
   return (
     <div className={shared.scroll}>
-      <Table className={classes(form.table, shared.table, styles.rates)}>
+      <Table controls className={classes(shared.table, styles.rates)}>
         <thead>
           <tr>
             <th scope="col">{copy.grade}</th>
@@ -174,7 +175,7 @@ function CityChoice({ pay, city, onCity }: { pay: TechnicianPay; city: string; o
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={city}
             onChange={(event) => {
               onCity(event.target.value);
@@ -214,14 +215,14 @@ export function PayRates(props: { pay: TechnicianPay; may: May; onChanged: (pay:
     <Panel
       titleId="pay-rates"
       title={copy.title}
-      className={form.panel}
+      padded
       actions={
         may.grades &&
         !adding && (
           <Button
             variant="outline"
             size="small"
-            className={form.quiet}
+            narrow
             onClick={() => {
               setSaid(null);
               setAdding(true);
@@ -248,7 +249,7 @@ export function PayRates(props: { pay: TechnicianPay; may: May; onChanged: (pay:
         </InlineMessage>
       )}
       {pay.grades.length === 0 ? (
-        <p className={form.note}>{copy.none}</p>
+        <Note>{copy.none}</Note>
       ) : (
         <>
           <CityChoice pay={pay} city={city} onCity={setCity} />

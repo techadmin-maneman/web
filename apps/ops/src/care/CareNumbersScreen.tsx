@@ -3,9 +3,9 @@
 // about, the remedies given, and the replies of each Care person.
 
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
-import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
@@ -49,10 +49,10 @@ function Figures({ numbers }: { numbers: CareNumbers }) {
 }
 
 function ByPerson({ numbers }: { numbers: CareNumbers }) {
-  if (numbers.by_person.length === 0) return <p className={form.note}>{copy.noPeople}</p>;
+  if (numbers.by_person.length === 0) return <Note>{copy.noPeople}</Note>;
   return (
     <div className={shared.scroll}>
-      <Table className={classes(form.table, shared.table)}>
+      <Table controls className={shared.table}>
         <thead>
           <tr>
             <th scope="col">{copy.columns.person}</th>
@@ -89,7 +89,7 @@ function Lists({ numbers }: { numbers: CareNumbers }) {
     <div className={shared.quick}>
       <h3 className={form.ruleTitle}>{copy.reasons}</h3>
       {numbers.reasons.length === 0 ? (
-        <p className={form.note}>{copy.nothing}</p>
+        <Note>{copy.nothing}</Note>
       ) : (
         <ul className={shared.leave}>
           {numbers.reasons.map((row) => (
@@ -99,7 +99,7 @@ function Lists({ numbers }: { numbers: CareNumbers }) {
       )}
       <h3 className={form.ruleTitle}>{copy.remedies}</h3>
       {numbers.remedies.length === 0 ? (
-        <p className={form.note}>{copy.nothing}</p>
+        <Note>{copy.nothing}</Note>
       ) : (
         <ul className={shared.leave}>
           {numbers.remedies.map((row) => (
@@ -137,13 +137,13 @@ export function CareNumbersScreen() {
   const [period, setPeriod] = useState<CarePeriod>("7");
   return (
     <div className={form.screen}>
-      <Panel titleId="care-numbers" title={copy.title} className={form.panel}>
+      <Panel titleId="care-numbers" title={copy.title} padded>
         <div className={shared.tools}>
           <Field label={copy.period}>
             {(control) => (
               <Select
                 {...control}
-                className={form.choiceBox}
+                width="choice"
                 value={period}
                 onChange={(event) => {
                   if (isPeriod(event.target.value)) setPeriod(event.target.value);

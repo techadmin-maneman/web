@@ -6,6 +6,7 @@ import { addDays, dayMonth, fullDate } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback, useState } from "react";
@@ -30,8 +31,8 @@ export function dayAfter(date: string, days: number, year = false): string {
 
 function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
   const { run } = forecast;
-  if (run === null) return <p className={form.note}>{copy.none}</p>;
-  if (forecast.lines.length === 0) return <p className={form.note}>{copy.empty(city)}</p>;
+  if (run === null) return <Note>{copy.none}</Note>;
+  if (forecast.lines.length === 0) return <Note>{copy.empty(city)}</Note>;
   const items = new Map<string, { name: string; periods: Map<number, Forecast["lines"][number]> }>();
   for (const line of forecast.lines) {
     const item = items.get(line.consumable_code) ?? { name: line.name, periods: new Map() };
@@ -41,9 +42,9 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
   const periods = Array.from({ length: run.horizon_periods }, (_, period) => period);
   return (
     <>
-      <p className={form.note}>{copy.note(run.period_days, dayAfter(run.run_on, 0, true))}</p>
+      <Note>{copy.note(run.period_days, dayAfter(run.run_on, 0, true))}</Note>
       <div className={shared.scroll}>
-        <Table className={`${form.table} ${styles.forecast}`}>
+        <Table controls className={styles.forecast}>
           <thead>
             <tr>
               <th scope="col">{copy.item}</th>
@@ -88,7 +89,7 @@ export function ForecastPanel({ cities }: { cities: readonly string[] }) {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={city}
             onChange={(event) => {
               setCity(event.target.value);

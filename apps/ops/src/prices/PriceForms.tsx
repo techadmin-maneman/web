@@ -88,7 +88,7 @@ function PriceBoxes(props: {
         {(control) => (
           <NumberInput
             {...control}
-            className={form.amountBox}
+            width="amount"
             inputMode="numeric"
             step={1}
             min={0}
@@ -105,7 +105,7 @@ function PriceBoxes(props: {
           <div className={form.fieldRow}>
             <NumberInput
               {...control}
-              className={form.figureBox}
+              width="figure"
               inputMode="numeric"
               step={1}
               min={0}
@@ -128,7 +128,7 @@ function PriceBoxes(props: {
         {(control) => (
           <DateInput
             {...control}
-            className={form.dateBox}
+            width="date"
             min={firstDay}
             value={typed.from}
             onChange={(event) => {

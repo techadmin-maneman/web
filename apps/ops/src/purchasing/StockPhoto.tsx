@@ -4,6 +4,7 @@
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Field, FileInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { errorText } from "@maneman/web-kit/refusal";
 import { smallJpeg } from "@maneman/web-kit/small-jpeg";
 import { useState } from "react";
@@ -76,11 +77,7 @@ export function StockPhoto({
           )
         }
       </Field>
-      {busy && (
-        <p className={form.hint} role="status">
-          {copy.photo.storing}
-        </p>
-      )}
+      {busy && <Note role="status">{copy.photo.storing}</Note>}
     </>
   );
 }

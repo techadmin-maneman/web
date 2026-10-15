@@ -76,7 +76,7 @@ function Figure(props: { label: string; value: string; onChange: (text: string) 
       {(control) => (
         <TextInput
           {...control}
-          className={form.figureBox}
+          width="figure"
           inputMode="numeric"
           maxLength={6}
           value={props.value}
@@ -98,7 +98,7 @@ function Particulars({ draft, onEdit }: { draft: Draft; onEdit: (field: keyof Dr
         {(control) => (
           <TextInput
             {...control}
-            className={form.areaBox}
+            width="area"
             maxLength={60}
             value={draft.name}
             onChange={(event) => {
@@ -111,7 +111,7 @@ function Particulars({ draft, onEdit }: { draft: Draft; onEdit: (field: keyof Dr
         {(control) => (
           <TextInput
             {...control}
-            className={form.figureBox}
+            width="figure"
             maxLength={20}
             value={draft.unit}
             onChange={(event) => {
@@ -124,7 +124,7 @@ function Particulars({ draft, onEdit }: { draft: Draft; onEdit: (field: keyof Dr
         {(control) => (
           <TextInput
             {...control}
-            className={form.amountBox}
+            width="amount"
             inputMode="decimal"
             maxLength={10}
             value={draft.cost}

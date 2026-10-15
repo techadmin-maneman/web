@@ -5,6 +5,7 @@ import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
@@ -39,7 +40,7 @@ function MoveTo(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={email}
             onChange={(event) => {
               setEmail(event.target.value);
@@ -56,7 +57,7 @@ function MoveTo(props: {
       <Button
         variant="outline"
         size="small"
-        className={form.quiet}
+        narrow
         disabled={busy || email === "" || email === props.now}
         onClick={() => void move()}
       >
@@ -75,7 +76,7 @@ function Team(props: {
   const load = useCallback(() => careApi.careTeam(), []);
   const [loaded] = useLoad(load);
   if (loaded.state !== "loaded") return null;
-  if (loaded.value.team.length === 0) return <p className={form.note}>{words.noTeam}</p>;
+  if (loaded.value.team.length === 0) return <Note>{words.noTeam}</Note>;
   return <MoveTo personId={props.personId} team={loaded.value.team} now={props.now} onMoved={props.onMoved} />;
 }
 
@@ -94,9 +95,9 @@ export function CarePerson(props: {
   const mayMove = useAccess().mayCall("POST /api/clients/{id}/care-person");
   return (
     <div className={styles.carePerson}>
-      <p className={form.note}>
+      <Note>
         {words.label}: {now === null ? words.none : coveredOf(now, props.email, props.coveredBy)}
-      </p>
+      </Note>
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}

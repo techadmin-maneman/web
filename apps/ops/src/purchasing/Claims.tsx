@@ -5,6 +5,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { TextLink } from "@maneman/ui/TextLink";
 import { RowButton } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -34,9 +35,9 @@ function ClaimsTable({
   supplierOf: (id: string) => string;
   onOpen: (id: string) => void;
 }) {
-  if (claims.claims.length === 0) return <p className={form.note}>{copy.claims.none}</p>;
+  if (claims.claims.length === 0) return <Note>{copy.claims.none}</Note>;
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.claims.columns.map((column) => (
@@ -51,7 +52,7 @@ function ClaimsTable({
           <tr key={claim.id}>
             <RowHead>
               <RowButton
-                className={form.inline}
+                beside
                 aria-label={copy.claims.open(copy.claims.number(claim.number))}
                 onClick={() => {
                   onOpen(claim.id);
@@ -97,16 +98,16 @@ export function Claims({ orders }: { orders: Orders }) {
         <ClaimsTable claims={current} supplierOf={supplierOf} onOpen={setOpen} />
         {opened !== null && (
           <div className={form.group}>
-            <p className={form.note}>
+            <Note>
               {copy.claims.number(opened.number)} · {copy.claims.from(copy.number(opened.order_number))}
               {opened.note !== null && ` · ${opened.note}`}
-            </p>
+            </Note>
             {opened.photo_id !== null && (
-              <p className={form.note}>
+              <Note>
                 <TextLink href={`/api/stock-photos/${opened.photo_id}`} newTab>
                   {copy.photo.view}
                 </TextLink>
-              </p>
+              </Note>
             )}
             <ClaimSteps key={opened.id} claim={opened} onAnswer={answered} />
           </div>

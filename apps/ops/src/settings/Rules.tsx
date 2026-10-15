@@ -9,6 +9,7 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import { ReviewBar } from "./ReviewBar.tsx";
 import { useSteps, type Sent } from "./SettingForm.tsx";
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState, type ReactNode } from "react";
 import { type OpsSetting } from "../api.ts";
@@ -104,11 +105,11 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
         disabled={held || !allowed.mayChange}
       >
         {pricedInPrices && (
-          <p className={form.note}>
+          <Note>
             <OpsLink className={form.link} to={PRICES_PATH}>
               {copy.lateFees}
             </OpsLink>
-          </p>
+          </Note>
         )}
         <Boxes rule={rule} draft={draft}>
           <Fields rule={rule} draft={draft} onChange={onEdit} />
@@ -118,7 +119,7 @@ function Rule({ rule, draft, allowed, held, refusal, onEdit, onStandard }: RuleP
 
       {mayGoBack && (
         <FormActions>
-          <Button variant="outline" size="small" className={form.quiet} onClick={onStandard}>
+          <Button variant="outline" size="small" narrow onClick={onStandard}>
             {copy.reset}
           </Button>
         </FormActions>
@@ -277,7 +278,7 @@ export function Rules() {
   };
 
   return (
-    <Panel titleId="rules" title={copy.title} className={form.panel}>
+    <Panel titleId="rules" title={copy.title} padded>
       <JumpList sections={sections} />
       {sections.map((section) => (
         <GroupSection key={section.id} section={section} allowed={allowed} onSaved={keep}>

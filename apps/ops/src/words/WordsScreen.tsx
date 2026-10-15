@@ -7,7 +7,6 @@ import { Button, RowButton } from "@maneman/ui/Button";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -46,7 +45,7 @@ function WordActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<R
     <td className={styles.actions}>
       {mayChange && (
         <RowButton
-          className={form.inline}
+          beside
           aria-label={copy.editLabel(place)}
           disabled={acting !== null}
           onClick={() => {
@@ -57,7 +56,7 @@ function WordActions({ word, mayChange, acting, onAct }: { word: Word } & Omit<R
         </RowButton>
       )}
       <RowButton
-        className={form.inline}
+        beside
         aria-label={copy.historyLabel(place)}
         disabled={acting !== null}
         onClick={() => {
@@ -135,7 +134,7 @@ function WordsTable({ view, row }: { view: TableView<Word>; row: RowProps }) {
     <>
       <Narrowing view={view} label={copy.narrow} className={styles.narrow} />
       <div className={styles.scroll}>
-        <Table className={classes(form.table, styles.table)}>
+        <Table controls className={styles.table}>
           <thead>
             <tr>
               <SortHeads view={view} />
@@ -187,14 +186,14 @@ function Words() {
     <Panel
       titleId="words"
       title={copy.title}
-      className={form.panel}
+      padded
       actions={
         mayPublish &&
         !publishing && (
           <Button
             variant="outline"
             size="small"
-            className={form.quiet}
+            narrow
             onClick={() => {
               setSaid(null);
               setPublishing(true);

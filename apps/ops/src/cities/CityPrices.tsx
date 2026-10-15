@@ -6,6 +6,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Note } from "@maneman/ui/Note";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { cities } from "../content.ts";
@@ -38,9 +39,9 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => void }) {
 
 function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => void }) {
   const mayWithdraw = useAccess().mayCall("DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}");
-  if (cities.prices.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (cities.prices.length === 0) return <Note>{copy.none}</Note>;
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.columns.map((column) => (
@@ -127,7 +128,7 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
         {(control) => (
           <TextInput
             {...control}
-            className={form.figureBox}
+            width="figure"
             value={draft.tier}
             onChange={(event) => {
               edit({ tier: event.target.value });
@@ -139,7 +140,7 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
         {(control) => (
           <NumberInput
             {...control}
-            className={form.amountBox}
+            width="amount"
             value={draft.amount}
             onChange={(event) => {
               edit({ amount: event.target.value });
@@ -151,7 +152,7 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
         {(control) => (
           <NumberInput
             {...control}
-            className={form.figureBox}
+            width="figure"
             value={draft.gst}
             onChange={(event) => {
               edit({ gst: event.target.value });
@@ -231,7 +232,7 @@ export function CityPrices({ cities, onSaved }: { cities: Cities; onSaved: () =>
   };
   return (
     <Panel titleId="city-prices" title={copy.panel} count={cities.prices.length}>
-      <p className={form.note}>{copy.note}</p>
+      <Note>{copy.note}</Note>
       <PriceTable cities={cities} onDone={saved(copy.withdrawn)} />
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>

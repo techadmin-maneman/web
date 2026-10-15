@@ -4,10 +4,10 @@
 import { RowButton } from "@maneman/ui/Button";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { classes } from "@maneman/ui/classes";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
@@ -37,7 +37,7 @@ function ViewChoice({ view, onView }: { view: ConversationView; onView: (view: C
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={view}
           onChange={(event) => {
             if (isView(event.target.value)) onView(event.target.value);
@@ -86,7 +86,7 @@ function Search({ search, onSearch }: { search: string; onSearch: (search: strin
         <Button
           variant="outline"
           size="small"
-          className={form.quiet}
+          narrow
           onClick={() => {
             setTyped("");
             onSearch("");
@@ -141,7 +141,7 @@ function ConversationRows(props: {
         <td className={shared.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
         <td className={shared.actions}>
           <RowButton
-            className={form.inline}
+            beside
             aria-label={copy.openLabel(who)}
             aria-expanded={props.open}
             onClick={() => {
@@ -188,7 +188,7 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const conversations = shownOf(loaded.value.conversations, older);
-  if (conversations.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (conversations.length === 0) return <Note>{copy.none}</Note>;
   const next = older === null ? loaded.value.next_cursor : older.next;
   const showOlder = async (cursor: string) => {
     setLoadingOlder(true);
@@ -205,7 +205,7 @@ function Conversations({ view, search }: { view: ConversationView; search: strin
       <ConversationTable conversations={conversations} opened={opened} onOpen={setOpened} onChanged={refresh} />
       {next !== null && (
         <div className={styles.more}>
-          <p className={form.note}>{copy.latest(conversations.length)}</p>
+          <Note>{copy.latest(conversations.length)}</Note>
           <Button variant="outline" size="small" busy={loadingOlder} onClick={() => void showOlder(next)}>
             {loadingOlder ? copy.loadingMore : copy.more}
           </Button>
@@ -224,7 +224,7 @@ function ConversationTable(props: {
   const columns = copy.columns;
   return (
     <div className={shared.scroll}>
-      <Table className={classes(form.table, shared.table)}>
+      <Table controls className={shared.table}>
         <thead>
           <tr>
             <th scope="col">{columns.client}</th>
@@ -263,7 +263,7 @@ export function MessagesScreen() {
   const [search, setSearch] = useState("");
   return (
     <div className={form.screen}>
-      <Panel titleId="messages" title={copy.title} className={form.panel}>
+      <Panel titleId="messages" title={copy.title} padded>
         <div className={shared.tools}>
           <ViewChoice view={view} onView={setView} />
           <Search search={search} onSearch={setSearch} />
@@ -278,13 +278,13 @@ export function MessagesScreen() {
 export function CareSettingsScreen() {
   return (
     <div className={form.screen}>
-      <Panel titleId="care-team" title={copy.team.title} className={form.panel}>
+      <Panel titleId="care-team" title={copy.team.title} padded>
         <CareTeam />
       </Panel>
-      <Panel titleId="remedies" title={copy.remedy.panel} className={form.panel}>
+      <Panel titleId="remedies" title={copy.remedy.panel} padded>
         <RemediesPanel />
       </Panel>
-      <Panel titleId="quick-replies" title={copy.quick.panel} className={form.panel}>
+      <Panel titleId="quick-replies" title={copy.quick.panel} padded>
         <QuickRepliesPanel />
       </Panel>
     </div>

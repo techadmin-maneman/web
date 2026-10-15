@@ -23,3 +23,10 @@
 .uploaded table td:first-child {
   padding-left: 0;
 }
+
+/* The upload's hint, as long as a form's line and a size smaller than the field's own. */
+.uploadHint {
+  max-width: var(--measure-form);
+  font-size: var(--fs-13);
+  line-height: var(--lh-160);
+}

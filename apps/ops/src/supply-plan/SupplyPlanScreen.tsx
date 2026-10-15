@@ -5,6 +5,7 @@
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
@@ -37,7 +38,7 @@ function Lines({
   if (shown.length === 0) return null;
   return (
     <Panel titleId={`plan-${kind}`} title={kind === "transfer" ? copy.transfers : copy.orders}>
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             {columns.map((column) => (
@@ -52,7 +53,7 @@ function Lines({
             <tr key={line.id}>
               <RowHead>
                 {line.name}
-                <p className={form.note}>{copy.why(line)}</p>
+                <Note>{copy.why(line)}</Note>
               </RowHead>
               {kind === "transfer" ? (
                 <>
@@ -95,7 +96,7 @@ export function SupplyPlanScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={form.screen}>
-          {current.lines.length === 0 && <p className={form.note}>{copy.none}</p>}
+          {current.lines.length === 0 && <Note>{copy.none}</Note>}
           <Lines lines={current.lines} kind="transfer" onAnswer={answered} />
           <Lines lines={current.lines} kind="order" onAnswer={answered} />
           {said !== null && (

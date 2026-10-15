@@ -39,7 +39,7 @@ function FigureField({
         <div className={form.fieldRow}>
           <NumberInput
             {...control}
-            className={form.figureBox}
+            width="figure"
             inputMode="numeric"
             step={1}
             min={bounds.min}
@@ -74,7 +74,7 @@ function ChoiceField({
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={choice}
           onChange={(event) => {
             onChange(event.target.value);
@@ -102,7 +102,7 @@ export function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string,
         {(control) => (
           <TextInput
             {...control}
-            className={form.text}
+            width="area"
             maxLength={64}
             value={key}
             onChange={(event) => {
@@ -115,7 +115,7 @@ export function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string,
         {(control) => (
           <NumberInput
             {...control}
-            className={form.number}
+            width="figure"
             inputMode="numeric"
             step={1}
             min={rule.min}
@@ -130,7 +130,7 @@ export function AddKey({ rule, onAdd }: { rule: NumberRule; onAdd: (key: string,
       <Button
         variant="outline"
         size="small"
-        className={form.quiet}
+        narrow
         disabled={!ready}
         onClick={() => {
           onAdd(key.trim(), text);

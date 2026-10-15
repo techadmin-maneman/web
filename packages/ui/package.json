@@ -35,6 +35,7 @@
     "./Mark": "./Mark.tsx",
     "./MobileInput": "./MobileInput.tsx",
     "./motion": "./motion.ts",
+    "./Note": "./Note.tsx",
     "./Panel": "./Panel.tsx",
     "./router": "./router.tsx",
     "./ScanField": "./ScanField.tsx",

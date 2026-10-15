@@ -2,6 +2,7 @@
 // receiving more while the order is sent or part received; and closing it short once part received.
 
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { rupees } from "@maneman/web-kit/money";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -24,11 +25,9 @@ function ReceiptList({ orders, order }: { orders: Orders; order: Order }) {
       <h3 className={form.fieldLabel}>{copy.receipts.title}</h3>
       {order.receipts.map((receipt) => (
         <div key={receipt.id}>
-          <p className={form.note}>
-            {copy.receipts.line(shortDate(indiaDate(receipt.received_at)), receipt.supplier_invoice)}
-          </p>
+          <Note>{copy.receipts.line(shortDate(indiaDate(receipt.received_at)), receipt.supplier_invoice)}</Note>
           {receipt.lines.map((line) => (
-            <p className={form.note} key={`${receipt.id}-${line.po_line_id}`}>
+            <Note key={`${receipt.id}-${line.po_line_id}`}>
               {copy.receipts.item({
                 name: named(line.po_line_id),
                 received: line.received,
@@ -36,7 +35,7 @@ function ReceiptList({ orders, order }: { orders: Orders; order: Order }) {
                 failed: line.qc_failed,
                 landed: rupees(line.landed_unit_paise),
               })}
-            </p>
+            </Note>
           ))}
         </div>
       ))}

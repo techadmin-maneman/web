@@ -5,6 +5,7 @@
 
 import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, Fieldset, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -55,7 +56,7 @@ function UsageFields(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.select}
+            width="choice"
             value={props.chosen}
             onChange={(event) => {
               props.onChoose(event.target.value);
@@ -76,7 +77,7 @@ function UsageFields(props: {
         )}
       </Field>
       {listed.length === 0 ? (
-        <p className={form.note}>{words.noneOffered}</p>
+        <Note>{words.noneOffered}</Note>
       ) : (
         <ul className={styles.uses}>
           {listed.map((each) => (
@@ -85,7 +86,7 @@ function UsageFields(props: {
                 {(control) => (
                   <TextInput
                     {...control}
-                    className={form.number}
+                    width="figure"
                     inputMode="numeric"
                     maxLength={3}
                     readOnly={!props.mayChange}
@@ -171,7 +172,7 @@ export function ServiceUsage({ consumables, onSaved }: ServiceUsageProps) {
   );
 
   return (
-    <Panel titleId="service-usage" title={words.title} className={form.panel}>
+    <Panel titleId="service-usage" title={words.title} padded>
       {mayChange ? (
         <SettingForm
           said={saved ? words.saved : null}

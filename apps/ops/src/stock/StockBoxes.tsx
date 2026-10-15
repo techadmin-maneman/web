@@ -34,7 +34,7 @@ export function StockChoice(props: {
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -64,7 +64,7 @@ export function Quantity(props: {
       {(control) => (
         <NumberInput
           {...control}
-          className={form.figureBox}
+          width="figure"
           type="text"
           inputMode="numeric"
           maxLength={6}
@@ -85,7 +85,7 @@ export function NoteBox(props: { lost: boolean; note: string; onNote: (note: str
       {(control) => (
         <TextInput
           {...control}
-          className={form.text}
+          width="area"
           maxLength={200}
           value={props.note}
           onChange={(event) => {

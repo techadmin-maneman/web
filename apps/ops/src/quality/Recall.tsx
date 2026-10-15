@@ -6,6 +6,7 @@ import { fullDate } from "@maneman/web-kit/dates";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
@@ -28,7 +29,7 @@ export type Answer =
 
 function Rows({ columns, rows }: { columns: readonly string[]; rows: readonly (readonly [string, ...string[]])[] }) {
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {columns.map((column) => (
@@ -85,7 +86,7 @@ function BookFree({ worn }: { worn: Worn }) {
 
 function WornRows({ worn, mayBook }: { worn: readonly Worn[]; mayBook: boolean }) {
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.wornColumns.map((column, index) => (
@@ -122,10 +123,10 @@ export function RecallDetail({
   const title = `${copy.number(recall.number)} · ${copy.lotLabel(recall.name, recall.lot_code)}`;
   return (
     <Panel id={id} opened titleId="recall-detail" title={title}>
-      <p className={form.note}>{recall.reason}</p>
+      <Note>{recall.reason}</Note>
       <h3 className={form.ruleTitle}>{copy.held}</h3>
       {recall.held.length === 0 ? (
-        <p className={form.note}>{copy.noneHeld}</p>
+        <Note>{copy.noneHeld}</Note>
       ) : (
         <Rows
           columns={copy.heldColumns}
@@ -134,7 +135,7 @@ export function RecallDetail({
       )}
       <h3 className={form.ruleTitle}>{copy.worn}</h3>
       {recall.worn.length === 0 ? (
-        <p className={form.note}>{copy.noneWorn}</p>
+        <Note>{copy.noneWorn}</Note>
       ) : (
         <WornRows worn={recall.worn} mayBook={recall.closed_at === null && access.mayCall("POST /api/visits")} />
       )}
@@ -174,7 +175,7 @@ export function RaiseRecall({
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={lot}
             onChange={(event) => {
               setLot(event.target.value);

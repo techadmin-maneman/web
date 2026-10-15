@@ -7,6 +7,7 @@ import { useWrite } from "../lib/write.ts";
 import { Panel } from "@maneman/ui/Panel";
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -58,7 +59,7 @@ function PlaceChoice(props: {
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={props.value}
           onChange={(event) => {
             props.onChange(event.target.value);
@@ -204,7 +205,7 @@ function ChangePlace(props: { stock: Stock; place: Place; onChanged: (stock: Sto
 
 function PlaceRows({ stock, onEdit }: { stock: Stock; onEdit: (id: string) => void }) {
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.columns.map((column, index) => (
@@ -227,7 +228,7 @@ function PlaceRows({ stock, onEdit }: { stock: Stock; onEdit: (id: string) => vo
             <td>{place.kind === "hub" ? place.zone : place.city}</td>
             <td>
               <RowButton
-                className={form.inline}
+                beside
                 aria-label={copy.editLabel(placeName(stock, place.id))}
                 onClick={() => {
                   onEdit(place.id);
@@ -248,7 +249,7 @@ export function PlacesPanel({ stock, onChanged }: { stock: Stock; onChanged: (st
   const place = stock.places.find((each) => each.id === editing);
   return (
     <Panel titleId="stock-places" title={copy.title}>
-      <p className={form.note}>{copy.intro}</p>
+      <Note>{copy.intro}</Note>
       <div className={shared.scroll}>
         <PlaceRows stock={stock} onEdit={setEditing} />
       </div>

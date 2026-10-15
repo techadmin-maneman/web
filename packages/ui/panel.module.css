@@ -7,6 +7,11 @@
     border: var(--hairline) solid var(--border-subtle);
   }
 
+  .padded {
+    min-width: 0;
+    padding-bottom: var(--sp-16);
+  }
+
   .head {
     display: flex;
     align-items: baseline;

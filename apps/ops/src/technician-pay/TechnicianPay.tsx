@@ -8,6 +8,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { classes } from "@maneman/ui/classes";
+import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { type TechnicianPay as Pay } from "../api.ts";
@@ -46,7 +47,7 @@ function TechnicianRows({ technician, pay, maySet, acting, onAct, onDone }: { te
         <td className={styles.actions}>
           {maySet && pay.grades.length > 0 && (
             <RowButton
-              className={form.inline}
+              beside
               aria-label={copy.changeLabel(technician.name)}
               disabled={acting !== null}
               onClick={() => {
@@ -92,17 +93,17 @@ function PayTechnicians({ pay, maySet, onChanged }: { pay: Pay; maySet: boolean;
     },
   };
   return (
-    <Panel titleId="pay-technicians" title={copy.title} className={form.panel}>
+    <Panel titleId="pay-technicians" title={copy.title} padded>
       {saved && (
         <InlineMessage tone="saved" className={form.saved}>
           {technicianPay.done.saved}
         </InlineMessage>
       )}
       {pay.technicians.length === 0 ? (
-        <p className={form.note}>{copy.none}</p>
+        <Note>{copy.none}</Note>
       ) : (
         <div className={styles.scroll}>
-          <Table className={classes(form.table, styles.table, styles.people)}>
+          <Table controls className={classes(styles.table, styles.people)}>
             <thead>
               <tr>
                 <th scope="col">{copy.name}</th>

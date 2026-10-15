@@ -4,7 +4,6 @@ import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { settings } from "../content/settings.ts";
-import form from "../components/forms.module.css";
 import styles from "./find-code.module.css";
 
 const copy = settings.discountCodes;
@@ -33,14 +32,14 @@ export function FindForm({ finding, onFind }: { finding: string | null; onFind: 
           />
         )}
       </Field>
-      <Button type="submit" variant="outline" size="small" className={form.quiet}>
+      <Button type="submit" variant="outline" size="small" narrow>
         {copy.findButton}
       </Button>
       {finding !== null && (
         <Button
           variant="outline"
           size="small"
-          className={form.quiet}
+          narrow
           onClick={() => {
             setText("");
             onFind(null);

@@ -5,6 +5,7 @@ import type { Success } from "@maneman/web-kit/api";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -40,8 +41,8 @@ export function CountClasses({
   };
   return (
     <Panel titleId="count-classes" title={copy.classesTitle}>
-      <p className={form.note}>{copy.classesNote}</p>
-      <Table className={form.table}>
+      <Note>{copy.classesNote}</Note>
+      <Table controls>
         <thead>
           <tr>
             {copy.classColumns.map((column) => (
@@ -62,7 +63,7 @@ export function CountClasses({
                     {(control) => (
                       <Select
                         {...control}
-                        className={form.choiceBox}
+                        width="choice"
                         value={item.set ? item.count_class : OWN}
                         onChange={(event) => void change(item.consumable_code, event.target.value)}
                       >

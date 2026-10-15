@@ -3,6 +3,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -97,12 +98,12 @@ export function ReturnedPieces({
   onAnswer: (answer: ClaimAnswer, said: string) => void;
 }) {
   const access = useAccess();
-  if (pieces.length === 0) return <p className={form.note}>{copy.returns.none}</p>;
+  if (pieces.length === 0) return <Note>{copy.returns.none}</Note>;
   const claim = async (piece: ReturnedPiece) => {
     onAnswer(await purchasingApi.claimReturned(piece.id), copy.returns.claimed);
   };
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.returns.columns.map((column) => (

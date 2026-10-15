@@ -3,6 +3,7 @@
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -37,17 +38,17 @@ function Actions(props: {
   return (
     <td>
       <span>{retired ? copy.retired : copy.active}</span>{" "}
-      <RowButton className={form.inline} aria-label={copy.itemsLabel(supplier.name)} onClick={props.onItems}>
+      <RowButton beside aria-label={copy.itemsLabel(supplier.name)} onClick={props.onItems}>
         {copy.items}
       </RowButton>
       {access.mayCall("POST /api/suppliers/{id}") && (
-        <RowButton className={form.inline} aria-label={copy.changeLabel(supplier.name)} onClick={props.onChange}>
+        <RowButton beside aria-label={copy.changeLabel(supplier.name)} onClick={props.onChange}>
           {copy.change}
         </RowButton>
       )}
       {access.mayCall("POST /api/suppliers/{id}/retire") && !asking && (
         <RowButton
-          className={form.inline}
+          beside
           aria-label={retired ? copy.restoreLabel(supplier.name) : copy.retireLabel(supplier.name)}
           onClick={() => {
             setAsking(true);
@@ -88,9 +89,9 @@ function SupplierTable(props: {
 }) {
   const { suppliers, onChange, onItems, onRetired } = props;
   return suppliers.suppliers.length === 0 ? (
-    <p className={form.note}>{copy.none}</p>
+    <Note>{copy.none}</Note>
   ) : (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.columns.map((column) => (
@@ -147,7 +148,7 @@ export function Suppliers() {
 
   return (
     <>
-      <Panel titleId="suppliers" title={copy.title} className={form.panel}>
+      <Panel titleId="suppliers" title={copy.title} padded>
         <SupplierTable
           suppliers={current}
           onChange={(id) => {

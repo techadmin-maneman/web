@@ -7,6 +7,7 @@ import { Field, Select } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { classes } from "@maneman/ui/classes";
+import { Note } from "@maneman/ui/Note";
 import { useLoad } from "@maneman/ui/useLoad";
 import { rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
@@ -70,7 +71,7 @@ function byTechnician(lines: readonly Line[]) {
 function StatementTable({ lines }: { lines: readonly Line[] }) {
   return (
     <div className={shared.scroll}>
-      <Table className={classes(form.table, shared.table, shared.people)}>
+      <Table controls className={classes(shared.table, shared.people)}>
         <thead>
           <tr>
             {copy.columns.map((column) => (
@@ -112,7 +113,7 @@ export function PayStatement({ today }: { today: string }) {
   const load = useCallback(() => technicianPayApi.payStatement(month), [month]);
   const [loaded, retry] = useLoad(load);
   return (
-    <Panel titleId="pay-statement" title={copy.title} className={form.panel}>
+    <Panel titleId="pay-statement" title={copy.title} padded>
       <div className={shared.tools}>
         <Field label={copy.month} className={form.field}>
           {(control) => (
@@ -146,11 +147,7 @@ export function PayStatement({ today }: { today: string }) {
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" &&
-        (loaded.value.lines.length === 0 ? (
-          <p className={form.note}>{copy.none}</p>
-        ) : (
-          <StatementTable lines={loaded.value.lines} />
-        ))}
+        (loaded.value.lines.length === 0 ? <Note>{copy.none}</Note> : <StatementTable lines={loaded.value.lines} />)}
     </Panel>
   );
 }

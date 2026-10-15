@@ -2,6 +2,7 @@
 // camera, a USB scanner or typed, each once. Their count is the movement's quantity.
 
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { ScanField } from "@maneman/ui/ScanField";
 import { stockLabels as copy } from "../content/stock-labels.ts";
 import form from "../components/forms.module.css";
@@ -25,7 +26,7 @@ export function PieceScans({
       />
       {units.length > 0 && (
         <>
-          <p className={form.note}>{copy.scanned(units.length)}</p>
+          <Note>{copy.scanned(units.length)}</Note>
           <ul className={styles.scans}>
             {units.map((label) => (
               <li className={styles.scan} key={label}>

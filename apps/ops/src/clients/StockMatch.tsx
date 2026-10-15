@@ -3,11 +3,11 @@
 // lacks; or that theirs is a custom order.
 
 import type { Success } from "@maneman/web-kit/api";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useCallback } from "react";
 import type { paths } from "../api-schema.ts";
-import form from "../components/forms.module.css";
 import { stockMatch as copy } from "../content/stock-match.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { clientsApi } from "./clients-api.ts";
@@ -15,19 +15,17 @@ import { clientsApi } from "./clients-api.ts";
 type Match = Success<paths["/api/clients/{id}/stock-match"]["get"]>;
 
 function Lines({ match }: { match: Match }) {
-  if (match.kind === "no_profile") return <p className={form.note}>{copy.noProfile}</p>;
-  if (match.kind === "incomplete") return <p className={form.note}>{copy.incomplete(match.missing)}</p>;
-  if (match.kind === "custom") return <p className={form.note}>{copy.custom}</p>;
+  if (match.kind === "no_profile") return <Note>{copy.noProfile}</Note>;
+  if (match.kind === "incomplete") return <Note>{copy.incomplete(match.missing)}</Note>;
+  if (match.kind === "custom") return <Note>{copy.custom}</Note>;
   return (
     <>
-      <p className={form.note}>{copy.matched(match.name ?? match.code ?? "")}</p>
-      {match.held.length === 0 && match.in_transit === 0 && <p className={form.note}>{copy.noneHeld}</p>}
+      <Note>{copy.matched(match.name ?? match.code ?? "")}</Note>
+      {match.held.length === 0 && match.in_transit === 0 && <Note>{copy.noneHeld}</Note>}
       {match.held.map((place) => (
-        <p className={form.note} key={place.place_id}>
-          {copy.held(place.pieces, place.name, place.city)}
-        </p>
+        <Note key={place.place_id}>{copy.held(place.pieces, place.name, place.city)}</Note>
       ))}
-      {match.in_transit > 0 && <p className={form.note}>{copy.inTransit(match.in_transit)}</p>}
+      {match.in_transit > 0 && <Note>{copy.inTransit(match.in_transit)}</Note>}
     </>
   );
 }

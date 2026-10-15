@@ -7,6 +7,7 @@ import { IconButton } from "@maneman/ui/IconButton";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -50,7 +51,7 @@ function LineBoxes(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={line.code}
             onChange={(event) => {
               props.onLine({ ...line, code: event.target.value });
@@ -76,7 +77,7 @@ function LineBoxes(props: {
         {(control) => (
           <TextInput
             {...control}
-            className={form.figureBox}
+            width="figure"
             inputMode="numeric"
             maxLength={7}
             value={line.quantity}
@@ -118,7 +119,7 @@ function SupplierPick(props: {
         {(control) => (
           <Select
             {...control}
-            className={form.choiceBox}
+            width="choice"
             value={supplierId}
             onChange={(event) => {
               onPick(event.target.value);
@@ -236,7 +237,7 @@ export function DraftOrder({
   const [expected, setExpected] = useState("");
   const [note, setNote] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
-  if (supplier === undefined) return <p className={form.note}>{copy.draft.noItems}</p>;
+  if (supplier === undefined) return <Note>{copy.draft.noItems}</Note>;
   /** A supplier picked starts from its first item, at its minimum. */
   const pick = (id: string) => {
     const item = stocked.find((each) => each.id === id)?.items[0];
@@ -282,7 +283,7 @@ export function DraftOrder({
         onNote={setNote}
         refused={(box) => boxError(copy.errors, failure, box)}
       />
-      <p className={form.note}>{copy.draft.total(inCurrency(total, supplier.currency))}</p>
+      <Note>{copy.draft.total(inCurrency(total, supplier.currency))}</Note>
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void draft()}>
           {copy.draft.send}

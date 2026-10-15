@@ -5,6 +5,7 @@
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { RowButton } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
@@ -82,7 +83,7 @@ function ConsumableRow({
         <span className={consumable.offered ? undefined : styles.quiet}>{stateWords(consumable)}</span>
         {may.change && (
           <RowButton
-            className={form.inline}
+            beside
             aria-label={copy.changeLabel(name)}
             onClick={() => {
               onDo({ kind: "change", code });
@@ -93,7 +94,7 @@ function ConsumableRow({
         )}
         {notRetired && may.retire && (
           <RowButton
-            className={form.inline}
+            beside
             aria-label={copy.retireLabel(name)}
             onClick={() => {
               onDo({ kind: "retire", code });
@@ -104,7 +105,7 @@ function ConsumableRow({
         )}
         {!notRetired && may.restore && (
           <RowButton
-            className={form.inline}
+            beside
             aria-label={copy.restoreLabel(name)}
             onClick={() => {
               onDo({ kind: "restore", code });
@@ -115,7 +116,7 @@ function ConsumableRow({
         )}
         {may.delete && (
           <RowButton
-            className={form.inline}
+            beside
             aria-label={deleting.label(name)}
             onClick={() => {
               onDo({ kind: "delete", code });
@@ -217,11 +218,11 @@ export function Consumables() {
 
   return (
     <>
-      <Panel titleId="consumables" title={copy.title} className={form.panel}>
+      <Panel titleId="consumables" title={copy.title} padded>
         {current.consumables.length === 0 ? (
-          <p className={form.note}>{copy.none}</p>
+          <Note>{copy.none}</Note>
         ) : (
-          <Table className={form.table}>
+          <Table controls>
             <thead>
               <tr>
                 {copy.columns.map((column) => (

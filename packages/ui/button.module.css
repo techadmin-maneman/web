@@ -234,4 +234,14 @@
       background: var(--ink-raised);
     }
   }
+
+  /* A little narrower than the action beside it (./Button.tsx's `narrow`). */
+  .narrow {
+    padding: 0 var(--sp-16);
+  }
+
+  /* A row's button set off from the words before it (RowButton's `beside`). */
+  .beside {
+    margin-left: var(--sp-8);
+  }
 }

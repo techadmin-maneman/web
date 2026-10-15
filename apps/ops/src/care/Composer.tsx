@@ -66,7 +66,7 @@ function ReasonChoice(props: { reason: CloseReason; onReason: (reason: CloseReas
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={reason}
           onChange={(event) => {
             if (isReason(event.target.value)) onReason(event.target.value);
@@ -129,7 +129,7 @@ export function Composer(props: {
         <Button
           variant="outline"
           size="small"
-          className={form.quiet}
+          narrow
           disabled={busy || empty}
           onClick={() =>
             void act(
@@ -146,7 +146,7 @@ export function Composer(props: {
         <Button
           variant="outline"
           size="small"
-          className={form.quiet}
+          narrow
           disabled={busy}
           onClick={() =>
             void act(

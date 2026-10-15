@@ -2,6 +2,7 @@
 // warning days (`stock_watch`), or has, soonest first, with where it is and how much is there. The morning alert says the same
 // in the chat; here ops act on it, moving the stock or writing it off by its lot.
 
+import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { fullDate } from "@maneman/web-kit/dates";
@@ -29,9 +30,9 @@ export function Expiring({ stock }: { stock: Stock }) {
   const words = stockViews.expiring;
   return (
     <Panel titleId="stock-expiring" title={words.title}>
-      <p className={form.note}>{words.intro(stock.expiry_warning_days)}</p>
+      <Note>{words.intro(stock.expiry_warning_days)}</Note>
       <div className={styles.scroll}>
-        <Table className={form.table}>
+        <Table controls>
           <thead>
             <tr>
               {words.columns.map((column) => (

@@ -5,6 +5,7 @@ import { longDate } from "@maneman/web-kit/dates";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { useRowPanel, type RowOpener } from "@maneman/ui/useRowPanel";
@@ -24,9 +25,9 @@ import { qualityApi } from "./quality-api.ts";
 const loadRecalls = () => qualityApi.recalls();
 
 function Recalls({ quality, opener, onOpen }: { quality: Quality; opener: RowOpener; onOpen: (id: string) => void }) {
-  if (quality.recalls.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (quality.recalls.length === 0) return <Note>{copy.none}</Note>;
   return (
-    <Table className={form.table}>
+    <Table controls>
       <thead>
         <tr>
           {copy.columns.map((column) => (

@@ -5,6 +5,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { OpsLink } from "../components/Shell.tsx";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { Button } from "@maneman/ui/Button";
+import { Note } from "@maneman/ui/Note";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useEffect, useState } from "react";
@@ -77,22 +78,22 @@ function About({ conversation }: { conversation: Conversation }) {
   const { person, technician } = conversation;
   if (technician !== null) {
     return (
-      <p className={form.note}>
+      <Note>
         {thread.technician}{" "}
         <OpsLink className={textLinkLook()} to={technicianPath(technician.id)}>
           {thread.technicianPage}
         </OpsLink>
-      </p>
+      </Note>
     );
   }
   if (person === null) return null;
   return (
     <>
-      <p className={form.note}>
+      <Note>
         <OpsLink className={textLinkLook()} to={clientPath(person.id, "visits")}>
           {thread.page}
         </OpsLink>
-      </p>
+      </Note>
       <ClientPanel personId={person.id} />
       <CarePerson personId={person.id} email={conversation.care_person} coveredBy={conversation.covered_by} />
     </>
@@ -126,7 +127,7 @@ export function Thread({
       <h3 className={form.ruleTitle}>{thread.title(whoOf(conversation))}</h3>
       <About conversation={conversation} />
       {items.length === 0 ? (
-        <p className={form.note}>{thread.empty}</p>
+        <Note>{thread.empty}</Note>
       ) : (
         <ol className={styles.items}>
           {items.map((item) => (
@@ -160,7 +161,7 @@ export function Thread({
         />
       )}
       <FormActions>
-        <Button variant="outline" size="small" className={form.quiet} onClick={onClose}>
+        <Button variant="outline" size="small" narrow onClick={onClose}>
           {thread.close}
         </Button>
       </FormActions>

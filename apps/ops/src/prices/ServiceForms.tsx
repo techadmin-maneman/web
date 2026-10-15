@@ -54,7 +54,7 @@ export function RenameForm(props: {
           {(control) => (
             <TextInput
               {...control}
-              className={form.areaBox}
+              width="area"
               maxLength={60}
               value={name}
               onChange={(event) => {
@@ -98,7 +98,7 @@ export function DescribeForm(props: {
           {(control) => (
             <TextInput
               {...control}
-              className={form.areaBox}
+              width="area"
               maxLength={props.maxLength}
               value={line}
               onChange={(event) => {
@@ -141,7 +141,7 @@ export function LengthForm(props: {
           {(control) => (
             <NumberInput
               {...control}
-              className={form.figureBox}
+              width="figure"
               inputMode="numeric"
               step={1}
               min={bounds.min}
@@ -187,7 +187,7 @@ export function RetireForm(props: {
           {(control) => (
             <DateInput
               {...control}
-              className={form.dateBox}
+              width="date"
               min={today}
               value={from}
               onChange={(event) => {
@@ -290,7 +290,7 @@ export function AddForm(props: {
           {(control) => (
             <TextInput
               {...control}
-              className={form.areaBox}
+              width="area"
               maxLength={60}
               value={name}
               onChange={(event) => {
@@ -304,7 +304,7 @@ export function AddForm(props: {
           {(control) => (
             <TextInput
               {...control}
-              className={form.areaBox}
+              width="area"
               maxLength={32}
               value={codeTyped ? code : (tierCodeOf(name) ?? "")}
               onChange={(event) => {
@@ -319,7 +319,7 @@ export function AddForm(props: {
           {(control) => (
             <NumberInput
               {...control}
-              className={form.figureBox}
+              width="figure"
               inputMode="numeric"
               step={1}
               min={bounds.min}

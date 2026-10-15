@@ -38,7 +38,7 @@ function ReceiptEntry(props: {
       {(control) => (
         <TextInput
           {...control}
-          className={props.type === "date" ? undefined : form.figureBox}
+          width={props.type === "date" ? undefined : "figure"}
           type={props.type ?? "text"}
           value={props.value}
           onChange={(event) => {

@@ -4,6 +4,7 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
@@ -109,10 +110,10 @@ function nextVisitOf(client: Listed["clients"][number]): string {
 }
 
 function Rows({ listed }: { listed: Listed }) {
-  if (listed.clients.length === 0) return <p className={form.note}>{copy.none}</p>;
+  if (listed.clients.length === 0) return <Note>{copy.none}</Note>;
   return (
     <div className={styles.listScroll}>
-      <Table className={form.table}>
+      <Table controls>
         <thead>
           <tr>
             <th scope="col">{copy.name}</th>

@@ -6,6 +6,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
@@ -68,7 +69,7 @@ function CityPick(props: {
       {(control) => (
         <Select
           {...control}
-          className={form.choiceBox}
+          width="choice"
           value={props.city}
           onChange={(event) => {
             props.onCity(event.target.value);
@@ -204,11 +205,11 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
   const mayRemove = access.mayCall("POST /api/demand-events/{id}/remove");
   return (
     <Panel titleId="plan-events" title={copy.title}>
-      <p className={form.note}>{copy.note}</p>
+      <Note>{copy.note}</Note>
       {demand.events.length === 0 ? (
-        <p className={form.note}>{copy.none}</p>
+        <Note>{copy.none}</Note>
       ) : (
-        <Table className={form.table}>
+        <Table controls>
           <thead>
             <tr>
               {copy.columns.map((column) => (

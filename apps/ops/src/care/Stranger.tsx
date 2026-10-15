@@ -3,6 +3,7 @@
 
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Note } from "@maneman/ui/Note";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
@@ -55,17 +56,13 @@ function FindAndLink(props: { conversationId: string; onDone: () => void }) {
           {copy.search}
         </Button>
       </div>
-      {found !== null && found.length === 0 && <p className={form.note}>{copy.noneFound}</p>}
+      {found !== null && found.length === 0 && <Note>{copy.noneFound}</Note>}
       {found !== null && found.length > 0 && (
         <ul className={styles.leave}>
           {found.map((client) => (
             <li key={client.id}>
               {copy.client(client.name, client.mobile)}{" "}
-              <RowButton
-                className={form.inline}
-                aria-label={copy.linkLabel(client.name)}
-                onClick={() => void link(client.id)}
-              >
+              <RowButton beside aria-label={copy.linkLabel(client.name)} onClick={() => void link(client.id)}>
                 {copy.link}
               </RowButton>
             </li>
@@ -106,7 +103,7 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
           {(control) => (
             <Select
               {...control}
-              className={form.choiceBox}
+              width="choice"
               value={foundUs}
               onChange={(event) => {
                 setFoundUs(event.target.value as FoundUs | "");
@@ -132,7 +129,7 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
 export function Stranger(props: { readonly conversationId: string; readonly onDone: () => void }) {
   return (
     <section className={form.group} aria-label={copy.title}>
-      <p className={form.note}>{copy.title}</p>
+      <Note>{copy.title}</Note>
       <FindAndLink conversationId={props.conversationId} onDone={props.onDone} />
       <SaveAsNew conversationId={props.conversationId} onDone={props.onDone} />
     </section>
