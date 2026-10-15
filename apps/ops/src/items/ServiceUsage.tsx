@@ -3,6 +3,7 @@
 // before it was retired is still done. The list is sent whole, after a check of each changed figure (ADR 0071). An
 // empty box is none.
 
+import { amountOf } from "@maneman/web-kit/figures";
 import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, Fieldset, Select, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
@@ -133,8 +134,7 @@ export function ServiceUsage({ consumables, onSaved }: ServiceUsageProps) {
     const before = was.get(each.code) ?? null;
     const after = items.find((item) => item.code === each.code)?.quantity ?? null;
     if (before === after) return [];
-    const said = (quantity: number | null) =>
-      quantity === null ? words.confirm.none : `${String(quantity)} ${each.unit}`;
+    const said = (quantity: number | null) => (quantity === null ? words.confirm.none : amountOf(quantity, each.unit));
     return [words.confirm.line(each.name, said(before), said(after))];
   });
   const steps = useSteps(

@@ -113,9 +113,7 @@ async function markDesign(page: Page): Promise<void> {
     [...(block?.parentElement?.children ?? [])].forEach((child, index) => {
       child.setAttribute("data-fidelity", String(index));
     });
-    const entity = [...document.querySelectorAll("span")].find((span) =>
-      span.textContent.includes("Private Limited"),
-    );
+    const entity = [...document.querySelectorAll("span")].find((span) => span.textContent.includes("Private Limited"));
     let footer: HTMLElement | null | undefined = entity;
     while (footer && getComputedStyle(footer).marginTop === "0px") footer = footer.parentElement;
     footer?.setAttribute("data-fidelity", "footer");

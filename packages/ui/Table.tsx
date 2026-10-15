@@ -37,7 +37,7 @@ export function TableScroll({ labelledBy, children }: { readonly labelledBy: str
   return (
     // A region the keyboard must reach to scroll it (WCAG 2.1.1): it holds no control of its own to take the focus.
     // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
-    <div className={styles.scroll} tabIndex={0} role="region" aria-labelledby={labelledBy}>
+    <div className={styles.scroll} tabIndex={0} role="group" aria-labelledby={labelledBy}>
       {children}
     </div>
   );

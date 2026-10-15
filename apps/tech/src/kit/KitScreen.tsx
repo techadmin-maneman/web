@@ -2,6 +2,7 @@
 // system's pieces scanned one by one; what it holds, each lot's expiry beside it; and the pieces that came off clients
 // and any expired stock, handed back to the stockroom. Never a cost. Its writes need signal, and say so without it.
 
+import { amountOf } from "@maneman/web-kit/figures";
 import { ICONS } from "@maneman/brand/icons";
 import { Button } from "@maneman/ui/Button";
 import { ErrorRef } from "@maneman/ui/ErrorRef";
@@ -93,7 +94,7 @@ function TopUp({ topUp, offline, onKit }: { topUp: Coming; offline: boolean; onK
   return (
     <li>
       <p className={styles.line}>
-        {topUp.name} · {topUp.quantity} {topUp.unit}
+        {topUp.name} · {amountOf(topUp.quantity, topUp.unit)}
       </p>
       <p className={styles.note}>{copy.coming.from(topUp.from, dayMonth(indiaDate(topUp.sent_at)))}</p>
       {pieces && (
@@ -145,7 +146,7 @@ function Held({ kit }: { kit: Kit }) {
           {kit.held.map((item) => (
             <li key={item.code}>
               <p className={styles.line}>
-                {item.name} · {item.quantity} {item.unit}
+                {item.name} · {amountOf(item.quantity, item.unit)}
               </p>
               {item.hair_system && <p className={styles.note}>{copy.held.pieces(item.units.length)}</p>}
               {item.lots
