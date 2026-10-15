@@ -155,7 +155,7 @@ describe("the ledger", () => {
     ];
     for (const refused of refusals) {
       expect(refused.status).toBe(400);
-      expect(await refused.json()).toMatchObject({ error: { fields: ["quantity"] } });
+      expect(await refused.json()).toMatchObject({ error: { fields: ["quantity.held"] } });
     }
     expect(await held("solvent", "central")).toEqual({ quantity: 10, low: false });
     const written = await env.DB.prepare(

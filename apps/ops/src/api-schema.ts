@@ -16379,7 +16379,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -16455,7 +16455,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, quantity for more than the place holds, or units for a label the place does not hold or a count other than the quantity */
+                /** @description invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -16549,7 +16549,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -16643,7 +16643,7 @@ export interface paths {
                         "application/json": components["schemas"]["Stock"];
                     };
                 };
-                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity */
+                /** @description invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity */
                 400: {
                     headers: {
                         [name: string]: unknown;

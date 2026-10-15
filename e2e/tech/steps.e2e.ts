@@ -165,7 +165,7 @@ test.describe("the consumables step", () => {
 
     await expect(page.getByRole("status").filter({ hasText: "Tape strips: 4" })).toBeAttached();
     await expect(page.getByRole("status").filter({ hasText: "Solvent: 10" })).toBeAttached();
-    await expect(page.getByText("strip · 4 expected")).toBeVisible();
+    await expect(page.getByText("4 strips expected")).toBeVisible();
     await expect(page.getByRole("button", { name: "One more bonding glue" })).toHaveCount(0);
 
     const another = page.getByRole("button", { name: techCopy.steps.consumables.add });

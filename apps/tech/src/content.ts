@@ -5,6 +5,7 @@
 
 import type { Moved } from "@maneman/web-kit/api";
 import { shortDate } from "@maneman/web-kit/dates";
+import { amountOf } from "@maneman/web-kit/figures";
 import type { Angle, FitSpec, History } from "./api.ts";
 import { apiDate, clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
 
@@ -478,7 +479,7 @@ export const steps = {
     more: (name: string) => `One more ${name.toLowerCase()}`,
     count: (name: string, count: number) => `${name}: ${String(count)}`,
     // The board draws the name alone; what one is counted in, and what the visit's service expects.
-    unit: (unit: string, expected: number) => (expected === 0 ? unit : `${unit} · ${String(expected)} expected`),
+    unit: (unit: string, expected: number) => (expected === 0 ? unit : `${amountOf(expected, unit)} expected`),
     // The board draws four steppers and no way to record a fifth consumable.
     add: "Add another",
     addOne: (name: string) => `Add ${name}`,

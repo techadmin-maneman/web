@@ -244,6 +244,9 @@ export const clients = {
       notRecommended: (name: string) => `Their hair profile recommends ${name}.`,
       day: "Day",
       window: "Window",
+      /** "Morning, 9 am to 12 pm" */
+      windowChoice: (name: string, from: string, to: string) =>
+        `${name.charAt(0).toUpperCase()}${name.slice(1)}, ${from} to ${to}`,
       technician: "Technician",
       anyone: "Anyone available",
       earlier: "Earlier days",

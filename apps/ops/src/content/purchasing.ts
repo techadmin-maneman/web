@@ -35,6 +35,8 @@ export const purchasing = {
     confirmCancel: "Cancel the order",
     keep: "Keep order",
     approved: "Approved.",
+    /** Approve gone after the first of two approvals: who gives the second. */
+    yoursFirst: "You gave its first approval. Another Operations manager gives the second.",
     sent: "Marked sent.",
     cancelled: "Cancelled.",
     cancelledWhy: (reason: string) => `Cancelled: ${reason}`,

@@ -7,6 +7,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { amountOf } from "@maneman/web-kit/figures";
 import { type Stock } from "../api.ts";
 import { stockViews } from "../content/stock-views.ts";
 import form from "../components/forms.module.css";
@@ -50,9 +51,9 @@ export function Demand({ stock }: { stock: Stock }) {
                     <tr key={`${row.consumable_code}/${row.city ?? ""}`}>
                       <RowHead>{named(row.consumable_code)}</RowHead>
                       <td>{row.city ?? words.noCity}</td>
-                      <td className={form.figure}>{`${String(row.expected)} ${unit(row.consumable_code)}`}</td>
+                      <td className={form.figure}>{amountOf(row.expected, unit(row.consumable_code))}</td>
                       <td className={form.figure}>
-                        {`${String(row.held)} ${unit(row.consumable_code)}`}
+                        {amountOf(row.held, unit(row.consumable_code))}
                         {row.held < row.expected && (
                           <span className={shared.low}>{words.short(row.expected - row.held)}</span>
                         )}

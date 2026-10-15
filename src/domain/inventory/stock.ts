@@ -295,7 +295,7 @@ export async function transferStock(db: D1Database, input: Moving, written: Writ
     }),
   ]);
   // More than the place holds, or a unit that left it since it was read.
-  if (left?.meta.changes === 0) return refusal("invalid_request", ["quantity"]);
+  if (left?.meta.changes === 0) return refusal("invalid_request", ["quantity.held"]);
   return { ok: true, lowered: [input.from] };
 }
 
@@ -468,7 +468,7 @@ export async function writeOff(
       ...unitWritten(written),
     }),
   ]);
-  if (left?.meta.changes === 0) return refusal("invalid_request", ["quantity"]);
+  if (left?.meta.changes === 0) return refusal("invalid_request", ["quantity.held"]);
   return { ok: true, lowered: [input.place] };
 }
 

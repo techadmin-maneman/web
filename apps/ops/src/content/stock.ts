@@ -18,6 +18,8 @@ export const stock = {
   // Not drawn: past a handful of places, the one shown beside the warehouse, and a place low on anything.
   place: "Place",
   placeLow: " · low",
+  /** A place holding less than nothing of something: a movement went unrecorded, and a count puts it right. */
+  placeBelow: " · below zero",
   totalsBy: "Show",
   byPlace: "Each place",
   byZone: "Totals by zone",
@@ -25,6 +27,7 @@ export const stock = {
   /** "12 strips", and a mark for a place at or below its level. */
   held: (quantity: number, unit: string) => amountOf(quantity, unit),
   low: "Low",
+  belowZero: "Below zero · count it",
   none: "No consumables yet. Add them in",
   settings: "Settings, Consumables",
   retired: "retired",
@@ -91,6 +94,7 @@ export const stock = {
     lot_id: changed("That lot isn’t held there."),
     units: "A label scanned isn’t held there. Check the pieces.",
     quantity: "One delivery labels at most 500 pieces.",
+    held: "More than that place holds. Check the quantity.",
     note: "Say what happened, in up to 200 characters.",
     offline: OFFLINE,
     unconfirmed: UNCONFIRMED,
