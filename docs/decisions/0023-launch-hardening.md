@@ -16,7 +16,7 @@ The build writes them into the Workers static-assets `_headers` file (`site/src/
 
 - **Content security policy.** It allows the site itself, Turnstile, and the hosts of whichever analytics tags have an ID; Cloudflare's Web Analytics beacon is switched off for the zone, and refused. Astro's inline scripts and styles are allowed by their SHA-256 hashes, which the build reads from the finished pages, so the policy needs no `'unsafe-inline'`.
   - Every refusal is reported, by `report-uri` and by `report-to` (`Reporting-Endpoints`), to `POST /api/csp-reports` on mm-api, which logs each as one `csp_refused` line, the page's path without its query, and stores nothing.
-  - Trusted Types (`require-trusted-types-for 'script'`) are in a report-only policy beside it: Turnstile's and the analytics tags' scripts may write HTML in ways they refuse, and the reports say which before they are enforced.
+  - Trusted Types (`require-trusted-types-for 'script'`) are in a report-only policy beside it: Turnstile's and the analytics tags' scripts may write HTML in ways they refuse, and the reports say which before they are enforced. **Changed 15 October 2026:** enforced, and every page's policy carries a nonce of its request's own ([ADR 0206](0206-trusted-types-and-a-nonce-per-page.md)).
   - `Cross-Origin-Opener-Policy: same-origin`, so no page the site opens can reach back into it.
   - Vite no longer inlines small assets as `data:` URLs: the policy allows none.
   - The R2 endpoint the prompt names is not needed, because the photo goes to the API (ADR 0022, 1).

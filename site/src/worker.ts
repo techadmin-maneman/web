@@ -20,6 +20,10 @@
 // launch reaches the site without a rebuild; each sentence that names them is built naming none. A city's page,
 // /areas/<city>, lists the areas served there, which it is built without.
 //
+// Every page goes through the Worker, which gives its content security policy a nonce of the request's own. Cloudflare
+// reads it from the policy and puts it on any script it adds to the page at its edge, so one switched back on for the
+// zone still runs (docs/decisions/0206-trusted-types-and-a-nonce-per-page.md).
+//
 // Every answer of mm-api's that cannot be used is one line in the Worker's log, and a failure is remembered for ten
 // seconds, so a down mm-api is not asked again by every view.
 
@@ -59,6 +63,20 @@ const FAILURE_KEPT_MS = 10_000;
 
 /** What the Worker asks mm-api for, as its log line names it. */
 type Asked = "invite" | "reward" | "cities";
+
+/** A page's policy with a nonce of this request's own for its scripts; anything but a page is passed on as it is. */
+export function withNonce(answer: Response): Response {
+  const policy = answer.headers.get("Content-Security-Policy");
+  const page = (answer.headers.get("Content-Type") ?? "").startsWith("text/html");
+  if (policy === null || !page || !/(^|; )script-src /.test(policy)) return answer;
+  const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+  const answered = new Response(answer.body, answer);
+  answered.headers.set(
+    "Content-Security-Policy",
+    policy.replace(/(^|; )script-src /, `$1script-src 'nonce-${nonce}' `),
+  );
+  return answered;
+}
 
 /** One line in the Worker's log for an answer it cannot use, and null in its place. */
 function failed(asked: Asked, status: number | null, reason: string): null {
@@ -270,12 +288,12 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
       const cityPage = CITY_PAGE.test(url.pathname);
       const namesCities = CITY_PAGES.has(url.pathname) || cityPage;
       const saysReward = code !== undefined || url.pathname === REWARD_PAGE;
-      if (!saysReward && !namesCities) return env.ASSETS.fetch(request);
+      if (!saysReward && !namesCities) return withNonce(await env.ASSETS.fetch(request));
 
       // The landing is r.html for every code, which the assets serve at /r (site/astro.config.ts builds files).
       const path = code === undefined ? url.pathname : "/r";
       const page = await env.ASSETS.fetch(builtFile(request, `${url.origin}${path}`));
-      if (!page.ok || request.method !== "GET") return page;
+      if (!page.ok || request.method !== "GET") return withNonce(page);
 
       const [invite, reward, cities] = await Promise.all([
         code === undefined ? null : lookUp(env, request, url.origin, code),
@@ -293,7 +311,7 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
         rewriter.on("meta", new Meta(invite, reward, url.origin, code));
         if (invite !== null) rewriter.on("#invite", new Written("data-invite", JSON.stringify({ ...invite, code })));
       }
-      return rewriter.transform(withoutValidators(page));
+      return withNonce(rewriter.transform(withoutValidators(page)));
     },
   } satisfies ExportedHandler<SiteEnv>;
 }

@@ -2,6 +2,7 @@
 // and the sitemap (site/src/lib/static-files.ts).
 
 import { describe, expect, it } from "vitest";
+import { SCRIPT_ORIGINS } from "../../../packages/web-kit/script-origins.ts";
 import type { AnalyticsIds } from "../../../site/src/lib/analytics-ids.ts";
 import {
   contentSecurityPolicy,
@@ -57,6 +58,7 @@ describe("the content security policy", () => {
         "base-uri 'self'",
         "form-action 'self'",
         "frame-ancestors 'none'",
+        "require-trusted-types-for 'script'",
         "report-uri /api/csp-reports",
         "report-to csp",
       ].join("; "),
@@ -75,6 +77,13 @@ describe("the content security policy", () => {
     const metaOnly = contentSecurityPolicy({ scripts: [], styles: [] }, { ...NO_TAGS, metaPixel: "1" });
     expect(metaOnly).toContain("https://connect.facebook.net");
     expect(metaOnly).not.toContain("google");
+  });
+
+  // Trusted Types' policies take a script's address from these hosts alone, so a tag the policy allows still loads.
+  it("allows scripts from the hosts Trusted Types takes a script's address from, and no other", () => {
+    const policy = contentSecurityPolicy({ scripts: [], styles: [] }, EVERY_TAG);
+    const scripts = (policy.split("; ").find((directive) => directive.startsWith("script-src ")) ?? "").split(" ");
+    expect(scripts.filter((source) => source.startsWith("https://")).sort()).toEqual([...SCRIPT_ORIGINS].sort());
   });
 
   it("fits Cloudflare’s line limit with every tag and a dozen inline scripts", () => {
@@ -96,14 +105,12 @@ describe("the headers file", () => {
   });
 
   // A refusal in a real browser left no trace, and nothing kept a page opened from the site from reaching back into it.
-  it("has every refusal reported, Trusted Types' only reported for now, and keeps an opened page apart", () => {
+  it("has every refusal reported, Trusted Types enforced, and keeps an opened page apart", () => {
     const policy = contentSecurityPolicy({ scripts: [], styles: [] }, NO_TAGS);
-    expect(policy).toMatch(/; report-uri \/api\/csp-reports; report-to csp$/);
+    expect(policy).toMatch(/; require-trusted-types-for 'script'; report-uri \/api\/csp-reports; report-to csp$/);
     const file = headersFile(true, policy);
     expect(file).toContain('  Reporting-Endpoints: csp="/api/csp-reports"\n');
-    expect(file).toContain(
-      "  Content-Security-Policy-Report-Only: require-trusted-types-for 'script'; report-uri /api/csp-reports; report-to csp\n",
-    );
+    expect(file).not.toContain("Content-Security-Policy-Report-Only");
     expect(file).toContain("  Cross-Origin-Opener-Policy: same-origin\n");
   });
 

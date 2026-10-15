@@ -3,6 +3,8 @@
 // appearance "interaction-only": invisible unless Cloudflare needs the visitor
 // to act. Each front end keeps its own site keys (docs/turnstile.md).
 
+import { scriptAddress } from "./trusted-scripts.ts";
+
 const SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
 interface TurnstileApi {
@@ -32,7 +34,7 @@ let loading: Promise<TurnstileApi> | undefined;
 function load(): Promise<TurnstileApi> {
   loading ??= new Promise<TurnstileApi>((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = SCRIPT;
+    script.src = scriptAddress(SCRIPT);
     script.async = true;
     const fail = () => {
       script.remove();
