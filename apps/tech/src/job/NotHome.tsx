@@ -170,7 +170,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       {confirming && (
         <ConfirmSheet
           title={copy.confirm.title}
-          body={copy.confirm.body}
+          body={job.badge === "free" || job.badge === "at_visit" ? copy.confirm.bodyNothingPaid : copy.confirm.body}
           yes={copy.confirm.yes}
           no={copy.confirm.no}
           onYes={() => void close()}

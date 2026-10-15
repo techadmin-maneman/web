@@ -398,6 +398,8 @@ export const notHome = {
   confirm: {
     title: "Close as a no-show?",
     body: "The client may be charged. Close only if no one has answered.",
+    // Nothing was paid ahead, so there is nothing to keep: free, or paid at the visit.
+    bodyNothingPaid: "Ops are told nobody was home. Close only if no one has answered.",
     yes: "Close as no-show",
     no: "Not yet",
   },
