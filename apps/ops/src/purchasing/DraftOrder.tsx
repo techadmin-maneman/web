@@ -7,14 +7,14 @@ import { IconButton } from "@maneman/ui/IconButton";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import type { Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal, Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { purchasingApi } from "./purchasing-api.ts";
 
@@ -105,11 +105,16 @@ function LineBoxes(props: {
 type Supplier = Orders["suppliers"][number];
 
 /** The supplier ordered from: only those that list something. */
-function SupplierPick(props: { stocked: readonly Supplier[]; supplierId: string; onPick: (id: string) => void }) {
+function SupplierPick(props: {
+  stocked: readonly Supplier[];
+  supplierId: string;
+  onPick: (id: string) => void;
+  error: string | null;
+}) {
   const { stocked, supplierId, onPick } = props;
   return (
     <>
-      <Field label={copy.draft.supplier} className={form.field}>
+      <Field label={copy.draft.supplier} className={form.field} error={props.error}>
         {(control) => (
           <Select
             {...control}
@@ -181,11 +186,12 @@ function WhenAndNote(props: {
   note: string;
   onExpected: (date: string) => void;
   onNote: (note: string) => void;
+  refused: (box: string) => string | null;
 }) {
   const { expected, note, onExpected, onNote } = props;
   return (
     <div className={form.fields}>
-      <Field label={copy.draft.expected} className={form.field}>
+      <Field label={copy.draft.expected} className={form.field} error={props.refused("expected_on")}>
         {(control) => (
           <TextInput
             {...control}
@@ -197,7 +203,7 @@ function WhenAndNote(props: {
           />
         )}
       </Field>
-      <Field label={copy.draft.note} className={form.field}>
+      <Field label={copy.draft.note} className={form.field} error={props.refused("note")}>
         {(control) => (
           <TextInput
             {...control}
@@ -262,16 +268,30 @@ export function DraftOrder({
   };
   return (
     <Panel titleId="draft-order" title={copy.draft.title}>
-      <SupplierPick stocked={stocked} supplierId={supplierId} onPick={pick} />
+      <SupplierPick
+        stocked={stocked}
+        supplierId={supplierId}
+        onPick={pick}
+        error={boxError(copy.errors, failure, "supplier_id")}
+      />
       <LinesEditor supplier={supplier} lines={lines} consumable={consumable} onLines={setLines} />
-      <WhenAndNote expected={expected} note={note} onExpected={setExpected} onNote={setNote} />
+      <WhenAndNote
+        expected={expected}
+        note={note}
+        onExpected={setExpected}
+        onNote={setNote}
+        refused={(box) => boxError(copy.errors, failure, box)}
+      />
       <p className={form.note}>{copy.draft.total(inCurrency(total, supplier.currency))}</p>
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void draft()}>
           {copy.draft.send}
         </Button>
       </FormActions>
-      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+      <FormRefusal
+        className={form.error}
+        said={formError(copy.errors, failure, ["supplier_id", "expected_on", "note"])}
+      />
     </Panel>
   );
 }

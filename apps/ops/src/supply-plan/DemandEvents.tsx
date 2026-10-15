@@ -14,7 +14,7 @@ import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import { dayAfter } from "./Forecast.tsx";
-import { FormRefusal, Refusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { supplyPlanApi } from "./supply-plan-api.ts";
@@ -57,6 +57,36 @@ function DemandEntry(props: {
 }
 
 /** An event added: its name, its city or every city, its days, and how much it changes demand. */
+/** The city an event is for, or every one. */
+function CityPick(props: {
+  cities: readonly string[];
+  city: string;
+  onCity: (city: string) => void;
+  error: string | null;
+}) {
+  return (
+    <Field label={copy.city} className={form.field} error={props.error}>
+      {(control) => (
+        <Select
+          {...control}
+          className={form.choiceBox}
+          value={props.city}
+          onChange={(event) => {
+            props.onCity(event.target.value);
+          }}
+        >
+          <option value="">{supplyPlan.everyCity}</option>
+          {props.cities.map((each) => (
+            <option key={each} value={each}>
+              {each}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
+  );
+}
+
 function AddEvent({
   cities,
   failure,
@@ -67,6 +97,7 @@ function AddEvent({
   onAnswer: (answer: Answer) => boolean;
 }) {
   const [draft, setDraft] = useState(EMPTY);
+  const refused = (box: string) => boxError(copy.errors, failure, box);
   const edit = (field: keyof typeof EMPTY) => (text: string) => {
     setDraft((was) => ({ ...was, [field]: text }));
   };
@@ -90,51 +121,28 @@ function AddEvent({
   return (
     <div className={form.group}>
       <h3 className={form.ruleTitle}>{copy.add}</h3>
-      <DemandEntry
-        label={copy.name}
-        value={draft.name}
-        onChange={edit("name")}
-        error={boxError(copy.errors, failure, "name")}
-      />
-      <Field label={copy.city} className={form.field} error={boxError(copy.errors, failure, "city")}>
-        {(control) => (
-          <Select
-            {...control}
-            className={form.choiceBox}
-            value={draft.city}
-            onChange={(event) => {
-              edit("city")(event.target.value);
-            }}
-          >
-            <option value="">{supplyPlan.everyCity}</option>
-            {cities.map((each) => (
-              <option key={each} value={each}>
-                {each}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
+      <DemandEntry label={copy.name} value={draft.name} onChange={edit("name")} error={refused("name")} />
+      <CityPick cities={cities} city={draft.city} onCity={edit("city")} error={refused("city")} />
       <DemandEntry
         label={copy.startsOn}
         type="date"
         value={draft.startsOn}
         onChange={edit("startsOn")}
-        error={boxError(copy.errors, failure, "starts_on")}
+        error={refused("starts_on")}
       />
       <DemandEntry
         label={copy.endsOn}
         type="date"
         value={draft.endsOn}
         onChange={edit("endsOn")}
-        error={boxError(copy.errors, failure, "ends_on")}
+        error={refused("ends_on")}
       />
       <DemandEntry
         label={copy.percent}
         type="number"
         value={draft.percent}
         onChange={edit("percent")}
-        error={boxError(copy.errors, failure, "uplift_percent")}
+        error={refused("uplift_percent")}
       />
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>

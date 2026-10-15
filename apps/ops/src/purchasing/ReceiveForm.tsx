@@ -4,14 +4,14 @@
 
 import { Button } from "@maneman/ui/Button";
 import { Field, Fieldset, TextInput } from "@maneman/ui/Field";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
 import { microRupeesFromRupees, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
 import type { Order, Orders } from "./types.ts";
 import styles from "./purchasing.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { purchasingApi } from "./purchasing-api.ts";
 
@@ -26,9 +26,15 @@ interface LineDraft {
 const WHOLE = /^\d{1,7}$/;
 const RUPEES = /^\d{1,9}(?:\.\d{1,2})?$/;
 
-function ReceiptEntry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
+function ReceiptEntry(props: {
+  label: string;
+  value: string;
+  type?: string;
+  onChange: (text: string) => void;
+  error: string | null;
+}) {
   return (
-    <Field label={props.label} className={form.field}>
+    <Field label={props.label} className={form.field} error={props.error}>
       {(control) => (
         <TextInput
           {...control}
@@ -44,18 +50,60 @@ function ReceiptEntry(props: { label: string; value: string; type?: string; onCh
   );
 }
 
-function LineFields(props: { name: string; draft: LineDraft; onDraft: (draft: LineDraft) => void }) {
-  const { draft, onDraft } = props;
+/** A line's boxes, and an extra's, by the names the API refuses them by. */
+const LINE_BOXES = {
+  received: "received",
+  damaged: "damaged",
+  failed: "qc_failed",
+  lot: "lot_code",
+  expires: "expires_on",
+};
+const EXTRA_BOXES = {
+  invoice: "supplier_invoice",
+  rate: "rate_micro_rupees",
+  freight: "freight_paise",
+  duty: "duty_paise",
+  clearing: "clearing_paise",
+};
+/** Every box of the form: a line's by its list, so any line's refusal is said on that line. */
+const BOXES = ["lines", ...Object.values(EXTRA_BOXES)];
+
+/** Words for the box the API refused, if it is this one. */
+type Refused = (box: string) => string | null;
+
+function LineFields(props: { name: string; draft: LineDraft; onDraft: (draft: LineDraft) => void; refused: Refused }) {
+  const { draft, onDraft, refused } = props;
   const set = (field: keyof LineDraft) => (text: string) => {
     onDraft({ ...draft, [field]: text });
   };
   return (
     <Fieldset className={styles.line} legend={props.name}>
-      <ReceiptEntry label={copy.receive.received} value={draft.received} onChange={set("received")} />
-      <ReceiptEntry label={copy.receive.damaged} value={draft.damaged} onChange={set("damaged")} />
-      <ReceiptEntry label={copy.receive.failed} value={draft.failed} onChange={set("failed")} />
-      <ReceiptEntry label={copy.receive.lot} value={draft.lot} onChange={set("lot")} />
-      <ReceiptEntry label={copy.receive.expires} value={draft.expires} type="date" onChange={set("expires")} />
+      <ReceiptEntry
+        label={copy.receive.received}
+        value={draft.received}
+        onChange={set("received")}
+        error={refused(LINE_BOXES.received)}
+      />
+      <ReceiptEntry
+        label={copy.receive.damaged}
+        value={draft.damaged}
+        onChange={set("damaged")}
+        error={refused(LINE_BOXES.damaged)}
+      />
+      <ReceiptEntry
+        label={copy.receive.failed}
+        value={draft.failed}
+        onChange={set("failed")}
+        error={refused(LINE_BOXES.failed)}
+      />
+      <ReceiptEntry label={copy.receive.lot} value={draft.lot} onChange={set("lot")} error={refused(LINE_BOXES.lot)} />
+      <ReceiptEntry
+        label={copy.receive.expires}
+        value={draft.expires}
+        type="date"
+        onChange={set("expires")}
+        error={refused(LINE_BOXES.expires)}
+      />
     </Fieldset>
   );
 }
@@ -73,23 +121,50 @@ function ExtrasFields({
   order,
   extras,
   onExtras,
+  refused,
 }: {
   order: Order;
   extras: Extras;
   onExtras: (extras: Extras) => void;
+  refused: Refused;
 }) {
   const extra = (field: keyof Extras) => (text: string) => {
     onExtras({ ...extras, [field]: text });
   };
   return (
     <div className={form.fields}>
-      <ReceiptEntry label={copy.receive.invoice} value={extras.invoice} onChange={extra("invoice")} />
+      <ReceiptEntry
+        label={copy.receive.invoice}
+        value={extras.invoice}
+        onChange={extra("invoice")}
+        error={refused(EXTRA_BOXES.invoice)}
+      />
       {order.currency !== "INR" && (
-        <ReceiptEntry label={copy.receive.rate(order.currency)} value={extras.rate} onChange={extra("rate")} />
+        <ReceiptEntry
+          label={copy.receive.rate(order.currency)}
+          value={extras.rate}
+          onChange={extra("rate")}
+          error={refused(EXTRA_BOXES.rate)}
+        />
       )}
-      <ReceiptEntry label={copy.receive.freight} value={extras.freight} onChange={extra("freight")} />
-      <ReceiptEntry label={copy.receive.duty} value={extras.duty} onChange={extra("duty")} />
-      <ReceiptEntry label={copy.receive.clearing} value={extras.clearing} onChange={extra("clearing")} />
+      <ReceiptEntry
+        label={copy.receive.freight}
+        value={extras.freight}
+        onChange={extra("freight")}
+        error={refused(EXTRA_BOXES.freight)}
+      />
+      <ReceiptEntry
+        label={copy.receive.duty}
+        value={extras.duty}
+        onChange={extra("duty")}
+        error={refused(EXTRA_BOXES.duty)}
+      />
+      <ReceiptEntry
+        label={copy.receive.clearing}
+        value={extras.clearing}
+        onChange={extra("clearing")}
+        error={refused(EXTRA_BOXES.clearing)}
+      />
     </div>
   );
 }
@@ -157,9 +232,15 @@ export function ReceiveForm(props: {
           onDraft={(draft) => {
             setLines(lines.map((each, at) => (at === index ? draft : each)));
           }}
+          refused={(box) => boxError(copy.errors, failure, `lines.${String(index)}.${box}`)}
         />
       ))}
-      <ExtrasFields order={order} extras={extras} onExtras={setExtras} />
+      <ExtrasFields
+        order={order}
+        extras={extras}
+        onExtras={setExtras}
+        refused={(box) => boxError(copy.errors, failure, box)}
+      />
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void send()}>
           {copy.receive.send}
@@ -168,7 +249,7 @@ export function ReceiveForm(props: {
           {copy.receive.cancel}
         </Button>
       </FormActions>
-      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+      <FormRefusal className={form.error} said={formError(copy.errors, failure, BOXES)} />
     </div>
   );
 }

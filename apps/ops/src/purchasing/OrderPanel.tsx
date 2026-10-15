@@ -6,7 +6,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
 import { inCurrency } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
@@ -16,7 +16,7 @@ import { useAccess, whoami } from "../lib/access.ts";
 import { OrderSheet } from "./OrderSheet.tsx";
 import { Receiving } from "./Receiving.tsx";
 import type { Order, Orders } from "./types.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { purchasingApi } from "./purchasing-api.ts";
@@ -32,12 +32,67 @@ function useApprovable(order: Order): boolean {
   return order.state === "drafted" && !approvedByMe && access.mayCall("POST /api/purchase-orders/{id}/approve");
 }
 
+/** Why the order is cancelled, asked before it is. */
+function CancelOrder({
+  orderId,
+  onAnswer,
+  onKeep,
+  failure,
+}: {
+  orderId: string;
+  onAnswer: (answer: Answer, said: string) => void;
+  onKeep: () => void;
+  failure: Failure | null;
+}) {
+  const [reason, setReason] = useState("");
+  return (
+    <div className={form.group}>
+      <Field label={copy.order.reason} className={form.field} error={boxError(copy.errors, failure, "reason")}>
+        {(control) => (
+          <TextInput
+            {...control}
+            maxLength={200}
+            value={reason}
+            onChange={(event) => {
+              setReason(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <FormActions>
+        <Button
+          variant="destructive"
+          size="small"
+          disabled={reason.trim() === ""}
+          onClick={() =>
+            void purchasingApi.cancelOrder(orderId, reason.trim()).then((answer) => {
+              onAnswer(answer, copy.order.cancelled);
+            })
+          }
+        >
+          {copy.order.confirmCancel}
+        </Button>
+        <Button variant="outline" size="small" onClick={onKeep}>
+          {copy.order.keep}
+        </Button>
+      </FormActions>
+    </div>
+  );
+}
+
 /** The steps the order can take now, and who may take them. */
-function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
+function Steps({
+  order,
+  onAnswer,
+  failure,
+}: {
+  order: Order;
+  onAnswer: (answer: Answer, said: string) => void;
+  failure: Failure | null;
+}) {
   const access = useAccess();
   const approvable = useApprovable(order);
   const [cancelling, setCancelling] = useState(false);
-  const [reason, setReason] = useState("");
   const step = async (to: "approve" | "send", said: string) => {
     onAnswer(await (to === "approve" ? purchasingApi.approveOrder(order.id) : purchasingApi.sendOrder(order.id)), said);
   };
@@ -69,43 +124,14 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
         )}
       </FormActions>
       {cancelling && (
-        <div className={form.group}>
-          <Field label={copy.order.reason} className={form.field}>
-            {(control) => (
-              <TextInput
-                {...control}
-                maxLength={200}
-                value={reason}
-                onChange={(event) => {
-                  setReason(event.target.value);
-                }}
-              />
-            )}
-          </Field>
-          <FormActions>
-            <Button
-              variant="destructive"
-              size="small"
-              disabled={reason.trim() === ""}
-              onClick={() =>
-                void purchasingApi.cancelOrder(order.id, reason.trim()).then((answer) => {
-                  onAnswer(answer, copy.order.cancelled);
-                })
-              }
-            >
-              {copy.order.confirmCancel}
-            </Button>
-            <Button
-              variant="outline"
-              size="small"
-              onClick={() => {
-                setCancelling(false);
-              }}
-            >
-              {copy.order.keep}
-            </Button>
-          </FormActions>
-        </div>
+        <CancelOrder
+          orderId={order.id}
+          onAnswer={onAnswer}
+          onKeep={() => {
+            setCancelling(false);
+          }}
+          failure={failure}
+        />
       )}
     </>
   );
@@ -171,7 +197,7 @@ export function OrderPanel({
       <p className={form.note}>
         {copy.order.total}: {inCurrency(order.total, order.currency)}
       </p>
-      <Steps order={order} onAnswer={answered} />
+      <Steps order={order} onAnswer={answered} failure={failure} />
       <Receiving orders={orders} order={order} onChanged={onChanged} />
       <FormActions>
         <Button
@@ -184,7 +210,7 @@ export function OrderPanel({
           {copy.order.print}
         </Button>
       </FormActions>
-      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+      <FormRefusal className={form.error} said={formError(copy.errors, failure, ["reason"])} />
       {printing && (
         <OrderSheet
           orders={orders}

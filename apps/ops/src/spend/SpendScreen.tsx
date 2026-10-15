@@ -98,6 +98,7 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
   const [note, setNote] = useState("");
   const [busy, once] = useOneAtATime();
   const [failure, setFailure] = useState<Failure | null>(null);
+  const refused = (box: string) => boxError(copy.errors, failure, box);
   const add = () =>
     once(async () => {
       setFailure(null);
@@ -123,21 +124,21 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
     <div className={form.group}>
       <SpendChoice
         label={copy.month}
-        error={boxError(copy.errors, failure, "month")}
+        error={refused("month")}
         value={month}
         options={monthsOf(list).map((each) => [each, fullMonth(each)])}
         onChange={setMonth}
       />
       <SpendChoice
         label={copy.city}
-        error={boxError(copy.errors, failure, "city")}
+        error={refused("city")}
         value={city}
         options={[["", copy.national], ...list.cities.map((each) => [each, each] as const)]}
         onChange={setCity}
       />
       <SpendChoice
         label={copy.channel}
-        error={boxError(copy.errors, failure, "channel")}
+        error={refused("channel")}
         value={channel}
         options={list.channels.map((each) => [each, copy.channels[each]])}
         onChange={(value) => {
@@ -146,26 +147,14 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
       />
       <Typed
         label={copy.campaign}
-        error={boxError(copy.errors, failure, "campaign")}
+        error={refused("campaign")}
         value={campaign}
         maxLength={120}
         onChange={setCampaign}
       />
       <p className={form.note}>{copy.campaignNote}</p>
-      <Typed
-        label={copy.amount}
-        error={boxError(copy.errors, failure, "amount")}
-        value={amount}
-        maxLength={12}
-        onChange={setAmount}
-      />
-      <Typed
-        label={copy.note}
-        error={boxError(copy.errors, failure, "note")}
-        value={note}
-        maxLength={200}
-        onChange={setNote}
-      />
+      <Typed label={copy.amount} error={refused("amount")} value={amount} maxLength={12} onChange={setAmount} />
+      <Typed label={copy.note} error={refused("note")} value={note} maxLength={200} onChange={setNote} />
       <Button variant="outline" size="small" disabled={busy || !isRupees(amount)} onClick={() => void add()}>
         {busy ? copy.adding : copy.add}
       </Button>
