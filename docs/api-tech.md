@@ -3602,6 +3602,7 @@ Request body:
             "last_of_kind",
             "service_retired",
             "no_product",
+            "no_profile",
             "unknown_invite",
             "own_invite",
             "already_invited",

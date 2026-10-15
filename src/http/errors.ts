@@ -131,6 +131,8 @@ export const ERROR_CODES = [
   "service_retired",
   // A first fit, or a consultation and fit in one visit, on a day the console offers no hair system to sell.
   "no_product",
+  // A first fit for a client with no hair profile: nothing says which hair system to fit.
+  "no_profile",
   // An invite ops attach to a client (docs/decisions/0089-an-invite-is-not-lost.md): no invite has the code; it is the
   // client's own; or the client came with one already.
   "unknown_invite",
@@ -300,6 +302,7 @@ export const ERROR_STATUS = {
   last_of_kind: 409,
   service_retired: 400,
   no_product: 422,
+  no_profile: 422,
   unknown_invite: 422,
   own_invite: 409,
   already_invited: 409,

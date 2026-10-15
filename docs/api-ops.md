@@ -1436,7 +1436,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair system on sale that day; code_not_applicable: the code does not apply to this booking
+**422**: not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair system on sale that day; no_profile: a first fit, for a client with no hair profile; code_not_applicable: the code does not apply to this booking
 
 ```json
 {
@@ -1455,6 +1455,7 @@ Request body:
               "enum": [
                 "not_bookable",
                 "no_product",
+                "no_profile",
                 "code_not_applicable"
               ]
             }
@@ -26983,6 +26984,7 @@ Request body:
             "last_of_kind",
             "service_retired",
             "no_product",
+            "no_profile",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -30651,6 +30653,7 @@ Request body:
             "last_of_kind",
             "service_retired",
             "no_product",
+            "no_profile",
             "unknown_invite",
             "own_invite",
             "already_invited",

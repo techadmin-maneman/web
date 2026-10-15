@@ -3,7 +3,7 @@
 
 import { env } from "cloudflare:workers";
 import { makeCodes, type NewCodes } from "../../../src/domain/money/discount-codes.ts";
-import { aPerson } from "../fixtures/index.ts";
+import { aHairProfile, aPerson } from "../fixtures/index.ts";
 import { fakeQueue, NOW, savedAddress } from "../helpers.ts";
 
 export const IMRAN = "t1";
@@ -63,7 +63,10 @@ export async function rohit(stage: "new" | "consulted" | "fitted" = "new") {
     .bind(ROHIT, NOW.toISOString())
     .run();
   await savedAddress(ROHIT, "122018");
-  if (stage === "consulted") await visit(ROHIT, "consultation", "completed", "2026-09-01T06:30:00.000Z", IMRAN);
+  if (stage === "consulted") {
+    await visit(ROHIT, "consultation", "completed", "2026-09-01T06:30:00.000Z", IMRAN);
+    await aHairProfile(ROHIT);
+  }
   if (stage === "fitted") await visit(ROHIT, "first_fit", "completed", "2026-08-01T03:30:00.000Z", IMRAN);
 }
 

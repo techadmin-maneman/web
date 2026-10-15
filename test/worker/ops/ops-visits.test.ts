@@ -268,6 +268,13 @@ describe("POST /api/visits: what is refused", () => {
     expect(today.status).toBe(422);
     expect(await today.json()).toMatchObject({ error: { code: "not_bookable" } });
   });
+
+  it("refuses a first fit for a client with no hair profile, which says what to fit", async () => {
+    await rohit("new");
+    const answer = await book({ client: ROHIT, kind: "first_fit", date: WEDNESDAY, window: "morning" });
+    expect(answer.status).toBe(422);
+    expect(await answer.json()).toMatchObject({ error: { code: "no_profile" } });
+  });
 });
 
 describe("GET /api/visits/availability", () => {
