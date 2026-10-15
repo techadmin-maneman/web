@@ -1,0 +1,40 @@
+/* A page's stacks and rows of tiles (./Layout.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .stack {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--columns-tile), 1fr));
+  }
+
+  .gap8 {
+    gap: var(--sp-8);
+  }
+
+  .gap12 {
+    gap: var(--sp-12);
+  }
+
+  .gap16 {
+    gap: var(--sp-16);
+  }
+
+  .gap20 {
+    gap: var(--sp-20);
+  }
+
+  .gap24 {
+    gap: var(--sp-24);
+  }
+
+  .gap32 {
+    gap: var(--sp-32);
+  }
+}

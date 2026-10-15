@@ -6,14 +6,14 @@
   .tabs {
     display: flex;
     gap: var(--sp-24);
-    border-bottom: var(--hairline) solid var(--paper-line);
+    border-bottom: var(--hairline) solid var(--ui-line);
   }
 
   .tab {
     padding: var(--sp-12) 0;
     border-bottom: var(--rule-strong) solid transparent;
     font-size: var(--fs-14);
-    color: var(--text-muted);
+    color: var(--ui-text-muted);
     text-decoration: none;
   }
 
@@ -29,7 +29,7 @@
 
   .tab[aria-current="page"],
   .tab[aria-current="true"] {
-    border-bottom-color: var(--ink);
-    color: var(--text);
+    border-bottom-color: var(--ui-strong);
+    color: var(--ui-text);
   }
 }

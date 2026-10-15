@@ -76,6 +76,25 @@
     /* A note's distance from its panel's edge (./Note.tsx), which a group of fields the panel's edge already sets in
        sets to nothing. */
     --note-inset: var(--sp-20);
+    /* A setting's label beside its box (./SettingRow.tsx), and a fact's name beside its value (./DescriptionList.tsx). */
+    --setting-label-width: 40%;
+    /* Settings' own menu (./SettingsLayout.tsx). */
+    --settings-menu-width: var(--skeleton-card);
+    /* The narrowest a tile goes in a row of them (./Layout.tsx's Columns). */
+    --columns-tile: var(--skeleton-card);
+    /* A search box's width (./SearchInput.tsx): its room, unless the app sets its own. */
+    --search-width: 100%;
+    /* A side navigation's width, open and folded to its icons, which the app that draws one sets (./SideNav.tsx). */
+    --nav-width: auto;
+    --nav-folded-width: auto;
+    /* A side navigation's colours: the ink, which the console's dark theme takes to the night's. */
+    --nav-ground: var(--ink);
+    --nav-current: var(--ink-deep);
+    --nav-text: var(--ink-soft);
+    --nav-text-current: var(--paper);
+    --nav-label: var(--ink-muted);
+    --nav-rule: var(--ink-rule);
+    --nav-mark: var(--gilt);
   }
 
   body {

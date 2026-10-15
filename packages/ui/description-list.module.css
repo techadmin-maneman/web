@@ -1,0 +1,43 @@
+/* Facts by name (./DescriptionList.tsx): in a row that wraps, or down the page, each name beside its value. */
+
+@layer base, ui;
+
+@layer ui {
+  .facts {
+    margin: 0;
+  }
+
+  .term {
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  .details {
+    margin: 0;
+    font-size: var(--fs-14);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text);
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-12) var(--sp-32);
+  }
+
+  .row .item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+
+  .list .item {
+    display: grid;
+    grid-template-columns: var(--setting-label-width) minmax(0, 1fr);
+    gap: var(--sp-16);
+    align-items: baseline;
+    padding: var(--sp-12) 0;
+    border-bottom: var(--hairline) solid var(--ui-line);
+  }
+}

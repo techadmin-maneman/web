@@ -1,6 +1,6 @@
-// The ops console's panel (design/phase2/Ops Console, the Referrals review queue,
-// and every queue drawn after it): a bordered section headed by its title in
-// the serif, with how many it holds at the right, and what it holds beneath.
+// The ops console's panel: a card raised off the page, headed by its title in
+// the serif, with how many it holds and its actions at the right, and what it
+// holds beneath.
 
 import type { ReactNode, Ref, RefObject } from "react";
 import { classes } from "./classes.ts";
@@ -52,7 +52,7 @@ export function Panel({
     >
       <div className={styles.head}>
         <h2
-          className={typeLook("title-3", styles.title)}
+          className={typeLook("title-4", styles.title)}
           id={titleId}
           ref={heading}
           tabIndex={heading === undefined ? undefined : -1}

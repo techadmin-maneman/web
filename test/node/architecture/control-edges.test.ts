@@ -23,6 +23,10 @@ const EDGES: Readonly<Record<string, readonly string[]>> = {
   // The roles a part reads, on whichever ground it stands (packages/brand/tokens.css).
   "--border-control": ["--paper", "--white", "--paper-light", "--ink", "--ink-deep"],
   "--status-error": ["--paper", "--white", "--ink", "--ink-deep"],
+  // The paper looks' roles, on paper, and on the ink in the console's dark theme, its boxes on the night's ink.
+  "--ui-line-control": ["--paper", "--white", "--paper-light", "--ink", "--ink-deep", "--ink-night"],
+  "--ui-strong": ["--paper", "--white", "--ink", "--ink-deep", "--ink-night"],
+  "--ui-error": ["--paper", "--white", "--ink", "--ink-deep", "--ink-night"],
 };
 
 const CONTROL =

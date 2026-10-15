@@ -182,6 +182,33 @@
   --status-note: var(--text-muted);
 }
 
+/*
+ * The paper looks' roles: what the shared parts draw their paper looks in. They hold the paper's colours everywhere
+ * but the ops console's dark theme (apps/ops/src/styles/theme.css), which turns them to the ink's. A ground leaves
+ * them alone: a part on the ink takes its onInk look. Some point at tokens-apps.css, which the site does not load;
+ * there the role is unset, as the token it names was.
+ */
+:root {
+  --ui-ground: var(--paper); /* a page */
+  --ui-raised: var(--paper-light); /* a panel or a bar above the page */
+  --ui-shade: var(--paper-shade); /* a block's fill: loading, a pressed button, one not yet usable */
+  --ui-box: var(--white); /* a field's box, a tick's, a switch's */
+  --ui-box-off: var(--paper-light); /* a box that cannot be used */
+  --ui-text: var(--text);
+  --ui-text-soft: var(--text-soft);
+  --ui-text-muted: var(--text-muted);
+  --ui-text-quiet: var(--text-quiet); /* the words of a control not yet usable */
+  --ui-hint: var(--paper-hint);
+  --ui-line: var(--paper-line); /* rules and borders */
+  --ui-line-control: var(--paper-control); /* a control's edge */
+  --ui-strong: var(--ink); /* a filled button, an outline's edge, a ticked box, a chosen tab's rule */
+  --ui-on-strong: var(--paper); /* words on --ui-strong, and on a filled destructive button */
+  --ui-strong-pressed: var(--ink-deep);
+  --ui-error: var(--error-on-paper);
+  --ui-attention: var(--brass-text);
+  --ui-accent: var(--brass); /* a rule or a mark in the brand's metal */
+}
+
 [data-ground="ink"] {
   --surface: var(--ink);
   --on-surface: var(--paper);

@@ -1,0 +1,99 @@
+/* Settings' frame (./SettingsLayout.tsx): its menu as wide as the app sets (--settings-menu-width, ./base.css). */
+
+@layer base, ui;
+
+@layer ui {
+  .layout {
+    display: grid;
+    grid-template-columns: var(--settings-menu-width) minmax(0, 1fr);
+    gap: var(--sp-32);
+    align-items: start;
+  }
+
+  .page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-20);
+    min-width: 0;
+  }
+
+  .menu {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-20);
+  }
+
+  .groupName {
+    margin: 0 0 var(--sp-4);
+    padding: 0 var(--sp-12);
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  .items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .item {
+    display: block;
+    padding: var(--sp-4) var(--sp-12);
+    border-left: var(--rule-strong) solid transparent;
+    font-size: var(--fs-14);
+    color: var(--ui-text);
+    text-decoration: none;
+  }
+
+  .item[aria-current="page"] {
+    border-left-color: var(--ui-strong);
+    background: var(--ui-raised);
+  }
+
+  .item:focus-visible {
+    outline-offset: var(--focus-inset);
+  }
+
+  @media (hover: hover) {
+    .item:hover {
+      background: var(--ui-raised);
+    }
+  }
+
+  /* While a change waits, at the foot of the scrolling page. */
+  .bar {
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-12);
+    padding: var(--sp-12) var(--sp-20);
+    border: var(--hairline) solid var(--ui-line-control);
+    background: var(--ui-raised);
+  }
+
+  .count {
+    font-size: var(--fs-14);
+    color: var(--ui-text);
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--sp-8);
+  }
+
+  @media (max-width: 1023px) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .menu {
+      position: static;
+    }
+  }
+}

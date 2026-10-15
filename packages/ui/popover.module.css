@@ -1,0 +1,96 @@
+/* A button and the small panel it opens beside it (./Popover.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .root {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-8);
+    min-width: var(--small-height);
+    min-height: var(--small-height);
+    padding: 0 var(--sp-8);
+    border: var(--hairline) solid var(--ui-line);
+    background: transparent;
+    color: var(--ui-text);
+    font: inherit;
+    font-size: var(--fs-13);
+    cursor: pointer;
+  }
+
+  .trigger[aria-expanded="true"] {
+    border-color: var(--ui-line-control);
+    background: var(--ui-shade);
+  }
+
+  .panel {
+    position: absolute;
+    top: calc(100% + var(--sp-4));
+    z-index: var(--z-header);
+    display: flex;
+    flex-direction: column;
+    min-width: var(--skeleton-card);
+    padding: var(--sp-4) 0;
+    border: var(--hairline) solid var(--ui-line-control);
+    background: var(--ui-raised);
+    color: var(--ui-text);
+  }
+
+  .start {
+    left: 0;
+  }
+
+  .end {
+    right: 0;
+  }
+
+  .note {
+    margin: 0;
+    padding: var(--sp-8) var(--sp-12);
+    border-bottom: var(--hairline) solid var(--ui-line);
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+    white-space: nowrap;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: var(--small-height);
+    padding: 0 var(--sp-12);
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-14);
+    color: var(--ui-text);
+    text-align: left;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .item:focus-visible {
+    outline-offset: var(--focus-inset);
+  }
+
+  .danger {
+    color: var(--ui-error);
+  }
+
+  @media (hover: hover) {
+    .trigger:hover {
+      border-color: var(--ui-line-control);
+    }
+
+    .item:hover {
+      background: var(--ui-shade);
+    }
+  }
+}
