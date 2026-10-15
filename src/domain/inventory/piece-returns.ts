@@ -9,7 +9,8 @@ export function pieceReturnStatements(
     readonly jobId: string;
     readonly technicianId: string;
     readonly label: string;
-    readonly reason: string;
+    /** Why it failed; null for one that came off because it was due. */
+    readonly reason: string | null;
     readonly at: string;
   },
 ): D1PreparedStatement[] {

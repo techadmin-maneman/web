@@ -159,7 +159,8 @@ export function stripStart(
  */
 export function remindedIfDoneBetween(today: string, days: NextVisitDays): { from: string; to: string } {
   return {
-    from: addDays(today, -days.service_cadence),
+    // Back to the at-risk day: a reminder whose day passed unsent still goes, once, until the task takes over.
+    from: addDays(today, -(days.service_cadence + days.at_risk_after_due)),
     to: sooner(addDays(today, days.reminder_before_due - days.service_cadence), addDays(today, -1)),
   };
 }

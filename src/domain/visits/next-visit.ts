@@ -7,8 +7,8 @@
 // day where the piece in wear falls due first. A visit whose due day has passed is offered for tomorrow, and the app
 // says the day it was due. Nothing is offered while a visit is booked, or paid for and still to be booked.
 //
-// The reminder: one WhatsApp a last visit, from `reminder_before_due` days before its next service falls due until
-// the day it does, while nothing is booked. The cron's pass writes it from the evening's reminder hour; the
+// The reminder: one WhatsApp a last visit, from `reminder_before_due` days before its next service falls due, while
+// nothing is booked; one whose day passed unsent goes until the client becomes an At-risk client task. The cron's pass writes it from the evening's reminder hour; the
 // messaging consumer sends it only with the client's consent to WhatsApp about their visits, and only while nothing
 // is booked still, checking both as it sends (src/queues/messaging.ts), as the visit messages do.
 
@@ -265,7 +265,7 @@ export async function composeNextServiceReminder(
   db: D1Database,
   visitId: string,
   personId: string,
-  days: NextVisitDays,
+  { days, now }: { readonly days: NextVisitDays; readonly now: Date },
 ): Promise<Composed> {
   if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
   const row = await db
@@ -283,8 +283,9 @@ export async function composeNextServiceReminder(
   if (row.booked === 1) return { skip: "a visit is booked" };
   const due = serviceDue(indiaDate(new Date(row.window_start)), days);
   const type = nextVisitType(due, row.piece_due);
+  // A reminder whose window passed unsent, an outage or consent given since, goes once the day is past, and says so.
   return {
-    template: "next_visit_due_v1",
+    template: due < indiaDate(now) ? "next_visit_overdue_v1" : "next_visit_due_v1",
     params: [firstNameOf(row.name), VISIT_TYPE_NAMES[type].toLowerCase(), shortDate(due)],
   };
 }
