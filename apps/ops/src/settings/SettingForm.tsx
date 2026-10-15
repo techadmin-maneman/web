@@ -6,7 +6,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Fieldset } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import type { Answer } from "@maneman/web-kit/api";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { formError, type Failure } from "@maneman/web-kit/refusal";
 import { useState, type ReactNode } from "react";
 import { CheckPanel } from "../components/CheckPanel.tsx";
 import form from "../components/forms.module.css";
@@ -65,9 +65,15 @@ export function useSteps<T>(
 }
 
 /** The line a refused send leaves beneath its form. */
-export function Refused(props: { readonly failed: Failure | null; readonly errors: Readonly<Record<string, string>> }) {
-  if (props.failed === null) return null;
-  return <Refusal className={form.error} said={errorText(props.errors, props.failed)} />;
+/** A form's refusal, but for one its `boxes` say on their own Fields (boxError). */
+export function Refused(props: {
+  readonly failed: Failure | null;
+  readonly errors: Readonly<Record<string, string>>;
+  readonly boxes?: readonly string[];
+}) {
+  const said = formError(props.errors, props.failed, props.boxes ?? []);
+  if (said === null) return null;
+  return <Refusal className={form.error} said={said} />;
 }
 
 /**

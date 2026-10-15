@@ -3,7 +3,7 @@
 
 import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { care } from "../content/care.ts";
@@ -39,7 +39,7 @@ function FindAndLink(props: { conversationId: string; onDone: () => void }) {
   return (
     <div className={styles.stranger}>
       <div className={styles.closing}>
-        <Field label={copy.find}>
+        <Field label={copy.find} error={boxError(copy.errors, failure, "person_id")}>
           {(control) => (
             <TextInput
               {...control}
@@ -72,7 +72,7 @@ function FindAndLink(props: { conversationId: string; onDone: () => void }) {
           ))}
         </ul>
       )}
-      <Refused failed={failure} errors={copy.errors} />
+      <Refused failed={failure} errors={copy.errors} boxes={["person_id"]} />
     </div>
   );
 }
@@ -90,7 +90,7 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
   return (
     <div className={styles.stranger}>
       <div className={styles.closing}>
-        <Field label={copy.name}>
+        <Field label={copy.name} error={boxError(copy.errors, failure, "name")}>
           {(control) => (
             <TextInput
               {...control}
@@ -102,7 +102,7 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
             />
           )}
         </Field>
-        <Field label={copy.foundUs}>
+        <Field label={copy.foundUs} error={boxError(copy.errors, failure, "found_us")}>
           {(control) => (
             <Select
               {...control}
@@ -124,7 +124,7 @@ function SaveAsNew(props: { conversationId: string; onDone: () => void }) {
           {copy.save}
         </Button>
       </div>
-      <Refused failed={failure} errors={copy.errors} />
+      <Refused failed={failure} errors={copy.errors} boxes={["name", "found_us"]} />
     </div>
   );
 }

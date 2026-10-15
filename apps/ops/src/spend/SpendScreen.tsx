@@ -11,7 +11,7 @@ import { classes } from "@maneman/ui/classes";
 import { useLoad } from "@maneman/ui/useLoad";
 import { fullMonth } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { spend as copy } from "../content/spend.ts";
 import { useAccess } from "../lib/access.ts";
@@ -32,6 +32,9 @@ function monthsOf(list: SpendList): string[] {
 }
 
 /** Whole rupees, one or more, as typed. */
+/** The boxes of an entry, by the names the API refuses them by. */
+const SPEND_BOXES = ["month", "city", "channel", "campaign", "amount", "note"];
+
 const isRupees = (typed: string): boolean => /^\d+$/.test(typed.trim()) && Number(typed) >= 1;
 
 function SpendChoice(props: {
@@ -39,9 +42,10 @@ function SpendChoice(props: {
   value: string;
   options: readonly (readonly [string, string])[];
   onChange: (value: string) => void;
+  error: string | null;
 }) {
   return (
-    <Field label={props.label}>
+    <Field label={props.label} error={props.error}>
       {(control) => (
         <Select
           {...control}
@@ -62,9 +66,15 @@ function SpendChoice(props: {
   );
 }
 
-function Typed(props: { label: string; value: string; maxLength: number; onChange: (value: string) => void }) {
+function Typed(props: {
+  label: string;
+  value: string;
+  maxLength: number;
+  onChange: (value: string) => void;
+  error: string | null;
+}) {
   return (
-    <Field label={props.label}>
+    <Field label={props.label} error={props.error}>
       {(control) => (
         <TextInput
           {...control}
@@ -113,32 +123,53 @@ function SpendForm({ list, onAdded }: { list: SpendList; onAdded: (entry: SpendE
     <div className={form.group}>
       <SpendChoice
         label={copy.month}
+        error={boxError(copy.errors, failure, "month")}
         value={month}
         options={monthsOf(list).map((each) => [each, fullMonth(each)])}
         onChange={setMonth}
       />
       <SpendChoice
         label={copy.city}
+        error={boxError(copy.errors, failure, "city")}
         value={city}
         options={[["", copy.national], ...list.cities.map((each) => [each, each] as const)]}
         onChange={setCity}
       />
       <SpendChoice
         label={copy.channel}
+        error={boxError(copy.errors, failure, "channel")}
         value={channel}
         options={list.channels.map((each) => [each, copy.channels[each]])}
         onChange={(value) => {
           setChannel(channelOf(value) ?? channel);
         }}
       />
-      <Typed label={copy.campaign} value={campaign} maxLength={120} onChange={setCampaign} />
+      <Typed
+        label={copy.campaign}
+        error={boxError(copy.errors, failure, "campaign")}
+        value={campaign}
+        maxLength={120}
+        onChange={setCampaign}
+      />
       <p className={form.note}>{copy.campaignNote}</p>
-      <Typed label={copy.amount} value={amount} maxLength={12} onChange={setAmount} />
-      <Typed label={copy.note} value={note} maxLength={200} onChange={setNote} />
+      <Typed
+        label={copy.amount}
+        error={boxError(copy.errors, failure, "amount")}
+        value={amount}
+        maxLength={12}
+        onChange={setAmount}
+      />
+      <Typed
+        label={copy.note}
+        error={boxError(copy.errors, failure, "note")}
+        value={note}
+        maxLength={200}
+        onChange={setNote}
+      />
       <Button variant="outline" size="small" disabled={busy || !isRupees(amount)} onClick={() => void add()}>
         {busy ? copy.adding : copy.add}
       </Button>
-      <Refused failed={failure} errors={copy.errors} />
+      <Refused failed={failure} errors={copy.errors} boxes={SPEND_BOXES} />
     </div>
   );
 }

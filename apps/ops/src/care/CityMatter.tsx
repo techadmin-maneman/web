@@ -6,7 +6,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextArea } from "@maneman/ui/Field";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { care } from "../content/care.ts";
 import { Refused } from "../settings/index.ts";
@@ -43,7 +43,7 @@ export function CityMatter({ conversationId }: { readonly conversationId: string
       )}
       {open ? (
         <>
-          <Field label={copy.label} className={styles.reply}>
+          <Field label={copy.label} className={styles.reply} error={boxError(copy.errors, failure, "note")}>
             {(control) => (
               <TextArea
                 {...control}
@@ -73,7 +73,7 @@ export function CityMatter({ conversationId }: { readonly conversationId: string
           {copy.open}
         </Button>
       )}
-      <Refused failed={failure} errors={copy.errors} />
+      <Refused failed={failure} errors={copy.errors} boxes={["note"]} />
     </div>
   );
 }

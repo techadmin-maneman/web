@@ -6,7 +6,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import { useAccess } from "../lib/access.ts";
 import { care as copy } from "../content/care.ts";
@@ -35,7 +35,7 @@ function MoveTo(props: {
     });
   return (
     <div className={styles.closing}>
-      <Field label={words.moveTo}>
+      <Field label={words.moveTo} error={boxError(words.errors, failure, "email")}>
         {(control) => (
           <Select
             {...control}
@@ -62,7 +62,7 @@ function MoveTo(props: {
       >
         {busy ? words.moving : words.move}
       </Button>
-      <Refused failed={failure} errors={words.errors} />
+      <Refused failed={failure} errors={words.errors} boxes={["email"]} />
     </div>
   );
 }

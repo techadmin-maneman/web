@@ -7,14 +7,14 @@ import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { useAccess } from "../lib/access.ts";
 import { dayAfter } from "./Forecast.tsx";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal, Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { supplyPlanApi } from "./supply-plan-api.ts";
@@ -29,9 +29,18 @@ const copy = supplyPlan.events;
 
 const EMPTY = { name: "", city: "", startsOn: "", endsOn: "", percent: "" };
 
-function DemandEntry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
+/** An event's boxes, by the names the API refuses them by. */
+const EVENT_BOXES = ["name", "city", "starts_on", "ends_on", "uplift_percent"];
+
+function DemandEntry(props: {
+  label: string;
+  value: string;
+  type?: string;
+  onChange: (text: string) => void;
+  error: string | null;
+}) {
   return (
-    <Field label={props.label} className={form.field}>
+    <Field label={props.label} className={form.field} error={props.error}>
       {(control) => (
         <TextInput
           {...control}
@@ -48,7 +57,15 @@ function DemandEntry(props: { label: string; value: string; type?: string; onCha
 }
 
 /** An event added: its name, its city or every city, its days, and how much it changes demand. */
-function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (answer: Answer) => boolean }) {
+function AddEvent({
+  cities,
+  failure,
+  onAnswer,
+}: {
+  cities: readonly string[];
+  failure: Failure | null;
+  onAnswer: (answer: Answer) => boolean;
+}) {
   const [draft, setDraft] = useState(EMPTY);
   const edit = (field: keyof typeof EMPTY) => (text: string) => {
     setDraft((was) => ({ ...was, [field]: text }));
@@ -73,8 +90,13 @@ function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (
   return (
     <div className={form.group}>
       <h3 className={form.ruleTitle}>{copy.add}</h3>
-      <DemandEntry label={copy.name} value={draft.name} onChange={edit("name")} />
-      <Field label={copy.city} className={form.field}>
+      <DemandEntry
+        label={copy.name}
+        value={draft.name}
+        onChange={edit("name")}
+        error={boxError(copy.errors, failure, "name")}
+      />
+      <Field label={copy.city} className={form.field} error={boxError(copy.errors, failure, "city")}>
         {(control) => (
           <Select
             {...control}
@@ -93,9 +115,27 @@ function AddEvent({ cities, onAnswer }: { cities: readonly string[]; onAnswer: (
           </Select>
         )}
       </Field>
-      <DemandEntry label={copy.startsOn} type="date" value={draft.startsOn} onChange={edit("startsOn")} />
-      <DemandEntry label={copy.endsOn} type="date" value={draft.endsOn} onChange={edit("endsOn")} />
-      <DemandEntry label={copy.percent} type="number" value={draft.percent} onChange={edit("percent")} />
+      <DemandEntry
+        label={copy.startsOn}
+        type="date"
+        value={draft.startsOn}
+        onChange={edit("startsOn")}
+        error={boxError(copy.errors, failure, "starts_on")}
+      />
+      <DemandEntry
+        label={copy.endsOn}
+        type="date"
+        value={draft.endsOn}
+        onChange={edit("endsOn")}
+        error={boxError(copy.errors, failure, "ends_on")}
+      />
+      <DemandEntry
+        label={copy.percent}
+        type="number"
+        value={draft.percent}
+        onChange={edit("percent")}
+        error={boxError(copy.errors, failure, "uplift_percent")}
+      />
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void add()}>
           {copy.save}
@@ -177,13 +217,15 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
           </tbody>
         </Table>
       )}
-      {access.mayCall("POST /api/demand-events") && <AddEvent cities={demand.cities} onAnswer={answered(copy.added)} />}
+      {access.mayCall("POST /api/demand-events") && (
+        <AddEvent cities={demand.cities} failure={failure} onAnswer={answered(copy.added)} />
+      )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
-      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+      <FormRefusal className={form.error} said={formError(copy.errors, failure, EVENT_BOXES)} />
     </Panel>
   );
 }

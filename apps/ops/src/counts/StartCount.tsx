@@ -4,12 +4,12 @@
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select } from "@maneman/ui/Field";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, formError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import type { CountTasks } from "./CountClasses.tsx";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { countsApi } from "./counts-api.ts";
 
@@ -27,7 +27,7 @@ export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; 
   return (
     <Panel titleId="count-now" title={copy.startTitle}>
       <div className={form.group}>
-        <Field label={copy.place} className={form.field}>
+        <Field label={copy.place} className={form.field} error={boxError(copy.errors, failure, "place_id")}>
           {(control) => (
             <Select
               {...control}
@@ -45,7 +45,7 @@ export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; 
             </Select>
           )}
         </Field>
-        <Field label={copy.item} className={form.field}>
+        <Field label={copy.item} className={form.field} error={boxError(copy.errors, failure, "consumable_code")}>
           {(control) => (
             <Select
               {...control}
@@ -69,7 +69,7 @@ export function StartCount({ countTasks, onStarted }: { countTasks: CountTasks; 
           </Button>
         </FormActions>
       </div>
-      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+      <FormRefusal className={form.error} said={formError(copy.errors, failure, ["place_id", "consumable_code"])} />
     </Panel>
   );
 }

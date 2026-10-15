@@ -8,7 +8,7 @@ import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, NumberInput, TextInput } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, errorText, formError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type Stock } from "../api.ts";
 import { stockTransit as copy } from "../content/stock-transit.ts";
@@ -18,7 +18,7 @@ import { PieceScans } from "./PieceScans.tsx";
 import { placeName } from "./StockForm.tsx";
 import styles from "./stock.module.css";
 import { unitOf } from "./holdings.ts";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal, Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { stockApi } from "./stock-api.ts";
@@ -51,7 +51,11 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
     <div className={form.group}>
       {consumable?.hair_system === true && <PieceScans units={units} onUnits={setUnits} />}
       <div className={form.fields}>
-        <Field label={`${copy.arrived} (${unit})`} className={form.field}>
+        <Field
+          label={`${copy.arrived} (${unit})`}
+          className={form.field}
+          error={boxError(copy.errors, failure, "received")}
+        >
           {(control) => (
             <NumberInput
               {...control}
@@ -67,7 +71,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
             />
           )}
         </Field>
-        <Field label={copy.note} className={form.field}>
+        <Field label={copy.note} className={form.field} error={boxError(copy.errors, failure, "note")}>
           {(control) => (
             <TextInput
               {...control}
@@ -97,7 +101,7 @@ function Receiving(props: { stock: Stock; transfer: Transfer; onDone: (stock: St
           {copy.cancel}
         </Button>
       </FormActions>
-      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+      <FormRefusal className={form.error} said={formError(copy.errors, failure, ["received", "note", "units"])} />
     </div>
   );
 }

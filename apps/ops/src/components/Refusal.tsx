@@ -33,3 +33,8 @@ export function Refusal({
     </InlineMessage>
   );
 }
+
+/** A form's own refusal, where there is one: formError's words, null when a box's Field says it, or nothing failed. */
+export function FormRefusal({ said, className }: { readonly said: string | null; readonly className?: string }) {
+  return said === null ? null : <Refusal className={className} said={said} />;
+}
