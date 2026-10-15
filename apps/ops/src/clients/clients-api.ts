@@ -53,8 +53,12 @@ export const clientsApi = {
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),
   /** Buildings matching what ops have typed of the address a client is giving them, in one billed session. */
-  addressSuggestions: (id: string, q: string, session: string) =>
-    client.post("/api/clients/{id}/address/suggestions", { path: { id }, body: { q, session } }),
+  /** Buildings matching what ops typed, kept near the pincode's city where the form has one. */
+  addressSuggestions: (id: string, q: string, session: string, pincode: string) =>
+    client.post("/api/clients/{id}/address/suggestions", {
+      path: { id },
+      body: /^d{6}$/.test(pincode) ? { q, session, pincode } : { q, session },
+    }),
   /** The address a client gave on the phone, saved as theirs, marked as given to ops (ADR 0092). */
   saveGivenAddress: (id: string, address: AddressGiven) =>
     client.post("/api/clients/{id}/address", { path: { id }, body: address }),

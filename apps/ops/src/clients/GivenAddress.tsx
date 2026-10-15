@@ -11,7 +11,14 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { AddressSearch, type AddressSuggestion } from "@maneman/ui/AddressSearch";
 import { useContext, useId, useRef, useState } from "react";
-import { ADDRESS_FIELDS, given, missingParts, type AddressField, type AddressPart } from "@maneman/web-kit/address";
+import {
+  ADDRESS_FIELDS,
+  areaOfSuggestion,
+  given,
+  missingParts,
+  type AddressField,
+  type AddressPart,
+} from "@maneman/web-kit/address";
 import { type AddressGiven, type ClientRecord } from "../api.ts";
 import { clients, NOT_PERMITTED, OFFLINE } from "../content.ts";
 import styles from "./address.module.css";
@@ -41,6 +48,21 @@ const EMPTY: Draft = {
 };
 
 /** A part left blank is none, as the API holds it. */
+/** The draft with a building typed over any picked: words, and no pin. */
+const withTyped = (was: Draft, building: string): Draft => ({
+  ...was,
+  building: building === "" ? null : building,
+  place_id: null,
+});
+
+/** The draft with a building picked: its name, its pin, and the area it is in over any typed before. */
+const withPicked = (was: Draft, chosen: AddressSuggestion): Draft => ({
+  ...was,
+  building: chosen.primary,
+  place_id: chosen.place_id,
+  locality: areaOfSuggestion(chosen.primary, chosen.secondary) ?? was.locality,
+});
+
 const orNull = (part: string | null | undefined): string | null => (given(part) ? part.trim() : null);
 
 /** The building search: the shared one (@maneman/ui/AddressSearch), in the console's words and on its form's look. */
@@ -48,12 +70,15 @@ function BuildingSearch({
   clientId,
   value,
   sessionToken,
+  pincode,
   onType,
   onChoose,
 }: {
   clientId: string;
   value: string;
   sessionToken: string;
+  /** The pincode typed so far: a full one keeps the search near its city. */
+  pincode: string;
   /** Typing after a choice abandons it: the building is then whatever was typed, with no pin. */
   onType: (building: string) => void;
   onChoose: (chosen: AddressSuggestion) => void;
@@ -63,7 +88,7 @@ function BuildingSearch({
     <AddressSearch
       value={value}
       search={async (query) => {
-        const answer = await clientsApi.addressSuggestions(clientId, query, sessionToken);
+        const answer = await clientsApi.addressSuggestions(clientId, query, sessionToken, pincode);
         return answer.ok ? { ok: true, suggestions: answer.body.suggestions } : { ok: false };
       }}
       onType={onType}
@@ -90,15 +115,13 @@ function FormTitle({ id }: { id: string }) {
   );
 }
 
-export function GivenAddressForm({
-  clientId,
-  onSaved,
-  onCancel,
-}: {
-  clientId: string;
-  onSaved: (address: NonNullable<ClientRecord["address"]>) => void;
-  onCancel: () => void;
-}) {
+interface GivenAddressProps {
+  readonly clientId: string;
+  readonly onSaved: (address: NonNullable<ClientRecord["address"]>) => void;
+  readonly onCancel: () => void;
+}
+
+export function GivenAddressForm({ clientId, onSaved, onCancel }: GivenAddressProps) {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [invalid, setInvalid] = useState<readonly AddressPart[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
@@ -177,11 +200,12 @@ export function GivenAddressForm({
         clientId={clientId}
         value={draft.building ?? ""}
         sessionToken={sessionToken}
+        pincode={draft.pincode}
         onType={(building) => {
-          setDraft((was) => ({ ...was, building: building === "" ? null : building, place_id: null }));
+          setDraft((was) => withTyped(was, building));
         }}
         onChoose={(chosen) => {
-          setDraft((was) => ({ ...was, building: chosen.primary, place_id: chosen.place_id }));
+          setDraft((was) => withPicked(was, chosen));
         }}
       />
       {/* A building chosen from the search is line one, so line one is asked only where none was. */}
