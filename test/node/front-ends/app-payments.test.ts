@@ -120,6 +120,12 @@ const noShow = (decision: "undecided" | "charged" | "waived") => ({
 describe("a visit’s payment the client was not home for", () => {
   const notHome = (decision: "undecided" | "charged" | "waived") => payment({ no_show: noShow(decision) });
 
+  // A service visit paid on 7 Jul for 30 Jul read as a visit on 7 Jul.
+  it("names the visit's own day beside the day it was paid, when they differ", () => {
+    expect(entryMeta(payment({}), 2030)).toBe("10 Sep · UPI · for 19 Sep");
+    expect(entryMeta(payment({ date: "2030-09-19" }), 2030)).toBe("19 Sep · UPI");
+  });
+
   it("says nobody was home and how long we waited, in place of the method", () => {
     expect(entryMeta(notHome("charged"), 2030)).toBe("10 Sep · missed visit, we waited 16 min");
   });

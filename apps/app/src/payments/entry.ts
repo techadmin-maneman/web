@@ -41,7 +41,7 @@ export function refundDestination(method: string | null): string | null {
 }
 
 /**
- * The list's line under the name: "22 Aug · UPI"; for a refund what it gave back, "14 Sep · First fit"; and for a
+ * The list's line under the name: "22 Aug · UPI · for 30 Aug"; for a refund what it gave back, "14 Sep · First fit"; and for a
  * visit the client was not home for, "19 Sep · not home, we waited 16 min".
  */
 export function entryMeta(entry: Entry, thisYear: number): string {
@@ -49,7 +49,12 @@ export function entryMeta(entry: Entry, thisYear: number): string {
   if (entry.kind === "refund") return `${date} · ${entryWhat(entry)}`;
   if (entry.no_show !== null) return `${date} · ${payments.noShow.meta(entry.no_show)}`;
   const method = methodName(entry.method, "short");
-  return method === null ? date : `${date} · ${method}`;
+  // Paid ahead, as every visit is: the visit's own day beside the day it was paid, so neither reads as the other.
+  const forVisit =
+    entry.visit !== null && entry.visit.date !== entry.date
+      ? payments.forVisit(listDate(entry.visit.date, thisYear))
+      : null;
+  return [date, method, forVisit].filter((part) => part !== null).join(" · ");
 }
 
 /** The main figure: what was paid, GST included, or for a refund the money coming back, "+ Rs. 1,000". */
