@@ -6088,6 +6088,34 @@ Request body:
       ],
       "description": "Null when none; a partly done visit's while another visit is booked, a recall's never."
     },
+    "missed_visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "technician": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "date",
+            "technician"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "A visit nobody was home for, while ops are still to decide it and nothing is booked since; null for none."
+    },
     "payment_owed": {
       "anyOf": [
         {
@@ -6420,6 +6448,7 @@ Request body:
     "consulted",
     "being_booked",
     "remake",
+    "missed_visit",
     "payment_owed",
     "credits",
     "prompt",

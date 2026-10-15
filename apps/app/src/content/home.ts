@@ -145,6 +145,14 @@ export const home = {
       "Decide before it’s fitted: go ahead and pay once fitted, or decide against it and pay nothing.",
     ],
   },
+  /** A visit nobody was home for, until ops decide what follows and the client is told. */
+  missed: {
+    label: "We missed you",
+    /** "Imran came by on Thu 15 Oct and couldn't reach you." */
+    line: (date: string, technician: string | null) =>
+      `${technician ?? "We"} came by on ${date} and couldn’t reach you.`,
+    next: "We’ll message you about what happens next.",
+  },
   /** A one visit the client was fitted at and has not paid for yet. */
   owed: {
     label: "To pay",

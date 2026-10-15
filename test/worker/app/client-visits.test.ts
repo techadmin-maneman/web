@@ -19,7 +19,7 @@ import {
   cookie,
   signIn,
 } from "./client-visits-fixtures.ts";
-import { aCreditSpent } from "../fixtures/index.ts";
+import { aCreditSpent, aNoShow } from "../fixtures/index.ts";
 
 /** Our IDs for the visits written so far in this test, by name. */
 let ids: Record<string, string>;
@@ -251,6 +251,26 @@ describe("GET /api/visits", () => {
 // A visit stays the client's until it is closed. One that dropped out of both lists once its window
 // ended left Home saying nothing was booked, and offering the booking again. One nobody came to goes to the history
 // once its day is over, so the client may book again while ops close it.
+// After a no-show the client heard nothing until ops decided, and Home said nothing of it.
+describe("a visit nobody was home for", () => {
+  it("is on Home until ops decide it", async () => {
+    const seeded = await seed([
+      booked("ap-missed", {
+        status: "terminated",
+        start: "2026-09-20T10:00:00+05:30",
+        end: "2026-09-20T11:30:00+05:30",
+      }),
+    ]);
+    await signIn();
+    await aNoShow({ id: seeded["ap-missed"] ?? "", technicianId: "t-imran" });
+    const missed = async () => (await (await get("/api/me")).json<{ missed_visit: unknown }>()).missed_visit;
+    expect(await missed()).toEqual({ date: "2026-09-20", technician: "Imran Khan" });
+
+    await env.DB.prepare("UPDATE no_show_cases SET decided_at = ?1, decision = 'waived'").bind(NOW.toISOString()).run();
+    expect(await missed()).toBeNull();
+  });
+});
+
 describe("a visit not yet closed", () => {
   // NOW is 12:00 on Monday 21 September in India.
   const thisMorning = booked("ap-morning", {

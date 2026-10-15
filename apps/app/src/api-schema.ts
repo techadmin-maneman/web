@@ -4358,6 +4358,12 @@ export interface components {
             } | null;
             /** @description Null when none; a partly done visit's while another visit is booked, a recall's never. */
             remake: components["schemas"]["Remake"] | null;
+            /** @description A visit nobody was home for, while ops are still to decide it and nothing is booked since; null for none. */
+            missed_visit: {
+                /** Format: date */
+                date: string;
+                technician: string | null;
+            } | null;
             /** @description The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the link Razorpay texted. Null when nothing is owed. */
             payment_owed: components["schemas"]["OwedPayment"] | null;
             /** @description The credit tile: balance and earliest expiry; null with none left. */

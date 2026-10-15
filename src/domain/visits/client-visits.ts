@@ -22,7 +22,14 @@ import { windowTimesOf } from "../../policy/slot-times.ts";
 import { begunPastArrival, landedOutcome, missedDayOver, todayStartsOf, visitBegun } from "./visit-begun.ts";
 import { ANGLES, type Angle, type Phase } from "../field/visit-photos.ts";
 import { MINUTE_MS, minutesBetween } from "../../lib/durations.ts";
-import { PAYMENT_HELD, statusIn, VISIT_ENDED, VISIT_LIVE } from "../../config/statuses.ts";
+import {
+  PAYMENT_HELD,
+  statusIn,
+  statusNotIn,
+  VISIT_CALLED_OFF,
+  VISIT_ENDED,
+  VISIT_LIVE,
+} from "../../config/statuses.ts";
 import { creditSpentOn } from "./visit-facts.ts";
 
 /** The three windows the client app offers, by the hour a visit starts in India. */
@@ -211,6 +218,29 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
     contextOf(db, personId),
   ]);
   return row === null ? null : visitSummaryOf(db, row, context, now);
+}
+
+/**
+ * The client's visit nobody was home for, while ops are still to decide it and nothing is booked since: Home says so,
+ * until ops decide and the client is told what follows. Null for none.
+ */
+export async function missedVisit(
+  db: D1Database,
+  personId: string,
+): Promise<{ readonly date: string; readonly technician: string | null } | null> {
+  const row = await db
+    .prepare(
+      `SELECT a.window_start, t.name AS technician FROM appointments a
+         JOIN no_show_cases n ON n.appointment_id = a.id AND n.closed_at IS NOT NULL AND n.decided_at IS NULL
+         LEFT JOIN technicians t ON t.id = a.technician_id
+       WHERE a.person_id = ?1 AND a.deleted_at IS NULL
+         AND NOT EXISTS (SELECT 1 FROM appointments b WHERE b.person_id = a.person_id AND b.deleted_at IS NULL
+                           AND b.window_start > a.window_start AND ${statusNotIn("b.status", VISIT_CALLED_OFF)})
+       ORDER BY a.window_start DESC LIMIT 1`,
+    )
+    .bind(personId)
+    .first<{ window_start: string; technician: string | null }>();
+  return row === null ? null : { date: indiaDate(new Date(row.window_start)), technician: row.technician };
 }
 
 /** The three states the apps show a client in. */

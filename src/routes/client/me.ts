@@ -35,7 +35,7 @@ import { currentAddress, liveContact } from "../../domain/clients/profile.ts";
 import { spendableCredits } from "../../domain/money/credits.ts";
 import { heldOneVisitPrice, owedPayments, requestedOneVisitPrice } from "../../domain/money/one-visit-money.ts";
 import { pendingInviteOf } from "../../domain/referrals/referrals.ts";
-import { CLIENT_STATES, clientStateOf, isFitted, nextVisit } from "../../domain/visits/client-visits.ts";
+import { CLIENT_STATES, clientStateOf, isFitted, missedVisit, nextVisit } from "../../domain/visits/client-visits.ts";
 import { consultationRecap } from "../../domain/visits/consultation-recap.ts";
 import { nextVisitFacts } from "../../domain/visits/next-visit.ts";
 import { clientOf } from "../../http/client-session.ts";
@@ -120,6 +120,12 @@ const MeSchema = z
     remake: z.union([RemakeSchema, z.null()]).openapi({
       description: "Null when none; a partly done visit's while another visit is booked, a recall's never.",
     }),
+    missed_visit: z
+      .union([z.object({ date: z.iso.date(), technician: z.string().nullable() }).strict(), z.null()])
+      .openapi({
+        description:
+          "A visit nobody was home for, while ops are still to decide it and nothing is booked since; null for none.",
+      }),
     payment_owed: z.union([OwedPaymentSchema, z.null()]).openapi({
       description:
         "The oldest payment the client owes: a consultation and fit in one visit they were fitted at, paid by the " +
@@ -314,6 +320,7 @@ export function registerClientMe(app: App): void {
 
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const nameOnInvite = c.var.config.settings.referrerNameOnInvite;
+    const missed = missedVisit(db, personId);
     const [person, upcoming, underWay, credits, fitted, form, types, services, home, invite, owed, recap, wears] =
       await Promise.all([
         liveContact(db, personId),
@@ -367,6 +374,7 @@ export function registerClientMe(app: App): void {
         next_visit: upcoming,
         consulted: fitted ? null : recap,
         being_booked: await beingBookedBody(db, underWay),
+        missed_visit: await missed,
         payment_owed: owed[0] ?? null,
         remake,
         credits: credits.visits > 0 ? creditsBody(credits) : null,

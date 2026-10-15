@@ -53,8 +53,8 @@ test.describe("the services and their prices", () => {
     const edit = (await page.getByRole("button", { name: "Edit Service visit", exact: true }).boundingBox()) ?? null;
     expect(edit).not.toBeNull();
     expect((edit?.x ?? 0) + (edit?.width ?? 0)).toBeLessThanOrEqual(1024);
-    const table = page.getByRole("table", { name: "Service visit" });
-    expect((await table.boundingBox())?.width ?? 0).toBeGreaterThan(600);
+    // The menu above the page, not beside it: the tables have the width.
+    expect((await page.getByRole("table").first().boundingBox())?.width ?? 0).toBeGreaterThan(600);
   });
 
   test("keeps a row’s prices still to come and its earlier ones under its Edit", async ({ page }) => {

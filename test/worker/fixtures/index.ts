@@ -7,4 +7,4 @@ export { aHold } from "./holds.ts";
 export { aPayment, aPaymentLink } from "./payments.ts";
 export { aConsent, aHairProfile, anAddress, aPerson } from "./people.ts";
 export { aTechnician } from "./technicians.ts";
-export { aVisit, keepUpVisits } from "./visits.ts";
+export { aNoShow, aVisit, keepUpVisits } from "./visits.ts";
