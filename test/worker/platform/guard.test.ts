@@ -14,7 +14,7 @@ describe("validateStaticConfig: environment and providers", () => {
     const config = validateStaticConfig(production);
     expect(config.environment).toBe("production");
     expect(config.settings.zohoCrm?.apiHost).toBe("www.zohoapis.in");
-    expect(config.settings.leadMobileDailyLimit).toBe(5);
+    expect(config.settings.leadMobileDailyLimit).toBe(15);
   });
 
   it("allows staging to hold a stub, for a provider not yet chosen", () => {
@@ -174,7 +174,7 @@ describe("validateStaticConfig: the limits fixed in src/config", () => {
       codeDailyCeiling: 300,
       techCodeDailyCeiling: 100,
     });
-    expect(settings).toMatchObject({ leadMobileDailyLimit: 5, leadIpDailyLimit: 20 });
+    expect(settings).toMatchObject({ leadMobileDailyLimit: 15, leadIpDailyLimit: 100 });
     expect(settings.tryon).toMatchObject({
       uploadIpHourlyLimit: 5,
       generateIpHourlyLimit: 5,

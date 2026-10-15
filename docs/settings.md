@@ -91,8 +91,8 @@ In `src/config/limits.ts`: the same everywhere. Only a local run may raise one, 
 | `OTP_IP_HOURLY_LIMIT` | 10 |
 | `OTP_DAILY_CEILING` | 300 |
 | `OTP_TECH_DAILY_CEILING` | 100 |
-| `LEAD_MOBILE_DAILY_LIMIT` | 5 |
-| `LEAD_IP_DAILY_LIMIT` | 20 |
+| `LEAD_MOBILE_DAILY_LIMIT` | 15 |
+| `LEAD_IP_DAILY_LIMIT` | 100 |
 | `TRYON_UPLOAD_IP_HOURLY_LIMIT` | 5 |
 | `TRYON_GENERATE_IP_HOURLY_LIMIT` | 5 |
 | `TRYON_CLAIM_MOBILE_DAILY_LIMIT` | 3 |

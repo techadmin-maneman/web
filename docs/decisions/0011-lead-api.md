@@ -25,8 +25,8 @@ Any other field is rejected.
 
 **Rate limits**, in India calendar days:
 
-- 5 leads a day per mobile number, as the prompt sets.
-- **Added:** 20 a day per IP address. A flood that gets past Turnstile would otherwise spend D1's 100,000 free writes a day (0009).
+- 15 a day per mobile number. It was 5, as the prompt set, until 15 October 2026: every Continue on the form and every booking counts, so a person who went back three or four times was turned away.
+- **Added:** 100 a day per IP address, 20 until 15 October 2026. A flood that gets past Turnstile would otherwise spend D1's 100,000 free writes a day (0009). A mobile network puts many people behind one address, so the count stays well above what one household sends.
 - Counter keys are salted hashes, so D1 holds neither the raw number nor the raw address.
 
 **Idempotency** (`Idempotency-Key` header, optional):
