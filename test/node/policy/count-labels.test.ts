@@ -5,6 +5,11 @@ import { describe, expect, it } from "vitest";
 import { labelColumns, labelFields, labelsFound, labelsOf } from "../../../src/domain/inventory/count-labels.ts";
 
 const HELD = new Map([["hs-1", new Set(["MM-ESS-0000041-R", "MM-ESS-0000042-S"])]]);
+/** Three of hs-1 at the place: the two labelled, and one that carries none. */
+const QUANTITIES = new Map([
+  ["hs-1", 3],
+  ["solvent", 3],
+]);
 
 describe("a count by labels", () => {
   it("finds the labels held and not scanned, and those scanned and not held", () => {
@@ -23,7 +28,17 @@ describe("a count by labels", () => {
       { code: "hs-1", counted: 1, labels: ["A", "B"] },
       { code: "hs-1", counted: 3, labels: ["A", "B"] },
     ];
-    expect(labelFields(lines, HELD)).toEqual(["lines.1.labels", "lines.2.labels", "lines.3.counted"]);
+    expect(labelFields(lines, HELD, QUANTITIES)).toEqual(["lines.1.labels", "lines.2.labels", "lines.3.counted"]);
+  });
+
+  // A labelled piece counted by number would be marked missing at sign-off while it sits on the shelf.
+  it("counts no more pieces as carrying no label than the place holds so, while its labels go unscanned", () => {
+    const scannedNone = { code: "hs-1", counted: 3, labels: [] };
+    expect(labelFields([scannedNone], HELD, QUANTITIES)).toEqual(["lines.0.unlabelled"]);
+    const oneUnlabelled = { code: "hs-1", counted: 1, labels: [] };
+    expect(labelFields([oneUnlabelled], HELD, QUANTITIES)).toEqual([]);
+    const allScanned = { code: "hs-1", counted: 3, labels: ["MM-ESS-0000041-R", "MM-ESS-0000042-S"] };
+    expect(labelFields([allScanned], HELD, QUANTITIES)).toEqual([]);
   });
 
   it("keeps a line's labels as JSON, and none for a line counted by number", () => {
