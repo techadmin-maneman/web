@@ -18,12 +18,12 @@ import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
 import { type Heard, keptArrival, keptClosed, keptStates } from "../store/jobs.ts";
-
-const NOTHING_HEARD: ReadonlyMap<string, Heard> = new Map();
 import type { Queued } from "../store/outbox.ts";
 import frame from "../components/frame.module.css";
 import shared from "./steps.module.css";
 import styles from "./close-out.module.css";
+
+const NOTHING_HEARD: ReadonlyMap<string, Heard> = new Map();
 
 /** Five angles before and five after: the ten the board counts. */
 const IN_A_SET = 5;
