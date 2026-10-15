@@ -7,9 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CountsScreen } from "../../apps/ops/src/counts/CountsScreen.tsx";
 import { counts as copy } from "../../apps/ops/src/content/counts.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const KIT = {
   id: "ct-1",
   place_id: "kit-1",

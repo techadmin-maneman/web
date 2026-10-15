@@ -7,9 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QualityScreen } from "../../apps/ops/src/quality/QualityScreen.tsx";
 import { quality as copy } from "../../apps/ops/src/content/quality.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const RECALL = {
   id: "rc-1",
   number: 1,

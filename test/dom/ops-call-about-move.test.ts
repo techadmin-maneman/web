@@ -7,9 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Task, TaskGroup } from "../../apps/ops/src/api.ts";
 import { CallAboutMove } from "../../apps/ops/src/tasks/CallAboutMove.tsx";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const MOVE = "55555555-5555-4555-8555-555555555555";
 
 const UNTOLD: Task = {

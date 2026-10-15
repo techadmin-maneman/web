@@ -8,9 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DispatchScreen } from "../../apps/ops/src/dispatch/DispatchScreen.tsx";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { BOARD } from "../../e2e/ops/fixtures/dispatch.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const ROHIT = BOARD.technicians[0]?.days[0]?.blocks[0]?.appointment_id ?? "";
 const IN_THE_TRAY = BOARD.unassigned[1]?.appointment_id ?? "";
 const NOWHERE = "79000000-0000-4000-8000-000000000001";

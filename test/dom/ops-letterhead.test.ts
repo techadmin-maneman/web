@@ -8,9 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Letterhead } from "../../apps/ops/src/purchasing/Letterhead.tsx";
 import type { Orders } from "../../apps/ops/src/purchasing/types.ts";
 import { purchasing } from "../../apps/ops/src/content/purchasing.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const copy = purchasing.letterhead;
 
 const BOOK = {

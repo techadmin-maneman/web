@@ -7,9 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CancelVisit } from "../../apps/ops/src/clients/CancelVisit.tsx";
 import { CloseVisit } from "../../apps/ops/src/clients/CloseVisit.tsx";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const VISIT = "22222222-2222-4222-8222-222222222222";
 
 /** A service visit paid Rs. 2,000 by UPI, inside the 24 hours: free to the client gives it all back. */

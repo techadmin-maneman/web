@@ -7,8 +7,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Job } from "../../apps/tech/src/api.ts";
 import { job as copy } from "../../apps/tech/src/content.ts";
-
 import { answered } from "./render-hook.ts";
+
 const queued: { kind: string; jobId: string; body: unknown }[] = [];
 
 vi.mock("../../apps/tech/src/store/outbox.ts", () => ({

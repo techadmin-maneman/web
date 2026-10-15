@@ -6,9 +6,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { UsageScreen } from "../../apps/ops/src/usage/UsageScreen.tsx";
 import { usage as copy } from "../../apps/ops/src/content/usage.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const USAGE = {
   since: "2026-08-24",
   technicians: [

@@ -10,10 +10,10 @@ import type { Conversation } from "../../apps/ops/src/care/care-api.ts";
 import { CareSettingsScreen, MessagesScreen } from "../../apps/ops/src/care/MessagesScreen.tsx";
 import { care as copy } from "../../apps/ops/src/content/care.ts";
 import { shortDate } from "../../packages/web-kit/dates.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
 import { RECORD } from "../../e2e/ops/fixtures/clients.ts";
+
 const ARJUN: Conversation = {
   id: "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e",
   person: { id: "11111111-1111-4111-8111-111111111111", name: "Arjun Mehta" },

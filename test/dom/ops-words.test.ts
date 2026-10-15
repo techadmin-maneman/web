@@ -8,9 +8,9 @@ import type { Word } from "../../apps/ops/src/api.ts";
 import { review } from "../../apps/ops/src/content/common.ts";
 import { words as copy } from "../../apps/ops/src/content/words.ts";
 import { WordsScreen } from "../../apps/ops/src/words/WordsScreen.tsx";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const REMINDER: Word = {
   key: "message:visit_reminder_v1",
   surface: "message",

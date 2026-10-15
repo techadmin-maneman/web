@@ -8,9 +8,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CustomOrders } from "../../apps/ops/src/clients/CustomOrders.tsx";
 import { customOrders as copy } from "../../apps/ops/src/content/custom-orders.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const CLIENT = "11111111-1111-4111-8111-111111111111";
 
 const ORDER = {

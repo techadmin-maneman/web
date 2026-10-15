@@ -7,9 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CustomOrderCard } from "../../apps/app/src/home/CustomOrderCard.tsx";
 import { home } from "../../apps/app/src/content.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const copy = home.customOrder;
 
 let page: HTMLDivElement;

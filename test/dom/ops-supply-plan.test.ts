@@ -7,9 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SupplyPlanScreen } from "../../apps/ops/src/supply-plan/SupplyPlanScreen.tsx";
 import { supplyPlan as copy } from "../../apps/ops/src/content/supply-plan.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const LOAN = {
   id: "pl-1",
   kind: "transfer",

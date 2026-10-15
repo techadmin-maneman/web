@@ -7,9 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StockMatch } from "../../apps/ops/src/clients/StockMatch.tsx";
 import { stockMatch as copy } from "../../apps/ops/src/content/stock-match.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const CLIENT = "11111111-1111-4111-8111-111111111111";
 const NONE = { kind: "no_profile", missing: [], code: null, name: null, city: null, held: [], in_transit: 0 };
 

@@ -7,9 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CareNumbersScreen } from "../../apps/ops/src/care/CareNumbersScreen.tsx";
 import { care } from "../../apps/ops/src/content/care.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const copy = care.numbers;
 
 const NUMBERS = {

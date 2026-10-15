@@ -8,9 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientVisit, DeletionRequest, ErasedClientRecord } from "../../apps/ops/src/api.ts";
 import { ErasedRecord } from "../../apps/ops/src/clients/Erase.tsx";
 import { DeletionsScreen } from "../../apps/ops/src/deletion-requests/DeletionsScreen.tsx";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const PERSON = "11111111-1111-4111-8111-111111111111";
 
 const visit = (changes: Partial<ClientVisit>): ClientVisit => ({

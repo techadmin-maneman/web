@@ -6,9 +6,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Address } from "../../apps/app/src/api.ts";
 import { AddressForm } from "../../apps/app/src/profile/AddressForm.tsx";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const IN_MUMBAI: Address = {
   line1: "Sea View",
   line2: null,

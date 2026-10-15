@@ -7,9 +7,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Planning } from "../../apps/ops/src/supply-plan/Planning.tsx";
 import { supplyPlan as copy } from "../../apps/ops/src/content/supply-plan.ts";
-
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+
 const WEDDINGS = {
   id: "ev-1",
   name: "Wedding season",
