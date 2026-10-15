@@ -150,7 +150,7 @@ describe("what the board carries of each visit", () => {
     ]);
   });
 
-  it("names the client in full, with his number, his word on WhatsApp, who referred him, and the badge", async () => {
+  it("names the client in full, with their number, their word on WhatsApp, who referred them, and the badge", async () => {
     await agreeToVisitMessages(true);
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
     await insertJob(B, { type: "service", start: TUESDAY["12:00"], technician: null });

@@ -21,7 +21,7 @@
 -- stock_movements, which stays the record of how it came to hold it.
 CREATE TABLE stock_balances (
   consumable_code TEXT NOT NULL REFERENCES consumables (code),
-  -- 'central' for the central store; for a technician's kit, his ID.
+  -- 'central' for the central store; for a technician's kit, their ID.
   place TEXT NOT NULL,
   quantity INTEGER NOT NULL,
   -- When the place last counted it; NULL if never.

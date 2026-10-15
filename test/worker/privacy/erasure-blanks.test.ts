@@ -55,7 +55,7 @@ describe("erasure blanks what ops wrote about the client", () => {
         `INSERT INTO no_show_cases (id, checkin_id, appointment_id, wait_started_at, wait_ends_at, closed_at, decision,
            decided_by, decided_at, decision_reason, created_at)
          VALUES ('case-9', 'checkin-9', 'visit-9', ?1, ?1, ?1, 'charged', 'ops@localhost', ?1,
-           'His wife said he forgets', ?1)`,
+           'Their partner said they forget', ?1)`,
       ).bind(at),
       // Why ops closed a visit of their left partly done without a follow-up (docs/decisions/0092-task-owners.md).
       env.DB.prepare(
@@ -65,7 +65,7 @@ describe("erasure blanks what ops wrote about the client", () => {
       // The visit ops closed by hand when Imran's phone was lost, and another they cancelled for them.
       env.DB.prepare(
         `INSERT INTO visit_outcomes (id, appointment_id, outcome, updated_at, closed_by, close_reason)
-         VALUES ('visit-row-9', 'visit-9', 'partial', ?1, 'ops@localhost', 'He had to leave for the hospital')`,
+         VALUES ('visit-row-9', 'visit-9', 'partial', ?1, 'ops@localhost', 'They had to leave for the hospital')`,
       ).bind(at),
       env.DB.prepare(
         `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
@@ -75,14 +75,14 @@ describe("erasure blanks what ops wrote about the client", () => {
         `INSERT INTO visit_changes (id, appointment_id, person_id, kind, notice, was_start, created_at, cancelled_by,
            cancel_reason, ops_terms)
          VALUES ('change-10', 'visit-10', ?1, 'cancelled', 'late', '2026-09-24T03:30:00.000Z', ?2, 'ops@localhost',
-           'His mother is unwell', 'free')`,
+           'Their mother is unwell', 'free')`,
       ).bind(FRIEND, at),
       // A visit of their ops moved onto a day they had blacked out.
       env.DB.prepare(
         `INSERT INTO dispatch_moves (id, appointment_id, was_technician_id, now_technician_id, was_start, now_start,
            reason, actor, fsm_write_state, write_state, created_at, updated_at, blackout_reason)
          VALUES ('move-9', 'visit-9', 't1', 't1', '2026-09-18T03:30:00.000Z', '2026-09-19T03:30:00.000Z',
-           'client_asked', 'ops@localhost', 'written', 'written', ?1, ?1, 'His only day off before the wedding')`,
+           'client_asked', 'ops@localhost', 'written', 'written', ?1, ?1, 'Their only day off before the wedding')`,
       ).bind(at),
     ]);
   }
@@ -154,11 +154,11 @@ describe("erasure blanks what ops wrote about the client", () => {
     expect(await reasons()).toEqual({
       review: null,
       attach: null,
-      no_show: "His wife said he forgets",
+      no_show: "Their partner said they forget",
       closed: "Moving to Pune, wants no more visits",
-      closed_by_hand: "He had to leave for the hospital",
-      cancelled: "His mother is unwell",
-      moved_onto_blackout: "His only day off before the wedding",
+      closed_by_hand: "They had to leave for the hospital",
+      cancelled: "Their mother is unwell",
+      moved_onto_blackout: "Their only day off before the wedding",
     });
   });
 
@@ -171,11 +171,11 @@ describe("erasure blanks what ops wrote about the client", () => {
     expect(await reasons()).toEqual({
       review: "Same flat as Vikram",
       attach: "Named Vikram on WhatsApp",
-      no_show: "His wife said he forgets",
+      no_show: "Their partner said they forget",
       closed: "Moving to Pune, wants no more visits",
-      closed_by_hand: "He had to leave for the hospital",
-      cancelled: "His mother is unwell",
-      moved_onto_blackout: "His only day off before the wedding",
+      closed_by_hand: "They had to leave for the hospital",
+      cancelled: "Their mother is unwell",
+      moved_onto_blackout: "Their only day off before the wedding",
     });
   });
 });

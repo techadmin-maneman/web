@@ -41,7 +41,7 @@ A migration's comments are part of it, so they are never edited either (rule 1),
 
 ## Deleting rows
 
-Every foreign key here is `NO ACTION`: deleting a row that another row points at fails the statement, and the whole batch it is in. The sweeper's housekeeping once deleted a technician's old session while his phone's row still pointed at it, and that stopped every cron job after it; an erasure failed the same way on a check-in and on a number change's codes.
+Every foreign key here is `NO ACTION`: deleting a row that another row points at fails the statement, and the whole batch it is in. The sweeper's housekeeping once deleted a technician's old session while their phone's row still pointed at it, and that stopped every cron job after it; an erasure failed the same way on a check-in and on a number change's codes.
 
 So a statement that deletes from a table deals with every row pointing at it first, in the same batch: it clears the reference, deletes the child, or keeps the parent. `test/node/database/foreign-keys.test.ts` lists every such reference from the migrations and fails until each has a written answer. A new reference to a table the code deletes from therefore needs one too.
 

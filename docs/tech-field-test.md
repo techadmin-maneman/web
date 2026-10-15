@@ -6,31 +6,31 @@ You do not need to be a developer to run this. Each step says what to tap and wh
 
 Print this, or copy it into a notes app, and fill it in as you go.
 
-**Who runs it:** the owner, or a technician with the owner beside him for the first job.
+**Who runs it:** a technician, with someone from ops beside them for the first job.
 
 **How long it takes:** one full working day, with three visits in different kinds of building. Part 6 needs the same phone again a week later, for ten minutes.
 
 **Which phone:** technicians use **any phone, including iPhones** (`docs/open-points.md`, item 124). Run this sheet on whichever phone the technician actually owns. The parts marked **iPhone only** are skipped on an Android phone; everything else is the same on both.
 
-**The one rule:** this is staging, with test jobs. Do not run it against a real client's visit unless ops have said which one, and never photograph a client without asking him first.
+**The one rule:** this is staging, with test jobs. Do not run it against a real client's visit unless ops have said which one, and never photograph a client without asking them first.
 
 ---
 
 ## Before you start
 
-**Do `docs/technician-test-setup.md` first.** It is twenty minutes on any phone, anywhere, and it proves the sign-in, the six steps of a job and the day-before unlock before anyone books a working day for this. It also sets a technician up without touching Zoho, which is worth knowing: the sign-in reads our own database and not FSM, so step 1 below is how a **real** technician gets listed, not a condition of logging in.
+**Do `docs/technician-test-setup.md` first.** It is twenty minutes on any phone, anywhere, and it proves the sign-in, the six steps of a job and the day-before unlock before anyone books a working day for this. It sets up a test technician; step 1 below is how a **real** one gets listed.
 
 Ops do these once. Tick each before the phone leaves the office.
 
 | #   | Set up                                                                                                                                                                                    | Done |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-| 1   | The technician is a user in Zoho FSM, active, **with his mobile number on his FSM user** (open point 27)                                                                                  |      |
-| 2   | Nothing to do here since 30 September 2026: a login code answers whoever asks for it, on any number (ADR 0097, "logins open, reminders fenced")                                           |      |
-| 3   | Three jobs are scheduled in FSM for that technician, today, at the three buildings in Part 1                                                                                              |      |
-| 4   | Each job's client address in FSM has a street address FSM could geocode (open point 54)                                                                                                   |      |
+| 1   | The technician is on the console's Technicians page, active, **with their own mobile number**, their city and zone, and trained to fit if Part 1 has a first fit |      |
+| 2   | Nothing to do here: a login code answers whoever asks for it, on any number (ADR 0097, "logins open, reminders fenced") |      |
+| 3   | Three visits are booked from the console for that technician, today, at the three buildings in Part 1 (each client's page, Book a visit) |      |
+| 4   | Each client's address has its pin placed on the client's page, so the check-in can be measured (open point 54) |      |
 | 5   | The phone is charged to 100%, with the battery percentage switched on in the status bar. Android or iPhone, whichever the technician owns                                                 |      |
-| 6   | The phone can reach `https://tech-staging.maneman.in` — it is behind Cloudflare Access, so the technician signs in to Access with his founders' login first, or ops open the site for him |      |
-| 7   | Ops can see this technician's phones, so they can count the rows before and after Part 0a (board D3, the technician list)                                                                 |      |
+| 6   | The phone can reach `https://tech-staging.maneman.in` — it is behind Cloudflare Access, so the technician signs in to Access first, or ops open the site for them |      |
+| 7   | Ops can see this technician's phones, so they can count the rows before and after Part 0a (the Technicians page, Phones)                                                                 |      |
 
 **The phone the day starts on**
 

@@ -171,7 +171,7 @@ What each group of tables means if it is left as it was at `<T>`, and how it is 
 - [technician_devices](#technician_devices): The phones technicians work from, each bound to a session and revocable by ops (ADR 0052).
 - [technician_leave](#technician_leave): A technician's leave in whole days, which the clash check reads beside `slot_claims` (ADR 0062).
 - [technician_updates](#technician_updates): A technician's word to the client from the job card: on the way, at the gate, or running late, sent from our number (ADR 0145).
-- [technicians](#technicians): The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
+- [technicians](#technicians): Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 - [tryon_jobs](#tryon_jobs): One try-on render: the photograph, the look, the provider's job and the result (ADR 0014, ADR 0015).
 - [tryon_sessions](#tryon_sessions): The try-on gate's session, which showed a visitor their result (ADR 0014); written no more since the look goes to WhatsApp only (ADR 0104).
 - [vendor_breakers](#vendor_breakers): Each vendor's failures in a row, and until when its work waits while it is held off (ADR 0203).
@@ -2677,7 +2677,7 @@ Made by `0053_balances_and_last_visits.sql`; changed by `0154_cycle_counts.sql`.
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
 | `consumable_code` | TEXT | no |  | primary key; → `consumables.code` |  |
-| `place` | TEXT | no |  | primary key | 'central' for the central store; for a technician's kit, his ID. |
+| `place` | TEXT | no |  | primary key | 'central' for the central store; for a technician's kit, their ID. |
 | `quantity` | INTEGER | no |  |  |  |
 | `counted_at` | TEXT | yes |  |  | When the place last counted it; NULL if never. |
 
@@ -3151,7 +3151,7 @@ Indexes:
 
 ## technicians
 
-The mirror of FSM's technicians: name, initials, mobile number and zone; and on staging the few written by hand for a test, which the sync leaves alone. `fsm_id` is FSM's ID for a technician FSM holds, otherwise one of ours. `city`, which ops set and the sync never writes, places him for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
+Each technician: name, initials, mobile number, zone and city, as ops keep them on the Technicians page. `fsm_id` is the ID FSM gave a technician it once held, otherwise one of ours. `city` places them for staff access (ADR 0032, ADR 0052, ADR 0109, ADR 0110).
 
 Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_hand_written_technicians.sql`, `0081_technician_city.sql`, `0090_board_version.sql`, `0097_technician_sign_in_stopped.sql`, `0106_technician_test_record.sql`, `0107_city_blackouts_and_fitters.sql`, `0108_technician_pay.sql`, `0133_stock_places.sql`.
 
@@ -3164,7 +3164,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `active` | INTEGER | no |  |  |  |
 | `updated_at` | TEXT | no |  |  |  |
 | `zone` | TEXT | yes |  |  | The zone migration 0026 left for the code that reads it: the dispatch board groups technicians by it, and FSM calls it a territory. NULL until each technician has one there (docs/open-points.md, item 12). |
-| `mobile_e164` | TEXT | yes |  |  | "Mobile number plus a one-time code, the same flow as clients but a separate role" (src/policy/technician-login.ts). The number comes from the technician's FSM user, which is also what makes him "an active field technician": nobody logs in whom FSM does not list. NULL for a user with no number on his FSM record, who then cannot log in (docs/open-points.md, item 12). |
+| `mobile_e164` | TEXT | yes |  |  | "Mobile number plus a one-time code, the same flow as clients but a separate role" (src/policy/technician-login.ts). The technician's own number, as ops keep it on the Technicians page. NULL for a technician with no number, who then cannot log in (docs/open-points.md, item 12). |
 | `hand_written` | INTEGER | no | `0` |  |  |
 | `city` | TEXT | yes |  | → `cities.name` |  |
 | `sign_in_stopped_at` | TEXT | yes |  |  |  |

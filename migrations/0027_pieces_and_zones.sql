@@ -43,10 +43,9 @@ CREATE INDEX pieces_by_code ON pieces (piece_code);
 ALTER TABLE technicians ADD COLUMN zone TEXT;
 
 -- "Mobile number plus a one-time code, the same flow as clients but a separate
--- role" (src/policy/technician-login.ts). The number comes from the technician's
--- FSM user, which is also what makes him "an active field technician": nobody
--- logs in whom FSM does not list. NULL for a user with no number on his FSM
--- record, who then cannot log in (docs/open-points.md, item 12).
+-- role" (src/policy/technician-login.ts). The technician's own number, as ops
+-- keep it on the Technicians page. NULL for a technician with no number, who
+-- then cannot log in (docs/open-points.md, item 12).
 ALTER TABLE technicians ADD COLUMN mobile_e164 TEXT;
 
 CREATE INDEX technicians_by_mobile ON technicians (mobile_e164);

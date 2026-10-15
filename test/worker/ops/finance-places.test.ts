@@ -201,7 +201,7 @@ const dayMoney = async (app: App) => (await get(app, "/api/payments")).json<DayM
 
 const CHARGE = { decision: "charged", reason: "Nobody came down." };
 const WAIVE = { decision: "waived", reason: "The lift was out." };
-const UPHOLD = { ruling: "upheld", reason: "He waited the full fifteen minutes." };
+const UPHOLD = { ruling: "upheld", reason: "They waited the full fifteen minutes." };
 const REFUND = { ruling: "refunded", reason: "The bell was broken." };
 
 describe("a grant of Finance in one city", () => {

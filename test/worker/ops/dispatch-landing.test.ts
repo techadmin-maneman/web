@@ -105,7 +105,7 @@ const dispatchMoves = () =>
 // every day and learnt of a clash only after a reason had been picked.
 // A technician never takes two of a client's visits in a row (docs/decisions/0111).
 describe("a client's visits in a row", () => {
-  it("refuses to give a visit to the technician of the client's visit before it, and offers him no room", async () => {
+  it("refuses to give a visit to the technician of the client's visit before it, and offers them no room", async () => {
     await insertJob(A, { type: "service", start: "2026-09-01T06:30:00.000Z", technician: SAMEER, status: "completed" });
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
 

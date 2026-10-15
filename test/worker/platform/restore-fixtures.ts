@@ -275,7 +275,7 @@ export const ROWS_AT_T: readonly string[] = [
 
 /** What was written between <T> and the export: rows added, changed and deleted, in tables of every kind. */
 export const WRITTEN_SINCE_T: readonly string[] = [
-  // A new client, and what she agreed to, wrote and asked for.
+  // A new client, and what they agreed to, wrote and asked for.
   `INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p3', '${SINCE}', '+919810000003', 'Meera O''Brien')`,
   `INSERT INTO consents (id, person_id, purpose, notice_version, granted, created_at)
      VALUES ('c2', 'p3', 'contact', 'contact-v1', 1, '${SINCE}')`,

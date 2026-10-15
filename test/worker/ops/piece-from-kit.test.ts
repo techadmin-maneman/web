@@ -27,7 +27,7 @@ async function added(grey: number): Promise<string> {
   return (await answer.json<{ code: string }>()).code;
 }
 
-/** The labels in Imran's kit of a hair system, delivered with the lot given and handed to him. */
+/** The labels in Imran's kit of a hair system, delivered with the lot given and handed to them. */
 async function inTheKit(of: string, lot: Record<string, string>): Promise<string[]> {
   await job.opsPost("/api/stock/deliveries", { consumable_code: of, quantity: 2, ...lot });
   await job.opsPost("/api/stock/transfers", { consumable_code: of, quantity: 2, from: "central", to: IMRAN });

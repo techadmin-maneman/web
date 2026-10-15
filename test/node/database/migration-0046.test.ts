@@ -64,7 +64,7 @@ describe("migration 0046", () => {
     db.close();
   });
 
-  it("takes a technician as the deployed code writes him, as one FSM wrote, and nothing but 0 or 1", () => {
+  it("takes a technician as the deployed code writes them, as one FSM wrote, and nothing but 0 or 1", () => {
     const db = migrated();
     db.exec(`INSERT INTO technicians (id, fsm_id, name, initials, active, zone, mobile_e164, updated_at)
       VALUES ('t-new', '8229000000304402', 'Naveen Rao', 'NR', 1, 'Gurgaon', '+919810000005', '${AT}')`);

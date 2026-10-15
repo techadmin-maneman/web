@@ -56,7 +56,7 @@ describe("migration 0027", () => {
     }).toThrow(/FOREIGN KEY/);
   });
 
-  it("gives a technician the number he logs in with and the zone the board groups him by", () => {
+  it("gives a technician the number they log in with and the zone the board groups them by", () => {
     expect(db.prepare("SELECT zone, mobile_e164 FROM technicians WHERE id = 't1'").get()).toEqual({
       zone: "Gurgaon",
       mobile_e164: "+919810000009",

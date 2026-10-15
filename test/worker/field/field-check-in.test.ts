@@ -51,7 +51,7 @@ describe("checking in", () => {
   });
 
   // A building pin far from its door blocked the whole job, and ops had no lever but the radius for everyone.
-  it("passes outside the radius once ops let him in, keeping the distance and naming who let him", async () => {
+  it("passes outside the radius once ops let them in, keeping the distance and naming who let them", async () => {
     const refused = await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, DOWN_THE_ROAD, "event-far-01");
     expect((await refused.json<{ passed: boolean }>()).passed).toBe(false);
 
@@ -265,7 +265,7 @@ describe("a check-in, guarded before it is measured", () => {
       reason: "technician_unavailable",
     });
 
-  it("is not found on a job that was never his, and measures and records nothing", async () => {
+  it("is not found on a job that was never theirs, and measures and records nothing", async () => {
     const asSameer = await sameer();
 
     const probe = await postAt(NOW, CHECK_IN, DOWN_THE_ROAD, "event-probe-01", asSameer);
@@ -277,7 +277,7 @@ describe("a check-in, guarded before it is measured", () => {
     expect(await count("SELECT COUNT(*) AS n FROM job_events")).toBe(0);
   });
 
-  it("measures nothing on a job ops moved off him, however often he tries", async () => {
+  it("measures nothing on a job ops moved off them, however often they try", async () => {
     expect((await giveToSameer()).status).toBe(200);
 
     for (const [position, eventId] of [
@@ -294,7 +294,7 @@ describe("a check-in, guarded before it is measured", () => {
     expect(await checkIns()).toEqual([]);
   });
 
-  it("measures nothing on his own job before its day", async () => {
+  it("measures nothing on their own job before its day", async () => {
     const answer = await post(`/api/tech/jobs/${LATER_JOB}/checkin`, DOWN_THE_ROAD, "event-probe-01");
 
     expect(answer.status).toBe(409);
@@ -341,7 +341,7 @@ describe("a check-in, guarded before it is measured", () => {
     expect(card.progress.wait_ends_at).toBe(first.wait_ends_at);
   });
 
-  it("is not the check-in of the technician given the job after it, who must arrive himself", async () => {
+  it("is not the check-in of the technician given the job after it, who must arrive themselves", async () => {
     await post(CHECK_IN, AT_THE_DOOR, "event-checkin-01");
     // Moved straight in the database, which supersedes nothing of ours.
     await env.DB.prepare("UPDATE appointments SET technician_id = ?2 WHERE id = ?1").bind(TODAY_JOB, SAMEER).run();

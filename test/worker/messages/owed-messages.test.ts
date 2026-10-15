@@ -92,7 +92,7 @@ async function visit(status = "dispatched", type = "service") {
 }
 
 describe("the arrival notice", () => {
-  it("tells the client his technician has arrived", async () => {
+  it("tells the client their technician has arrived", async () => {
     await visit();
     await consent("whatsapp_visits", true);
     const sent = await send(await queued("arrival_notice", "appointment", VISIT));

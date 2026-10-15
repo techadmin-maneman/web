@@ -133,7 +133,7 @@ describe("dispatch, once the technician has begun", () => {
     return row?.days[0]?.blocks.find((block) => block.appointment_id === TODAY_JOB);
   }
 
-  it("refuses to move a visit he has checked in at, and writes nothing", async () => {
+  it("refuses to move a visit they have checked in at, and writes nothing", async () => {
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
 
     const answer = await moveToSameerTomorrow();
@@ -144,7 +144,7 @@ describe("dispatch, once the technician has begun", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM dispatch_moves").first()).toEqual({ n: 0 });
   });
 
-  it("refuses to move a visit he has started", async () => {
+  it("refuses to move a visit they have started", async () => {
     await startJob();
 
     const answer = await moveToSameerTomorrow();
@@ -154,7 +154,7 @@ describe("dispatch, once the technician has begun", () => {
     expect(await visitNow()).toEqual({ technician_id: IMRAN, window_start: TODAY_START.toISOString() });
   });
 
-  it("offers room once he has checked in, none once he has started, and the board says how far he has got", async () => {
+  it("offers room once they have checked in, none once they have started, and the board says how far they have got", async () => {
     expect(await blockOnTheBoard()).toMatchObject({ begun: null });
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
 
@@ -165,7 +165,7 @@ describe("dispatch, once the technician has begun", () => {
     expect(await blockOnTheBoard()).toMatchObject({ begun: "started" });
   });
 
-  it("moves a visit he has only checked in at once ops clear the check-in, and records who chose it", async () => {
+  it("moves a visit they have only checked in at once ops clear the check-in, and records who chose it", async () => {
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
 
     const answer = await moveTomorrowMorning({ clear_check_in: true });
@@ -177,7 +177,7 @@ describe("dispatch, once the technician has begun", () => {
     expect(await checkInsCleared()).toEqual([{ subject_id: TODAY_JOB, detail: JSON.stringify({ move_id: move?.id }) }]);
   });
 
-  it("refuses his next step sent with the start he saw at check-in, and takes his check-in on the new day", async () => {
+  it("refuses their next step sent with the start they saw at check-in, and takes their check-in on the new day", async () => {
     await post(`/api/tech/jobs/${TODAY_JOB}/checkin`, AT_THE_DOOR, "event-checkin-01");
     await moveTomorrowMorning({ clear_check_in: true });
 
@@ -198,7 +198,7 @@ describe("dispatch, once the technician has begun", () => {
     ]);
   });
 
-  it("will not clear the check-in of a visit he has started, and writes nothing", async () => {
+  it("will not clear the check-in of a visit they have started, and writes nothing", async () => {
     await startJob();
 
     const answer = await moveTomorrowMorning({ clear_check_in: true });

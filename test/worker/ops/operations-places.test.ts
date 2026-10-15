@@ -303,7 +303,7 @@ describe("booking a visit, for a grant of Operations in one city", () => {
       outcome: "done",
       started_at: TUESDAY_MORNING,
       ended_at: "2026-09-22T05:00:00.000Z",
-      reason: "His phone was lost.",
+      reason: "Their phone was lost.",
     };
     expect((await post(delhi, `/api/visits/${GURGAON_VISIT}/close`, close)).status).toBe(404);
     // Its own visit gets past its city to the visit's own answer: its time has not come.

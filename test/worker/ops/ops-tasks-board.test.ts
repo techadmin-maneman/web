@@ -161,7 +161,7 @@ describe("GET /api/tasks", () => {
 
     // In the words the reason has on the job sheet: the committed list's, until ops save their own
     // (docs/decisions/0087-consumables-and-stock.md).
-    it("waits with the technician's reason, from when he closed it", async () => {
+    it("waits with the technician's reason, from when they closed it", async () => {
       await closed("partial", "piece_not_ready");
       expect(tasksIn(await tasks(), "partial_visit")).toEqual([
         {

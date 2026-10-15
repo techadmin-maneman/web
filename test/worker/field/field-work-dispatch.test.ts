@@ -208,7 +208,7 @@ describe("dispatch", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_claims").first()).toEqual({ n: 0 });
   });
 
-  it("writes nothing when the technician starts the visit under a move that clears his check-in", async () => {
+  it("writes nothing when the technician starts the visit under a move that clears their check-in", async () => {
     await work(minutesAfterStart(2), TODAY_JOB, [["checkin", AT_THE_DOOR, 2]]);
     // Their start lands between the move's checks and its write.
     const db = env.DB;

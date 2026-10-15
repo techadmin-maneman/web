@@ -47,7 +47,7 @@ async function unsent() {
 }
 
 describe("when ops switch a technician off", () => {
-  it("keeps the work his phone has not sent, and drops the clients' cards and who he is", async () => {
+  it("keeps the work their phone has not sent, and drops the clients' cards and who they are", async () => {
     const phone = await aDaysWork();
 
     expect(await leaveSignedOut("technician_inactive", SWITCHED_OFF_AT)).toBe(true);
@@ -92,7 +92,7 @@ describe("when ops switch a technician off", () => {
     expect(await unsent()).toEqual({ steps: 0, photographs: 0 });
   });
 
-  it("does not start the seven days again when he is told a second time", async () => {
+  it("does not start the seven days again when they are told a second time", async () => {
     await aDaysWork();
     await leaveSignedOut("technician_inactive", SWITCHED_OFF_AT);
     await leaveSignedOut("technician_inactive", SWITCHED_OFF_AT + 5 * DAY_MS);
@@ -122,7 +122,7 @@ describe("any other end of a session", () => {
 });
 
 describe("signing in again", () => {
-  it("lets his own work go on once he is switched back on, and keeps it no longer than any other", async () => {
+  it("lets their own work go on once they are switched back on, and keeps it no longer than any other", async () => {
     await aDaysWork();
     await leaveSignedOut("technician_inactive", SWITCHED_OFF_AT);
 
@@ -143,7 +143,7 @@ describe("signing in again", () => {
     expect(await keptArrival(JOB)).toBeNull();
   });
 
-  it("drops it when he signs in after the seven days", async () => {
+  it("drops it when they sign in after the seven days", async () => {
     await aDaysWork();
     await leaveSignedOut("technician_inactive", SWITCHED_OFF_AT);
 

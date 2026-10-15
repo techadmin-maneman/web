@@ -91,7 +91,7 @@ Each writes **test records**, named "Staging test", on staging or in the owner's
 | `staging-tryon.ts`          | one try-on through the real API                                                                  | `.env.staging-access`                       |
 | `youcam-probe.ts`           | every look on one photograph, through the real adapter: the time and units each                  | a file holding `YOUCAM_API_KEY`             |
 | `load-test-leads.ts`        | M4's load test: 50 bookings at once, and no duplicates                                           | `.env.staging-access`                       |
-| `seed-technician-tester.ts` | a technician a real person signs in as, and his jobs; `--clear` takes them out                   | wrangler's login                            |
+| `seed-technician-tester.ts` | a technician a real person signs in as, and their jobs; `--clear` takes them out                   | wrangler's login                            |
 | `books-proof.ts`            | a customer, an invoice and a payment in Books, then deleted                                      | `.env.books-scripts`                        |
 | `staging-records.ts`        | lists what staging wrote into the org; `--delete <file>` deletes what the owner kept on the list | `.env.books-scripts` and `.env.crm-scripts` |
 
