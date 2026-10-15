@@ -9,13 +9,9 @@ import { type VisitType, VISIT_TYPE_NAMES } from "../../config/visit-types.ts";
 import { statusIn, PAYMENT_HELD } from "../../config/statuses.ts";
 import { auditStatement, opsEntry, type Written } from "../platform/audit.ts";
 import { referencePayment } from "./payments.ts";
+import { UPI_MARK } from "../../policy/upi.ts";
+import { queueMessage } from "../messages/queued-messages.ts";
 import type { Composed } from "../messages/visit-message-text.ts";
-
-/** What a UPI payment's Razorpay ID is written as: the transaction's reference under this mark, never Razorpay's. */
-const UPI_MARK = "upi:";
-
-/** Whether a payment was made by UPI outside Razorpay, which Razorpay can neither read back nor refund. */
-export const paidOutsideRazorpay = (razorpayPaymentId: string): boolean => razorpayPaymentId.startsWith(UPI_MARK);
 
 export type UpiRecorded =
   | { readonly kind: "recorded"; readonly paymentId: string }
@@ -76,12 +72,13 @@ export async function recordUpiPayment(
       )
       .bind(paymentId, due.personId, asked.visitId, razorpayPaymentId, due.amount, at, due.amountExGst, due.gstPercent),
     referencePayment(db, paymentId, written.now),
-    db
-      .prepare(
-        `INSERT INTO outbound_messages (id, created_at, person_id, kind, subject_kind, subject_id, state, queued_at)
-         VALUES (?1, ?2, ?3, 'upi_received', 'payment', ?4, 'queued', ?2)`,
-      )
-      .bind(crypto.randomUUID(), at, due.personId, paymentId),
+    queueMessage(db, {
+      id: crypto.randomUUID(),
+      personId: due.personId,
+      kind: "upi_received",
+      subject: { kind: "payment", id: paymentId },
+      at,
+    }),
     auditStatement(
       db,
       opsEntry(written, "payment.upi_record", { kind: "appointment", id: asked.visitId }, { payment_id: paymentId }),

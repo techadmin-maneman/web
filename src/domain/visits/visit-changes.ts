@@ -370,3 +370,11 @@ export function opsCancelTerms({ terms, onClientTerms }: { terms: ChangeTerms; o
     credit: credit === null ? null : { ...credit, outcome: creditOutcome(credit.live, charged, terms.sold.lateCharge) },
   };
 }
+
+/** The kind of a visit of the client's; null for one not theirs, or none. */
+export function kindOfClientVisit(db: D1Database, visitId: string, personId: string): Promise<VisitType | null> {
+  return db
+    .prepare("SELECT type FROM appointments WHERE id = ?1 AND person_id = ?2")
+    .bind(visitId, personId)
+    .first<VisitType>("type");
+}

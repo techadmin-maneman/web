@@ -19,8 +19,8 @@ export interface JobSheetItem {
 }
 
 /**
- * The checklist per visit type, as the owner approved them for launch; ops change them in Settings, Job sheet. The
- * ids are what a visit records, and never change.
+ * The checklist per visit type; ops change them in Settings, Job sheet. The ids are what a visit records, and never
+ * change.
  */
 export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
   consultation: [
@@ -55,7 +55,7 @@ export const CHECKLIST: Readonly<Record<VisitType, readonly JobSheetItem[]>> = {
 };
 
 /**
- * The reasons behind "Partial · pick a reason", as the owner approved them for launch, the clinical two among them.
+ * The reasons behind "Partial · pick a reason", the clinical two among them.
  * "Ops needs the full set — these drive the task queue", which is why a reason
  * is checked against the list in force before any write.
  */

@@ -83,8 +83,7 @@ export async function bookingHoldRow(db: D1Database, holdId: string): Promise<Ho
     .first<HoldRow>();
 }
 
-/** Whether the client pays money for it: not a free visit, and not one a credit covers. */
-/** Whether the hold is paid in money before it is booked: not when free, a credit pays, or it is paid at the visit. */
+/** Whether the client pays money for it before it is booked: not a free visit, one a credit covers, or one paid at the visit. */
 export const paidInMoney = (hold: { amount: number; use_credit: number; pay_at_visit?: number }) =>
   hold.amount > 0 && hold.use_credit !== 1 && hold.pay_at_visit !== 1;
 

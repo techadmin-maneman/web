@@ -10,8 +10,14 @@ import { servesItself } from "../../http/self-serve.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
-import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
-import { changeableVisit, changeTerms, termsInForce, type ChangeTerms } from "../../domain/visits/visit-changes.ts";
+import { VISIT_TYPES } from "../../config/visit-types.ts";
+import {
+  changeableVisit,
+  changeTerms,
+  kindOfClientVisit,
+  termsInForce,
+  type ChangeTerms,
+} from "../../domain/visits/visit-changes.ts";
 import { cancelVisit } from "../../domain/visits/visit-cancel.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { clientOf } from "../../http/client-session.ts";
@@ -162,9 +168,7 @@ const cancelRoute = selfServeRoute({
 
 /** Whether the client moves this visit of theirs themselves; one not theirs is answered as not found later. */
 async function changesItself(c: Context<AppEnv>, visitId: string): Promise<boolean> {
-  const kind = await c.env.DB.prepare("SELECT type FROM appointments WHERE id = ?1 AND person_id = ?2")
-    .bind(visitId, clientOf(c).subjectId)
-    .first<VisitType>("type");
+  const kind = await kindOfClientVisit(c.env.DB, visitId, clientOf(c).subjectId);
   return kind === null || servesItself(c, kind);
 }
 

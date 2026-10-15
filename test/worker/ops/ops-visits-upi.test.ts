@@ -4,7 +4,9 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
+import { askRefund } from "../../../src/domain/money/refunds.ts";
 import { composeUpiReceived } from "../../../src/domain/money/upi-payments.ts";
+import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, NATURAL, ROHIT, bindings, rohit, technician } from "./ops-visits-fixtures.ts";
 
@@ -110,5 +112,14 @@ describe("a paid visit booked while online payment is off", () => {
     await env.DB.prepare("UPDATE slot_holds SET pay_at_visit = 0").run();
     const notDue = await post(`/api/visits/${visit}/upi-payment`, { utr: "412345678903" });
     expect(await notDue.json()).toMatchObject({ error: { code: "not_due" } });
+  });
+});
+
+describe("a payment made by UPI outside Razorpay", () => {
+  it("is never refunded through Razorpay: the refund is refused, for ops to make by UPI", async () => {
+    const payments = createStubPayments();
+    const outcome = await askRefund(payments, "upi:412345678901", { amount: 220_000, receipt: "r-1", notes: {} });
+    expect(outcome.kind).toBe("refused");
+    expect(payments.made.refunds).toEqual([]);
   });
 });

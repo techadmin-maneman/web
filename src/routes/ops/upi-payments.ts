@@ -7,7 +7,6 @@ import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
-import { queueMessage } from "../../http/queue-message.ts";
 import { opsRoute } from "../../http/session-routes.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";
 

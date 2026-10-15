@@ -18,6 +18,50 @@ import { tasksApi } from "./tasks-api.ts";
 
 const copy = tasks.upi;
 
+/** The drawer's one field, the UTR, and its two buttons. */
+function UpiDrawer(props: {
+  sub: string;
+  utr: string;
+  failed: string | null;
+  busy: boolean;
+  onUtr: (utr: string) => void;
+  onRecord: () => void;
+  onClose: () => void;
+}) {
+  const titleId = useId();
+  return (
+    <Drawer titleId={titleId} title={copy.title} sub={props.sub} canClose={!props.busy} onDismiss={props.onClose}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          props.onRecord();
+        }}
+      >
+        <Field label={copy.utr} error={props.failed ?? undefined}>
+          {(control) => (
+            <TextInput
+              {...control}
+              value={props.utr}
+              autoComplete="off"
+              onChange={(event) => {
+                props.onUtr(event.target.value);
+              }}
+            />
+          )}
+        </Field>
+        <span className={shared.acts}>
+          <Button type="submit" variant="primary" size="small" disabled={props.busy || props.utr.trim() === ""}>
+            {props.busy ? copy.recording : copy.record}
+          </Button>
+          <Button type="button" variant="outline" size="small" disabled={props.busy} onClick={props.onClose}>
+            {copy.cancel}
+          </Button>
+        </span>
+      </form>
+    </Drawer>
+  );
+}
+
 export function UpiPaymentAction({
   task,
   subject,
@@ -31,7 +75,6 @@ export function UpiPaymentAction({
   const [utr, setUtr] = useState("");
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
-  const titleId = useId();
   const mayRecord = useAccess().mayCall("POST /api/visits/{id}/upi-payment");
   const due = task.facts.group === "upi_due" ? task.facts : null;
   if (due === null || !mayRecord) return null;
@@ -66,42 +109,15 @@ export function UpiPaymentAction({
         </TextButton>
       </span>
       {open && (
-        <Drawer
-          titleId={titleId}
-          title={copy.title}
+        <UpiDrawer
           sub={copy.sub(`${subject}, ${dispatch.typeNames[due.kind]}`, rupees(due.amount))}
-          canClose={!busy}
-          onDismiss={close}
-        >
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void record();
-            }}
-          >
-            <Field label={copy.utr} error={failed ?? undefined}>
-              {(control) => (
-                <TextInput
-                  {...control}
-                  value={utr}
-                  autoComplete="off"
-                  inputMode="text"
-                  onChange={(event) => {
-                    setUtr(event.target.value);
-                  }}
-                />
-              )}
-            </Field>
-            <span className={shared.acts}>
-              <Button type="submit" variant="primary" size="small" disabled={busy || utr.trim() === ""}>
-                {busy ? copy.recording : copy.record}
-              </Button>
-              <Button type="button" variant="outline" size="small" disabled={busy} onClick={close}>
-                {copy.cancel}
-              </Button>
-            </span>
-          </form>
-        </Drawer>
+          utr={utr}
+          failed={failed}
+          busy={busy}
+          onUtr={setUtr}
+          onRecord={() => void record()}
+          onClose={close}
+        />
       )}
     </>
   );

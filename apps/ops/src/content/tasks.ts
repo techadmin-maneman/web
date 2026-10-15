@@ -281,11 +281,7 @@ export const tasks = {
       unknown: FAILED,
     },
   },
-  /**
-   * A one visit's payment link, copied to send by hand, or texted to the client again by Razorpay. No
-   * board draws it.
-   */
-  /** A visit paid by UPI at the visit, recorded from its row (ADR 0208). */
+  /** A visit paid by UPI at the visit, recorded from its row. */
   upi: {
     open: "Record UPI",
     title: "Record UPI payment",
@@ -301,6 +297,10 @@ export const tasks = {
       reference_used: "That UTR is already recorded against another payment.",
     },
   },
+  /**
+   * A one visit's payment link, copied to send by hand, or texted to the client again by Razorpay. No
+   * board draws it.
+   */
   link: {
     copy: "Copy link",
     copied: "Link copied",
