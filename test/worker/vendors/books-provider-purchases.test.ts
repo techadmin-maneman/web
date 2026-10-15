@@ -123,6 +123,7 @@ describe("Books: a receipt's bill", () => {
       date: "2026-09-21",
       dueDate: "2026-10-21",
       exchangeRate: 83.25,
+      currency: "USD",
       lines: [{ description: "Solvent (PO-0001)", accountId: "acc-raw", unitPrice: 250, quantity: 10 }],
     });
     expect(bill).toEqual({ id: "b-2", reference: null });
@@ -162,6 +163,7 @@ describe("Books: a claim's vendor credit", () => {
       reference: "claim-1",
       date: "2026-10-01",
       exchangeRate: 83.25,
+      currency: "USD",
       lines: [{ description: "Solvent (CL-0001, PO-0001)", accountId: "acc-raw", unitPrice: 400, quantity: 1 }],
     });
     expect(credit).toEqual({ id: "vc-2", reference: "claim-1" });

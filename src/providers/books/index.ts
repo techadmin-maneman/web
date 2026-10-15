@@ -155,6 +155,8 @@ export interface NewBooksBill {
   readonly dueDate: string;
   /** Rupees to one unit of the bill's currency: 1 for rupees. */
   readonly exchangeRate: number;
+  /** The bill's currency (ISO 4217), which says how many decimal places its prices' smallest unit has. */
+  readonly currency: string;
   readonly lines: readonly {
     readonly description: string;
     readonly accountId: string;

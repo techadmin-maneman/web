@@ -1048,6 +1048,7 @@ export interface Rows {
     readonly note: string | null;
     readonly books_bill_id: string | null;
     readonly books_checked_at: string | null;
+    readonly rate_micro: number | null;
   };
   readonly referral_attributions: {
     readonly id: string;

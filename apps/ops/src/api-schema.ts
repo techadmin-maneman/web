@@ -13585,7 +13585,7 @@ export interface paths {
                         "application/json": components["schemas"]["PurchaseOrders"];
                     };
                 };
-                /** @description invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, or rupee_rate for none on an order in another currency */
+                /** @description invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, or rate_micro_rupees for none on an order in another currency */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -19134,8 +19134,10 @@ export interface components {
                 expires_on: string | null;
             }[];
             supplier_invoice: string | null;
-            /** @description Paise to one unit of the order's currency, as Rs. 83.25 to the dollar is 8325; null for rupees. */
-            rupee_rate: number | null;
+            /** @description Micro-rupees to one whole unit of the order's currency, as Rs. 83.25 to the dollar is 83,250,000 and Rs. 0.56 to the yen 560,000; null for rupees. */
+            rate_micro_rupees?: number | null;
+            /** @description Deprecated: send rate_micro_rupees. Paise to one unit of the order's currency. */
+            rupee_rate?: number | null;
             freight_paise: number;
             duty_paise: number;
             clearing_paise: number;

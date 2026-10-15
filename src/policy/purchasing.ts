@@ -1,6 +1,7 @@
 // Purchase orders' rules (docs/decisions/0166-purchase-orders.md): when one needs a second approver, and the states it
 // moves through. No price is set here: every price is the supplier's, copied onto the order when it is drafted.
 
+import { MICRO_PER_RUPEE, paiseOf } from "../config/currencies.ts";
 import { addDays, indiaDate } from "../lib/india-time.ts";
 
 /**
@@ -29,8 +30,8 @@ export function needsSecondApproval(
 ): boolean {
   if (order.currency === "INR") return order.total > aboveRupees * 100;
   const rate = rupeesToOne[order.currency] ?? rupeesToOne.default ?? 0;
-  // The total is in the currency's hundredths, so the rate in rupees makes it paise.
-  return rate <= 0 || order.total * rate > aboveRupees * 100;
+  // The total is in the currency's smallest unit, whatever its decimal places.
+  return rate <= 0 || paiseOf(order.total, order.currency, rate * MICRO_PER_RUPEE) > aboveRupees * 100;
 }
 
 /**
@@ -50,12 +51,16 @@ interface CostedLine {
 
 /**
  * What one unit of each line cost landed, in paise (docs/decisions/0167-receipts-and-landed-cost.md): the supplier's
- * price, in its currency's smallest unit, at `rupeeRate` paise to one unit of that currency, and the line's share of
- * `extras`, the receipt's freight, duty and clearing, by the value it brought. A line that brought nothing costs its
- * price alone; where no line brought value, the extras are shared by count.
+ * price, in its currency's smallest unit, at `rate.micro` micro-rupees to one whole unit of `rate.currency`, and the
+ * line's share of `extras`, the receipt's freight, duty and clearing, by the value it brought. A line that brought
+ * nothing costs its price alone; where no line brought value, the extras are shared by count.
  */
-export function landedUnitCosts(lines: readonly CostedLine[], rupeeRate: number, extras: number): number[] {
-  const unitPaise = lines.map((line) => (line.unitPrice * rupeeRate) / 100);
+export function landedUnitCosts(
+  lines: readonly CostedLine[],
+  rate: { readonly currency: string; readonly micro: number },
+  extras: number,
+): number[] {
+  const unitPaise = lines.map((line) => paiseOf(line.unitPrice, rate.currency, rate.micro));
   const values = lines.map((line, index) => (unitPaise[index] ?? 0) * line.received);
   const totalValue = values.reduce((sum, value) => sum + value, 0);
   const totalCount = lines.reduce((sum, line) => sum + line.received, 0);

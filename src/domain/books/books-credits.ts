@@ -3,6 +3,7 @@
 // the amount credited, on the account its receipt's bill line used. It waits for that bill, so the credit sits beside
 // it; Books applies it to the bill, or to the next, when ops pay. Looked for by our claim's ID before one is made.
 
+import { MICRO_PER_RUPEE } from "../../config/currencies.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import type { BillAccounts } from "./books-bills.ts";
 import { closeFailures, tellFailure, type Pass } from "./books-pass.ts";
@@ -33,7 +34,8 @@ type CreditRow = {
   name: string;
   credit_amount: number;
   decided_at: string;
-  rupee_rate: number;
+  rate_micro: number;
+  currency: string;
   vendor_id: string | null;
   hair_system: number;
 };
@@ -42,7 +44,8 @@ type CreditRow = {
 export async function creditClaim(pass: Pass, claimId: string, accounts: BillAccounts): Promise<boolean> {
   const claim = await pass.db
     .prepare(
-      `SELECT k.number, o.number AS order_number, c.name, k.credit_amount, k.decided_at, r.rupee_rate,
+      `SELECT k.number, o.number AS order_number, c.name, k.credit_amount, k.decided_at,
+         COALESCE(r.rate_micro, r.rupee_rate * 10000) AS rate_micro, o.currency,
          s.books_vendor_id AS vendor_id,
          EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = k.consumable_code) AS hair_system
        FROM supplier_claims k JOIN consumables c ON c.code = k.consumable_code
@@ -71,7 +74,8 @@ export async function creditClaim(pass: Pass, claimId: string, accounts: BillAcc
         vendorId,
         reference: claimId,
         date: indiaDate(new Date(claim.decided_at)),
-        exchangeRate: claim.rupee_rate / 100,
+        exchangeRate: claim.rate_micro / MICRO_PER_RUPEE,
+        currency: claim.currency,
         lines: [
           {
             description: `${pass.label}${claim.name} (${number}, ${order})`,

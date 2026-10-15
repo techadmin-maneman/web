@@ -4,6 +4,7 @@
 // supplier (./supplier-claims.ts); and what one cost landed
 // (src/policy/purchasing.ts), kept on the line and on its lot. The order moves on to part received or received.
 
+import { MICRO_PER_PAISA, MICRO_PER_RUPEE } from "../../config/currencies.ts";
 import { landedUnitCosts } from "../../policy/purchasing.ts";
 import { auditStatement, type Written } from "../platform/audit.ts";
 import { deliveryStatements } from "../inventory/stock.ts";
@@ -66,7 +67,7 @@ async function checkedReceipt(
   receipt: {
     readonly poId: string;
     readonly lines: readonly ReceiptLine[];
-    readonly rupeeRate: number | null;
+    readonly rateMicro: number | null;
     readonly supplierInvoice: string | null;
   },
 ): Promise<
@@ -89,8 +90,8 @@ async function checkedReceipt(
   const order = orderLines[0];
   if (order === undefined) return refusal("not_found");
   if (order.state !== "sent" && order.state !== "part_received") return refusal("order_state");
-  const rate = order.currency === "INR" ? 100 : receipt.rupeeRate;
-  if (rate === null || rate <= 0) return refusal("invalid_request", ["rupee_rate"]);
+  const rate = order.currency === "INR" ? MICRO_PER_RUPEE : receipt.rateMicro;
+  if (rate === null || rate <= 0) return refusal("invalid_request", ["rate_micro_rupees"]);
   const matched = receipt.lines.map((line) => ({ line, of: orderLines.find((each) => each.id === line.poLineId) }));
   const stray = matched.findIndex(({ of }) => of === undefined);
   if (stray >= 0) return refusal("invalid_request", [`lines.${String(stray)}`]);
@@ -118,7 +119,8 @@ export async function receiveOrder(
     readonly poId: string;
     readonly lines: readonly ReceiptLine[];
     readonly supplierInvoice: string | null;
-    readonly rupeeRate: number | null;
+    /** Micro-rupees to one whole unit of the order's currency; null for an order in rupees. */
+    readonly rateMicro: number | null;
     readonly extras: { readonly freight: number; readonly duty: number; readonly clearing: number };
     readonly note: string | null;
   },
@@ -131,7 +133,7 @@ export async function receiveOrder(
   const { freight, duty, clearing } = receipt.extras;
   const landed = landedUnitCosts(
     matched.map(({ line, of }) => ({ unitPrice: of?.unit_price ?? 0, received: line.received })),
-    rate,
+    { currency: order.currency, micro: rate },
     freight + duty + clearing,
   );
   const id = crypto.randomUUID();
@@ -158,9 +160,9 @@ export async function receiveOrder(
     receivedAudit(db, { poId: receipt.poId, id, lines: receipt.lines.length }, written),
     db
       .prepare(
-        `INSERT INTO receipts (id, po_id, received_by, received_at, supplier_invoice, rupee_rate, freight_paise, duty_paise,
-           clearing_paise, note)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
+        `INSERT INTO receipts (id, po_id, received_by, received_at, supplier_invoice, rupee_rate, rate_micro,
+           freight_paise, duty_paise, clearing_paise, note)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?11, ?7, ?8, ?9, ?10)`,
       )
       .bind(
         id,
@@ -168,11 +170,13 @@ export async function receiveOrder(
         written.actor.id,
         written.now.toISOString(),
         receipt.supplierInvoice,
-        rate,
+        // Whole paise beside the micro-rupees, which code deployed before them still reads.
+        Math.max(1, Math.round(rate / MICRO_PER_PAISA)),
         freight,
         duty,
         clearing,
         receipt.note,
+        rate,
       ),
     ...lines,
     // What arrived settles the order: received once every line has all it ordered, part received until then.

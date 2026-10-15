@@ -210,7 +210,7 @@ export const purchasing = {
   errors: {
     supplier_id: changed("That supplier is retired or gone."),
     lines: "Each item once, at least its minimum.",
-    rupee_rate: "Give the rupee rate for this currency.",
+    rate_micro_rupees: "Give the rupee rate for this currency.",
     order_state: changed("That order has moved on."),
     same_approver: "You gave its first approval. Another Operations manager gives the second.",
     custom_order: "A client’s custom order is on this order. Cancel the custom order, which refunds them.",

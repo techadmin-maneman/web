@@ -8,6 +8,7 @@
 // The freight, duty and clearing are in the landed cost, not on the supplier's bill: they come from the forwarder or
 // the customs broker on bills of their own. GST on the bill waits on the CA (INV-2).
 
+import { MICRO_PER_RUPEE } from "../../config/currencies.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { closeFailures, tellFailure, type Pass } from "./books-pass.ts";
 
@@ -103,7 +104,8 @@ const BILLS_PER_PASS = 5;
 type BillRow = {
   received_at: string;
   supplier_invoice: string | null;
-  rupee_rate: number;
+  rate_micro: number;
+  currency: string;
   number: number;
   vendor_id: string;
   payment_terms_days: number;
@@ -115,7 +117,8 @@ type BillLineRow = { name: string; unit_price: number; invoiced: number; hair_sy
 export async function billReceipt(pass: Pass, receiptId: string, accounts: BillAccounts): Promise<boolean> {
   const receipt = await pass.db
     .prepare(
-      `SELECT r.received_at, r.supplier_invoice, r.rupee_rate, o.number, s.books_vendor_id AS vendor_id,
+      `SELECT r.received_at, r.supplier_invoice, COALESCE(r.rate_micro, r.rupee_rate * 10000) AS rate_micro,
+         o.currency, o.number, s.books_vendor_id AS vendor_id,
          s.payment_terms_days
        FROM receipts r JOIN purchase_orders o ON o.id = r.po_id JOIN suppliers s ON s.id = o.supplier_id
        WHERE r.id = ?1`,
@@ -151,7 +154,8 @@ export async function billReceipt(pass: Pass, receiptId: string, accounts: BillA
         billNumber: receipt.supplier_invoice ?? `${order}-${receiptId.slice(0, 8)}`,
         date,
         dueDate: addDays(date, receipt.payment_terms_days),
-        exchangeRate: receipt.rupee_rate / 100,
+        exchangeRate: receipt.rate_micro / MICRO_PER_RUPEE,
+        currency: receipt.currency,
         lines: lines.map((line) => ({
           description: `${pass.label}${line.name} (${order})`,
           accountId: line.hair_system === 1 ? accounts.hairSystems : accounts.consumables,

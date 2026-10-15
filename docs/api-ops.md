@@ -8994,7 +8994,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, or rupee_rate for none on an order in another currency
+**400**: invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, or rate_micro_rupees for none on an order in another currency
 
 ```json
 {
@@ -28748,6 +28748,15 @@ Request body:
       "minLength": 1,
       "maxLength": 60
     },
+    "rate_micro_rupees": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1000000000000,
+      "description": "Micro-rupees to one whole unit of the order's currency, as Rs. 83.25 to the dollar is 83,250,000 and Rs. 0.56 to the yen 560,000; null for rupees."
+    },
     "rupee_rate": {
       "type": [
         "integer",
@@ -28755,7 +28764,7 @@ Request body:
       ],
       "minimum": 1,
       "maximum": 10000000,
-      "description": "Paise to one unit of the order's currency, as Rs. 83.25 to the dollar is 8325; null for rupees."
+      "description": "Deprecated: send rate_micro_rupees. Paise to one unit of the order's currency."
     },
     "freight_paise": {
       "type": "integer",
@@ -28785,7 +28794,6 @@ Request body:
   "required": [
     "lines",
     "supplier_invoice",
-    "rupee_rate",
     "freight_paise",
     "duty_paise",
     "clearing_paise",
