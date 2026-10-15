@@ -1,9 +1,8 @@
-// Settings: the business inputs ops set for themselves
-// (docs/decisions/0061-ops-editable-inputs.md). Three panels, and the thing
-// each one has to get right is the same: say the unit and the bounds before
-// anything is typed, show a change that cannot quietly be taken back before it
-// is made (docs/decisions/0071-what-ops-see-before-a-setting-changes.md), and
-// say what went wrong, of the box it went wrong in, when a figure is refused.
+// Settings' Areas and Closed days: where visits are offered, and the days they are not
+// (docs/decisions/0061-ops-editable-inputs.md). Each shows a change that cannot
+// quietly be taken back before it is made
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md), and says what
+// went wrong, of the box it went wrong in, when a figure is refused.
 //
 // The refusals are the API's own shape: invalid_request, with the fields it
 // names (src/http/errors.ts).
@@ -17,39 +16,55 @@ import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts
 import { review } from "../../apps/ops/src/content/common.ts";
 import { pressTwice } from "./twice.ts";
 
-test.describe("the service area, Areas' Served tab", () => {
-  const area = (page: Page, pincode: string) => page.getByRole("textbox", { name: `Area name for ${pincode}` });
+test.describe("the service area", () => {
+  const served = opsCopy.areas.served;
+  const row = (page: Page, pincode: string) =>
+    page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: pincode, exact: true }) });
+
+  /** Opens a pincode's drawer from its row, changes what is asked, and puts it into the page's change. */
+  async function change(
+    page: Page,
+    pincode: string,
+    to: { area?: string; served?: boolean; launchOn?: string },
+  ): Promise<void> {
+    await page.getByRole("button", { name: served.editLabel(pincode) }).click();
+    const drawer = page.getByRole("dialog");
+    if (to.area !== undefined) await drawer.getByLabel(served.columns[1]).fill(to.area);
+    if (to.served !== undefined) await drawer.getByLabel(served.columns[2]).setChecked(to.served);
+    if (to.launchOn !== undefined) await drawer.getByLabel(served.columns[3]).fill(to.launchOn);
+    await drawer.getByRole("button", { name: served.done }).click();
+  }
 
   test("lists one city at a time, since 198 pincodes is not a page", async ({ page }) => {
-    await open(page, "/areas/served");
+    await open(page, "/settings/areas");
     await expect(page.getByRole("button", { name: "Delhi · 1 of 2" })).toBeVisible();
-    await expect(area(page, "110017")).toHaveValue("Saket");
+    await expect(row(page, "110017")).toContainText("Saket");
     // Gurgaon's pincode is not drawn until its city is chosen.
-    await expect(area(page, "122018")).toHaveCount(0);
+    await expect(row(page, "122018")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
-    await expect(area(page, "122018")).toHaveValue("Sec65");
+    await expect(row(page, "122018")).toContainText("Sec65");
   });
 
   test("narrows a city’s pincodes to those served or not, or by a search", async ({ page }) => {
-    await open(page, "/areas/served");
+    await open(page, "/settings/areas");
     const rows = page.getByRole("table").getByRole("row");
     const narrow = page.getByRole("search", { name: opsCopy.areas.served.narrow });
     await narrow.getByLabel(opsCopy.areas.tabs.served).selectOption("No");
     await expect(rows).toHaveCount(2);
-    await expect(area(page, "110024")).toBeVisible();
+    await expect(row(page, "110024")).toBeVisible();
     await narrow.getByLabel(opsCopy.areas.tabs.served).selectOption("");
     await narrow.getByLabel(opsCopy.tables.search).fill("saket");
     await expect(rows).toHaveCount(2);
-    await expect(area(page, "110017")).toBeVisible();
+    await expect(row(page, "110017")).toBeVisible();
   });
 
   test("sends only the pincodes that changed", async ({ page }) => {
-    await open(page, "/areas/served", {
+    await open(page, "/settings/areas", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
-    await page.getByLabel("Launch date for 110017").fill("2026-09-02");
+    await change(page, "110017", { launchOn: "2026-09-02" });
 
     const sent = posted(page, "/api/service-area");
     await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
@@ -61,15 +76,15 @@ test.describe("the service area, Areas' Served tab", () => {
 
   // Launch messages read "we now come to Sec91", with no way to say it better.
   test("sends a better name for an area, and refuses one a spreadsheet would run", async ({ page }) => {
-    await open(page, "/areas/served", {
+    await open(page, "/settings/areas", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
-    await area(page, "122018").fill("=Sector 65");
+    await change(page, "122018", { area: "=Sector 65" });
     await expect(page.getByRole("alert")).toContainText("122018: 2–40 characters");
     await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
 
-    await area(page, "122018").fill("Sector 65 ");
+    await change(page, "122018", { area: "Sector 65 " });
     const sent = posted(page, "/api/service-area");
     await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
     expect((await sent).postDataJSON()).toEqual({
@@ -78,19 +93,19 @@ test.describe("the service area, Areas' Served tab", () => {
   });
 
   test("fills a whole city in one press", async ({ page }) => {
-    await open(page, "/areas/served");
+    await open(page, "/settings/areas");
     await page.getByRole("button", { name: "Serve all of Delhi" }).click();
     await expect(page.getByRole("button", { name: "Delhi · 2 of 2" })).toBeVisible();
-    await expect(page.getByRole("checkbox", { name: "Served 110024" })).toBeChecked();
+    await expect(row(page, "110024")).toContainText(served.yes);
   });
 
   // Serving a pincode here sent none of the launch alerts the waitlist's launch sends. It had a
   // launch panel of its own; it now opens the one Waiting uses.
   test("says who serving a pincode will message, and messages them only once ops agree", async ({ page }) => {
-    await open(page, "/areas/served", {
+    await open(page, "/settings/areas", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 3 }),
     });
-    await page.getByRole("checkbox", { name: "Served 110024" }).check();
+    await change(page, "110024", { served: true });
     await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
 
     const check = page.getByRole("region", { name: "Mark 110024 live" });
@@ -108,10 +123,10 @@ test.describe("the service area, Areas' Served tab", () => {
   });
 
   test("says so when a change would leave nowhere served", async ({ page }) => {
-    await open(page, "/areas/served", {
+    await open(page, "/settings/areas", {
       "POST /api/service-area": fails(400, "no_service_area"),
     });
-    await page.getByRole("checkbox", { name: "Served 110017" }).uncheck();
+    await change(page, "110017", { served: false });
     await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
     await expect(page.getByRole("alert")).toContainText(opsCopy.areas.served.errors.no_service_area);
   });
@@ -125,7 +140,7 @@ test.describe("the service area, Areas' Served tab", () => {
 
   // The table kept the old values after an upload, and the next Save put them back.
   test("puts a file’s changes in the table, so the one Save sends the file’s values", async ({ page }) => {
-    await open(page, "/areas/served", {
+    await open(page, "/settings/areas", {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 0 }),
     });
     await upload(page, "pincode,served,launch_on\n110017,yes,2026-09-01\n110024,no,2026-11-01\n");
@@ -133,23 +148,22 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(preview).toContainText(opsCopy.cities.list.notServed);
     await expect(preview).toContainText("Not served, launch 2026-11-01");
     await page.getByRole("button", { name: opsCopy.areas.served.upload.apply }).click();
-    await expect(page.getByLabel("Launch date for 110024")).toHaveValue("2026-11-01");
+    await expect(row(page, "110024")).toContainText("1 Nov");
 
     const sent = posted(page, "/api/service-area");
     await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110024", served: false, launch_on: "2026-11-01" }],
     });
-    await expect(page.getByLabel("Launch date for 110024")).toHaveValue("2026-11-01");
+    await expect(row(page, "110024")).toContainText("1 Nov");
     await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
   });
 
   // A pincode served from a later day was served at once.
   test("will not serve a pincode from a day still to come", async ({ page }) => {
     await page.clock.setFixedTime(new Date("2026-10-04T06:00:00.000Z"));
-    await open(page, "/areas/served");
-    await page.getByRole("checkbox", { name: "Served 110024" }).check();
-    await page.getByLabel("Launch date for 110024").fill("2026-10-20");
+    await open(page, "/settings/areas");
+    await change(page, "110024", { served: true, launchOn: "2026-10-20" });
     await expect(page.getByRole("alert")).toContainText("110024: the launch date must be today or earlier");
     await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
   });
@@ -165,7 +179,7 @@ test.describe("the service area, Areas' Served tab", () => {
       waiting: 0,
       to_alert: 0,
     };
-    await open(page, "/areas/served", { "POST /api/pincodes": json(added, 201) });
+    await open(page, "/settings/areas", { "POST /api/pincodes": json(added, 201) });
     const form = page.getByRole("group", { name: opsCopy.areas.add.title });
     await form.getByLabel(opsCopy.areas.add.pincode).fill("400050");
     await form.getByLabel(opsCopy.areas.add.area).fill("Bandra West");
@@ -182,11 +196,11 @@ test.describe("the service area, Areas' Served tab", () => {
     await expect(form.getByRole("status")).toHaveText("400050 added to Mumbai.");
     expect(adds).toBe(1);
     await expect(page.getByRole("button", { name: "Mumbai · 0 of 1" })).toHaveAttribute("aria-current", "true");
-    await expect(area(page, "400050")).toHaveValue("Bandra West");
+    await expect(row(page, "400050")).toContainText("Bandra West");
   });
 
   test("refuses a pincode the API could not hold before it is sent", async ({ page }) => {
-    await open(page, "/areas/served");
+    await open(page, "/settings/areas");
     const form = page.getByRole("group", { name: opsCopy.areas.add.title });
     await form.getByLabel(opsCopy.areas.add.pincode).fill("012345");
     await expect(form.getByRole("alert")).toHaveText(opsCopy.areas.add.badPincode);
@@ -198,7 +212,7 @@ test.describe("the service area, Areas' Served tab", () => {
 
   // A file without its served column switched every pincode in it off.
   test("refuses a file that leaves out one of its three columns", async ({ page }) => {
-    await open(page, "/areas/served");
+    await open(page, "/settings/areas");
     await upload(page, "pincode,launch_on\n110017,2026-09-01\n");
     await expect(page.getByRole("alert")).toContainText("Needs pincode, served and launch_on columns");
     await expect(page.getByRole("button", { name: opsCopy.areas.served.upload.apply })).toHaveCount(0);
@@ -207,8 +221,14 @@ test.describe("the service area, Areas' Served tab", () => {
 
 // The days no visit is offered, which the runbook's SQL set before (docs/decisions/0088-every-policy-in-the-console.md).
 test.describe("the blackout days", () => {
+  /** The form that closes days, opened from the page's head. */
+  async function closeDays(page: Page) {
+    await page.getByRole("button", { name: settingsCopy.blackouts.formTitle }).click();
+    return page.getByRole("dialog", { name: settingsCopy.blackouts.formTitle });
+  }
+
   test("lists the days run together, why, who added them, and what is still booked on them", async ({ page }) => {
-    await open(page, "/settings/blackouts");
+    await open(page, "/settings/closed-days");
     const diwali = page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Every city · Diwali" });
     await expect(diwali).toContainText("Closed by ops@maneman.in on 20 Sep 2027");
     await expect(diwali).toContainText("3 visits are still booked. Move them on the dispatch board.");
@@ -235,19 +255,19 @@ test.describe("the blackout days", () => {
       booked: 0,
     };
     const added = { ...BLACKOUTS, blackouts: [...BLACKOUTS.blackouts, christmas] };
-    await open(page, "/settings/blackouts", { "POST /api/blackouts": json(added) });
-    const add = page.getByRole("button", { name: review.next });
+    await open(page, "/settings/closed-days", { "POST /api/blackouts": json(added) });
+    const form = await closeDays(page);
+    const add = form.getByRole("button", { name: review.next });
     await expect(add).toBeDisabled();
-    await page.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2027-12-24");
-    await page.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2027-12-24");
-    await page.getByLabel(settingsCopy.blackouts.reason).fill("  Christmas ");
+    await form.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2027-12-24");
+    await form.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2027-12-24");
+    await form.getByLabel(settingsCopy.blackouts.reason).fill("  Christmas ");
     const request = posted(page, "/api/blackouts");
     await add.click();
-    await page.getByRole("button", { name: review.send }).click();
+    await form.getByRole("button", { name: review.send }).click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-12-24", to: "2027-12-24", reason: "Christmas" });
-    await expect(page.getByRole("status").filter({ hasText: settingsCopy.blackouts.added })).toBeVisible();
+    await expect(form).toHaveCount(0);
     await expect(page.getByRole("listitem").filter({ hasText: "Fri 24 Dec · Every city · Christmas" })).toBeVisible();
-    await expect(page.getByLabel(settingsCopy.blackouts.reason)).toHaveValue("");
   });
 
   test("closes the days in one city alone, and names it", async ({ page }) => {
@@ -259,16 +279,17 @@ test.describe("the blackout days", () => {
       set_at: "2027-09-21T06:00:00.000Z",
       booked: 0,
     };
-    await open(page, "/settings/blackouts", {
+    await open(page, "/settings/closed-days", {
       "POST /api/blackouts": json({ ...BLACKOUTS, blackouts: [...BLACKOUTS.blackouts, holi] }),
     });
-    await page.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2028-03-10");
-    await page.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2028-03-10");
-    await page.getByLabel(opsCopy.areas.add.city).selectOption("Gurgaon");
-    await page.getByLabel(settingsCopy.blackouts.reason).fill("Holi");
+    const form = await closeDays(page);
+    await form.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2028-03-10");
+    await form.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2028-03-10");
+    await form.getByLabel(opsCopy.areas.add.city).selectOption("Gurgaon");
+    await form.getByLabel(settingsCopy.blackouts.reason).fill("Holi");
     const request = posted(page, "/api/blackouts");
-    await page.getByRole("button", { name: review.next }).click();
-    await page.getByRole("button", { name: review.send }).click();
+    await form.getByRole("button", { name: review.next }).click();
+    await form.getByRole("button", { name: review.send }).click();
     expect((await request).postDataJSON()).toEqual({
       from: "2028-03-10",
       to: "2028-03-10",
@@ -279,13 +300,14 @@ test.describe("the blackout days", () => {
   });
 
   test("says why the API refused the days, of the box it refused", async ({ page }) => {
-    await open(page, "/settings/blackouts", { "POST /api/blackouts": fails(400, "invalid_request", ["to"]) });
-    await page.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2027-10-01");
-    await page.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2027-12-01");
-    await page.getByLabel(settingsCopy.blackouts.reason).fill("Too long");
-    await page.getByRole("button", { name: review.next }).click();
-    await page.getByRole("button", { name: review.send }).click();
-    await expect(page.getByRole("alert")).toHaveText(settingsCopy.blackouts.errors.to);
+    await open(page, "/settings/closed-days", { "POST /api/blackouts": fails(400, "invalid_request", ["to"]) });
+    const form = await closeDays(page);
+    await form.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2027-10-01");
+    await form.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2027-12-01");
+    await form.getByLabel(settingsCopy.blackouts.reason).fill("Too long");
+    await form.getByRole("button", { name: review.next }).click();
+    await form.getByRole("button", { name: review.send }).click();
+    await expect(form.getByRole("alert")).toHaveText(settingsCopy.blackouts.errors.to);
   });
 
   // Review of #145, item 7: a run named only its first day's setter.
@@ -302,7 +324,7 @@ test.describe("the blackout days", () => {
       ...BLACKOUTS,
       blackouts: [...BLACKOUTS.blackouts.slice(0, 2), later, ...BLACKOUTS.blackouts.slice(2)],
     };
-    await open(page, "/settings/blackouts", { "GET /api/blackouts": json(split) });
+    await open(page, "/settings/closed-days", { "GET /api/blackouts": json(split) });
     await expect(
       page.getByRole("listitem").filter({ hasText: "Fri 29 Oct to Sat 30 Oct · Every city · Diwali" }),
     ).toContainText("Closed by ops@maneman.in on 20 Sep 2027");
@@ -313,7 +335,7 @@ test.describe("the blackout days", () => {
 
   test("offers a run of days again, the whole run once asked", async ({ page }) => {
     const left = { ...BLACKOUTS, blackouts: BLACKOUTS.blackouts.slice(2) };
-    await open(page, "/settings/blackouts", { "POST /api/blackouts/remove": json(left) });
+    await open(page, "/settings/closed-days", { "POST /api/blackouts/remove": json(left) });
     const request = posted(page, "/api/blackouts/remove");
     await page.getByRole("button", { name: "Reopen Fri 29 Oct to Sat 30 Oct" }).click();
     const asked = page.getByRole("group", { name: "Reopen Fri 29 Oct to Sat 30 Oct?" });

@@ -4,7 +4,6 @@
 
 import { ICONS } from "@maneman/brand/icons";
 import { IconButton } from "@maneman/ui/IconButton";
-import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
@@ -268,7 +267,7 @@ export function DraftOrder({
     onDrafted(answer.body, copy.draft.drafted);
   };
   return (
-    <Panel titleId="draft-order" title={copy.draft.title}>
+    <div className={styles.draft}>
       <SupplierPick
         stocked={stocked}
         supplierId={supplierId}
@@ -295,6 +294,6 @@ export function DraftOrder({
         failure={failure}
         boxes={["supplier_id", "expected_on", "note"]}
       />
-    </Panel>
+    </div>
   );
 }

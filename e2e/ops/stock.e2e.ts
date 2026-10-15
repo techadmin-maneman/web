@@ -7,6 +7,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, IMRAN, json, STOCK, type Answers, type OpsReply } from "./fixtures.ts";
+import { expectOneBoxALine } from "./one-box-a-line.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { stock } from "../../apps/ops/src/content/stock.ts";
 import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
@@ -31,7 +32,11 @@ const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
 const onHand = (page: Page) => page.getByRole("region", { name: stock.onHand });
-const recording = (page: Page) => page.getByRole("region", { name: stock.record.title });
+/** The form that records a movement, opened from the page's head. */
+async function recording(page: Page) {
+  await page.getByRole("button", { name: stock.record.title }).click();
+  return page.getByRole("dialog", { name: stock.record.title });
+}
 
 test("is a section of its own beside the technicians, titled by what it is", async ({ page }) => {
   await open(page);
@@ -95,7 +100,7 @@ test("past six places, shows the warehouse and one place, picked, marking each p
 
 test("records a delivery into the store, showing what it holds before and after", async ({ page }) => {
   await open(page, { "POST /api/stock/deliveries": json(STOCK) });
-  const form = recording(page);
+  const form = await recording(page);
   await form.getByLabel(stock.record.consumable).selectOption({ label: "Tape strips" });
   await form.getByLabel(stock.record.quantity).fill("100");
   await form.getByLabel(stock.record.note).fill("Supplier’s note 4418");
@@ -118,7 +123,7 @@ test("records a delivery into the store, showing what it holds before and after"
 
 test("takes a delivery’s supplier lot and its expiry", async ({ page }) => {
   await open(page, { "POST /api/stock/deliveries": json(STOCK) });
-  const form = recording(page);
+  const form = await recording(page);
   await form.getByLabel(stock.record.consumable).selectOption({ label: "Solvent" });
   await form.getByLabel(stock.record.quantity).fill("500");
   await form.getByLabel(stock.record.lot).fill("SV-2611");
@@ -149,7 +154,7 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
     .filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
   await expect(tape.getByRole("cell").nth(0)).toContainText("Expires 31 Oct 2027");
 
-  const form = recording(page);
+  const form = await recording(page);
   await form.getByLabel(stock.record.kinds.write_off).check();
   await form.getByLabel(stock.record.consumable).selectOption({ label: "Tape strips" });
   await form.getByLabel(stock.record.lostLot).selectOption({ label: "TS-0901 · expires 31 Oct 2027" });
@@ -163,7 +168,7 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
 
 test("a transfer shows both places, and says when the store would hold less than nothing", async ({ page }) => {
   await open(page, { "POST /api/stock/transfers": json(STOCK) });
-  const form = recording(page);
+  const form = await recording(page);
   await form.getByLabel(stock.record.kinds.transfer).check();
   await form.getByLabel(stock.record.consumable).selectOption({ label: "Solvent" });
   await form.getByLabel(stock.record.from, { exact: true }).selectOption({ label: WAREHOUSE });
@@ -193,7 +198,7 @@ test("a transfer shows both places, and says when the store would hold less than
 
 test("will not move stock to the place it is in", async ({ page }) => {
   await open(page);
-  const form = recording(page);
+  const form = await recording(page);
   await form.getByLabel(stock.record.kinds.transfer).check();
   await form.getByLabel(stock.record.from, { exact: true }).selectOption({ label: "Imran Qureshi" });
   await form.getByLabel(stock.record.to, { exact: true }).selectOption({ label: "Imran Qureshi" });
@@ -203,7 +208,7 @@ test("will not move stock to the place it is in", async ({ page }) => {
 
 test("a count shows the figure it finds, and one that agrees says it records only the count", async ({ page }) => {
   await open(page, { "POST /api/stock/counts": json(STOCK) });
-  const form = recording(page);
+  const form = await recording(page);
   await form.getByLabel(stock.record.kinds.count).check();
   await form.getByLabel(stock.record.consumable).selectOption({ label: "Tape strips" });
   await form.getByLabel(stock.record.place).selectOption({ label: "Imran Qureshi" });
@@ -229,7 +234,7 @@ test("a count shows the figure it finds, and one that agrees says it records onl
 
 test("a loss needs its words, and a refusal names what was wrong", async ({ page }) => {
   await open(page, { "POST /api/stock/write-offs": fails(400, "invalid_request", ["place_id"]) });
-  const form = recording(page);
+  const form = await recording(page);
   await form.getByLabel(stock.record.kinds.write_off).check();
   await form.getByLabel(stock.record.quantity).fill("2");
   await expect(form.getByRole("button", { name: stock.record.check })).toBeDisabled();
@@ -439,7 +444,7 @@ test("opens a hair system’s labels after its delivery, the latest batch ticked
     "GET /api/stock/units": json(UNITS),
   });
   const printed = await catchPrints(page);
-  const form = recording(page);
+  const form = await recording(page);
   await form.getByLabel(stock.record.consumable).selectOption({ label: HAIR.name });
   await form.getByLabel(stock.record.quantity).fill("2");
   await form.getByRole("button", { name: stock.record.check }).click();
@@ -493,7 +498,7 @@ test("prints a lot’s label for each of its boxes", async ({ page }) => {
 
 test("names a hair system’s pieces by their labels, as a scanner types them, and counts them", async ({ page }) => {
   await open(page, { "GET /api/stock": json(withPieces), "POST /api/stock/transfers": json(withPieces) });
-  const form = recording(page);
+  const form = await recording(page);
   await form.getByRole("radio", { name: stock.record.kinds.transfer }).check();
   await form.getByLabel(stock.record.consumable).selectOption({ label: HAIR.name });
   const scan = form.getByLabel(stockLabels.scan.label, { exact: true });
@@ -588,12 +593,14 @@ test("says so when no camera opens, leaving the label to be typed", async ({ pag
   await expect(labels.getByLabel(stockLabels.find)).toBeEditable();
 });
 
-test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }) => {
+test("meets WCAG 2.2 AA, a box to a line, with a movement being checked as well", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
 
-  await recording(page).getByLabel(stock.record.quantity).fill("5");
-  await recording(page).getByRole("button", { name: stock.record.check }).click();
-  await expect(recording(page).getByRole("group", { name: review.title })).toBeVisible();
+  const form = await recording(page);
+  await expectOneBoxALine(page, stock.record.title);
+  await form.getByLabel(stock.record.quantity).fill("5");
+  await form.getByRole("button", { name: stock.record.check }).click();
+  await expect(form.getByRole("group", { name: review.title })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

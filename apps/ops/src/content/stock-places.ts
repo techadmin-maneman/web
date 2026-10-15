@@ -5,7 +5,6 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const stockPlaces = {
   title: "Places",
-  intro: "Where stock is kept. Each technician’s kit comes with them.",
   columns: ["Place", "Kind", "Area", ""],
   kinds: { warehouse: "Warehouse", hub: "Hub", stockroom: "Stockroom", kit: "Kit" },
   closed: "Closed",

@@ -1,19 +1,12 @@
-/* What ./Narrow.tsx alone draws; what it shares is in ./activity.module.css. */
+/* What ./Narrow.tsx alone draws: the filters one to a line, in the drawer Filter opens, then Show and Clear. */
 
 .filters {
-  --local-activity-filter: 192px; /* a filter's narrowest: a date box with its picker */
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--local-activity-filter), 1fr));
-  gap: var(--sp-12) var(--sp-16);
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
 }
 
 .apply {
   display: flex;
   gap: var(--sp-8);
-}
-
-/* Pages opened, shown too: a box on its own line's foot, level with the buttons. */
-.reads {
-  align-self: center;
 }

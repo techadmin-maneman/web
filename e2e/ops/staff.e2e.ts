@@ -5,6 +5,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, json, type Answers, type OpsReply } from "./fixtures.ts";
+import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 import { review } from "../../apps/ops/src/content/common.ts";
 
@@ -56,7 +57,7 @@ const row = (page: Page, name: string) => page.getByRole("row").filter({ has: pa
 
 test("lists each person with their access and whether they are let in", async ({ page }) => {
   await open(page);
-  await expect(page).toHaveTitle("Staff · Mane Man operations");
+  await expect(page).toHaveTitle("Staff · Settings · Mane Man operations");
 
   const owner = row(page, "owner@maneman.in");
   await expect(owner).toContainText("Admin · Manage · National");
@@ -127,10 +128,8 @@ test("starts enforcing only after the check, for someone who may switch it", asy
 test("offers the switch and the service tokens to nobody without Admin · Manage nationally", async ({ page }) => {
   await open(page, { "GET /api/staff": json({ ...BOOK, may_run_access: false }) });
   await expect(page.getByRole("button", { name: settingsCopy.staff.enforcement.start })).toHaveCount(0);
-  await expect(page.getByText(settingsCopy.staff.enforcement.onlyNational)).toBeVisible();
   await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);
-  await expect(page.getByRole("group", { name: settingsCopy.staff.tokens.addTitle })).toHaveCount(0);
-  await expect(page.getByText(settingsCopy.staff.tokens.onlyNational)).toBeVisible();
+  await expect(page.getByRole("button", { name: settingsCopy.staff.tokens.addTitle })).toHaveCount(0);
 });
 
 /** Signed in as `email`, who may read the list, change it and take people off it. */
@@ -166,8 +165,9 @@ test("offers nobody a way to remove themselves", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Remove owner@maneman.in" })).toHaveCount(0);
 });
 
-test("meets WCAG 2.2 AA", async ({ page }) => {
+test("meets WCAG 2.2 AA, a box to a line", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: settingsCopy.staff.add }).click();
+  await expectOneBoxALine(page, settingsCopy.staff.add);
   expect(await axeViolations(page)).toEqual([]);
 });

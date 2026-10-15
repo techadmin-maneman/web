@@ -24,14 +24,14 @@
 /* The client's name, which reaches their record; opening it is audited. */
 .name {
   font-size: var(--fs-15);
-  color: var(--text);
+  color: var(--ui-text);
   text-decoration: underline;
 }
 
 .who {
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -43,8 +43,8 @@
   max-width: var(--measure-column);
   margin: var(--sp-12) 0 0;
   padding: var(--sp-12) 0;
-  border-top: var(--hairline) solid var(--paper-line);
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--ui-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
   font-family: var(--font-serif);
   font-size: var(--fs-16);
   line-height: var(--lh-145);

@@ -21,7 +21,7 @@ import { WordHistory } from "./WordHistory.tsx";
 import { LastPublished, PublishCheck } from "./WordsPublish.tsx";
 import form from "../components/forms.module.css";
 import styles from "./words-screen.module.css";
-import { ActionRow } from "../components/ActionRow.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 import { wordsApi } from "./words-api.ts";
 
 /** What is open beneath a line's row: its form, opened with a wording, or its history. */
@@ -76,7 +76,7 @@ function WordActingRow({ word, ...row }: { word: Word } & RowProps) {
     onAct(null);
   };
   return (
-    <ActionRow className={styles.acting}>
+    <FormDrawer title={placeOf(word)} onClose={close}>
       {acting.kind === "edit" ? (
         <WordForm word={word} start={acting.start} messages={row.messages} onDone={row.onDone} onCancel={close} />
       ) : (
@@ -89,7 +89,7 @@ function WordActingRow({ word, ...row }: { word: Word } & RowProps) {
           onClose={close}
         />
       )}
-    </ActionRow>
+    </FormDrawer>
   );
 }
 

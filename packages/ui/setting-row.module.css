@@ -1,0 +1,76 @@
+/*
+ * One setting on a line of its own (./SettingRow.tsx): the name in a column as wide as the app sets
+ * (--setting-label-width, ./base.css), the box beside it, a rule beneath. Short of a desk the name stands above.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .row {
+    padding: var(--sp-12) var(--sp-20);
+    border-bottom: var(--hairline) solid var(--ui-line);
+  }
+
+  .row:last-child {
+    border-bottom: 0;
+  }
+
+  .row:focus-visible {
+    outline: var(--focus-width) solid var(--focus-colour);
+    outline-offset: var(--focus-inset);
+  }
+
+  .field {
+    display: grid;
+    grid-template-columns: var(--setting-label-width) minmax(0, 1fr);
+    column-gap: var(--sp-16);
+    align-items: center;
+  }
+
+  .field .label {
+    grid-column: 1;
+    font-size: var(--fs-14);
+    color: var(--ui-text);
+  }
+
+  .control,
+  .value,
+  .field .error {
+    grid-column: 2;
+  }
+
+  .control {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+  }
+
+  .control :is(input, select, textarea) {
+    margin-top: 0;
+  }
+
+  .unit {
+    font-size: var(--fs-14);
+    color: var(--ui-text-muted);
+  }
+
+  .value {
+    font-size: var(--fs-14);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text);
+  }
+
+  @media (max-width: 760px) {
+    .field {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: var(--sp-8);
+    }
+
+    .field .label,
+    .control,
+    .value,
+    .field .error {
+      grid-column: 1;
+    }
+  }
+}

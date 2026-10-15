@@ -5,16 +5,18 @@
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
+import { hiddenLook } from "@maneman/ui/VisuallyHidden";
 import { Button } from "@maneman/ui/Button";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { AddressSearch, type AddressSuggestion } from "@maneman/ui/AddressSearch";
-import { useId, useRef, useState } from "react";
+import { useContext, useId, useRef, useState } from "react";
 import { ADDRESS_FIELDS, given, missingParts, type AddressField, type AddressPart } from "@maneman/web-kit/address";
 import { type AddressGiven, type ClientRecord } from "../api.ts";
 import { clients, NOT_PERMITTED, OFFLINE } from "../content.ts";
 import styles from "./address.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { InDrawer } from "../components/FormDrawer.tsx";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.given;
@@ -75,6 +77,16 @@ function BuildingSearch({
       }}
       className={styles.search}
     />
+  );
+}
+
+/** The form's name: read, not shown, in the drawer it opens in, whose own title says it already. */
+function FormTitle({ id }: { id: string }) {
+  const inDrawer = useContext(InDrawer);
+  return (
+    <h3 className={inDrawer ? hiddenLook : capsLook(styles.title)} id={id}>
+      {copy.title}
+    </h3>
   );
 }
 
@@ -160,9 +172,7 @@ export function GivenAddressForm({
         void save();
       }}
     >
-      <h3 className={capsLook(styles.title)} id={`${formId}-title`}>
-        {copy.title}
-      </h3>
+      <FormTitle id={`${formId}-title`} />
       <BuildingSearch
         clientId={clientId}
         value={draft.building ?? ""}

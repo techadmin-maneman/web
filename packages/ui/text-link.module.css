@@ -25,7 +25,7 @@
   }
 
   .words:disabled {
-    color: var(--text-quiet);
+    color: var(--ui-text-quiet);
     text-decoration-color: currentcolor;
     cursor: default;
   }
@@ -36,13 +36,13 @@
   }
 
   .plain {
-    color: var(--text);
-    text-decoration-color: var(--paper-line);
+    color: var(--ui-text);
+    text-decoration-color: var(--ui-line);
   }
 
   .muted {
-    color: var(--text-muted);
-    text-decoration-color: var(--paper-line);
+    color: var(--ui-text-muted);
+    text-decoration-color: var(--ui-line);
   }
 
   .ink {
@@ -51,12 +51,12 @@
   }
 
   .brass {
-    color: var(--text);
-    text-decoration-color: var(--brass);
+    color: var(--ui-text);
+    text-decoration-color: var(--ui-accent);
   }
 
   .danger {
-    color: var(--error-on-paper);
+    color: var(--ui-error);
     text-decoration-color: currentcolor;
   }
 
@@ -84,7 +84,7 @@
     .plain:hover:not(:disabled),
     .muted:hover:not(:disabled),
     .brass:hover:not(:disabled) {
-      color: var(--text);
+      color: var(--ui-text);
       text-decoration-color: currentcolor;
     }
 

@@ -374,7 +374,9 @@ test("names a disputed charge and what it kept, and leads to the dispute in Char
   // A client since erased still has their charge ruled on.
   await expect(row(page, "Erased client")).toContainText("Disputes a charge: a free service visit");
   await expect(
-    page.getByRole("navigation", { name: opsCopy.shell.title }).getByRole("link", { name: /^Charges, 2 waiting/ }),
+    page
+      .getByRole("navigation", { name: opsCopy.shell.title })
+      .getByRole("link", { name: opsCopy.shell.waiting(opsCopy.shell.nav.money, 2, false) }),
   ).toBeVisible();
 });
 

@@ -76,18 +76,18 @@
   /* ---- Filled ----------------------------------------------------------------- */
 
   .primary {
-    background: var(--ink);
-    color: var(--paper);
+    background: var(--ui-strong);
+    color: var(--ui-on-strong);
   }
 
   .primary:active:not(:disabled):not([aria-disabled="true"]) {
-    background: var(--ink-deep);
+    background: var(--ui-strong-pressed);
   }
 
   .primary:disabled,
   .primary[aria-disabled="true"]:not([data-settling]) {
-    background: var(--paper-shade);
-    color: var(--text-quiet);
+    background: var(--ui-shade);
+    color: var(--ui-text-quiet);
   }
 
   .light {
@@ -121,8 +121,8 @@
   }
 
   .destructive {
-    background: var(--error-on-paper);
-    color: var(--paper);
+    background: var(--ui-error);
+    color: var(--ui-on-strong);
   }
 
   .destructive:active:not(:disabled):not([aria-disabled="true"]) {
@@ -131,8 +131,8 @@
 
   .destructive:disabled,
   .destructive[aria-disabled="true"]:not([data-settling]) {
-    background: var(--paper-shade);
-    color: var(--text-quiet);
+    background: var(--ui-shade);
+    color: var(--ui-text-quiet);
   }
 
   /* ---- Outlined --------------------------------------------------------------- */
@@ -146,19 +146,19 @@
   }
 
   .outline {
-    border-color: var(--ink);
-    color: var(--text);
+    border-color: var(--ui-strong);
+    color: var(--ui-text);
   }
 
   .quiet {
-    border-color: var(--paper-line);
-    color: var(--text);
+    border-color: var(--ui-line);
+    color: var(--ui-text);
   }
 
   .outline:active:not(:disabled):not([aria-disabled="true"]),
   .quiet:active:not(:disabled):not([aria-disabled="true"]),
   .danger:active:not(:disabled):not([aria-disabled="true"]) {
-    background: var(--paper-shade);
+    background: var(--ui-shade);
   }
 
   .outline:disabled,
@@ -167,8 +167,8 @@
   .quiet[aria-disabled="true"]:not([data-settling]),
   .danger:disabled,
   .danger[aria-disabled="true"]:not([data-settling]) {
-    border-color: var(--paper-line);
-    color: var(--text-quiet);
+    border-color: var(--ui-line);
+    color: var(--ui-text-quiet);
   }
 
   .outlineOnInk {
@@ -200,15 +200,15 @@
   }
 
   .danger {
-    border-color: var(--error-on-paper);
-    color: var(--error-on-paper);
+    border-color: var(--ui-error);
+    color: var(--ui-error);
   }
 
   /* ---- A pointer resting on it: at a desk, never a finger's lingering tap ----- */
 
   @media (hover: hover) {
     .primary:hover:not(:disabled):not([aria-disabled="true"]) {
-      background: var(--ink-deep);
+      background: var(--ui-strong-pressed);
     }
 
     .light:hover:not(:disabled):not([aria-disabled="true"]) {
@@ -226,7 +226,7 @@
     .outline:hover:not(:disabled):not([aria-disabled="true"]),
     .quiet:hover:not(:disabled):not([aria-disabled="true"]),
     .danger:hover:not(:disabled):not([aria-disabled="true"]) {
-      background: var(--paper-shade);
+      background: var(--ui-shade);
     }
 
     .outlineOnInk:hover:not(:disabled):not([aria-disabled="true"]),

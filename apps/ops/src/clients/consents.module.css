@@ -2,7 +2,7 @@
 
 .consents {
   max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
   padding: var(--sp-24);
 }
 
@@ -33,7 +33,7 @@
 .date,
 .source,
 .quiet {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* A consent the client has taken back, in oxblood, as the board marks it. */

@@ -40,26 +40,16 @@
 
 .sub {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* A call's method and path, IDs only, which can run long. */
 .call {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   overflow-wrap: anywhere;
 }
 
 .older {
   align-self: flex-start;
-}
-
-/* A client or a visit a link narrowed the log to, each a chip with its own way off. */
-.linked {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-8);
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }

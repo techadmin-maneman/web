@@ -1,36 +1,36 @@
-// The console's frame (design/phase2/Ops Console), which App draws once round whichever page is open: the navigation on
-// ink down the left, by department, with only the sections the person may open and how many tasks wait in each; and a
-// header naming the section, with who is signed in at its right.
+// The console's frame, which App draws once round whichever page is open: the navigation on the ink down the left,
+// an entry for each job with how many tasks wait in it and Settings at its foot; a bar across the top with where the
+// page sits, the search and the person signed in; and the page's head, its title, figures, actions and tabs.
 
-import { SkipLink } from "@maneman/ui/SkipLink";
-import { capsLook } from "@maneman/ui/Caps";
+import { GLYPHS } from "@maneman/brand/icons";
+import { Breadcrumbs, type Crumb } from "@maneman/ui/Breadcrumbs";
 import { Button } from "@maneman/ui/Button";
+import { Icon } from "@maneman/ui/Icon";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Mark } from "@maneman/ui/Mark";
-import { textLinkLook } from "@maneman/ui/TextLink";
+import { PageHeader, PageTitle } from "@maneman/ui/PageHeader";
 import { Link, usePath, wasRedirected } from "@maneman/ui/router";
+import { SkipLink } from "@maneman/ui/SkipLink";
+import { textLinkLook } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ComponentProps,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from "react";
 import { shell } from "../content.ts";
-import { useMayCall, whoami } from "../lib/access.ts";
+import { whoami } from "../lib/access.ts";
 import { useLapsed } from "../lib/session.ts";
-import { useTaskBoard } from "../lib/waiting.ts";
-import { mayOpen, SECTIONS, type MayCall, type SectionPath } from "../route.ts";
-import { DEPARTMENTS, type Department } from "../lib/grants.ts";
-import { waitingIn, type Waiting } from "../tasks/decided.ts";
+import {
+  NAV_NAMES,
+  navOf,
+  SECTION_NAMES,
+  sectionOf,
+  SETTINGS_GROUP_NAMES,
+  settingsPageOf,
+  SETTINGS_PAGE_NAMES,
+  type Route,
+} from "../route.ts";
 import { Account } from "./Account.tsx";
-import { ClientFinder } from "./ClientFinder.tsx";
 import { CommandPalette } from "./CommandPalette.tsx";
-import { GroupTabs, navEntries, type NavEntry } from "./SectionGroups.tsx";
+import { Navigation, NAV_ID } from "./Navigation.tsx";
+import { PageHead } from "./PageHead.tsx";
+import { GroupTabs } from "./SectionGroups.tsx";
 import styles from "./shell.module.css";
 
 /**
@@ -77,89 +77,8 @@ function NotListed() {
   );
 }
 
-function SectionLink({ section, name, current, waiting }: Omit<NavEntry, "key">) {
-  if (waiting === undefined) {
-    return (
-      <Link className={styles.section} to={section.path} current={current}>
-        {name}
-      </Link>
-    );
-  }
-  return (
-    <Link
-      className={styles.section}
-      to={section.path}
-      current={current}
-      label={
-        waiting.of === "low_places"
-          ? shell.lowPlaces(name, waiting.count)
-          : shell.waiting(name, waiting.count, waiting.overdue)
-      }
-    >
-      {name}
-      <span className={waiting.overdue ? styles.overdue : styles.count}>{waiting.count}</span>
-    </Link>
-  );
-}
-
-interface DepartmentProps {
-  readonly department: Department;
-  readonly current: SectionPath;
-  readonly mayCall: MayCall;
-  readonly waiting: ReadonlyMap<SectionPath, Waiting>;
-}
-
-/** One department's sections under its name; nothing for a department the person may open nothing in. */
-function DepartmentSections({ department, current, mayCall, waiting }: DepartmentProps) {
-  const sections = SECTIONS.filter((each) => each.department === department && mayOpen(mayCall, each.page));
-  if (sections.length === 0) return null;
-  const entries = navEntries(sections, current, waiting);
-  const nameId = `nav-${department}`;
-  return (
-    <div className={styles.department}>
-      <p className={capsLook(styles.departmentName)} id={nameId}>
-        {shell.departments[department]}
-      </p>
-      <ul className={styles.sections} aria-labelledby={nameId}>
-        {entries.map(({ key, ...entry }) => (
-          <li key={key}>
-            <SectionLink {...entry} />
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-const NOTHING_WAITING: ReadonlyMap<SectionPath, Waiting> = new Map();
-
-const NAV_ID = "console-nav";
-
-function Navigation({ current, open }: { current: SectionPath; open: boolean }) {
-  const mayCall = useMayCall();
-  const board = useTaskBoard(mayCall !== null && mayOpen(mayCall, "tasks"));
-  const waiting = board === null ? NOTHING_WAITING : waitingIn(board, new Date());
-  return (
-    <nav id={NAV_ID} className={styles.nav} data-open={open} aria-label={shell.title}>
-      <div className={styles.brand}>
-        <Mark className={styles.mark} />
-        <span className={capsLook(styles.brandName)}>{shell.title}</span>
-      </div>
-      {DEPARTMENTS.map((department) => (
-        <DepartmentSections
-          key={department}
-          department={department}
-          current={current}
-          mayCall={mayCall}
-          waiting={waiting}
-        />
-      ))}
-    </nav>
-  );
-}
-
 /**
- * The navigation's place in a narrow window: folded away until Menu opens it, and folded again as a page opens or
+ * The navigation's place in a narrow window: off the page until Menu opens it, and away again as a page opens or
  * Escape is pressed. In a wide one it stands beside the page and the button is not drawn.
  */
 function useMenu(): { open: boolean; toggle: () => void } {
@@ -186,22 +105,6 @@ function useMenu(): { open: boolean; toggle: () => void } {
   };
 }
 
-/** The header's button to the navigation, drawn only in a narrow window. */
-function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  return (
-    <Button
-      variant="quiet"
-      size="small"
-      className={styles.menu}
-      aria-expanded={open}
-      aria-controls={NAV_ID}
-      onClick={onToggle}
-    >
-      {open ? shell.closeMenu : shell.menu}
-    </Button>
-  );
-}
-
 /**
  * Moves the focus to the heading when another page opens, so the keyboard starts at the new page and a screen reader
  * names it. The first page of a load leaves the focus where the browser put it, as does a redirect, which shows the
@@ -217,39 +120,51 @@ function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: 
   }, [heading, page, path]);
 }
 
-const HeaderSub = createContext<(sub: string | undefined) => void>(() => undefined);
+/** Where the page sits: its entry above a page of several, its section above a record, Settings' group above its page. */
+function crumbsOf(route: Route, record: string | undefined): Crumb[] {
+  if (route.page === "settings") {
+    const page = settingsPageOf(route.tab);
+    return [{ label: shell.settings }, { label: SETTINGS_GROUP_NAMES[page.group] }];
+  }
+  const section = sectionOf(route.page);
+  if (record !== undefined) return [{ label: SECTION_NAMES[route.page], to: section.path }];
+  const entry = navOf(route.page);
+  return entry.pages.length > 1 ? [{ label: NAV_NAMES[entry.entry] }] : [];
+}
 
-/** A line beside the title for as long as the page is open, as the dispatch board puts its week there. */
-export function useHeaderSub(sub: string | undefined): void {
-  const setSub = useContext(HeaderSub);
-  useEffect(() => {
-    setSub(sub);
-    return () => {
-      setSub(undefined);
-    };
-  }, [setSub, sub]);
+/** The page's title: a record's own name, Settings' page, or the page's. */
+function pageTitleOf(route: Route, record: string | undefined): string {
+  if (record !== undefined) return record;
+  return route.page === "settings" ? SETTINGS_PAGE_NAMES[route.tab] : SECTION_NAMES[route.page];
 }
 
 interface Props {
-  /** The section shown, marked in the navigation. */
-  readonly section: SectionPath;
-  readonly title: string;
-  /** The dispatch board fills the frame to its edges, where every other section is padded. */
+  readonly route: Route;
+  /** The dispatch board fills the frame beneath its head to its edges, where every other page is padded. */
   readonly flush?: boolean;
-  /** The Clients page has its own search, so its header has none. */
-  readonly finder?: boolean;
   /** Why the page was just read again, said above it (lib/refresh.ts). */
   readonly note?: string | null;
   readonly children: ReactNode;
 }
 
-export function Shell({ section, title, flush, finder = true, note = null, children }: Props) {
+export function Shell({ route, flush = false, note = null, children }: Props) {
   const lapsed = useLapsed();
   const heading = useRef<HTMLHeadingElement>(null);
   const main = useRef<HTMLElement>(null);
   const [sub, setSub] = useState<string | undefined>();
+  const [record, setRecord] = useState<string | undefined>();
+  const [actions, setActions] = useState<HTMLElement | null>(null);
+  const [searching, setSearching] = useState(false);
+  const search = useCallback(() => {
+    setSearching(true);
+  }, []);
+  const stopSearching = useCallback(() => {
+    setSearching(false);
+  }, []);
   const menu = useMenu();
   useFocusOnArrival(heading, main);
+  const crumbs = crumbsOf(route, record);
+  const title = pageTitleOf(route, record);
   return (
     <div className={styles.console}>
       <SkipLink
@@ -259,24 +174,41 @@ export function Shell({ section, title, flush, finder = true, note = null, child
       >
         {shell.skip}
       </SkipLink>
-      <Navigation current={section} open={menu.open} />
-      <CommandPalette />
+      <Navigation route={route} open={menu.open} />
+      <CommandPalette open={searching} onOpen={search} onClose={stopSearching} />
       <div className={styles.body}>
-        <header className={styles.header}>
-          <MenuButton open={menu.open} onToggle={menu.toggle} />
-          <div className={styles.heading}>
-            <h1 className={styles.title} ref={heading} tabIndex={-1}>
-              {title}
-            </h1>
-            {sub !== undefined && <span className={styles.sub}>{sub}</span>}
+        <header className={styles.bar}>
+          <Button
+            variant="quiet"
+            size="small"
+            className={styles.menu}
+            aria-expanded={menu.open}
+            aria-controls={NAV_ID}
+            onClick={menu.toggle}
+          >
+            {menu.open ? shell.closeMenu : shell.menu}
+          </Button>
+          <div className={styles.crumbs}>
+            {crumbs.length > 0 && <Breadcrumbs label={shell.crumbs} crumbs={[...crumbs, { label: title }]} />}
           </div>
-          {finder && <ClientFinder />}
+          <Button variant="quiet" size="small" className={styles.search} onClick={search}>
+            <Icon d={GLYPHS.search} size="xs" />
+            {shell.search}
+            <kbd className={styles.keys}>{shell.searchKeys}</kbd>
+          </Button>
           <Account />
         </header>
         {lapsed && <Lapsed />}
         <NotListed />
-        <main id="content" ref={main} tabIndex={-1} className={flush === true ? styles.flushPage : styles.page}>
-          <GroupTabs section={section} />
+        <main id="content" ref={main} tabIndex={-1} className={flush ? styles.flushPage : styles.page}>
+          <PageHeader
+            className={flush ? styles.flushHead : styles.head}
+            title={title}
+            titleRef={heading}
+            meta={sub}
+            actions={<div className={styles.actions} ref={setActions} />}
+            tabs={route.page === "settings" || record !== undefined ? undefined : <GroupTabs page={route.page} />}
+          />
           <div aria-live="polite">
             {note !== null && (
               <InlineMessage tone="note" className={styles.note}>
@@ -284,7 +216,9 @@ export function Shell({ section, title, flush, finder = true, note = null, child
               </InlineMessage>
             )}
           </div>
-          <HeaderSub value={setSub}>{children}</HeaderSub>
+          <PageHead value={{ setSub, setRecord, actions }}>
+            <PageTitle value={title}>{children}</PageTitle>
+          </PageHead>
         </main>
       </div>
     </div>

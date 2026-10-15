@@ -1,6 +1,6 @@
-// The ops console's table: rows of --ops-row, the
-// head's names small and muted over a rule in the text's own ink, and a figure
-// set right in figures of one width. A caller's class sets the columns.
+// The ops console's table: rows of --ops-row, the head's names small and muted over a rule and held in view as the
+// rows scroll, a row marked under the pointer, and a figure set right in figures of one width. A caller's class sets
+// the columns.
 
 import type { ReactNode } from "react";
 import { classes } from "./classes.ts";

@@ -10,6 +10,7 @@ import { failedRequestId, useLoad } from "@maneman/ui/useLoad";
 import { useState } from "react";
 import { type ReturnedVisit, type Roster, type Technician, type TechnicianSummary } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
+import { useRecordTitle } from "../components/PageHead.tsx";
 import { technicians } from "../content.ts";
 import {
   dispatchPath,
@@ -95,12 +96,9 @@ function TechnicianPage({
 }) {
   const { summary, active } = entry;
   const [switched, setSwitched] = useState<Switched | null>(null);
+  useRecordTitle(summary.name);
   return (
     <div className={styles.page}>
-      <OpsLink className={styles.back} to="/technicians">
-        {technicians.page.back}
-      </OpsLink>
-      <h2 className={styles.pageTitle}>{summary.name}</h2>
       <Details
         technician={summary}
         cities={cities}

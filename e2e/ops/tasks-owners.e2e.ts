@@ -137,8 +137,8 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
   await why.fill("Moving to Pune; wants no more visits.");
   await closeIt.click();
   await expect(list(page).getByRole("listitem")).toHaveCount(1);
-  await expect(page.getByText("0 overdue")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: /^\d+ open$/ })).toBeFocused();
+  await expect(page.getByRole("button", { name: /overdue, go to the first$/ })).toHaveCount(0);
+  await expect(list(page)).toBeFocused();
   expect(reasons).toEqual([{ reason: "Moving to Pune; wants no more visits." }]);
 });
 
@@ -218,14 +218,14 @@ test("records a call about a move from its row, and opens each of the board’s 
 
   await vikram.getByRole("button", { name: "Told by phone · Vikram Sethi" }).click();
   await expect(list(page).getByRole("listitem")).toHaveCount(1);
-  await expect(page.getByRole("heading", { level: 2, name: /^\d+ open$/ })).toBeFocused();
+  await expect(list(page)).toBeFocused();
   expect(told).toEqual([`/api/dispatch/moves/${MOVE}/told`]);
 });
 
 test("says so when no queue holds anything", async ({ page }) => {
   await open(page, { overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] });
   await expect(page.getByText(opsCopy.tasks.empty)).toBeVisible();
-  await expect(page.getByText("0 overdue")).toBeVisible();
+  await expect(page.getByRole("button", { name: /overdue, go to the first$/ })).toHaveCount(0);
 });
 
 test("says so when the list cannot be loaded, and loads it on Try again", async ({ page }) => {

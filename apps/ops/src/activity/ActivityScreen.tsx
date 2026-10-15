@@ -8,16 +8,18 @@ import { EmptyState } from "@maneman/ui/EmptyState";
 import { Chip } from "@maneman/ui/Chip";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
+import { Toolbar } from "@maneman/ui/Toolbar";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, longDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type ActivityEntry } from "../api.ts";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { OpsLink } from "../components/Shell.tsx";
 import { activity } from "../content/activity.ts";
 import { activityPath, clientPath, dispatchPath, technicianPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import styles from "./activity-screen.module.css";
-import { askedOf, filtersOf, type Filters } from "./filters.ts";
+import { appliedOf, askedOf, filtersOf, type Filters } from "./filters.ts";
 import { Narrow } from "./Narrow.tsx";
 import { activityApi } from "./activity-api.ts";
 
@@ -175,30 +177,19 @@ function Log({ filters }: { filters: Filters }) {
   );
 }
 
-/** The client or visit a link narrowed the log to, each with a way to take it off. */
-function Linked({ filters, onApply }: { filters: Filters; onApply: (filters: Filters) => void }) {
-  const set = [
-    ["person", copy.filters.person, filters.person],
-    ["visit", copy.filters.visit, filters.visit],
-  ] as const;
-  const shown = set.filter(([, , value]) => value !== undefined);
-  if (shown.length === 0) return null;
-  return (
-    <ul className={styles.linked}>
-      {shown.map(([name, label, value]) => (
-        <li key={name}>
-          <Chip
-            removeLabel={copy.filters.remove(label)}
-            onRemove={() => {
-              onApply({ ...filters, [name]: undefined });
-            }}
-          >
-            {label} · {value?.slice(0, 8)}
-          </Chip>
-        </li>
-      ))}
-    </ul>
-  );
+/** Each filter set, a chip with its way off: a client or visit a link narrowed to, and what Filter chose. */
+function Applied({ filters, onApply }: { filters: Filters; onApply: (filters: Filters) => void }) {
+  return appliedOf(filters).map(({ name, words }) => (
+    <Chip
+      key={name}
+      removeLabel={copy.filters.remove(words)}
+      onRemove={() => {
+        onApply({ ...filters, [name]: undefined });
+      }}
+    >
+      {words}
+    </Chip>
+  ));
 }
 
 export function ActivityScreen() {
@@ -209,8 +200,20 @@ export function ActivityScreen() {
   };
   return (
     <div className={styles.column}>
-      <Linked filters={filters} onApply={apply} />
-      <Narrow filters={filters} onApply={apply} />
+      <Toolbar label={copy.filters.label}>
+        <DrawerButton label={copy.filters.filter}>
+          {(close) => (
+            <Narrow
+              filters={filters}
+              onApply={(next) => {
+                apply(next);
+                close();
+              }}
+            />
+          )}
+        </DrawerButton>
+        <Applied filters={filters} onApply={apply} />
+      </Toolbar>
       <Log key={activityPath(filters)} filters={filters} />
     </div>
   );

@@ -36,7 +36,9 @@ describe("the client app", () => {
       .flatMap(rulesOf)
       .filter(([selector]) => selector.includes("::placeholder") && !selector.includes("onInk"));
     expect(placeholders.length).toBeGreaterThan(0);
-    for (const [, body] of placeholders) expect(body).toContain("color: var(--paper-hint)");
+    // A shared part's placeholder reads the hint through its role, which is the hint on paper.
+    for (const [, body] of placeholders) expect(body).toMatch(/color: var\(--(paper-hint|ui-hint)\)/);
+    expect(readFileSync("packages/brand/tokens.css", "utf8")).toContain("--ui-hint: var(--paper-hint);");
   });
 
   it("names the profile button by the initials it shows, so saying them reaches it", () => {

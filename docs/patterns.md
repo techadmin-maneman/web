@@ -1,6 +1,6 @@
 # Patterns
 
-How a screen is put together from `packages/ui`, so a new one reads like the rest. Every part is in the kit: run a local console (`npm run dev:ops`, or the local build) and open `/_kit` to see each one in its states, on paper and on the ink. The nightly fidelity run shoots the kit to `docs/fidelity/ops/kit.png`.
+How a screen is put together from `packages/ui`, so a new one reads like the rest. Every part is in the kit: run a local console (`npm run dev:ops`, or the local build) and open `/_kit` to see each one in its states, on paper and on the ink. The nightly fidelity run shoots the kit, in the light theme and the dark, to `docs/fidelity/ops/`.
 
 ## The parts
 

@@ -42,7 +42,6 @@ export const supplyPlan = {
   accuracy: {
     title: "Accuracy",
     none: "Measured once a forecast’s first period has passed.",
-    note: "Off by: how far the forecast missed what was used. A bias above zero means it ran high.",
     periodColumns: ["Period from", "Expected", "Used", "Off by", "Bias", "Within high case"],
     itemColumns: ["Item", "Expected", "Used", "Off by", "Bias"],
     /** "18%", or a dash where nothing was used */
@@ -55,7 +54,6 @@ export const supplyPlan = {
   },
   events: {
     title: "Events",
-    note: "What will lift or drop demand. The next forecast reads them.",
     none: "No events ahead.",
     columns: ["Event", "City", "Days", "Change", ""],
     /** "+20%", "−10%" */

@@ -17,7 +17,7 @@ test.describe("the discount codes", () => {
   };
 
   test("heads the page with what every code has come to", async ({ page }) => {
-    await open(page, "/discount-codes");
+    await open(page, "/settings/discount-codes");
     const figures = page.getByRole("definition");
     await expect(figures).toHaveText(["1", "4", "4", "Rs. 14,000", "Rs. 77,000"]);
     await expect(page.getByRole("term")).toHaveText([
@@ -32,7 +32,7 @@ test.describe("the discount codes", () => {
   test("lists each code in a row: its terms, uses, clients, what it gave, what was paid and when last used", async ({
     page,
   }) => {
-    await open(page, "/discount-codes");
+    await open(page, "/settings/discount-codes");
     await expect(row(page, "WEDDNG25").getByRole("cell")).toHaveText([
       "25% (max Rs. 5,000)",
       "First fit, Service",
@@ -51,7 +51,7 @@ test.describe("the discount codes", () => {
   });
 
   test("folds the codes switched off beneath the table, their figures kept", async ({ page }) => {
-    await open(page, "/discount-codes");
+    await open(page, "/settings/discount-codes");
     await expect(row(page, "RPLC2K")).toBeHidden();
     await page.getByText("Switched off (1)").click();
     await expect(row(page, "RPLC2K")).toContainText("Rs. 13,000");
@@ -60,7 +60,7 @@ test.describe("the discount codes", () => {
   });
 
   test("sorts the codes by what was paid, and narrows them to what they apply to", async ({ page }) => {
-    await open(page, "/discount-codes");
+    await open(page, "/settings/discount-codes");
     const rows = page.getByRole("table").first().getByRole("row");
     await page.getByRole("button", { name: settingsCopy.discountCodes.figures.paid, exact: true }).click();
     await expect(rows.nth(1)).toContainText("TYPO10");
@@ -76,7 +76,7 @@ test.describe("the discount codes", () => {
     if (typo === undefined) throw new Error("the fixture has no unused code");
     const left = { ...DISCOUNT_CODES, codes: DISCOUNT_CODES.codes.filter((code) => code.id !== typo.id) };
     let deleted = false;
-    await open(page, "/discount-codes", {
+    await open(page, "/settings/discount-codes", {
       [`POST /api/discount-codes/${typo.id}/delete` as const]: (route) => {
         deleted = true;
         return empty()(route);
@@ -92,7 +92,7 @@ test.describe("the discount codes", () => {
   });
 
   test("makes a code ops typed only once they have read what it takes off", async ({ page }) => {
-    await open(page, "/discount-codes", { "POST /api/discount-codes": made(["DIWALI"]) });
+    await open(page, "/settings/discount-codes", { "POST /api/discount-codes": made(["DIWALI"]) });
     const form = await makeForm(page);
     const check = form.getByRole("button", { name: settingsCopy.discountCodes.check });
     await expect(check).toBeDisabled();
@@ -121,7 +121,7 @@ test.describe("the discount codes", () => {
   });
 
   test("generates a batch of single-use codes, an amount off each", async ({ page }) => {
-    await open(page, "/discount-codes", { "POST /api/discount-codes": made(["A2B3C4D5", "E6F7G8H9"]) });
+    await open(page, "/settings/discount-codes", { "POST /api/discount-codes": made(["A2B3C4D5", "E6F7G8H9"]) });
     const form = await makeForm(page);
     await form.getByLabel(settingsCopy.discountCodes.how).selectOption({ label: "Generate" });
     await form.getByLabel(settingsCopy.discountCodes.count).fill("2");
@@ -148,7 +148,7 @@ test.describe("the discount codes", () => {
   });
 
   test("says why the API refused a code, of the box it refused", async ({ page }) => {
-    await open(page, "/discount-codes", {
+    await open(page, "/settings/discount-codes", {
       "POST /api/discount-codes": fails(400, "invalid_request", ["code"]),
     });
     const form = await makeForm(page);
@@ -162,7 +162,7 @@ test.describe("the discount codes", () => {
 
   // AUDITTEST reached "Make these codes?" before the API refused it.
   test("says beside the box when a typed code cannot be one, before anything is checked", async ({ page }) => {
-    await open(page, "/discount-codes");
+    await open(page, "/settings/discount-codes");
     const form = await makeForm(page);
     const code = form.getByLabel(settingsCopy.discountCodes.code, { exact: true });
     await code.fill("WEDDING-25");
@@ -181,7 +181,7 @@ test.describe("the discount codes", () => {
     const [wedding] = DISCOUNT_CODES.codes;
     if (wedding === undefined) throw new Error("the fixture has no code");
     const off = `POST /api/discount-codes/${wedding.id}/off` as const;
-    await open(page, "/discount-codes", { [off]: empty() });
+    await open(page, "/settings/discount-codes", { [off]: empty() });
     await page.getByRole("button", { name: "Switch off WEDDNG25" }).click();
     const panel = page.getByRole("group", { name: "Switch off WEDDNG25?" });
     await expect(panel).toContainText("It can’t be used again. 3 bookings keep it.");

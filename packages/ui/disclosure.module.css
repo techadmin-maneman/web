@@ -7,10 +7,10 @@
     display: flex;
     align-items: center;
     min-height: var(--tap);
-    color: var(--text-muted);
+    color: var(--ui-text-muted);
     list-style: none;
     text-decoration: underline;
-    text-decoration-color: var(--paper-line);
+    text-decoration-color: var(--ui-line);
     text-underline-offset: var(--sp-4);
     cursor: pointer;
   }
@@ -21,7 +21,7 @@
 
   @media (hover: hover) {
     .summary:hover {
-      color: var(--text);
+      color: var(--ui-text);
       text-decoration-color: currentcolor;
     }
   }
@@ -33,7 +33,7 @@
   /* ---- A ruled list's entry: the site's questions, and what a hair system is made of ---------------------------- */
 
   .ruled {
-    border-bottom: var(--hairline) solid var(--paper-line);
+    border-bottom: var(--hairline) solid var(--ui-line);
   }
 
   .ruledSummary {
@@ -52,11 +52,11 @@
 
   .sign {
     flex-shrink: 0;
-    color: var(--text-muted);
+    color: var(--ui-text-muted);
   }
 
   .ruled[open] .sign {
-    color: var(--text);
+    color: var(--ui-text);
   }
 
   .ruled[open] .upright {

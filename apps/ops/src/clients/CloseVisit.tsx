@@ -85,7 +85,6 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
       }}
     >
       <OutcomeChoice outcome={outcome} onChoose={setOutcome} />
-      {!timed && <p className={shared.note}>{copy.noShowNote}</p>}
       <div className={styles.times} hidden={!timed}>
         <Field className={shared.field} label={copy.started} error={boxError(ERRORS, failure, "started_at")}>
           {(control) => (

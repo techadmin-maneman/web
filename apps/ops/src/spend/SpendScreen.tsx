@@ -19,6 +19,8 @@ import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { spendApi, type SpendChannel, type SpendEntry, type SpendList } from "./spend-api.ts";
 import form from "../components/forms.module.css";
+import { DrawerButton } from "../components/DrawerButton.tsx";
+import { PageActions } from "../components/PageHead.tsx";
 
 /** Each month from the first the page takes to this one, the latest first. */
 function monthsOf(list: SpendList): string[] {
@@ -231,12 +233,19 @@ function Spend() {
   return (
     <>
       {access.mayCall("POST /api/spend") && (
-        <SpendForm
-          list={loaded.value}
-          onAdded={(entry) => {
-            setEntries([entry, ...shown].sort((one, other) => other.month.localeCompare(one.month)));
-          }}
-        />
+        <PageActions>
+          <DrawerButton primary label={copy.addOne}>
+            {(close) => (
+              <SpendForm
+                list={loaded.value}
+                onAdded={(entry) => {
+                  setEntries([entry, ...shown].sort((one, other) => other.month.localeCompare(one.month)));
+                  close();
+                }}
+              />
+            )}
+          </DrawerButton>
+        </PageActions>
       )}
       <Refused failed={failure} errors={copy.errors} />
       <SpendTable
@@ -252,7 +261,6 @@ export function SpendScreen() {
   return (
     <div className={form.screen}>
       <Panel titleId="spend" title={copy.title} padded>
-        <Note>{copy.intro}</Note>
         <Spend />
       </Panel>
     </div>

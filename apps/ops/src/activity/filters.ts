@@ -45,3 +45,31 @@ export function askedOf(filters: Filters, cursor?: string): ActivityAsked {
   }
   return cursor === undefined ? asked : { ...asked, cursor };
 }
+
+/** A filter that is set, in words, as its chip says it: "Who · Technician", "From · 2026-10-01". */
+export interface Applied {
+  readonly name: keyof Filters;
+  readonly words: string;
+}
+
+const words = activity.filters;
+
+/** Each filter that is set, in the order the form asks for them, the client or visit a link set first. */
+export function appliedOf(filters: Filters): Applied[] {
+  const applied: Applied[] = [];
+  if (filters.person !== undefined)
+    applied.push({ name: "person", words: `${words.person} · ${filters.person.slice(0, 8)}` });
+  if (filters.visit !== undefined)
+    applied.push({ name: "visit", words: `${words.visit} · ${filters.visit.slice(0, 8)}` });
+  if (filters.actor_kind !== undefined) {
+    applied.push({ name: "actor_kind", words: `${words.kind} · ${words.kinds[filters.actor_kind]}` });
+  }
+  if (filters.actor !== undefined) applied.push({ name: "actor", words: `${words.kind} · ${filters.actor}` });
+  if (filters.action !== undefined) {
+    applied.push({ name: "action", words: `${words.action} · ${activity.actions[filters.action]}` });
+  }
+  if (filters.from !== undefined) applied.push({ name: "from", words: `${words.from} · ${filters.from}` });
+  if (filters.to !== undefined) applied.push({ name: "to", words: `${words.to} · ${filters.to}` });
+  if (filters.reads !== undefined) applied.push({ name: "reads", words: words.reads });
+  return applied;
+}

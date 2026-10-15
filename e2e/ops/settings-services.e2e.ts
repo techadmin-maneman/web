@@ -1,9 +1,8 @@
-// Settings: the business inputs ops set for themselves
-// (docs/decisions/0061-ops-editable-inputs.md). Three panels, and the thing
-// each one has to get right is the same: say the unit and the bounds before
-// anything is typed, show a change that cannot quietly be taken back before it
-// is made (docs/decisions/0071-what-ops-see-before-a-setting-changes.md), and
-// say what went wrong, of the box it went wrong in, when a figure is refused.
+// Settings' Services: the prices clients pay and the services they book
+// (docs/decisions/0061-ops-editable-inputs.md). Every change shows what it was
+// beside what it will be before it is made
+// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md), and a refusal
+// is said of the box it was refused for.
 //
 // The refusals are the API's own shape: invalid_request, with the fields it
 // names (src/http/errors.ts).
@@ -28,7 +27,7 @@ test.describe("the services and their prices", () => {
   const edit = (page: Page, name: string) => page.getByRole("button", { name: `Edit ${name}`, exact: true }).click();
 
   test("lists each kind’s services as a table: length, price, GST and the next price", async ({ page }) => {
-    await open(page, "/prices");
+    await open(page, "/settings/services");
     for (const kind of ["Consultation", "First fit", "Service visit", "Replacement"]) {
       await expect(page.getByRole("heading", { level: 3, name: kind, exact: true })).toBeVisible();
       await expect(page.getByRole("table", { name: kind })).toBeVisible();
@@ -48,7 +47,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("keeps a row’s prices still to come and its earlier ones under its Edit", async ({ page }) => {
-    await open(page, "/prices");
+    await open(page, "/settings/services");
     await expect(page.getByText(/Rs\. 1,500/)).toBeHidden();
     await edit(page, "Service visit");
     await expect(page.getByRole("button", { name: "Edit Service visit", exact: true })).toHaveAttribute(
@@ -60,7 +59,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("opens one row at a time", async ({ page }) => {
-    await open(page, "/prices");
+    await open(page, "/settings/services");
     await edit(page, "Service visit");
     await edit(page, "Premium");
     await expect(page.getByRole("button", { name: "Rename Premium" })).toBeVisible();
@@ -71,7 +70,7 @@ test.describe("the services and their prices", () => {
 
   // GST opened at nought and the amount blank, whatever the item, so an 18% item was saved GST-free.
   test("starts a new price from the price in force, its GST included", async ({ page }) => {
-    await open(page, "/prices");
+    await open(page, "/settings/services");
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await expect(page.getByLabel(settingsCopy.services.form.amount)).toHaveValue("2000");
@@ -80,7 +79,7 @@ test.describe("the services and their prices", () => {
 
   // A new price once started from today, and changed what clients had been quoted that day.
   test("starts a new price from tomorrow, and offers no earlier day", async ({ page }) => {
-    await open(page, "/prices");
+    await open(page, "/settings/services");
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     const from = page.getByLabel(settingsCopy.services.form.from);
@@ -90,7 +89,7 @@ test.describe("the services and their prices", () => {
 
   test("shows the old price beside the new, and GST changing, before anything is sent", async ({ page }) => {
     let sent = 0;
-    await open(page, "/prices", {
+    await open(page, "/settings/services", {
       "POST /api/prices": (route) => {
         sent += 1;
         return json({ prices: PRICE_ROWS })(route);
@@ -122,7 +121,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("goes back to the form without sending when the change is not the one meant", async ({ page }) => {
-    await open(page, "/prices");
+    await open(page, "/settings/services");
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
@@ -133,7 +132,7 @@ test.describe("the services and their prices", () => {
 
   // A day typed before tomorrow reached the check, and was refused only when sent.
   test("refuses a day before tomorrow beside the box, before anything is checked", async ({ page }) => {
-    await open(page, "/prices");
+    await open(page, "/settings/services");
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     const from = page.getByLabel(settingsCopy.services.form.from);
@@ -144,7 +143,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("says a price applies from tomorrow at the earliest when the API refuses the date", async ({ page }) => {
-    await open(page, "/prices", {
+    await open(page, "/settings/services", {
       "POST /api/prices": fails(400, "invalid_request", ["valid_from"]),
     });
     await edit(page, "Service visit");
@@ -158,7 +157,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("says why a price for a retired service is refused", async ({ page }) => {
-    await open(page, "/prices", { "POST /api/prices": fails(400, "service_retired", ["valid_from"]) });
+    await open(page, "/settings/services", { "POST /api/prices": fails(400, "service_retired", ["valid_from"]) });
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Change the price of Premium" }).click();
     await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
@@ -168,7 +167,7 @@ test.describe("the services and their prices", () => {
 
   test("takes back a price still to come, once asked", async ({ page }) => {
     const left = PRICE_ROWS.filter((price) => price.valid_from !== "2027-10-01");
-    await open(page, "/prices", { "POST /api/prices/withdraw": json({ prices: left }) });
+    await open(page, "/settings/services", { "POST /api/prices/withdraw": json({ prices: left }) });
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Withdraw the Service visit price from 1 Oct 2027" }).click();
     const asked = page.getByRole("group", { name: /Withdraw the price from 1 Oct 2027/ });
@@ -182,7 +181,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("corrects a price still to come in one go, from the day it had or another", async ({ page }) => {
-    await open(page, "/prices", { "POST /api/prices/correct": json({ prices: PRICE_ROWS }) });
+    await open(page, "/settings/services", { "POST /api/prices/correct": json({ prices: PRICE_ROWS }) });
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Correct the Service visit price from 1 Oct 2027" }).click();
     await expect(page.getByLabel(settingsCopy.services.form.amount)).toHaveValue("2500");
@@ -206,7 +205,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("offers no way to take back or correct the price in force or a spent one", async ({ page }) => {
-    await open(page, "/prices");
+    await open(page, "/settings/services");
     await edit(page, "Service visit");
     await expect(page.getByRole("button", { name: /^Withdraw/ })).toHaveCount(1);
     await expect(page.getByRole("button", { name: /^Correct/ })).toHaveCount(1);
@@ -215,7 +214,7 @@ test.describe("the services and their prices", () => {
   test("adds a hair system to the first fit, its code made from its name and its length its kind’s", async ({
     page,
   }) => {
-    await open(page, "/prices", { "POST /api/services": json(SERVICES, 201) });
+    await open(page, "/settings/services", { "POST /api/services": json(SERVICES, 201) });
     await page.getByRole("button", { name: settingsCopy.services.actions.addHairSystem }).click();
     await page.getByLabel(settingsCopy.services.form.name, { exact: true }).fill("Thin skin");
     await expect(page.getByLabel(settingsCopy.discountCodes.code)).toHaveValue("thin_skin");
@@ -237,7 +236,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("renames a service and says its code, and so its prices, stay", async ({ page }) => {
-    await open(page, "/prices", { "POST /api/services/first_fit/premium/name": json(SERVICES) });
+    await open(page, "/settings/services", { "POST /api/services/first_fit/premium/name": json(SERVICES) });
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Rename Premium" }).click();
     await page.getByLabel(settingsCopy.services.form.name, { exact: true }).fill("Premium first fit");
@@ -251,7 +250,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("gives a service the line clients read under its name, shown beside the one it replaces", async ({ page }) => {
-    await open(page, "/prices", { "POST /api/services/first_fit/premium/description": json(SERVICES) });
+    await open(page, "/settings/services", { "POST /api/services/first_fit/premium/description": json(SERVICES) });
     await expect(row(page, "Premium")).toContainText("A finer lace front, for a closer look.");
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Edit the description of Premium" }).click();
@@ -272,7 +271,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("gives a service another length, inside what the day holds", async ({ page }) => {
-    await open(page, "/prices", { "POST /api/services/first_fit/premium/length": json(SERVICES) });
+    await open(page, "/settings/services", { "POST /api/services/first_fit/premium/length": json(SERVICES) });
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Change the length of Premium" }).click();
     await expect(page.getByLabel(settingsCopy.services.form.minutes)).toHaveAttribute("max", "360");
@@ -287,7 +286,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("retires a service from a day, and says why a kind’s last one stays", async ({ page }) => {
-    await open(page, "/prices", {
+    await open(page, "/settings/services", {
       "POST /api/services/replacement/standard/retire": fails(409, "last_of_kind"),
     });
     await edit(page, "Replacement");
@@ -304,7 +303,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("offers a retired service again, once asked", async ({ page }) => {
-    await open(page, "/prices", { "POST /api/services/replacement/lace/restore": json(SERVICES) });
+    await open(page, "/settings/services", { "POST /api/services/replacement/lace/restore": json(SERVICES) });
     await edit(page, "Lace replacement");
     await page.getByRole("button", { name: "Restore Lace replacement" }).click();
     const asked = page.getByRole("group", { name: /Offer Lace replacement again/ });
@@ -316,7 +315,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("moves a service up its kind, showing the new order before it is sent", async ({ page }) => {
-    await open(page, "/prices", { "POST /api/services/first_fit/order": json(SERVICES) });
+    await open(page, "/settings/services", { "POST /api/services/first_fit/order": json(SERVICES) });
     await edit(page, "First fit");
     await expect(page.getByRole("button", { name: "Move First fit up" })).toHaveCount(0);
     await edit(page, "Premium");
@@ -329,7 +328,7 @@ test.describe("the services and their prices", () => {
   });
 
   test("prices a late fee beside its kind, one figure a kind", async ({ page }) => {
-    await open(page, "/prices");
+    await open(page, "/settings/services");
     await expect(row(page, "Late fee", "First fit").getByRole("cell")).toHaveText([
       "",
       "Rs. 4,000",
@@ -346,17 +345,17 @@ test.describe("the services and their prices", () => {
 // What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md).
 test("takes a hair system’s cost in whole rupees, from today", async ({ page }) => {
   const products = [{ item: "first_fit", tier: "standard", name: "Mane Man Natural", cost: null, since: null }];
-  await open(page, "/prices", {
+  await open(page, "/settings/hair-systems", {
     "GET /api/standard-costs": json({ products }),
     "POST /api/standard-costs": json({ products: [{ ...products[0], cost: 600000, since: "2026-09-21" }] }),
   });
   const copy = settingsCopy.standardCosts;
-  const box = page.getByRole("textbox", { name: copy.costLabel("First fit · Mane Man Natural") });
+  const box = page.getByRole("textbox", { name: "First fit · Mane Man Natural" });
   await box.fill("6000");
   const sent = posted(page, "/api/standard-costs");
   await page.getByRole("button", { name: copy.reviewLabel("First fit · Mane Man Natural") }).click();
   await expect(page.getByText(copy.change("First fit · Mane Man Natural", copy.notSet, "6,000"))).toBeVisible();
   await page.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({ item: "first_fit", tier: "standard", cost: 600000 });
-  await expect(page.getByRole("cell", { name: "21 Sep" })).toBeVisible();
+  await expect(page.getByText(copy.since("Mon 21 Sep"))).toBeVisible();
 });

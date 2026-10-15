@@ -36,12 +36,6 @@ export function keepSearch(search: KeptSearch): void {
   window.history.replaceState({ ...others, [SEARCH]: search }, "");
 }
 
-/** Opens the Clients page on a search typed into the header of another page. */
-export function findFrom(text: string): void {
-  window.history.pushState({ [SEARCH]: { text, found: null } }, "", "/clients");
-  window.dispatchEvent(new PopStateEvent("popstate"));
-}
-
 const isRecent = (each: unknown): each is RecentClient =>
   typeof each === "object" &&
   each !== null &&

@@ -37,7 +37,6 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
   if (accuracy.periods.length === 0) return <Note>{copy.none}</Note>;
   return (
     <>
-      <Note>{copy.note}</Note>
       <TableScroll labelledBy="plan-forecast">
         <Table controls>
           <Head columns={copy.periodColumns} />

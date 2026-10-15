@@ -1,5 +1,5 @@
-/* The ops console's drawer (./Drawer.tsx): a panel fixed under the header at the page's right, over a page left in
-   view, headed by its title in the serif over a rule in the text's own ink. */
+/* The ops console's drawer (./Drawer.tsx): a panel fixed under the header at the page's right, the window's full
+   height, over a page left in view, headed by its title in the serif over a rule in the text's own ink. */
 
 @layer base, ui;
 
@@ -9,7 +9,8 @@
     inset: var(--header-h) 0 auto auto;
     width: var(--drawer-width);
     max-width: 100%;
-    max-height: calc(100dvh - var(--header-h));
+    height: calc(100dvh - var(--header-h));
+    max-height: none;
     margin: 0;
     padding: 0;
     overflow-y: auto;

@@ -51,3 +51,10 @@
 .style {
   margin: 0;
 }
+
+/* The navigation open and folded, side by side, at a height of their own. */
+.navs {
+  display: flex;
+  gap: var(--sp-16);
+  height: var(--skeleton-card);
+}

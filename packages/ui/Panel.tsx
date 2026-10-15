@@ -1,9 +1,11 @@
-// The ops console's panel (design/phase2/Ops Console, the Referrals review queue,
-// and every queue drawn after it): a bordered section headed by its title in
-// the serif, with how many it holds at the right, and what it holds beneath.
+// The ops console's panel: a card raised off the page, headed by its title in
+// the serif, with how many it holds and its actions at the right, and what it
+// holds beneath.
 
-import type { ReactNode, Ref, RefObject } from "react";
+import { useContext, type ReactNode, type Ref, type RefObject } from "react";
 import { classes } from "./classes.ts";
+import { PageTitle } from "./PageHeader.tsx";
+import { hiddenLook } from "./VisuallyHidden.tsx";
 import styles from "./panel.module.css";
 import { typeLook } from "./type.ts";
 import { useFocusOnMount } from "./useFocusOnMount.ts";
@@ -43,6 +45,8 @@ export function Panel({
 }) {
   const arrived = useFocusOnMount<HTMLHeadingElement>();
   const heading = headingRef ?? (opened ? arrived : undefined);
+  // A panel titled as its page is has its heading read, not shown: the page's own title says it already.
+  const repeats = useContext(PageTitle) === title;
   return (
     <section
       className={classes(styles.panel, padded && styles.padded, className)}
@@ -50,15 +54,16 @@ export function Panel({
       aria-labelledby={titleId}
       ref={ref}
     >
-      <div className={styles.head}>
+      <div className={repeats && count === undefined && actions === undefined ? undefined : styles.head}>
         <h2
-          className={typeLook("title-3", styles.title)}
+          className={repeats ? hiddenLook : typeLook("title-4", styles.title)}
           id={titleId}
           ref={heading}
           tabIndex={heading === undefined ? undefined : -1}
         >
           {title}
         </h2>
+        {repeats && <span className={styles.title} />}
         {count !== undefined && <span className={styles.count}>{count}</span>}
         {actions}
       </div>

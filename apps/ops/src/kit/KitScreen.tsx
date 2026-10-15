@@ -37,6 +37,7 @@ import { useState, type ReactNode } from "react";
 import { kit as words } from "../content/kit.ts";
 import styles from "./kit.module.css";
 import { Refusal } from "../components/Refusal.tsx";
+import { ConsoleKit } from "./ConsoleKit.tsx";
 
 const SIZES: readonly ButtonSize[] = ["action", "control", "small", "compact"];
 const STYLES: readonly TextStyle[] = [
@@ -353,6 +354,7 @@ export function KitScreen() {
       <Messages />
       <Labels />
       <Frames />
+      <ConsoleKit />
     </main>
   );
 }

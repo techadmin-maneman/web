@@ -20,7 +20,7 @@ export const stockViews = {
   },
   expiring: {
     title: "Expiring",
-    intro: (days: number) => `Lots expiring within ${String(days)} days, soonest first. Use them first or move them.`,
+    within: (days: number) => `Within ${String(days)} days, soonest first`,
     columns: ["Item", "Lot", "Place", "How many", "Expires"],
     expired: "Expired",
   },

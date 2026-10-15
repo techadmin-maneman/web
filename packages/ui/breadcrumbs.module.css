@@ -1,0 +1,35 @@
+/* Where a page sits (./Breadcrumbs.tsx): muted links, a slash between each two, the page itself in the text's ink. */
+
+@layer base, ui;
+
+@layer ui {
+  .crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-13);
+    color: var(--ui-text);
+  }
+
+  .crumb + .crumb::before {
+    content: "/";
+    padding: 0 var(--sp-8);
+    color: var(--ui-text-muted);
+  }
+
+  .link {
+    color: var(--ui-text-muted);
+    text-decoration: none;
+  }
+
+  @media (hover: hover) {
+    .link:hover {
+      color: var(--ui-text);
+      text-decoration: underline;
+      text-underline-offset: var(--sp-4);
+    }
+  }
+}

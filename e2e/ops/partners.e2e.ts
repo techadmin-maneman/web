@@ -1,4 +1,4 @@
-// Partners on Referrals (docs/decisions/0123-partner-referral-channels.md), which no board draws. Every name and
+// Partners in Settings (docs/decisions/0123-partner-referral-channels.md), which no board draws. Every name and
 // figure is made up.
 
 import { readFileSync } from "node:fs";
@@ -39,8 +39,8 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
     "GET /api/referral-channels": json(PARTNERS),
     ...extra,
   });
-  await page.goto("/referrals");
-  await expect(page.getByRole("heading", { name: copy.title })).toBeVisible();
+  await page.goto("/settings/partners");
+  await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }
 
 const row = (page: Page) =>

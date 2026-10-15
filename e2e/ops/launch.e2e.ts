@@ -1,4 +1,4 @@
-// Marking a pincode live from Areas' Waiting tab, telling those who wait in one
+// Marking a pincode live from the Waitlist, telling those who wait in one
 // already live, and adding one the service area does not hold first
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 // e2e/ops/waitlist.e2e.ts holds the queue itself; this holds the panel.
@@ -35,8 +35,8 @@ const launchRoute = (preview: object, launched: object) => (route: Route) => {
 
 async function open(page: Page, routes: Answers, areas: OpsReply<"/api/waitlist"> = AREAS) {
   await answer(page, { "GET /api/waitlist": json(areas), ...routes });
-  await page.goto("/areas");
-  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
+  await page.goto("/waitlist");
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.shell.sections.waitlist })).toBeVisible();
 }
 
 // The panel opened 1,632 px down a 900 px window, and focus stayed put.
@@ -121,7 +121,7 @@ test("says where the message’s name for the area comes from, and leads there",
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   await page.getByRole("link", { name: opsCopy.waitlist.rename }).click();
-  await expect(page).toHaveURL(/\/areas\/served$/);
+  await expect(page).toHaveURL(/\/settings\/areas$/);
 });
 
 // A launch keeps to the caller's cities, while the service area is set nationally: Growth Manage in one city is not led

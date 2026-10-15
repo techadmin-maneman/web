@@ -3,10 +3,13 @@ import { reportUncaughtErrors } from "@maneman/web-kit/client-errors";
 import { StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
+import { applyTheme, keptTheme } from "./lib/theme.ts";
 import { AppBoundary } from "./states/ErrorBoundary.tsx";
 import "./styles/global.css";
 
 reportUncaughtErrors();
+// The theme chosen in this browser, before anything is drawn.
+applyTheme(keptTheme());
 
 // The kit (./kit/KitScreen.tsx) is built into local builds alone: elsewhere the condition is false when the build
 // writes it, so its import is dropped with it.

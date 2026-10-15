@@ -3,7 +3,7 @@
 
 import { RowButton } from "@maneman/ui/Button";
 import { Button } from "@maneman/ui/Button";
-import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table, TableScroll } from "@maneman/ui/Table";
@@ -22,7 +22,8 @@ import form from "../components/forms.module.css";
 import shared from "./care.module.css";
 import styles from "./messages-screen.module.css";
 import { phoneWords } from "../lib/phone.ts";
-import { ActionRow } from "../components/ActionRow.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
+import { SearchInput } from "@maneman/ui/SearchInput";
 
 const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed", "all"];
 
@@ -66,19 +67,7 @@ function Search({ search, onSearch }: { search: string; onSearch: (search: strin
         onSearch(typed.trim());
       }}
     >
-      <Field label={copy.search}>
-        {(control) => (
-          <TextInput
-            {...control}
-            type="search"
-            value={typed}
-            maxLength={80}
-            onChange={(event) => {
-              setTyped(event.target.value);
-            }}
-          />
-        )}
-      </Field>
+      <SearchInput label={copy.search} value={typed} maxLength={80} onChange={setTyped} />
       <Button type="submit" variant="outline" size="small">
         {copy.find}
       </Button>
@@ -153,7 +142,12 @@ function ConversationRows(props: {
         </td>
       </tr>
       {props.open && (
-        <ActionRow className={shared.acting}>
+        <FormDrawer
+          title={conversation.person?.name ?? phoneWords(conversation.mobile)}
+          onClose={() => {
+            props.onOpen(null);
+          }}
+        >
           <Thread
             conversation={conversation}
             onClose={() => {
@@ -161,7 +155,7 @@ function ConversationRows(props: {
             }}
             onChanged={props.onChanged}
           />
-        </ActionRow>
+        </FormDrawer>
       )}
     </>
   );
@@ -274,16 +268,32 @@ export function MessagesScreen() {
   );
 }
 
-/** Care's own settings, a tab beside the inbox: the team's rota, the remedies Care may offer, and the quick replies. */
-export function CareSettingsScreen() {
+/** Settings › Care › Team: the team's rota. */
+export function CareTeamScreen() {
   return (
     <div className={form.screen}>
       <Panel titleId="care-team" title={copy.team.title} padded>
         <CareTeam />
       </Panel>
+    </div>
+  );
+}
+
+/** Settings › Care › Remedies: what Care may offer. */
+export function RemediesScreen() {
+  return (
+    <div className={form.screen}>
       <Panel titleId="remedies" title={copy.remedy.panel} padded>
         <RemediesPanel />
       </Panel>
+    </div>
+  );
+}
+
+/** Settings › Care › Quick replies. */
+export function QuickRepliesScreen() {
+  return (
+    <div className={form.screen}>
       <Panel titleId="quick-replies" title={copy.quick.panel} padded>
         <QuickRepliesPanel />
       </Panel>

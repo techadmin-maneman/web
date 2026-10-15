@@ -97,7 +97,7 @@ export const technicianPay = {
     name: "Up to 40 letters or digits.",
     taken: "A grade has that name.",
     in_use: "In use: a technician holds it, or a rate names it.",
-    from: "A rate starts today or later, so a month already worked keeps its own.",
+    from: "A rate starts today or later.",
     city: "Choose one of our cities.",
     amount: "Enter whole rupees.",
     not_found: changed("Already gone."),

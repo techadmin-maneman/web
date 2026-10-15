@@ -7,8 +7,8 @@
   justify-content: space-between;
   gap: var(--sp-8) var(--sp-16);
   padding: var(--sp-8) var(--sp-16);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  background: var(--paper-light);
+  border-bottom: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
 }
 
 .bar:focus {
@@ -24,7 +24,7 @@
 .barNote {
   margin: 0;
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* The keyboard's way to a destination: a list, and a button to take the one chosen. */

@@ -25,6 +25,8 @@ import { SupplierScores } from "./SupplierScores.tsx";
 import type { Orders } from "./types.ts";
 import { RowHead } from "../components/RowHead.tsx";
 import { purchasingApi } from "./purchasing-api.ts";
+import { PageActions } from "../components/PageHead.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 
 const loadOrders = () => purchasingApi.orders();
 
@@ -91,13 +93,20 @@ export function PurchasingScreen() {
             <OrderPanel key={opened.id} id={panelId} orders={current} order={opened} onChanged={changed} />
           )}
           {access.mayCall("POST /api/purchase-orders") && (
-            <DraftOrder
-              orders={current}
-              onDrafted={(next, words) => {
-                changed(next, words);
-                setOpen(next.orders[0]?.id ?? null);
-              }}
-            />
+            <PageActions>
+              <DrawerButton primary label={copy.draft.title}>
+                {(close) => (
+                  <DraftOrder
+                    orders={current}
+                    onDrafted={(next, words) => {
+                      changed(next, words);
+                      setOpen(next.orders[0]?.id ?? null);
+                      close();
+                    }}
+                  />
+                )}
+              </DrawerButton>
+            </PageActions>
           )}
           {access.mayCall("POST /api/purchase-orders/letterhead") && <Letterhead orders={current} onSaved={changed} />}
           {access.mayCall("GET /api/supplier-claims") && <Claims orders={current} />}

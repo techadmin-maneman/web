@@ -14,6 +14,8 @@ import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi } from "./care-api.ts";
+import { DrawerButton } from "../components/DrawerButton.tsx";
+import { PageActions } from "../components/PageHead.tsx";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
 import { FormActions } from "../components/FormActions.tsx";
@@ -163,7 +165,20 @@ export function QuickRepliesPanel() {
           ))}
         </ul>
       )}
-      {mayKeep && <AddForm onAdded={retry} />}
+      {mayKeep && (
+        <PageActions>
+          <DrawerButton primary label={copy.addOne}>
+            {(close) => (
+              <AddForm
+                onAdded={() => {
+                  retry();
+                  close();
+                }}
+              />
+            )}
+          </DrawerButton>
+        </PageActions>
+      )}
     </div>
   );
 }

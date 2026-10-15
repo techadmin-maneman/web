@@ -67,7 +67,7 @@ export const states = {
 /** A long table's search, its lists, its count and its next page (../components/TableTools.tsx). */
 export const tables = {
   search: "Search",
-  all: "All",
+  allOf: (column: string) => `${column}: All`,
   clear: "Clear",
   count: (matching: number, total: number) => `${String(matching)} of ${String(total)}`,
   none: "Nothing matches.",
