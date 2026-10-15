@@ -1,5 +1,5 @@
 // The analytics project's logins, from .env.analytics-supabase, which git ignores: the API's writer and Zoho's reader
-// through Supabase's session pooler, and the owner's postgres login, which only the migrations use. No password is
+// through Supabase's session pooler, and the project's postgres login, which only the migrations use. No password is
 // printed.
 
 import { readFileSync } from "node:fs";

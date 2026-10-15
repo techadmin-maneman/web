@@ -3,6 +3,7 @@
 // nowhere. The decision records, the verification log and the rest of docs/ keep the paths of their day, as history
 // does.
 
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -25,10 +26,20 @@ const ownRoot = (file: string): string | null => /^(apps\/[\w-]+|site)\//.exec(f
 
 const MAPS = ["docs/architecture.md", "docs/start-here.md"];
 
+/** A file a build writes, which git ignores: there once the build has run, and named before it has. */
+function written(path: string): boolean {
+  try {
+    execFileSync("git", ["check-ignore", "-q", "--no-index", path]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const missing = [...["src", "apps", "packages", "scripts", "site/src"].flatMap(filesUnder), ...MAPS].flatMap((file) =>
   [...readFileSync(file, "utf8").matchAll(CITED)]
     .map((match) => match[1] ?? "")
-    .filter((cited) => !existsSync(cited) && !existsSync(`${ownRoot(file) ?? "."}/${cited}`))
+    .filter((cited) => !existsSync(cited) && !existsSync(`${ownRoot(file) ?? "."}/${cited}`) && !written(cited))
     .map((cited) => `${file}: ${cited}`),
 );
 
