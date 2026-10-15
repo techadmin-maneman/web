@@ -1,5 +1,5 @@
 # Every hour, staging as a visitor and its apps find it: mm-api's health, with the cron's last run, the site's pages,
-# and each app host serving its app (scripts/release/smoke.ts). It changes nothing. A failure opens an issue, or adds
+# each app host serving its app (scripts/release/smoke.ts), and every Worker's triggers attached. It changes nothing. A failure opens an issue, or adds
 # to the open one, so whoever watches the repository hears of it; the next pass closes nothing by itself.
 name: watch staging
 
@@ -36,6 +36,12 @@ jobs:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: npm run smoke -- --environment staging --surfaces
+      # A deploy uploads code but never attaches a new cron, queue consumer or workflow (docs/decisions/0010), and its own
+      # check only warns, so a Worker left without one is caught here, within the hour.
+      - name: Every cron, queue consumer and workflow attached
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/release/check-triggers.ts staging --strict
 
   tell:
     name: tell whoever watches the repository
