@@ -959,6 +959,8 @@ export interface Rows {
     readonly deliver_to: string;
     readonly set_by: string;
     readonly set_at: string;
+    readonly registered_office: string | null;
+    readonly cin: string | null;
   };
   readonly po_lines: {
     readonly id: string;

@@ -4,6 +4,9 @@
 /** India's GST number: state, PAN, entity, Z, check. */
 export const GSTIN = /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
+/** A company's Corporate Identification Number: listed or not, industry, state, year, kind of company, number. */
+export const CIN = /^[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}$/;
+
 /** ISO 3166 alpha-2. */
 export const COUNTRY = /^[A-Z]{2}$/;
 

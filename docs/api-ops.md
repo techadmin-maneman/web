@@ -23647,7 +23647,7 @@ Request body:
 
 ### POST /api/purchase-orders/letterhead
 
-What a printed order says of us: the legal name, the GSTIN and where the supplier delivers
+What a printed order says of us: the legal name, the registered office and CIN, the GSTIN and where the supplier delivers
 
 Request body:
 
@@ -45396,6 +45396,26 @@ Request body:
         "legal_name": {
           "type": "string"
         },
+        "registered_office": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "gstin": {
           "anyOf": [
             {
@@ -45412,6 +45432,8 @@ Request body:
       },
       "required": [
         "legal_name",
+        "registered_office",
+        "cin",
         "gstin",
         "deliver_to"
       ],
@@ -45440,6 +45462,23 @@ Request body:
       "type": "string",
       "minLength": 2,
       "maxLength": 120
+    },
+    "registered_office": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 5,
+      "maxLength": 400,
+      "default": null
+    },
+    "cin": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[LU]\\d{5}[A-Z]{2}\\d{4}[A-Z]{3}\\d{6}$",
+      "default": null
     },
     "gstin": {
       "type": [

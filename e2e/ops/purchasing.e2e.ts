@@ -54,6 +54,8 @@ const BOOK = {
 
 const LETTERHEAD = {
   legal_name: "Mane Man Grooming Services Private Limited",
+  registered_office: "Plot 12, Okhla Phase II\nNew Delhi 110020",
+  cin: "U74999DL2026PTC123456",
   gstin: "06AABCM1234A1Z5",
   deliver_to: "Warehouse 4, Sector 37\nGurgaon 122001",
 };
@@ -238,6 +240,8 @@ test("a manager sets the letterhead, and a printed order carries it with what th
   const letterhead = page.getByRole("region", { name: copy.letterhead.title });
   await expect(letterhead).toContainText(copy.letterhead.missing);
   await letterhead.getByLabel(copy.letterhead.legalName).fill(LETTERHEAD.legal_name);
+  await letterhead.getByLabel(copy.letterhead.registeredOffice).fill(LETTERHEAD.registered_office);
+  await letterhead.getByLabel(copy.letterhead.cin).fill("u74999dl2026ptc123456");
   await letterhead.getByLabel(copy.letterhead.gstin).fill("06aabcm1234a1z5");
   await letterhead.getByLabel(copy.letterhead.deliverTo).fill(LETTERHEAD.deliver_to);
   const sent = posted(page, "/api/purchase-orders/letterhead");
@@ -250,7 +254,10 @@ test("a manager sets the letterhead, and a printed order carries it with what th
     .getByRole("button", { name: copy.order.print })
     .click();
   const sheet = page.locator("#order-sheet");
-  await expect(sheet).toContainText(`${copy.sheet.from}: ${LETTERHEAD.legal_name} · GSTIN 06AABCM1234A1Z5`);
+  await expect(sheet).toContainText(
+    `${copy.sheet.from}: ${LETTERHEAD.legal_name} · CIN U74999DL2026PTC123456 · GSTIN 06AABCM1234A1Z5`,
+  );
+  await expect(sheet).toContainText(`${copy.sheet.registeredOffice}: Plot 12, Okhla Phase II`);
   await expect(sheet).toContainText("Warehouse 4, Sector 37");
   await expect(sheet).toContainText("KS-SOL-500");
   await expect(sheet).toContainText("48 ml (4 packs of 12)");

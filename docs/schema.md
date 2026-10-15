@@ -2037,7 +2037,7 @@ Indexes:
 
 One row, once ops set it: the legal name, GSTIN and delivery address a printed purchase order carries (ADR 0166).
 
-Made by `0176_po_letterhead.sql`.
+Made by `0176_po_letterhead.sql`; changed by `0180_letterhead_office.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2047,6 +2047,8 @@ Made by `0176_po_letterhead.sql`.
 | `deliver_to` | TEXT | no |  |  |  |
 | `set_by` | TEXT | no |  |  |  |
 | `set_at` | TEXT | no |  |  |  |
+| `registered_office` | TEXT | yes |  |  | A company's registered office and its CIN, which a printed purchase order carries beside its legal name, as the Companies Act 2013 asks of a company's business letters (s.12(3)(c); docs/decisions/0166-purchase-orders.md). Null until ops set them. |
+| `cin` | TEXT | yes |  |  |  |
 
 ## po_lines
 
