@@ -244,3 +244,30 @@ export const PURPOSES: Readonly<Record<string, string>> = {
   zoho_access_tokens:
     "Each Zoho client's access token, the CRM's, FSM's and Books', and the lease one caller holds while it asks for a new one (ADR 0070, ADR 0110).",
 };
+
+/**
+ * Where a migration's note on a column named a module that has since moved: the migrations are never edited, so the
+ * document says where it is now. Each under src/, written without it, since the old paths are gone.
+ */
+export const PATHS_MOVED: Readonly<Record<string, string>> = Object.fromEntries(
+  [
+    ["domain/asked-windows.ts", "src/domain/booking/asked-windows.ts"],
+    ["domain/client-notes.ts", "src/domain/clients/client-notes.ts"],
+    ["domain/tasks.ts", "src/domain/ops/tasks.ts"],
+    ["domain/audit.ts", "src/domain/platform/audit.ts"],
+    ["domain/referral-grants.ts", "src/domain/referrals/referral-grants.ts"],
+    ["domain/books-erasure.ts", "src/domain/books/books-erasure.ts"],
+    ["routes/client-refer.ts", "src/routes/client/refer.ts"],
+    ["config/ops-settings.ts", "src/policy/ops-settings.ts"],
+    ["domain/fsm-mirror.ts", "docs/decisions/0110-field-work-without-fsm.md, which retired the FSM mirror"],
+  ].map(([from = "", to = ""]) => [`src/${from}`, to]),
+);
+
+/** A column whose migration's note no longer says what it is today, in today's words. */
+export const NOTES_NOW: Readonly<Record<string, string>> = {
+  "stock_balances.place": "'central' for the central store; for a technician's kit, their ID.",
+  "technicians.mobile_e164":
+    "The technician's own number, as ops keep it on the Technicians page, which they sign in with by a one-time code, " +
+    "the same flow as clients' but a separate role (src/routes/tech/auth.ts). NULL for a technician with no number, " +
+    "who then cannot sign in.",
+};

@@ -72,10 +72,9 @@ export default defineConfig({
       thresholds:
         process.env.COVERAGE_SHARD === undefined
           ? {
-              // Just under what the suite reaches, so a fall shows. A file a glob below matches counts to that
-              // glob's floor and not to these, so the front ends' own floors leave mm-api's whole figure as it was.
-              lines: 97,
-              branches: 87,
+              // mm-api's code and the scripts' shared modules, together: just under what the suite reaches, so a fall
+              // shows. No global floor: vitest counts every file into it, the front ends' too, which have their own.
+              "{src,scripts/lib}/**": { lines: 97, branches: 87 },
               "src/providers/**": { lines: 90, branches: 85 },
               "src/providers/payments/razorpay.ts": { lines: 95, branches: 95 },
               "src/domain/money/payments.ts": { lines: 90, branches: 90 },

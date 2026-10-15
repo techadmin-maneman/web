@@ -7,6 +7,6 @@ ALTER TABLE people ADD COLUMN crm_contact_id TEXT;
 ALTER TABLE people ADD COLUMN crm_contact_erased_at TEXT;
 ALTER TABLE people ADD COLUMN crm_contact_erasure_attempts INTEGER NOT NULL DEFAULT 0;
 
--- The pass (src/domain/books/books-erasure.ts): erased people whose CRM Contact is still to be erased.
+-- The pass (src/domain/books-erasure.ts): erased people whose CRM Contact is still to be erased.
 CREATE INDEX people_crm_contact_erasure_due ON people (erased_at)
   WHERE crm_contact_id IS NOT NULL AND crm_contact_erased_at IS NULL;
