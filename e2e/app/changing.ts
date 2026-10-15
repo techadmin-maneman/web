@@ -10,7 +10,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { indiaDate } from "../../src/lib/india-time.ts";
-import { randomMobile } from "../support.ts";
+import { randomMobile } from "../numbers.ts";
 import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
 import { wrangler } from "./fitted.ts";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";

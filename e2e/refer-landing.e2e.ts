@@ -9,7 +9,7 @@ import { axeViolations } from "./a11y.ts";
 
 import { HOUSE_CARD } from "../src/config/house-card.ts";
 import type { Page, Request } from "@playwright/test";
-import { fillAddress } from "./booking-area.ts";
+import { fillAddress } from "./address-form.ts";
 import {
   analyticsCommands,
   analyticsEvents,

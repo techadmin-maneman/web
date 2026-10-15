@@ -5,7 +5,7 @@
 
 import type { Page } from "@playwright/test";
 import { axeViolations } from "./a11y.ts";
-import { fillAddress } from "./booking-area.ts";
+import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
 import { enterNumberCode, expect, NUMBER_CODE, NUMBER_CODE_ID, test, visit } from "./support.ts";

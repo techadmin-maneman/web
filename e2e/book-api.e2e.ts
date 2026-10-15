@@ -5,7 +5,8 @@
 
 import type { Page } from "@playwright/test";
 import { expect, fakeTurnstile, randomMobile, test, visit } from "./support.ts";
-import { fillAddress, SERVED, UNSERVED } from "./booking-area.ts";
+import { SERVED, UNSERVED } from "./booking-area.ts";
+import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
 

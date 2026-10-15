@@ -7,6 +7,7 @@ import { LOCAL_LOGIN_CODE } from "../scripts/lib/local-stack.ts";
 import sharp from "sharp";
 import { drawnHead, HEAD_HEIGHT, HEAD_WIDTH, type Rgb } from "../test/node/drawn-head.ts";
 import { contractErrors, type Surface } from "./contract.ts";
+export { randomMobile } from "./numbers.ts";
 import { booking, numberCode, tryOn } from "../site/src/content/site.ts";
 import { referral } from "../site/src/content/referral.ts";
 
@@ -128,11 +129,6 @@ export async function fakeTurnstile(page: Page): Promise<void> {
 export async function visit(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await page.waitForFunction(() => document.querySelectorAll("astro-island[ssr]").length === 0);
-}
-
-/** A random mobile number, so the API's per-number daily limit never trips. */
-export function randomMobile(): string {
-  return `9${String(Math.floor(Math.random() * 1e9)).padStart(9, "0")}`;
 }
 
 /** A drawn head with brown hair, as a JPEG for the try-on's file input: never a photograph of anyone. */

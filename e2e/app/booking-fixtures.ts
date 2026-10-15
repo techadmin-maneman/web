@@ -11,12 +11,15 @@ import { continueToPayment } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
 import { titles, home, booking } from "../../apps/app/src/content.ts";
 import { priceFigures } from "../../apps/app/src/lib/money.ts";
-import { LOCAL_PRICES } from "../prices.ts";
+import { LOCAL_PRICES, PRICE } from "../prices.ts";
 
 /** A first fit and its late fee once GST applies, as it will in production (on staging GST is nothing). */
 export const FIRST_FIT = { amount_ex_gst: 3000000, amount: 3540000, gst_percent: 18 };
 
 export const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
+
+/** The pay step's button for a service visit. */
+export const PAY_SERVICE = booking.pay.pay(PRICE.service);
 
 const LATE_FEE_FIGURES = priceFigures(LATE_FEE);
 
