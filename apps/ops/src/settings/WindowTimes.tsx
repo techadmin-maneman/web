@@ -9,6 +9,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { longDate, shortDate } from "@maneman/web-kit/dates";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { windowTimesOf } from "@rules/policy/slot-times.ts";
+import { WINDOW_SLOT_MAP } from "@rules/config/scheduling.ts";
 import { useState } from "react";
 import type { SlotTimes } from "../api.ts";
 import { CheckLine } from "../components/CheckPanel.tsx";
@@ -35,6 +36,12 @@ const hoursOf = (times: { unitStarts: readonly string[]; dayEnd: string }) => {
   return (window: (typeof WINDOWS)[number]) => timeRange(windows[window].start, windows[window].end, UNBROKEN);
 };
 
+/** A half-slot's box name: the window it belongs to, and which of that window's half-slots it is. */
+function startLabel(unit: number): string {
+  const window = WINDOWS.find((each) => WINDOW_SLOT_MAP[each].includes(unit)) ?? WINDOWS[0];
+  return copy.start(copy.window[window], WINDOW_SLOT_MAP[window].indexOf(unit) + 1);
+}
+
 /** The windows in force, each with its hours. */
 function InForce({ times }: { times: SlotTimes }) {
   const hours = hoursOf({ unitStarts: times.in_force.unit_starts, dayEnd: times.in_force.day_end });
@@ -58,7 +65,7 @@ function TimeBoxes({ draft, onDraft }: { draft: Draft; onDraft: (draft: Draft) =
   return (
     <div className={form.fields}>
       {draft.starts.map((start, index) => (
-        <Field key={index} label={copy.start(index + 1)} className={form.field}>
+        <Field key={index} label={startLabel(index)} className={form.field}>
           {(control) => (
             <TextInput
               {...control}
@@ -154,7 +161,13 @@ function ChangeForm({ times, said, onSet }: { times: SlotTimes; said: string | n
   );
 }
 
-/** Every change set, each from its day, by whom. */
+/** Each window's hours as a change sets them. */
+function setsOf(change: SlotTimes["changes"][number]): string[] {
+  const hours = hoursOf({ unitStarts: change.unit_starts, dayEnd: change.day_end });
+  return WINDOWS.map((window) => `${copy.window[window]} ${hours(window)}`);
+}
+
+/** Every change set, each from its day, by whom, and what it sets. */
 function Changes({ times }: { times: SlotTimes }) {
   if (times.changes.length === 0) return <Note>{copy.none}</Note>;
   return (
@@ -162,6 +175,8 @@ function Changes({ times }: { times: SlotTimes }) {
       {times.changes.map((change) => (
         <li key={`${change.applies_from}-${change.set_at}`} className={form.rule}>
           {copy.setBy(shortDate(change.applies_from), whoWords(change.set_by), longDate(change.set_at))}
+          <br />
+          {copy.sets(setsOf(change))}
         </li>
       ))}
     </ul>

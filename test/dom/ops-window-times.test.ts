@@ -35,9 +35,11 @@ let page: HTMLDivElement;
 let root: Root;
 let sent: unknown[];
 let answer: () => Response;
+let served: SlotTimes;
 
 beforeEach(() => {
   sent = [];
+  served = TIMES;
   answer = () => Response.json({ applies_from: "2026-12-01" }, { status: 201 });
   vi.stubGlobal(
     "fetch",
@@ -46,7 +48,7 @@ beforeEach(() => {
       if (url.endsWith("/api/whoami")) {
         return Response.json({ error: { code: "internal_error", request_id: "r-1" } }, { status: 500 });
       }
-      if ((init?.method ?? "GET") === "GET") return Response.json(TIMES);
+      if ((init?.method ?? "GET") === "GET") return Response.json(served);
       sent.push(typeof init?.body === "string" ? JSON.parse(init.body) : null);
       return answer();
     }),
@@ -100,9 +102,28 @@ describe("the window times", () => {
     expect(said()).toContain(copy.none);
   });
 
+  // The list of changes said only the day and who set it, not what it set.
+  it("say what each change sets, beside who set it", async () => {
+    const later = ["09:30", "11:00", "12:30", "14:00", "15:30", "17:00", "18:30", "20:00"];
+    served = {
+      ...TIMES,
+      changes: [
+        {
+          applies_from: "2026-11-30",
+          unit_starts: later,
+          day_end: "21:00",
+          set_by: "ops@maneman.in",
+          set_at: "2026-10-01T05:00:00.000Z",
+        },
+      ],
+    };
+    await show();
+    expect(said()).toContain(`${copy.window.morning} 9:30 am–12:30 pm`);
+  });
+
   it("change from the earliest day, checked against the windows they move", async () => {
     await show();
-    type(copy.start(7), "18:30");
+    type(copy.start(copy.window.evening, 1), "18:30");
     await press(review.next);
     expect(said()).toContain(`${copy.window.afternoon}: 12–6 pm → 12–6:30 pm`);
     expect(said()).toContain(`${copy.window.evening}: 6–9 pm → 6:30–9 pm`);

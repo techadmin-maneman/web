@@ -329,7 +329,9 @@ export const settings = {
     appliesFrom: "From",
     /** The first day a change may take, after the last a client can book and the last visit booked. */
     earliest: (date: string) => `The earliest is ${date}.`,
-    start: (slot: number) => `Half-slot ${String(slot)} starts`,
+    /** A half-slot's start box, by its window: "Morning starts", "Afternoon, half-slot 3 starts". */
+    start: (window: string, position: number) =>
+      position === 1 ? `${window} starts` : `${window}, half-slot ${String(position)} starts`,
     dayEnd: "The day ends",
     /** The check's line for a window: "Morning: 9 am–12 noon → 9:30 am–12:30 pm". */
     change: (window: string, was: string, now: string) =>
@@ -338,6 +340,8 @@ export const settings = {
     set: "Set.",
     history: "Changes",
     setBy: (from: string, who: string, when: string) => `From ${from}, set by ${who} on ${when}`,
+    /** What a change sets, beneath who set it: "Morning 9:30 am–12:30 pm · Afternoon …". */
+    sets: (windows: readonly string[]) => windows.join(" · "),
     none: "No changes yet.",
     errors: {
       not_permitted: NOT_PERMITTED,
