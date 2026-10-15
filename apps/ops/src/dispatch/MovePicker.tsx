@@ -91,6 +91,13 @@ interface Props {
   readonly onCancel: () => void;
 }
 
+/** Where the visit lands: from where it stood, or at the same time with another technician. */
+function whenWords(stood: string | null, lands: string): string {
+  const copy = dispatch.move;
+  if (stood === null) return copy.to(lands);
+  return stood === lands ? copy.stays(lands) : copy.fromTo(stood, lands);
+}
+
 export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckIn, onSend, onCancel }: Props) {
   const [reason, setReason] = useState<MoveReason | null>(null);
   const [blackoutReason, setBlackoutReason] = useState("");
@@ -114,7 +121,7 @@ export function MovePicker({ job, to, landsAt, blackout, sending, clearingCheckI
       <h2 className={styles.pickerTitle} id="move-title">
         {copy.title(nameOf(job), to.technician.name)}
       </h2>
-      <p className={styles.pickerWhen}>{stood === null ? copy.to(lands) : copy.fromTo(stood, lands)}</p>
+      <p className={styles.pickerWhen}>{whenWords(stood, lands)}</p>
       <ChoiceGroup className={styles.reasons} legend={copy.legend} legendLook="hidden" disabled={sending} ruled>
         {copy.reasons.map((each) => (
           <Radio

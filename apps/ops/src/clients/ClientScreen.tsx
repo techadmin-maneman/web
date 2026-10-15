@@ -192,7 +192,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
             <div className={shared.client}>
               <Head
                 record={record}
-                credits={adjusted?.credits ?? record.credits}
+                credits={adjusted === null ? record.credits : adjusted.credits}
                 invite={attached?.invite ?? record.invite}
               />
               <OpenTasks clientId={clientId} />
@@ -213,7 +213,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                   clientId={clientId}
                   tab={tab}
                   record={record}
-                  credits={adjusted?.credits ?? record.credits}
+                  credits={adjusted === null ? record.credits : adjusted.credits}
                   onCredits={(credits) => {
                     setAdjusted({ credits });
                   }}

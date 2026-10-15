@@ -212,8 +212,8 @@ export function LabelField(props: {
   code: string;
   looked: Looked;
   looking: boolean;
-  /** The label is of a piece in the kit that has expired. */
-  expired: boolean;
+  /** What the label warns of (piece-form's labelWarning); null for nothing. */
+  warning: string | null;
   pieces: readonly ClientPiece[];
   picking: boolean;
   onCode: (code: string) => void;
@@ -262,9 +262,9 @@ export function LabelField(props: {
         </Button>
         <Picker pieces={props.pieces} open={props.picking} onToggle={props.onTogglePicking} onPick={props.onPick} />
       </div>
-      {props.expired && (
+      {props.warning !== null && (
         <p className={shared.warn} role="alert">
-          {copy.piece.expired}
+          {props.warning}
         </p>
       )}
       <LookedNote looked={props.looked} />

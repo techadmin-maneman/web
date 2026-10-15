@@ -11,28 +11,25 @@ import { summaryName } from "../../../apps/app/src/lib/visit.ts";
 const PRICE = { amount: 3_000_000, from: false, code: null };
 
 describe("a one visit’s card", () => {
-  it("says what it costs once fitted, only if the client goes ahead, and that a link comes by text", () => {
-    expect(oneVisitLines(PRICE)).toEqual([
-      "Rs. 30,000, only if you go ahead",
-      "Paid once fitted, by a link we text you",
-    ]);
+  it("says what it costs once fitted, only if the client goes ahead, and that it is paid once fitted", () => {
+    expect(oneVisitLines(PRICE)).toEqual(["Rs. 30,000, only if you go ahead", "Paid once fitted"]);
   });
 
   it("says where the prices start when the hair systems differ, and names the code taken off", () => {
     expect(oneVisitLines({ amount: 2_700_000, from: true, code: "TENPC" })).toEqual([
       "From Rs. 27,000, only if you go ahead",
       "Code TENPC applied",
-      "Paid once fitted, by a link we text you",
+      "Paid once fitted",
     ]);
   });
 
-  it("says nothing is to pay when the code covers it, and only that it is paid by link while nothing is priced", () => {
+  it("says nothing is to pay when the code covers it, and only that it is paid once fitted while nothing is priced", () => {
     expect(oneVisitLines({ amount: 0, from: false, code: "FITFREE" })).toEqual([
       "Nothing to pay: code FITFREE covers it",
     ]);
     expect(oneVisitLines({ amount: null, from: false, code: null })).toEqual([
       "You pay only if you go ahead",
-      "Paid once fitted, by a link we text you",
+      "Paid once fitted",
     ]);
   });
 });
@@ -46,9 +43,9 @@ describe("a visit’s name and length", () => {
   });
 
   it("gives the length in hours and minutes, as booking does", () => {
-    expect(home.next.length("Consultation and fit", 180)).toBe("Consultation and fit · 3 hr");
-    expect(home.next.length("Service visit", 90)).toBe("Service visit · 1 hr 30 min");
-    expect(visitLength(60)).toBe("1 hr");
-    expect(visitLength(45)).toBe("45 min");
+    expect(home.next.length("Consultation and fit", 180)).toBe("Consultation and fit · 3 hours");
+    expect(home.next.length("Service visit", 90)).toBe("Service visit · 1 hour 30 minutes");
+    expect(visitLength(60)).toBe("1 hour");
+    expect(visitLength(45)).toBe("45 minutes");
   });
 });

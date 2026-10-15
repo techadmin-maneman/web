@@ -205,7 +205,7 @@ export function registerClientChanges(app: App): void {
     const session = clientOf(c);
     const { deps, log } = c.var;
     const now = deps.now();
-    const visit = await changeableVisit(c.env.DB, session.subjectId, c.req.valid("param").id, now);
+    const visit = await changeableVisit(c.env.DB, session.subjectId, { id: c.req.valid("param").id }, now);
     if (visit === null) return refuse(c, "not_changeable");
     if (!servesItself(c, visit.type)) return refuse(c, "ops_assisted");
     const terms = await changeTerms({

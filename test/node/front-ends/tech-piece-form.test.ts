@@ -12,27 +12,42 @@ import {
 } from "../../../apps/tech/src/steps/piece-form.ts";
 
 const EMPTY: PieceForm = { code: "", base: "", lot: "", stock: null, oldCode: "", oldReason: "", choice: null };
-const FIRST_FIT = { one_visit: false };
-const ONE_VISIT = { one_visit: true };
+const FIRST_FIT = { one_visit: false, kit_hair_systems: [], date: "2026-09-21" };
+const ONE_VISIT = { one_visit: true, kit_hair_systems: [], date: "2026-09-21" };
 const LABEL = "MM-STD-4417-B";
 
 describe("the piece step", () => {
   it("waits for a label in the API’s format, and for one that is not another client’s", () => {
-    expect(stillMissing(EMPTY, FIRST_FIT, false)).toBe(copy.piece.checkFirst);
-    expect(stillMissing({ ...EMPTY, code: "MM-STD-44" }, FIRST_FIT, false)).toBe(copy.piece.checkFirst);
-    expect(stillMissing({ ...EMPTY, code: LABEL }, FIRST_FIT, true)).toBe(copy.piece.notThisClientAction);
-    expect(stillMissing({ ...EMPTY, code: LABEL }, FIRST_FIT, false)).toBeNull();
+    expect(stillMissing(EMPTY, FIRST_FIT, "found")).toBe(copy.piece.checkFirst);
+    expect(stillMissing({ ...EMPTY, code: "MM-STD-44" }, FIRST_FIT, "found")).toBe(copy.piece.checkFirst);
+    expect(stillMissing({ ...EMPTY, code: LABEL }, FIRST_FIT, "another_client")).toBe(copy.piece.notThisClientAction);
+    expect(stillMissing({ ...EMPTY, code: LABEL }, FIRST_FIT, "found")).toBeNull();
   });
 
-  it("asks why a piece that came off failed, once its label is given", () => {
+  it("goes on with a label in the kit, or one checked as this client's, and never with one unknown to us", () => {
+    const kit = {
+      ...FIRST_FIT,
+      kit_hair_systems: [{ code: "hs_exact", units: [{ code: LABEL, lot_code: null, expires_on: null }] }],
+    } as unknown as typeof FIRST_FIT;
+    const typed = { ...EMPTY, code: "MM-STD-9999-Z" };
+    expect(stillMissing(typed, FIRST_FIT, "none")).toBe(copy.piece.uncheckedAction);
+    expect(stillMissing(typed, FIRST_FIT, "unknown")).toBe(copy.piece.notInKitAction);
+    // With no signal to check it, the label goes as typed, and the API checks it once the phone is back.
+    expect(stillMissing(typed, FIRST_FIT, "offline")).toBeNull();
+    expect(stillMissing({ ...EMPTY, code: LABEL }, kit, "none")).toBeNull();
+  });
+
+  it("takes the piece that came off with or without why it failed, as a due one has no failure", () => {
     const off = { ...EMPTY, code: LABEL, oldCode: "MM-STD-1201-A" };
-    expect(stillMissing(off, FIRST_FIT, false)).toBe(copy.piece.old.needsReason);
-    expect(stillMissing({ ...off, oldReason: "lifted at the front" }, FIRST_FIT, false)).toBeNull();
+    expect(stillMissing(off, FIRST_FIT, "found")).toBeNull();
+    expect(stillMissing({ ...off, oldReason: "lifted at the front" }, FIRST_FIT, "found")).toBeNull();
+    expect(stillMissing({ ...off, oldCode: "MM-STD-12" }, FIRST_FIT, "found")).toBe(copy.piece.checkFirst);
+    expect(pieceBody(off, FIRST_FIT)).toEqual({ piece_code: LABEL, old_piece: { piece_code: "MM-STD-1201-A" } });
   });
 
   it("on a one visit, waits for the client’s choice, and asks for no label once they decline", () => {
-    expect(stillMissing(EMPTY, ONE_VISIT, false)).toBe(oneVisit.chooseFirst);
-    expect(stillMissing({ ...EMPTY, choice: DECLINED }, ONE_VISIT, false)).toBeNull();
+    expect(stillMissing(EMPTY, ONE_VISIT, "found")).toBe(oneVisit.chooseFirst);
+    expect(stillMissing({ ...EMPTY, choice: DECLINED }, ONE_VISIT, "found")).toBeNull();
     expect(pieceBody({ ...EMPTY, choice: DECLINED }, ONE_VISIT)).toEqual({ declined: true });
   });
 

@@ -156,7 +156,7 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
       )}
       <dl className={shared.facts}>
         {visit.technician !== null && <Fact name={copy.technician} value={visit.technician.name} />}
-        {visit.duration_minutes !== null && (
+        {visit.duration_minutes !== null && visit.duration_minutes > 0 && (
           <Fact name={copy.duration} value={visitLength(visit.duration_minutes)} numeric />
         )}
         <Fact name={copy.type} value={visitTitle(visit)} />

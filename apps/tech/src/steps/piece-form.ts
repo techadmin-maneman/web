@@ -44,6 +44,32 @@ function productFitted(job: Pick<Job, "profile" | "service" | "one_visit" | "typ
   return job.profile?.fit.product ?? null;
 }
 
+type Fit = NonNullable<NonNullable<Job["profile"]>["fit"]>;
+
+/** Whether a kit hair system is made to the profile's base, colour, grey and density exactly. */
+const madeTo = (each: KitHairSystem, fit: Fit): boolean =>
+  each.base_width_in === fit.base_width_in &&
+  each.base_length_in === fit.base_length_in &&
+  each.colour === fit.colour &&
+  each.grey_percent === fit.grey_percent &&
+  each.density_percent === fit.density_percent;
+
+/**
+ * Whether the kit hair system chosen is not the one this fit is for: another product than the one paid for or chosen,
+ * or, with a hair profile, made to another fit. False for none chosen, or a piece from elsewhere.
+ */
+function otherThanFitted(
+  job: Pick<Job, "kit_hair_systems" | "profile" | "service" | "one_visit" | "type">,
+  choice: Choice,
+  stock: string | null,
+): boolean {
+  const hairSystem = job.kit_hair_systems.find((each) => each.code === stock);
+  if (hairSystem === undefined) return false;
+  const product = productFitted(job, choice);
+  const fit = job.profile?.fit ?? null;
+  return (product !== null && hairSystem.product !== product) || (fit !== null && !madeTo(hairSystem, fit));
+}
+
 /**
  * The kit's hair systems, those made to the client's profile first: the product the client chose on a one visit, paid
  * for on a first fit, or the profile's on a replacement, and the profile's base, colour, grey and density exactly.
@@ -54,14 +80,7 @@ export function kitChoices(
 ): { readonly hairSystem: KitHairSystem; readonly matches: boolean }[] {
   const fit = job.profile?.fit ?? null;
   const product = productFitted(job, choice);
-  const matches = (each: KitHairSystem) =>
-    fit !== null &&
-    each.product === product &&
-    each.base_width_in === fit.base_width_in &&
-    each.base_length_in === fit.base_length_in &&
-    each.colour === fit.colour &&
-    each.grey_percent === fit.grey_percent &&
-    each.density_percent === fit.density_percent;
+  const matches = (each: KitHairSystem) => fit !== null && each.product === product && madeTo(each, fit);
   const listed = job.kit_hair_systems.map((hairSystem) => ({ hairSystem, matches: matches(hairSystem) }));
   return [...listed.filter((each) => each.matches), ...listed.filter((each) => !each.matches)];
 }
@@ -91,9 +110,18 @@ function kitPieceOf(
 }
 
 /** Whether a label is of a piece in the kit that expires before the visit's day. */
-export function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string): boolean {
+function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string): boolean {
   const piece = kitPieceOf(job, label);
   return piece !== null && piece.expires_on !== null && piece.expires_on < job.date;
+}
+
+/** What the label warns of: a piece of the kit that has expired, or a hair system not the one this fit is for. */
+export function labelWarning(
+  job: Pick<Job, "kit_hair_systems" | "date" | "profile" | "service" | "one_visit" | "type">,
+  form: PieceForm,
+): string | null {
+  if (expiredInKit(job, form.code)) return copy.piece.expired;
+  return otherThanFitted(job, form.choice, form.stock) ? copy.piece.otherThanFitted : null;
 }
 
 /**
@@ -115,19 +143,35 @@ export function afterLabel(
 export const declinedTheFit = (form: PieceForm, job: Pick<Job, "one_visit">): boolean =>
   job.one_visit && form.choice === DECLINED;
 
+/** What a label's check found: not checked yet, unknown to us, no signal to check, this client's, or another's. */
+export type LabelChecked = "none" | "unknown" | "offline" | "found" | "another_client";
+
 /**
- * What still keeps Next dim, in the words it says instead; null once the step can go. `notThisClients`: the label
- * looked up is another client's.
+ * What still keeps Next dim, in the words it says instead; null once the step can go. A fit goes on with a hair system
+ * from the kit, picked by its row or by a label in it, or a label checked as this client's piece; with no signal to
+ * check it, as typed.
  */
-export function stillMissing(form: PieceForm, job: Pick<Job, "one_visit">, notThisClients: boolean): string | null {
+export function stillMissing(
+  form: PieceForm,
+  job: Pick<Job, "one_visit" | "kit_hair_systems" | "date">,
+  checked: LabelChecked,
+): string | null {
+  if (expiredInKit(job, form.code)) return copy.piece.expiredAction;
   if (job.one_visit && form.choice === null) return oneVisit.chooseFirst;
   if (declinedTheFit(form, job)) return null;
   if (!isLabel(form.code)) return copy.piece.checkFirst;
-  if (notThisClients) return copy.piece.notThisClientAction;
-  if (!given(form.oldCode)) return null;
-  if (!isLabel(form.oldCode)) return copy.piece.checkFirst;
-  return given(form.oldReason) ? null : copy.piece.old.needsReason;
+  if (checked === "another_client") return copy.piece.notThisClientAction;
+  const fromKit = form.stock !== null || kitPieceOf(job, form.code) !== null;
+  if (!fromKit && checked === "none") return copy.piece.uncheckedAction;
+  if (!fromKit && checked === "unknown") return copy.piece.notInKitAction;
+  return given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;
 }
+
+/** The piece that came off: why it failed where it did; with no reason, it was due, and is replaced. */
+const oldPieceOf = (form: PieceForm) =>
+  given(form.oldReason)
+    ? { piece_code: form.oldCode, failure_reason: form.oldReason.trim() }
+    : { piece_code: form.oldCode };
 
 /** The step's body: against the fit, or the piece with what was said of it, and on a replacement the one off. */
 export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBody<"piece"> {
@@ -138,6 +182,6 @@ export function pieceBody(form: PieceForm, job: Pick<Job, "one_visit">): EventBo
     ...(given(form.base) ? { base: form.base.trim() } : {}),
     ...(given(form.lot) ? { supplier_lot: form.lot.trim() } : {}),
     ...(form.stock === null ? {} : { stock_code: form.stock }),
-    ...(given(form.oldCode) ? { old_piece: { piece_code: form.oldCode, failure_reason: form.oldReason.trim() } } : {}),
+    ...(given(form.oldCode) ? { old_piece: oldPieceOf(form) } : {}),
   };
 }

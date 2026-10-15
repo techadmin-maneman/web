@@ -24,13 +24,17 @@ import { purchasingApi } from "./purchasing-api.ts";
 
 type Answer = Awaited<ReturnType<typeof purchasingApi.sendOrder>>;
 
-/** Whether the person signed in may approve the order now: not where they gave its first approval already. */
-function useApprovable(order: Order): boolean {
+/**
+ * Whether the person signed in may approve the order now, which they may not where they gave its first approval
+ * already; and whether they did.
+ */
+function useApprovable(order: Order): { readonly approvable: boolean; readonly firstWasMine: boolean } {
   const access = useAccess();
   const [signedIn] = useLoad(whoami);
   const me = signedIn.state === "loaded" ? signedIn.value.signed_in_as.toLowerCase() : null;
   const approvedByMe = order.approved_by !== null && order.approved_by.toLowerCase() === me;
-  return order.state === "drafted" && !approvedByMe && access.mayCall("POST /api/purchase-orders/{id}/approve");
+  const mayApprove = order.state === "drafted" && access.mayCall("POST /api/purchase-orders/{id}/approve");
+  return { approvable: mayApprove && !approvedByMe, firstWasMine: mayApprove && approvedByMe };
 }
 
 /** Why the order is cancelled, asked before it is. */
@@ -92,7 +96,7 @@ function Steps({
   failure: Failure | null;
 }) {
   const access = useAccess();
-  const approvable = useApprovable(order);
+  const { approvable, firstWasMine } = useApprovable(order);
   const [cancelling, setCancelling] = useState(false);
   const step = async (to: "approve" | "send", said: string) => {
     onAnswer(await (to === "approve" ? purchasingApi.approveOrder(order.id) : purchasingApi.sendOrder(order.id)), said);
@@ -124,6 +128,7 @@ function Steps({
           </Button>
         )}
       </FormActions>
+      {firstWasMine && <Note>{copy.order.yoursFirst}</Note>}
       {cancelling && (
         <CancelOrder
           orderId={order.id}

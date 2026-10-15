@@ -21222,7 +21222,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
 
 ```json
 {
@@ -21315,7 +21315,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
 
 ```json
 {
@@ -21408,7 +21408,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, or a code the list never held, or items.N.client for a checklist item's client words empty or too long
+**400**: invalid_request: fields names items for a list empty or too long, or items.N.label or items.N.code for one that is empty, too long, twice on the list, placeholder text, or a code the list never held, or items.N.client for a checklist item's client words empty, too long or placeholder text
 
 ```json
 {
@@ -21550,7 +21550,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity
 
 ```json
 {
@@ -21643,7 +21643,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, quantity for more than the place holds, or units for a label the place does not hold or a count other than the quantity
+**400**: invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity
 
 ```json
 {
@@ -21772,7 +21772,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity
 
 ```json
 {
@@ -21901,7 +21901,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity
+**400**: invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity
 
 ```json
 {
@@ -27832,14 +27832,15 @@ Request body:
             "booked",
             "in_progress",
             "done",
-            "closing"
+            "closing",
+            "missed"
           ]
         },
         {
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -28301,14 +28302,15 @@ Request body:
             "booked",
             "in_progress",
             "done",
-            "closing"
+            "closing",
+            "missed"
           ]
         },
         {
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, or otherwise over and waiting to be closed. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -42438,8 +42440,7 @@ Request body:
       "description": "One of the cities the list names."
     },
     "reason": {
-      "type": "string",
-      "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/-]{0,59}$/u"
+      "type": "string"
     }
   },
   "required": [

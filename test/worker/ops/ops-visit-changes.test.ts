@@ -288,8 +288,17 @@ describe("POST /api/visits/:id/cancel: what it refuses", () => {
     expect(await statusOf()).toBe("scheduled");
   });
 
-  it("refuses a visit that has passed", async () => {
+  it("cancels a visit whose time passed with nobody arriving, and refuses one the technician arrived at", async () => {
     await visit("service", THIS_MORNING);
+    expect((await cancel({}, { confirm: false })).status).toBe(200);
+
+    await env.DB.prepare(
+      `INSERT INTO job_events (id, appointment_id, event_id, technician_id, kind, body, occurred_at, received_at,
+         updated_at)
+       VALUES ('event-1', ?1, 'event-checkin-01', 't1', 'check_in', '{}', ?2, ?2, ?2)`,
+    )
+      .bind(VISIT, THIS_MORNING)
+      .run();
     expect((await cancel({}, { confirm: false })).status).toBe(409);
   });
 

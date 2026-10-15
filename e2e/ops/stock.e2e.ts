@@ -62,7 +62,7 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
   await expect(tape.getByRole("cell").nth(1)).toContainText(stock.low);
   await expect(tape.getByRole("cell").nth(2)).not.toContainText(stock.low);
   const solvent = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Solvent" }) });
-  await expect(solvent.getByRole("cell").nth(0)).toHaveText("-20 ml");
+  await expect(solvent.getByRole("cell").nth(0)).toHaveText(`-20 ml${stock.belowZero}`);
 });
 
 // A column a kit was unreadable past eight or ten.

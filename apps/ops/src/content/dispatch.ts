@@ -185,6 +185,8 @@ export const dispatch = {
     fromTo: (from: string, to: string) => `${from} → ${to}`,
     /** The tray's jobs have no technician yet, so there is nothing to move them from. */
     to: (to: string) => `To ${to}`,
+    /** Another technician, at the time it stood. */
+    stays: (at: string) => `Same time, ${at}`,
     legend: "Reason",
     /**
      * The design's five, in its order (src/policy/dispatch.ts), less "Skill needed · first fit certified": no

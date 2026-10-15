@@ -19,7 +19,7 @@ export const counts = {
   /** "Imran Qureshi · Weekly" */
   heading: (place: string, countClass: string) => `${place} · ${countClass}`,
   countNote: "Count what’s there.",
-  recountNote: "These differed. Count them again.",
+  recountNote: "These didn’t match: a figure differed or a label wasn’t scanned. Count them again.",
   counted: (name: string) => `Count of ${name}`,
   /** A hair system held under labels: each one scanned, and any with no label counted beside them. */
   scanEach: (name: string) => `Scan every ${name} here.`,
@@ -27,7 +27,9 @@ export const counts = {
   /** "Not held here: MM-ESS-0000041-R. Look into it." */
   notHeld: (labels: readonly string[]) =>
     `Not held here: ${labels.join(", ")}. Look into ${labels.length === 1 ? "it" : "them"}.`,
-  notScanned: (labels: readonly string[]) => `Not scanned: ${labels.join(", ")}.`,
+  /** At sign-off: what signing off does to the pieces whose labels went unscanned. */
+  notScanned: (labels: readonly string[]) =>
+    `Not scanned: ${labels.join(", ")}. Signing off marks ${labels.length === 1 ? "it" : "them"} missing; scan ${labels.length === 1 ? "it" : "them"} on a recount if ${labels.length === 1 ? "it is" : "they are"} there.`,
   saveCount: "Save count",
   saveRecount: "Save recount",
   countSaid: (waiting: number) => (waiting === 0 ? "Counted." : `Counted. ${String(waiting)} to count again.`),

@@ -14,7 +14,6 @@ import { CodeBox } from "../CodeBox.tsx";
 import { photoLines } from "../consents.ts";
 import { atStake, insideNotice, type AtStake } from "../late-change.ts";
 import styles from "../booking.module.css";
-import { firstNameOf } from "@rules/lib/names.ts";
 import { paysNothing } from "../pay.ts";
 import { minutesAndSeconds, useHoldLeft, Heading, LastMinute, LateFee } from "./shared.tsx";
 
@@ -133,7 +132,6 @@ export function PayStep(props: {
   const { hold, moving } = props;
   const copy = booking.pay;
   const left = useHoldLeft(hold);
-  const technician = firstNameOf(hold.technician.name);
   const covered = hold.credit !== null;
   const free = paysNothing(hold);
   // A move in place keeps the visit as it was booked: only its new time, and what the move costs, are shown.
@@ -202,7 +200,6 @@ export function PayStep(props: {
       >
         {payLabel(hold, moving)}
       </Button>
-      {!free && <p className={styles.moneyNote}>{copy.neverHandlesMoney(technician)}</p>}
       {stake.kind === "credit" && !late && (
         <p className={styles.creditNote}>{copy.credit.note(hold.change_notice_hours)}</p>
       )}

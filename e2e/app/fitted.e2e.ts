@@ -14,7 +14,7 @@ test("Home shows a fitted client’s next visit, with the technician, and Resche
   await expect(page.getByText(shortDate(client.next.date))).toBeVisible();
   await expect(page.getByText("Afternoon, 12–4 pm")).toBeVisible();
   await expect(page.getByText("Imran", { exact: true })).toBeVisible();
-  await expect(page.getByText("Service visit · 1 hr 30 min")).toBeVisible();
+  await expect(page.getByText("Service visit · 1 hour 30 minutes")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
   // Home's one prompt: this client has given no address, which comes before the replacement falling due.
   await expect(page.getByText(appCopy.home.prompt.address)).toBeVisible();
@@ -44,7 +44,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await visits.nth(1).click();
   await expect(page.getByRole("heading", { level: 1, name: fullDate(client.service.date) })).toBeVisible();
   await expect(page.getByText("Imran Qureshi")).toBeVisible();
-  await expect(page.getByText("1 hr 25 min")).toBeVisible();
+  await expect(page.getByText("1 hour 25 minutes")).toBeVisible();
   // The visit's "What was done": the checklist the technician ticked, from their phone.
   await expect(page.getByRole("term").filter({ hasText: appCopy.visits.detail.done }).locator("+ dd")).toHaveText(
     "Hair system removed, scalp cleaned, hair system cleaned.",

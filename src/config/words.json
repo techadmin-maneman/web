@@ -4788,8 +4788,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted, by a link to your phone; decide against it and you pay nothing.",
-    "reviewed": true
+    "text": "Starts in the morning or the afternoon. Choose your hair system with your technician and have it fitted there and then. Pay once fitted; decide against it and you pay nothing.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.consultation.code.label",
@@ -5292,8 +5292,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "3 hours at home. You pay once fitted, by a link to your phone.",
-    "reviewed": true
+    "text": "3 hours at home. You pay once fitted.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.booked.calendar.label",

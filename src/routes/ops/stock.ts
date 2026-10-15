@@ -34,7 +34,7 @@ import { indiaDate } from "../../lib/india-time.ts";
 import { Code, Labels, LotCode, Note, PlaceId, Quantity, STOCK } from "./stock.schemas.ts";
 
 const REFUSED = errorResponse(
-  "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels or more than the place holds, or units for a label the place does not hold or a count other than the quantity",
+  "invalid_request: fields names consumable_code for one nobody added, place_id for no place or one not in the caller's cities, lot_id for a lot the place holds none of, quantity for more pieces of a hair system than one delivery labels, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity",
 );
 
 /** A place outside the caller's cities, as anything elsewhere is. */
@@ -101,7 +101,7 @@ const transferRoute = opsRoute({
     404: ELSEWHERE,
     200: STOCK,
     400: errorResponse(
-      "invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, quantity for more than the place holds, or units for a label the place does not hold or a count other than the quantity",
+      "invalid_request: fields names consumable_code, from, or to for the place it came from, or a place not in the caller's cities, quantity.held for more than the place holds, or units for a label the place does not hold or a count other than the quantity",
     ),
   },
 });

@@ -83,7 +83,6 @@ export const booking = {
     // A booking ops set to cost nothing when changed late (docs/decisions/0088-every-policy-in-the-console.md).
     freeAnyTime: "Free to move or cancel at any time.",
     pay: (amount: string) => `Pay ${amount}`,
-    neverHandlesMoney: (name: string) => `${name} never handles money.`,
     guarantee: GUARANTEE,
     // A free consultation has no payment.
     free: "Free",

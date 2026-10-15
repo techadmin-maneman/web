@@ -32,14 +32,12 @@ describe("the piece", () => {
       .run();
   });
 
-  /** Every step of the replacement up to the piece, worked from 13:02, and replayed the next morning. */
+  /** Every step of the replacement up to the piece, which comes first after the photographs, worked from 13:02. */
   async function upToThePiece(at: Date): Promise<void> {
     const steps: [string, unknown, number][] = [
       ["checkin", AT_THE_DOOR, 2],
       ["start", undefined, 5],
       ["photos", { phase: "before" }, 10],
-      ["checklist", { done: [] }, 30],
-      ["consumables", { items: [{ name: "Adhesive", quantity: 2 }] }, 40],
     ];
     for (const [step, body, minute] of steps) {
       const answer = await postAt(at, `/api/tech/jobs/${REPLACEMENT}/${step}`, body, uuidv7At(minute));
@@ -98,6 +96,22 @@ describe("the piece", () => {
     ]);
   });
 
+  it("takes a due piece off as replaced, not failed, where it is named with no reason", async () => {
+    await upToThePiece(minutesAfterStart(60));
+    const answer = await postAt(
+      minutesAfterStart(60),
+      `/api/tech/jobs/${REPLACEMENT}/piece`,
+      { piece_code: "MM-STD-5520-A", old_piece: { piece_code: "MM-STD-4417-B" } },
+      uuidv7At(50),
+    );
+    expect(answer.status).toBe(202);
+
+    const old = await env.DB.prepare(
+      "SELECT failed_at, replaced_at IS NOT NULL AS replaced FROM pieces WHERE id = 'piece-old'",
+    ).first();
+    expect(old).toEqual({ failed_at: null, replaced: 1 });
+  });
+
   it("leaves a piece named as failed unmarked as replaced", async () => {
     await upToThePiece(minutesAfterStart(60));
     await postAt(
@@ -125,7 +139,17 @@ describe("the piece", () => {
   });
 
   it("keeps what was used, with quantities, where ops can count stock", async () => {
-    await upToThePiece(minutesAfterStart(60));
+    const at = minutesAfterStart(60);
+    await upToThePiece(at);
+    const steps: [string, unknown, number][] = [
+      ["piece", { piece_code: "MM-STD-5520-A" }, 20],
+      ["checklist", { done: [] }, 30],
+      ["consumables", { items: [{ name: "Adhesive", quantity: 2 }] }, 40],
+    ];
+    for (const [step, body, minute] of steps) {
+      const answer = await postAt(at, `/api/tech/jobs/${REPLACEMENT}/${step}`, body, uuidv7At(minute));
+      expect(answer.status).toBeLessThan(300);
+    }
 
     const used = await env.DB.prepare("SELECT name, quantity FROM consumables_used WHERE appointment_id = ?1")
       .bind(REPLACEMENT)
@@ -159,8 +183,6 @@ describe("a piece label already on record", () => {
       ["checkin", AT_THE_DOOR, 2],
       ["start", undefined, 5],
       ["photos", { phase: "before" }, 10],
-      ["checklist", { done: [] }, 30],
-      ["consumables", { items: [] }, 40],
     ];
     for (const [step, body, minute] of steps) {
       const answer = await postAt(sentAt, `/api/tech/jobs/${REPLACEMENT}/${step}`, body, uuidv7At(minute));

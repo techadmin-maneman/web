@@ -17,7 +17,7 @@ import { useScreen } from "../lib/useScreen.ts";
 import { clock, lengthOf, metres, todayInIndia, where } from "../lib/when.ts";
 import { go } from "../route.ts";
 import { Failed, Loading } from "../states/States.tsx";
-import { keptArrival, keptClosed } from "../store/jobs.ts";
+import { keptArrival, keptClosed, keptStates } from "../store/jobs.ts";
 import type { Queued } from "../store/outbox.ts";
 import frame from "../components/frame.module.css";
 import shared from "./steps.module.css";
@@ -76,9 +76,17 @@ function Evidence({ job }: { job: Job }) {
   );
 }
 
+/** How a job closed: as its card or the phone's outbox says, else as the API's answer to its outcome did once it landed. */
+function useOutcome(job: Job | null, queued: readonly Queued[], signature: unknown): Outcome | null {
+  const heard = valueOr(useAsync(keptStates, signature)[0], null)?.get(job?.id ?? "")?.outcome ?? null;
+  if (job === null) return null;
+  return outcomeOf({ id: job.id, progress: { ...job.progress, outcome: job.progress.outcome ?? heard } }, queued);
+}
+
 export function CloseOut({ id }: { id: string }) {
   const waiting = useOutbox();
   const [loaded, retry] = useJob(id, signatureOf(waiting));
+  const outcome = useOutcome(loaded.state === "loaded" ? loaded.value : null, waiting.events, signatureOf(waiting));
   const [day] = useDay(todayInIndia());
   const names = useNames();
   const heading = useScreen(titles.closeOut);
@@ -96,7 +104,6 @@ export function CloseOut({ id }: { id: string }) {
   }
 
   const job = loaded.value;
-  const outcome = outcomeOf(job, waiting.events);
   if (outcome === null) {
     return (
       <main className={frame.screen}>

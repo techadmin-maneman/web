@@ -5,7 +5,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
-import { shortDate, weekdayDate } from "@maneman/web-kit/dates";
+import { addDays, shortDate, todayInIndia, weekdayDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold } from "../../api.ts";
@@ -102,7 +102,9 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
       </h2>
       <Icon className={styles.confirmedTick} d={ICONS.tick} size="xl" />
       <p className={bookingSheet.confirmedTitle}>{when}</p>
-      {reminded && <p className={bookingSheet.confirmedLine}>{copy.tellsYou}</p>}
+      {reminded && hold.date > addDays(todayInIndia(Date.now()), 1) && (
+        <p className={bookingSheet.confirmedLine}>{copy.tellsYou}</p>
+      )}
       <Settled hold={hold} />
       <div className={styles.confirmedCalendar}>
         <AddToCalendar

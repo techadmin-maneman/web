@@ -14,7 +14,7 @@ import {
   choiceSent,
   declinedTheFit,
   afterLabel,
-  expiredInKit,
+  labelWarning,
   given,
   kitChoices,
   noticeFor,
@@ -136,10 +136,8 @@ function Fitting({
   const [choice, setChoice] = useState<Choice>(choiceSent(sent));
 
   const form: PieceForm = { code, base, lot, stock, oldCode, oldReason, choice };
-  const expired = expiredInKit(job, code);
-  const missing = expired
-    ? copy.piece.expiredAction
-    : stillMissing(form, job, looked.state === "found" && !looked.found.belongs_to_this_job);
+  const checked = looked.state === "found" && !looked.found.belongs_to_this_job ? "another_client" : looked.state;
+  const missing = stillMissing(form, job, checked);
   /** A label typed or scanned: one of the kit's pieces picks its hair system and fills in its lot. */
   const takeLabel = (label: string) => {
     const next = afterLabel(job, { code, lot }, label);
@@ -180,7 +178,7 @@ function Fitting({
             code={code}
             looked={looked}
             looking={looking}
-            expired={expired}
+            warning={labelWarning(job, form)}
             pieces={(job.pieces ?? []).filter(toFit)}
             picking={picking === "new"}
             onCode={takeLabel}
@@ -206,7 +204,7 @@ function Fitting({
           )}
         </>
       )}
-      {!job.one_visit && <CannotFit onClose={onFinish} />}
+      <CannotFit onClose={onFinish} />
     </StepFrame>
   );
 }

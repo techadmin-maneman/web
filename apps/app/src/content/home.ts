@@ -96,7 +96,12 @@ export const home = {
     openInvoice: "Open the invoice",
   },
   /** A visit not yet closed, once it has begun. */
-  stages: { in_progress: "Today · in progress", done: "Done · record on its way", closing: "Wrapping up" },
+  stages: {
+    in_progress: "Today · in progress",
+    done: "Done · record on its way",
+    closing: "Wrapping up",
+    missed: "We’ll be in touch about this visit",
+  },
   next: {
     label: "Your next visit",
     /** "Service visit · 1 hour 30 minutes". */
@@ -132,11 +137,11 @@ export const home = {
     unpriced: "You pay only if you go ahead",
     covered: (code: string) => `Nothing to pay: code ${code} covers it`,
     code: (code: string) => `Code ${code} applied`,
-    paidBy: "Paid once fitted, by a link we text you",
+    paidBy: "Paid once fitted",
     expect: [
       "Your scalp measured and your colour matched.",
       "Choose your hair system, fitted there and then.",
-      "Decide before it’s fitted: go ahead and pay by the link we text you, or decide against it and pay nothing.",
+      "Decide before it’s fitted: go ahead and pay once fitted, or decide against it and pay nothing.",
     ],
   },
   /** A one visit the client was fitted at and has not paid for yet. */

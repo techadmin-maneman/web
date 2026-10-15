@@ -64,12 +64,13 @@ export interface ChangeableVisit {
 }
 
 /**
- * The client's visit, if they may still change it: ahead, not begun, and of one of our types.
+ * The client's visit, if they may still change it: ahead, not begun, and of one of our types. `evenPast`: ops may also
+ * cancel one whose time has passed with nobody arriving.
  */
 export async function changeableVisit(
   db: D1Database,
   personId: string,
-  visitId: string,
+  visit: { readonly id: string; readonly evenPast?: boolean },
   now: Date,
 ): Promise<ChangeableVisit | null> {
   const row = await db
@@ -78,9 +79,9 @@ export async function changeableVisit(
          s.minutes AS service_minutes
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
-         AND a.type IS NOT NULL AND a.window_start > ?3 AND NOT ${visitBegun("a")}`,
+         AND a.type IS NOT NULL AND (a.window_start > ?3 OR ?4 = 1) AND NOT ${visitBegun("a")}`,
     )
-    .bind(visitId, personId, now.toISOString())
+    .bind(visit.id, personId, now.toISOString(), visit.evenPast === true ? 1 : 0)
     .first<{
       id: string;
       person_id: string;
@@ -105,14 +106,14 @@ export async function changeableVisit(
   };
 }
 
-/** The visit, if it may still be changed, whoever's it is: for ops, who change it for the client. */
+/** The visit, if ops may still cancel it for the client: not begun, ahead or with its time passed and nobody arrived. */
 export async function changeableVisitFor(db: D1Database, visitId: string, now: Date): Promise<ChangeableVisit | null> {
   const owner = await db
     .prepare("SELECT person_id FROM appointments WHERE id = ?1")
     .bind(visitId)
     .first<{ person_id: string }>();
   if (owner === null) return null;
-  return changeableVisit(db, owner.person_id, visitId, now);
+  return changeableVisit(db, owner.person_id, { id: visitId, evenPast: true }, now);
 }
 
 /** When the visit's window starts, by the times in force on its day, which the 24 hours count back from. */

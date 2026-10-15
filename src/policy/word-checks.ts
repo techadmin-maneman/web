@@ -19,6 +19,9 @@ const TYPED_VISITS =
 
 const PLACEHOLDER = /\bplaceholder\b|\blorem\b|\bTODO\b|\bTBD\b/i;
 
+/** Text marked to be written later, which no one should read. */
+export const isPlaceholder = (text: string): boolean => PLACEHOLDER.test(text);
+
 /** What a message's first line may not name: the lock screen shows it to anyone near the phone. */
 const SAYS_THE_VISIT = /hair|fit/i;
 

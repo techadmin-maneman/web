@@ -99,8 +99,8 @@ test("books a fitted client’s service visit in a window someone is free in, se
   await expect(booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true })).toHaveValue("service");
   // Thursday's morning is full, so it is not offered.
   await expect(booking.getByLabel(opsCopy.clients.visits.book.window, { exact: true }).getByRole("option")).toHaveText([
-    "afternoon, 12:00 to 16:00",
-    "evening, 16:00 to 20:00",
+    "Afternoon, 12 pm to 4 pm",
+    "Evening, 4 pm to 8 pm",
   ]);
   await booking
     .getByLabel(opsCopy.clients.visits.book.technician, { exact: true })

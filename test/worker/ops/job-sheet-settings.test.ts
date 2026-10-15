@@ -176,6 +176,14 @@ describe("a checklist ops save", () => {
     expect(ticked.status).toBe(202);
   });
 
+  it("refuses words left to be written later, for the technician or the client", async () => {
+    const items = [{ label: "PLACEHOLDER Old hair system removed" }, { label: "Scalp cleaned", client: "TBD" }];
+    const answer = await job.opsPost("/api/job-sheet/checklists/replacement", { items });
+
+    expect(answer.status).toBe(400);
+    expect(await answer.json()).toMatchObject({ error: { fields: ["items.0.label", "items.1.client"] } });
+  });
+
   it("refuses a code no list of the kind ever held", async () => {
     await job.workTo("checklist");
     const answer = await job.post(`/api/tech/jobs/${JOB}/checklist`, { done: ["made_up"] }, "event-checklist-01");

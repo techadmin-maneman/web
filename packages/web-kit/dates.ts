@@ -116,6 +116,9 @@ export function listMonth(isoMonth: string, thisYear: number): string {
   return year === String(thisYear) ? name : `${name} ${year}`;
 }
 
+/** A time of day as India's clock words: "09:00" → "9 am", "13:30" → "1:30 pm". */
+export const clockWords = (time: string): string => indiaClock(indiaInstant("2026-01-01", time).toISOString());
+
 /** An instant as India's calendar date, YYYY-MM-DD: "2026-09-21T20:00:00Z" → "2026-09-22". */
 export function indiaDate(isoInstant: string): string {
   return inIndia(isoInstant).toISOString().slice(0, 10);

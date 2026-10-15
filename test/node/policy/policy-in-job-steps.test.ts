@@ -19,12 +19,12 @@ describe("the steps of a job", () => {
     expect(stepsFor("service")).toEqual(["before_photos", "checklist", "consumables", "after_photos", "outcome"]);
   });
 
-  it("takes the piece step on a replacement, and never on a service visit or a consultation", () => {
+  it("takes the piece step on a replacement first, before anything is used, and never on a service or a consultation", () => {
     expect(stepsFor("replacement")).toEqual([
       "before_photos",
+      "piece",
       "checklist",
       "consumables",
-      "piece",
       "after_photos",
       "outcome",
     ]);
@@ -65,17 +65,18 @@ describe("the steps of a job", () => {
     // A service visit has no piece, so its after photographs follow the consumables.
     const toConsumables = done("check_in", "start", "before_photos", "checklist", "consumables");
     expect(stepBefore({ kind: "after_photos", type: "service", done: toConsumables, body: {} })).toBeNull();
-    expect(stepBefore({ kind: "after_photos", type: "replacement", done: toConsumables, body: {} })).toBe("piece");
+    const photographed = done("check_in", "start", "before_photos");
+    expect(stepBefore({ kind: "checklist", type: "replacement", done: photographed, body: {} })).toBe("piece");
   });
 
-  it("closes a fit from its piece step, Can't fit today, once the step before the piece is in", () => {
+  it("closes a fit from its piece step, Can't fit today, once the before photographs are in and before anything is used", () => {
     const cannotFit = { outcome: "partial", reason: "no_piece", cannot_fit: true };
-    const toConsumables = done("check_in", "start", "before_photos", "checklist", "consumables");
-    expect(stepBefore({ kind: "outcome", type: "first_fit", done: toConsumables, body: cannotFit })).toBeNull();
-    const toChecklist = done("check_in", "start", "before_photos", "checklist");
-    expect(stepBefore({ kind: "outcome", type: "replacement", done: toChecklist, body: cannotFit })).toBe(
-      "consumables",
+    const photographed = done("check_in", "start", "before_photos");
+    expect(stepBefore({ kind: "outcome", type: "first_fit", done: photographed, body: cannotFit })).toBeNull();
+    expect(stepBefore({ kind: "outcome", type: "replacement", done: done("check_in", "start"), body: cannotFit })).toBe(
+      "before_photos",
     );
+    const toConsumables = done("check_in", "start", "before_photos", "piece", "checklist", "consumables");
     // Any other outcome still follows the after photographs.
     const partial = { outcome: "partial", reason: "client_stopped_it" };
     expect(stepBefore({ kind: "outcome", type: "first_fit", done: toConsumables, body: partial })).toBe("after_photos");

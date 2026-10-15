@@ -86,8 +86,6 @@ describe("the piece", () => {
     ["checkin", AT_THE_DOOR, 2],
     ["start", undefined, 5],
     ["photos", { phase: "before" }, 10],
-    ["checklist", { done: [] }, 30],
-    ["consumables", { items: [] }, 40],
   ] as const;
 
   beforeEach(async () => {

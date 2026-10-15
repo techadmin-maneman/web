@@ -391,7 +391,7 @@ export const settings = {
       not_permitted: NOT_PERMITTED,
       from: "The first day can’t be in the past.",
       to: "The last day must follow the first, within a month.",
-      reason: "Up to 60 letters or digits.",
+      reason: "Up to 60 characters, starting with a letter or a digit.",
       city: "Choose one of our cities.",
       not_found: changed("Already reopened."),
       offline: OFFLINE,

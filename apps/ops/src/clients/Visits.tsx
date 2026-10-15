@@ -140,48 +140,56 @@ function ClosedWithoutFollowUp({ visit }: { visit: ClientVisit }) {
   );
 }
 
-/** What ops may change of a visit to come: cancel it while it is ahead, or close it by hand once its time has come. */
+type Change = "cancel" | "close";
+
+/**
+ * What ops may change of a visit to come: cancel it while it is ahead, or close it by hand once its time has come; one
+ * nobody arrived at, either.
+ */
 function changesOf(
   visit: { readonly starts_at: string; readonly stage: ClientVisit["stage"] },
   now: number,
-): "cancel" | "close" | null {
-  if (visit.stage === null || visit.stage === "done") return null;
-  if (Date.parse(visit.starts_at) > now) return visit.stage === "booked" ? "cancel" : null;
-  return "close";
+): readonly Change[] {
+  if (visit.stage === null || visit.stage === "done") return [];
+  if (Date.parse(visit.starts_at) > now) return visit.stage === "booked" ? ["cancel"] : [];
+  return visit.stage === "missed" ? ["close", "cancel"] : ["close"];
 }
+
+const CALLS = { cancel: "POST /api/visits/{id}/cancel", close: "POST /api/visits/{id}/close" } as const;
 
 /** A visit's own action in its row, and the panel it opens; a visit changed has the page read the record again. */
 function ChangeVisit({ visit, name, onChanged }: { visit: ClientVisit; name: string; onChanged: () => void }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<Change | null>(null);
   const opener = useRef<HTMLButtonElement>(null);
   const access = useAccess();
-  const change = changesOf(visit, Date.now());
-  if (change === null) return null;
-  const call = change === "cancel" ? "POST /api/visits/{id}/cancel" : "POST /api/visits/{id}/close";
-  if (!access.mayCall(call)) return null;
+  const changes = changesOf(visit, Date.now()).filter((change) => access.mayCall(CALLS[change]));
+  if (changes.length === 0) return null;
 
   const when = fullDate(visit.date);
   const closed = (changed: boolean) => {
-    setOpen(false);
+    setOpen(null);
     if (changed) onChanged();
     else requestAnimationFrame(() => opener.current?.focus());
   };
   return (
     <>
-      <Button
-        variant="outline"
-        size="small"
-        ref={opener}
-        className={styles.rowAction}
-        aria-label={change === "cancel" ? copy.cancel.openLabel(when) : copy.handClose.openLabel(when)}
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        {change === "cancel" ? copy.cancel.open : copy.handClose.open}
-      </Button>
-      {open && change === "cancel" && <CancelVisit visitId={visit.id} name={name} onClose={closed} />}
-      {open && change === "close" && <CloseVisit visitId={visit.id} name={name} date={visit.date} onClose={closed} />}
+      {changes.map((change) => (
+        <Button
+          key={change}
+          variant="outline"
+          size="small"
+          ref={change === open ? opener : undefined}
+          className={styles.rowAction}
+          aria-label={change === "cancel" ? copy.cancel.openLabel(when) : copy.handClose.openLabel(when)}
+          onClick={() => {
+            setOpen(change);
+          }}
+        >
+          {change === "cancel" ? copy.cancel.open : copy.handClose.open}
+        </Button>
+      ))}
+      {open === "cancel" && <CancelVisit visitId={visit.id} name={name} onClose={closed} />}
+      {open === "close" && <CloseVisit visitId={visit.id} name={name} date={visit.date} onClose={closed} />}
     </>
   );
 }

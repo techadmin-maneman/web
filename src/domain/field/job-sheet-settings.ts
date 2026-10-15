@@ -18,6 +18,7 @@ import {
   type JobSheetItem,
 } from "../../config/job-sheet.ts";
 import { VISIT_TYPES, type VisitType } from "../../config/visit-types.ts";
+import { isPlaceholder } from "../../policy/word-checks.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 import { freshCode } from "../../lib/slug.ts";
 import { type Refusal, refusal } from "../../lib/refusal.ts";
@@ -178,12 +179,13 @@ function refusalsOf(which: ListName, sent: readonly ItemSent[], known: ReadonlyS
   const labels = new Set<string>();
   sent.forEach((item, index) => {
     const label = item.label.trim().toLowerCase();
-    if (label === "" || item.label.trim().length > JOB_SHEET_BOUNDS.maxLabel || labels.has(label)) {
+    const tooLong = item.label.trim().length > JOB_SHEET_BOUNDS.maxLabel;
+    if (label === "" || tooLong || labels.has(label) || isPlaceholder(label)) {
       fields.push(`items.${String(index)}.label`);
     }
     labels.add(label);
     const client = item.client?.trim();
-    if (client !== undefined && (client === "" || client.length > JOB_SHEET_BOUNDS.maxLabel)) {
+    if (client !== undefined && (client === "" || client.length > JOB_SHEET_BOUNDS.maxLabel || isPlaceholder(client))) {
       fields.push(`items.${String(index)}.client`);
     }
     if (item.code === undefined) return;

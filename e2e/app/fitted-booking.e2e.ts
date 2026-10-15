@@ -100,7 +100,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   await page.reload();
 
   const card = page.getByRole("region", { name: appCopy.home.oneVisit.label });
-  await expect(card).toContainText("Consultation and fit · 3 hr");
+  await expect(card).toContainText("Consultation and fit · 3 hours");
   await expect(card).toContainText("Rs. 27,000, only if you go ahead");
   await expect(card).toContainText("Code TENPC applied");
   await expect(card).toContainText(appCopy.home.oneVisit.paidBy);

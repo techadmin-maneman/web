@@ -35,3 +35,19 @@ export const gilded = (page: Page) =>
       })
       .map((element) => element.textContent.trim()),
   );
+
+/** A hair system in the technician's kit, held under the one label given: what a fit goes on with. */
+export const holding = (product: string, label: string): Fake["kitHairSystems"] => [
+  {
+    product,
+    base_width_in: 8,
+    base_length_in: 10,
+    colour: "1B",
+    grey_percent: 20,
+    density_percent: 100,
+    code: `hs_${product}`,
+    name: `Kit stock ${label}`,
+    held: 1,
+    units: [{ code: label, lot_code: null, expires_on: null }],
+  },
+];

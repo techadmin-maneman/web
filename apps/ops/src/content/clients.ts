@@ -244,6 +244,9 @@ export const clients = {
       notRecommended: (name: string) => `Their hair profile recommends ${name}.`,
       day: "Day",
       window: "Window",
+      /** "Morning, 9 am to 12 pm" */
+      windowChoice: (name: string, from: string, to: string) =>
+        `${name.charAt(0).toUpperCase()}${name.slice(1)}, ${from} to ${to}`,
       technician: "Technician",
       anyone: "Anyone available",
       earlier: "Earlier days",
@@ -292,6 +295,7 @@ export const clients = {
         terms_changed: "Their free service visit was just used. Try again.",
         unavailable: "Razorpay couldn’t create the link. Try again in a minute.",
         not_found: "This client can’t be booked.",
+        not_permitted: NOT_PERMITTED,
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,
@@ -398,7 +402,8 @@ export const clients = {
       booked: "Booked",
       in_progress: "In progress",
       done: "Done",
-      closing: "Closing…",
+      closing: "Not closed",
+      missed: "Nobody arrived",
     },
     outcomes: { done: "Done", partial: "Partly done", no_show: "No-show" },
     statuses: { cancelled: "Cancelled", terminated: "Not done" },

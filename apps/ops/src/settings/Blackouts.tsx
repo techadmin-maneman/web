@@ -2,6 +2,7 @@
 // a day; the list runs together the days one press added, each run naming who added it. Closing a day moves nothing
 // booked on it, so the check counts the visits it strands, and each run links to the board to move them.
 
+import { isBlackoutReason } from "@rules/policy/blackouts.ts";
 import { CheckLine, CheckWarning } from "../components/CheckPanel.tsx";
 import { Field, DateInput, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
@@ -143,7 +144,12 @@ function DraftBoxes(props: {
           </Select>
         )}
       </Field>
-      <Field label={copy.reason} className={form.field} box="reason">
+      <Field
+        label={copy.reason}
+        className={form.field}
+        box="reason"
+        error={draft.reason.trim() === "" || isBlackoutReason(draft.reason.trim()) ? undefined : copy.errors.reason}
+      >
         {(control) => (
           <TextInput
             {...control}
@@ -166,7 +172,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
   /** The visits the days would leave booked, counted as the check opens; null where they could not be. */
   const [booked, setBooked] = useState<number | null>(0);
   const [added, setAdded] = useState(false);
-  const ready = draft.from !== "" && draft.to !== "" && draft.reason.trim() !== "";
+  const ready = draft.from !== "" && draft.to !== "" && isBlackoutReason(draft.reason.trim());
   const steps = useSteps(
     async () =>
       sentOf(await settingsApi.addBlackouts({ ...periodOf(draft), reason: draft.reason.trim() }), (body) => ({

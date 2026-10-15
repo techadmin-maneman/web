@@ -114,10 +114,12 @@ interface VisitPlace {
 /**
  * The active technicians ops placed in the city a visit is in: the city of the pincode it is booked at, else of the
  * client's current address. Nobody where that city is unknown, and a technician with no city takes no booking until
- * ops set one (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md).
+ * ops set one (docs/decisions/0117-a-technician-takes-visits-in-their-own-city.md). Staging's test records stay apart:
+ * a test client is booked only with a test technician, and a real client never is.
  */
 const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technicians t
   WHERE t.active = 1 AND (t.id = ?3 OR (t.city = ${bookingCity("?1", "?2")} AND (?4 = 0 OR t.fits_trained = 1)
+    AND (?2 IS NULL OR t.test_record = (SELECT COALESCE(MAX(p.test_record), 0) FROM people p WHERE p.id = ?2))
     AND (?5 IS NULL OR EXISTS (
       SELECT 1 FROM stock_balances b WHERE b.consumable_code = ?5 AND b.quantity > 0
         AND (b.place = t.id OR b.place IN (SELECT r.id FROM stock_places r

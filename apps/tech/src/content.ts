@@ -5,6 +5,7 @@
 
 import type { Moved } from "@maneman/web-kit/api";
 import { shortDate } from "@maneman/web-kit/dates";
+import { amountOf } from "@maneman/web-kit/figures";
 import type { Angle, FitSpec, History } from "./api.ts";
 import { apiDate, clock, dayAfter, dayMonth, todayInIndia } from "./lib/when.ts";
 
@@ -478,7 +479,7 @@ export const steps = {
     more: (name: string) => `One more ${name.toLowerCase()}`,
     count: (name: string, count: number) => `${name}: ${String(count)}`,
     // The board draws the name alone; what one is counted in, and what the visit's service expects.
-    unit: (unit: string, expected: number) => (expected === 0 ? unit : `${unit} · ${String(expected)} expected`),
+    unit: (unit: string, expected: number) => (expected === 0 ? unit : `${amountOf(expected, unit)} expected`),
     // The board draws four steppers and no way to record a fifth consumable.
     add: "Add another",
     addOne: (name: string) => `Add ${name}`,
@@ -501,13 +502,16 @@ export const steps = {
     stopScan: "Stop scanning",
     camera: { opening: "Opening the camera…", refused: "No camera. Type the label instead." },
     expired: "This piece has expired. Hand it in and use another.",
+    otherThanFitted: "Not the hair system this fit is for. Check with ops before you fit.",
     expiredAction: "That piece has expired",
     placeholder: "MM-ESS-0000123-K",
     // The board draws no label typed wrong.
     malformed: "Type it as on the label, like MM-ESS-0000123-K.",
     checkFirst: "Check the label to continue",
     look: "Check the label",
-    unknown: "Unknown label. It’s saved as you typed it.",
+    unknown: "Not in your kit. Check the label, or close with Can’t fit today.",
+    notInKitAction: "That label isn’t in your kit",
+    uncheckedAction: "Waiting for the label check",
     inKit: (name: string, lot: string | null) =>
       lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`,
     // The board draws no lookup with no signal.
@@ -525,8 +529,7 @@ export const steps = {
     old: {
       title: "The piece that came off",
       label: "The label of the piece that came off",
-      reason: "Why it failed",
-      needsReason: "Say why it failed to continue",
+      reason: "Why it failed, if it did",
     },
     // The board draws no empty base; the piece may not be in the mirror yet.
     unnamed: "Not recorded",

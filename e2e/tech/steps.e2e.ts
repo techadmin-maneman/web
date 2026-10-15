@@ -8,7 +8,7 @@ import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST } from "./fixtures.ts";
 import { fakeTech } from "./fake-tech.ts";
 import { atTheDoor, deviceRecordOnPhone, heldOnPhone, pageScrolls, queuedOnPhone } from "./on-phone.ts";
-import { startedThrough, writesTo, checklistItems, gilded } from "./steps-fixtures.ts";
+import { holding, startedThrough, writesTo, checklistItems, gilded } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 /** A step's one action, in the foot below its body. */
@@ -165,7 +165,7 @@ test.describe("the consumables step", () => {
 
     await expect(page.getByRole("status").filter({ hasText: "Tape strips: 4" })).toBeAttached();
     await expect(page.getByRole("status").filter({ hasText: "Solvent: 10" })).toBeAttached();
-    await expect(page.getByText("strip · 4 expected")).toBeVisible();
+    await expect(page.getByText("4 strips expected")).toBeVisible();
     await expect(page.getByRole("button", { name: "One more bonding glue" })).toHaveCount(0);
 
     const another = page.getByRole("button", { name: techCopy.steps.consumables.add });
@@ -308,6 +308,7 @@ test.describe("with motion", () => {
 test("a step the API refused can be corrected where it stands in the queue, not only thrown away", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "replacement";
+  fake.kitHairSystems = holding("standard", "MM-STD-7193-C");
   startedThrough(fake, "before_photos", "checklist", "consumables");
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();

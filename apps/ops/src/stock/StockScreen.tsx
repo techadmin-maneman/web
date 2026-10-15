@@ -92,7 +92,8 @@ function Held({ stock, code, place }: { stock: Stock; code: string; place: strin
   return (
     <td className={styles.held}>
       <span className={quantity < 0 ? styles.below : undefined}>{copy.held(quantity, unit)}</span>
-      {holding?.low === true && <span className={styles.low}>{copy.low}</span>}
+      {quantity < 0 && <span className={styles.low}>{copy.belowZero}</span>}
+      {holding?.low === true && quantity >= 0 && <span className={styles.low}>{copy.low}</span>}
       {holding?.counted_at !== null && holding?.counted_at !== undefined && (
         <span className={styles.counted}>{copy.counted(shortDate(indiaDate(holding.counted_at)))}</span>
       )}
@@ -118,7 +119,12 @@ const PLACES_SIDE_BY_SIDE = 6;
 
 /** The place the table shows beside the warehouse, past a handful: each named, and marked where any is low. */
 function PlacePicker({ stock, place, onPlace }: { stock: Stock; place: string; onPlace: (place: string) => void }) {
-  const lowIn = (id: string) => stock.holdings.some((holding) => holding.place_id === id && holding.low);
+  const held = (id: string) => stock.holdings.filter((holding) => holding.place_id === id);
+  /** Below zero says more than low: a movement went unrecorded there. */
+  const markOf = (id: string) => {
+    if (held(id).some((holding) => holding.quantity < 0)) return copy.placeBelow;
+    return held(id).some((holding) => holding.low) ? copy.placeLow : "";
+  };
   return (
     <Field label={copy.place} className={styles.kitPicker}>
       {(control) => (
@@ -135,7 +141,7 @@ function PlacePicker({ stock, place, onPlace }: { stock: Stock; place: string; o
               : [
                   <option key={each.id} value={each.id}>
                     {placeName(stock, each.id)}
-                    {lowIn(each.id) ? copy.placeLow : ""}
+                    {markOf(each.id)}
                   </option>,
                 ],
           )}

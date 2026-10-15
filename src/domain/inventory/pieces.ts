@@ -85,8 +85,9 @@ export function pieceStepOf(body: unknown): PieceStep {
   const piece = pieceBodyOf(body);
   if (piece === null || "declined" in piece) return { fitted: null, failed: [] };
   const failed: PieceFailure[] = [];
+  // An old piece named with no reason was due: the fit retires it as replaced, not failed.
   const oldPiece = piece.old_piece ?? null;
-  if (oldPiece !== null) {
+  if (oldPiece?.failure_reason !== undefined) {
     failed.push({ code: oldPiece.piece_code, reason: oldPiece.failure_reason, field: "old_piece" });
   }
   const code = piece.piece_code;
