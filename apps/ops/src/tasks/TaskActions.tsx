@@ -1,6 +1,6 @@
 // What ops do with a task on the Tasks board itself (docs/decisions/0092-task-owners.md): take it, give it to
-// another member of staff who has signed in to the console, hand it back, and, for a visit left partly done alone,
-// close it without a follow-up, with why. The design draws each task's owner and none of these; they sit beneath the
+// another member of staff who has signed in to the console, hand it back, and, for the groups ops may close, close it
+// with why. The design draws each task's owner and none of these; they sit beneath the
 // task's own lines, as the way to where it is decided does.
 
 import { TextButton } from "@maneman/ui/TextLink";
@@ -21,10 +21,16 @@ type Group = TaskGroup["group"];
 
 /** The group as the close route names it, for the groups whose tasks ops may close; null for any other. */
 const closableAs = (group: Group): ClosableGroup | null =>
-  group === "partial_visit" || group === "city_matter" ? group : null;
+  group === "partial_visit" || group === "at_risk_client" || group === "city_matter" ? group : null;
 
-/** The close button's words and the reason's label, which a City matter says its own way. */
-const closeWords = (group: ClosableGroup) => (group === "city_matter" ? tasks.close.cityMatter : tasks.close);
+/** The close button's words and the reason's label, each group's own. */
+const CLOSE_WORDS: Readonly<Record<ClosableGroup, { readonly open: string; readonly label: string }>> = {
+  partial_visit: tasks.close,
+  at_risk_client: tasks.close.atRisk,
+  city_matter: tasks.close.cityMatter,
+};
+
+const closeWords = (group: ClosableGroup) => CLOSE_WORDS[group];
 
 /** A label every row repeats, with whose it is said to a screen reader. */
 const Named = ({ label, subject }: { label: string; subject: string }) => (

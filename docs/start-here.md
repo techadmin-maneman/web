@@ -267,7 +267,7 @@ this map, or when the map names something that no longer exists.
 
 ### Ops' own work
 
-- **Database work** (`src/domain/ops/`): `needs-a-hand`, `tasks`, `task-facts` (what each task turns on),
+- **Database work** (`src/domain/ops/`): `needs-a-hand`, `tasks`, `task-queues` (the board's queues), `task-facts` (what each task turns on),
   `task-reach` (whose cities each is in), `task-closures`, `task-owners`, `grievances`, `activity`, `staff`,
   `task-spans` (when each task opened and closed), `targets` (each month's plan, city by city)
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `grievances`, `ops-settings`, `console-routes`, `access`,

@@ -5458,7 +5458,7 @@ Request body:
 
 ### POST /api/tasks/{group}/{id}/close
 
-Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed
+Close a visit left partly done, an at-risk client or a City matter without doing its thing, with why; it leaves the board and stays closed
 
 Request body:
 
@@ -21874,7 +21874,7 @@ Request body:
     },
     "truncated": {
       "type": "boolean",
-      "description": "More were waiting than one look reads (2000 a statement), so a count may be short."
+      "description": "More were waiting than one look reads (2000 a statement): every count is whole, but the overdue figure may be short."
     },
     "staff": {
       "type": "array",

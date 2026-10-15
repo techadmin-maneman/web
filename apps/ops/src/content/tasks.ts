@@ -264,6 +264,8 @@ export const tasks = {
     label: "Why no follow-up is needed",
     /** A City matter closes once the city has dealt with it. */
     cityMatter: { open: "Mark done", label: "What was done" },
+    /** An at-risk client closes with what came of the call. */
+    atRisk: { open: "Close", label: "What came of the call" },
     confirm: "Close task",
     closing: "Closing…",
     cancel: "Cancel",

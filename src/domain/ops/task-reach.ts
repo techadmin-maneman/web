@@ -1,10 +1,9 @@
-// Where each task on the board is, so a caller sees only the tasks in their reach: each group's record, which the
-// task's id names, and that record's city (./tasks.ts).
+// Where each task on the board is, so a caller reads only the tasks in their reach: each group's record, which the
+// task's id names, and that record's city. The board keeps to it in the statement that reads each queue (./tasks.ts),
+// so one city's queues never crowd another's out of a look.
 
-import { citiesOf, type PlacedId, type PlacedRecord } from "../clients/places.ts";
-import { reachesCity, type PlacesReached } from "../../policy/access.ts";
+import { idWithinReach, type PlacedRecord } from "../clients/places.ts";
 import type { TaskGroup } from "../../policy/tasks.ts";
-import type { Task } from "./tasks.ts";
 
 /** The record each group's task is read from, which its id names and which says where the task is. */
 const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
@@ -35,19 +34,9 @@ const TASK_RECORDS: Readonly<Record<TaskGroup, PlacedRecord>> = {
   payment_to_refund: "payment",
 };
 
-const recordOf = (task: Task): PlacedId => ({ kind: TASK_RECORDS[task.group], id: task.id });
-
 /**
- * The tasks within reach: each group's where the caller's grants in the department that decides it reach its record's
- * city. A city is looked up only for a task whose group is not reached everywhere.
+ * An SQL condition that keeps a task of the group, its id `id`, where the reach bound to `param` (reachBinding) gets
+ * to its record's city.
  */
-export async function tasksWithin(
-  db: D1Database,
-  tasks: readonly Task[],
-  reachOf: (group: TaskGroup) => PlacesReached,
-): Promise<Task[]> {
-  const toPlace = tasks.filter((task) => reachOf(task.group).kind !== "everywhere");
-  if (toPlace.length === 0) return [...tasks];
-  const cityOf = await citiesOf(db, toPlace.map(recordOf));
-  return tasks.filter((task) => reachesCity(reachOf(task.group), cityOf(recordOf(task))));
-}
+export const taskWithinReach = (group: TaskGroup, id: string, param: string): string =>
+  idWithinReach(TASK_RECORDS[group], id, param);

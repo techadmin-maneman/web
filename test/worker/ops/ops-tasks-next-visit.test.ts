@@ -98,6 +98,24 @@ describe("GET /api/tasks, the next visit", () => {
     ]);
   });
 
+  // A client long gone stayed an overdue task for ever, and the overdue count only grew.
+  it("leaves the board once the client counts as lost, after the days lapsed ops set", async () => {
+    // Done 17 May: due 16 June, lapsed from 24 June, lost after 90 days lapsed, on 22 September.
+    await visitOf(VISIT, "service", "2026-05-17T04:30:00.000Z", "completed");
+    expect(groupNames(await tasks())).toEqual(["at_risk_client"]);
+    await env.DB.prepare("UPDATE appointments SET window_start = '2026-05-16T04:30:00.000Z'").run();
+    expect(groupNames(await tasks())).toEqual([]);
+    // Done 15 July, lost after 30 days lapsed, on 21 September.
+    await env.DB.prepare("UPDATE appointments SET window_start = '2026-07-15T04:30:00.000Z'").run();
+    expect(groupNames(await tasks())).toEqual(["at_risk_client"]);
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('lost_after_days', '30', 'ops@localhost', ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    expect((await opsSet({})).groups).toEqual([]);
+  });
+
   it("lists one on the day they fall at risk, and none the day before", async () => {
     await visitOf(VISIT, "service", "2026-08-16T04:30:00.000Z", "completed"); // at risk from 22 September
     expect(groupNames(await tasks())).toEqual([]);

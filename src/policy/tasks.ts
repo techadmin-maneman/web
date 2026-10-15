@@ -161,10 +161,15 @@ export const dueAt = (since: Date, group: TaskGroup, sla: Slas = TASK_SLA_HOURS)
   new Date(since.getTime() + sla[group] * HOUR_MS);
 
 /**
- * The groups ops close with a reason: a visit left partly done, whose follow-up the client may never want; and a City
- * matter, closed with what was done. Every other group leaves the board only when its thing is done.
+ * The groups ops close with a reason: a visit left partly done, whose follow-up the client may never want; an at-risk
+ * client, closed with what came of the call; and a City matter, closed with what was done. Every other group leaves
+ * the board only when its thing is done.
  */
-export const CLOSABLE_TASK_GROUPS = ["partial_visit", "city_matter"] as const satisfies readonly TaskGroup[];
+export const CLOSABLE_TASK_GROUPS = [
+  "partial_visit",
+  "at_risk_client",
+  "city_matter",
+] as const satisfies readonly TaskGroup[];
 
 export const isClosable = (group: TaskGroup): boolean => (CLOSABLE_TASK_GROUPS as readonly TaskGroup[]).includes(group);
 

@@ -9,6 +9,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
+import { READ_CAP } from "../../../src/domain/ops/tasks.ts";
 import { TASKS_SHOWN } from "../../../src/routes/ops/tasks.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import {
@@ -93,6 +94,24 @@ describe("GET /api/tasks", () => {
     const listed = tasksIn(body, "grievance");
     expect(listed).toHaveLength(TASKS_SHOWN);
     expect(listed[0]?.id).toBe("55555555-5555-4555-8555-000000000000");
+  });
+
+  // A queue past what one look reads was counted only as far as it read.
+  it("counts a queue whole past what one look reads, and says the overdue figure may be short", async () => {
+    await env.DB.prepare(
+      `WITH RECURSIVE n(i) AS (SELECT 0 UNION ALL SELECT i + 1 FROM n WHERE i < ?2)
+       INSERT INTO grievances (id, person_id, text, state, created_at)
+       SELECT printf('55555555-5555-4555-8555-%012d', i), ?1, 'Words', 'open',
+              strftime('%Y-%m-%dT%H:%M:%fZ', '2026-09-01T06:00:00.000Z', '+' || i || ' minutes')
+         FROM n`,
+    )
+      .bind(PERSON, READ_CAP + 4)
+      .run();
+
+    const body = await tasks();
+    expect(body.truncated).toBe(true);
+    expect(body.groups.find((each) => each.group === "grievance")?.count).toBe(READ_CAP + 5);
+    expect(tasksIn(body, "grievance")).toHaveLength(TASKS_SHOWN);
   });
 
   it("lists a finished visit whose invoice is still a draft in Books, until it is sent", async () => {
