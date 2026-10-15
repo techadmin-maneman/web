@@ -89,7 +89,13 @@ const ACTIVITY_SQL = `
     AND (?10 = 1 OR a.action NOT IN ('ops.call', 'client.call', 'tech.call')
          OR (COALESCE(json_extract(a.detail, '$.method'), '') <> 'GET'
              AND COALESCE(json_extract(a.detail, '$.path'), '') NOT GLOB '*/find'
-             AND COALESCE(json_extract(a.detail, '$.path'), '') NOT GLOB '*/search'))
+             AND COALESCE(json_extract(a.detail, '$.path'), '') NOT GLOB '*/search'
+             -- A call whose own action is logged beside it, by the same person within seconds, is that action.
+             AND NOT EXISTS (SELECT 1 FROM audit_log d INDEXED BY audit_log_actor
+                              WHERE d.actor_kind = a.actor_kind AND d.actor = a.actor
+                                AND d.at BETWEEN strftime('%Y-%m-%dT%H:%M:%fZ', a.at, '-5 seconds')
+                                             AND strftime('%Y-%m-%dT%H:%M:%fZ', a.at, '+5 seconds')
+                                AND d.action NOT IN ('ops.call', 'client.call', 'tech.call'))))
   ORDER BY a.id DESC
   LIMIT ?9`;
 

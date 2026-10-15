@@ -22,9 +22,9 @@ export const supplyPlan = {
   keep: "Keep line",
   draft: "Draft again",
   drafted: "Drafted again from the latest forecast.",
-  approvedSaid: "Approved.",
+  approvedSaid: "Approved. Its order is drafted in Purchasing, to approve there.",
   rejectedSaid: "Rejected.",
-  states: { approved: "Approved", rejected: "Rejected" },
+  states: { approved: "Approved · order drafted", rejected: "Rejected" },
   /** "PO-0007" */
   order: (number: number) => `PO-${String(number).padStart(4, "0")}`,
   forecast: {

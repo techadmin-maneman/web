@@ -30,7 +30,7 @@ export type TaskFacts =
     }
   | { readonly group: "replacement_order"; readonly piece_code: string; readonly due_on: Day }
   | { readonly group: "recall_call"; readonly piece_codes: string[] }
-  | { readonly group: "stock_at_risk"; readonly consumable_code: string | null }
+  | { readonly group: "stock_at_risk"; readonly consumable_code: string | null; readonly name: string | null }
   | { readonly group: "referral_review"; readonly signal: string | null }
   | { readonly group: "grievance" }
   | { readonly group: "number_change" }

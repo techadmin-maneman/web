@@ -173,6 +173,36 @@ describe("the activity log", () => {
     ]);
   });
 
+  it("lists a change once: the call its own action stands for is left out", async () => {
+    const at = new Date("2026-09-21T03:30:00.000Z");
+    const care = staff("care@maneman.in");
+    await env.DB.batch([
+      auditStatement(
+        env.DB,
+        {
+          surface: "ops",
+          actor: care,
+          action: "ops.call",
+          detail: { method: "POST", route: "/api/visits/{id}/cancel", path: `/api/visits/${VISIT}/cancel` },
+          requestId: null,
+        },
+        at,
+      ),
+      auditStatement(
+        env.DB,
+        {
+          surface: "ops",
+          actor: care,
+          action: "visit.cancel",
+          subject: { kind: "appointment", id: VISIT },
+          requestId: null,
+        },
+        new Date(at.getTime() + 400),
+      ),
+    ]);
+    expect((await read()).entries.map((entry) => entry.action)).toEqual(["visit.cancel"]);
+  });
+
   it("is itself written to the log, under whoever read it", async () => {
     await request(opsAs(READER), "/api/activity?action=price.set");
 

@@ -23243,6 +23243,7 @@ export interface components {
             /** @enum {string} */
             group: "stock_at_risk";
             consumable_code: string | null;
+            name: string | null;
         } | {
             /** @enum {string} */
             group: "referral_review";

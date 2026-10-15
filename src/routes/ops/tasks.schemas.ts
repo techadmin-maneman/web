@@ -34,7 +34,7 @@ export const TaskFactsSchema = z
     }),
     facts("replacement_order", { piece_code: z.string(), due_on: day }),
     facts("recall_call", { piece_codes: z.array(z.string()) }),
-    facts("stock_at_risk", { consumable_code: z.string().nullable() }),
+    facts("stock_at_risk", { consumable_code: z.string().nullable(), name: z.string().nullable() }),
     facts("referral_review", { signal: z.string().nullable().openapi({ description: "The first fraud rule met." }) }),
     facts("grievance", {}),
     facts("number_change", {}),

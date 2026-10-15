@@ -39436,11 +39436,18 @@ Request body:
             "string",
             "null"
           ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
         "group",
-        "consumable_code"
+        "consumable_code",
+        "name"
       ],
       "additionalProperties": false
     },
