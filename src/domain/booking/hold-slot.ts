@@ -305,3 +305,21 @@ export async function retakeSlot(db: D1Database, hold: HeldTime, now: Date): Pro
   const after = await db.prepare("SELECT state FROM slot_holds WHERE id = ?1").bind(hold.id).first<{ state: string }>();
   return after !== null && after.state !== "released";
 }
+
+/**
+ * A fitted one visit's booking, owing the hair system's price by UPI at the visit while online payment is off
+ * (docs/decisions/0208-paid-at-the-visit-by-upi.md): the amount, with its GST, as the price book had it on the day.
+ */
+export function oneVisitOwedAtVisit(
+  db: D1Database,
+  appointmentId: string,
+  price: { readonly amount: number; readonly amount_ex_gst: number; readonly gst_percent: number },
+  now: Date,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE slot_holds SET pay_at_visit = 1, amount = ?2, amount_ex_gst = ?3, gst_percent = ?4, updated_at = ?5
+       WHERE appointment_id = ?1 AND one_visit = 1 AND state = 'booked'`,
+    )
+    .bind(appointmentId, price.amount, price.amount_ex_gst, price.gst_percent, now.toISOString());
+}

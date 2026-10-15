@@ -6,12 +6,21 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { askRefund } from "../../../src/domain/money/refunds.ts";
 import { composeUpiReceived } from "../../../src/domain/money/upi-payments.ts";
+import { createLogger } from "../../../src/log.ts";
+import { createPaymentsProvider } from "../../../src/providers/payments/index.ts";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
+import { aPayment } from "../fixtures/index.ts";
 import { IMRAN, NATURAL, ROHIT, bindings, rohit, technician } from "./ops-visits-fixtures.ts";
 
-/** The console where no payment can be taken online: no payments provider, so no Razorpay settings. */
-const offline = () => appFor("local", fakeDependencies(), { razorpay: null }, "ops");
+/** The console where no payment can be taken online: PAYMENTS_PROVIDER is none. */
+const offline = () =>
+  appFor(
+    "local",
+    { ...fakeDependencies(), payments: createPaymentsProvider("none", null, { fetch, log: createLogger() }) },
+    {},
+    "ops",
+  );
 
 const post = (path: string, body: object) =>
   request(
@@ -100,12 +109,7 @@ describe("a paid visit booked while online payment is off", () => {
   it("refuses a UTR already recorded, and a visit not paid at the visit", async () => {
     await bookFit();
     const visit = (await env.DB.prepare("SELECT appointment_id FROM slot_holds").first<string>("appointment_id")) ?? "";
-    await env.DB.prepare(
-      `INSERT INTO payments (id, person_id, razorpay_payment_id, amount, currency, method, status, created_at, updated_at)
-       VALUES ('other', ?1, 'upi:412345678901', 100, 'INR', 'upi', 'captured', ?2, ?2)`,
-    )
-      .bind(ROHIT, NOW.toISOString())
-      .run();
+    await aPayment({ person_id: ROHIT, razorpay_payment_id: "upi:412345678901", amount: 100 });
     const used = await post(`/api/visits/${visit}/upi-payment`, { utr: "412345678901" });
     expect(await used.json()).toMatchObject({ error: { code: "reference_used" } });
 

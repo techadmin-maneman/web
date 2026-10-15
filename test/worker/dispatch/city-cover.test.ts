@@ -6,6 +6,7 @@ import { tellOfUncoveredCities } from "../../../src/domain/clients/service-area.
 import { createAlertOnce, createResolveAlert } from "../../../src/domain/platform/alerts.ts";
 import { createLogger } from "../../../src/log.ts";
 import { markDatabase, NOW, request } from "../helpers.ts";
+import { aTechnician } from "../fixtures/index.ts";
 import { pincode, site } from "../site/consultations-fixtures.ts";
 
 const told: string[] = [];
@@ -28,12 +29,7 @@ const openKeys = async () =>
     await env.DB.prepare("SELECT key FROM alerts WHERE resolved_at IS NULL ORDER BY key").all<{ key: string }>()
   ).results.map((row) => row.key);
 
-const technician = (id: string, city: string, active = 1) =>
-  env.DB.prepare(
-    "INSERT INTO technicians (id, fsm_id, name, initials, active, updated_at, city) VALUES (?1, ?1, 'Imran Qureshi', 'IQ', ?2, ?3, ?4)",
-  )
-    .bind(id, active, NOW.toISOString(), city)
-    .run();
+const technician = (id: string, city: string, active = 1) => aTechnician({ id, city, active });
 
 beforeEach(async () => {
   told.length = 0;

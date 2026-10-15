@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-15
-- Topic: Money
+- Topic: Money and Books
 - Amends [0045](0045-self-serve-booking.md) on who books what with no payment provider
 
 ## Context

@@ -16,7 +16,8 @@ import {
   type RazorpayRefund,
 } from "../../providers/payments/razorpay.ts";
 import { bookPaidHold } from "../booking/book-paid-hold.ts";
-import { holdOfLink, recordHoldLinkPaid, type LinkHold } from "../booking/visit-booking.ts";
+import { holdOfLink, type LinkHold } from "../booking/booked-hold.ts";
+import { recordHoldLinkPaid } from "../booking/visit-booking.ts";
 import { paymentsTab, type AlertOnce } from "../platform/alerts.ts";
 import { recordBookingConsents } from "../privacy/booking-consents.ts";
 import { customOrderOfLink, customOrderPaid } from "./custom-order-links.ts";

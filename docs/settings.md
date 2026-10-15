@@ -33,6 +33,7 @@ In `wrangler.jsonc`, read at startup and checked by the startup guard (`src/conf
 | `RESULT_RETENTION_DAYS` | `3` | `3` | `14` |
 | `ROUTES_PROVIDER` | `stub` | `none` | `none` |
 | `SELF_SERVE_BOOKING` | `true` | `true` | `false` |
+| `SELF_SERVE_CONSULTATIONS` | `true` | `true` | `true` |
 | `SERVICE_TOKEN_ACTS_AS` | — | `test-operator@maneman.in` | — |
 | `SMS_PROVIDER` | `stub` | `none` | `none` |
 | `STAFF_BOOTSTRAP_ADMINS` | `ops@localhost` | `tech@maneman.in,adwate@gmail.com` | `tech@maneman.in,adwate@gmail.com` |
@@ -136,7 +137,7 @@ In the console, Settings · Rules: kept in D1 (`ops_settings`), in force from th
 | `address_unlock_hour` | Address unlock | hour of the day, in India | `18` |
 | `reminder_hour` | Reminder time | hour of the day, in India | `18` |
 | `phone_clock` | Phone clock limits | minutes | `{"before_start":60,"held_offline":24}` |
-| `task_sla_hours` | Task deadlines | hours | `{"untold_move":4,"move_unanswered":4,"visit_left_open":24,"unassigned_visit":24,"recall_call":24,"unanswered_chat":24,"city_matter":24,"remedy_approval":24,"leave_conflict":48,"address_to_confirm":48,"consultation_request":48,"first_fit_to_book":48,"replacement_order":48,"stock_at_risk":48,"at_risk_client":48,"partial_visit":48,"referral_review":48,"no_show_decision":48,"no_show_dispute":48,"number_change":48,"erasure_request":720,"grievance":720,"draft_invoice":48,"payment_owed":48,"payment_to_refund":24}` |
+| `task_sla_hours` | Task deadlines | hours | `{"untold_move":4,"move_unanswered":4,"visit_left_open":24,"unassigned_visit":24,"recall_call":24,"unanswered_chat":24,"city_matter":24,"remedy_approval":24,"leave_conflict":48,"address_to_confirm":48,"consultation_request":48,"first_fit_to_book":48,"replacement_order":48,"stock_at_risk":48,"at_risk_client":48,"partial_visit":48,"referral_review":48,"no_show_decision":48,"no_show_dispute":48,"number_change":48,"erasure_request":720,"grievance":720,"draft_invoice":48,"payment_owed":48,"upi_due":12,"payment_to_refund":24}` |
 | `piece_cycle_days` | Replacement cycle | days | `{"default":180}` |
 | `payment_hold` | Payment hold | minutes | `{"countdown":10,"grace":2}` |
 | `dispute_window_days` | Dispute window | days | `30` |

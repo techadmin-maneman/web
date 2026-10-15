@@ -143,6 +143,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0176](0176-custom-order-refunds.md) Custom order refunds
 - [0192](0192-free-remakes.md) Free remakes
 - [0202](0202-razorpay-events-queued.md) Razorpay's events are queued, and every queue has its dead letters
+- [0208](0208-paid-at-the-visit-by-upi.md) Paid at the visit by UPI, while online payment is off
 
 ### Privacy and accounts
 

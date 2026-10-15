@@ -321,7 +321,7 @@ export function readSettings(
     turnstileSecret,
     acceptTurnstileTestToken,
     selfServeBooking,
-    selfServeConsultations: selfServeBooking || read.flag("SELF_SERVE_CONSULTATIONS"),
+    selfServeConsultations: selfServeBooking || read.optionalFlag("SELF_SERVE_CONSULTATIONS"),
     referrerNameOnInvite: read.flag("REFERRER_NAME_ON_INVITE"),
     ipHashSalt,
     alertWebhookUrl: alertWebhookUrl === "" ? null : alertWebhookUrl,

@@ -123,3 +123,35 @@ export async function refundableFor(db: D1Database, orderId: string | null): Pro
 
 /** How a try to book a hold ended. */
 export type Confirmed = "booked" | "already_booked" | "being_booked" | "not_paid" | "refunded" | "lapsed";
+
+/** The visit a hold became, once booked; null while it is not. */
+export async function visitOfHold(db: D1Database, holdId: string): Promise<string | null> {
+  const row = await db
+    .prepare("SELECT appointment_id FROM slot_holds WHERE id = ?1 AND state = 'booked'")
+    .bind(holdId)
+    .first<{ appointment_id: string | null }>();
+  return row?.appointment_id ?? null;
+}
+
+/** A hold ops sent a payment link for, and whose it is. */
+export interface LinkHold {
+  readonly id: string;
+  readonly personId: string;
+}
+
+/**
+ * The hold a paid link was for: by the link's ID, or by its reference, which is the hold's, or the hold's own ID on a
+ * link made before holds had one. Null for no hold of ours.
+ */
+export async function holdOfLink(
+  db: D1Database,
+  link: { readonly razorpayLinkId: string; readonly reference: string | null },
+): Promise<LinkHold | null> {
+  return db
+    .prepare(
+      `SELECT id, person_id AS personId FROM slot_holds
+       WHERE pay_by_link = 1 AND (payment_link_id = ?1 OR reference = ?2 OR id = ?2) LIMIT 1`,
+    )
+    .bind(link.razorpayLinkId, link.reference)
+    .first<LinkHold>();
+}

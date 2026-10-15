@@ -41,6 +41,7 @@ import { loadSlotSchedule } from "./slot-times.ts";
 import { termsInForce } from "../visits/visit-changes.ts";
 import { REMAKE_TERMS, remakeBookedStatement, remakesOwed, type Remake } from "./remakes.ts";
 import { replacementWears } from "../inventory/stock-gap.ts";
+import type { LinkHold } from "./booked-hold.ts";
 import { cityOfPerson } from "../cities/cities.ts";
 
 /** What ops ask for. */
@@ -196,18 +197,19 @@ const remakeSale = (service: PricedService, covers: Remake): Sale => ({
   covers,
 });
 
-/**
- * How it is paid: nothing at booking for a one visit or a free one, a credit where one pays, else a link; or, while
- * online payment is off, by UPI at the visit.
- */
+/** How it is paid: nothing for a one visit or a free one, a credit where one pays, else a link, or UPI offline. */
 export function paysFor(oneVisit: boolean, onCredit: boolean, price: Price, online = true): Pays {
   if (oneVisit || price.amount === 0) return "nothing";
   if (onCredit) return "credit";
   return online ? "link" : "at_visit";
 }
 
-/** Paid at the visit, nothing was taken at booking, so a late change or a no-show has nothing to keep. */
-const AT_VISIT_CHARGES = { lateCharge: "nothing", noShowCharge: "nothing" } as const;
+/** Sold while online payment is off: what would be a link is paid by UPI at the visit, and nothing taken is kept. */
+export function atTheVisit(sale: Sale): Sale {
+  if (sale.pays !== "link") return sale;
+  const terms = { ...sale.terms, lateCharge: "nothing", noShowCharge: "nothing" } as const;
+  return { ...sale, pays: "at_visit", lateFee: null, terms };
+}
 
 /**
  * What the visit is sold as, or why it cannot be booked: the client, the kind, the day and the service checked, then
@@ -218,8 +220,6 @@ export async function saleFor(
   asked: VisitAsked,
   inputs: OpsInputs,
   now: Date,
-  /** Whether a payment can be taken online; off, a paid visit is paid by UPI at the visit. */
-  online = true,
 ): Promise<{ ok: true; sale: Sale } | Refused> {
   if (!(await isClient(db, asked.personId))) return refused({ code: "not_found" });
   if (asked.oneVisit && asked.kind !== "first_fit") {
@@ -248,13 +248,7 @@ export async function saleFor(
   const lateFeeItem = asked.oneVisit ? undefined : LATE_FEES[asked.kind];
   const lateFee = lateFeeItem === undefined ? null : await lateFeeOn(db, lateFeeItem, asked.date, city);
   const terms = asked.oneVisit ? ONE_VISIT_TERMS : termsInForce(inputs, asked.kind);
-  const pays = paysFor(asked.oneVisit, onCredit, price, online);
-  if (pays === "at_visit") {
-    return {
-      ok: true,
-      sale: { service, price, lateFee: null, terms: { ...terms, ...AT_VISIT_CHARGES }, pays, code, covers: null },
-    };
-  }
+  const pays = paysFor(asked.oneVisit, onCredit, price);
   return { ok: true, sale: { service, price, lateFee, terms, pays, code, covers: null } };
 }
 
@@ -469,38 +463,6 @@ export async function sendHoldLink(
     .bind(hold.id, made.id, made.shortUrl, now.toISOString())
     .run();
   return made;
-}
-
-/** The visit a hold became, once booked; null while it is not. */
-export async function visitOfHold(db: D1Database, holdId: string): Promise<string | null> {
-  const row = await db
-    .prepare("SELECT appointment_id FROM slot_holds WHERE id = ?1 AND state = 'booked'")
-    .bind(holdId)
-    .first<{ appointment_id: string | null }>();
-  return row?.appointment_id ?? null;
-}
-
-/** A hold ops sent a payment link for, and whose it is. */
-export interface LinkHold {
-  readonly id: string;
-  readonly personId: string;
-}
-
-/**
- * The hold a paid link was for: by the link's ID, or by its reference, which is the hold's, or the hold's own ID on a
- * link made before holds had one. Null for no hold of ours.
- */
-export async function holdOfLink(
-  db: D1Database,
-  link: { readonly razorpayLinkId: string; readonly reference: string | null },
-): Promise<LinkHold | null> {
-  return db
-    .prepare(
-      `SELECT id, person_id AS personId FROM slot_holds
-       WHERE pay_by_link = 1 AND (payment_link_id = ?1 OR reference = ?2 OR id = ?2) LIMIT 1`,
-    )
-    .bind(link.razorpayLinkId, link.reference)
-    .first<LinkHold>();
 }
 
 /**

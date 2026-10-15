@@ -34,6 +34,7 @@ import { serviceOf } from "../booking/services.ts";
 import { visitMessage } from "../messages/visit-messages.ts";
 import { cityOfVisit } from "../cities/cities.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
+import { oneVisitOwedAtVisit } from "../booking/hold-slot.ts";
 
 /** What asking for the link came to; "free" when a discount code left nothing to pay, so no link was asked for. */
 export type LinkSent = "sent" | "already_sent" | "unpriced" | "refused" | "unavailable" | "free" | "at_visit";
@@ -198,21 +199,7 @@ export async function oweAtVisit(db: D1Database, visit: FittedVisit, now: Date):
     await settleFree(db, visit, after.fix, now);
     return "free";
   }
-  await db.batch([
-    ...after.fix,
-    db
-      .prepare(
-        `UPDATE slot_holds SET pay_at_visit = 1, amount = ?2, amount_ex_gst = ?3, gst_percent = ?4, updated_at = ?5
-         WHERE appointment_id = ?1 AND one_visit = 1 AND state = 'booked'`,
-      )
-      .bind(
-        visit.appointmentId,
-        after.price.amount,
-        after.price.amount_ex_gst,
-        after.price.gst_percent,
-        now.toISOString(),
-      ),
-  ]);
+  await db.batch([...after.fix, oneVisitOwedAtVisit(db, visit.appointmentId, after.price, now)]);
   return "at_visit";
 }
 

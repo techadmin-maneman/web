@@ -27,6 +27,7 @@ import {
   closeAsDone,
   linkRow,
 } from "./one-visit-fixtures.ts";
+import { aHold } from "../fixtures/index.ts";
 
 /** Staging's messaging, texting only the handsets named. */
 const allowing = (...handsets: string[]): Partial<Settings> => ({
@@ -173,14 +174,16 @@ describe("closing a one visit the client was fitted at", () => {
   it("owes the product's price by UPI at the visit, with no link, while online payment is off", async () => {
     const payments = createPaymentsProvider("none", null, { fetch, log: createLogger() });
     const job = await oneVisit({ payments });
-    const at = NOW.toISOString();
-    await env.DB.prepare(
-      `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
-         gst_percent, state, appointment_id, expires_at, created_at, updated_at, one_visit)
-       VALUES ('hold-1', ?1, 'first_fit', '2026-09-21', 'morning', ?2, 0, 0, 0, 0, 'booked', ?3, ?4, ?4, ?4, 1)`,
-    )
-      .bind(PERSON, IMRAN, JOB, at)
-      .run();
+    await aHold({
+      id: "hold-1",
+      person_id: PERSON,
+      technician_id: IMRAN,
+      type: "first_fit",
+      date: "2026-09-21",
+      state: "booked",
+      appointment_id: JOB,
+      one_visit: 1,
+    });
     await toThePiece(job, { ...A_PIECE, product: NATURAL.tier });
 
     expect((await closeAsDone(job)).status).toBe(202);
