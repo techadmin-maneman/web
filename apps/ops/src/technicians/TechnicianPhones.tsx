@@ -164,9 +164,15 @@ function SignInStopped({ technician, why }: { technician: Technician; why: strin
   );
 }
 
-export function Phones({ technician }: { technician: Technician }) {
+/** Why they cannot sign in now, if they cannot: a revoke, or their codes for today used up. */
+function stoppedBy(technician: Technician): string | null {
   const stopped = technician.sign_in_stopped_at;
-  const why = stopped === null ? (technician.out_of_codes ? copy.outOfCodes : null) : copy.stopped(longDate(stopped));
+  if (stopped !== null) return copy.stopped(longDate(stopped));
+  return technician.out_of_codes ? copy.outOfCodes : null;
+}
+
+export function Phones({ technician }: { technician: Technician }) {
+  const why = stoppedBy(technician);
   return (
     <>
       {why !== null && <SignInStopped technician={technician} why={why} />}
