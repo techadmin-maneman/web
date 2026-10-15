@@ -20,8 +20,8 @@ import styles from "./profile.module.css";
 
 /**
  * The draft with a building chosen from the search, or typed over one. An empty ID means the client typed over the
- * choice: the building stands as words, and the address saves without a pin. A chosen building's area fills an empty
- * one.
+ * choice: the building stands as words, and the address saves without a pin. A chosen building's area replaces the
+ * one typed, which may be the old address's: the building is where the pin is.
  */
 function withBuilding(
   draft: Address,
@@ -30,7 +30,7 @@ function withBuilding(
   return {
     ...draft,
     building: building === "" ? null : building,
-    locality: given(draft.locality) ? draft.locality : (area ?? draft.locality),
+    locality: area ?? draft.locality,
     place_id: placeId === "" ? null : placeId,
   };
 }
