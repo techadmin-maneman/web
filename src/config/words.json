@@ -5696,6 +5696,22 @@
     "reviewed": true
   },
   {
+    "key": "message:visit_booked_at_visit_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "visit_booked_at_visit_v1",
+    "text": "Hi {{1}}, you're booked.\nYour {{2}} is {{3}}, {{4}}, with {{5}}. Pay {{6}} by UPI to Mane Man at the visit.",
+    "reviewed": false
+  },
+  {
+    "key": "message:upi_received_v1",
+    "surface": "message",
+    "group": "Messages",
+    "where": "upi_received_v1",
+    "text": "Hi {{1}}, thank you: payment received.\n{{6}} by UPI for your {{2}} (ref {{7}}). It's in the Mane Man app.",
+    "reviewed": false
+  },
+  {
     "key": "message:link_paid_v1",
     "surface": "message",
     "group": "Messages",
