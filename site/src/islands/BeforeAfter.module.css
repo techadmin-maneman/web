@@ -1,14 +1,11 @@
-.frame {
-  position: relative;
-  width: 100%;
-  background: var(--ink-frame);
-  overflow: hidden;
-}
+/* The teaser's band (./BeforeAfter.tsx): the shared compare's stage at the band's height, its divider at 46% from the
+   first paint, and the labels in its corners. */
 .teaser {
+  --at: 46%;
+  --compare-handle: var(--teaser-handle);
+
+  width: 100%;
   height: var(--teaser-frame-h);
-}
-.from46 {
-  --position: 46%;
 }
 
 .layer {
@@ -25,17 +22,12 @@
   /* The teaser's pair fills its band. */
   object-fit: cover;
 }
-.before {
-  clip-path: inset(0 calc(100% - var(--position)) 0 0);
-}
 
 /* Two classes, so the size wins over the global .label rule. */
-.frame .corner {
-  position: absolute;
-  font-size: var(--fs-15);
-}
 .teaser .corner {
+  position: absolute;
   top: var(--sp-20);
+  font-size: var(--fs-15);
 }
 .teaser .left {
   left: var(--sp-20);
@@ -43,43 +35,8 @@
 .teaser .right {
   right: var(--sp-20);
 }
-.frame .tag {
+.teaser .tag {
   position: absolute;
   left: var(--sp-20);
   bottom: var(--sp-20);
-}
-
-.line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--position);
-  width: var(--hairline);
-  background: var(--gilt);
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-.handle {
-  position: absolute;
-  top: 50%;
-  left: var(--position);
-  transform: translate(-50%, -50%);
-  border: var(--hairline) solid var(--gilt);
-  background: var(--ink-deep);
-  color: var(--gilt);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-4);
-  pointer-events: none;
-}
-.teaser .handle {
-  width: var(--teaser-handle);
-  height: var(--teaser-handle);
-}
-
-/* The input covers the frame, invisible; its focus ring moves to the handle. */
-.frame:has(input:focus-visible) .handle {
-  outline: var(--focus-width) solid var(--paper);
-  outline-offset: var(--focus-offset);
 }

@@ -12,7 +12,7 @@ The site's /book and invite pages and the client app's booking sheet ask for the
 ## Decision
 
 1. **The site compiles with Preact's compatibility layer** (`preact({ compat: true })` in `site/astro.config.ts`), so a component written for React in `@maneman/ui` runs in a site island. The layer costs nothing in a page whose islands import nothing from `react`, and adds about 6 KB (2 KB compressed) to one that does.
-2. **The booking's parts live in `@maneman/ui`**, each taking its words and its classes from the surface that draws it, as `AddressSearch` does: the site keeps its look and its copy, the app keeps its own. `WindowChoice` is the first; the day strip and the address's fields follow.
+2. **The booking's parts live in `@maneman/ui`**, each taking its words from the surface that draws it, as `AddressSearch` does. `WindowChoice` was the first; the day strip and the address's fields followed. Each now ships one look, a full day the board's shaded block and a full window "Full" in place of its hours, and a surface sets only its spacing and width (amended 15 October 2026). The before-and-after compare is one part too, `Compare`, which the site's teaser and the app's Compare screen both draw.
 3. **The shared parts use nothing Preact lacks**: plain elements, `className`, the hooks Preact has. Every `onChange` the site sets on an element is on a radio, a checkbox, a select or a file input, where the layer still listens for the change event; text fields listen with `onInput`.
 
 ## Consequences

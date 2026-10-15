@@ -26,10 +26,6 @@
     font-size: var(--fs-14);
   }
 
-  .full {
-    font-size: var(--fs-14);
-  }
-
   /* A change this close to the visit is charged: said in oxblood, in the paper's colour once the card is the ink. */
   .late {
     color: var(--error-on-paper);

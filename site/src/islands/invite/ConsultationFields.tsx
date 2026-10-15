@@ -146,7 +146,6 @@ export function DayWindows({
       }))}
       chosen={slot.window}
       fullWord={consultation.full}
-      fullInPlaceOfHours
       onChoose={onWindow}
     />
   );

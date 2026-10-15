@@ -1,6 +1,6 @@
 // An address's parts as labelled fields, in the order every form asks for them, each held to the API's longest and
 // marked required where an address cannot do without it (@maneman/web-kit/address). The client app's form
-// and the site's /book and invite pages draw it, each in its own words and its own look; the building search, the
+// and the site's /book and invite pages draw it in one look, each in its own words; the building search, the
 // save and what a refusal offers stay each form's own. The site compiles it with Preact (site/astro.config.ts), so it
 // uses nothing Preact lacks: its fields listen with onInput, which React and Preact hear alike.
 
