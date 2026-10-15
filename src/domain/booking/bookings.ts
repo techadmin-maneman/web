@@ -77,7 +77,7 @@ async function tryStartBooking({
   if (hold?.person_id !== personId || hold.state !== "held" || hold.expires_at <= now.toISOString()) return null;
   if (hold.pay_by_link === 1) return null;
   const isNewVisit = hold.moves_appointment_id === null;
-  if (isNewVisit && (await liveVisitOf(db, personId, hold.type, hold.id)) !== null) return null;
+  if (isNewVisit && (await liveVisitOf(db, personId, { type: hold.type, now }, hold.id)) !== null) return null;
   if (!paidInMoney(hold)) {
     if (await confirmFree(db, hold, now)) return { kind: "free" };
     if (hold.use_credit === 1) await stopUsingCredit(db, hold.id, now);
@@ -197,7 +197,7 @@ async function retakenInTime(
   if (payment === null || paidTooLate(hold, payment)) return false;
   if (hold.confirmed_at === null || hold.refunded_at !== null || hold.moves_appointment_id !== null) return false;
   if ((await heldVisitTimes(db, hold)).start <= now) return false;
-  if ((await liveVisitOf(db, hold.person_id, hold.type, hold.id)) !== null) return false;
+  if ((await liveVisitOf(db, hold.person_id, { type: hold.type, now }, hold.id)) !== null) return false;
   return retakeSlot(db, hold, now);
 }
 

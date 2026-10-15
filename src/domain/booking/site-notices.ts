@@ -46,28 +46,35 @@ export function siteNotice(
   return { id, statement };
 }
 
+interface Person {
+  readonly personId: string;
+  readonly firstName: string;
+}
+
 async function nameOf(db: D1Database, personId: string): Promise<string | null> {
   const row = await db.prepare("SELECT name FROM people WHERE id = ?1").bind(personId).first<{ name: string }>();
   return row?.name ?? null;
 }
 
 /** A consultation and fit in one visit is the client's first fit as well as their consultation, at the same time. */
-async function visitName(db: D1Database, personId: string, consultation: LiveVisit): Promise<string> {
-  const fit = await liveVisitOf(db, personId, "first_fit");
+async function visitName(db: D1Database, personId: string, consultation: LiveVisit, now: Date): Promise<string> {
+  const fit = await liveVisitOf(db, personId, { type: "first_fit", now });
   const oneVisit = fit !== null && fit.date === consultation.date && fit.window === consultation.window;
   return oneVisit ? "consultation and fit" : "consultation";
 }
 
-async function consultationExists(db: D1Database, personId: string, firstName: string): Promise<Composed> {
-  const live = await liveVisitOf(db, personId, "consultation");
+async function consultationExists(db: D1Database, person: Person, now: Date): Promise<Composed> {
+  const { personId, firstName } = person;
+  const live = await liveVisitOf(db, personId, { type: "consultation", now });
   if (live === null) return { skip: "no consultation still to happen" };
   const hours = hoursOfWindow(live.date, live.window, await loadSlotSchedule(db));
-  const params = [firstName, await visitName(db, personId, live), shortDate(live.date), hours];
+  const params = [firstName, await visitName(db, personId, live, now), shortDate(live.date), hours];
   return { template: "consultation_exists_v1", params };
 }
 
-async function bookInApp(db: D1Database, personId: string, firstName: string): Promise<Composed> {
-  if ((await bookableTypes(db, personId)).includes("consultation")) return { skip: "may book from the site now" };
+async function bookInApp(db: D1Database, person: Person, now: Date): Promise<Composed> {
+  const { personId, firstName } = person;
+  if ((await bookableTypes(db, personId, now)).includes("consultation")) return { skip: "may book from the site now" };
   return { template: "book_in_app_v1", params: [firstName] };
 }
 
@@ -84,13 +91,17 @@ async function addressNotServed(db: D1Database, personId: string, firstName: str
 }
 
 /** What a queued notice says, as the person stands now; or why it is not sent. */
-export async function composeSiteNotice(db: D1Database, kind: SiteNoticeKind, personId: string): Promise<Composed> {
+export async function composeSiteNotice(
+  db: D1Database,
+  { kind, personId }: { readonly kind: SiteNoticeKind; readonly personId: string },
+  now: Date,
+): Promise<Composed> {
   if (!(await consentGiven(db, personId, "whatsapp_visits"))) return { skip: NO_VISITS_CONSENT };
   const name = await nameOf(db, personId);
   if (name === null) return { skip: "no such person" };
   const firstName = firstNameOf(name);
-  if (kind === "consultation_exists") return consultationExists(db, personId, firstName);
-  if (kind === "book_in_app") return bookInApp(db, personId, firstName);
+  if (kind === "consultation_exists") return consultationExists(db, { personId, firstName }, now);
+  if (kind === "book_in_app") return bookInApp(db, { personId, firstName }, now);
   if (kind === "address_not_served") return addressNotServed(db, personId, firstName);
   return addressOnAccount(db, personId, firstName);
 }

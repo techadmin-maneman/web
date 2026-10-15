@@ -42,11 +42,11 @@ const placeOf = (pincode: Pincode): string => pincode.area ?? pincode.city;
 async function notBookedFor(
   db: D1Database,
   personId: string,
-  addressOutsideArea: boolean,
+  { addressOutsideArea, now }: { readonly addressOutsideArea: boolean; readonly now: Date },
 ): Promise<NotBookedFromSite | null> {
   const [consultationToCome, types] = await Promise.all([
-    liveVisitOf(db, personId, "consultation"),
-    bookableTypes(db, personId),
+    liveVisitOf(db, personId, { type: "consultation", now }),
+    bookableTypes(db, personId, now),
   ]);
   return notBookedFromSite({
     addressOutsideArea,
@@ -351,7 +351,7 @@ export async function bookConsultation(form: FormRequest, request: ConsultationR
   const savedPincode = saved === null ? null : await pincodeOf(db, saved.pincode);
   if (knownId !== null) {
     const addressOutsideArea = saved !== null && savedPincode?.served !== 1;
-    const notBooked = await notBookedFor(db, knownId, addressOutsideArea);
+    const notBooked = await notBookedFor(db, knownId, { addressOutsideArea, now });
     if (notBooked !== null) return answerAsForANewNumber(form, request, pincode, { personId: knownId, notBooked });
   }
   // The visit goes to the address on the account where there is one, which is served, or the person would have been

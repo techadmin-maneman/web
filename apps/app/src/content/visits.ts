@@ -18,6 +18,8 @@ export const visits = {
   offline: "Your visits will load when you are back online.",
   cancelled: "Cancelled",
   notHome: "Missed visit",
+  /** A visit nobody came to, in the history once its day is over, until ops close it. */
+  missedByUs: "We couldn’t make it",
   partial: "Partly done",
   /*
    * The client's own record, derived from their visits and

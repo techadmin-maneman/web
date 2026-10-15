@@ -157,6 +157,7 @@ function pastLine(visit: VisitSummary): string {
   const after = (): string[] => {
     if (visit.status === "cancelled") return [visits.cancelled];
     if (visit.status === "terminated") return [visit.not_home ? visits.notHome : visits.partial];
+    if (visit.stage === "missed") return [visits.missedByUs];
     return technicianOf(visit);
   };
   return [visitTitle(visit), ...after()].join(" · ");

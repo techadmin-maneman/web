@@ -102,7 +102,7 @@ export async function bookable(
     cityOfPerson(db, personId),
   ]);
   const [types, service] = await Promise.all([
-    bookableTypes(db, personId),
+    bookableTypes(db, personId, c.var.deps.now()),
     bookableService(db, { kind: wanted.type, tier: wanted.tier, on, wears, city }),
   ]);
   if (!types.includes(wanted.type)) return "not_bookable";

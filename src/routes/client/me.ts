@@ -322,7 +322,7 @@ export function registerClientMe(app: App): void {
         spendableCredits(db, personId, now),
         isFitted(db, personId),
         formBookingOf(c, personId, today),
-        bookableTypes(db, personId),
+        bookableTypes(db, personId, now),
         cityOfPerson(db, personId).then((city) => servicesOnDay(db, tomorrow, city)),
         homeFactsOf(c, personId, now),
         pendingInviteOf(db, personId, now, nameOnInvite),
