@@ -79,7 +79,7 @@ describe("publishing the site's words", () => {
   // A length changed in the console stayed the code's on the site, whose build read lengths from the code alone.
   it("tells the site's build how long each kind of visit is booked for, as ops last set it", async () => {
     const before = (await siteWords()).lengths;
-    expect(before).toMatchObject({ consultation: expect.any(Number), service: expect.any(Number) });
+    expect([typeof before.consultation, typeof before.service]).toEqual(["number", "number"]);
     const longer = (before.service ?? 0) + 30;
     expect((await post("/api/services/service/standard/length", { minutes: longer })).status).toBe(200);
     expect((await siteWords()).lengths.service).toBe(longer);
