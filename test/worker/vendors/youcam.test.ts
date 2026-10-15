@@ -18,7 +18,8 @@ import { syntheticJpeg, syntheticPng } from "../tryon-fixtures.ts";
 const KEY = "live-key-that-must-never-leak";
 const UPLOAD_URL = "https://storage.youcam.test/upload/f1?signature=abc";
 const RESULT_URL = "https://results.youcam.test/r1.jpg";
-const REFERENCE = "https://maneman.in/refs/v1/side-part.jpg";
+// A look, by its id: the provider knows its reference photograph.
+const LOOK = "side-part";
 const log = createLogger();
 
 const uploadUrl = () =>
@@ -40,7 +41,10 @@ function youcam(polled: () => Response = () => json({ status: 200, data: { task_
       call.method === "POST" ? json({ status: 200, data: { task_id: "t1" } }) : polled(),
     [RESULT_URL]: () => new Response(syntheticJpeg(64, 64), { headers: { "Content-Type": "image/jpeg" } }),
   });
-  return { image: createYoucamProvider({ apiKey: KEY, fetch: http.fetch, log }), calls: http.calls };
+  return {
+    image: createYoucamProvider({ apiKey: KEY, fetch: http.fetch, log, refsUrl: "https://maneman.in/refs/v1" }),
+    calls: http.calls,
+  };
 }
 
 /** A poll's answer for a task YouCam failed with `code`. */
@@ -50,7 +54,7 @@ const taskError = (code: string) =>
 describe("YouCam: a render", () => {
   it("uploads the photograph through the signed URL, without the key, and asks for the look's hair in its own colour", async () => {
     const { image, calls } = youcam();
-    expect(await image.submit(syntheticJpeg(800, 800), REFERENCE)).toEqual({ ok: true, taskId: "t1" });
+    expect(await image.submit(syntheticJpeg(800, 800), LOOK)).toEqual({ ok: true, taskId: "t1" });
 
     const [asked, put, task] = calls;
     expect(asked?.headers.get("Authorization")).toBe(`Bearer ${KEY}`);
@@ -60,12 +64,16 @@ describe("YouCam: a render", () => {
     expect(put).toMatchObject({ method: "PUT", url: UPLOAD_URL });
     expect(put?.headers.get("Authorization")).toBeNull();
     expect(put?.headers.get("Content-Type")).toBe("image/jpg");
-    expect(JSON.parse(task?.body ?? "")).toEqual({ src_file_id: "f1", ref_file_url: REFERENCE, hair_color: "src" });
+    expect(JSON.parse(task?.body ?? "")).toEqual({
+      src_file_id: "f1",
+      ref_file_url: "https://maneman.in/refs/v1/side-part.jpg",
+      hair_color: "src",
+    });
   });
 
   it("refuses a photograph that is not a JPEG before calling, as a fault of ours", async () => {
     const { image, calls } = youcam();
-    expect(await image.submit(syntheticPng(800, 800), REFERENCE)).toMatchObject({
+    expect(await image.submit(syntheticPng(800, 800), LOOK)).toMatchObject({
       ok: false,
       failure: { code: "photo_invalid_file", alert: true },
     });
@@ -154,6 +162,7 @@ describe("YouCam: the units left", () => {
         apiKey: KEY,
         fetch: fakeFetch({ [`${API_BASE_URL}${CREDIT_PATH}`]: () => json(body) }).fetch,
         log,
+        refsUrl: "https://maneman.in/refs/v1",
       }).credits();
     expect(await credit({ status: 200, results: [{ amount_dec: 600.5 }, { amount_dec: 399.5 }] })).toBe(1000);
     expect(await credit({ status: 200, data: { results: [{ amount_dec: "12" }] } })).toBe(12);

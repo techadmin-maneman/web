@@ -75,10 +75,16 @@ describe("YouCam", () => {
   const KEY = "live-key-that-must-never-leak";
   const UPLOAD_URL = "https://storage.youcam.test/upload/f1";
   const RESULT_URL = "https://results.youcam.test/r1.jpg";
-  const REFERENCE = "https://maneman.in/refs/v1/side-part.jpg";
+  // A look, by its id: the provider knows its reference photograph.
+  const LOOK = "side-part";
 
   function youcam(routes: Parameters<typeof fakeFetch>[0]) {
-    return createYoucamProvider({ apiKey: KEY, fetch: fakeFetch(routes).fetch, log });
+    return createYoucamProvider({
+      apiKey: KEY,
+      fetch: fakeFetch(routes).fetch,
+      log,
+      refsUrl: "https://maneman.in/refs/v1",
+    });
   }
   const uploadUrl = () =>
     json({
@@ -98,7 +104,7 @@ describe("YouCam", () => {
       [`${API_BASE_URL}${CREDIT_PATH}`]: () => json({ status: 200, results: [{ amount_dec: 10 }] }),
     });
 
-    await image.submit(syntheticJpeg(800, 800), REFERENCE);
+    await image.submit(syntheticJpeg(800, 800), LOOK);
     await image.poll("task-1");
     await image.download(RESULT_URL);
     await image.credits();
@@ -124,7 +130,7 @@ describe("YouCam", () => {
           },
         }),
       );
-    const image = createYoucamProvider({ apiKey: KEY, fetch: timedOut, log });
+    const image = createYoucamProvider({ apiKey: KEY, fetch: timedOut, log, refsUrl: "https://maneman.in/refs/v1" });
 
     expect(await youcam({ [RESULT_URL]: brokenBody }).download(RESULT_URL)).toEqual({
       ok: false,

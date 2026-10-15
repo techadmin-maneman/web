@@ -17,7 +17,7 @@ import { fakeBatch } from "../batches.ts";
 import { NOW, captureLogs, fakeDependencies, fakeQueue, markDatabase } from "../helpers.ts";
 import { insertJob, insertPerson, syntheticJpeg } from "../tryon-fixtures.ts";
 
-const OPTIONS = { resultRetentionDays: 30, refsUrl: "https://maneman.in/refs/v1" };
+const OPTIONS = { resultRetentionDays: 30 };
 const log = createLogger();
 
 /** A clock the test moves by hand, shared by the job code and the stub provider. */
@@ -28,7 +28,7 @@ function clock() {
 
 /** The stub provider, counting how often it was asked to submit. */
 function countingImage(now: () => Date) {
-  const image = createImageProvider(null, { fetch, now, log });
+  const image = createImageProvider(null, { fetch, now, log, refsUrl: "https://maneman.in/refs/v1" });
   const submit = vi.fn(image.submit.bind(image));
   return { image: { ...image, submit } satisfies ImageProvider, submit };
 }
@@ -80,7 +80,7 @@ describe("render: the happy path", () => {
       renders: 1,
       provider_task_id: expect.stringMatching(/^stub\./) as string,
     });
-    expect(submit.mock.calls[0]?.[1]).toBe("https://maneman.in/refs/v1/side-part.jpg");
+    expect(submit.mock.calls[0]?.[1]).toBe("side-part");
 
     time.advance(3_000);
     expect(await step(deps, "job")).toEqual({ retryAfterSeconds: POLL_DELAY_SECONDS.early });
@@ -247,7 +247,7 @@ describe("render: never billed twice", () => {
 describe("render: a result that can never be used", () => {
   it("fails at once with render_failed and an alert, rather than downloading it again", async () => {
     const time = clock();
-    const image = createImageProvider(null, { fetch, now: time.now, log });
+    const image = createImageProvider(null, { fetch, now: time.now, log, refsUrl: "https://maneman.in/refs/v1" });
     const tooBig: ImageProvider = {
       ...image,
       download: () => Promise.resolve({ ok: false, detail: "result is 5242881 bytes", transient: false }),
@@ -270,7 +270,7 @@ describe("render: a result that can never be used", () => {
 describe("render: a result that arrives after its job moved on", () => {
   /** The stub provider, running `during` while the result downloads. */
   function imageThat(during: () => Promise<unknown>, now: () => Date): ImageProvider {
-    const image = createImageProvider(null, { fetch, now, log });
+    const image = createImageProvider(null, { fetch, now, log, refsUrl: "https://maneman.in/refs/v1" });
     return {
       ...image,
       download: async (url) => {

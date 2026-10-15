@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isKnownTemplate, RESULT_TEMPLATE, renderMessage } from "../../../src/config/message-templates.ts";
 import { leadNotice } from "../../../src/domain/leads/lead-notice.ts";
 import { PRESETS, findPreset } from "../../../src/config/presets.ts";
+import { YOUCAM_REFERENCES } from "../../../src/providers/image/youcam-looks.ts";
 import { MAX_UPLOAD_BYTES } from "../../../src/config/tryon.ts";
 import { checkPhoto } from "../../../src/domain/try-on/photo.ts";
 import { inspectImage } from "../../../src/lib/image-bytes.ts";
@@ -19,8 +20,8 @@ describe("presets", () => {
       "Quiff",
       "Crew cut · Ivy League",
     ]);
-    expect(new Set(PRESETS.map((preset) => preset.reference)).size).toBe(6);
-    expect(findPreset("quiff")?.reference).toBe("quiff.jpg");
+    expect(new Set(PRESETS.map((preset) => YOUCAM_REFERENCES[preset.id])).size).toBe(6);
+    expect(YOUCAM_REFERENCES.quiff).toBe("quiff.jpg");
     expect(findPreset("nope")).toBeUndefined();
   });
 });

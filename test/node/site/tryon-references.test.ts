@@ -1,4 +1,4 @@
-// The looks' reference photographs (src/config/presets.ts): the tested bytes, unchanged, wherever YouCam may fetch them,
+// The looks' reference photographs (src/providers/image/youcam-looks.ts): the tested bytes, unchanged, wherever YouCam may fetch them,
 // and the small crop the picker shows beside each, which stops above the generator's mark on the full photograph.
 
 import { createHash } from "node:crypto";
@@ -6,7 +6,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { readJsonc } from "../../../scripts/lib/jsonc.ts";
-import { PRESETS, REFERENCE_VERSION } from "../../../src/config/presets.ts";
+import { PRESETS } from "../../../src/config/presets.ts";
+import { REFERENCE_VERSION, YOUCAM_REFERENCES } from "../../../src/providers/image/youcam-looks.ts";
 
 const Manifest = z.object({
   version: z.string(),
@@ -22,7 +23,7 @@ const sha256 = (path: string) => createHash("sha256").update(readFileSync(path))
 describe("the looks' reference photographs", () => {
   it("are the manifest’s, one a look, under the version the looks name", () => {
     expect(manifest.version).toBe(REFERENCE_VERSION);
-    expect(PRESETS.map((preset) => [preset.id, preset.reference])).toEqual(
+    expect(PRESETS.map((preset) => [preset.id, YOUCAM_REFERENCES[preset.id]])).toEqual(
       manifest.files.map((file) => [file.id, file.file]),
     );
   });

@@ -288,7 +288,7 @@ export function fakeDependencies(overrides: Partial<Dependencies> = {}): TestDep
     fetch: fakeFetch({ [TURNSTILE_URL]: turnstilePasses }).fetch,
     now,
     crm: createStubCrm(createLogger()),
-    image: createImageProvider(null, { fetch, now, log: createLogger() }),
+    image: createImageProvider(null, { fetch, now, log: createLogger(), refsUrl: "https://maneman.in/refs/v1" }),
     geocode: createGeocodeProvider("stub", null, { fetch, log: createLogger() }),
     routes: createStubRoutes(),
     messaging: createStubMessaging(createLogger()),

@@ -3,7 +3,6 @@
 
 import type { Reader } from "./env-reader.ts";
 import { ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
-import { REFERENCE_VERSION } from "./presets.ts";
 import { MAX_RESULT_RETENTION_DAYS } from "./tryon.ts";
 import type {
   Settings,
@@ -278,8 +277,9 @@ export function readTryon(read: Reader, providers: ProvidersRead, isLocal: boole
     youcamApiKey: providers.IMAGE_PROVIDER === "youcam" ? read.text("YOUCAM_API_KEY") : null,
     refsUrl: read.text("TRYON_REFS_URL"),
   };
-  if (!tryon.refsUrl.endsWith(`/refs/${REFERENCE_VERSION}`)) {
-    read.problems.push(`TRYON_REFS_URL must end in /refs/${REFERENCE_VERSION}, the references' version`);
+  // Which version is the image provider's own; test/node/site/tryon-references.test.ts holds the deployed URL to it.
+  if (!/\/refs\/v\d+$/.test(tryon.refsUrl)) {
+    read.problems.push("TRYON_REFS_URL must end in the references' version, as /refs/v1");
   }
   if (!isLocal && !tryon.refsUrl.startsWith("https://")) {
     read.problems.push("TRYON_REFS_URL must be https: YouCam fetches each reference from it");
