@@ -178,9 +178,9 @@ export const tasks = {
     recall_call: (pieces: string) => `${pieces} · recalled, replacement free`,
     /** "Tue 22 Sep · nobody attended", or "· not closed" for one begun: give the client a new time, or close it. */
     visit_left_open: (when: string, begun: boolean) => `${when} · ${begun ? "not closed" : "nobody attended"}`,
-    /** "hs_essential_8x10_1b_g20_d100 · none in their city", or the profile that matches no stock code yet. */
-    stock_at_risk: (code: string) =>
-      code === "" ? "No hair system matched to their profile" : `${code} · none in their city`,
+    /** "Mane Man Essential 8x10 1B, 20% grey, 100% · none in their city", or the profile that matches none yet. */
+    stock_at_risk: (hairSystem: string) =>
+      hairSystem === "" ? "No hair system matched to their profile" : `${hairSystem} · none in their city`,
     /**
      * "9 weeks since the last visit · due Sat 19 Sep", as the Tasks design writes "9 weeks since service": the day the next
      * service fell due, from the cadence ops set. The task goes when the client books.
@@ -369,6 +369,8 @@ export const needsAHand = {
   seen: (times: number, since: string) => (times === 1 ? `Since ${since}` : `${String(times)} times since ${since}`),
   open: "Open",
   sendAgain: "Send again",
+  /** An alert's whole words, its IDs and vendor's answer among them, beneath the first sentence. */
+  details: "Details",
   sending: "Sending…",
   done: "Mark done",
   closing: "Closing…",

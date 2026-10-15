@@ -31,6 +31,7 @@ const KitSchema = z
           name: z.string(),
           unit: z.string(),
           quantity: z.number().int(),
+          low: z.boolean().openapi({ description: "At or below the kit level ops set for it." }),
           hair_system: z.boolean(),
           lots: z
             .array(Lot.extend({ quantity: z.number().int() }).strict())
@@ -157,6 +158,7 @@ async function kitAnswer(c: Context<AppEnv>, kit: string) {
       name: item.name,
       unit: item.unit,
       quantity: item.quantity,
+      low: item.low,
       hair_system: item.hairSystem,
       lots: item.lots.map((lot) => ({ lot_code: lot.lotCode, expires_on: lot.expiresOn, quantity: lot.quantity })),
       units: item.units.map((unit) => ({ code: unit.code, lot_code: unit.lotCode, expires_on: unit.expiresOn })),

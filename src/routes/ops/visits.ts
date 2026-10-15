@@ -4,7 +4,7 @@
 // booking is audited in the batch that holds its slot (ADR 0031).
 
 import { opsRoute } from "../../http/session-routes.ts";
-import { recommendedProduct } from "../../domain/clients/hair-profiles.ts";
+import { latestProfile, recommendedProduct } from "../../domain/clients/hair-profiles.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { BOOKING_DAYS, BOOKING_WINDOWS } from "../../config/scheduling.ts";
@@ -149,7 +149,8 @@ const bookRoute = opsRoute({
     ),
     422: errorResponse(
       "not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair " +
-        "system on sale that day; code_not_applicable: the code does not apply to this booking",
+        "system on sale that day; no_profile: a first fit, for a client with no hair profile; " +
+        "code_not_applicable: the code does not apply to this booking",
     ),
     503: errorResponse("unavailable: Razorpay could not make the payment link, so nothing is held"),
   },
@@ -278,6 +279,10 @@ const isClientInReach = async (c: Context<AppEnv>, client: string): Promise<bool
 /** A booking outside the caller's cities: a client or a technician elsewhere is not found, as anything elsewhere is. */
 async function refusedElsewhere(c: Context<AppEnv>, asked: VisitAsked) {
   if (!(await withinRouteReach(c, "client", asked.personId))) return { code: "not_found" } as const;
+  // A first fit is fitted to the profile the consultation measured; a one visit measures it there and then.
+  if (asked.kind === "first_fit" && !asked.oneVisit && (await latestProfile(c.env.DB, asked.personId)) === null) {
+    return { code: "no_profile" } as const;
+  }
   if (asked.technicianId === undefined) return null;
   if (!(await withinRouteReach(c, "technician", asked.technicianId))) return { code: "not_found" } as const;
   return null;

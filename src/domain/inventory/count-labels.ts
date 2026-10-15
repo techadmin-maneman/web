@@ -49,14 +49,24 @@ export interface CountedLine {
 
 /**
  * The fields wrong in a count's lines: a line of an item the place holds under labels needs them, each once, and its
- * figure counts every one scanned, with any pieces there that carry none.
+ * figure counts every one scanned, with any pieces there that carry none. While labels held there go unscanned, no
+ * more pieces are counted as carrying none than the place holds unlabelled: a labelled piece counted by number would
+ * be marked missing while it sits there. `quantities`: what the place holds of each code.
  */
-export function labelFields(lines: readonly CountedLine[], held: ReadonlyMap<string, ReadonlySet<string>>): string[] {
+export function labelFields(
+  lines: readonly CountedLine[],
+  held: ReadonlyMap<string, ReadonlySet<string>>,
+  quantities: ReadonlyMap<string, number>,
+): string[] {
   return lines.flatMap((line, index) => {
     const at = `lines.${String(index)}`;
     if (line.labels === undefined) return held.has(line.code) ? [`${at}.labels`] : [];
     if (new Set(line.labels).size !== line.labels.length) return [`${at}.labels`];
-    return line.counted < line.labels.length ? [`${at}.counted`] : [];
+    if (line.counted < line.labels.length) return [`${at}.counted`];
+    const labelled = held.get(line.code) ?? new Set<string>();
+    const unscanned = labelsFound(labelled, line.labels).missing.length;
+    const unlabelledHeld = Math.max(0, (quantities.get(line.code) ?? 0) - labelled.size);
+    return unscanned > 0 && line.counted - line.labels.length > unlabelledHeld ? [`${at}.unlabelled`] : [];
   });
 }
 

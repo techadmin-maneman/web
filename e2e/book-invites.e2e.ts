@@ -117,7 +117,9 @@ test("a pincode we do not serve lists the number kept, with the launch alert off
   await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
 
   await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
-  // Joining the list is asking to be told at launch, so the box starts ticked.
+  // A message at launch is the visitor's own choice: the box starts unticked, and they tick it.
+  await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert)).not.toBeChecked();
+  await page.getByText(referralCopy.referral.waitlist.launchAlert).click();
   await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert)).toBeChecked();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
@@ -211,7 +213,6 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
   await expect(page.getByText(referralCopy.referral.remembered.waitlist)).toBeVisible();
   await expect(page.getByRole("button", { name: referralCopy.referral.remembered.joinWithout })).toBeVisible();
   await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
-  await page.getByText(referralCopy.referral.waitlist.launchAlert).click();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();

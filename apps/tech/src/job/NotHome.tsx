@@ -170,7 +170,7 @@ export function NotHome({ job, queued, card }: { job: Job; queued: readonly Queu
       {confirming && (
         <ConfirmSheet
           title={copy.confirm.title}
-          body={copy.confirm.body}
+          body={job.badge === "free" || job.badge === "at_visit" ? copy.confirm.bodyNothingPaid : copy.confirm.body}
           yes={copy.confirm.yes}
           no={copy.confirm.no}
           onYes={() => void close()}
@@ -204,7 +204,9 @@ function Arriving({ job, opensAt, noPosition }: { job: Job; opensAt: boolean; no
   return (
     <section className={styles.stage}>
       <p className={capsLook(styles.stageLabel)}>{copy.arrived.step}</p>
-      <p className={styles.stageBody}>{copy.arrived.body(job.checkin_radius_m)}</p>
+      <p className={styles.stageBody}>
+        {job.address?.lat === null ? copy.arrived.noPin : copy.arrived.body(job.checkin_radius_m)}
+      </p>
       {opensAt && (
         <p className={styles.stageOpens} role="status">
           {copy.arrived.opensAt(clock(job.checkin_from))}

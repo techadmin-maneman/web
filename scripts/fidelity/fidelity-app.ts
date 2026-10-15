@@ -325,6 +325,7 @@ type Price = Schemas["Price"];
 const hold = (type: "first_fit" | "service", price: Price, lateFee: Price | null): Schemas["Hold"] => ({
   id: "b0000000-0000-4000-8000-000000000001",
   type,
+  one_visit: false,
   service:
     type === "service"
       ? { tier: "standard", name: "Service visit", minutes: 90 }

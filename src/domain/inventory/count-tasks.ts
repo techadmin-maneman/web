@@ -329,7 +329,11 @@ async function linesRefused(db: D1Database, task: CountTask, codes: readonly str
     )
   )
     return ["lines"];
-  return labelFields(lines, await labelsHeld(db, task.placeId, codes));
+  const [labelled, { held }] = await Promise.all([
+    labelsHeld(db, task.placeId, codes),
+    heldNow(db, task.placeId, codes),
+  ]);
+  return labelFields(lines, labelled, held);
 }
 
 /** An open task's count, every item it lists, blind: each within the tolerance settled, the rest to count again. */

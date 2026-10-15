@@ -3602,6 +3602,7 @@ Request body:
             "last_of_kind",
             "service_retired",
             "no_product",
+            "no_profile",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -6564,6 +6565,10 @@ Request body:
           "quantity": {
             "type": "integer"
           },
+          "low": {
+            "type": "boolean",
+            "description": "At or below the kit level ops set for it."
+          },
           "hair_system": {
             "type": "boolean"
           },
@@ -6644,6 +6649,7 @@ Request body:
           "name",
           "unit",
           "quantity",
+          "low",
           "hair_system",
           "lots",
           "units"

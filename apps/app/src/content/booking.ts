@@ -24,6 +24,11 @@ export const booking = {
   },
   /** A first fit while ops offer no hair system in the console. */
   firstFitNotYet: "First fits aren’t open to book yet.",
+  /** A paid visit, booked with ops on WhatsApp while online payment is off: what to expect. */
+  withOps: (price: string) => `We book it with you on WhatsApp. You pay ${price} by UPI at the visit.`,
+  /** What the WhatsApp message asks for: the hair system or service, and the day the app offered. */
+  asking: (message: string, what: string | null, day: string | null) =>
+    [message, [what, day].filter((part) => part !== null).join(", ")].filter((part) => part !== "").join(" "),
   /**
    * A client who has given no address is asked for it before any slot (ADR 0079;
    * ADR 0025, item 60), under Profile's heading, "Where we come".

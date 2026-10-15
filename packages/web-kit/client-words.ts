@@ -13,7 +13,7 @@ export const CLIENT_WORDS = {
   /** The address's first line. */
   addressLine: "Building, society or street",
   /** Beneath the address: what the technician needs to get in, and when they see it. */
-  accessHint: "Gate code or parking. Your technician sees it the day before.",
+  accessHint: "Gate code or parking. Your technician sees it the evening before, with your address.",
   /** A write that did not go through, for a reason the client cannot act on. */
   failed: "That didn’t go through. Try again.",
 } as const;

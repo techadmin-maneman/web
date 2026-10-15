@@ -22,7 +22,7 @@ export type Answer =
 
 function Decided({ line, decided }: { line: Line; decided: Exclude<Line["state"], "proposed"> }) {
   const state = copy.states[decided];
-  if (decided === "approved" && line.po_number !== null) return <>{`${state} · ${copy.order(line.po_number)}`}</>;
+  if (decided === "approved" && line.po_number !== null) return <>{copy.draftedAs(copy.order(line.po_number))}</>;
   if (decided === "rejected" && line.reject_reason !== null) return <>{`${state} · ${line.reject_reason}`}</>;
   return <>{state}</>;
 }

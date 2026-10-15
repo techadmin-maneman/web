@@ -7,7 +7,7 @@
 import { Fieldset } from "@maneman/ui/Field";
 import { AddressFields } from "@maneman/ui/AddressFields";
 import { AddressSearch } from "@maneman/ui/AddressSearch";
-import { areaOfSuggestion, given, type AddressPart } from "@maneman/web-kit/address";
+import { areaOfSuggestion, type AddressPart } from "@maneman/web-kit/address";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { referral } from "../../content/referral.ts";
 import type { AddressFields as Address, RequiredPart } from "../../lib/address.ts";
@@ -66,10 +66,8 @@ export function AddressFieldset(props: {
             props.onChange({ ...address, building: typed, placeId: "" });
           }}
           onChoose={(chosen) => {
-            // The area the suggestion names, where the client has not typed one.
-            const locality = given(address.locality)
-              ? address.locality
-              : (areaOfSuggestion(chosen.primary, chosen.secondary) ?? "");
+            // The area the suggestion names, where the pin is, over any typed before.
+            const locality = areaOfSuggestion(chosen.primary, chosen.secondary) ?? address.locality;
             props.onChange({ ...address, building: chosen.primary, placeId: chosen.place_id, locality });
           }}
           words={{

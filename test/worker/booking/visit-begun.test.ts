@@ -89,7 +89,7 @@ const oneVisitClosedAs = (state: string) =>
   env.DB.prepare("UPDATE appointments SET one_visit = ?2 WHERE id = ?1").bind(JOB, state).run();
 
 describe("a visit the technician has checked in to", () => {
-  it("can no longer be cancelled or moved, and reads as in progress", async () => {
+  it("can no longer be cancelled or moved once the technician is at the door, which the client reads", async () => {
     expect(await changeAnswers()).toEqual([200, 200, 200]);
     expect(await nextVisitStage()).toBe("booked");
 
@@ -100,6 +100,9 @@ describe("a visit the technician has checked in to", () => {
     const cancel = await clientPost(`/api/appointments/${JOB}/cancel`, { confirm: true, notice: "late" });
     expect(await cancel.json()).toMatchObject({ error: { code: "not_changeable" } });
     expect(await changes()).toBe(0);
+    expect(await nextVisitStage()).toBe("arrived");
+
+    await job.post(`/api/tech/jobs/${JOB}/start`, undefined, "event-start-01");
     expect(await nextVisitStage()).toBe("in_progress");
   });
 

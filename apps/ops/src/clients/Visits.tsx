@@ -140,6 +140,13 @@ function ClosedWithoutFollowUp({ visit }: { visit: ClientVisit }) {
   );
 }
 
+/** What Book a visit opens on: a fitted client's service, a consulted lead's first fit, anyone else's consultation. */
+function firstChoiceOf(record: ClientRecord): "service" | "first_fit" | "consultation" {
+  if (record.state === "fitted") return "service";
+  const consulted = record.visits.past.some((visit) => visit.type === "consultation" && visit.status === "completed");
+  return consulted ? "first_fit" : "consultation";
+}
+
 type Change = "cancel" | "close";
 
 /**
@@ -336,7 +343,7 @@ function BookOne({ clientId, record, onBooked }: { clientId: string; record: Cli
         <BookVisit
           clientId={clientId}
           name={record.name}
-          prefill={{ choice: record.state === "fitted" ? "service" : "consultation" }}
+          prefill={{ choice: firstChoiceOf(record) }}
           onClose={(booked) => {
             setOpen(false);
             if (booked !== null) onBooked();

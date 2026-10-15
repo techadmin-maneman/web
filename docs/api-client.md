@@ -5506,6 +5506,7 @@ Request body:
             "last_of_kind",
             "service_retired",
             "no_product",
+            "no_profile",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -6584,6 +6585,7 @@ Request body:
           "type": "string",
           "enum": [
             "booked",
+            "arrived",
             "in_progress",
             "done",
             "closing",
@@ -6594,7 +6596,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, the technician at the door (checked in), under way (started), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -7966,6 +7968,7 @@ Request body:
           "type": "string",
           "enum": [
             "booked",
+            "arrived",
             "in_progress",
             "done",
             "closing",
@@ -7976,7 +7979,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, the technician at the door (checked in), under way (started), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -9948,6 +9951,10 @@ Request body:
         "replacement"
       ]
     },
+    "one_visit": {
+      "type": "boolean",
+      "description": "A consultation and fit in one visit, whose product is chosen at the visit, not the service named."
+    },
     "service": {
       "allOf": [
         {
@@ -10144,6 +10151,7 @@ Request body:
   "required": [
     "id",
     "type",
+    "one_visit",
     "service",
     "date",
     "window",

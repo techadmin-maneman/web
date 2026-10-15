@@ -75,6 +75,12 @@ describe("a fit's technician", () => {
     expect(await offered({ product: "essential" })).toEqual([IMRAN, SAMEER].sort());
   });
 
+  it("is the one whose own kit holds it before any whose stockroom does, who would fetch it first", async () => {
+    await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: "gurgaon-room", counted: 1 });
+    await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: SAMEER, counted: 1 });
+    expect(await offered({ product: "essential" })).toEqual([SAMEER]);
+  });
+
   it("is not asked for a visit that fits nothing", async () => {
     await job.opsPost("/api/stock/counts", { consumable_code: code, place_id: SAMEER, counted: 1 });
     expect(await offered(null)).toEqual([IMRAN, SAMEER].sort());

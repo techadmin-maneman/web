@@ -1436,7 +1436,7 @@ Request body:
 }
 ```
 
-**422**: not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair system on sale that day; code_not_applicable: the code does not apply to this booking
+**422**: not_bookable: the day, the kind or the service cannot be booked; no_product: a first fit, with no hair system on sale that day; no_profile: a first fit, for a client with no hair profile; code_not_applicable: the code does not apply to this booking
 
 ```json
 {
@@ -1455,6 +1455,7 @@ Request body:
               "enum": [
                 "not_bookable",
                 "no_product",
+                "no_profile",
                 "code_not_applicable"
               ]
             }
@@ -26983,6 +26984,7 @@ Request body:
             "last_of_kind",
             "service_retired",
             "no_product",
+            "no_profile",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -27830,6 +27832,7 @@ Request body:
           "type": "string",
           "enum": [
             "booked",
+            "arrived",
             "in_progress",
             "done",
             "closing",
@@ -27840,7 +27843,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, the technician at the door (checked in), under way (started), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -28300,6 +28303,7 @@ Request body:
           "type": "string",
           "enum": [
             "booked",
+            "arrived",
             "in_progress",
             "done",
             "closing",
@@ -28310,7 +28314,7 @@ Request body:
           "type": "null"
         }
       ],
-      "description": "For a visit not yet closed: still to come, under way (the technician has checked in), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
+      "description": "For a visit not yet closed: still to come, the technician at the door (checked in), under way (started), closed as done from the technician's phone, otherwise over and waiting to be closed, or over with nobody having arrived. Null once it is closed."
     },
     "prepaid": {
       "type": "boolean",
@@ -30651,6 +30655,7 @@ Request body:
             "last_of_kind",
             "service_retired",
             "no_product",
+            "no_profile",
             "unknown_invite",
             "own_invite",
             "already_invited",
@@ -39436,11 +39441,18 @@ Request body:
             "string",
             "null"
           ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "required": [
         "group",
-        "consumable_code"
+        "consumable_code",
+        "name"
       ],
       "additionalProperties": false
     },

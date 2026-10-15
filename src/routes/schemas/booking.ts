@@ -50,6 +50,9 @@ export const HoldSchema = z
   .object({
     id: z.uuid(),
     type: z.enum(VISIT_TYPES),
+    one_visit: z.boolean().openapi({
+      description: "A consultation and fit in one visit, whose product is chosen at the visit, not the service named.",
+    }),
     service: ServiceSchema.openapi({ description: "What it is for, with the length it is held and booked for." }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),

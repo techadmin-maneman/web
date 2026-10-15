@@ -5028,8 +5028,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Gate code or parking. Your technician sees it the day before.",
-    "reviewed": true
+    "text": "Gate code or parking. Your technician sees it the evening before, with your address.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.waitlist.title",

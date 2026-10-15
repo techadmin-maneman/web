@@ -289,6 +289,7 @@ export const clients = {
         already_booked: "Already booked, or a payment link is open for one.",
         not_bookable: "That day or service can’t be booked.",
         no_product: "No hair system on sale that day.",
+        no_profile: "Record their hair profile first, under Hair systems.",
         code_not_applicable: "That code doesn’t apply to this visit.",
         invalid_request: "Already made good, or not owed. Close and look again.",
         code_off: "That code is switched off.",
@@ -400,6 +401,7 @@ export const clients = {
     /** A visit to come, by where it stands, and one done, by how it was closed. */
     stages: {
       booked: "Booked",
+      arrived: "At the door",
       in_progress: "In progress",
       done: "Done",
       closing: "Not closed",

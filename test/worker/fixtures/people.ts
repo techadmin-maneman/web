@@ -30,3 +30,22 @@ export const anAddress = (personId: string, row: RowOf<"addresses"> = {}) =>
     },
     row,
   );
+
+/** The hair profile a client's consultation measured: an Essential, 8 by 10 inches, 1B, 20% grey, full density. */
+export const aHairProfile = (personId: string, row: RowOf<"hair_profiles"> = {}) =>
+  writeRow(
+    "hair_profiles",
+    {
+      id: crypto.randomUUID(),
+      person_id: personId,
+      staff: "ops@localhost",
+      created_at: AT,
+      product: "essential",
+      base_width_in: 8,
+      base_length_in: 10,
+      colour: "1B",
+      grey_percent: 20,
+      density_percent: 100,
+    },
+    row,
+  );

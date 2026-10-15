@@ -2,6 +2,7 @@
 // about (src/routes/ops/alerts.ts). Each says what happened and links to where to act; ops mark one done, or send
 // again the message, lead or CRM erasure it gave up on. Each person sees their own departments' kinds.
 
+import { Disclosure } from "@maneman/ui/Disclosure";
 import { TextButton } from "@maneman/ui/TextLink";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
@@ -17,6 +18,7 @@ import { alertNeed, markDoneNeed, useAccess, type Access } from "../lib/access.t
 import { PanelFailed } from "../states/States.tsx";
 import shared from "./tasks.module.css";
 import styles from "./needs-ahand.module.css";
+import { headlineOf } from "./alert-headline.ts";
 import { tasksApi } from "./tasks-api.ts";
 
 /** The few words that name what went wrong. */
@@ -56,7 +58,12 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
     <li className={shared.alert}>
       <div className={shared.what}>
         <span className={shared.subject}>{title}</span>
-        <span className={shared.sub}>{alert.message}</span>
+        <span className={shared.sub}>{headlineOf(alert.message)}</span>
+        {headlineOf(alert.message) !== alert.message && (
+          <Disclosure summary={copy.details}>
+            <span className={shared.sub}>{alert.message}</span>
+          </Disclosure>
+        )}
 
         <span className={shared.acts}>
           {alert.link !== null && (

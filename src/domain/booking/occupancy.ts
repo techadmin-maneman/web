@@ -122,8 +122,8 @@ const TECHNICIANS_IN_THE_CITY = `SELECT t.id, t.name, t.initials FROM technician
     AND (?2 IS NULL OR t.test_record = (SELECT COALESCE(MAX(p.test_record), 0) FROM people p WHERE p.id = ?2))
     AND (?5 IS NULL OR EXISTS (
       SELECT 1 FROM stock_balances b WHERE b.consumable_code = ?5 AND b.quantity > 0
-        AND (b.place = t.id OR b.place IN (SELECT r.id FROM stock_places r
-                                           WHERE r.kind = 'stockroom' AND r.city = t.city AND r.active = 1))))))
+        AND (b.place = t.id OR (?6 = 0 AND b.place IN (SELECT r.id FROM stock_places r
+                                           WHERE r.kind = 'stockroom' AND r.city = t.city AND r.active = 1)))))))
   ORDER BY t.id = ?3 DESC, t.name`;
 
 /** A fit to place: the product a first fit was paid for, which its piece is of; null on a replacement. */
@@ -140,8 +140,8 @@ export const fittingOf = (type: VisitType | null, tier: string | null): Fitting 
 
 /**
  * Who can take a booking: the active technicians in the visit's city, and for a fit only those trained to fit (ADR
- * 0119) whose kit, or their city's stockroom, holds a piece of the client's exact spec. Where none does, any trained
- * fitter takes it, and the evening's kit check tells ops what is short. A client's move may go to any of them, its own
+ * 0119) whose own kit holds a piece of the client's exact spec; where none does, those whose city's stockroom holds
+ * one; where none does, any trained fitter, and the evening's kit check tells ops what is short. A client's move may go to any of them, its own
  * technician first, who keeps it wherever they work.
  */
 export async function techniciansFor(
@@ -150,16 +150,27 @@ export async function techniciansFor(
   place: VisitPlace,
   fitting: Fitting | null = null,
 ): Promise<Technician[]> {
-  const read = async (code: string | null) => {
+  const read = async (code: string | null, kitOnly = false) => {
     const { results } = await db
       .prepare(TECHNICIANS_IN_THE_CITY)
-      .bind(place.pincode, place.personId, moving?.technicianId ?? null, fitting === null ? 0 : 1, code)
+      .bind(
+        place.pincode,
+        place.personId,
+        moving?.technicianId ?? null,
+        fitting === null ? 0 : 1,
+        code,
+        kitOnly ? 1 : 0,
+      )
       .all<Technician>();
     return results;
   };
   const code = fitting === null || place.personId === null ? null : await fitCode(db, place.personId, fitting.product);
-  const withPiece = await read(code);
-  return code === null || withPiece.length > 0 ? withPiece : read(null);
+  if (code === null) return read(null);
+  for (const kitOnly of [true, false]) {
+    const holding = await read(code, kitOnly);
+    if (holding.length > 0) return holding;
+  }
+  return read(null);
 }
 
 /** A visit being moved: only its technician can take the move, and its own time is left out. */

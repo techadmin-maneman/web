@@ -7,7 +7,7 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { Hold, MoveTerms } from "../../api.ts";
-import { booking, change, windowHours } from "../../content.ts";
+import { booking, change, ONE_VISIT, windowHours } from "../../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
 import { priceFigures } from "../../lib/money.ts";
 import { CodeBox } from "../CodeBox.tsx";
@@ -19,7 +19,7 @@ import { minutesAndSeconds, useHoldLeft, Heading, LastMinute, LateFee } from "./
 
 /** What the pay step names: the service booked, or, for a move, the visit moved or its late fee. */
 function itemName(hold: Hold, moving: MoveTerms | undefined): string {
-  const what = hold.service.name;
+  const what = hold.one_visit ? ONE_VISIT : hold.service.name;
   if (moving?.cost === "free") return change.moveItem(what);
   if (moving?.cost === "late_fee") return change.lateFeeItem(what);
   return what;

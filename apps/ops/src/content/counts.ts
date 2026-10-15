@@ -54,6 +54,7 @@ export const counts = {
     lines: changed("The items changed since this opened."),
     labels: "Scan each labelled piece once.",
     counted: "That’s fewer than the labels scanned.",
+    unlabelled: "Scan the pieces that carry a label; count only those with none.",
     consumable_code: "This place holds none of that.",
     order_state: changed("Someone else counted this first."),
     not_found: changed("That’s gone."),

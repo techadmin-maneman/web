@@ -67,7 +67,7 @@ test("a job closed out on another phone reads as closed on Today, as its card sa
   const row = page.getByRole("listitem").first();
   await expect(row).toContainText(techCopy.titles.closeOut);
   await row.click();
-  await expect(page.getByText("Closed out · partial")).toBeVisible();
+  await expect(page.getByText("Closed out · partly done")).toBeVisible();
 });
 
 test("says nothing is booked when the day is empty (board A2)", async ({ page }) => {

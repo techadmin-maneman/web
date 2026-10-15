@@ -54,7 +54,7 @@ const SUBS: { readonly [G in Group]: Sub<G> } = {
   replacement_order: (facts, task) =>
     copy.replacement_order(facts.piece_code, fullDate(indiaDate(task.due)), fullDate(facts.due_on)),
   recall_call: (facts) => copy.recall_call(facts.piece_codes.join(" ")),
-  stock_at_risk: (facts) => copy.stock_at_risk(facts.consumable_code ?? ""),
+  stock_at_risk: (facts) => copy.stock_at_risk(facts.name ?? facts.consumable_code ?? ""),
   referral_review: (facts) => SIGNALS[facts.signal ?? ""] ?? copy.unknown,
   grievance: () => copy.grievance,
   number_change: () => copy.number_change,
