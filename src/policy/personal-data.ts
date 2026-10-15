@@ -120,10 +120,12 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "checkin_waived_at",
       "checkin_waived_by",
       "checkin_waived_reason",
+      "tier",
     ],
     whyLeftOut:
       "Our and FSM's keys, when each visit was last checked against FSM and Books, and ops letting the technician " +
-      "check in past the geofence, which is about their arrival. The technician is given by name.",
+      "check in past the geofence, which is about their arrival. The technician is given by name, and the price " +
+      "code by the hair system's name.",
     erasure: {
       blanks: ["client_note", "client_note_at"],
       why: "The visits stay, as the record of the service and its invoice; the client's notes to the technician go.",
@@ -414,9 +416,10 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
       "reference_year",
       "reference_number",
       "payment_checked_at",
+      "tier",
     ],
     whyLeftOut:
-      "How each slot was held and placed, by our, Razorpay's and FSM's keys; its price before GST; when we last asked Razorpay about its payment; and a one-way hash of the network address, which reads as nothing.",
+      "How each slot was held and placed, by our, Razorpay's and FSM's keys; its price before GST; when we last asked Razorpay about its payment; a one-way hash of the network address, which reads as nothing; and the price code, which the hair system's name says.",
     erasure: {
       blanks: ["consents_shown", "consents_ip_hash"],
       why: "What the pay step showed, and the hashed network address, go; the booking stays.",

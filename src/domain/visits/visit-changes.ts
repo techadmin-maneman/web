@@ -61,6 +61,8 @@ export interface ChangeableVisit {
   /** When it started before ops moved it, while it stands where they put it; null otherwise. */
   readonly startBeforeMove: Date | null;
   readonly technicianId: string | null;
+  /** A consultation and fit in one visit, which names no hair system until the client chooses one there. */
+  readonly oneVisit: boolean;
 }
 
 /**
@@ -76,7 +78,7 @@ export async function changeableVisit(
   const row = await db
     .prepare(
       `SELECT a.id, a.person_id, a.type, a.tier, a.window_start, a.window_end, a.start_before_move, a.technician_id,
-         s.minutes AS service_minutes
+         s.minutes AS service_minutes, a.one_visit
        FROM appointments a LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")}
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
          AND a.type IS NOT NULL AND (a.window_start > ?3 OR ?4 = 1) AND NOT ${visitBegun("a")}`,
@@ -92,6 +94,7 @@ export async function changeableVisit(
       start_before_move: string | null;
       technician_id: string | null;
       service_minutes: number | null;
+      one_visit: string | null;
     }>();
   if (row === null) return null;
   return {
@@ -103,6 +106,7 @@ export async function changeableVisit(
     start: new Date(row.window_start),
     startBeforeMove: row.start_before_move === null ? null : new Date(row.start_before_move),
     technicianId: row.technician_id,
+    oneVisit: row.one_visit === "booked",
   };
 }
 
