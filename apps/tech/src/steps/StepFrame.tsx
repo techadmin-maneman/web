@@ -80,7 +80,8 @@ export function StepFrame({
         <IconButton
           className={styles.back}
           d={ICONS.back}
-          size="lg" weight="heavy"
+          size="lg"
+          weight="heavy"
           label={copy.back}
           onClick={onBack}
         />
