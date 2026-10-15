@@ -4,14 +4,14 @@
 import type { Success } from "@maneman/web-kit/api";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { clients } from "../content.ts";
 import { customOrders as copy } from "../content/custom-orders.ts";
 import { paiseFromRupees } from "@maneman/web-kit/money";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { clientsApi } from "./clients-api.ts";
 
@@ -31,9 +31,18 @@ interface Draft {
   note: string;
 }
 
-function OrderEntry(props: { label: string; value: string; type?: string; onChange: (text: string) => void }) {
+/** The order's boxes, by the names the API refuses them by. */
+const ORDER_BOXES = ["supplier_id", "supplier_price", "amount", "promised_on", "wave", "note"];
+
+function OrderEntry(props: {
+  label: string;
+  value: string;
+  type?: string;
+  onChange: (text: string) => void;
+  error: string | null;
+}) {
   return (
-    <Field label={props.label} className={form.field}>
+    <Field label={props.label} className={form.field} error={props.error}>
       {(control) => (
         <TextInput
           {...control}
@@ -54,15 +63,18 @@ function OrderBoxes({
   customOrders,
   draft,
   edit,
+  failure,
 }: {
   customOrders: CustomOrders;
   draft: Draft;
   edit: (field: keyof Draft) => (text: string) => void;
+  failure: Failure | null;
 }) {
+  const refused = (box: string) => boxError(copy.errors, failure, box);
   const currency = customOrders.suppliers.find((each) => each.id === draft.supplierId)?.currency ?? "";
   return (
     <>
-      <Field label={copy.raise.supplier} className={form.field}>
+      <Field label={copy.raise.supplier} className={form.field} error={refused("supplier_id")}>
         {(control) => (
           <Select
             {...control}
@@ -83,10 +95,17 @@ function OrderBoxes({
         label={copy.raise.supplierPrice(currency)}
         value={draft.supplierPrice}
         onChange={edit("supplierPrice")}
+        error={refused("supplier_price")}
       />
-      <OrderEntry label={copy.raise.amount} value={draft.amount} onChange={edit("amount")} />
-      <OrderEntry label={copy.raise.promised} type="date" value={draft.promised} onChange={edit("promised")} />
-      <Field label={copy.raise.wave} className={form.field}>
+      <OrderEntry label={copy.raise.amount} value={draft.amount} onChange={edit("amount")} error={refused("amount")} />
+      <OrderEntry
+        label={copy.raise.promised}
+        type="date"
+        value={draft.promised}
+        onChange={edit("promised")}
+        error={refused("promised_on")}
+      />
+      <Field label={copy.raise.wave} className={form.field} error={refused("wave")}>
         {(control) => (
           <Select
             {...control}
@@ -104,7 +123,7 @@ function OrderBoxes({
           </Select>
         )}
       </Field>
-      <OrderEntry label={copy.raise.note} value={draft.note} onChange={edit("note")} />
+      <OrderEntry label={copy.raise.note} value={draft.note} onChange={edit("note")} error={refused("note")} />
     </>
   );
 }
@@ -148,7 +167,7 @@ export function RaiseCustomOrder({
   return (
     <div className={form.group}>
       <h3 className={form.fieldLabel}>{copy.raise.title}</h3>
-      <OrderBoxes customOrders={customOrders} draft={draft} edit={edit} />
+      <OrderBoxes customOrders={customOrders} draft={draft} edit={edit} failure={failure} />
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void raise()}>
           {copy.raise.send}
@@ -157,7 +176,7 @@ export function RaiseCustomOrder({
           {copy.raise.keep}
         </Button>
       </FormActions>
-      {failure !== null && <Refusal className={form.error} said={errorText(copy.errors, failure)} />}
+      <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={ORDER_BOXES} />
     </div>
   );
 }

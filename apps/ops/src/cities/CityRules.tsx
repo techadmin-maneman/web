@@ -30,9 +30,10 @@ function RuleForm(props: { city: string; rule: CityRuleName; now: number | null;
       ready={/^\d{1,4}$/.test(figure.trim())}
       errors={copy.errors}
       onCancel={null}
+      boxes={["value"]}
       checking={<CheckLine>{copy.line(name, was, figure.trim())}</CheckLine>}
     >
-      <Field label={`${copy.figure} (${copy.units[props.rule]})`} className={form.field}>
+      <Field label={`${copy.figure} (${copy.units[props.rule]})`} className={form.field} box="value">
         {(control) => (
           <NumberInput
             {...control}

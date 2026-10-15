@@ -157,6 +157,11 @@ describe("the Words page", () => {
     await press(copy.form.next);
     await press(copy.check.send);
     expect(page.querySelector('[role="alert"]')?.textContent).toBe(copy.errors.holes);
+    // Said on the box it names, which is marked as refused and described by it.
+    const box = page.querySelector("textarea");
+    expect(box?.getAttribute("aria-invalid")).toBe("true");
+    const described = (box?.getAttribute("aria-describedby") ?? "").split(" ").map((id) => document.getElementById(id));
+    expect(described.map((each) => each?.textContent)).toContain(copy.errors.holes);
   });
 
   it("puts a line back to the code’s wording from its history", async () => {

@@ -51,3 +51,26 @@ describe("the published words a build reads", () => {
     await expect(fetchSiteWords("staging", {}, answering({ words: "no" }).fetcher)).rejects.toThrow("shape");
   });
 });
+
+describe("the visit lengths a build reads", () => {
+  const lengths = { consultation: 45, first_fit: 180, service: 120, replacement: 135 };
+
+  // A length ops changed in the console stayed the code's on the site until a release changed the code.
+  it("are the console's, said as the site says a length", async () => {
+    const { fetcher } = answering({ id: null, words: {}, lengths });
+    expect(await fetchSiteWords("production", {}, fetcher)).toEqual({
+      "site:service/visitLength.consultation": "45 minutes",
+      "site:service/visitLength.firstFit": "3 hours",
+      "site:service/visitLength.service": "2 hours",
+    });
+  });
+
+  it("give way to words published for the same line, and to a kind that offers nothing", async () => {
+    const words = { "site:service/visitLength.service": "about two hours" };
+    const { fetcher } = answering({ id: PUBLISHED.id, words, lengths: { ...lengths, consultation: null } });
+    expect(await fetchSiteWords("production", {}, fetcher)).toEqual({
+      "site:service/visitLength.firstFit": "3 hours",
+      "site:service/visitLength.service": "about two hours",
+    });
+  });
+});

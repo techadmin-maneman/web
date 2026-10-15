@@ -327,7 +327,22 @@ export const ERROR_STATUS = {
 export const refuse = <Code extends ErrorCode>(c: Context<AppEnv>, code: Code, fields?: readonly string[]) =>
   c.json(errorBody(code, c.var.requestId, fields), ERROR_STATUS[code]);
 
-/** The OpenAPI entry for an error response. */
+/** The codes a response's description names, "busy: …; unavailable: …", each as a word of its own. */
+export function codesNamed(description: string): ErrorCode[] {
+  const words = new Set(description.split(/[^a-z_]+/));
+  return ERROR_CODES.filter((code) => words.has(code));
+}
+
+/**
+ * The OpenAPI entry for an error response, its code one of those its description names, so the contract says which a
+ * route answers; any code where it names none. What any route may answer besides (test/any-route.ts) stands apart.
+ */
 export function errorResponse(description: string) {
-  return { description, content: { "application/json": { schema: ErrorResponseSchema } } } as const;
+  const [first, ...rest] = codesNamed(description);
+  // The error as every route has it, its code narrowed to this answer's: the rest of it is written once.
+  const schema =
+    first === undefined
+      ? ErrorResponseSchema
+      : ErrorResponseSchema.and(z.looseObject({ error: z.looseObject({ code: z.enum([first, ...rest]) }) }));
+  return { description, content: { "application/json": { schema } } } as const;
 }

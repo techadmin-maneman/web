@@ -70,9 +70,9 @@ function changes(was: Consumable, draft: Draft): string[] {
 }
 
 /** A whole figure, as typed; empty for none. */
-function Figure(props: { label: string; value: string; onChange: (text: string) => void }) {
+function Figure(props: { label: string; value: string; onChange: (text: string) => void; box: string }) {
   return (
-    <Field label={props.label} className={form.field}>
+    <Field label={props.label} className={form.field} box={props.box}>
       {(control) => (
         <TextInput
           {...control}
@@ -94,7 +94,7 @@ function Particulars({ draft, onEdit }: { draft: Draft; onEdit: (field: keyof Dr
   const edit = onEdit;
   return (
     <div className={form.fields}>
-      <Field label={formWords.name} className={form.field}>
+      <Field label={formWords.name} className={form.field} box="name">
         {(control) => (
           <TextInput
             {...control}
@@ -107,7 +107,7 @@ function Particulars({ draft, onEdit }: { draft: Draft; onEdit: (field: keyof Dr
           />
         )}
       </Field>
-      <Field label={formWords.unit} className={form.field}>
+      <Field label={formWords.unit} className={form.field} box="unit">
         {(control) => (
           <TextInput
             {...control}
@@ -120,7 +120,7 @@ function Particulars({ draft, onEdit }: { draft: Draft; onEdit: (field: keyof Dr
           />
         )}
       </Field>
-      <Field label={formWords.cost} className={form.field}>
+      <Field label={formWords.cost} className={form.field} box="unit_cost">
         {(control) => (
           <TextInput
             {...control}
@@ -201,6 +201,7 @@ export function ConsumableForm({
       ready={ready}
       errors={{ ...copy.errors, unit_cost: copy.unitCostUpTo(rupees(maxUnitCost)) }}
       onCancel={onCancel}
+      boxes={["name", "unit", "unit_cost", "reorder_kit", "reorder_store", "reorder_central", "shelf_life_days"]}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [formWords.confirm.nothing] : lines).map((line) => (
         <CheckLine key={line}>{line}</CheckLine>
@@ -208,10 +209,10 @@ export function ConsumableForm({
     >
       <Particulars draft={draft} onEdit={edit} />
       <div className={form.fields}>
-        <Figure label={formWords.kit} value={draft.kit} onChange={edit("kit")} />
-        <Figure label={formWords.store} value={draft.store} onChange={edit("store")} />
-        <Figure label={formWords.central} value={draft.central} onChange={edit("central")} />
-        <Figure label={formWords.shelf} value={draft.shelf} onChange={edit("shelf")} />
+        <Figure label={formWords.kit} value={draft.kit} onChange={edit("kit")} box="reorder_kit" />
+        <Figure label={formWords.store} value={draft.store} onChange={edit("store")} box="reorder_store" />
+        <Figure label={formWords.central} value={draft.central} onChange={edit("central")} box="reorder_central" />
+        <Figure label={formWords.shelf} value={draft.shelf} onChange={edit("shelf")} box="shelf_life_days" />
       </div>
     </SettingForm>
   );

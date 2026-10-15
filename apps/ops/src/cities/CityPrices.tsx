@@ -97,7 +97,7 @@ function PriceBoxes({ cities, draft, edit }: { cities: Cities; draft: Draft; edi
           </Select>
         )}
       </Field>
-      <Field label={copy.item} className={form.field}>
+      <Field label={copy.item} className={form.field} box="item">
         {(control) => (
           <Select
             {...control}
@@ -123,7 +123,7 @@ function PriceBoxes({ cities, draft, edit }: { cities: Cities; draft: Draft; edi
 function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Draft>) => void }) {
   return (
     <>
-      <Field label={copy.tier} className={form.field}>
+      <Field label={copy.tier} className={form.field} box="tier">
         {(control) => (
           <TextInput
             {...control}
@@ -135,7 +135,7 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.amount} className={form.field}>
+      <Field label={copy.amount} className={form.field} box="amount_ex_gst">
         {(control) => (
           <NumberInput
             {...control}
@@ -147,7 +147,7 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.gst} className={form.field}>
+      <Field label={copy.gst} className={form.field} box="gst_percent">
         {(control) => (
           <NumberInput
             {...control}
@@ -159,7 +159,7 @@ function PriceFigures({ draft, edit }: { draft: Draft; edit: (change: Partial<Dr
           />
         )}
       </Field>
-      <Field label={copy.from} className={form.field}>
+      <Field label={copy.from} className={form.field} box="valid_from">
         {(control) => (
           <DateInput
             {...control}
@@ -214,6 +214,7 @@ function PriceForm({ cities, onSaved }: { cities: Cities; onSaved: () => void })
       ready={ready}
       errors={copy.errors}
       onCancel={null}
+      boxes={["item", "tier", "amount_ex_gst", "gst_percent", "valid_from"]}
       checking={<CheckLine>{line}</CheckLine>}
     >
       <PriceBoxes cities={cities} draft={draft} edit={edit} />

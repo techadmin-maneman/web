@@ -33,7 +33,7 @@ const enterRoute = techRoute({
   request: { params: z.object({ id: z.uuid() }), body: { required: true, ...json(EntrySchema) } },
   responses: {
     200: { description: "It comes off the product's price at the payment link", ...json(AppliedSchema) },
-    401: errorResponse("session_required; device_revoked"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse("not_found: no such job of this technician's"),
     409: errorResponse(
       "already_discounted: the visit carries a code; price_settled: its payment link is made, or it is not a one " +

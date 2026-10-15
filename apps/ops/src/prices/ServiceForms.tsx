@@ -46,10 +46,11 @@ export function RenameForm(props: {
       ready={name.trim() !== "" && name.trim() !== service.name}
       errors={copy.errors}
       onCancel={props.onCancel}
+      boxes={["name"]}
       checking={<CheckLine>{check.rename(service.name, name.trim(), service.tier)}</CheckLine>}
     >
       <div className={form.fields}>
-        <Field label={formWords.name} className={form.field}>
+        <Field label={formWords.name} className={form.field} box="name">
           {(control) => (
             <TextInput
               {...control}
@@ -89,10 +90,11 @@ export function DescribeForm(props: {
       ready={line.trim() !== was}
       errors={{ ...copy.errors, description: copy.limits.description(props.maxLength) }}
       onCancel={props.onCancel}
+      boxes={["description"]}
       checking={<CheckLine>{check.describe(service.name, was, line.trim())}</CheckLine>}
     >
       <div className={form.fields}>
-        <Field label={formWords.description} className={form.field}>
+        <Field label={formWords.description} className={form.field} box="description">
           {(control) => (
             <TextInput
               {...control}
@@ -131,10 +133,11 @@ export function LengthForm(props: {
       ready={minutes.trim() !== "" && Number(minutes) !== service.minutes}
       errors={{ ...copy.errors, minutes: copy.limits.minutes(bounds.min, bounds.max) }}
       onCancel={props.onCancel}
+      boxes={["minutes"]}
       checking={<CheckLine>{check.length(service.name, service.minutes, Number(minutes))}</CheckLine>}
     >
       <div className={form.fields}>
-        <Field label={formWords.minutes} className={form.field}>
+        <Field label={formWords.minutes} className={form.field} box="minutes">
           {(control) => (
             <NumberInput
               {...control}
@@ -176,10 +179,11 @@ export function RetireForm(props: {
       ready={from !== ""}
       errors={copy.errors}
       onCancel={props.onCancel}
+      boxes={["from"]}
       checking={<CheckLine>{check.retire(service.name, longDate(from))}</CheckLine>}
     >
       <div className={form.fields}>
-        <Field label={formWords.retireFrom} className={form.field}>
+        <Field label={formWords.retireFrom} className={form.field} box="from">
           {(control) => (
             <DateInput
               {...control}
@@ -278,10 +282,11 @@ export function AddForm(props: {
       ready={ready}
       errors={{ ...copy.errors, minutes: copy.limits.minutes(bounds.min, bounds.max) }}
       onCancel={props.onCancel}
+      boxes={["name", "tier", "minutes"]}
       checking={<CheckLine>{check.add(kindName, name.trim(), Number(minutes), codeSent)}</CheckLine>}
     >
       <div className={form.fields}>
-        <Field label={formWords.name} className={form.field}>
+        <Field label={formWords.name} className={form.field} box="name">
           {(control) => (
             <TextInput
               {...control}
@@ -295,7 +300,7 @@ export function AddForm(props: {
             />
           )}
         </Field>
-        <Field label={formWords.code} hint={formWords.codeHints[kind]} className={form.field}>
+        <Field label={formWords.code} hint={formWords.codeHints[kind]} className={form.field} box="tier">
           {(control) => (
             <TextInput
               {...control}
@@ -310,7 +315,7 @@ export function AddForm(props: {
             />
           )}
         </Field>
-        <Field label={formWords.minutes} className={form.field}>
+        <Field label={formWords.minutes} className={form.field} box="minutes">
           {(control) => (
             <NumberInput
               {...control}

@@ -5,8 +5,8 @@
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
-import { errorText, type Failure } from "@maneman/web-kit/refusal";
-import { Checkbox, ChoiceGroup, Field, NumberInput, Radio, Select, TextInput } from "@maneman/ui/Field";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
+import { Checkbox, ChoiceGroup, Radio } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { useState } from "react";
 import { type Stock } from "../api.ts";
@@ -17,8 +17,9 @@ import { LotFields } from "./LotFields.tsx";
 import { PieceScans } from "./PieceScans.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
+import { NoteBox, Quantity, StockChoice, stockBoxes, type Refused } from "./StockBoxes.tsx";
 import { stockApi } from "./stock-api.ts";
 
 export const KINDS = ["delivery", "transfer", "count", "write_off"] as const;
@@ -56,56 +57,6 @@ export function placeName(stock: Stock, id: string): string {
 
 /** The warehouse a delivery goes into, which is "central" in the ledger. */
 const warehouseOf = (stock: Stock) => stock.places.find((each) => each.kind === "warehouse")?.id ?? "central";
-
-/** One of the consumables or the places, by name. */
-function StockChoice(props: {
-  label: string;
-  value: string;
-  options: readonly (readonly [string, string])[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <Field label={props.label} className={form.field}>
-      {(control) => (
-        <Select
-          {...control}
-          className={form.choiceBox}
-          value={props.value}
-          onChange={(event) => {
-            props.onChange(event.target.value);
-          }}
-        >
-          {props.options.map(([value, name]) => (
-            <option key={value} value={value}>
-              {name}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
-  );
-}
-
-/** How many, kept as typed until it is sent. */
-function Quantity(props: { label: string; hint?: string; value: string; onChange: (text: string) => void }) {
-  return (
-    <Field label={props.label} hint={props.hint} className={form.field}>
-      {(control) => (
-        <NumberInput
-          {...control}
-          className={form.figureBox}
-          type="text"
-          inputMode="numeric"
-          maxLength={6}
-          value={props.value}
-          onChange={(event) => {
-            props.onChange(event.target.value);
-          }}
-        />
-      )}
-    </Field>
-  );
-}
 
 /** What each place the movement touches holds now, beside what it will hold, and any that would go below nothing. */
 function effectOf(stock: Stock, draft: Draft): { lines: string[]; warnings: string[] } {
@@ -224,14 +175,16 @@ function HowMany(props: {
   draft: Draft;
   unit: string;
   onEdit: (field: "counted" | "quantity") => (text: string) => void;
+  refused: Refused;
 }) {
-  const { draft, unit, onEdit } = props;
+  const { draft, unit, onEdit, refused } = props;
   if (draft.kind === "count") {
     return (
       <Quantity
         label={copy.record.inUnit(copy.record.counted, unit)}
         value={draft.counted}
         onChange={onEdit("counted")}
+        error={refused("counted")}
       />
     );
   }
@@ -241,6 +194,7 @@ function HowMany(props: {
       label={copy.record.inUnit(copy.record.quantity, unit)}
       value={draft.quantity}
       onChange={onEdit("quantity")}
+      error={refused("quantity")}
     />
   );
 }
@@ -264,8 +218,9 @@ function WhatMoved(props: {
   kinds: readonly Kind[];
   places: readonly (readonly [string, string])[];
   onEdit: (field: Exclude<keyof Draft, "units" | "waitForScan">) => (value: string) => void;
+  refused: Refused;
 }) {
-  const { stock, draft, kinds, places } = props;
+  const { stock, draft, kinds, places, refused } = props;
   const edit = props.onEdit;
   return (
     <>
@@ -289,20 +244,43 @@ function WhatMoved(props: {
           value={draft.code}
           options={stock.consumables.map((each) => [each.code, each.name] as const)}
           onChange={edit("code")}
+          error={refused("consumable_code")}
         />
         {draft.kind === "transfer" && (
           <>
-            <StockChoice label={copy.record.from} value={draft.from} options={places} onChange={edit("from")} />
-            <StockChoice label={copy.record.to} value={draft.to} options={places} onChange={edit("to")} />
+            <StockChoice
+              label={copy.record.from}
+              value={draft.from}
+              options={places}
+              onChange={edit("from")}
+              error={refused("from")}
+            />
+            <StockChoice
+              label={copy.record.to}
+              value={draft.to}
+              options={places}
+              onChange={edit("to")}
+              error={refused("to")}
+            />
           </>
         )}
         {(draft.kind === "count" || draft.kind === "write_off") && (
-          <StockChoice label={copy.record.place} value={draft.place} options={places} onChange={edit("place")} />
+          <StockChoice
+            label={copy.record.place}
+            value={draft.place}
+            options={places}
+            onChange={edit("place")}
+            error={refused("place_id")}
+          />
         )}
       </div>
     </>
   );
 }
+
+/** The boxes the form draws for this movement, whose refusals their Fields say. */
+const drawnBoxes = (stock: Stock, draft: Draft) =>
+  stockBoxes(draft.kind, draft.units.length > 0, (holdingOf(stock, draft.code, draft.place)?.lots.length ?? 0) > 0);
 
 /** Records a movement of one of `kinds`: those the caller may record, in KINDS' order. */
 export function StockForm({
@@ -342,6 +320,8 @@ export function StockForm({
   };
   const unit = unitOf(stock, draft.code);
   const checking = step.step === "checking" || step.step === "saving";
+  const failure = step.step === "failed" ? step : null;
+  const refused = (box: string) => boxError(copy.errors, failure, box);
   const effect = effectOf(stock, draft);
 
   const send = async () => {
@@ -359,26 +339,19 @@ export function StockForm({
   return (
     <Panel titleId="stock-record" title={copy.record.title}>
       <div className={form.group}>
-        <WhatMoved stock={stock} draft={draft} kinds={kinds} places={places} onEdit={edit} />
-        <LotFields stock={stock} draft={draft} onEdit={edit} />
+        <WhatMoved stock={stock} draft={draft} kinds={kinds} places={places} onEdit={edit} refused={refused} />
+        <LotFields stock={stock} draft={draft} onEdit={edit} refused={refused} />
         {scans(stock, draft) && <PieceScans units={draft.units} onUnits={scan} />}
         <WaitForScan stock={stock} draft={draft} onDraft={setDraft} />
         <div className={form.fields}>
-          <HowMany draft={draft} unit={unit} onEdit={edit} />
+          <HowMany draft={draft} unit={unit} onEdit={edit} refused={refused} />
           {draft.kind !== "transfer" && (
-            <Field label={draft.kind === "write_off" ? copy.record.lossNote : copy.record.note} className={form.field}>
-              {(control) => (
-                <TextInput
-                  {...control}
-                  className={form.text}
-                  maxLength={200}
-                  value={draft.note}
-                  onChange={(event) => {
-                    edit("note")(event.target.value);
-                  }}
-                />
-              )}
-            </Field>
+            <NoteBox
+              lost={draft.kind === "write_off"}
+              note={draft.note}
+              onNote={edit("note")}
+              error={refused("note")}
+            />
           )}
         </div>
         {checking ? (
@@ -410,7 +383,7 @@ export function StockForm({
             {copy.recorded}
           </InlineMessage>
         )}
-        {step.step === "failed" && <Refusal className={form.error} said={errorText(copy.errors, step)} />}
+        <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={drawnBoxes(stock, draft)} />
       </div>
     </Panel>
   );

@@ -34,7 +34,9 @@ const PHOTOS_CLOSED = "already_closed: the job has closed, so it takes no more p
 /** What every in-job write can be refused with. A route with more to say of a conflict says it after these. */
 const STEP_REFUSALS = {
   400: errorResponse("invalid_request: see error.fields"),
-  401: errorResponse("session_required; device_revoked: ops revoked this phone, so drop the cached jobs"),
+  401: errorResponse(
+    "session_required; device_revoked: ops revoked this phone, so drop the cached jobs; technician_inactive: ops switched the technician off",
+  ),
   404: errorResponse("not_found: no such job, or never this technician's"),
   409: errorResponse(
     `superseded: the job changed under the phone; out_of_order: send the step before this one first; ${CLOSED}`,
@@ -55,7 +57,7 @@ export const jobsRoute = techRoute({
   responses: {
     200: { description: "The day's jobs, in time order", ...json(JobsSchema) },
     400: errorResponse("invalid_request: a date before yesterday"),
-    401: errorResponse("session_required; device_revoked"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
   },
 });
 
@@ -66,7 +68,7 @@ export const jobRoute = techRoute({
   request: { params: jobId },
   responses: {
     200: { description: "The job", ...json(JobDetailSchema) },
-    401: errorResponse("session_required; device_revoked"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse("not_found: no such job of this technician's"),
   },
 });
@@ -81,7 +83,7 @@ export const lastVisitPhotoRoute = techRoute({
       description: "The image",
       content: { "image/jpeg": { schema: z.string() }, "image/png": { schema: z.string() } },
     },
-    401: errorResponse("session_required; device_revoked"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse(
       "not_found: no such job of this technician's, not unlocked yet, or no earlier visit's photograph",
     ),
@@ -120,7 +122,7 @@ export const uploadUrlRoute = techRoute({
   responses: {
     201: { description: "The link, good for fifteen minutes", ...json(UploadUrlSchema) },
     400: errorResponse("invalid_request"),
-    401: errorResponse("session_required; device_revoked"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse("not_found: no such job, or never this technician's"),
     409: errorResponse(
       "superseded: the job was given to another technician or cancelled while its photographs waited; moved names " +
@@ -145,7 +147,7 @@ export const uploadRoute = techRoute({
   request: { params: z.object({ token: z.string().min(1).max(500) }) },
   responses: {
     200: { description: "Received", ...json(PhotoTakenSchema) },
-    401: errorResponse("session_required; device_revoked"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse("not_found: the link is wrong or expired"),
     409: errorResponse(PHOTOS_CLOSED),
     422: errorResponse("photo_invalid_file: not a JPEG or PNG, or over 2 MB"),
@@ -163,7 +165,7 @@ export const smallUploadRoute = techRoute({
   },
   responses: {
     204: { description: "Received, or held already" },
-    401: errorResponse("session_required; device_revoked"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse("not_found: the link is wrong or expired"),
     409: errorResponse(
       "upload_missing: that take is not the angle's photograph: not arrived yet, or taken again since; " +

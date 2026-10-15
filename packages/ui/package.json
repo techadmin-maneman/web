@@ -55,6 +55,7 @@
     "./useCamera": "./useCamera.ts",
     "./useScreenTitle": "./useScreenTitle.ts",
     "./useFocusOnMount": "./useFocusOnMount.ts",
+    "./useNearView": "./useNearView.ts",
     "./useLoad": "./useLoad.ts",
     "./useOneAtATime": "./useOneAtATime.ts",
     "./useOtpChallenge": "./useOtpChallenge.ts",

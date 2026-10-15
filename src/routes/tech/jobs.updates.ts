@@ -37,7 +37,7 @@ const updateRoute = techRoute({
       ...json(z.object({ sent: z.boolean() }).strict()),
     },
     400: errorResponse("invalid_request: minutes are for on the way and running late, and not for at the gate"),
-    401: errorResponse("session_required; device_revoked"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse("not_found: no such job, or never this technician's"),
   },
 });

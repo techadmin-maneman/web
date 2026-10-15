@@ -7,7 +7,7 @@ import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { shortDate, indiaDate } from "@maneman/web-kit/dates";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import { care } from "../content/care.ts";
 import { useAccess } from "../lib/access.ts";
@@ -29,10 +29,11 @@ function Choices(props: {
   reason: RemedyReason;
   onVisits: (visits: number) => void;
   onReason: (reason: RemedyReason) => void;
+  failure: Failure | null;
 }) {
   return (
     <>
-      <Field label={copy.visits}>
+      <Field label={copy.visits} error={boxError(copy.errors, props.failure, "visits")}>
         {(control) => (
           <Select
             {...control}
@@ -50,7 +51,7 @@ function Choices(props: {
           </Select>
         )}
       </Field>
-      <Field label={copy.reason}>
+      <Field label={copy.reason} error={boxError(copy.errors, props.failure, "reason")}>
         {(control) => (
           <Select
             {...control}
@@ -114,8 +115,8 @@ export function RemedyForm({ personId }: { readonly personId: string }) {
   }
   return (
     <div className={styles.closing}>
-      <Choices visits={visits} reason={reason} onVisits={setVisits} onReason={setReason} />
-      <Field label={copy.note} className={styles.reply}>
+      <Choices visits={visits} reason={reason} onVisits={setVisits} onReason={setReason} failure={failure} />
+      <Field label={copy.note} className={styles.reply} error={boxError(copy.errors, failure, "note")}>
         {(control) => (
           <TextArea
             {...control}
@@ -132,7 +133,7 @@ export function RemedyForm({ personId }: { readonly personId: string }) {
       <Button variant="outline" size="small" disabled={note.trim() === ""} onClick={() => void give()}>
         {copy.give}
       </Button>
-      <Refused failed={failure} errors={copy.errors} />
+      <Refused failed={failure} errors={copy.errors} boxes={["visits", "reason", "note"]} />
     </div>
   );
 }

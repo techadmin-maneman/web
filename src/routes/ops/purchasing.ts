@@ -255,7 +255,12 @@ const cancelRoute = opsRoute({
     ...orderPath,
     body: { required: true, ...json(z.object({ reason: Note }).strict().openapi("PurchaseOrderCancel")) },
   },
-  responses: STEP_ANSWERS,
+  responses: {
+    ...STEP_ANSWERS,
+    409: errorResponse(
+      "order_state: the order is past the step asked; custom_order: it was raised for a client's custom order, which is cancelled from the client's page",
+    ),
+  },
 });
 
 export async function ordersAnswer(c: Context<AppEnv>) {

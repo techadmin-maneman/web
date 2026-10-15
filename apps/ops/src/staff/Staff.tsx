@@ -236,10 +236,11 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
       ready={ready}
       errors={words.errors}
       onCancel={null}
+      boxes={["client_id", "label"]}
       checking={<CheckLine>{words.adding(label.trim(), clientId.trim())}</CheckLine>}
     >
       <div className={form.fields}>
-        <Field label={words.clientId} className={form.field}>
+        <Field label={words.clientId} className={form.field} box="client_id">
           {(control) => (
             <TextInput
               {...control}
@@ -254,7 +255,7 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
             />
           )}
         </Field>
-        <Field label={words.label} className={form.field}>
+        <Field label={words.label} className={form.field} box="label">
           {(control) => (
             <TextInput
               {...control}

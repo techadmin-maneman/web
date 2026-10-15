@@ -10,7 +10,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import type { Sent, Success } from "@maneman/web-kit/api";
 import { fullMonth } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import type { paths } from "../api-schema.ts";
 import { targets as copy } from "../content/targets.ts";
@@ -40,9 +40,10 @@ function TargetChoice(props: {
   value: string;
   options: readonly (readonly [string, string])[];
   onChange: (value: string) => void;
+  error?: string | null;
 }) {
   return (
-    <Field label={props.label}>
+    <Field label={props.label} error={props.error ?? null}>
       {(control) => (
         <Select
           {...control}
@@ -83,19 +84,21 @@ function TargetForm({ list, onSaved }: { list: Targets; onSaved: (list: Targets)
     <div className={form.group}>
       <TargetChoice
         label={copy.city}
+        error={boxError(copy.errors, failure, "city")}
         value={city}
         options={list.cities.map((each) => [each, each])}
         onChange={setCity}
       />
       <TargetChoice
         label={copy.measure}
+        error={boxError(copy.errors, failure, "measure")}
         value={measure}
         options={list.measures.map((each) => [each, copy.measures[each]])}
         onChange={(value) => {
           setMeasure(list.measures.find((each) => each === value) ?? measure);
         }}
       />
-      <Field label={copy.target}>
+      <Field label={copy.target} error={boxError(copy.errors, failure, "target")}>
         {(control) => (
           <TextInput
             {...control}
@@ -111,7 +114,7 @@ function TargetForm({ list, onSaved }: { list: Targets; onSaved: (list: Targets)
       <Button variant="outline" size="small" disabled={!/^\d+$/.test(typed.trim())} onClick={() => void set()}>
         {copy.set}
       </Button>
-      <Refused failed={failure} errors={copy.errors} />
+      <Refused failed={failure} errors={copy.errors} boxes={["city", "measure", "target"]} />
     </div>
   );
 }

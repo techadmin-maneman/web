@@ -56,10 +56,11 @@ export function Retiring({ consumable, today, onSaved, onCancel }: Props & { rea
       ready={from !== ""}
       errors={copy.errors}
       onCancel={onCancel}
+      boxes={["from"]}
       checking={<CheckLine>{words.question(consumable.name, from === "" ? "" : longDate(from))}</CheckLine>}
     >
       <div className={form.fields}>
-        <Field label={words.from} className={form.field}>
+        <Field label={words.from} className={form.field} box="from">
           {(control) => (
             <DateInput
               {...control}

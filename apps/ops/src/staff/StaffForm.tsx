@@ -64,11 +64,14 @@ function GrantRow(props: {
   staff: StaffList;
   onChange: (grant: StaffGrant) => void;
   onRemove: () => void;
+  /** Where the row is in the list, by which the API names the box it refuses: grants.2.place. */
+  index: number;
 }) {
   const { grant, staff, onChange, onRemove } = props;
+  const box = (field: string) => `grants.${String(props.index)}.${field}`;
   return (
     <li className={styles.grantRow}>
-      <Field label={copy.form.department} className={form.field}>
+      <Field label={copy.form.department} className={form.field} box={box("department")}>
         {(control) => (
           <Select
             {...control}
@@ -86,7 +89,7 @@ function GrantRow(props: {
           </Select>
         )}
       </Field>
-      <Field label={copy.form.level} className={form.field}>
+      <Field label={copy.form.level} className={form.field} box={box("level")}>
         {(control) => (
           <Select
             {...control}
@@ -104,7 +107,7 @@ function GrantRow(props: {
           </Select>
         )}
       </Field>
-      <Field label={copy.form.place} className={form.field}>
+      <Field label={copy.form.place} className={form.field} box={box("place")}>
         {(control) => (
           <Select
             {...control}
@@ -167,9 +170,6 @@ export function StaffForm(props: {
     setDraft({ ...draft, ...change });
     steps.edit();
   };
-  const editGrant = (index: number, grant: StaffGrant) => {
-    edit({ grants: draft.grants.map((each, at) => (at === index ? grant : each)) });
-  };
   const lines = steps.step === "editing" ? [] : checkLines(person, sent);
 
   return (
@@ -179,13 +179,14 @@ export function StaffForm(props: {
       ready={draft.email.trim() !== "" && !listed}
       errors={copy.errors}
       onCancel={onCancel}
+      boxes={["email", "grants"]}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [review.nothing] : lines).map((line) => (
         <CheckLine key={line}>{line}</CheckLine>
       ))}
     >
       <div className={form.fields}>
-        <Field label={copy.form.email} className={form.field}>
+        <Field label={copy.form.email} className={form.field} box="email">
           {(control) => (
             <TextInput
               {...control}
@@ -215,10 +216,11 @@ export function StaffForm(props: {
           {draft.grants.map((grant, index) => (
             <GrantRow
               key={index}
+              index={index}
               grant={grant}
               staff={staff}
               onChange={(changed) => {
-                editGrant(index, changed);
+                edit({ grants: draft.grants.map((each, at) => (at === index ? changed : each)) });
               }}
               onRemove={() => {
                 edit({ grants: draft.grants.filter((_, at) => at !== index) });

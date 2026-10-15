@@ -3,6 +3,8 @@
 // to reload it.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { errorText, formError, type Failure } from "@maneman/web-kit/refusal";
 import { useEffect, type ReactNode } from "react";
 import { isChanged, LATEST } from "../content/common.ts";
 import { useRefreshPage } from "../lib/refresh.ts";
@@ -31,5 +33,33 @@ export function Refusal({
       {said}
       {children}
     </InlineMessage>
+  );
+}
+
+/**
+ * A form's refusal: said here, but for one that names a box among `boxes`, which that box's Field says. That one is
+ * still told to a screen reader once, as the press it answers sent it, since a Field's own words are read only when
+ * the box is reached, and a box's refusal that `changed` named reads the page again as one said here does.
+ */
+export function FormRefusal(props: {
+  readonly errors: Readonly<Record<string, string | undefined>>;
+  readonly failure: Failure | null;
+  readonly boxes: readonly string[];
+  readonly className?: string;
+}) {
+  const said = props.failure === null ? null : errorText(props.errors, props.failure);
+  useRereadOnChange(said);
+  if (said === null) return null;
+  if (formError(props.errors, props.failure, props.boxes) !== null) {
+    return (
+      <InlineMessage tone="error" className={props.className}>
+        {said}
+      </InlineMessage>
+    );
+  }
+  return (
+    <VisuallyHidden>
+      <span role="alert">{said}</span>
+    </VisuallyHidden>
   );
 }

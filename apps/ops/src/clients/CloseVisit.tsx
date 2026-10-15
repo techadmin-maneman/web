@@ -3,7 +3,7 @@
 // (src/routes/ops/visit-changes.ts). No board draws it.
 
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
-import { errorText } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { ChoiceGroup, Field, Radio, TextArea, TextInput } from "@maneman/ui/Field";
@@ -12,7 +12,7 @@ import { useId, useState } from "react";
 import { type HandClose } from "../api.ts";
 import { clients } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
-import { Refusal } from "../components/Refusal.tsx";
+import { FormRefusal } from "../components/Refusal.tsx";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.handClose;
@@ -24,12 +24,9 @@ const OUTCOMES: readonly Outcome[] = ["done", "partial", "no_show"];
 /** "09:20" on an India date, as the instant the API takes. */
 const instantOf = (date: string, time: string): string => new Date(`${date}T${time}:00+05:30`).toISOString();
 
-/** A refusal in the console's words: a field the API named, else its code. */
-function closeRefusal(code: string, fields: readonly string[]): string {
-  if (code === "invalid_request" && fields.includes("reason")) return copy.errors.reason;
-  if (code === "invalid_request") return copy.errors.times;
-  return errorText(copy.errors, { code });
-}
+/** A refusal in the console's words, a time the API refused said as the times are. */
+const ERRORS = { ...copy.errors, started_at: copy.errors.times, ended_at: copy.errors.times };
+const BOXES = ["started_at", "ended_at", "reason"];
 
 function OutcomeChoice({ outcome, onChoose }: { outcome: Outcome; onChoose: (outcome: Outcome) => void }) {
   const id = useId();
@@ -61,7 +58,7 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
   const [started, setStarted] = useState("");
   const [ended, setEnded] = useState("");
   const [reason, setReason] = useState("");
-  const [failed, setFailed] = useState<string | null>(null);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const [busy, once] = useOneAtATime();
   // A no-show's times are the technician's check-in and its wait.
   const timed = outcome !== "no_show";
@@ -69,14 +66,14 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
 
   const close = () =>
     once(async () => {
-      setFailed(null);
+      setFailure(null);
       const answer = await clientsApi.closeVisit(visitId, {
         outcome,
         ...(timed ? { started_at: instantOf(date, started), ended_at: instantOf(date, ended) } : {}),
         reason: reason.trim(),
       });
       if (answer.ok) onClosed(outcome);
-      else setFailed(closeRefusal(answer.code, answer.fields));
+      else setFailure({ code: answer.code, fields: answer.fields });
     });
 
   return (
@@ -89,7 +86,7 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
       <OutcomeChoice outcome={outcome} onChoose={setOutcome} />
       {!timed && <p className={styles.note}>{copy.noShowNote}</p>}
       <div className={styles.times} hidden={!timed}>
-        <Field className={styles.field} label={copy.started}>
+        <Field className={styles.field} label={copy.started} error={boxError(ERRORS, failure, "started_at")}>
           {(control) => (
             <TextInput
               {...control}
@@ -102,7 +99,7 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
             />
           )}
         </Field>
-        <Field className={styles.field} label={copy.ended}>
+        <Field className={styles.field} label={copy.ended} error={boxError(ERRORS, failure, "ended_at")}>
           {(control) => (
             <TextInput
               {...control}
@@ -116,7 +113,7 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
           )}
         </Field>
       </div>
-      <Field className={styles.field} label={copy.reason}>
+      <Field className={styles.field} label={copy.reason} error={boxError(ERRORS, failure, "reason")}>
         {(control) => (
           <TextArea
             {...control}
@@ -135,7 +132,7 @@ function ClosingForm({ visitId, date, onClosed }: ClosingProps) {
           {busy ? copy.closing : copy.confirm}
         </Button>
       </div>
-      {failed !== null && <Refusal className={styles.error} said={failed} />}
+      <FormRefusal className={styles.error} errors={ERRORS} failure={failure} boxes={BOXES} />
     </form>
   );
 }

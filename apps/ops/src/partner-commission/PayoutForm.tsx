@@ -25,7 +25,7 @@ function PayoutFields(props: { draft: Draft; month: string; today: string; edit:
   const { draft, edit } = props;
   return (
     <div className={form.fields}>
-      <Field label={formWords.amount} className={form.field}>
+      <Field label={formWords.amount} className={form.field} box="amount">
         {(control) => (
           <NumberInput
             {...control}
@@ -39,7 +39,7 @@ function PayoutFields(props: { draft: Draft; month: string; today: string; edit:
           />
         )}
       </Field>
-      <Field label={formWords.paidOn} className={form.field}>
+      <Field label={formWords.paidOn} className={form.field} box="paid_on">
         {(control) => (
           <DateInput
             {...control}
@@ -53,7 +53,7 @@ function PayoutFields(props: { draft: Draft; month: string; today: string; edit:
           />
         )}
       </Field>
-      <Field label={formWords.reference} className={form.field}>
+      <Field label={formWords.reference} className={form.field} box="reference">
         {(control) => (
           <TextInput
             {...control}
@@ -116,6 +116,7 @@ export function PayoutForm(props: {
       ready={ready}
       errors={{ ...errors, amount: partnerCommission.amountUpTo(rupees(props.maxAmount)) }}
       onCancel={props.onCancel}
+      boxes={["amount", "paid_on", "reference"]}
       checking={
         <>
           <CheckLine>{check.line(rupees(amount), shortDate(draft.paidOn), reference)}</CheckLine>

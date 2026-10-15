@@ -2,7 +2,7 @@
 // a closed consultation, which Care may set, change or clear as the client tells them.
 
 import { Field, Select } from "@maneman/ui/Field";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type ClientRecord } from "../api.ts";
 import { clients } from "../content.ts";
@@ -49,7 +49,7 @@ export function LostReason({
   };
   return (
     <>
-      <Field label={copy.label}>
+      <Field label={copy.label} error={boxError(copy.errors, failure, "lost_reason")}>
         {(control) => (
           <Select
             {...control}
@@ -66,7 +66,7 @@ export function LostReason({
           </Select>
         )}
       </Field>
-      <Refused failed={failure} errors={copy.errors} />
+      <Refused failed={failure} errors={copy.errors} boxes={["lost_reason"]} />
     </>
   );
 }

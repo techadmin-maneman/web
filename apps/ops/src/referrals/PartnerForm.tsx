@@ -79,9 +79,15 @@ interface Box {
   readonly onValue: (value: string) => void;
 }
 
-function NumberBox({ label, value, onValue, className }: Box & { readonly className: string | undefined }) {
+function NumberBox({
+  label,
+  value,
+  onValue,
+  className,
+  box,
+}: Box & { readonly className: string | undefined; readonly box: string }) {
   return (
-    <Field label={label} className={form.field}>
+    <Field label={label} className={form.field} box={box}>
       {(control) => (
         <NumberInput
           {...control}
@@ -102,7 +108,7 @@ function NumberBox({ label, value, onValue, className }: Box & { readonly classN
 function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<Draft>) => void }) {
   return (
     <div className={form.fields}>
-      <Field label={formWords.name} className={form.field}>
+      <Field label={formWords.name} className={form.field} box="name">
         {(control) => (
           <TextInput
             {...control}
@@ -117,6 +123,7 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
       </Field>
       <NumberBox
         label={formWords.friendVisits}
+        box="friend_visits"
         value={draft.friendVisits}
         className={form.figureBox}
         onValue={(friendVisits) => {
@@ -125,6 +132,7 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
       />
       <NumberBox
         label={formWords.validDays}
+        box="valid_days"
         value={draft.validDays}
         className={form.figureBox}
         onValue={(validDays) => {
@@ -133,13 +141,14 @@ function PartnerFields({ draft, edit }: { draft: Draft; edit: (change: Partial<D
       />
       <NumberBox
         label={formWords.commission}
+        box="commission"
         value={draft.commission}
         className={form.amountBox}
         onValue={(commission) => {
           edit({ commission });
         }}
       />
-      <Field label={formWords.discountCode} className={form.field}>
+      <Field label={formWords.discountCode} className={form.field} box="discount_code">
         {(control) => (
           <TextInput
             {...control}
@@ -186,6 +195,7 @@ export function PartnerForm(props: {
       ready={withinLimits(terms, props.limits)}
       errors={{ ...copy.errors, commission: copy.commissionUpTo(rupees(props.limits.max_commission)) }}
       onCancel={props.onCancel}
+      boxes={["name", "friend_visits", "valid_days", "commission", "discount_code"]}
       sendable={lines.length > 0}
       checking={(lines.length > 0 ? lines : [check.nothing]).map((line) => (
         <CheckLine key={line}>{line}</CheckLine>

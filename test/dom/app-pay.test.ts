@@ -112,7 +112,7 @@ describe("paying for a hold", () => {
   });
 
   it("says the booking could not start when the API refuses it", async () => {
-    answers.booked = () => error("not_bookable", 409);
+    answers.booked = () => error("ops_assisted", 409);
     await pay(holdOf());
     expect(events).toEqual([]);
     expect(problems).toEqual([null, booking.failedToStart]);

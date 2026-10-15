@@ -48,7 +48,7 @@ const lookupRoute = techRoute({
   request: { query: z.object({ code: z.string().min(3).max(40), job: z.uuid().optional() }) },
   responses: {
     200: { description: "The piece", content: { "application/json": { schema: LookupSchema } } },
-    401: errorResponse("session_required; device_revoked"),
+    401: errorResponse("session_required; device_revoked; technician_inactive: ops switched the technician off"),
     404: errorResponse("not_found: no piece with that label"),
   },
 });

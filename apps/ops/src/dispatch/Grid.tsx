@@ -9,6 +9,7 @@ import { Tile } from "@maneman/ui/Tile";
 import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
+import { useNearView } from "@maneman/ui/useNearView";
 import { inIndia, shortDate } from "@maneman/web-kit/dates";
 import { memo, useMemo } from "react";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
@@ -254,6 +255,23 @@ const TechnicianRow = memo(function TechnicianRow({ technician, dates, days, ...
   );
 });
 
+/** Rows drawn at once; past them, each is drawn as it scrolls near, so a board of many technicians opens quickly. */
+const ROWS_AT_ONCE = 60;
+
+/** A row past the first ROWS_AT_ONCE: its technician's name, at a row's height, until it scrolls near. */
+const LaterRow = memo(function LaterRow(props: RowProps) {
+  const [row, near] = useNearView<HTMLTableRowElement>();
+  if (near) return <TechnicianRow {...props} />;
+  return (
+    <tr ref={row}>
+      <th className={styles.tech} scope="row">
+        <span>{props.technician.name}</span>
+      </th>
+      <td className={styles.cell} colSpan={props.dates.length} />
+    </tr>
+  );
+});
+
 interface GridProps {
   readonly board: Board;
   /** The technicians to draw: the board's, narrowed by what ops searched for. */
@@ -302,19 +320,22 @@ export const Grid = memo(function Grid({ board, rows, inHand, found, onOpen, onT
         </tr>
       </thead>
       <tbody>
-        {rows.map((technician) => (
-          <TechnicianRow
-            key={technician.technician_id}
-            technician={technician}
-            dates={board.dates}
-            days={days}
-            found={found}
-            inHand={inHand}
-            onLand={onLand}
-            onOpen={onOpen}
-            onTake={onTake}
-          />
-        ))}
+        {rows.map((technician, index) => {
+          const Row = index < ROWS_AT_ONCE ? TechnicianRow : LaterRow;
+          return (
+            <Row
+              key={technician.technician_id}
+              technician={technician}
+              dates={board.dates}
+              days={days}
+              found={found}
+              inHand={inHand}
+              onLand={onLand}
+              onOpen={onOpen}
+              onTake={onTake}
+            />
+          );
+        })}
       </tbody>
     </Table>
   );

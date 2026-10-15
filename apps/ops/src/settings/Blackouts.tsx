@@ -95,7 +95,7 @@ function DraftBoxes(props: {
   const { draft, today, cities, onEdit } = props;
   return (
     <div className={form.fields}>
-      <Field label={copy.from} className={form.field}>
+      <Field label={copy.from} className={form.field} box="from">
         {(control) => (
           <DateInput
             {...control}
@@ -108,7 +108,7 @@ function DraftBoxes(props: {
           />
         )}
       </Field>
-      <Field label={copy.to} className={form.field}>
+      <Field label={copy.to} className={form.field} box="to">
         {(control) => (
           <DateInput
             {...control}
@@ -121,7 +121,7 @@ function DraftBoxes(props: {
           />
         )}
       </Field>
-      <Field label={copy.city} className={form.field}>
+      <Field label={copy.city} className={form.field} box="city">
         {(control) => (
           <Select
             {...control}
@@ -140,7 +140,7 @@ function DraftBoxes(props: {
           </Select>
         )}
       </Field>
-      <Field label={copy.reason} className={form.field}>
+      <Field label={copy.reason} className={form.field} box="reason">
         {(control) => (
           <TextInput
             {...control}
@@ -199,6 +199,7 @@ function AddForm(props: { today: string; cities: readonly string[]; onAdded: (da
       ready={ready}
       errors={copy.errors}
       onCancel={null}
+      boxes={["from", "to", "city", "reason"]}
       checking={
         <>
           <CheckLine>

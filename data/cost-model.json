@@ -35,6 +35,14 @@
       "note": "Annual billing, before 18% GST; confirm against Zoho's invoice."
     },
     {
+      "id": "zoho_analytics",
+      "what": "Zoho Analytics Premium, which every dashboard and its email is built in: up to 15 readers",
+      "basis": "national",
+      "inr": 4200,
+      "source": "https://itforsme.in/pricing/zoho-analytics-india",
+      "note": "A Zoho partner's figure, billed annually, before 18% GST: partners' pages differ up to Rs. 4,800, and Zoho's own page shows its prices only in a browser. Confirm in Zoho Analytics' billing page. Each reader past 15 is an extra user, or the Enterprise plan's 50."
+    },
+    {
       "id": "whatsapp_utility",
       "what": "WhatsApp utility message: a booking, a reminder, an arrival, a check-in",
       "basis": "per_utility_message",

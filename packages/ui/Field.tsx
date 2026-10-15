@@ -15,6 +15,8 @@
 // item 36 rules for every field; a caller's own class places it.
 
 import {
+  createContext,
+  useContext,
   useId,
   type InputHTMLAttributes,
   type Ref,
@@ -50,10 +52,17 @@ export interface FieldLook {
   readonly error?: string | undefined;
 }
 
+/**
+ * The words for a box a form's last send was refused on, by the name the API refused it by, and null for any other:
+ * a form that sets it has each Field naming its `box` say that box's refusal.
+ */
+export const RefusedBoxes = createContext<(box: string) => string | null>(() => null);
+
 export function Field({
   label,
   hint,
-  error,
+  error: given,
+  box,
   onInk = false,
   labelHidden = false,
   announce = false,
@@ -65,6 +74,8 @@ export function Field({
   readonly hint?: ReactNode;
   /** What is wrong with the value, said once it is; null or absent while nothing is. */
   readonly error?: ReactNode;
+  /** The name the API refuses this box by, under a form that sets RefusedBoxes. */
+  readonly box?: string;
   /** On the ink, as every technician app screen is: its words in the ink's own muted tone. */
   readonly onInk?: boolean;
   /** Read to a screen reader and not shown, where the board draws the box alone. */
@@ -77,8 +88,10 @@ export function Field({
   readonly children: (control: FieldControl) => ReactNode;
 }) {
   const id = useId();
+  const refusedOf = useContext(RefusedBoxes);
+  const error = given ?? (box === undefined ? null : refusedOf(box));
   const hintId = hint === undefined ? null : `${id}-hint`;
-  const errorId = error === undefined || error === null ? null : `${id}-error`;
+  const errorId = error === null ? null : `${id}-error`;
   const words = (
     <label className={classes(styles.label, look?.label)} htmlFor={id}>
       {label}

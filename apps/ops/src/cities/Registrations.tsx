@@ -25,9 +25,15 @@ interface Draft {
 
 const EMPTY: Draft = { stateCode: "", gstin: "", branch: "" };
 
-function RegistrationEntry(props: { label: string; value: string; max: number; onChange: (text: string) => void }) {
+function RegistrationEntry(props: {
+  label: string;
+  value: string;
+  max: number;
+  onChange: (text: string) => void;
+  box: string;
+}) {
   return (
-    <Field label={props.label} className={form.field}>
+    <Field label={props.label} className={form.field} box={props.box}>
       {(control) => (
         <TextInput
           {...control}
@@ -68,11 +74,13 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
       ready={/^[A-Za-z]{2}$/.test(body.state_code) && body.gstin.length === 15}
       errors={copy.errors}
       onCancel={null}
+      boxes={["state_code", "gstin", "books_branch_id"]}
       checking={<CheckLine>{copy.adding(body.state_code, body.gstin)}</CheckLine>}
     >
       <div className={form.fields}>
         <RegistrationEntry
           label={copy.stateCode}
+          box="state_code"
           value={draft.stateCode}
           max={2}
           onChange={(stateCode) => {
@@ -81,6 +89,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
         />
         <RegistrationEntry
           label={copy.gstin}
+          box="gstin"
           value={draft.gstin}
           max={15}
           onChange={(gstin) => {
@@ -89,6 +98,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
         />
         <RegistrationEntry
           label={copy.branch}
+          box="books_branch_id"
           value={draft.branch}
           max={40}
           onChange={(branch) => {

@@ -24,15 +24,18 @@ export function LotFields({
   stock,
   draft,
   onEdit,
+  refused,
 }: {
   stock: Stock;
   draft: LotDraft;
   onEdit: (field: "lotCode" | "expiresOn" | "lotId") => (value: string) => void;
+  /** Words for a box the API refused, by the name it refused it by. */
+  refused: (box: string) => string | null;
 }) {
   if (draft.kind === "delivery" || draft.kind === "count") {
     return (
       <div className={form.fields}>
-        <Field label={copy.record.lot} className={form.field}>
+        <Field label={copy.record.lot} className={form.field} error={refused("lot_code")}>
           {(control) => (
             <TextInput
               {...control}
@@ -44,7 +47,7 @@ export function LotFields({
             />
           )}
         </Field>
-        <Field label={copy.record.expires} className={form.field}>
+        <Field label={copy.record.expires} className={form.field} error={refused("expires_on")}>
           {(control) => (
             <TextInput
               {...control}
@@ -63,7 +66,7 @@ export function LotFields({
   if (draft.kind !== "write_off" || lots.length === 0) return null;
   return (
     <div className={form.fields}>
-      <Field label={copy.record.lostLot} className={form.field}>
+      <Field label={copy.record.lostLot} className={form.field} error={refused("lot_id")}>
         {(control) => (
           <Select
             {...control}

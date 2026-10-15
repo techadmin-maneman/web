@@ -5,7 +5,7 @@ import { Button, RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextArea, TextInput } from "@maneman/ui/Field";
 import { useLoad } from "@maneman/ui/useLoad";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import { api, isErased } from "../api.ts";
 import { care } from "../content/care.ts";
@@ -89,7 +89,7 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
   return (
     <div className={styles.teamForm}>
       <div className={form.fields}>
-        <Field label={copy.title}>
+        <Field label={copy.title} error={boxError(copy.errors, failure, "title")}>
           {(control) => (
             <TextInput
               {...control}
@@ -101,7 +101,7 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
             />
           )}
         </Field>
-        <Field label={copy.text} className={styles.reply}>
+        <Field label={copy.text} className={styles.reply} error={boxError(copy.errors, failure, "text")}>
           {(control) => (
             <TextArea
               {...control}
@@ -127,7 +127,7 @@ function AddForm({ onAdded }: { onAdded: () => void }) {
           {copy.add}
         </Button>
       </FormActions>
-      <Refused failed={failure} errors={copy.errors} />
+      <Refused failed={failure} errors={copy.errors} boxes={["title", "text"]} />
     </div>
   );
 }

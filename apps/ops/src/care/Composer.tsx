@@ -4,7 +4,7 @@
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextArea } from "@maneman/ui/Field";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { Answer } from "../api.ts";
 import { careApi, type ChatThread, type CloseReason } from "./care-api.ts";
@@ -38,9 +38,10 @@ function lastFailed(thread: ChatThread): boolean {
 }
 
 /** The reply's box, which a note uses too. */
-function ReplyBox({ text, onText }: { text: string; onText: (text: string) => void }) {
+function ReplyBox(props: { text: string; onText: (text: string) => void; error: string | null }) {
+  const { text, onText } = props;
   return (
-    <Field label={compose.label} className={styles.reply}>
+    <Field label={compose.label} className={styles.reply} error={props.error}>
       {(control) => (
         <TextArea
           {...control}
@@ -58,9 +59,10 @@ function ReplyBox({ text, onText }: { text: string; onText: (text: string) => vo
 }
 
 /** What the chat was about, as it closes. */
-function ReasonChoice({ reason, onReason }: { reason: CloseReason; onReason: (reason: CloseReason) => void }) {
+function ReasonChoice(props: { reason: CloseReason; onReason: (reason: CloseReason) => void; error: string | null }) {
+  const { reason, onReason } = props;
   return (
-    <Field label={compose.reason}>
+    <Field label={compose.reason} error={props.error}>
       {(control) => (
         <Select
           {...control}
@@ -108,7 +110,7 @@ export function Composer(props: {
     <div className={styles.compose}>
       <div className={form.fields}>
         <QuickReplyPick name={props.client.name} personId={props.client.personId} onPick={setText} />
-        <ReplyBox text={text} onText={setText} />
+        <ReplyBox text={text} onText={setText} error={boxError(copy.errors, failure, "text")} />
       </div>
       <FormActions>
         <Button
@@ -140,7 +142,7 @@ export function Composer(props: {
         </Button>
       </FormActions>
       <div className={styles.closing}>
-        <ReasonChoice reason={reason} onReason={setReason} />
+        <ReasonChoice reason={reason} onReason={setReason} error={boxError(copy.errors, failure, "reason")} />
         <Button
           variant="outline"
           size="small"
@@ -156,7 +158,7 @@ export function Composer(props: {
           {compose.closeChat}
         </Button>
       </div>
-      <Refused failed={failure} errors={copy.errors} />
+      <Refused failed={failure} errors={copy.errors} boxes={["text", "reason"]} />
     </div>
   );
 }
