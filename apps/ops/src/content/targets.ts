@@ -5,7 +5,7 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const targets = {
   title: "Targets",
-  intro: "Each month’s plan, city by city, which every scorecard shows beside the actual.",
+  setOne: "Set a target",
   month: "Month",
   city: "City",
   measure: "Measure",

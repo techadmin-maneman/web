@@ -2,11 +2,12 @@
 // may be withdrawn; the one in force and the spent ones stay, as an invoice may stand on them.
 
 import { CheckLine } from "../components/CheckPanel.tsx";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
+import { AddInDrawer } from "../components/AddInDrawer.tsx";
 import { Table } from "@maneman/ui/Table";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Note } from "@maneman/ui/Note";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { cities } from "../content.ts";
@@ -39,7 +40,7 @@ function Withdraw({ price, onDone }: { price: CityPrice; onDone: () => void }) {
 
 function PriceTable({ cities, onDone }: { cities: Cities; onDone: () => void }) {
   const mayWithdraw = useAccess().mayCall("DELETE /api/cities/{name}/prices/{item}/{tier}/{valid_from}");
-  if (cities.prices.length === 0) return <Note>{copy.none}</Note>;
+  if (cities.prices.length === 0) return <EmptyState look="panel" line={copy.none} />;
   return (
     <Table controls>
       <thead>
@@ -231,15 +232,32 @@ export function CityPrices({ cities, onSaved }: { cities: Cities; onSaved: () =>
     onSaved();
   };
   return (
-    <Panel titleId="city-prices" title={copy.panel} count={cities.prices.length}>
-      <Note>{copy.note}</Note>
+    <Panel
+      titleId="city-prices"
+      title={copy.panel}
+      count={cities.prices.length}
+      actions={
+        mayAdd && (
+          <AddInDrawer label={copy.add}>
+            {(close) => (
+              <PriceForm
+                cities={cities}
+                onSaved={() => {
+                  saved(copy.added)();
+                  close();
+                }}
+              />
+            )}
+          </AddInDrawer>
+        )
+      }
+    >
       <PriceTable cities={cities} onDone={saved(copy.withdrawn)} />
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}
         </InlineMessage>
       )}
-      {mayAdd && <PriceForm cities={cities} onSaved={saved(copy.added)} />}
     </Panel>
   );
 }

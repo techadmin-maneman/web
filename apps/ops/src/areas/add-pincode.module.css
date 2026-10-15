@@ -7,10 +7,10 @@
   height: var(--tap);
   margin-top: var(--sp-8);
   padding: 0 var(--sp-8);
-  border: var(--hairline) solid var(--paper-control);
+  border: var(--hairline) solid var(--ui-line-control);
   border-radius: 0;
-  background: var(--white);
-  color: var(--text);
+  background: var(--ui-box);
+  color: var(--ui-text);
   font: inherit;
   font-size: var(--fs-15);
 }

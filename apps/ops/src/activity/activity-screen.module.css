@@ -40,13 +40,13 @@
 
 .sub {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* A call's method and path, IDs only, which can run long. */
 .call {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   overflow-wrap: anywhere;
 }
 

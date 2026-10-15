@@ -4,16 +4,14 @@
 import type { Success } from "@maneman/web-kit/api";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
-import { Field, Select } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
-import { Table } from "@maneman/ui/Table";
+import { Select } from "@maneman/ui/Field";
+import { SettingRow } from "@maneman/ui/SettingRow";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import type { paths } from "../api-schema.ts";
 import form from "../components/forms.module.css";
 import { counts as copy } from "../content/counts.ts";
 import { Refusal } from "../components/Refusal.tsx";
-import { RowHead } from "../components/RowHead.tsx";
 import { countsApi } from "./counts-api.ts";
 
 export type CountTasks = Success<paths["/api/count-tasks"]["get"]>;
@@ -41,47 +39,28 @@ export function CountClasses({
   };
   return (
     <Panel titleId="count-classes" title={copy.classesTitle}>
-      <Note>{copy.classesNote}</Note>
-      <Table controls>
-        <thead>
-          <tr>
-            {copy.classColumns.map((column) => (
-              <th key={column} scope="col">
-                {column}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {countTasks.classes.map((item) => {
-            const own = item.hair_system ? "weekly" : "quarterly";
-            return (
-              <tr key={item.consumable_code}>
-                <RowHead>{item.name}</RowHead>
-                <td>
-                  <Field label={copy.classLabel(item.name)} className={form.field}>
-                    {(control) => (
-                      <Select
-                        {...control}
-                        width="choice"
-                        value={item.set ? item.count_class : OWN}
-                        onChange={(event) => void change(item.consumable_code, event.target.value)}
-                      >
-                        <option value={OWN}>{copy.ownClass(copy.classes[own])}</option>
-                        {CLASSES.map((each) => (
-                          <option key={each} value={each}>
-                            {copy.classes[each]}
-                          </option>
-                        ))}
-                      </Select>
-                    )}
-                  </Field>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </Table>
+      {countTasks.classes.map((item) => {
+        const own = item.hair_system ? "weekly" : "quarterly";
+        return (
+          <SettingRow key={item.consumable_code} label={item.name}>
+            {(control) => (
+              <Select
+                {...control}
+                width="choice"
+                value={item.set ? item.count_class : OWN}
+                onChange={(event) => void change(item.consumable_code, event.target.value)}
+              >
+                <option value={OWN}>{copy.ownClass(copy.classes[own])}</option>
+                {CLASSES.map((each) => (
+                  <option key={each} value={each}>
+                    {copy.classes[each]}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </SettingRow>
+        );
+      })}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}

@@ -25,6 +25,8 @@ import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
 import { RowHead } from "../components/RowHead.tsx";
+import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { PageActions } from "../components/Shell.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
 const PlacesPanel = lazyScreen(() => import("./PlacesPanel.tsx").then((module) => module.PlacesPanel));
@@ -277,17 +279,28 @@ export function StockScreen() {
             </Suspense>
           )}
           {firstKind !== undefined && current.consumables.length > 0 && (
-            <StockForm
-              stock={current}
-              kinds={[firstKind, ...otherKinds]}
-              onRecorded={(after, recorded) => {
-                setStock(after);
-                const hairSystem = after.consumables.some((each) => each.code === recorded.code && each.hair_system);
-                if (recorded.kind === "delivery" && hairSystem) {
-                  setLabelsFor({ at: { code: recorded.code, place: "central" }, time: (labelsFor?.time ?? 0) + 1 });
-                }
-              }}
-            />
+            <PageActions>
+              <AddInDrawer primary label={copy.record.title}>
+                {() => (
+                  <StockForm
+                    stock={current}
+                    kinds={[firstKind, ...otherKinds]}
+                    onRecorded={(after, recorded) => {
+                      setStock(after);
+                      const hairSystem = after.consumables.some(
+                        (each) => each.code === recorded.code && each.hair_system,
+                      );
+                      if (recorded.kind === "delivery" && hairSystem) {
+                        setLabelsFor({
+                          at: { code: recorded.code, place: "central" },
+                          time: (labelsFor?.time ?? 0) + 1,
+                        });
+                      }
+                    }}
+                  />
+                )}
+              </AddInDrawer>
+            </PageActions>
           )}
           <Suspense fallback={<Loading />}>
             <Demand stock={current} />

@@ -9,7 +9,7 @@
 
 .find {
   max-width: var(--measure-form);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
   padding: var(--sp-24);
 }
 
@@ -26,34 +26,23 @@
 .findHint {
   margin: var(--sp-8) 0 var(--sp-16);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* ---- The client's page --------------------------------------------------- */
 
 /* The design draws the head, the tabs and the pieces table across the page; photographs and consents are panels within it. */
 .client {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
   min-width: 0;
 }
 
-/* The page runs to the frame's edges, so what stands in for it before it loads is padded as a section is. */
-.waiting {
-  padding: var(--sp-24);
-}
-
-/* The board heads the page with the name over a line of the client's standing. */
+/* An erased client's page heads itself with what is left. */
 .head {
-  padding: var(--sp-16) var(--sp-28);
-  border-bottom: var(--hairline) solid var(--text);
-}
-
-/* The name, and the board's WhatsApp button across from it. */
-.headLine {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-20);
+  padding-bottom: var(--sp-16);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .name {
@@ -63,33 +52,22 @@
   font-size: var(--fs-30);
 }
 
-.whatsapp {
-  flex-shrink: 0;
-}
-
 /* The brand's WhatsApp glyph is a line, drawn as the dispatch board's drawer draws it. */
 .icon {
   flex-shrink: 0;
 }
 
-/* The number, which calls the client from a phone and reads as the rest of the line elsewhere. */
-
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-32);
-  margin: var(--sp-16) 0 0;
-}
-
 .metaKey {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
-/* What waits on Tasks for the client, beneath the head and set in as it is. */
+/* What waits on Tasks for the client, beneath the head: a band to act on. */
 .open {
-  padding: var(--sp-16) var(--sp-28);
-  border-bottom: var(--hairline) solid var(--paper-line);
+  padding: var(--sp-12) var(--sp-20);
+  border: var(--hairline) solid var(--ui-line);
+  border-left: var(--rule-strong) solid var(--status-attention);
+  background: var(--ui-raised);
 }
 
 .openTasks {
@@ -116,16 +94,11 @@
 .openNone {
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-/* The client page's tabs (packages/ui/Tabs.tsx), set in from the page's edges as its head is. */
-.tabs {
-  padding: 0 var(--sp-28);
+  color: var(--ui-text-muted);
 }
 
 .panel {
-  padding: var(--sp-20) var(--sp-28);
+  padding-top: var(--sp-20);
 }
 
 /* ---- Finding a client: the matches -------------------------------------- */
@@ -138,7 +111,7 @@
 .foundList {
   margin: 0;
   padding: 0;
-  border-top: var(--hairline) solid var(--text);
+  border-top: var(--hairline) solid var(--ui-text);
   list-style: none;
 }
 
@@ -149,12 +122,12 @@
   gap: var(--sp-16);
   min-height: var(--ops-row);
   padding: var(--sp-8) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
   font-size: var(--fs-14);
 }
 
 .foundName {
-  color: var(--text);
+  color: var(--ui-text);
   text-decoration: underline;
   text-underline-offset: var(--sp-4);
 }
@@ -163,7 +136,7 @@
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-14);
   font-weight: var(--weight-regular);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .foundWho {
@@ -174,11 +147,11 @@
 
 .foundStanding {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .foundMobile {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -214,7 +187,7 @@
 .sectionTitle {
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .visitList .table {
@@ -228,7 +201,7 @@
 }
 
 .quietCell {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* A visit to come's way to the dispatch board, beneath its date, on a target 24 px tall (WCAG 2.5.8). */
@@ -238,9 +211,9 @@
   width: fit-content;
   min-height: var(--sp-24);
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   text-decoration: underline;
-  text-decoration-color: var(--paper-line);
+  text-decoration-color: var(--ui-line);
   text-underline-offset: var(--sp-4);
 }
 
@@ -255,7 +228,7 @@
   display: block;
   margin-top: var(--sp-4);
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* An open payment link's address beneath its state, with the button that copies it. */
@@ -268,7 +241,7 @@
 }
 
 .linkUrl {
-  color: var(--text);
+  color: var(--ui-text);
   overflow-wrap: anywhere;
 }
 
@@ -300,7 +273,7 @@
 
 .refundItem + .refundItem {
   margin-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
 .refundWhat {
@@ -311,7 +284,7 @@
 .refundLine {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* ---- Credits, put right by hand ------------------------------------------ */
@@ -319,7 +292,7 @@
 .credits,
 .invite {
   max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
   padding: var(--sp-24);
 }
 
@@ -354,14 +327,14 @@
 
 .photos {
   max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
   padding: var(--sp-24);
 }
 
 .eyebrow {
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .photosTitle {
@@ -386,7 +359,7 @@
 .phase {
   margin: var(--sp-16) 0 var(--sp-8);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .grid {
@@ -400,7 +373,7 @@
   display: block;
   width: 100%;
   aspect-ratio: 3 / 4;
-  background: var(--ink);
+  background: var(--ui-strong);
   object-fit: cover;
 }
 
@@ -414,14 +387,14 @@
 .caption {
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* Who opened the photographs before: the log the locked state promises. */
 .before {
   margin-top: var(--sp-20);
   padding-top: var(--sp-8);
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
 .beforeList {
@@ -445,7 +418,7 @@
   margin: var(--sp-16) 0 0;
   font-size: var(--fs-14);
   line-height: var(--lh-160);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* ---- Shared ------------------------------------------------------------- */
@@ -457,10 +430,12 @@
 /* The page's buttons (packages/ui/Button.tsx), as wide as their words. */
 .primary {
   display: inline-flex;
+  align-self: flex-start;
   padding: 0 var(--sp-20);
 }
 
 .secondary {
   display: inline-flex;
+  align-self: flex-start;
   margin-top: var(--sp-16);
 }

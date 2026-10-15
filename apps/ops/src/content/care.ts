@@ -151,6 +151,7 @@ export const care = {
     text: "Answer",
     holes: "{name} becomes the client’s first name, and {next_visit} their next visit.",
     add: "Add",
+    addOne: "Add a quick reply",
     retire: "Retire",
     retireLabel: (title: string) => `Retire the quick reply ${title}`,
     errors: { not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },

@@ -18,7 +18,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type CareMember } from "./care-api.ts";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
-import { ActionRow } from "../components/ActionRow.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 
 const copy = care.team;
@@ -323,12 +323,12 @@ function MemberRows(props: {
         </td>
       </tr>
       {acting !== null && (
-        <ActionRow className={styles.acting}>
+        <FormDrawer title={member.name ?? member.email} onClose={cancel}>
           {acting === "name" && <NameForm member={member} onDone={done} onCancel={cancel} />}
           {acting === "days" && <DaysOffForm member={member} onDone={done} onCancel={cancel} />}
           {acting === "leave" && <LeaveForm member={member} onDone={done} onCancel={cancel} />}
           {acting === "move" && <MoveAllForm member={member} team={props.team} onDone={done} onCancel={cancel} />}
-        </ActionRow>
+        </FormDrawer>
       )}
     </>
   );

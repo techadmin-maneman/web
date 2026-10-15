@@ -17,6 +17,7 @@ import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts
 import type { Supplier, Suppliers } from "./SupplierForm.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { suppliersApi } from "./suppliers-api.ts";
+import { AddInDrawer } from "../components/AddInDrawer.tsx";
 
 const copy = settings.suppliers;
 const words = copy.item;
@@ -239,7 +240,27 @@ export function SupplierItems({
   const named = (code: string) => suppliers.consumables.find((each) => each.code === code)?.name ?? code;
   const unitOf = (code: string) => suppliers.consumables.find((each) => each.code === code)?.unit ?? "";
   return (
-    <Panel titleId="supplier-items" title={words.title(supplier.name)}>
+    <Panel
+      titleId="supplier-items"
+      title={words.title(supplier.name)}
+      actions={
+        access.mayCall("POST /api/suppliers/{id}/items") && (
+          <AddInDrawer label={words.addOne} title={words.title(supplier.name)}>
+            {(close) => (
+              <ItemForm
+                key={supplier.id}
+                suppliers={suppliers}
+                supplier={supplier}
+                onSaved={(next, said) => {
+                  onSaved(next, said);
+                  close();
+                }}
+              />
+            )}
+          </AddInDrawer>
+        )
+      }
+    >
       {supplier.items.length === 0 ? (
         <Note>{words.none}</Note>
       ) : (
@@ -278,9 +299,6 @@ export function SupplierItems({
             ))}
           </tbody>
         </Table>
-      )}
-      {access.mayCall("POST /api/suppliers/{id}/items") && (
-        <ItemForm key={supplier.id} suppliers={suppliers} supplier={supplier} onSaved={onSaved} />
       )}
     </Panel>
   );

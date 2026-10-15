@@ -17,6 +17,8 @@ import { SupplierItems } from "./SupplierItems.tsx";
 import { ActionCheck, sentOf } from "../settings/index.ts";
 import { RowHead } from "../components/RowHead.tsx";
 import { suppliersApi } from "./suppliers-api.ts";
+import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 
 const copy = settings.suppliers;
 
@@ -148,7 +150,27 @@ export function Suppliers() {
 
   return (
     <>
-      <Panel titleId="suppliers" title={copy.title} padded>
+      <Panel
+        titleId="suppliers"
+        title={copy.title}
+        padded
+        actions={
+          access.mayCall("POST /api/suppliers") && (
+            <AddInDrawer label={copy.form.addTitle}>
+              {(close) => (
+                <SupplierForm
+                  supplier={null}
+                  onSaved={(next, words) => {
+                    saved(next, words);
+                    close();
+                  }}
+                  onCancel={close}
+                />
+              )}
+            </AddInDrawer>
+          )
+        }
+      >
         <SupplierTable
           suppliers={current}
           onChange={(id) => {
@@ -163,19 +185,22 @@ export function Suppliers() {
             {said}
           </InlineMessage>
         )}
-        {changing !== undefined ? (
-          <SupplierForm
-            key={changing.id}
-            supplier={changing}
-            onSaved={saved}
-            onCancel={() => {
+        {changing !== undefined && (
+          <FormDrawer
+            title={changing.name}
+            onClose={() => {
               setDoing({ kind: "add" });
             }}
-          />
-        ) : (
-          access.mayCall("POST /api/suppliers") && (
-            <SupplierForm key="new" supplier={null} onSaved={saved} onCancel={null} />
-          )
+          >
+            <SupplierForm
+              key={changing.id}
+              supplier={changing}
+              onSaved={saved}
+              onCancel={() => {
+                setDoing({ kind: "add" });
+              }}
+            />
+          </FormDrawer>
         )}
       </Panel>
       {shown !== null && <SupplierItems suppliers={current} supplier={shown} onSaved={saved} />}

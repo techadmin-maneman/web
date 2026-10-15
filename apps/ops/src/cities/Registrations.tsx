@@ -3,10 +3,11 @@
 
 import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
+import { AddInDrawer } from "../components/AddInDrawer.tsx";
 import { Table } from "@maneman/ui/Table";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Note } from "@maneman/ui/Note";
+import { EmptyState } from "@maneman/ui/EmptyState";
 import { useState } from "react";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -119,10 +120,27 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
     onSaved();
   };
   return (
-    <Panel titleId="gst-registrations" title={copy.panel} count={cities.registrations.length}>
-      <Note>{copy.note}</Note>
+    <Panel
+      titleId="gst-registrations"
+      title={copy.panel}
+      count={cities.registrations.length}
+      actions={
+        access.mayCall("POST /api/gst-registrations") && (
+          <AddInDrawer label={copy.add}>
+            {(close) => (
+              <RegistrationForm
+                onSaved={() => {
+                  saved(copy.added)();
+                  close();
+                }}
+              />
+            )}
+          </AddInDrawer>
+        )
+      }
+    >
       {cities.registrations.length === 0 ? (
-        <Note>{copy.none}</Note>
+        <EmptyState look="panel" line={copy.none} />
       ) : (
         <Table controls>
           <thead>
@@ -164,7 +182,6 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
           {said}
         </InlineMessage>
       )}
-      {access.mayCall("POST /api/gst-registrations") && <RegistrationForm onSaved={saved(copy.added)} />}
     </Panel>
   );
 }

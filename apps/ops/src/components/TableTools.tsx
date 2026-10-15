@@ -2,7 +2,9 @@
 // page (./useTableView.ts). A head sorts on a press and reverses on the next; aria-sort says which way it runs.
 
 import { TextButton } from "@maneman/ui/TextLink";
-import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Select } from "@maneman/ui/Field";
+import { SearchInput } from "@maneman/ui/SearchInput";
+import { Toolbar } from "@maneman/ui/Toolbar";
 import { SortButton } from "@maneman/ui/Table";
 import { classes } from "@maneman/ui/classes";
 import { tables as copy } from "../content.ts";
@@ -36,7 +38,7 @@ export function SortHeads<Row>({ view, className }: { view: TableView<Row>; clas
   });
 }
 
-/** The search and the lists that narrow the table, and, once narrowed, how many rows match. */
+/** The search and the lists that narrow the table on one row, and at its end, once narrowed, how many rows match. */
 export function Narrowing<Row>({
   view,
   label,
@@ -47,34 +49,35 @@ export function Narrowing<Row>({
   className?: string;
 }) {
   return (
-    <div className={classes(styles.bar, className)} role="search" aria-label={label}>
-      {view.searchable && (
-        <Field label={copy.search}>
-          {(control) => (
-            <TextInput
-              {...control}
-              type="search"
-              value={view.search}
-              onChange={(event) => {
-                view.setSearch(event.currentTarget.value);
-              }}
-            />
-          )}
-        </Field>
-      )}
+    <Toolbar
+      label={label}
+      className={classes(styles.bar, className)}
+      end={
+        view.narrowed ? (
+          <>
+            {copy.count(view.matching, view.total)}
+            <TextButton tone="muted" compact onClick={view.clear}>
+              {copy.clear}
+            </TextButton>
+          </>
+        ) : undefined
+      }
+    >
+      {view.searchable && <SearchInput label={copy.search} value={view.search} onChange={view.setSearch} />}
       {view.columns.map(
         (column, at) =>
           column.choice !== undefined && (
-            <Field key={column.label} label={column.label}>
+            <Field key={column.label} label={column.label} labelHidden>
               {(control) => (
                 <Select
                   {...control}
+                  width="choice"
                   value={view.chosen[at] ?? ""}
                   onChange={(event) => {
                     view.choose(at, event.currentTarget.value);
                   }}
                 >
-                  <option value="">{copy.all}</option>
+                  <option value="">{copy.allOf(column.label)}</option>
                   {view.options(at).map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -85,15 +88,7 @@ export function Narrowing<Row>({
             </Field>
           ),
       )}
-      {view.narrowed && (
-        <p className={styles.count}>
-          {copy.count(view.matching, view.total)}
-          <TextButton tone="muted" compact className={styles.clear} onClick={view.clear}>
-            {copy.clear}
-          </TextButton>
-        </p>
-      )}
-    </div>
+    </Toolbar>
   );
 }
 

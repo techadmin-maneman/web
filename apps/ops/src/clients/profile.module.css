@@ -10,7 +10,7 @@
   gap: var(--sp-16);
   max-width: var(--ops-panel);
   margin-bottom: var(--sp-28);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
   padding: var(--sp-24);
 }
 
@@ -19,19 +19,19 @@
   margin: 0;
   padding: 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .hint {
   margin: 0;
   font-size: var(--fs-14);
   line-height: var(--lh-145);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .rows {
   margin: 0;
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
 .row {
@@ -39,12 +39,12 @@
   gap: var(--sp-16);
   justify-content: space-between;
   padding: var(--sp-8) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .rowKey {
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .rowValue {
@@ -52,7 +52,7 @@
   font-size: var(--fs-14);
   font-variant-numeric: tabular-nums;
   text-align: right;
-  color: var(--text);
+  color: var(--ui-text);
 }
 
 .versions {
@@ -68,7 +68,7 @@
 }
 
 .version {
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .form {
@@ -77,11 +77,11 @@
   gap: var(--sp-12);
 }
 
-/* Two to a row, in the panel's width. */
+/* One to a line, in the panel's width. */
 .fields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-12) var(--sp-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
 }
 
 .input,

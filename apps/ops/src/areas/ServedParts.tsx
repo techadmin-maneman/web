@@ -2,9 +2,12 @@
 // message, what sits beneath Save, and a file read with its changes shown before they go into the table.
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
+import { Badge } from "@maneman/ui/Badge";
 import { Field, Checkbox, DateInput, Fieldset, FileInput, TextInput } from "@maneman/ui/Field";
 import { errorText } from "@maneman/web-kit/refusal";
-import { Button } from "@maneman/ui/Button";
+import { Button, RowButton } from "@maneman/ui/Button";
+import { shortDate } from "@maneman/web-kit/dates";
+import { useState } from "react";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { TabButton, Tabs } from "@maneman/ui/Tabs";
@@ -17,6 +20,7 @@ import type { Draft, FileChange, Row } from "./served-draft.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 
 const copy = areas.served;
 const launch = areas.launch;
@@ -40,48 +44,107 @@ interface PincodeRowProps {
   readonly onChange: (next: Row) => void;
 }
 
+/** One pincode's three settings, a box each, in a drawer beside the table; Done puts them into the page's change. */
+function PincodeDrawer({
+  id,
+  row,
+  onDone,
+  onClose,
+}: {
+  id: string;
+  row: Row;
+  onDone: (next: Row) => void;
+  onClose: () => void;
+}) {
+  const [next, setNext] = useState(row);
+  return (
+    <FormDrawer title={copy.editTitle(id, row.area)} onClose={onClose}>
+      <div className={form.fields}>
+        <Field label={copy.columns[1]}>
+          {(control) => (
+            <TextInput
+              {...control}
+              maxLength={40}
+              value={next.area}
+              onChange={(event) => {
+                setNext({ ...next, area: event.target.value });
+              }}
+            />
+          )}
+        </Field>
+        <Checkbox
+          label={copy.columns[2]}
+          checked={next.served}
+          onChange={(event) => {
+            setNext({ ...next, served: event.target.checked });
+          }}
+        />
+        <Field label={copy.columns[3]}>
+          {(control) => (
+            <DateInput
+              {...control}
+              width="date"
+              value={next.launch_on ?? ""}
+              onChange={(event) => {
+                setNext({ ...next, launch_on: event.target.value === "" ? null : event.target.value });
+              }}
+            />
+          )}
+        </Field>
+      </div>
+      <FormActions>
+        <Button
+          variant="primary"
+          size="small"
+          onClick={() => {
+            onDone(next);
+          }}
+        >
+          {copy.done}
+        </Button>
+        <Button variant="outline" size="small" narrow onClick={onClose}>
+          {copy.cancel}
+        </Button>
+      </FormActions>
+    </FormDrawer>
+  );
+}
+
 export function PincodeRow({ pincode, row, mayChange, onChange }: PincodeRowProps) {
   const id = pincode.pincode;
+  const [editing, setEditing] = useState(false);
   return (
     <tr>
       <RowHead>{id}</RowHead>
-      <td>
-        <TextInput
-          compact
-          className={styles.cellText}
-          id={`area-${id}`}
-          maxLength={40}
-          aria-label={copy.areaLabel(id)}
-          disabled={!mayChange}
-          value={row.area}
-          onChange={(event) => {
-            onChange({ ...row, area: event.target.value });
-          }}
-        />
-      </td>
-      <td>
-        <Checkbox
-          aria-label={copy.served(id)}
-          disabled={!mayChange}
-          checked={row.served}
-          onChange={(event) => {
-            onChange({ ...row, served: event.target.checked });
-          }}
-        />
-      </td>
-      <td>
-        <DateInput
-          compact
-          className={styles.cellDate}
-          aria-label={copy.launchOn(id)}
-          disabled={!mayChange}
-          value={row.launch_on ?? ""}
-          onChange={(event) => {
-            onChange({ ...row, launch_on: event.target.value === "" ? null : event.target.value });
-          }}
-        />
-      </td>
+      <td>{row.area}</td>
+      <td>{row.served ? <Badge tone="done">{copy.yes}</Badge> : copy.no}</td>
+      <td>{row.launch_on === null ? "" : shortDate(row.launch_on)}</td>
       <td className={form.figure}>{pincode.waiting}</td>
+      {mayChange && (
+        <td className={styles.actions}>
+          <RowButton
+            aria-label={copy.editLabel(id)}
+            onClick={() => {
+              setEditing(true);
+            }}
+          >
+            {copy.edit}
+          </RowButton>
+          {editing && (
+            <PincodeDrawer
+              id={id}
+              row={row}
+              onDone={(next) => {
+                onChange(next);
+                setEditing(false);
+              }}
+              onClose={() => {
+                setEditing(false);
+              }}
+            />
+          )}
+        </td>
+      )}
     </tr>
   );
 }

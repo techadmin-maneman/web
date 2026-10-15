@@ -14,6 +14,7 @@ import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { type TechnicianPay } from "../api.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 import { technicianPay } from "../content/technician-pay.ts";
 import { AddGradeForm, RenameGradeForm, SetRateForm } from "./PayForms.tsx";
 import { rateNow, ratesLater } from "./pay-rates.ts";
@@ -26,7 +27,7 @@ const copy = technicianPay.rates;
 
 type Grade = TechnicianPay["grades"][number];
 
-/** What is open beneath a grade's row. */
+/** What a grade's row has open. */
 type Acting = { readonly id: string; readonly kind: "rate" | "rename" | "delete" } | null;
 
 /** Which row actions the person's access reaches. */
@@ -73,8 +74,8 @@ function RateActions({ grade, acting, may, onAct }: { grade: Grade } & Pick<RowP
   );
 }
 
-/** Beneath a grade's row, what its action opened. */
-function RateActingRow({ grade, span, ...row }: { grade: Grade; span: number } & RowProps) {
+/** What a grade's action opened, in a drawer beside the table. */
+function RateActingRow({ grade, ...row }: { grade: Grade } & RowProps) {
   const { acting, onAct, onDone } = row;
   if (acting?.id !== grade.id) return null;
   const cancel = () => {
@@ -84,29 +85,27 @@ function RateActingRow({ grade, span, ...row }: { grade: Grade; span: number } &
     onDone(pay, technicianPay.done.saved);
   };
   return (
-    <tr className={shared.acting}>
-      <td colSpan={span}>
-        {acting.kind === "rate" && (
-          <SetRateForm grade={grade} pay={row.pay} city={row.city} onDone={saved} onCancel={cancel} />
-        )}
-        {acting.kind === "rename" && <RenameGradeForm grade={grade} onDone={saved} onCancel={cancel} />}
-        {acting.kind === "delete" && (
-          <div className={styles.ask}>
-            <DeleteAction
-              name={grade.name}
-              send={() => technicianPayApi.deletePayGrade(grade.id)}
-              refusal={(refused) =>
-                refused === "in_use" ? copy.inUse : errorText(technicianPay.errors, { code: refused, fields: [] })
-              }
-              onDeleted={(pay) => {
-                onDone(pay, technicianPay.done.deleted);
-              }}
-              onCancel={cancel}
-            />
-          </div>
-        )}
-      </td>
-    </tr>
+    <FormDrawer title={grade.name} onClose={cancel}>
+      {acting.kind === "rate" && (
+        <SetRateForm grade={grade} pay={row.pay} city={row.city} onDone={saved} onCancel={cancel} />
+      )}
+      {acting.kind === "rename" && <RenameGradeForm grade={grade} onDone={saved} onCancel={cancel} />}
+      {acting.kind === "delete" && (
+        <div className={styles.ask}>
+          <DeleteAction
+            name={grade.name}
+            send={() => technicianPayApi.deletePayGrade(grade.id)}
+            refusal={(refused) =>
+              refused === "in_use" ? copy.inUse : errorText(technicianPay.errors, { code: refused, fields: [] })
+            }
+            onDeleted={(pay) => {
+              onDone(pay, technicianPay.done.deleted);
+            }}
+            onCancel={cancel}
+          />
+        </div>
+      )}
+    </FormDrawer>
   );
 }
 
@@ -132,7 +131,7 @@ function GradeRows({ grade, ...row }: { grade: Grade } & RowProps) {
         ))}
         <RateActions grade={grade} {...row} />
       </tr>
-      <RateActingRow grade={grade} span={pay.kinds.length + 3} {...row} />
+      <RateActingRow grade={grade} {...row} />
     </>
   );
 }
@@ -234,14 +233,21 @@ export function PayRates(props: { pay: TechnicianPay; may: May; onChanged: (pay:
       }
     >
       {adding && (
-        <AddGradeForm
-          onDone={(next) => {
-            done(next, technicianPay.done.saved);
-          }}
-          onCancel={() => {
+        <FormDrawer
+          title={copy.addGrade}
+          onClose={() => {
             setAdding(false);
           }}
-        />
+        >
+          <AddGradeForm
+            onDone={(next) => {
+              done(next, technicianPay.done.saved);
+            }}
+            onCancel={() => {
+              setAdding(false);
+            }}
+          />
+        </FormDrawer>
       )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>

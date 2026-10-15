@@ -5,7 +5,6 @@
 import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { Panel } from "@maneman/ui/Panel";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type Consumables as ConsumableList } from "../api.ts";
@@ -209,25 +208,19 @@ export function HairSystemForm({
     steps.edit();
   };
   const productName = products.find((each) => each.tier === draft.product)?.name ?? draft.product;
+  if (products.length === 0) return <Note>{copy.noProducts}</Note>;
   return (
-    <Panel titleId="hair-systems" title={copy.title} padded>
-      <Note>{copy.intro}</Note>
-      {products.length === 0 ? (
-        <Note>{copy.noProducts}</Note>
-      ) : (
-        <SettingForm
-          title={copy.formTitle}
-          steps={steps}
-          ready={readyOf(draft)}
-          errors={copy.errors}
-          onCancel={null}
-          checking={checkLines(draft, productName).map((line) => (
-            <CheckLine key={line}>{line}</CheckLine>
-          ))}
-        >
-          <SpecFields products={products.map((each) => [each.tier, each.name] as const)} draft={draft} edit={edit} />
-        </SettingForm>
-      )}
-    </Panel>
+    <SettingForm
+      title={copy.formTitle}
+      steps={steps}
+      ready={readyOf(draft)}
+      errors={copy.errors}
+      onCancel={null}
+      checking={checkLines(draft, productName).map((line) => (
+        <CheckLine key={line}>{line}</CheckLine>
+      ))}
+    >
+      <SpecFields products={products.map((each) => [each.tier, each.name] as const)} draft={draft} edit={edit} />
+    </SettingForm>
   );
 }

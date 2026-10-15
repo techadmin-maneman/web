@@ -22,7 +22,7 @@ import form from "../components/forms.module.css";
 import shared from "./care.module.css";
 import styles from "./messages-screen.module.css";
 import { phoneWords } from "../lib/phone.ts";
-import { ActionRow } from "../components/ActionRow.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 
 const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed", "all"];
 
@@ -153,7 +153,12 @@ function ConversationRows(props: {
         </td>
       </tr>
       {props.open && (
-        <ActionRow className={shared.acting}>
+        <FormDrawer
+          title={conversation.person?.name ?? phoneWords(conversation.mobile)}
+          onClose={() => {
+            props.onOpen(null);
+          }}
+        >
           <Thread
             conversation={conversation}
             onClose={() => {
@@ -161,7 +166,7 @@ function ConversationRows(props: {
             }}
             onChanged={props.onChanged}
           />
-        </ActionRow>
+        </FormDrawer>
       )}
     </>
   );

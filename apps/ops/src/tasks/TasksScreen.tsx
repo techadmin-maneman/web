@@ -11,7 +11,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink, PageActions, useHeaderSub } from "../components/Shell.tsx";
 import { tasks } from "../content.ts";
 import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
@@ -211,7 +211,7 @@ function TaskQueue() {
   const [closed, setClosed] = useState<readonly string[]>([]);
   const [unfolded, setUnfolded] = useState<ReadonlySet<Group>>(new Set());
   const [marked, setMarked] = useState<string | null>(null);
-  const heading = useRef<HTMLHeadingElement>(null);
+  const heading = useRef<HTMLElement>(null);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
@@ -248,7 +248,7 @@ function TaskQueue() {
       },
       onClosed: () => {
         setClosed((was) => [...was, key]);
-        // The row is gone, so the keyboard goes to the list's heading rather than to the top of the page.
+        // The row is gone, so the keyboard goes to the list rather than to the top of the page.
         heading.current?.focus();
       },
     };
@@ -275,14 +275,13 @@ function TaskQueue() {
     />
   );
 
+  const open = groups.reduce((sum, group) => sum + group.count, 0);
   return (
-    <section className={shared.queue} aria-labelledby="tasks">
-      <div className={shared.queueHead}>
-        <h2 className={shared.panelTitle} id="tasks" ref={heading} tabIndex={-1}>
-          {tasks.openCount(groups.reduce((sum, group) => sum + group.count, 0))}
-        </h2>
-        <OverdueCount count={overdue} onJump={first === null ? null : goToFirstOverdue} />
-      </div>
+    <section className={shared.queue} aria-labelledby="tasks" ref={heading} tabIndex={-1}>
+      <QueueHead open={open} overdue={overdue} onJump={first === null ? null : goToFirstOverdue} />
+      <VisuallyHidden as="h2" id="tasks">
+        {tasks.openCount(open)}
+      </VisuallyHidden>
       {truncated && <p className={styles.note}>{tasks.truncated}</p>}
       {sections.length === 0 ? (
         <EmptyState look="panel" line={tasks.empty} />
@@ -294,6 +293,17 @@ function TaskQueue() {
         ))
       )}
     </section>
+  );
+}
+
+/** How many are open, beside the page's title, and how many have run over, among its actions. */
+function QueueHead({ open, overdue, onJump }: { open: number; overdue: number; onJump: (() => void) | null }) {
+  useHeaderSub(tasks.openCount(open));
+  if (overdue === 0) return null;
+  return (
+    <PageActions>
+      <OverdueCount count={overdue} onJump={onJump} />
+    </PageActions>
   );
 }
 

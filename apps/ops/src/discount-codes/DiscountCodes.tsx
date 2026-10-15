@@ -6,7 +6,7 @@ import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Disclosure } from "@maneman/ui/Disclosure";
 import { errorText } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
-import { Button, RowButton } from "@maneman/ui/Button";
+import { RowButton } from "@maneman/ui/Button";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
@@ -27,6 +27,7 @@ import { FindForm } from "./FindCode.tsx";
 import form from "../components/forms.module.css";
 import styles from "./discount-codes.module.css";
 import { discountCodesApi } from "./discount-codes-api.ts";
+import { AddInDrawer } from "../components/AddInDrawer.tsx";
 
 const copy = settings.discountCodes;
 const columns = copy.columns;
@@ -308,7 +309,6 @@ export function DiscountCodes() {
   const [loaded, retry] = useLoad(load);
   /** The list as it was read again after a change, so what was typed above it stays. */
   const [refreshed, setRefreshed] = useState<DiscountCodeList | null>(null);
-  const [making, setMaking] = useState(false);
   const [acting, setActing] = useState<Acting>(null);
   const [said, setSaid] = useState<string | null>(null);
   const access = useAccess();
@@ -353,32 +353,21 @@ export function DiscountCodes() {
       title={copy.title}
       padded
       actions={
-        mayMake &&
-        !making && (
-          <Button
-            variant="outline"
-            size="small"
-            narrow
-            onClick={() => {
-              setMaking(true);
-            }}
-          >
-            {copy.make}
-          </Button>
+        mayMake && (
+          <AddInDrawer primary label={copy.make}>
+            {(close) => (
+              <DiscountCodeForm
+                today={codes.today}
+                most={codes.batch_most}
+                onMade={() => void refresh()}
+                onClose={close}
+              />
+            )}
+          </AddInDrawer>
         )
       }
     >
       <Figures totals={codes.totals} />
-      {making && (
-        <DiscountCodeForm
-          today={codes.today}
-          most={codes.batch_most}
-          onMade={() => void refresh()}
-          onClose={() => {
-            setMaking(false);
-          }}
-        />
-      )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}

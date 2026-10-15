@@ -4,7 +4,6 @@
 // in (docs/decisions/0164-the-kit-screen.md).
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Panel } from "@maneman/ui/Panel";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { Checkbox, ChoiceGroup, Radio } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
@@ -337,54 +336,47 @@ export function StockForm({
   };
 
   return (
-    <Panel titleId="stock-record" title={copy.record.title}>
-      <div className={form.group}>
-        <WhatMoved stock={stock} draft={draft} kinds={kinds} places={places} onEdit={edit} refused={refused} />
-        <LotFields stock={stock} draft={draft} onEdit={edit} refused={refused} />
-        {scans(stock, draft) && <PieceScans units={draft.units} onUnits={scan} />}
-        <WaitForScan stock={stock} draft={draft} onDraft={setDraft} />
-        <div className={form.fields}>
-          <HowMany draft={draft} unit={unit} onEdit={edit} refused={refused} />
-          {draft.kind !== "transfer" && (
-            <NoteBox
-              lost={draft.kind === "write_off"}
-              note={draft.note}
-              onNote={edit("note")}
-              error={refused("note")}
-            />
-          )}
-        </div>
-        {checking ? (
-          <CheckPanel
-            lines={effect.lines}
-            warnings={effect.warnings}
-            busy={step.step === "saving"}
-            onSend={() => void send()}
-            onBack={() => {
-              setStep({ step: "editing" });
-            }}
-          />
-        ) : (
-          <FormActions>
-            <Button
-              variant="primary"
-              size="small"
-              disabled={!readyOf(draft, stock.max_quantity)}
-              onClick={() => {
-                setStep({ step: "checking" });
-              }}
-            >
-              {copy.record.check}
-            </Button>
-          </FormActions>
+    <div className={styles.record}>
+      <WhatMoved stock={stock} draft={draft} kinds={kinds} places={places} onEdit={edit} refused={refused} />
+      <LotFields stock={stock} draft={draft} onEdit={edit} refused={refused} />
+      {scans(stock, draft) && <PieceScans units={draft.units} onUnits={scan} />}
+      <WaitForScan stock={stock} draft={draft} onDraft={setDraft} />
+      <div className={form.fields}>
+        <HowMany draft={draft} unit={unit} onEdit={edit} refused={refused} />
+        {draft.kind !== "transfer" && (
+          <NoteBox lost={draft.kind === "write_off"} note={draft.note} onNote={edit("note")} error={refused("note")} />
         )}
-        {step.step === "recorded" && (
-          <InlineMessage tone="saved" className={form.saved}>
-            {copy.recorded}
-          </InlineMessage>
-        )}
-        <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={drawnBoxes(stock, draft)} />
       </div>
-    </Panel>
+      {checking ? (
+        <CheckPanel
+          lines={effect.lines}
+          warnings={effect.warnings}
+          busy={step.step === "saving"}
+          onSend={() => void send()}
+          onBack={() => {
+            setStep({ step: "editing" });
+          }}
+        />
+      ) : (
+        <FormActions>
+          <Button
+            variant="primary"
+            size="small"
+            disabled={!readyOf(draft, stock.max_quantity)}
+            onClick={() => {
+              setStep({ step: "checking" });
+            }}
+          >
+            {copy.record.check}
+          </Button>
+        </FormActions>
+      )}
+      {step.step === "recorded" && (
+        <InlineMessage tone="saved" className={form.saved}>
+          {copy.recorded}
+        </InlineMessage>
+      )}
+      <FormRefusal className={form.error} errors={copy.errors} failure={failure} boxes={drawnBoxes(stock, draft)} />
+    </div>
   );
 }

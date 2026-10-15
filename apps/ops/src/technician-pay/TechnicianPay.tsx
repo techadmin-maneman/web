@@ -20,7 +20,7 @@ import { PayRates } from "./PayRates.tsx";
 import { PayStatement } from "./PayStatement.tsx";
 import form from "../components/forms.module.css";
 import styles from "./technician-pay.module.css";
-import { ActionRow } from "../components/ActionRow.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 import { technicianPayApi } from "./technician-pay-api.ts";
 
 const copy = technicianPay.technicians;
@@ -60,7 +60,12 @@ function TechnicianRows({ technician, pay, maySet, acting, onAct, onDone }: { te
         </td>
       </tr>
       {acting === technician.id && (
-        <ActionRow className={styles.acting}>
+        <FormDrawer
+          title={technician.name}
+          onClose={() => {
+            onAct(null);
+          }}
+        >
           <GradeOfForm
             technician={technician}
             pay={pay}
@@ -69,7 +74,7 @@ function TechnicianRows({ technician, pay, maySet, acting, onAct, onDone }: { te
               onAct(null);
             }}
           />
-        </ActionRow>
+        </FormDrawer>
       )}
     </>
   );

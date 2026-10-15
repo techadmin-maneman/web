@@ -16,7 +16,7 @@
 }
 .page {
   white-space: nowrap;
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 .where {
   font-weight: var(--weight-regular);
@@ -31,7 +31,7 @@
   display: block;
   margin-top: var(--sp-4);
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 .actions {
   white-space: nowrap;
@@ -39,8 +39,4 @@
 }
 .actions button:first-child {
   margin-left: 0;
-}
-.table .acting > td {
-  padding: 0 0 var(--sp-16);
-  background: var(--paper-light);
 }

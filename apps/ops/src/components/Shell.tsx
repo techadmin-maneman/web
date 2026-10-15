@@ -10,7 +10,7 @@ import { classes } from "@maneman/ui/classes";
 import { Icon } from "@maneman/ui/Icon";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Mark } from "@maneman/ui/Mark";
-import { PageHeader } from "@maneman/ui/PageHeader";
+import { PageHeader, PageTitle } from "@maneman/ui/PageHeader";
 import { usePath, wasRedirected } from "@maneman/ui/router";
 import { FOLDS, NavButton, NavItem, SideNav } from "@maneman/ui/SideNav";
 import { SkipLink } from "@maneman/ui/SkipLink";
@@ -318,6 +318,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
   const menu = useMenu();
   useFocusOnArrival(heading, main);
   const crumbs = crumbsOf(route, record);
+  const title = titleOf(route, record);
   return (
     <div className={styles.console}>
       <SkipLink
@@ -342,9 +343,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
             {menu.open ? shell.closeMenu : shell.menu}
           </Button>
           <div className={styles.crumbs}>
-            {crumbs.length > 0 && (
-              <Breadcrumbs label={shell.crumbs} crumbs={[...crumbs, { label: titleOf(route, record) }]} />
-            )}
+            {crumbs.length > 0 && <Breadcrumbs label={shell.crumbs} crumbs={[...crumbs, { label: title }]} />}
           </div>
           <Button variant="quiet" size="small" className={styles.search} onClick={search}>
             <Icon d={GLYPHS.search} size="xs" />
@@ -358,7 +357,7 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
         <main id="content" ref={main} tabIndex={-1} className={flush ? styles.flushPage : styles.page}>
           <PageHeader
             className={flush ? styles.flushHead : styles.head}
-            title={titleOf(route, record)}
+            title={title}
             titleRef={heading}
             meta={sub}
             actions={<div className={styles.actions} ref={setActions} />}
@@ -371,7 +370,9 @@ export function Shell({ route, flush = false, note = null, children }: Props) {
               </InlineMessage>
             )}
           </div>
-          <PageHead value={{ setSub, setRecord, actions }}>{children}</PageHead>
+          <PageHead value={{ setSub, setRecord, actions }}>
+            <PageTitle value={title}>{children}</PageTitle>
+          </PageHead>
         </main>
       </div>
     </div>

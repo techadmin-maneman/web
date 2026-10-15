@@ -4,3 +4,10 @@
 .kinds {
   margin-top: var(--sp-8);
 }
+
+/* The movement's form, in the drawer Record a movement opens: its parts one under another. */
+.record {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}

@@ -1,11 +1,10 @@
-// Finance · Prices · Hair system costs (docs/decisions/0152-standard-costs.md): what each first fit and replacement
-// product costs us, for the margin figures, until stock lots carry what was paid. A figure set counts from today.
+// Settings › Prices › Hair systems (docs/decisions/0152-standard-costs.md): what each first fit and replacement product
+// costs us, for the margin figures, until stock lots carry what was paid; a row each. A figure set counts from today.
 
 import { Button } from "@maneman/ui/Button";
 import { TextInput } from "@maneman/ui/Field";
-import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
-import { Table } from "@maneman/ui/Table";
+import { SettingRow, SettingValue } from "@maneman/ui/SettingRow";
 import { useLoad } from "@maneman/ui/useLoad";
 import type { Sent as Body, Success } from "@maneman/web-kit/api";
 import { shortDate } from "@maneman/web-kit/dates";
@@ -19,6 +18,7 @@ import { CheckPanel } from "../components/CheckPanel.tsx";
 import { review } from "../content/common.ts";
 import { Refused, sentOf, useSteps } from "../settings/index.ts";
 import { pricesApi } from "./prices-api.ts";
+import styles from "./prices.module.css";
 
 type Product = Success<paths["/api/standard-costs"]["get"]>["products"][number];
 type CostChange = Body<paths["/api/standard-costs"]["post"]>;
@@ -44,50 +44,52 @@ function CostRow(props: { product: Product; mayChange: boolean; onSaved: (produc
       props.onSaved(sent.products);
     },
   );
+  const since = product.since === null ? null : copy.since(shortDate(product.since));
+  if (!props.mayChange)
+    return <SettingValue label={label} value={since === null ? standing : `${standing} · ${since}`} />;
   return (
-    <tr>
-      <th scope="row">{label}</th>
-      <td>
-        {props.mayChange ? (
-          <TextInput
-            aria-label={copy.costLabel(label)}
-            inputMode="numeric"
-            maxLength={9}
-            value={typed}
-            onChange={(event) => {
-              setTyped(event.target.value);
-              steps.edit();
-            }}
-          />
-        ) : (
-          standing
-        )}
-      </td>
-      <td>{product.since === null ? copy.notSet : shortDate(product.since)}</td>
-      {props.mayChange && (
-        <td>
-          {steps.step === "editing" ? (
-            <Button
-              variant="outline"
-              size="small"
-              aria-label={copy.reviewLabel(label)}
-              disabled={!/^\d+$/.test(typed.trim())}
-              onClick={steps.check}
-            >
-              {review.next}
-            </Button>
-          ) : (
-            <CheckPanel
-              lines={[copy.change(label, standing, rupeeFigure(paiseFromRupees(typed)))]}
-              busy={steps.step === "saving"}
-              onSend={steps.go}
-              onBack={steps.edit}
+    <>
+      <SettingRow label={label} unit={copy.unit}>
+        {(control) => (
+          <>
+            <TextInput
+              {...control}
+              width="amount"
+              inputMode="numeric"
+              maxLength={9}
+              value={typed}
+              disabled={steps.step !== "editing"}
+              onChange={(event) => {
+                setTyped(event.target.value);
+                steps.edit();
+              }}
             />
-          )}
-          <Refused failed={steps.failed} errors={copy.errors} />
-        </td>
+            {steps.step === "editing" && typed.trim() !== (product.cost === null ? "" : rupeesTyped(product.cost)) && (
+              <Button
+                variant="outline"
+                size="small"
+                aria-label={copy.reviewLabel(label)}
+                disabled={!/^\d+$/.test(typed.trim())}
+                onClick={steps.check}
+              >
+                {review.next}
+              </Button>
+            )}
+          </>
+        )}
+      </SettingRow>
+      {steps.step !== "editing" && (
+        <div className={styles.check}>
+          <CheckPanel
+            lines={[copy.change(label, standing, rupeeFigure(paiseFromRupees(typed)))]}
+            busy={steps.step === "saving"}
+            onSend={steps.go}
+            onBack={steps.edit}
+          />
+        </div>
       )}
-    </tr>
+      <Refused failed={steps.failed} errors={copy.errors} />
+    </>
   );
 }
 
@@ -99,28 +101,15 @@ export function StandardCosts() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const shown = products ?? loaded.value.products;
   return (
-    <Panel titleId="standard-costs" title={copy.title} padded>
-      <Note>{copy.note}</Note>
-      <Table controls>
-        <thead>
-          <tr>
-            <th scope="col">{copy.columns.product}</th>
-            <th scope="col">{copy.columns.cost}</th>
-            <th scope="col">{copy.columns.since}</th>
-            {mayChange && <th scope="col" />}
-          </tr>
-        </thead>
-        <tbody>
-          {shown.map((product) => (
-            <CostRow
-              key={`${product.item}/${product.tier}/${String(product.cost)}`}
-              product={product}
-              mayChange={mayChange}
-              onSaved={setProducts}
-            />
-          ))}
-        </tbody>
-      </Table>
+    <Panel titleId="standard-costs" title={copy.title}>
+      {shown.map((product) => (
+        <CostRow
+          key={`${product.item}/${product.tier}/${String(product.cost)}`}
+          product={product}
+          mayChange={mayChange}
+          onSaved={setProducts}
+        />
+      ))}
     </Panel>
   );
 }

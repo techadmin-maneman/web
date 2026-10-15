@@ -15,7 +15,7 @@
 .pickerWhen {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-15);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .reasons {
@@ -26,7 +26,7 @@
 .consequence {
   margin: var(--sp-16) 0 0;
   padding-left: var(--sp-16);
-  border-left: var(--rule-strong) solid var(--brass);
+  border-left: var(--rule-strong) solid var(--ui-accent);
   font-size: var(--fs-15);
   line-height: var(--lh-160);
 }

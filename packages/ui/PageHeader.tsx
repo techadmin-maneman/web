@@ -3,10 +3,13 @@
 //
 //   <PageHeader title={copy.title} meta={copy.count(rows.length)} actions={<Button …>{copy.add}</Button>} />
 
-import type { ReactNode, Ref } from "react";
+import { createContext, type ReactNode, type Ref } from "react";
 import { classes } from "./classes.ts";
 import styles from "./page-header.module.css";
 import { typeLook } from "./type.ts";
+
+/** The page's title, as its head shows it, for a panel beneath to know it is titled the same (./Panel.tsx). */
+export const PageTitle = createContext<ReactNode>(null);
 
 export function PageHeader({
   title,

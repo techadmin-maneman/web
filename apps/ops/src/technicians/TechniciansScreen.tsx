@@ -18,7 +18,7 @@ import {
   type TechnicianSummary,
   type TechnicianWork,
 } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink, PageActions, useHeaderSub } from "../components/Shell.tsx";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { technicianPath } from "../route.ts";
@@ -147,6 +147,12 @@ function RosterTable({
   );
 }
 
+/** The days the figures count, beside the page's title. */
+function Period({ from, to }: { from: string; to: string }) {
+  useHeaderSub(technicians.work.period(fullDate(from), fullDate(lastDay(to))));
+  return null;
+}
+
 function Roster() {
   const [loaded, retry] = useLoad(techniciansApi.technicians);
   // The roster carries no period, so the figures are a read of their own; the
@@ -184,11 +190,10 @@ function Roster() {
         {technicians.title}
       </VisuallyHidden>
       {mayAdd && (
-        <div className={shared.toolbar}>
+        <PageActions>
           <Button
-            variant="outline"
+            variant="primary"
             size="small"
-            className={shared.quiet}
             onClick={() => {
               setAdded(null);
               setAdding(true);
@@ -196,8 +201,9 @@ function Roster() {
           >
             {technicians.add.open}
           </Button>
-        </div>
+        </PageActions>
       )}
+      <Period from={work.value.from} to={work.value.to} />
       {added !== null && (
         <p className={shared.notice} role="status">
           {technicians.add.added(added)}
@@ -208,9 +214,6 @@ function Roster() {
       ) : (
         <RosterTable active={roster.technicians} figures={figures} />
       )}
-      <p className={shared.note}>
-        {technicians.work.period(fullDate(work.value.from), fullDate(lastDay(work.value.to)))}
-      </p>
       {roster.switched_off.length > 0 && <SwitchedOff list={roster.switched_off} />}
       {adding && (
         <AddTechnician

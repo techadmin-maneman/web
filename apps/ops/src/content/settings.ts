@@ -399,8 +399,8 @@ export const settings = {
   /** What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md). */
   standardCosts: {
     title: "Hair system costs",
-    note: "Cost before GST. Changes count from today.",
-    columns: { product: "Product", cost: "Cost, Rs.", since: "Since" },
+    unit: "Rs., before GST",
+    since: (date: string) => `since ${date}`,
     kinds: { first_fit: "First fit", replacement: "Replacement" },
     notSet: "Not set",
     saved: "Saved.",
@@ -631,6 +631,7 @@ export const settings = {
     },
     item: {
       title: (name: string) => `What ${name} supplies`,
+      addOne: "Add an item",
       columns: ["Item", "Their code", "Price", "Pack", "Minimum", "Lead time"],
       none: "Nothing listed yet.",
       consumable: "Item",
@@ -668,6 +669,7 @@ export const settings = {
   },
   consumables: {
     title: "Consumables",
+    add: "Add a consumable",
     columns: ["Consumable", "Cost each", "Low at", "Status"],
     none: "No consumables yet.",
     /** "Kit 5 · hub or stockroom 20 · warehouse 50", the levels each kind of place is low at. */
@@ -700,7 +702,7 @@ export const settings = {
     // No design draws it (docs/decisions/0156-hair-systems-in-stock.md).
     hairSystems: {
       title: "Hair systems",
-      intro: "Each spec kept in stock, counted in pieces. Cost and levels change in the list above.",
+      add: "Add a hair system",
       noProducts: "Add a first-fit service in Services first.",
       product: "Product",
       width: "Base width, inches",
@@ -966,7 +968,6 @@ export const settings = {
       removeLabel: (label: string) => `Remove ${label}`,
       removeTitle: (label: string) => `Remove ${label}?`,
       removeLine: "It’s refused once access control is on.",
-      onlyNational: "Only national Admin · Manage can change service tokens.",
       errors: {
         client_id: "Paste the client ID exactly as shown.",
         label: "Give it a short name.",

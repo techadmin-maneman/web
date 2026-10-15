@@ -16,8 +16,8 @@
   gap: var(--sp-4);
   max-width: var(--ops-measure);
   padding: var(--sp-8) var(--sp-12);
-  border: var(--hairline) solid var(--paper-line);
-  background: var(--paper);
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-ground);
 }
 
 .ours {
@@ -27,12 +27,12 @@
 .auto {
   align-self: center;
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .when {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .text {

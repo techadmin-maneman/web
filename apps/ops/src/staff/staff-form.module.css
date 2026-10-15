@@ -1,4 +1,4 @@
-/* What ./StaffForm.tsx alone draws; what it shares is in ./staff.module.css. */ /* The Staff page: a grant's three boxes on one line, and each grant on its own line in the list. */
+/* What ./StaffForm.tsx alone draws; what it shares is in ./staff.module.css. */
 
 .grants {
   display: flex;
@@ -8,9 +8,15 @@
   padding: 0;
   list-style: none;
 }
+/* A grant's three boxes, one to a line, a rule between two grants. */
 .grantRow {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--sp-12) var(--sp-16);
+  flex-direction: column;
+  gap: var(--sp-12);
+  max-width: var(--measure-form);
+}
+
+.grants > li + li {
+  padding-top: var(--sp-12);
+  border-top: var(--hairline) solid var(--ui-line);
 }

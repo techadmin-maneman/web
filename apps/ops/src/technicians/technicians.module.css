@@ -8,14 +8,7 @@
 
 .panel {
   padding: var(--sp-20);
-  border: var(--hairline) solid var(--paper-line);
-}
-
-/* Add a technician, above the table and out of the board's five columns. */
-.toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--sp-16);
+  border: var(--hairline) solid var(--ui-line);
 }
 
 /* What a change just did: a technician added, or switched back on. */
@@ -29,7 +22,7 @@
   padding: var(--sp-8) var(--sp-8) var(--sp-8) 0;
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   text-align: left;
 }
 
@@ -43,7 +36,7 @@
 /* The board's columns, at the widths it draws them; the name takes the slack, as its 1fr does. */
 .city {
   width: var(--ops-column);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* "Trained to fit", a box beside its words, in the form's run of fields. */
@@ -89,10 +82,10 @@
   background: transparent;
   font: inherit;
   font-size: var(--fs-14);
-  color: var(--text);
+  color: var(--ui-text);
   text-align: left;
   text-decoration: underline;
-  text-decoration-color: var(--paper-line);
+  text-decoration-color: var(--ui-line);
   text-underline-offset: var(--sp-4);
   cursor: pointer;
 }
@@ -106,26 +99,19 @@
 .base {
   display: block;
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* Away today, in the small capitals the board letters its own labels in. */
 .away {
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
-  color: var(--text-muted);
-}
-
-.note {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-13);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .none {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* ---- A technician's page: their details, then a tab at a time ------------ */
@@ -140,15 +126,8 @@
 
 .back {
   font-size: var(--fs-14);
-  color: var(--text);
+  color: var(--ui-text);
   text-underline-offset: var(--sp-4);
-}
-
-.pageTitle {
-  margin: var(--sp-8) 0 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-22);
 }
 
 .tabs {
@@ -175,7 +154,7 @@
 
 .offZone {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* ---- Their details, in the panel ----------------------------------------- */
@@ -184,7 +163,7 @@
   margin: 0 0 var(--sp-8);
   font-size: var(--fs-13);
   line-height: var(--lh-145);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .facts {
@@ -229,7 +208,7 @@
   margin: 0 0 var(--sp-8);
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-15);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* ---- One phone, and its revoke ------------------------------------------- */
@@ -253,7 +232,7 @@
 
 .seen {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
@@ -265,7 +244,7 @@
   margin: 0;
   font-size: var(--fs-13);
   line-height: var(--lh-145);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .actions {
@@ -286,11 +265,11 @@
 .signedIn {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .signedIn {
-  color: var(--text);
+  color: var(--ui-text);
 }
 
 .error {
@@ -335,5 +314,5 @@
 
 .label {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }

@@ -28,6 +28,9 @@ import form from "../components/forms.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 import { itemsApi } from "./items-api.ts";
 
+import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
+
 const copy = settings.consumables;
 
 /** What the panel's form is doing: adding one, or changing, retiring or restoring the one named. */
@@ -130,33 +133,41 @@ function ConsumableRow({
   );
 }
 
-/** The form beneath the table: the one a row's button asked for, else adding a new one, where access allows it. */
+/** The drawer a row's button opened; nothing while none is open. */
 function ConsumableEditor({
   consumables,
   doing,
-  mayAdd,
   onSaved,
   onCancel,
 }: {
   consumables: ConsumableList;
   doing: Doing;
-  mayAdd: boolean;
   onSaved: (consumables: ConsumableList, said: string) => void;
   onCancel: () => void;
 }) {
   const named = doing.kind === "add" ? undefined : consumables.consumables.find((each) => each.code === doing.code);
-  if (named === undefined || doing.kind === "add") {
-    if (!mayAdd) return null;
-    return (
-      <ConsumableForm
-        key="new"
-        consumable={null}
-        maxUnitCost={consumables.max_unit_cost}
-        onSaved={onSaved}
-        onCancel={null}
-      />
-    );
-  }
+  if (named === undefined || doing.kind === "add") return null;
+  return (
+    <FormDrawer title={named.name} onClose={onCancel}>
+      <ConsumableChange named={named} consumables={consumables} doing={doing} onSaved={onSaved} onCancel={onCancel} />
+    </FormDrawer>
+  );
+}
+
+/** What a consumable's row opened: its change, its deletion, or its retirement. */
+function ConsumableChange({
+  named,
+  consumables,
+  doing,
+  onSaved,
+  onCancel,
+}: {
+  named: ConsumableList["consumables"][number];
+  consumables: ConsumableList;
+  doing: Exclude<Doing, { kind: "add" }>;
+  onSaved: (consumables: ConsumableList, said: string) => void;
+  onCancel: () => void;
+}) {
   if (doing.kind === "change") {
     return (
       <ConsumableForm
@@ -198,6 +209,50 @@ function ConsumableEditor({
   );
 }
 
+/** Adding a consumable, and a hair system, from the list's head, as the person's access allows. */
+function AddButtons({
+  consumables,
+  may,
+  onSaved,
+}: {
+  consumables: ConsumableList;
+  may: ReturnType<typeof useMayDo>;
+  onSaved: (consumables: ConsumableList, said: string) => void;
+}) {
+  return (
+    <>
+      {may.add && (
+        <AddInDrawer label={copy.add}>
+          {(close) => (
+            <ConsumableForm
+              consumable={null}
+              maxUnitCost={consumables.max_unit_cost}
+              onSaved={(next, words) => {
+                onSaved(next, words);
+                close();
+              }}
+              onCancel={close}
+            />
+          )}
+        </AddInDrawer>
+      )}
+      {may.addHairSystem && (
+        <AddInDrawer label={copy.hairSystems.add}>
+          {(close) => (
+            <HairSystemForm
+              consumables={consumables}
+              onSaved={(next, words) => {
+                onSaved(next, words);
+                close();
+              }}
+            />
+          )}
+        </AddInDrawer>
+      )}
+    </>
+  );
+}
+
 export function Consumables() {
   const [loaded, retry] = useLoad(itemsApi.consumables);
   /** The list after a change, so the table follows without reading it again. */
@@ -218,7 +273,12 @@ export function Consumables() {
 
   return (
     <>
-      <Panel titleId="consumables" title={copy.title} padded>
+      <Panel
+        titleId="consumables"
+        title={copy.title}
+        padded
+        actions={<AddButtons consumables={current} may={may} onSaved={saved} />}
+      >
         {current.consumables.length === 0 ? (
           <Note>{copy.none}</Note>
         ) : (
@@ -255,14 +315,12 @@ export function Consumables() {
         <ConsumableEditor
           consumables={current}
           doing={doing}
-          mayAdd={may.add}
           onSaved={saved}
           onCancel={() => {
             setDoing({ kind: "add" });
           }}
         />
       </Panel>
-      {may.addHairSystem && <HairSystemForm consumables={current} onSaved={saved} />}
       <ServiceUsage consumables={current} onSaved={setConsumables} />
     </>
   );

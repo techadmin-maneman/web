@@ -145,7 +145,6 @@ interface GroupProps {
   readonly children?: ReactNode;
 }
 
-/** One subject's rules in a panel, reviewed and sent together. */
 /**
  * A group's drafts and their sending: one rule at a time, in the order shown, a refusal stopping the rest and saying
  * which rule it was; and the check before anything goes.
@@ -205,6 +204,7 @@ function useGroup(rules: readonly OpsSetting[], onSaved: (saved: OpsSetting) => 
   };
 }
 
+/** One subject's rules in a panel, reviewed and sent together. */
 function Group({ section, allowed, onSaved, children }: GroupProps) {
   const { id, rules } = section;
   const { drafts, sending, saved, steps, changes, review, edit, discard, refusalFor } = useGroup(rules, onSaved);

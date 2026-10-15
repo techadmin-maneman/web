@@ -8,6 +8,7 @@ import { Fieldset } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -69,6 +70,11 @@ function PincodeTable(props: {
         <thead>
           <tr>
             <SortHeads view={view} />
+            {mayChange && (
+              <th scope="col">
+                <VisuallyHidden>{copy.edit}</VisuallyHidden>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>

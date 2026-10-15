@@ -12,7 +12,7 @@ import { rupees } from "@maneman/web-kit/money";
 import { useRef, useState } from "react";
 import { addressLine } from "@maneman/web-kit/address";
 import type { AutoRefund, ClientRecord, ClientVisit } from "../api.ts";
-import { OpsLink } from "../components/Shell.tsx";
+import { OpsLink, PageActions } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
@@ -310,17 +310,18 @@ function BookOne({ clientId, record, onBooked }: { clientId: string; record: Cli
   if (!mayBook) return null;
   return (
     <>
-      <Button
-        variant="primary"
-        size="small"
-        ref={opener}
-        className={styles.primary}
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        {copy.book.open}
-      </Button>
+      <PageActions>
+        <Button
+          variant="primary"
+          size="small"
+          ref={opener}
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          {copy.book.open}
+        </Button>
+      </PageActions>
       {open && (
         <BookVisit
           clientId={clientId}
