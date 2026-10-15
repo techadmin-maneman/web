@@ -40,7 +40,7 @@ const replacesLine = (choice: Choice, prefill: Prefill): string =>
  * What the form says was refused: the booking's own refusal, else a first fit for a client with no hair profile, said
  * as soon as First fit is chosen rather than once the form is filled and sent.
  */
-const refusalOf = (failed: string | null, choice: Choice, offered: VisitAvailability): string | null =>
+const shownRefusal = (failed: string | null, choice: Choice, offered: VisitAvailability): string | null =>
   failed ?? (choice === "first_fit" && offered.needs_profile ? "no_profile" : null);
 
 /** "Wed 23 Sep, 9 am": when the link closes. */
@@ -172,7 +172,7 @@ function BookingForm({
   const firstDay = offered.days[0]?.date;
   const cover = offered.owed.some((each) => each.id === covers) ? covers : "";
   const takesCode = kindOf(choice) !== "consultation" && cover === "";
-  const refused = refusalOf(failed, choice, offered);
+  const refused = shownRefusal(failed, choice, offered);
 
   const book = () =>
     once(async () => {
