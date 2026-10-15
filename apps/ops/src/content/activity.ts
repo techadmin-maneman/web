@@ -185,6 +185,7 @@ export const activity = {
   actions: ACTIONS,
   filters: {
     label: "Narrow the log",
+    filter: "Filter",
     kind: "Who",
     kinds: {
       any: "Anyone",
@@ -199,7 +200,7 @@ export const activity = {
     // Not drawn: each page opened is logged as a call; the log shows what changed unless asked.
     reads: "Show pages opened too",
     anyAction: "Any action",
-    /** A filter a link set, above the form: "Client · Rohit Malhotra", with its own way off. */
+    /** A filter set, as its chip says it: "Client · 22000000", with its own way off. */
     person: "Client",
     visit: "Visit",
     remove: (filter: string) => `Remove filter: ${filter}`,

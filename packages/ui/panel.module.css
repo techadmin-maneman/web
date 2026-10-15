@@ -23,6 +23,11 @@
     border-bottom: var(--hairline) solid var(--ui-line);
   }
 
+  /* A choice in the head, its label read and not shown, sits on the head's line. */
+  .head :is(input, select) {
+    margin-top: 0;
+  }
+
   .title {
     flex: 1;
     min-width: 0;

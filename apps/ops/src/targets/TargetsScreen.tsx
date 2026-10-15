@@ -20,7 +20,7 @@ import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import { targetsApi } from "./targets-api.ts";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { PageActions } from "../components/Shell.tsx";
 
 type Targets = Success<paths["/api/targets"]["get"]>;
@@ -190,7 +190,7 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
       />
       {mayChange && (
         <PageActions>
-          <AddInDrawer primary label={copy.setOne}>
+          <DrawerButton primary label={copy.setOne}>
             {(close) => (
               <TargetForm
                 list={list}
@@ -200,7 +200,7 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
                 }}
               />
             )}
-          </AddInDrawer>
+          </DrawerButton>
         </PageActions>
       )}
       <TargetTable list={list} onSaved={setSaved} />

@@ -3,7 +3,7 @@
 
 import { RowButton } from "@maneman/ui/Button";
 import { Button } from "@maneman/ui/Button";
-import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
@@ -23,6 +23,7 @@ import shared from "./care.module.css";
 import styles from "./messages-screen.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { FormDrawer } from "../components/FormDrawer.tsx";
+import { SearchInput } from "@maneman/ui/SearchInput";
 
 const VIEWS: readonly ConversationView[] = ["open", "mine", "waiting", "closed", "all"];
 
@@ -66,19 +67,7 @@ function Search({ search, onSearch }: { search: string; onSearch: (search: strin
         onSearch(typed.trim());
       }}
     >
-      <Field label={copy.search}>
-        {(control) => (
-          <TextInput
-            {...control}
-            type="search"
-            value={typed}
-            maxLength={80}
-            onChange={(event) => {
-              setTyped(event.target.value);
-            }}
-          />
-        )}
-      </Field>
+      <SearchInput label={copy.search} value={typed} maxLength={80} onChange={setTyped} />
       <Button type="submit" variant="outline" size="small">
         {copy.find}
       </Button>

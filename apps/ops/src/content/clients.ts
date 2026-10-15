@@ -357,7 +357,6 @@ export const clients = {
       close: "Close",
       outcome: "Outcome",
       outcomes: { done: "Done", partial: "Partly done", no_show: "No-show" },
-      noShowNote: "From the technician’s check-in, once the wait has run out. The case goes to No-shows to rule on.",
       started: "Started",
       ended: "Finished",
       reason: "What happened",
@@ -479,6 +478,7 @@ export const clients = {
   /** Putting a client's free service visits right by hand (POST /api/clients/{id}/credits). */
   credits: {
     title: "Free service visits",
+    adjust: "Change",
     balance: "They hold",
     none: "None",
     visits: (count: number) => `${String(count)} ${Math.abs(count) === 1 ? "visit" : "visits"}`,

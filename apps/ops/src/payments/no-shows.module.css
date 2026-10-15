@@ -19,6 +19,7 @@
 
 .panel {
   border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
 }
 
 /* ---- The day's money, and the charges beneath it --------------------------- */

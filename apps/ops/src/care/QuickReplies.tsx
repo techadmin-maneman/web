@@ -14,7 +14,7 @@ import { useAccess } from "../lib/access.ts";
 import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi } from "./care-api.ts";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { PageActions } from "../components/Shell.tsx";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";
@@ -167,7 +167,7 @@ export function QuickRepliesPanel() {
       )}
       {mayKeep && (
         <PageActions>
-          <AddInDrawer primary label={copy.addOne}>
+          <DrawerButton primary label={copy.addOne}>
             {(close) => (
               <AddForm
                 onAdded={() => {
@@ -176,7 +176,7 @@ export function QuickRepliesPanel() {
                 }}
               />
             )}
-          </AddInDrawer>
+          </DrawerButton>
         </PageActions>
       )}
     </div>

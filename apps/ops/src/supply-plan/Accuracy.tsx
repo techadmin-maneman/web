@@ -38,7 +38,6 @@ function Measured({ accuracy }: { accuracy: Accuracy }) {
   if (accuracy.periods.length === 0) return <Note>{copy.none}</Note>;
   return (
     <>
-      <Note>{copy.note}</Note>
       <div className={styles.scroll}>
         <Table controls>
           <Head columns={copy.periodColumns} />

@@ -13,7 +13,7 @@
   /* A dispatch block is this tall for each slot it takes. The board draws 22, 34 and 46 px, under two lines of type
      that make one slot and a slot and a half read alike (ADR 0025, item 49). */
   --ops-slot: 42px;
-  --ops-table-min: 960px; /* the narrowest a wide table goes before it scrolls */
+  --ops-table-min: 860px; /* the narrowest a wide table goes before it scrolls: a Settings page beside its menu */
   /* A table's columns, by how much they hold: each screen names its own for what it holds, as one of these. */
   --ops-column-narrow: 72px; /* an owner, a source */
   --ops-cell: 88px; /* a day on the board, a figure with its unit */

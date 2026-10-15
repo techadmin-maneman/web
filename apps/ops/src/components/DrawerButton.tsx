@@ -1,7 +1,7 @@
-// A way to add to a list: its button, in the head of the list's panel, opens the form in a drawer beside the page,
-// and the drawer closes once the form is done or put aside. The form is never left open under the list.
+// A button that opens its form in a drawer beside the page, which closes once the form is done or put aside: a list's
+// way to add to it, from the head of its panel, or to narrow it. The form is never left open under the list.
 //
-//   <Panel title={copy.title} actions={<AddInDrawer label={copy.add}>{(close) => <XForm onSaved={close} />}</AddInDrawer>}>
+//   <Panel title={copy.title} actions={<DrawerButton label={copy.add}>{(close) => <XForm onSaved={close} />}</DrawerButton>}>
 
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
@@ -9,7 +9,7 @@ import { useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { InDrawer } from "./FormDrawer.tsx";
 
-export function AddInDrawer({
+export function DrawerButton({
   label,
   title = label,
   primary = false,

@@ -27,7 +27,7 @@ import { FindForm } from "./FindCode.tsx";
 import form from "../components/forms.module.css";
 import styles from "./discount-codes.module.css";
 import { discountCodesApi } from "./discount-codes-api.ts";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 
 const copy = settings.discountCodes;
 const columns = copy.columns;
@@ -354,7 +354,7 @@ export function DiscountCodes() {
       padded
       actions={
         mayMake && (
-          <AddInDrawer primary label={copy.make}>
+          <DrawerButton primary label={copy.make}>
             {(close) => (
               <DiscountCodeForm
                 today={codes.today}
@@ -363,7 +363,7 @@ export function DiscountCodes() {
                 onClose={close}
               />
             )}
-          </AddInDrawer>
+          </DrawerButton>
         )
       }
     >

@@ -21,7 +21,7 @@ import form from "../components/forms.module.css";
 import { ActionCheck, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { settingsApi } from "./settings-api.ts";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { PageActions } from "../components/Shell.tsx";
 
 const copy = settings.blackouts;
@@ -285,7 +285,7 @@ export function Blackouts() {
     <Panel titleId="blackouts" title={copy.title} padded>
       {mayAdd && (
         <PageActions>
-          <AddInDrawer primary label={copy.formTitle}>
+          <DrawerButton primary label={copy.formTitle}>
             {(close) => (
               <AddForm
                 today={loaded.value.today}
@@ -296,7 +296,7 @@ export function Blackouts() {
                 }}
               />
             )}
-          </AddInDrawer>
+          </DrawerButton>
         </PageActions>
       )}
       {periods.length === 0 ? (

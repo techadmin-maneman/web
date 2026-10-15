@@ -12,7 +12,7 @@ import type { Cities, City } from "./types.ts";
 import { CityForm } from "./CityForm.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 
 const copy = cities.list;
 
@@ -24,7 +24,7 @@ const statusOf = (city: City): string => {
 /** Adding a city, from the list's head. */
 function AddCity({ zones, onSaved }: { zones: readonly string[]; onSaved: (said: string) => void }) {
   return (
-    <AddInDrawer label={copy.add}>
+    <DrawerButton label={copy.add}>
       {(close) => (
         <CityForm
           city={null}
@@ -36,7 +36,7 @@ function AddCity({ zones, onSaved }: { zones: readonly string[]; onSaved: (said:
           onCancel={close}
         />
       )}
-    </AddInDrawer>
+    </DrawerButton>
   );
 }
 

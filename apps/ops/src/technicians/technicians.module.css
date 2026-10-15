@@ -9,6 +9,7 @@
 .panel {
   padding: var(--sp-20);
   border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
 }
 
 /* What a change just did: a technician added, or switched back on. */

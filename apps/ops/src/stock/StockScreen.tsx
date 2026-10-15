@@ -25,7 +25,7 @@ import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
 import { RowHead } from "../components/RowHead.tsx";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { PageActions } from "../components/Shell.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
@@ -50,10 +50,11 @@ function anyExpiring(stock: Stock): boolean {
 /** How the table adds up the places: each its own, or by zone or city. */
 function Grouping({ by, onBy }: { by: string; onBy: (by: "place" | "zone" | "city") => void }) {
   return (
-    <Field label={copy.totalsBy} className={styles.kitPicker}>
+    <Field label={copy.totalsBy} labelHidden>
       {(control) => (
         <Select
           {...control}
+          width="choice"
           value={by}
           onChange={(event) => {
             const picked = event.target.value;
@@ -263,8 +264,7 @@ export function StockScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={styles.screen}>
-          <Panel titleId="stock-on-hand" title={copy.onHand}>
-            <Grouping by={by} onBy={setBy} />
+          <Panel titleId="stock-on-hand" title={copy.onHand} actions={<Grouping by={by} onBy={setBy} />}>
             {by === "place" ? (
               <OnHand stock={current} />
             ) : (
@@ -280,7 +280,7 @@ export function StockScreen() {
           )}
           {firstKind !== undefined && current.consumables.length > 0 && (
             <PageActions>
-              <AddInDrawer primary label={copy.record.title}>
+              <DrawerButton primary label={copy.record.title}>
                 {() => (
                   <StockForm
                     stock={current}
@@ -299,7 +299,7 @@ export function StockScreen() {
                     }}
                   />
                 )}
-              </AddInDrawer>
+              </DrawerButton>
             </PageActions>
           )}
           <Suspense fallback={<Loading />}>

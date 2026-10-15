@@ -17,7 +17,7 @@ import { SupplierItems } from "./SupplierItems.tsx";
 import { ActionCheck, sentOf } from "../settings/index.ts";
 import { RowHead } from "../components/RowHead.tsx";
 import { suppliersApi } from "./suppliers-api.ts";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
 
 const copy = settings.suppliers;
@@ -156,7 +156,7 @@ export function Suppliers() {
         padded
         actions={
           access.mayCall("POST /api/suppliers") && (
-            <AddInDrawer label={copy.form.addTitle}>
+            <DrawerButton label={copy.form.addTitle}>
               {(close) => (
                 <SupplierForm
                   supplier={null}
@@ -167,7 +167,7 @@ export function Suppliers() {
                   onCancel={close}
                 />
               )}
-            </AddInDrawer>
+            </DrawerButton>
           )
         }
       >

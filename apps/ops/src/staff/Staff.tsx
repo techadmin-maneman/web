@@ -28,7 +28,7 @@ import styles from "./staff.module.css";
 import { FormActions } from "../components/FormActions.tsx";
 import { staffApi } from "./staff-api.ts";
 import { FormDrawer } from "../components/FormDrawer.tsx";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 
 const copy = settings.staff;
 
@@ -45,7 +45,6 @@ function Enforcement({ staff, onChanged }: PanelProps) {
     <Panel titleId="staff-enforcement" title={words.title} padded>
       <Note>{on ? words.on : words.off}</Note>
       {setBy !== null && setAt !== null && <Note>{words.setBy(whoWords(setBy), longDate(setAt))}</Note>}
-      {!staff.may_run_access && <Note>{words.onlyNational}</Note>}
       {staff.may_run_access && (
         <ActionCheck
           key={String(on)}
@@ -308,7 +307,7 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
       padded
       actions={
         staff.may_run_access && (
-          <AddInDrawer label={words.addTitle}>
+          <DrawerButton label={words.addTitle}>
             {(close) => (
               <TokenForm
                 onChanged={(next) => {
@@ -317,7 +316,7 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
                 }}
               />
             )}
-          </AddInDrawer>
+          </DrawerButton>
         )
       }
     >

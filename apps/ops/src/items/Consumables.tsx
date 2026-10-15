@@ -28,7 +28,7 @@ import form from "../components/forms.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 import { itemsApi } from "./items-api.ts";
 
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
 
 const copy = settings.consumables;
@@ -222,7 +222,7 @@ function AddButtons({
   return (
     <>
       {may.add && (
-        <AddInDrawer label={copy.add}>
+        <DrawerButton label={copy.add}>
           {(close) => (
             <ConsumableForm
               consumable={null}
@@ -234,10 +234,10 @@ function AddButtons({
               onCancel={close}
             />
           )}
-        </AddInDrawer>
+        </DrawerButton>
       )}
       {may.addHairSystem && (
-        <AddInDrawer label={copy.hairSystems.add}>
+        <DrawerButton label={copy.hairSystems.add}>
           {(close) => (
             <HairSystemForm
               consumables={consumables}
@@ -247,7 +247,7 @@ function AddButtons({
               }}
             />
           )}
-        </AddInDrawer>
+        </DrawerButton>
       )}
     </>
   );

@@ -13,6 +13,7 @@
 
 .panel {
   border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
 }
 
 .panelBody {

@@ -947,7 +947,6 @@ export const settings = {
       stopLine: "Everyone signed in will see every section.",
       sending: "Saving…",
       back: "Cancel",
-      onlyNational: "Only national Admin · Manage can change this.",
       errors: {
         not_permitted: "Only national Admin · Manage can change this.",
         offline: OFFLINE,

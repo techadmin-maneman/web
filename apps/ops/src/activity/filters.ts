@@ -45,3 +45,26 @@ export function askedOf(filters: Filters, cursor?: string): ActivityAsked {
   }
   return cursor === undefined ? asked : { ...asked, cursor };
 }
+
+/** A filter that is set, in words, as its chip says it: "Who · Technician", "From · 2026-10-01". */
+export interface Applied {
+  readonly name: keyof Filters;
+  readonly words: string;
+}
+
+const words = activity.filters;
+
+/** Each filter that is set, in the order the form asks for them, the client or visit a link set first. */
+export function appliedOf(filters: Filters): Applied[] {
+  const said: [keyof Filters, string | undefined][] = [
+    ["person", filters.person === undefined ? undefined : `${words.person} · ${filters.person.slice(0, 8)}`],
+    ["visit", filters.visit === undefined ? undefined : `${words.visit} · ${filters.visit.slice(0, 8)}`],
+    ["actor_kind", filters.actor_kind === undefined ? undefined : `${words.kind} · ${words.kinds[filters.actor_kind]}`],
+    ["actor", filters.actor === undefined ? undefined : `${words.kind} · ${filters.actor}`],
+    ["action", filters.action === undefined ? undefined : `${words.action} · ${activity.actions[filters.action]}`],
+    ["from", filters.from === undefined ? undefined : `${words.from} · ${filters.from}`],
+    ["to", filters.to === undefined ? undefined : `${words.to} · ${filters.to}`],
+    ["reads", filters.reads === undefined ? undefined : words.reads],
+  ];
+  return said.flatMap(([name, text]) => (text === undefined ? [] : [{ name, words: text }]));
+}

@@ -24,6 +24,7 @@ import { CloseVisit } from "./CloseVisit.tsx";
 import { LostReason } from "./LostReason.tsx";
 import { GivenAddressForm } from "./GivenAddress.tsx";
 import { VisitCode } from "./VisitCode.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 
 type SavedAddress = NonNullable<ClientRecord["address"]>;
 
@@ -83,25 +84,25 @@ function Address({
   const opener = useRef<HTMLButtonElement>(null);
   const mayRecord = useAccess().mayCall("POST /api/clients/{id}/address");
 
-  if (recording) {
-    return (
-      <GivenAddressForm
-        clientId={clientId}
-        onSaved={(given) => {
-          onAddress(given);
-          setRecording(false);
-          setSaved(true);
-          requestAnimationFrame(() => opener.current?.focus());
-        }}
-        onCancel={() => {
-          setRecording(false);
-          requestAnimationFrame(() => opener.current?.focus());
-        }}
-      />
-    );
-  }
+  const stopRecording = () => {
+    setRecording(false);
+    requestAnimationFrame(() => opener.current?.focus());
+  };
   return (
     <div>
+      {recording && (
+        <FormDrawer title={copy.given.title} onClose={stopRecording}>
+          <GivenAddressForm
+            clientId={clientId}
+            onSaved={(given) => {
+              onAddress(given);
+              setSaved(true);
+              stopRecording();
+            }}
+            onCancel={stopRecording}
+          />
+        </FormDrawer>
+      )}
       {address === null ? <p className={styles.note}>{copy.noAddress}</p> : <AddressRows address={address} />}
       {saved && (
         <p className={styles.done} role="status">

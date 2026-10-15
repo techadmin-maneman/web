@@ -205,7 +205,6 @@ export function EventsPanel({ calendar }: { calendar: Calendar }) {
   const mayRemove = access.mayCall("POST /api/demand-events/{id}/remove");
   return (
     <Panel titleId="plan-events" title={copy.title}>
-      <Note>{copy.note}</Note>
       {demand.events.length === 0 ? (
         <Note>{copy.none}</Note>
       ) : (

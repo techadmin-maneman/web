@@ -3,7 +3,7 @@
 
 import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { Table } from "@maneman/ui/Table";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
@@ -126,7 +126,7 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
       count={cities.registrations.length}
       actions={
         access.mayCall("POST /api/gst-registrations") && (
-          <AddInDrawer label={copy.add}>
+          <DrawerButton label={copy.add}>
             {(close) => (
               <RegistrationForm
                 onSaved={() => {
@@ -135,7 +135,7 @@ export function Registrations({ cities, onSaved }: { cities: Cities; onSaved: ()
                 }}
               />
             )}
-          </AddInDrawer>
+          </DrawerButton>
         )
       }
     >

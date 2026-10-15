@@ -2,7 +2,7 @@
 // would refuse is left out, and the API is asked with only what is set.
 
 import { describe, expect, it } from "vitest";
-import { askedOf, filtersOf } from "../../../../../apps/ops/src/activity/filters.ts";
+import { appliedOf, askedOf, filtersOf } from "../../../../../apps/ops/src/activity/filters.ts";
 import { activityPath } from "../../../../../apps/ops/src/route.ts";
 
 const CLIENT = "22000000-0000-4000-8000-000000000001";
@@ -41,5 +41,15 @@ describe("Activity’s filters", () => {
 
   it("ask the API with only what is set, and the page to go on from", () => {
     expect(askedOf({ person: CLIENT, actor: undefined }, "MTIw")).toEqual({ person: CLIENT, cursor: "MTIw" });
+  });
+
+  it("name each filter set, as its chip says it, in the order the form asks for them", () => {
+    expect(appliedOf({ to: "2026-10-07", actor_kind: "technician", person: CLIENT, reads: "include" })).toEqual([
+      { name: "person", words: `Client · ${CLIENT.slice(0, 8)}` },
+      { name: "actor_kind", words: "Who · Technician" },
+      { name: "to", words: "To · 2026-10-07" },
+      { name: "reads", words: "Show pages opened too" },
+    ]);
+    expect(appliedOf({})).toEqual([]);
   });
 });

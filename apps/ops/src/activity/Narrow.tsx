@@ -105,7 +105,6 @@ export function Narrow({ filters, onApply }: { filters: Filters; onApply: (filte
       <DateBox label={copy.from} {...box("from")} />
       <DateBox label={copy.to} {...box("to")} />
       <Checkbox
-        className={styles.reads}
         label={copy.reads}
         checked={draft.reads === "include"}
         onChange={(event) => {

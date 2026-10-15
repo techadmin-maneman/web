@@ -4,7 +4,7 @@
 import { CheckLine } from "../components/CheckPanel.tsx";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Panel } from "@maneman/ui/Panel";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 import { Table } from "@maneman/ui/Table";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
@@ -238,7 +238,7 @@ export function CityPrices({ cities, onSaved }: { cities: Cities; onSaved: () =>
       count={cities.prices.length}
       actions={
         mayAdd && (
-          <AddInDrawer label={copy.add}>
+          <DrawerButton label={copy.add}>
             {(close) => (
               <PriceForm
                 cities={cities}
@@ -248,7 +248,7 @@ export function CityPrices({ cities, onSaved }: { cities: Cities; onSaved: () =>
                 }}
               />
             )}
-          </AddInDrawer>
+          </DrawerButton>
         )
       }
     >

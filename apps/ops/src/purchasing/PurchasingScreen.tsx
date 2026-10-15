@@ -26,7 +26,7 @@ import type { Orders } from "./types.ts";
 import { RowHead } from "../components/RowHead.tsx";
 import { purchasingApi } from "./purchasing-api.ts";
 import { PageActions } from "../components/Shell.tsx";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 
 const loadOrders = () => purchasingApi.orders();
 
@@ -94,7 +94,7 @@ export function PurchasingScreen() {
           )}
           {access.mayCall("POST /api/purchase-orders") && (
             <PageActions>
-              <AddInDrawer primary label={copy.draft.title}>
+              <DrawerButton primary label={copy.draft.title}>
                 {(close) => (
                   <DraftOrder
                     orders={current}
@@ -105,7 +105,7 @@ export function PurchasingScreen() {
                     }}
                   />
                 )}
-              </AddInDrawer>
+              </DrawerButton>
             </PageActions>
           )}
           {access.mayCall("POST /api/purchase-orders/letterhead") && <Letterhead orders={current} onSaved={changed} />}

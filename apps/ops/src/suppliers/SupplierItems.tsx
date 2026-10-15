@@ -17,7 +17,7 @@ import { ActionCheck, SettingForm, sentOf, useSteps } from "../settings/index.ts
 import type { Supplier, Suppliers } from "./SupplierForm.tsx";
 import { RowHead } from "../components/RowHead.tsx";
 import { suppliersApi } from "./suppliers-api.ts";
-import { AddInDrawer } from "../components/AddInDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 
 const copy = settings.suppliers;
 const words = copy.item;
@@ -245,7 +245,7 @@ export function SupplierItems({
       title={words.title(supplier.name)}
       actions={
         access.mayCall("POST /api/suppliers/{id}/items") && (
-          <AddInDrawer label={words.addOne} title={words.title(supplier.name)}>
+          <DrawerButton label={words.addOne} title={words.title(supplier.name)}>
             {(close) => (
               <ItemForm
                 key={supplier.id}
@@ -257,7 +257,7 @@ export function SupplierItems({
                 }}
               />
             )}
-          </AddInDrawer>
+          </DrawerButton>
         )
       }
     >

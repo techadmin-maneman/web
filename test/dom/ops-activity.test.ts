@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ActivityScreen } from "../../apps/ops/src/activity/ActivityScreen.tsx";
 import { activity } from "../../apps/ops/src/content/activity.ts";
 import { contractChecked } from "./contract-fetch.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 
 let page: HTMLDivElement;
 let root: Root;
@@ -14,9 +15,20 @@ let reads: string[];
 
 const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 10)));
 
+/** The drawer the filters are set in, opened from the row above the log. */
+const filter = () => {
+  act(() => {
+    [...document.body.querySelectorAll("button")]
+      .find((each) => each.textContent.trim() === activity.filters.filter)
+      ?.click();
+  });
+};
+
 const show = () => {
   act(() => {
-    [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === activity.filters.show)?.click();
+    [...document.body.querySelectorAll("button")]
+      .find((each) => each.textContent.trim() === activity.filters.show)
+      ?.click();
   });
 };
 
@@ -29,6 +41,8 @@ function choose(select: HTMLSelectElement | null, value: string) {
 }
 
 beforeEach(() => {
+  // The filters open in a drawer beside the page, as a modal dialog.
+  openDialogsAsJsdomCan();
   reads = [];
   vi.stubGlobal(
     "fetch",
@@ -64,10 +78,10 @@ describe("the Activity page", () => {
     await settle();
     await settle();
     expect(reads).toEqual(["?person=p-1"]);
-    expect(page.textContent).toContain(activity.empty);
+    expect(document.body.textContent).toContain(activity.empty);
 
-    const remove = page.querySelector<HTMLButtonElement>(
-      `button[aria-label="${activity.filters.remove(activity.filters.person)}"]`,
+    const remove = document.body.querySelector<HTMLButtonElement>(
+      `button[aria-label="${activity.filters.remove(`${activity.filters.person} · p-1`)}"]`,
     );
     act(() => {
       remove?.click();
@@ -83,7 +97,8 @@ describe("the Activity page", () => {
       await Promise.resolve();
     });
     await settle();
-    const who = page.querySelector<HTMLSelectElement>(`form[aria-label="${activity.filters.label}"] select`);
+    filter();
+    const who = document.body.querySelector<HTMLSelectElement>(`form[aria-label="${activity.filters.label}"] select`);
     const kind = who?.options[1]?.value ?? "";
     choose(who, kind);
     await settle();
@@ -92,6 +107,7 @@ describe("the Activity page", () => {
     show();
     await settle();
     expect(reads).toEqual(["?person=p-1", `?actor_kind=${kind}&person=p-1`]);
+    filter();
     show();
     await settle();
     expect(reads).toHaveLength(2);

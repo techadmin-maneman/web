@@ -98,7 +98,7 @@ export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next
 
   return (
     <Panel titleId="letterhead" title={copy.title}>
-      <Note>{set === null ? copy.missing : copy.intro}</Note>
+      {set === null && <Note>{copy.missing}</Note>}
       <form
         className={form.group}
         onSubmit={(event) => {

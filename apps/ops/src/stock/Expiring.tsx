@@ -30,7 +30,7 @@ export function Expiring({ stock }: { stock: Stock }) {
   const words = stockViews.expiring;
   return (
     <Panel titleId="stock-expiring" title={words.title}>
-      <Note>{words.intro(stock.expiry_warning_days)}</Note>
+      <Note>{words.within(stock.expiry_warning_days)}</Note>
       <div className={styles.scroll}>
         <Table controls>
           <thead>
