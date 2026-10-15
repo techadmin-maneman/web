@@ -31,4 +31,6 @@ export const CODE_WORDS = {
   dispatched: "Booked",
   in_progress: "Under way",
   terminated: "Closed without a visit",
+  // A booking started and let go before it was booked: a slot the app held while they chose.
+  released: "Not booked",
 } satisfies Readonly<Record<string, string>>;
