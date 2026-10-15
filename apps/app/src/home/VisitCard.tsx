@@ -70,7 +70,7 @@ function Reschedule(props: {
       </Button>
     );
   }
-  if (!me.booking.self_serve || props.changing === null) {
+  if (props.changing === null || !me.booking.self_serve_kinds.includes(props.changing.type)) {
     return (
       <ButtonLink
         variant="outlineOnInk"
@@ -122,7 +122,7 @@ function AddNote(props: { what: string; date: string; noting: NotingVisit | null
   const { me, offline } = useSession();
   const [open, setOpen] = useState(false);
   const message = messages.note(props.what, props.date);
-  const noting = me.booking.self_serve ? props.noting : null;
+  const noting = me.booking.self_serve_kinds.length > 0 ? props.noting : null;
   if (noting === null) return <NoteOnWhatsApp message={message} />;
   return (
     <>

@@ -432,12 +432,12 @@ function Consulted({
   );
 }
 
-/** Nothing booked yet: a consultation, in the app where self-serve booking is on, else on the public site. */
+/** Nothing booked yet: a consultation, in the app where the client books one themselves, else on the public site. */
 function NothingBooked({ me, offline }: { me: Me; offline: boolean }) {
   return (
     <section className={styles.nothing}>
       <h1 className={styles.nothingTitle}>{home.nothing.title}</h1>
-      {me.booking.self_serve || offline ? (
+      {me.booking.self_serve_kinds.includes("consultation") || offline ? (
         <BookButton className={styles.book} label={home.nothing.book} message={messages.book} />
       ) : (
         <ButtonLink variant="primary" size="action" className={styles.book} href={BOOKING_URL[import.meta.env.MM_ENV]}>

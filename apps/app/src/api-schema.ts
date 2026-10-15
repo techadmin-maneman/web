@@ -4409,8 +4409,10 @@ export interface components {
                 type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             } | null;
             booking: {
-                /** @description Booking in the app is on; off, the app opens WhatsApp. */
+                /** @description Booking every kind of visit in the app is on. */
                 self_serve: boolean;
+                /** @description The kinds of visit the client books, moves and cancels in the app; for any other the app opens WhatsApp. */
+                self_serve_kinds: ("consultation" | "first_fit" | "service" | "replacement")[];
                 /** @description What the client may book now. */
                 types: ("consultation" | "first_fit" | "service" | "replacement")[];
                 /** @description Every service of those kinds offered and priced now, a kind at a time, in the console's order. A first fit's are the hair systems ops offer; with none, a first fit cannot be booked yet. */

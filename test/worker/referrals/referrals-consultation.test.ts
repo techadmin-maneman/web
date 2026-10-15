@@ -217,7 +217,7 @@ describe("POST /api/r/:code/consultation", () => {
     const code = await codeOf();
     const crm = fakeQueue();
     const answer = await request(
-      site({ selfServeBooking: false }),
+      site({ selfServeBooking: false, selfServeConsultations: false }),
       `/api/r/${code}/consultation`,
       post({ ...FRIEND, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { CRM_QUEUE: crm },

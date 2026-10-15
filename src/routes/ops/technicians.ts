@@ -39,6 +39,7 @@ import { runsOver } from "../../policy/technician-work.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
+import { tellOfUncoveredCities } from "../../domain/clients/service-area.ts";
 
 const TechnicianWorkSchema = z
   .object({
@@ -317,6 +318,8 @@ export function registerOpsTechnicians(app: App): void {
 
     const visits = await deactivateTechnician(c.env.DB, id, auditOf(c, "technician.deactivate", id), c.var.deps.now());
     c.var.log.info("technician_deactivated", { technician_id: id, visits_unassigned: visits.length });
+    // The last in a city leaves it served with nobody to send: ops hear of it now, not the next morning.
+    await tellOfUncoveredCities(c.env.DB, c.var.deps);
     return c.json({ visits }, 200);
   });
 
@@ -333,6 +336,7 @@ export function registerOpsTechnicians(app: App): void {
       c.var.deps.now(),
     );
     if (reactivated === "number_in_use") return refuse(c, "number_in_use");
+    await tellOfUncoveredCities(c.env.DB, c.var.deps);
     return c.json({ active: true as const }, 200);
   });
 

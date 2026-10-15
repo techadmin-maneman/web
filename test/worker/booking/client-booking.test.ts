@@ -175,10 +175,30 @@ describe("GET /api/availability", () => {
     });
     expect(firstFit.status).toBe(200);
 
-    const off = appFor("local", fakeDependencies(), { ...LOCAL_SETTINGS, selfServeBooking: false }, "client");
+    const off = appFor(
+      "local",
+      fakeDependencies(),
+      { ...LOCAL_SETTINGS, selfServeBooking: false, selfServeConsultations: false },
+      "client",
+    );
     const answer = await request(off, "/api/availability?type=first_fit", { headers: { Cookie: lead.cookie } });
     expect(answer.status).toBe(409);
     expect((await answer.json<{ error: { code: string } }>()).error.code).toBe("ops_assisted");
+  });
+
+  // At launch with no online payment: a consultation costs nothing, so the client books it; a paid visit goes to ops.
+  it("books a consultation itself while online payment is off, and sends a paid visit to ops", async () => {
+    const lead = await client(true);
+    const free = appFor("local", fakeDependencies(), { ...LOCAL_SETTINGS, selfServeBooking: false }, "client");
+    const ask = (path: string) => request(free, path, { headers: { Cookie: lead.cookie } });
+
+    // This lead has had their consultation, so none is offered again; but the app asked, and was not sent to ops.
+    expect((await ask("/api/availability?type=consultation")).status).not.toBe(409);
+    const firstFit = await ask("/api/availability?type=first_fit&tier=standard");
+    expect(firstFit.status).toBe(409);
+    expect((await firstFit.json<{ error: { code: string } }>()).error.code).toBe("ops_assisted");
+    const me = await (await ask("/api/me")).json<{ booking: { self_serve: boolean; self_serve_kinds: string[] } }>();
+    expect(me.booking).toMatchObject({ self_serve: false, self_serve_kinds: ["consultation"] });
   });
 });
 

@@ -103,7 +103,7 @@ export interface FormRequest {
   readonly now: Date;
   /** Where the form is answered: a person made on staging with a test name is a test record. */
   readonly environment: EnvironmentName;
-  /** Clients book, and the slot is held, only while self-serve booking is on (ADR 0045). */
+  /** Clients book, and the slot is held, only while consultations are self-serve (ADR 0045). */
   readonly selfServeBooking: boolean;
   /** The number, the Turnstile token and the day's limits per number and address, the same for both pages. */
   readonly checkPerson: (mobile: string, turnstileToken: string, name: string) => Promise<Checked>;

@@ -156,6 +156,20 @@ describe("POST /api/consultation", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM people").first()).toEqual({ n: 0 });
   });
 
+  // At launch with no online payment: a consultation costs nothing, so the site books it outright all the same.
+  it("books a consultation outright while online payment is off", async () => {
+    await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
+    const answer = await request(
+      site({ selfServeBooking: false }),
+      "/api/consultation",
+      post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
+      { CRM_QUEUE: fakeQueue() },
+    );
+    expect(answer.status).toBe(201);
+    expect(await answer.json()).toMatchObject({ state: "booked", date: "2026-09-23", window: "morning" });
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM appointments").first()).toEqual({ n: 1 });
+  });
+
   // Ops fix the hour on WhatsApp while the flag is off, so the day the visitor
   // asked for is recorded for them instead of being refused
   // (docs/decisions/0060-an-invited-friend-reaches-ops-and-the-crm.md).
@@ -163,7 +177,7 @@ describe("POST /api/consultation", () => {
     await pincode("122018", "Gurgaon South City II", "Gurgaon", true);
     const crm = fakeQueue();
     const answer = await request(
-      site({ selfServeBooking: false }),
+      site({ selfServeBooking: false, selfServeConsultations: false }),
       "/api/consultation",
       post({ ...VISITOR, pincode: "122018", date: "2026-09-23", window: "morning", consent: true, address: ADDRESS }),
       { CRM_QUEUE: crm },

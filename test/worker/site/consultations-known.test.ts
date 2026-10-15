@@ -266,7 +266,10 @@ describe("a number the site already knows", () => {
 
   it("is answered requested while self-serve booking is off, as a new number is, and leaves ops nothing", async () => {
     await fittedClient();
-    const answer = await book({ date: "2026-09-23", window: "morning" }, { selfServeBooking: false });
+    const answer = await book(
+      { date: "2026-09-23", window: "morning" },
+      { selfServeBooking: false, selfServeConsultations: false },
+    );
     expect(await answer.json()).toEqual({ ...BOOKED_MORNING, state: "requested" });
     expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
     expect(await told()).toEqual(["book_in_app"]);

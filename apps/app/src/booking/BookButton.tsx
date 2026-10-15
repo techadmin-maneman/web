@@ -75,7 +75,8 @@ export function BookButton({
       </Button>
     );
   }
-  if (!me.booking.self_serve || kind === undefined) {
+  // A kind the client may not book themselves goes to ops on WhatsApp: every paid visit, while online payment is off.
+  if (kind === undefined || !me.booking.self_serve_kinds.includes(kind)) {
     return quiet ? (
       <TextLink tone="brass" className={className} href={whatsappWith(message)}>
         {label}

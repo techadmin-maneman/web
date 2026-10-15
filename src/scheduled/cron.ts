@@ -72,6 +72,7 @@ import { checkWhatsAppBridge } from "./whatsapp-bridge.ts";
 import { startOrFollow } from "../workflows/steps.ts";
 import { type MessagingMessage } from "../config/pipeline.ts";
 import { tellOfUnassignedToday } from "../domain/dispatch/unassigned.ts";
+import { tellOfUncoveredCities } from "../domain/clients/service-area.ts";
 import { queueFollowUps } from "../domain/visits/follow-ups.ts";
 import { cityReminderHours, type ReminderHours } from "../domain/cities/city-rules.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
@@ -140,6 +141,7 @@ async function missedJobsJob({ env, deps, config }: CronContext): Promise<void> 
   }
 }
 const unassignedToday = ({ env, deps }: CronContext) => tellOfUnassignedToday(env.DB, deps);
+const uncoveredCities = ({ env, deps }: CronContext) => tellOfUncoveredCities(env.DB, deps);
 
 /** What a run is given; the budget and the figures ops set are the run's own, shared by its jobs. */
 export type CronRun = Omit<CronContext, "budget" | "inputs" | "slot"> & {
@@ -421,6 +423,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "dispatch_utilisation", needs: "nothing", every: 60, at: 43, run: utilisationJob },
   // A visit today with no technician, told each hour until someone is sent (src/domain/dispatch/unassigned.ts).
   { name: "unassigned_today", needs: "nothing", every: 60, at: 46, run: unassignedToday },
+  // A city served with nobody to send, each morning; a switch-off asks at once (src/domain/clients/service-area.ts).
+  { name: "uncovered_cities", needs: "nothing", every: 60, at: 52, slot: { hour: 9 }, run: uncoveredCities },
   { name: "low_stock", needs: "nothing", every: 60, at: 50, run: lowStockJob },
   // The next service falling due with nothing booked (docs/decisions/0086-the-next-visit-is-offered.md).
   { name: "next_service_reminders", needs: "messaging", every: 60, at: 44, run: nextServiceRemindersJob },

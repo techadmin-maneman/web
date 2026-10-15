@@ -6271,7 +6271,20 @@ Request body:
       "properties": {
         "self_serve": {
           "type": "boolean",
-          "description": "Booking in the app is on; off, the app opens WhatsApp."
+          "description": "Booking every kind of visit in the app is on."
+        },
+        "self_serve_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "consultation",
+              "first_fit",
+              "service",
+              "replacement"
+            ]
+          },
+          "description": "The kinds of visit the client books, moves and cancels in the app; for any other the app opens WhatsApp."
         },
         "types": {
           "type": "array",
@@ -6357,6 +6370,7 @@ Request body:
       },
       "required": [
         "self_serve",
+        "self_serve_kinds",
         "types",
         "services",
         "next"

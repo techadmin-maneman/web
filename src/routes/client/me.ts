@@ -61,6 +61,7 @@ import { creditsBody, CreditsSchema } from "./refer.ts";
 import { wornProduct } from "../../domain/inventory/stock-gap.ts";
 import { replacementFor } from "../../policy/services.ts";
 import { cityOfPerson } from "../../domain/cities/cities.ts";
+import { selfServeKinds } from "../../policy/self-serve.ts";
 
 const MeSchema = z
   .object({
@@ -198,7 +199,11 @@ const MeSchema = z
       }),
     booking: z
       .object({
-        self_serve: z.boolean().openapi({ description: "Booking in the app is on; off, the app opens WhatsApp." }),
+        self_serve: z.boolean().openapi({ description: "Booking every kind of visit in the app is on." }),
+        self_serve_kinds: z.array(z.enum(VISIT_TYPES)).openapi({
+          description:
+            "The kinds of visit the client books, moves and cancels in the app; for any other the app opens WhatsApp.",
+        }),
         types: z.array(z.enum(VISIT_TYPES)).openapi({ description: "What the client may book now." }),
         services: z
           .array(
@@ -431,7 +436,13 @@ export function registerClientMe(app: App): void {
         credits: credits.visits > 0 ? creditsBody(credits) : null,
         prompt,
         invoice,
-        booking: { self_serve: c.var.config.settings.selfServeBooking, types, services: offered, next: offer },
+        booking: {
+          self_serve: c.var.config.settings.selfServeBooking,
+          self_serve_kinds: [...selfServeKinds(c.var.config.settings)],
+          types,
+          services: offered,
+          next: offer,
+        },
         referral_reward: home.referralReward,
         pending_invite: pendingInvite === null ? null : { referrer_first_name: pendingInvite.referrerFirstName },
       },
