@@ -31,13 +31,13 @@ After changing the public site, rebuild it with `npm run build:site -- --env loc
 
 Locally nothing happens by itself that, on staging, another system does. Each has a command:
 
-| On staging                                  | Locally                                                                                        |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| On staging                                   | Locally                                                                                        |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | The cron, every minute, each job at its pace | `npm run tick`: one run of every job (`wrangler dev --test-scheduled`)                         |
-| Razorpay's webhook after a client pays      | `npm run pay:local`: pays the last booking held, by the same signed webhook                    |
-| A technician closing a visit on their phone | `npm run close:local`: lists open visits; `npm run close:local -- <id> [--partial]` closes one |
-| WhatsApp messages, login codes              | the stub: nothing is sent, and every code is `246810`                                          |
-| The address search (Google)                 | the stub: a few made-up suggestions                                                            |
+| Razorpay's webhook after a client pays       | `npm run pay:local`: pays the last booking held, by the same signed webhook                    |
+| A technician closing a visit on their phone  | `npm run close:local`: lists open visits; `npm run close:local -- <id> [--partial]` closes one |
+| WhatsApp messages, login codes               | the stub: nothing is sent, and every code is `246810`                                          |
+| The address search (Google)                  | the stub: a few made-up suggestions                                                            |
 
 `close:local` calls `POST /api/dev/appointments/:id/close`, which exists only where `DEV_ROUTES=on`. `dev:all` sets it; the startup guard refuses it anywhere but locally, so it can never be reached on a deployed Worker.
 
