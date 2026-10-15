@@ -7,7 +7,15 @@
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { CARD_HEIGHT, CARD_WIDTH, HALF_WIDTH, LOCKUP, RULE_WIDTH } from "../../../apps/app/src/refer/card-layout.ts";
+import {
+  CARD_HEIGHT,
+  CARD_WIDTH,
+  HALF_WIDTH,
+  LOCKUP,
+  lockupPlaces,
+  RULE_WIDTH,
+  type Place,
+} from "../../../apps/app/src/refer/card-layout.ts";
 import { CARD_OVERLAY_PNG } from "../../../src/config/card-overlay.ts";
 
 const BOARD = readFileSync("design/phase2/Referral and Waitlist.dc.html", "utf8");
@@ -64,9 +72,15 @@ describe("the overlay the API draws a client’s card with", () => {
       Array.from({ length: width * height }, (_, index) =>
         pixel(left + (index % width), top + Math.floor(index / width)),
       ).some((rgba) => near(rgba, hex) && rgba[3] === 255);
+    // The whole pixels inside a place, whose wordmark is centred on the mark's line to a fraction of one.
+    const drawnIn = (place: Place, hex: string) =>
+      anyIn(Math.ceil(place.left), Math.ceil(place.top), Math.floor(place.width), Math.floor(place.height), hex);
+    const places = lockupPlaces();
     // 1200 − 40 − (44 + 18 + 140) = 958 across, and 630 − 34 − 48 = 548 down; the wordmark centred on the mark's line.
-    expect(anyIn(958, 548, 44, 48, COLOURS.gilt)).toBe(true);
-    expect(anyIn(1020, 560, 140, 23, COLOURS.paper)).toBe(true);
+    expect(places.mark).toMatchObject({ left: 958, top: 548, width: 44, height: 48 });
+    expect(places.wordmark).toMatchObject({ left: 1020, width: 140 });
+    expect(drawnIn(places.mark, COLOURS.gilt)).toBe(true);
+    expect(drawnIn(places.wordmark, COLOURS.paper)).toBe(true);
     expect(LOCKUP).toMatchObject({ right: 40, bottom: 34, gap: 18 });
   });
 });
