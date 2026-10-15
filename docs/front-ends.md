@@ -34,7 +34,7 @@ Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` se
 
 - **Tokens only.** No stylesheet writes a colour, length, duration, curve, weight or leading of its own; `test/node/site/site-tokens.test.ts` and `test/node/apps/app/app-tokens.test.ts` fail on one.
 - **No copies.** An app that keeps its own icon, mark, router, loader, tap guard or error boundary, hides words its own way, formats rupees or adds India's offset fails a test. What is shared is written once, so a fix reaches every app.
-- **Each app brings its own React.** `packages/ui` imports React without installing it, and each app's `vite.config.ts` dedupes it: the repository's own React 18 is there for the fidelity runs.
+- **One React 19.** `packages/ui` takes React as a peer, and each app's `vite.config.ts` dedupes it; the fidelity harness keeps React 18 in its own workspace (`tools/fidelity/`), for the design exports' UMD build.
 
 ## Inside an app
 

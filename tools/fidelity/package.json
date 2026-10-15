@@ -1,0 +1,10 @@
+{
+  "name": "@maneman/fidelity-harness",
+  "private": true,
+  "version": "0.0.0",
+  "description": "React 18 for the fidelity harness alone: the design exports load its UMD build, which React 19 no longer ships (scripts/lib/fidelity.ts). The apps use their own React 19.",
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}

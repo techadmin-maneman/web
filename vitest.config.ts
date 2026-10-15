@@ -1,4 +1,4 @@
-import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-pool-workers";
+import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 import { RULES_ALIAS } from "./scripts/build/rules-alias.ts";
 import { StalledFiles } from "./test/stalled-files.ts";
@@ -15,18 +15,13 @@ export const NODE_PROJECT = {
   },
 };
 
-/**
- * The apps' components and packages/ui's, on the React 19 they ship with: from packages/ui, React would otherwise
- * resolve to the repository root's React 18, as apps/app/vite.config.ts says.
- */
+/** The apps' components and packages/ui's, on the one React 19 the repository installs. */
 export const DOM_PROJECT = {
   // The apps' code under test is built for the local environment, as the browser tests' builds are.
   define: { "import.meta.env.MM_ENV": JSON.stringify("local") },
   resolve: {
     alias: {
       ...RULES_ALIAS,
-      react: `${import.meta.dirname}/apps/app/node_modules/react`,
-      "react-dom": `${import.meta.dirname}/apps/app/node_modules/react-dom`,
     },
   },
   test: {

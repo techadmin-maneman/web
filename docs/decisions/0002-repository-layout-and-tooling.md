@@ -17,7 +17,7 @@ The prompt fixes two Workers (`mm-api`, `mm-site`), a `migrations/` directory, `
 **Versions** (all exact, lockfile committed):
 
 - TypeScript 6.0.3. TypeScript 7 (the native port) is current, but `typescript-eslint` 8.70 supports `<6.1.0`.
-- vitest 4.1.11. `@cloudflare/vitest-pool-workers` 0.22.0 requires `^4.1.0`; vitest 5 is out.
+- vitest 4.1.11. `@cloudflare/vitest-plugin` (once `@cloudflare/vitest-pool-workers`) requires `^4.1.0`; vitest 5 is out.
 - `compatibility_date` is 2026-08-15, the date of the oldest workerd in the toolchain (the one the test pool bundles), so tests and deployments run with the same runtime semantics.
 - `sharp` is overridden to 0.35.4: the test pool's nested miniflare pins 0.35.2, which carries GHSA-rgj7-g3m4-5g8c. The top-level wrangler already uses 0.35.4.
 - npm 11 blocks install scripts unless approved; `allowScripts` approves exactly `esbuild` and `workerd`.
