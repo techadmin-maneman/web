@@ -18,4 +18,4 @@ Stock arrives as deliveries recorded when they land (ADR 0087), with no record o
 ## Consequences
 
 - Purchase orders, receipts with a quality check, bills to Books and supplier claims build on suppliers. No price is kept anywhere but here and on the documents that copy it.
-- Tests: `test/worker/ops/suppliers.test.ts`, `e2e/ops/suppliers.e2e.ts`.
+- Tests: `test/worker/purchasing/suppliers.test.ts`, `e2e/ops/suppliers.e2e.ts`.

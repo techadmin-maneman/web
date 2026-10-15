@@ -21,12 +21,12 @@ async function open(page: Page, decision = json({ state: "approved" }), path = "
     [DECIDE]: decision,
   });
   await page.goto(path);
-  await expect(page.getByRole("heading", { name: "Held for review" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: opsCopy.referrals.queue.title })).toBeVisible();
 }
 
 test("lists every held grant with the rule it met, and counts them", async ({ page }) => {
   await open(page);
-  const queue = page.getByRole("region", { name: "Held for review" });
+  const queue = page.getByRole("region", { name: opsCopy.referrals.queue.title });
   await expect(queue.getByRole("listitem").filter({ hasText: "→" })).toHaveCount(3);
   await expect(queue.getByText(FIRST)).toBeVisible();
   await expect(queue.getByText(opsCopy.referrals.queue.signals.shared_address)).toBeVisible();
@@ -37,7 +37,7 @@ test("lists every held grant with the rule it met, and counts them", async ({ pa
 // The design writes how long a grant has waited; the queue once wrote the day of the first fit.
 test("says how long each grant has been held, as the board writes it", async ({ page }) => {
   await open(page);
-  const queue = page.getByRole("region", { name: "Held for review" });
+  const queue = page.getByRole("region", { name: opsCopy.referrals.queue.title });
   await expect(queue.getByRole("listitem").filter({ hasText: FIRST })).toContainText("3 days held");
   await expect(queue.getByRole("listitem").filter({ hasText: "Ashish Gill" })).toContainText("1 day held");
   await expect(queue.getByRole("listitem").filter({ hasText: "Karan Bose" })).toContainText("5 hours held");
@@ -66,13 +66,13 @@ test("asks why before it approves one, and sends the reason with the approval", 
   expect((await sent).postDataJSON()).toEqual({ decision: "approve", reason: "Father and son, two households" });
   await expect(page.getByText(FIRST)).toBeHidden();
   // The row is gone, so the keyboard goes to the queue's heading and not to the top of the page.
-  await expect(page.getByRole("heading", { name: "Held for review" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: opsCopy.referrals.queue.title })).toBeFocused();
 });
 
 test("asks why before it rejects one, and will not send an empty reason", async ({ page }) => {
   await open(page, json({ state: "rejected" }));
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
-  await grant.getByRole("button", { name: "Reject", exact: true }).click();
+  await grant.getByRole("button", { name: opsCopy.referrals.queue.reject, exact: true }).click();
 
   const confirm = grant.getByRole("button", { name: opsCopy.referrals.queue.reason.confirm.reject });
   await expect(confirm).toBeDisabled();
@@ -86,9 +86,9 @@ test("asks why before it rejects one, and will not send an empty reason", async 
 test("hands the keyboard back to the button that asked when the reason is not given", async ({ page }) => {
   await open(page);
   const grant = page.getByRole("listitem").filter({ hasText: FIRST });
-  await grant.getByRole("button", { name: "Reject", exact: true }).click();
-  await grant.getByRole("button", { name: "Cancel" }).click();
-  await expect(grant.getByRole("button", { name: "Reject", exact: true })).toBeFocused();
+  await grant.getByRole("button", { name: opsCopy.referrals.queue.reject, exact: true }).click();
+  await grant.getByRole("button", { name: opsCopy.referrals.queue.reason.cancel }).click();
+  await expect(grant.getByRole("button", { name: opsCopy.referrals.queue.reject, exact: true })).toBeFocused();
 });
 
 test("says so when someone else has decided the grant already", async ({ page }) => {
@@ -128,7 +128,7 @@ test("shows every referrer’s figures, the busiest first, as the route orders t
     "href",
     `/clients/${REFERRERS.referrers[0]?.person_id ?? ""}/referrals`,
   );
-  await expect(page.getByRole("button", { name: "Show more" })).toBeHidden();
+  await expect(page.getByRole("button", { name: opsCopy.referrals.table.more })).toBeHidden();
 });
 
 test("reads the referrers a page at a time", async ({ page }) => {
@@ -158,11 +158,11 @@ test("reads the referrers a page at a time", async ({ page }) => {
   await page.goto("/referrals");
 
   const asked = page.waitForRequest((request) => request.url().includes("/api/referrers?cursor=NA"));
-  await page.getByRole("button", { name: "Show more" }).click();
+  await page.getByRole("button", { name: opsCopy.referrals.table.more }).click();
   await asked;
   await expect(page.getByRole("row").filter({ hasText: "Nikhil Arora" })).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: "Karan Bose" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Show more" })).toBeHidden();
+  await expect(page.getByRole("button", { name: opsCopy.referrals.table.more })).toBeHidden();
 });
 
 test("says nothing is held when the queue is empty", async ({ page }) => {
@@ -178,7 +178,7 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/referrals/held": json(HELD), "GET /api/referrers": json(REFERRERS) });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: opsCopy.states.retry }).click();
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
@@ -189,7 +189,7 @@ test("meets WCAG 2.2 AA with a queue, and with a rejection open", async ({ page 
   await page
     .getByRole("listitem")
     .filter({ hasText: FIRST })
-    .getByRole("button", { name: "Reject", exact: true })
+    .getByRole("button", { name: opsCopy.referrals.queue.reject, exact: true })
     .click();
   expect(await axeViolations(page)).toEqual([]);
 });

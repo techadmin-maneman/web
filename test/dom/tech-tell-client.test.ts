@@ -7,6 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Job } from "../../apps/tech/src/api.ts";
 import { job as copy } from "../../apps/tech/src/content.ts";
+import { answered } from "./render-hook.ts";
 
 const queued: { kind: string; jobId: string; body: unknown }[] = [];
 
@@ -53,7 +54,7 @@ const draw = (job: Job) => {
 const press = async (label: string) => {
   await act(async () => {
     [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await answered();
   });
 };
 

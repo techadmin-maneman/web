@@ -10,17 +10,18 @@ import { axeViolations } from "../a11y.ts";
 import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { LOCAL_PRICES, PRICE } from "../prices.ts";
 
 type Dispute = "open" | "refunded" | "upheld" | null;
 
 /**
- * The first fit as a no-show ops charged Rs. 4,000, with its dispute where it stands, and when the days to dispute it
+ * The first fit as a no-show ops charged its late fee, with its dispute where it stands, and when the days to dispute it
  * ended, once they have.
  */
 async function charged(page: Page, dispute: Dispute, closedAt: string | null = null): Promise<string> {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   const path = `/api/visits/${client.firstFit.id}`;
   // Read by the page, whose app.localhost only the browser resolves.
   const visit = await page.evaluate(async (url) => (await fetch(url)).json() as Promise<object>, path);
@@ -30,7 +31,7 @@ async function charged(page: Page, dispute: Dispute, closedAt: string | null = n
     no_show: {
       decision: "charged",
       waited_minutes: 16,
-      charge: { kept: 400_000, credit_spent: false },
+      charge: { kept: LOCAL_PRICES.lateFeeFirstFit, credit_spent: false },
       dispute,
       disputable: dispute === null && closedAt === null,
       dispute_closed_at: closedAt,
@@ -45,8 +46,8 @@ async function charged(page: Page, dispute: Dispute, closedAt: string | null = n
 test("says what the charge kept, and offers its dispute", async ({ page }) => {
   await charged(page, null);
   await expect(page.getByText("We came and waited 16 minutes, but no one was home.")).toBeVisible();
-  await expect(page.getByText("Charged: we kept Rs. 4,000 of what you paid.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Dispute this charge" })).toBeVisible();
+  await expect(page.getByText(appCopy.visits.detail.noShow.kept(PRICE.lateFeeFirstFit))).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.dispute.title })).toBeVisible();
 });
 
 test("sends the dispute with the client’s words, and says it is with us", async ({ page }) => {
@@ -55,12 +56,12 @@ test("sends the dispute with the client’s words, and says it is with us", asyn
   assertInContract("client", "POST", disputed, 201, { state: "open" });
   await page.route(`**${disputed}`, (route) => route.fulfill({ status: 201, json: { state: "open" } }));
 
-  await page.getByRole("button", { name: "Dispute this charge" }).click();
-  const sheet = page.getByRole("dialog", { name: "Dispute this charge" });
-  await expect(sheet.getByRole("button", { name: "Send" })).toBeDisabled();
+  await page.getByRole("button", { name: appCopy.dispute.title }).click();
+  const sheet = page.getByRole("dialog", { name: appCopy.dispute.title });
+  await expect(sheet.getByRole("button", { name: appCopy.dispute.send })).toBeDisabled();
   await sheet.getByLabel(appCopy.dispute.label).fill("I was home all morning. Nobody rang the bell.");
   const sent = page.waitForRequest((request) => request.url().endsWith(disputed) && request.method() === "POST");
-  await sheet.getByRole("button", { name: "Send" }).click();
+  await sheet.getByRole("button", { name: appCopy.dispute.send }).click();
   expect((await sent).postDataJSON()).toEqual({ reason: "I was home all morning. Nobody rang the bell." });
   // The sheet is named by its heading, which now says the dispute is with us.
   await expect(page.getByRole("dialog").getByRole("status")).toContainText("Dispute received.");
@@ -73,10 +74,10 @@ test("says the days to dispute have passed, when they pass while the sheet is op
   const closed = { error: { code: "dispute_window_closed", request_id: "r-1" } };
   assertInContract("client", "POST", disputed, 409, closed);
   await page.route(`**${disputed}`, (route) => route.fulfill({ status: 409, json: closed }));
-  await page.getByRole("button", { name: "Dispute this charge" }).click();
-  const sheet = page.getByRole("dialog", { name: "Dispute this charge" });
+  await page.getByRole("button", { name: appCopy.dispute.title }).click();
+  const sheet = page.getByRole("dialog", { name: appCopy.dispute.title });
   await sheet.getByLabel(appCopy.dispute.label).fill("I was home all morning.");
-  await sheet.getByRole("button", { name: "Send" }).click();
+  await sheet.getByRole("button", { name: appCopy.dispute.send }).click();
   await expect(page.getByRole("dialog").getByRole("status")).toContainText(
     "The time to dispute this charge has passed.",
   );
@@ -86,18 +87,18 @@ test("says the days to dispute have passed, when they pass while the sheet is op
 test("says when the days to dispute the charge ended, and offers no dispute", async ({ page }) => {
   await charged(page, null, "2026-09-17T09:30:00.000Z");
   await expect(page.getByText("The days to dispute this charge ended on Thu 17 Sep.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Dispute this charge" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.visits.detail.noShow.dispute })).toHaveCount(0);
 });
 
 test("says a dispute is being looked at, and offers no second one", async ({ page }) => {
   await charged(page, "open");
   await expect(page.getByText(appCopy.visits.detail.noShow.disputed.open)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Dispute this charge" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.visits.detail.noShow.dispute })).toHaveCount(0);
 });
 
 test("says how ops ruled on the dispute", async ({ page }) => {
   await charged(page, "upheld");
-  await expect(page.getByText("Charged: we kept Rs. 4,000 of what you paid.")).toBeVisible();
+  await expect(page.getByText(appCopy.visits.detail.noShow.kept(PRICE.lateFeeFirstFit))).toBeVisible();
   await expect(page.getByText(appCopy.visits.detail.noShow.disputed.upheld)).toBeVisible();
 });
 
@@ -105,15 +106,15 @@ test("says how ops ruled on the dispute", async ({ page }) => {
 test("says only that the charge was refunded, once ops refund it", async ({ page }) => {
   await charged(page, "refunded");
   await expect(page.getByText(appCopy.visits.detail.noShow.disputed.refunded)).toBeVisible();
-  await expect(page.getByText("Charged: we kept Rs. 4,000 of what you paid.")).toHaveCount(0);
+  await expect(page.getByText(appCopy.visits.detail.noShow.kept(PRICE.lateFeeFirstFit))).toHaveCount(0);
 });
 
 test("meets WCAG 2.2 AA with the charge, and with its dispute open", async ({ page }) => {
   await charged(page, null);
-  await expect(page.getByRole("button", { name: "Dispute this charge" })).toBeVisible();
+  await expect(page.getByRole("button", { name: appCopy.visits.detail.noShow.dispute })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("button", { name: "Dispute this charge" }).click();
-  await expect(page.getByRole("dialog", { name: "Dispute this charge" })).toBeVisible();
+  await page.getByRole("button", { name: appCopy.visits.detail.noShow.dispute }).click();
+  await expect(page.getByRole("dialog", { name: appCopy.visits.detail.noShow.dispute })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

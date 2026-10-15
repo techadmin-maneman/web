@@ -26,7 +26,7 @@ test("Photos shows a booked client’s before photo beside its look, each kept, 
   const madeOn = indiaDate(client.createdAt);
   const date = fullDate(madeOn);
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
   await tab(page, "Photos").click();
 
   const tryOn = page.getByRole("region", { name: date });
@@ -44,7 +44,7 @@ test("Photos shows a booked client’s before photo beside its look, each kept, 
   ).toBeVisible();
   // No visit has photographs yet: the design's lines, beneath the try-on.
   await expect(page.getByText("Your photos begin at your first visit.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Compare" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: appCopy.titles.compare })).toHaveCount(0);
 
   await look.click();
   const sheet = page.getByRole("dialog", { name: `Your look · ${date}` });
@@ -53,7 +53,7 @@ test("Photos shows a booked client’s before photo beside its look, each kept, 
   await sheet.getByRole("link", { name: appCopy.photos.download }).click();
   // The file's own type names its extension.
   expect((await download).suggestedFilename()).toBe(`mane-man-${madeOn}-try-on-look.jpg`);
-  await sheet.getByRole("button", { name: "Close" }).click();
+  await sheet.getByRole("button", { name: appCopy.booking.close }).click();
   await expect(sheet).toBeHidden();
 
   await photo.click();
@@ -63,7 +63,7 @@ test("Photos shows a booked client’s before photo beside its look, each kept, 
 
 test("the tab meets WCAG 2.2 AA with a try-on above the empty state", async ({ page }) => {
   await logIn(page, tryOnClient().mobile);
-  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
   await tab(page, "Photos").click();
   await expect(page.getByText(appCopy.photos.tryOn.title)).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);

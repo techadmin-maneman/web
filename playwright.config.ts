@@ -33,7 +33,7 @@ export default defineConfig({
   workers: local ? undefined : 3,
   timeout: local ? 30_000 : 60_000,
   expect: { timeout: local ? 5_000 : 15_000 },
-  reporter: local ? "list" : [["list"], ["github"]],
+  reporter: local ? "list" : [["list"], ["github"], ["./e2e/flaky-reporter.ts"]],
   use: { baseURL: `http://127.0.0.1:${String(PORTS.site)}`, trace: "retain-on-failure" },
   webServer: [
     {

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { broken, shell } from "../../apps/ops/src/content.ts";
 import { Shell } from "../../apps/ops/src/components/Shell.tsx";
 import { AppBoundary, PageBoundary } from "../../apps/ops/src/states/ErrorBoundary.tsx";
+import { contractChecked } from "./contract-fetch.ts";
 
 let page: HTMLDivElement;
 let root: Root;
@@ -18,10 +19,13 @@ function Throws(): never {
 
 beforeEach(() => {
   reported = [];
-  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-    if (url === "/api/client-errors" && typeof init?.body === "string") reported.push(init.body);
-    return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init?: RequestInit) => {
+      if (url === "/api/client-errors" && typeof init?.body === "string") reported.push(init.body);
+      return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
+    }),
+  );
   // React logs each error a boundary catches; the test reads the page instead.
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   page = document.createElement("div");

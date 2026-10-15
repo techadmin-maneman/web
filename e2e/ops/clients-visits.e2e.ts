@@ -34,7 +34,7 @@ test.describe("the client’s hair profile", () => {
   test("stands above the pieces: the latest, its history, and every version with who recorded it", async ({ page }) => {
     await openClient(page, `/clients/${CLIENT.id}/pieces`, { [READ_HAIR_PROFILE]: json(HAIR_PROFILE) });
     const profile = section(page);
-    await expect(profile.getByRole("definition").first()).toHaveText("IV");
+    await expect(profile.getByRole("definition").first()).toHaveText(opsCopy.clients.profile.stages.IV);
     await expect(profile.locator("dl").first()).toContainText("Colour#2");
     await expect(profile.locator("dl").first()).toContainText("Skin conditions and allergiesDry at the crown");
     await expect(profile.getByRole("listitem")).toHaveText([
@@ -140,16 +140,20 @@ test("lists where visits go, and every visit to come and done", async ({ page })
   const coming = page.getByRole("region", { name: opsCopy.clients.visits.upcoming }).getByRole("row").nth(1);
   await expect(coming).toContainText("25 Sep 2027");
   await expect(coming).toContainText("9 am to 10:30 am");
-  await expect(coming).toContainText("Service visit");
+  await expect(coming).toContainText(opsCopy.clients.visits.types.service);
   await expect(coming).toContainText("Imran Qureshi");
   await expect(coming).toContainText("Booked · Prepaid");
-  await expect(page.getByRole("region", { name: "Done" }).getByRole("row").nth(1)).toContainText("22 Aug 2027");
+  await expect(page.getByRole("region", { name: opsCopy.clients.visits.past }).getByRole("row").nth(1)).toContainText(
+    "22 Aug 2027",
+  );
   // A visit to come opens on the dispatch board, on its week with its drawer open; a visit done does not.
   await expect(coming.getByRole("link", { name: "Show on board: the visit of 25 Sep 2027" })).toHaveAttribute(
     "href",
     "/dispatch?from=2027-09-25&visit=33000000-0000-4000-8000-000000000002",
   );
-  await expect(page.getByRole("region", { name: "Done" }).getByRole("link", { name: /Show on board/ })).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: opsCopy.clients.visits.past }).getByRole("link", { name: /Show on board/ }),
+  ).toHaveCount(0);
 });
 
 test("says so when there is no address and no visit either way", async ({ page }) => {
@@ -196,8 +200,8 @@ test("records an address the client gives on the phone, with the building found,
   await form.getByLabel(opsCopy.clients.visits.given.flat).fill("Flat 1203");
   await form.getByLabel(opsCopy.clients.visits.given.tower).fill("Tower C");
   await form.getByLabel(opsCopy.clients.visits.given.locality).fill("Sector 65");
-  await form.getByLabel("City").fill("Gurgaon");
-  await form.getByLabel("Pincode").fill("122018");
+  await form.getByLabel(opsCopy.clients.visits.given.city).fill("Gurgaon");
+  await form.getByLabel(opsCopy.clients.visits.given.pincode).fill("122018");
   expect(await axeViolations(page)).toEqual([]);
   await form.getByRole("button", { name: opsCopy.clients.visits.given.save }).click();
 
@@ -232,7 +236,7 @@ test("asks for what an address cannot do without before it sends one", async ({ 
   await expect(form.getByLabel(opsCopy.clients.visits.given.flat)).toBeFocused();
   await expect(form.getByLabel(opsCopy.clients.visits.given.flat)).toHaveAttribute("required", "");
   expect(sent).toBe(0);
-  await form.getByRole("button", { name: "Cancel" }).click();
+  await form.getByRole("button", { name: opsCopy.clients.visits.given.cancel }).click();
   await expect(page.getByRole("button", { name: opsCopy.clients.visits.given.open })).toBeFocused();
 });
 

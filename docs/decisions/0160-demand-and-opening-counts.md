@@ -19,4 +19,4 @@ Phase 1 of inventory ends with two things ops need before stock can be planned: 
 ## Consequences
 
 - A Tasks group for fits at risk, and the forecast that drafts orders from this demand, come in later phases.
-- Tests: `test/worker/ops/stock-demand.test.ts`, `e2e/ops/stock.e2e.ts`.
+- Tests: `test/worker/purchasing/stock-demand.test.ts`, `e2e/ops/stock.e2e.ts`.

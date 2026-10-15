@@ -235,7 +235,7 @@ test("says so when the list cannot be loaded, and loads it on Try again", async 
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/tasks": json(TASKS) });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: opsCopy.states.retry }).click();
   await expect(page.getByRole("link", { name: "Kunal Mehta", exact: true })).toBeVisible();
 });
 
@@ -284,7 +284,7 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
 
   await needsAHand.getByRole("button", { name: "Send again · WhatsApp message failed" }).click();
   await expect(needsAHand.getByRole("listitem")).toHaveCount(1);
-  await expect(page.getByRole("heading", { level: 2, name: "Needs a hand" })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 2, name: opsCopy.needsAHand.title })).toBeFocused();
   expect(sentAgain).toEqual(["/api/alerts/97000000-0000-4000-8000-000000000001/send-again"]);
 });
 

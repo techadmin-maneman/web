@@ -12,7 +12,7 @@ import * as techCopy from "../../apps/tech/src/content.ts";
 test("opens on the sign-in, as the Prototype draws it", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Mane Man technician");
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   await expect(page.getByRole("textbox", { name: techCopy.signIn.mobileLabel })).toBeVisible();
   await expect(page.getByRole("textbox", { name: techCopy.signIn.codeLabel })).toBeVisible();
 });
@@ -61,7 +61,7 @@ test("says why an app opened from the home screen is signed out, and nothing of 
     route.fulfill({ status: 401, json: { error: { code: "session_required", request_id: "test" } } }),
   );
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   await expect(page.getByText(/Sign in here once, then use the home-screen app/)).toHaveCount(0);
 
   await page.addInitScript(() => {
@@ -89,7 +89,7 @@ test("signs the phone out and forgets everything it held", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
   await page.getByRole("button", { name: techCopy.today.signOut }).click();
   await page.getByRole("alert").getByRole("button", { name: techCopy.today.signOut }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");
 });
@@ -107,7 +107,7 @@ test("wipes the phone and signs out when the session has ended, as a revoked dev
     }),
   );
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");
 });
@@ -122,7 +122,7 @@ test("a phone revoked while the app is open is wiped at its next call, and shows
   fake.revoked = true;
   await page.getByText("Rohit M.").first().click();
 
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   await expect(page.getByText(techCopy.session.revoked)).toBeVisible();
   await expect(page.getByText("Rohit M.")).toHaveCount(0);
   await expect(page.getByText("Gate code 4417 · visitor bay B")).toHaveCount(0);

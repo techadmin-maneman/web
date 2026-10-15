@@ -34,7 +34,7 @@ const WHATSAPP = "^https://wa\\.me/\\d+\\?text=";
 test("a fitted client reschedules and books through WhatsApp, and no booking sheet opens", async ({ page }) => {
   await selfServeOff(page);
   await logIn(page, fittedClient().mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
 
   await expect(page.getByRole("link", { name: appCopy.home.reschedule })).toHaveAttribute(
     "href",
@@ -42,7 +42,7 @@ test("a fitted client reschedules and books through WhatsApp, and no booking she
   );
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
 
-  await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.visits }).click();
   await expect(page.getByRole("link", { name: appCopy.home.next.book })).toHaveAttribute(
     "href",
     new RegExp(`${WHATSAPP}${encodeURIComponent("I’d like to book my next visit.")}`),
@@ -56,7 +56,7 @@ test("a client with nothing booked is sent to the public site to book a consulta
   await selfServeOff(page, { next_visit: null, consultation: null });
   await logIn(page, bookedNumber());
 
-  const book = page.getByRole("link", { name: "Book a free consultation" });
+  const book = page.getByRole("link", { name: appCopy.home.nothing.book });
   await expect(book).toHaveAttribute("href", /\/book$/);
-  await expect(page.getByRole("button", { name: "Book a free consultation" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: appCopy.home.nothing.book })).toHaveCount(0);
 });

@@ -5,6 +5,7 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type OpsReply } from "./fixtures.ts";
 import { quality as copy } from "../../apps/ops/src/content/quality.ts";
+import { stockPlaces } from "../../apps/ops/src/content/stock-places.ts";
 
 const BOOK = {
   recalls: [],
@@ -79,7 +80,7 @@ test("recalls a lot with why, and shows where it is and who wears it", async ({ 
   const detail = page.getByRole("region", {
     name: `${copy.number(1)} · ${copy.lotLabel("Essential 8x10", "BAD-0921")}`,
   });
-  await expect(detail).toContainText("Warehouse");
+  await expect(detail).toContainText(stockPlaces.kinds.warehouse);
   await expect(detail).toContainText("Rohit Malhotra");
   await expect(page.getByRole("region", { name: copy.failures })).toContainText(copy.rate(12.5));
   await expect(page.getByRole("region", { name: copy.risk })).toContainText(copy.moveTo("Imran Qureshi"));

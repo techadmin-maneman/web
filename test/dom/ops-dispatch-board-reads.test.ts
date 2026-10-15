@@ -6,6 +6,8 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FULL_READ_MS, LOOK_GAP_MS, POLL_MS, useBoard } from "../../apps/ops/src/dispatch/useBoard.ts";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const BOARD_PATH = "/api/dispatch";
 const VERSION_PATH = "/api/dispatch/version";
@@ -46,13 +48,16 @@ beforeEach(() => {
   serverVersion = 7;
   visibility = "visible";
   vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);
-  vi.stubGlobal("fetch", (url: string) => {
-    const path = new URL(url, "https://ops.maneman.test").pathname;
-    asked.push(path);
-    if (path === VERSION_PATH) return Promise.resolve(Response.json({ version: serverVersion }));
-    if (path === BOARD_PATH) return Promise.resolve(Response.json({ ...EMPTY_BOARD, version: serverVersion }));
-    throw new Error(`Nothing answers ${path}`);
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string) => {
+      const path = new URL(url, "https://ops.maneman.test").pathname;
+      asked.push(path);
+      if (path === VERSION_PATH) return Promise.resolve(Response.json({ version: serverVersion }));
+      if (path === BOARD_PATH) return Promise.resolve(Response.json({ ...EMPTY_BOARD, version: serverVersion }));
+      throw new Error(`Nothing answers ${path}`);
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -69,9 +74,7 @@ afterEach(() => {
 });
 
 async function settle() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 async function open(paused = false) {

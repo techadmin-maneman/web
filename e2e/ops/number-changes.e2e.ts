@@ -18,10 +18,10 @@ async function open(page: Page, decision = json({ state: "confirmed" }), path = 
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/number-changes": json(NUMBER_CHANGES), [DECIDE]: decision });
   await page.goto(path);
-  await expect(page.getByRole("heading", { level: 1, name: "Number changes" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.numberChanges.title })).toBeVisible();
 }
 
-const queue = (page: Page) => page.getByRole("region", { name: "Waiting for a decision" });
+const queue = (page: Page) => page.getByRole("region", { name: opsCopy.numberChanges.queue.title });
 
 test("shows both numbers, the day it was asked for, and that each was proven", async ({ page }) => {
   await open(page);
@@ -61,18 +61,20 @@ test("reaches the client’s record from the name", async ({ page }) => {
 test("confirms the change, and it leaves the queue", async ({ page }) => {
   await open(page);
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
-  await page.getByRole("button", { name: "Confirm" }).click();
+  await page.getByRole("button", { name: opsCopy.numberChanges.queue.confirm }).click();
   expect((await sent).postDataJSON()).toEqual({ decision: "confirm", reason: null });
   await expect(page.getByText("Rohit Malhotra")).toBeHidden();
 });
 
 test("rejects with a reason, which it will not send without", async ({ page }) => {
   await open(page, json({ state: "rejected" }));
-  await page.getByRole("button", { name: "Reject", exact: true }).click();
+  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true }).click();
   const send = page.getByRole("button", { name: opsCopy.numberChanges.queue.reason.confirm });
   await expect(send).toBeDisabled();
 
-  await page.getByRole("textbox", { name: "Reason" }).fill("The client says they did not ask.");
+  await page
+    .getByRole("textbox", { name: opsCopy.numberChanges.queue.reason.label })
+    .fill("The client says they did not ask.");
   const sent = page.waitForRequest((request) => request.url().endsWith(DECISION) && request.method() === "POST");
   await send.click();
   expect((await sent).postDataJSON()).toEqual({ decision: "reject", reason: "The client says they did not ask." });
@@ -81,21 +83,21 @@ test("rejects with a reason, which it will not send without", async ({ page }) =
 
 test("leaves the change waiting when the rejection is called off", async ({ page }) => {
   await open(page);
-  await page.getByRole("button", { name: "Reject", exact: true }).click();
-  await page.getByRole("button", { name: "Cancel" }).click();
-  await expect(page.getByRole("button", { name: "Confirm" })).toBeVisible();
+  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true }).click();
+  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reason.cancel }).click();
+  await expect(page.getByRole("button", { name: opsCopy.numberChanges.queue.confirm })).toBeVisible();
   // The keyboard goes back to the button that asked, not to the top of the page.
-  await expect(page.getByRole("button", { name: "Reject", exact: true })).toBeFocused();
+  await expect(page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true })).toBeFocused();
 });
 
 test("moves the keyboard into the reason as it opens, and to the heading once decided", async ({ page }) => {
   await open(page, json({ state: "rejected" }));
-  await page.getByRole("button", { name: "Reject", exact: true }).click();
-  const reason = page.getByRole("textbox", { name: "Reason" });
+  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true }).click();
+  const reason = page.getByRole("textbox", { name: opsCopy.numberChanges.queue.reason.label });
   await expect(reason).toBeFocused();
   await reason.fill("The client says they did not ask.");
   await page.getByRole("button", { name: opsCopy.numberChanges.queue.reason.confirm }).click();
-  await expect(page.getByRole("heading", { name: "Waiting for a decision" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: opsCopy.numberChanges.queue.title })).toBeFocused();
 });
 
 // The Tasks board links a number change to its row here.
@@ -107,14 +109,14 @@ test("brings the change a task named into view, and gives it the keyboard", asyn
 // The API answers with the code alone, so the console says whose number it is.
 test("says so when another client already holds the new number", async ({ page }) => {
   await open(page, fails(409, "number_in_use"));
-  await page.getByRole("button", { name: "Confirm" }).click();
-  await expect(page.getByRole("alert")).toContainText("Another client already has that number.");
+  await page.getByRole("button", { name: opsCopy.numberChanges.queue.confirm }).click();
+  await expect(page.getByRole("alert")).toContainText(opsCopy.numberChanges.queue.errors.number_in_use);
   await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });
 
 test("says so when someone has decided it already", async ({ page }) => {
   await open(page, fails(404, "not_found"));
-  await page.getByRole("button", { name: "Confirm" }).click();
+  await page.getByRole("button", { name: opsCopy.numberChanges.queue.confirm }).click();
   await expect(page.getByText("Already decided. Here’s the latest.")).toBeVisible();
 });
 
@@ -130,7 +132,7 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/number-changes": json(NUMBER_CHANGES) });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: opsCopy.states.retry }).click();
   await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });
 
@@ -138,6 +140,6 @@ test("meets WCAG 2.2 AA with a queue, and with a rejection open", async ({ page 
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("button", { name: "Reject", exact: true }).click();
+  await page.getByRole("button", { name: opsCopy.numberChanges.queue.reject, exact: true }).click();
   expect(await axeViolations(page)).toEqual([]);
 });

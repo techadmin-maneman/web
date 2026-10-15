@@ -20,4 +20,4 @@ Orders, receipts and claims now record each supplier's delivery (ADR 0166, 0167,
 ## Consequences
 
 - A supplier's promised lead time is read as it is listed today, not as it was when ordered.
-- Tests: `test/node/policy/supplier-scorecard.test.ts`, `test/worker/ops/supplier-claims.test.ts`, `e2e/ops/supplier-claims.e2e.ts`.
+- Tests: `test/node/policy/supplier-scorecard.test.ts`, `test/worker/purchasing/supplier-claims.test.ts`, `e2e/ops/supplier-claims.e2e.ts`.

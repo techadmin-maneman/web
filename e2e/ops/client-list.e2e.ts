@@ -51,9 +51,9 @@ test("lists every client beneath the search, narrowed by status and city, the na
   await expect(list.getByRole("row").nth(2)).toContainText(opsCopy.clients.list.noVisit);
   expect(await axeViolations(page)).toEqual([]);
 
-  await list.getByLabel("Status").selectOption({ label: "Booked" });
+  await list.getByLabel(opsCopy.clients.list.state).selectOption({ label: "Booked" });
   await expect.poll(() => asked.at(-1)).toBe("?state=lead");
-  await list.getByLabel("City").selectOption("Noida");
+  await list.getByLabel(opsCopy.clients.list.city).selectOption("Noida");
   await expect.poll(() => asked.at(-1)).toBe("?state=lead&city=Noida");
   expect(new URL(page.url()).search).toBe("?state=lead&city=Noida");
 
@@ -63,6 +63,6 @@ test("lists every client beneath the search, narrowed by status and city, the na
 
   // The address opens the list narrowed as it was: a bookmark, or a link sent to a colleague.
   await page.reload();
-  await expect(list.getByLabel("Status")).toHaveValue("lead");
-  await expect(list.getByLabel("City")).toHaveValue("Noida");
+  await expect(list.getByLabel(opsCopy.clients.list.state)).toHaveValue("lead");
+  await expect(list.getByLabel(opsCopy.clients.list.city)).toHaveValue("Noida");
 });

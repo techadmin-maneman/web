@@ -22,4 +22,4 @@ The owner's rulings, 11 October 2026:
 
 - A client may see the same technician twice in a row in a city with few technicians.
 - Ops must place a technician in a city before its first pincode goes live.
-- Tests: `test/worker/booking/client-booking-holds.test.ts`, `visit-changes-moving.test.ts`, `test/worker/ops/dispatch-landing.test.ts`, `ops-service-area.test.ts` and `test/worker/referrals/referral-cards-launch.test.ts`.
+- Tests: `test/worker/booking/client-booking-holds.test.ts`, `visit-changes-moving.test.ts`, `test/worker/dispatch/dispatch-landing.test.ts`, `ops-service-area.test.ts` and `test/worker/referrals/referral-cards-launch.test.ts`.

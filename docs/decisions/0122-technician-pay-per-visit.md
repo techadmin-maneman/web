@@ -17,4 +17,4 @@ Technicians are paid a salary and a rate for each visit, and the rate differs by
 ## Consequences
 
 - The payroll integration reads these: each technician's visits closed in a month, by kind and city, at the rate in force on each visit's day.
-- Tests: `test/worker/ops/technician-pay.test.ts`, `e2e/ops/technician-pay.e2e.ts`.
+- Tests: `test/worker/dispatch/technician-pay.test.ts`, `e2e/ops/technician-pay.e2e.ts`.

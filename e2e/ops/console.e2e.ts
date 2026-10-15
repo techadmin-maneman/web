@@ -35,7 +35,7 @@ test("opens on Tasks, with the sections under their departments, those of one jo
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.tasks.title })).toBeVisible();
   await expect(page).toHaveURL(/\/tasks$/);
 
   const department = (name: string) => navigation(page).getByRole("list", { name }).getByRole("link");
@@ -68,12 +68,15 @@ test("shows a person only the sections their access opens, and opens on the firs
   });
   await page.goto("/");
   await expect(page).toHaveURL(/\/payments$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Charges" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.noShows.title })).toBeVisible();
   await expect(navigation(page).getByRole("list")).toHaveCount(1);
-  await expectNames(navigation(page).getByRole("list", { name: "Finance" }).getByRole("link"), ["Charges", "Prices"]);
+  await expectNames(navigation(page).getByRole("list", { name: opsCopy.DEPARTMENT_NAMES.finance }).getByRole("link"), [
+    "Charges",
+    "Prices",
+  ]);
 
   await page.goto("/areas");
-  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
   await expect(page.getByText(opsCopy.shell.closed)).toBeVisible();
 });
 
@@ -85,37 +88,39 @@ test("opens the waitlist and the service area at their old addresses, as the tab
     ["/waitlist", /\/areas$/],
   ] as const) {
     await page.goto(old);
-    await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
     await expect(page).toHaveURL(now);
     await expect(
-      navigation(page).getByRole("list", { name: "Growth" }).getByRole("link", { name: "Areas" }),
+      navigation(page)
+        .getByRole("list", { name: opsCopy.DEPARTMENT_NAMES.growth })
+        .getByRole("link", { name: opsCopy.areas.title }),
     ).toHaveAttribute("aria-current", "page");
   }
-  const tabs = page.getByRole("navigation", { name: "Areas" });
-  await expect(tabs.getByRole("link")).toHaveText(["Waiting", "Served"]);
-  await expect(tabs.getByRole("link", { name: "Waiting" })).toHaveAttribute("aria-current", "page");
+  const tabs = page.getByRole("navigation", { name: opsCopy.areas.title });
+  await expect(tabs.getByRole("link")).toHaveText([opsCopy.areas.tabs.waiting, opsCopy.areas.tabs.served]);
+  await expect(tabs.getByRole("link", { name: opsCopy.areas.tabs.waiting })).toHaveAttribute("aria-current", "page");
 });
 
 // Changing section dropped the focus to the page, and nothing led past the navigation.
 test("moves the keyboard to a new page’s heading, and offers a way past the navigation", async ({ page }) => {
   await page.goto("/areas");
-  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: opsCopy.shell.skip })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("main")).toBeFocused();
 
-  await navigation(page).getByRole("link", { name: "Referrals" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Referrals" })).toBeFocused();
+  await navigation(page).getByRole("link", { name: opsCopy.referrals.title }).click();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.referrals.title })).toBeFocused();
   await page.goBack();
-  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeFocused();
 });
 
 // Every page was titled "Mane Man operations" (WCAG 2.4.2).
 test("titles each page by what it is", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Tasks · Mane Man operations");
-  await page.getByRole("link", { name: "Areas" }).click();
+  await page.getByRole("link", { name: opsCopy.areas.title }).click();
   await expect(page).toHaveTitle("Waiting · Areas · Mane Man operations");
   await page.goto("/settings/prices");
   await expect(page).toHaveTitle("Prices · Mane Man operations");
@@ -178,19 +183,19 @@ test("leaves a click that asks for a new tab to the browser", async ({ page, con
   await page.goto("/");
   // Settled on /tasks first: Tasks shows at / before whoami answers, and the page is drawn again once / becomes
   // /tasks, so a click before then can land on a link that is being replaced.
-  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.tasks.title })).toBeVisible();
   await expect(page).toHaveURL(/\/tasks$/);
   // A click that lands as the sidebar is drawn again opens nothing, so it is pressed again until a tab opens.
   let tab: Page | undefined;
   await expect(async () => {
     const opened = context.waitForEvent("page", { timeout: 5_000 });
-    await page.getByRole("link", { name: "Areas" }).click({ modifiers: ["ControlOrMeta"] });
+    await page.getByRole("link", { name: opsCopy.areas.title }).click({ modifiers: ["ControlOrMeta"] });
     tab = await opened;
   }).toPass();
   // The tab opens on about:blank before it loads the link. Its address is what the browser was asked for; waiting for
   // its whole page to load as well timed out on a busy runner with the address already right.
   await tab?.waitForURL(/\/areas$/, { waitUntil: "commit" });
-  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.tasks.title })).toBeVisible();
   await expect(page).toHaveURL(/\/tasks$/);
 });
 
@@ -208,7 +213,7 @@ test("serves its policy: its own origin only, its own camera, no payment, and no
 test("answers any page path with the console, as a single-page app", async ({ page }) => {
   const response = await page.goto("/areas");
   expect(response?.status()).toBe(200);
-  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
 });
 
 test("reaches mm-api as the ops surface, on its own host", async ({ page }) => {
@@ -225,11 +230,11 @@ test("reaches mm-api as the ops surface, on its own host", async ({ page }) => {
 
 test("moves between sections without a reload, and back", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: "Areas" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  await page.getByRole("link", { name: opsCopy.areas.title }).click();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
   expect(new URL(page.url()).pathname).toBe("/areas");
   await page.goBack();
-  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.tasks.title })).toBeVisible();
 });
 
 // Each page drew its own frame, so every move drew the navigation again and the header's search lost what was typed.
@@ -240,8 +245,8 @@ test("keeps its frame as the page under it changes, the header’s search holdin
   await navigation(page).evaluate((nav) => {
     nav.dataset.drawn = "once";
   });
-  await navigation(page).getByRole("link", { name: "Areas" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  await navigation(page).getByRole("link", { name: opsCopy.areas.title }).click();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
   await expect(navigation(page)).toHaveAttribute("data-drawn", "once");
   await expect(finder).toHaveValue("Rohit");
 });
@@ -275,20 +280,23 @@ test("heads each section of a group with the group’s sections as tabs, and mar
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/counts");
   const tabs = page.getByRole("main").getByRole("navigation", { name: opsCopy.shell.groups.inventory });
-  await expect(tabs.getByRole("link", { name: "Counts" })).toHaveAttribute("aria-current", "page");
-  await expect(tabs.getByRole("link", { name: "Items" })).toBeVisible();
-  await expect(navigation(page).getByRole("link", { name: "Inventory" })).toHaveAttribute("aria-current", "page");
+  await expect(tabs.getByRole("link", { name: opsCopy.shell.sections.counts })).toHaveAttribute("aria-current", "page");
+  await expect(tabs.getByRole("link", { name: opsCopy.shell.sections.items })).toBeVisible();
+  await expect(navigation(page).getByRole("link", { name: opsCopy.shell.groups.inventory })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
 });
 
 test("goes to a page by its name from anywhere, with Ctrl K", async ({ page }) => {
   // Where it goes is answered here, refused, so the page it opens reads nothing the other specs left behind.
   await answer(page, { "GET /api/tasks": json(TASKS), "GET /api/dispatch": fails(403, "access_required") });
   await page.goto("/tasks");
-  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.tasks.title })).toBeVisible();
   await page.keyboard.press("Control+k");
   const palette = page.getByRole("dialog", { name: opsCopy.shell.palette.title });
   await palette.getByLabel(opsCopy.shell.palette.label).fill("disp");
-  await palette.getByRole("link", { name: "Dispatch" }).click();
+  await palette.getByRole("link", { name: opsCopy.dispatch.title }).click();
   await expect(page).toHaveURL(/\/dispatch$/);
   await expect(palette).toBeHidden();
 });

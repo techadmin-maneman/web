@@ -72,7 +72,7 @@ export default async function globalSetup(): Promise<void> {
   await seedNextVisit();
   await seedTryOn();
   await seedBookedNumbers();
-  await seedBookingArea();
+  seedBookingArea();
   // Last: the seeds above retire every e2e technician but their own (e2e/technicians.ts).
   await seedTechLive();
 }

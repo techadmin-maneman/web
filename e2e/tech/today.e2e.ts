@@ -65,7 +65,7 @@ test("a job closed out on another phone reads as closed on Today, as its card sa
   await page.goto("/");
 
   const row = page.getByRole("listitem").first();
-  await expect(row).toContainText("Closed out");
+  await expect(row).toContainText(techCopy.titles.closeOut);
   await row.click();
   await expect(page.getByText("Closed out · partial")).toBeVisible();
 });
@@ -85,7 +85,7 @@ test("shows board A2's banner with no signal, and the card still opens from the 
   // The card is opened once with signal, so the phone is holding it.
   await page.getByText("Rohit M.").first().click();
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
 
   // Into a basement. The app is already open, as it is on a technician's phone.
@@ -113,13 +113,13 @@ test("says there is no signal when nothing answers, even while the phone says it
   fake.online = false;
   await page.getByText("Rohit M.").first().click();
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
   await expect(page.getByText(techCopy.today.offline.title)).toBeVisible();
 
   // And once something answers again, it stops saying so.
   fake.online = true;
   await page.getByText("Rohit M.").first().click();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: techCopy.queue.back }).click();
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
   await expect(page.getByText(techCopy.today.offline.title)).toHaveCount(0);
 });

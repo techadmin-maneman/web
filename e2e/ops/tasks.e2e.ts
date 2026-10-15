@@ -7,17 +7,17 @@ import * as opsCopy from "../../apps/ops/src/content.ts";
 test("stands each group under its department, in the navigation’s order, side by side", async ({ page }) => {
   await open(page);
   await expect(list(page).getByRole("heading", { level: 3 })).toHaveText([
-    "Operations",
-    "Customer Care",
-    "Finance",
-    "Growth",
+    opsCopy.tasks.departments.operations,
+    opsCopy.tasks.departments.customer_care,
+    opsCopy.tasks.departments.finance,
+    opsCopy.tasks.departments.growth,
   ]);
   await expect(groupNames(page)).toHaveText([
-    "Replacement order",
-    "Number change",
-    "Deletion request",
-    "No-show decision",
-    "Referral review",
+    opsCopy.tasks.groups.replacement_order,
+    opsCopy.tasks.groups.number_change,
+    opsCopy.tasks.groups.erasure_request,
+    opsCopy.tasks.groups.no_show_decision,
+    opsCopy.tasks.groups.referral_review,
   ]);
   await expect(list(page).getByRole("listitem")).toHaveCount(8);
 

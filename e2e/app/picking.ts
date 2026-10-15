@@ -1,16 +1,18 @@
 // The booking sheet's window step, for the tests that go on to pay.
 //
-// Three technicians serve every test in this suite (e2e/global-setup.ts), and
-// the tests that book all reach for the same first free day, so a window the
-// sheet offered can be held by another of them before this one asks for it. The
-// API then answers `taken` and the sheet says so and offers what is left, which
-// is what the window picker asks of it. A client picks another; so does this.
+// Three technicians serve every test in this suite (e2e/global-setup.ts). Each
+// worker books on a day of its own (toWindows, ./booking-fixtures.ts), but a day
+// can fill, and its next free day can be another worker's, so a window the sheet
+// offered can be held by another test before this one asks for it. The API then
+// answers `taken` and the sheet says so and offers what is left, which is what the
+// window picker asks of it. A client picks another; so does this.
 
 import type { Page, Response } from "@playwright/test";
 import { expect } from "../support.ts";
+import { booking } from "../../apps/app/src/content.ts";
 
 /** The window picker's words when the window went while the client was choosing. */
-export const TAKEN = "That time has just gone. Pick another.";
+export const TAKEN = booking.window.taken;
 
 /** The pay step: "Pay and confirm", or "Confirm" for a visit that costs nothing. */
 const PAY_STEP = /^(Pay and confirm|Confirm)$/;
@@ -32,7 +34,7 @@ export function windowsAskedAgain(page: Page): () => Promise<void> {
 
 /** Picks a free window on the day the sheet is showing, and continues to the pay step. */
 export async function continueToPayment(page: Page): Promise<void> {
-  const windows = page.getByRole("dialog", { name: "Pick a time" });
+  const windows = page.getByRole("dialog", { name: booking.window.title });
   const pay = page.getByRole("dialog", { name: PAY_STEP });
   // Three tries: the day has three windows, and a client would give up on the day too.
   for (let tries = 0; tries < 3; tries += 1) {

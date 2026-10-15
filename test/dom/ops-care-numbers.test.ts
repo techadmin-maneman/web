@@ -7,6 +7,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CareNumbersScreen } from "../../apps/ops/src/care/CareNumbersScreen.tsx";
 import { care } from "../../apps/ops/src/content/care.ts";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const copy = care.numbers;
 
@@ -27,12 +29,15 @@ let asked: string[];
 
 beforeEach(() => {
   asked = [];
-  vi.stubGlobal("fetch", (url: string) => {
-    const address = new URL(url, "https://ops.maneman.test");
-    asked.push(`${address.pathname}${address.search}`);
-    if (address.pathname === "/api/care-numbers") return Promise.resolve(Response.json(NUMBERS));
-    return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      asked.push(`${address.pathname}${address.search}`);
+      if (address.pathname === "/api/care-numbers") return Promise.resolve(Response.json(NUMBERS));
+      return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -50,7 +55,7 @@ describe("the Care numbers page", () => {
   it("shows the week’s figures, reasons, remedies and each Care person", async () => {
     await act(async () => {
       root.render(createElement(CareNumbersScreen));
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(asked).toContain("/api/care-numbers?days=7");
     expect(page.textContent).toContain(copy.minutes(42));
@@ -65,7 +70,7 @@ describe("the Care numbers page", () => {
   it("asks for another period when one is chosen", async () => {
     await act(async () => {
       root.render(createElement(CareNumbersScreen));
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     const select = page.querySelector("select");
     await act(async () => {
@@ -73,7 +78,7 @@ describe("the Care numbers page", () => {
         select.value = "30";
         select.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(asked).toContain("/api/care-numbers?days=30");
   });

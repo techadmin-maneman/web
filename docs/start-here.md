@@ -71,7 +71,7 @@ this map, or when the map names something that no longer exists.
 - **Routes** (`src/routes/`): `ops/dispatch`, `ops/dispatch-moves`, `ops/dispatch-day`, `ops/blackouts`, `ops/technicians`,
   `ops/technician-leave`, `ops/technician-phones`
 - **Screens:** `apps/ops/src/dispatch/`, `apps/ops/src/technicians/`
-- **Tests:** `test/worker/ops/dispatch.test.ts`, `test/worker/field/field-dispatch.test.ts`,
+- **Tests:** `test/worker/dispatch/dispatch.test.ts`, `test/worker/field/field-dispatch.test.ts`,
   `e2e/ops/dispatch.e2e.ts`, `e2e/ops/technicians.e2e.ts`
 
 ### Technicians' pay
@@ -80,7 +80,7 @@ this map, or when the map names something that no longer exists.
 - **Routes** (`src/routes/`): `ops/technician-pay`
 - **Screens:** `apps/ops/src/technician-pay/TechnicianPay.tsx`, `apps/ops/src/technician-pay/PayRates.tsx`,
   `apps/ops/src/technician-pay/PayForms.tsx`
-- **Tests:** `test/worker/ops/technician-pay.test.ts`, `e2e/ops/technician-pay.e2e.ts`
+- **Tests:** `test/worker/dispatch/technician-pay.test.ts`, `e2e/ops/technician-pay.e2e.ts`
 
 ### The technician's work in the field
 
@@ -105,7 +105,7 @@ this map, or when the map names something that no longer exists.
   `ops/consumables`, `ops/hair-systems`
 - **Screens:** `apps/ops/src/stock/`, `apps/ops/src/items/`, `apps/ops/src/kit/`, `apps/ops/src/counts/`,
   `apps/ops/src/quality/`, `apps/ops/src/usage/`, and the technician app's kit, `apps/tech/src/kit/`
-- **Tests:** `test/worker/ops/stock-*.test.ts`, `test/worker/ops/hair-systems.test.ts`, `e2e/ops/stock.e2e.ts`,
+- **Tests:** `test/worker/inventory/`, `e2e/ops/stock.e2e.ts`,
   `e2e/ops/consumables.e2e.ts`, `e2e/ops/counts.e2e.ts`, `e2e/ops/quality.e2e.ts`, `e2e/ops/usage.e2e.ts`
 
 ### Purchasing: suppliers, orders and the supply plan
@@ -255,7 +255,8 @@ this map, or when the map names something that no longer exists.
 - **Screens:** `apps/ops/src/spend/`
 - **Vendor** (`src/providers/`): `warehouse/` (Supabase's Postgres, or the stub)
 - **Jobs:** `src/scheduled/analytics.ts`
-- **Tests:** `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`
+- **Schema:** `warehouse/migrations/`, applied by `scripts/ops/warehouse-migrate.ts`
+- **Tests:** `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-postgres.test.ts`
 
 ### The Words page
 
@@ -265,7 +266,7 @@ this map, or when the map names something that no longer exists.
 - **Routes** (`src/routes/`): `ops/words`, `public/site-words`
 - **Build:** `scripts/lib/site-words.ts` reads the published words for a site build; `site/src/lib/published-words.ts`
   lays them over the copy; `.github/workflows/site-words.yml` rebuilds staging's site after a publish
-- **Tests:** `test/worker/ops/words.test.ts`, `test/node/words/`, `test/node/policy/word-checks.test.ts`
+- **Tests:** `test/worker/words/words.test.ts`, `test/node/words/`, `test/node/policy/word-checks.test.ts`
 
 ### Ops' own work
 

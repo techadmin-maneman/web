@@ -11,8 +11,8 @@ const ADR_DESCRIPTION = { descriptionFormat: "^: see docs/decisions/\\d{4}-[a-z0
 
 /** The most code lines a function, and a file, may hold in src/. */
 const SIZE = { fn: 80, lines: 400 } as const;
-/** The most code lines a test file holds before it is warned of. */
-const TEST_LINES = 500;
+/** The most code lines a test file holds: past it, it is several files, each easier to find a failure in. */
+const TEST_LINES = 700;
 
 /** A loader written inline is a new function every render, which useLoad and useAsync would run again on each one. */
 const INLINE_LOADER = {
@@ -284,9 +284,8 @@ export default defineConfig(
     rules: { "no-console": ["error", { allow: ["warn"] }] },
   },
   {
-    // A test file past 500 lines is warned of: one that long is several, each easier to find a failure in.
     files: ["test/**/*.ts", "e2e/**/*.ts"],
-    rules: { "no-console": "off", "max-lines": sized("warn", TEST_LINES) },
+    rules: { "no-console": "off", "max-lines": sized("error", TEST_LINES) },
   },
   {
     // A cast hid a consumer's changed signature from the compiler.

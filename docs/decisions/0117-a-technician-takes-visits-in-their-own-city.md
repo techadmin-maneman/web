@@ -23,4 +23,4 @@ The technicians who may take a visit are read in the same statement as before, s
 
 - Staging's active technicians had no city when this landed: until ops set one for each, staging offers no slot.
 - A city with no technician of its own shows no slot at all.
-- Tests: `test/worker/booking/technician-city.test.ts`, and the city cases in `test/worker/ops/dispatch-landing.test.ts`.
+- Tests: `test/worker/booking/technician-city.test.ts`, and the city cases in `test/worker/dispatch/dispatch-landing.test.ts`.

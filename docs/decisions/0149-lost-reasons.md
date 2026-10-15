@@ -19,4 +19,4 @@ The growth figures ask why consultations end without a fit. Nothing recorded it.
 
 ## Consequences
 
-- Tests: `test/worker/ops/job-sheet-settings.test.ts`, `test/worker/ops/visit-lost-reason.test.ts`, `test/node/dom/tech-kept.test.ts`, `e2e/tech/steps.e2e.ts`.
+- Tests: `test/worker/ops/job-sheet-settings.test.ts`, `test/worker/ops/visit-lost-reason.test.ts`, `test/node/front-ends/tech-kept.test.ts`, `e2e/tech/steps.e2e.ts`.

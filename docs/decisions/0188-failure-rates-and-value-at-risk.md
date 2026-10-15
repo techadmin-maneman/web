@@ -19,4 +19,4 @@ The scope asks for failure rates by lot, stock code, supplier and technician. It
 
 - Pieces fitted before labels have no lot, stock code or supplier on record, so they are not in the failure rates.
 - A place with no recent use shows everything it holds as at risk until it uses some.
-- Tests: `test/node/policy/stock-quality.test.ts`, `test/worker/ops/stock-quality.test.ts`, `test/dom/ops-quality.test.ts`, `e2e/ops/quality.e2e.ts`.
+- Tests: `test/node/policy/stock-quality.test.ts`, `test/worker/inventory/stock-quality.test.ts`, `test/dom/ops-quality.test.ts`, `e2e/ops/quality.e2e.ts`.

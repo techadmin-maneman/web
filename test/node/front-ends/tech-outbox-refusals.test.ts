@@ -1,6 +1,6 @@
 // The outbox sending what the phone holds (apps/tech/src/store/outbox.ts), on
 // an IndexedDB that runs in Node and an API faked at fetch. The ordering rules
-// themselves are test/node/dom/tech-outbox.test.ts; this is the store and the
+// themselves are test/node/front-ends/tech-outbox.test.ts; this is the store and the
 // sending around them.
 
 import "fake-indexeddb/auto";

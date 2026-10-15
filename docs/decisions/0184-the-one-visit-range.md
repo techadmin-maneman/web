@@ -18,4 +18,4 @@ A consultation and fit in one visit (ADR 0105) books a first fit whose client is
 ## Consequences
 
 - Nothing matching on the day still closes the visit as a consultation (ADR 0105).
-- Tests: `test/worker/ops/kit-check.test.ts`.
+- Tests: `test/worker/inventory/kit-check.test.ts`.

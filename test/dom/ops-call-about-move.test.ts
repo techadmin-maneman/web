@@ -7,6 +7,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Task, TaskGroup } from "../../apps/ops/src/api.ts";
 import { CallAboutMove } from "../../apps/ops/src/tasks/CallAboutMove.tsx";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const MOVE = "55555555-5555-4555-8555-555555555555";
 
@@ -32,17 +34,18 @@ beforeEach(() => {
   told = [];
   closed = 0;
   toldAnswer = () => Response.json({ told: true });
-  vi.stubGlobal("fetch", (url: string, init: { method?: string } | undefined) => {
-    const path = new URL(url, "https://ops.maneman.test").pathname;
-    if (init?.method === "POST") {
-      told.push(path);
-      return Promise.resolve(toldAnswer());
-    }
-    // Who is signed in: unknown, so every action is shown and the API refuses what it must.
-    return Promise.resolve(
-      Response.json({ error: { code: "unknown", message: "", request_id: "r" } }, { status: 500 }),
-    );
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init: { method?: string } | undefined) => {
+      const path = new URL(url, "https://ops.maneman.test").pathname;
+      if (init?.method === "POST") {
+        told.push(path);
+        return Promise.resolve(toldAnswer());
+      }
+      // Who is signed in: unknown, so every action is shown and the API refuses what it must.
+      return Promise.resolve(Response.json({ error: { code: "internal_error", request_id: "r" } }, { status: 500 }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -57,9 +60,7 @@ afterEach(() => {
 });
 
 async function settle() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 async function show(task: Task, group: TaskGroup["group"] = "untold_move") {
@@ -107,8 +108,7 @@ describe("a move the client has not heard of, on its task", () => {
   });
 
   it("closes the task when the call was recorded meanwhile, or a later move told the client", async () => {
-    toldAnswer = () =>
-      Response.json({ error: { code: "not_found", message: "", request_id: "r", fields: [] } }, { status: 404 });
+    toldAnswer = () => Response.json({ error: { code: "not_found", request_id: "r", fields: [] } }, { status: 404 });
     await show(UNTOLD);
     await pressTold();
     expect(closed).toBe(1);
@@ -116,7 +116,7 @@ describe("a move the client has not heard of, on its task", () => {
 
   it("keeps the task, and says so, when the record did not go through", async () => {
     toldAnswer = () =>
-      Response.json({ error: { code: "unknown", message: "", request_id: "r", fields: [] } }, { status: 500 });
+      Response.json({ error: { code: "internal_error", request_id: "r", fields: [] } }, { status: 500 });
     await show(UNTOLD);
     await pressTold();
     expect(closed).toBe(0);

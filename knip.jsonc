@@ -45,7 +45,7 @@
       "project": ["**/*.{ts,tsx}!"]
     },
     "packages/web-kit": {
-      // The workers' kit is bundled into each sw.js by a relative import (test/node/dom/ui-package.test.ts), which
+      // The workers' kit is bundled into each sw.js by a relative import (test/node/front-ends/ui-package.test.ts), which
       // knip stops following once tsconfig.base.json maps @rules/; those tests prove a worker imports it.
       "entry": ["sw-shell.ts!"],
       "project": ["**/*.{ts,tsx}!"]

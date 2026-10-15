@@ -14,16 +14,26 @@ function targetOf(environment: EnvironmentName): string[] {
   return [EXPECTED_DATABASE_NAME[environment], "--remote", "--env", environment];
 }
 
-/** The rows one statement answers. */
+/**
+ * The rows one statement answers. It goes as a file too: wrangler on Windows runs only the first line of a statement
+ * given with --command.
+ */
 export function d1Query<T>(environment: EnvironmentName, sql: string): T[] {
-  const output = execFileSync(
-    process.execPath,
-    [WRANGLER, "d1", "execute", ...targetOf(environment), "--json", "--command", sql],
-    { encoding: "utf8" },
-  );
-  // wrangler prints its banner before the JSON when the terminal is not a TTY.
-  const answers = JSON.parse(output.slice(output.indexOf("["))) as { results: T[] }[];
-  return answers[0]?.results ?? [];
+  const folder = mkdtempSync(join(tmpdir(), "mm-d1-"));
+  try {
+    const file = join(folder, "query.sql");
+    writeFileSync(file, sql);
+    const output = execFileSync(
+      process.execPath,
+      [WRANGLER, "d1", "execute", ...targetOf(environment), "--json", "--file", file, "--yes"],
+      { encoding: "utf8" },
+    );
+    // wrangler prints its banner before the JSON when the terminal is not a TTY.
+    const answers = JSON.parse(output.slice(output.indexOf("["))) as { results: T[] }[];
+    return answers[0]?.results ?? [];
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
 }
 
 /** Runs the statements as one file. `show` passes wrangler's own report of it through to the terminal. */

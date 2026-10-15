@@ -14,10 +14,11 @@ import {
   TASKS_READ_ON,
   type Call,
 } from "./fixtures.ts";
+import { noShows } from "../../apps/ops/src/content.ts";
 
 export const FIRST = "Visit of Sun 19 Sep";
 
-export const QUEUE = "No-shows to decide";
+export const QUEUE = noShows.queue.title;
 
 /** The fixture's day, which the clock is set to: Wednesday 22 September 2027. */
 export const MONEY = "Today, Wed 22 Sep";

@@ -8,6 +8,13 @@ import { LOCAL_LOGIN_CODE, PORTS } from "../../scripts/lib/local-stack.ts";
 import { addDays, indiaDate } from "../../src/lib/india-time.ts";
 import { expect, test } from "../support.ts";
 import { AT_THE_DOOR, liveDay } from "./day.ts";
+import {
+  signIn as signInWords,
+  capture as captureWords,
+  notHome,
+  job as jobWords,
+  steps,
+} from "../../apps/tech/src/content.ts";
 
 const day = liveDay();
 const OPS = `http://ops.localhost:${String(PORTS.ops)}`;
@@ -15,22 +22,22 @@ const OPS = `http://ops.localhost:${String(PORTS.ops)}`;
 /** Signs in through the app, as a technician does, with the code the local API sends every number. */
 async function signIn(page: Page): Promise<void> {
   await page.goto("/");
-  await page.getByRole("textbox", { name: "Mobile number" }).fill(day.mobile);
-  await page.getByRole("button", { name: "Send the code" }).click();
+  await page.getByRole("textbox", { name: signInWords.mobileLabel }).fill(day.mobile);
+  await page.getByRole("button", { name: signInWords.sendCode }).click();
   // The sixth digit sends the code.
-  await page.getByRole("textbox", { name: "Code" }).fill(LOCAL_LOGIN_CODE);
+  await page.getByRole("textbox", { name: signInWords.codeLabel }).fill(LOCAL_LOGIN_CODE);
   await expect(page.getByRole("heading", { name: /jobs? today$/ })).toBeVisible();
 }
 
 /** Takes the five photographs of a set, and sends it. */
 async function photograph(page: Page): Promise<void> {
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: captureWords.take });
   await expect(capture).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
     await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
   }
-  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("button", { name: captureWords.finish }).click();
 }
 
 test.beforeEach(async ({ context }) => {
@@ -43,8 +50,8 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
   await signIn(page);
   await page.goto(`/jobs/${id}`);
   await expect(page.getByRole("heading", { level: 1, name: day.client })).toBeVisible();
-  await page.getByRole("button", { name: "I have arrived" }).click();
-  await expect(page.getByText("2 · Waiting")).toBeVisible();
+  await page.getByRole("button", { name: notHome.arrived.action }).click();
+  await expect(page.getByText(notHome.waiting.step)).toBeVisible();
 
   // The order is the API's to keep: an outcome before the job has started is refused, whatever a phone sends.
   const early = await page.evaluate(
@@ -73,22 +80,22 @@ test("signs in, checks in, works a service visit’s steps in the API’s order 
       written.push(request.headers()["x-job-starts-at"] ?? "none");
     }
   });
-  await page.getByRole("button", { name: "Start job" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Before photos" })).toBeVisible();
+  await page.getByRole("button", { name: jobWords.start }).click();
+  await expect(page.getByRole("heading", { level: 1, name: captureWords.before })).toBeVisible();
   await photograph(page);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: steps.titles.checklist })).toBeVisible();
   for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
-  await page.getByRole("button", { name: "Next" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Consumables used" })).toBeVisible();
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: steps.next }).click();
+  await expect(page.getByRole("heading", { level: 1, name: steps.titles.consumables })).toBeVisible();
+  await page.getByRole("button", { name: steps.next }).click();
 
-  await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: captureWords.after })).toBeVisible();
   await photograph(page);
-  await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
-  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: steps.titles.outcome })).toBeVisible();
+  await page.getByRole("button", { name: captureWords.finish, exact: true }).click();
   const closing = page.waitForResponse((answer) => answer.url().endsWith(`/api/tech/jobs/${id}/outcome`));
-  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByRole("button", { name: steps.next }).click();
   expect((await closing).status()).toBe(202);
   await expect(page.getByText(`${day.client} · done`)).toBeVisible();
 
@@ -104,7 +111,7 @@ test("a job ops moved while the phone held it is refused, and the card says it m
   const { id, startsAt } = day.moved;
   await signIn(page);
   await page.goto(`/jobs/${id}`);
-  await expect(page.getByRole("button", { name: "I have arrived" })).toBeVisible();
+  await expect(page.getByRole("button", { name: notHome.arrived.action })).toBeVisible();
 
   // Ops move it to a morning a week out, through the console's own API, while the card stays open on the phone.
   const desk = await context.newPage();
@@ -134,9 +141,9 @@ test("a job ops moved while the phone held it is refused, and the card says it m
   // The phone's check-in still carries the start it held, so the API refuses it. The app reads the card again and
   // says where the job went, and the card is the moved one, not yet open to check in at.
   const refused = page.waitForResponse((answer) => answer.url().endsWith(`/api/tech/jobs/${id}/checkin`));
-  await page.getByRole("button", { name: "I have arrived" }).click();
+  await page.getByRole("button", { name: notHome.arrived.action }).click();
   expect((await refused).status()).toBe(409);
   await expect(page.getByRole("alert").filter({ hasText: /Ops moved this job to 9 am on .+\./ })).toBeVisible();
   await expect(page.getByText(/^Opens at /)).toBeVisible();
-  await expect(page.getByRole("button", { name: "I have arrived" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: notHome.arrived.action })).toHaveCount(0);
 });

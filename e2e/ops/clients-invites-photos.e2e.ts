@@ -33,14 +33,14 @@ test("attaches an invite to a client who came with none, with why, and shows it 
     [ATTACH_INVITE]: json(attached, 201),
   });
   const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
-  await expect(invite).toContainText("No invite.");
+  await expect(invite).toContainText(opsCopy.clients.invite.none);
   // The note forbade a fitted client, though one is allowed, held for review.
   const attach = invite.getByRole("button", { name: opsCopy.clients.invite.form.save });
   await expect(attach).toBeDisabled();
 
   await invite.getByLabel(opsCopy.clients.invite.form.code).fill("rm4k7p");
   await expect(attach).toBeDisabled();
-  await invite.getByLabel("Reason").fill("Told us Rohit sent them");
+  await invite.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
   expect(await axeViolations(page)).toEqual([]);
   const sent = page.waitForRequest((request) => request.url().endsWith("/referral") && request.method() === "POST");
   await attach.click();
@@ -66,7 +66,7 @@ test.describe("says why an invite was not attached", () => {
       });
       const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
       await invite.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
-      await invite.getByLabel("Reason").fill("Told us Rohit sent them");
+      await invite.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
       await invite.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
       await expect(invite.getByRole("alert")).toContainText(words);
       await expect(invite.getByLabel(opsCopy.clients.invite.form.code)).toHaveValue("RM4K7P");
@@ -88,7 +88,7 @@ test.describe("says why an invite was not attached", () => {
     });
     const invite = page.getByRole("region", { name: opsCopy.clients.invite.title });
     await invite.getByLabel(opsCopy.clients.invite.form.code).fill("RM4K7P");
-    await invite.getByLabel("Reason").fill("Told us Rohit sent them");
+    await invite.getByLabel(opsCopy.clients.invite.form.reason).fill("Told us Rohit sent them");
     await invite.getByRole("button", { name: opsCopy.clients.invite.form.save }).click();
     await expect(invite.getByRole("status")).toHaveText(opsCopy.clients.invite.news.already_invited);
     await expect(invitedBy(page)).toHaveText("Vikram Sethi (VSAB23)");
@@ -149,7 +149,7 @@ test("shows nothing, and asks for no photograph, when the opening could not be l
     [VIEW_PHOTOS]: fails(503, "unavailable"),
   });
   await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
-  await expect(page.getByRole("alert")).toContainText("Couldn’t log the view, so photos stay locked.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.clients.photos.errors.unavailable);
   await expect(page.getByRole("img")).toHaveCount(0);
   expect(photos).toBe(0);
 });

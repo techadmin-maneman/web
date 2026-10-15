@@ -8,6 +8,8 @@ import type { Word } from "../../apps/ops/src/api.ts";
 import { review } from "../../apps/ops/src/content/common.ts";
 import { words as copy } from "../../apps/ops/src/content/words.ts";
 import { WordsScreen } from "../../apps/ops/src/words/WordsScreen.tsx";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const REMINDER: Word = {
   key: "message:visit_reminder_v1",
@@ -44,13 +46,16 @@ beforeEach(() => {
     ["GET /api/words", () => Response.json({ words: [REMINDER, HERO], published: null, messages: "at_once" })],
   ]);
   sent = [];
-  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-    const path = new URL(url, "https://ops.maneman.test").pathname;
-    if (typeof init?.body === "string") sent.push(JSON.parse(init.body));
-    const reply = answers.get(`${init?.method ?? "GET"} ${path}`);
-    const refused = () => Response.json({ error: { code: "unavailable", request_id: "request-1" } }, { status: 503 });
-    return Promise.resolve((reply ?? refused)(init));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init?: RequestInit) => {
+      const path = new URL(url, "https://ops.maneman.test").pathname;
+      if (typeof init?.body === "string") sent.push(JSON.parse(init.body));
+      const reply = answers.get(`${init?.method ?? "GET"} ${path}`);
+      const refused = () => Response.json({ error: { code: "unavailable", request_id: "request-1" } }, { status: 503 });
+      return Promise.resolve((reply ?? refused)(init));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -64,10 +69,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const settle = () =>
-  act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+const settle = () => answered();
 
 async function show() {
   act(() => {
@@ -84,7 +86,7 @@ const button = (label: string) =>
 async function press(label: string) {
   await act(async () => {
     button(label)?.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await answered();
   });
 }
 

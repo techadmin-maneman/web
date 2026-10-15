@@ -192,7 +192,7 @@ test("carries a job in hand to the next week, asks where it fits there, and move
 
   const list = page.getByLabel(opsCopy.dispatch.landing.list);
   await expect(list.getByRole("option")).toHaveText([
-    "A technician, day and window",
+    opsCopy.dispatch.landing.listPrompt,
     "Sandeep Yadav · Fri 26 Sep · morning",
   ]);
   await list.selectOption({ label: "Sandeep Yadav · Fri 26 Sep · morning" });
@@ -279,7 +279,7 @@ test("asks why before a move onto a blacked-out day, and sends the reason with i
   await expect(picker).toContainText("Sat 20 Sep is a closed day.");
   await reason(page, "Client asked");
   await expect(picker.getByRole("button", { name: opsCopy.dispatch.move.send })).toBeDisabled();
-  await picker.getByLabel("Reason").fill("Their only free day before they travel");
+  await picker.getByLabel(opsCopy.dispatch.move.legend).fill("Their only free day before they travel");
   await press(page, "Move and notify");
 
   await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");
@@ -340,7 +340,7 @@ test("asks ops to call a client who has not agreed to WhatsApp, and records the 
   await expect(status).toContainText(
     "Vikram S. moved. Vikram Sethi isn’t on WhatsApp updates: call +91 98100 00002 with the new window.",
   );
-  await status.getByRole("button", { name: "Told by phone" }).click();
+  await status.getByRole("button", { name: opsCopy.dispatch.landing.told }).click();
   await expect(page.getByRole("status")).toHaveText(`Recorded: ${VIKRAM.name} told by phone.`);
   expect(told).toHaveLength(1);
   expect(VIKRAM_JOB?.person?.whatsapp_visits).toBe(false);
@@ -383,7 +383,7 @@ test("lets go of nothing while a move is being sent, so it cannot be sent twice"
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "Move Rohit M. to Sandeep Yadav" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: opsCopy.dispatch.move.cancel })).toBeDisabled();
 
   release();
   await expect(page.getByRole("status")).toContainText("Moved. Rohit M. gets the new window on WhatsApp.");

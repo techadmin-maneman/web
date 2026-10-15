@@ -90,3 +90,42 @@ describe("POST /api/dev/appointments/:id/close, anywhere but locally", () => {
     },
   );
 });
+
+const write = (environment: EnvironmentName, devRoutes = true) =>
+  request(appFor(environment, fakeDependencies(), { devRoutes }), "/api/dev/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mobile: "+919810000001", text: "Is my visit still on?" }),
+  });
+
+const threads = () =>
+  env.DB.prepare(
+    `SELECT c.mobile_e164, c.state, m.direction, m.text FROM conversations c
+     JOIN chat_messages m ON m.conversation_id = c.id`,
+  ).all();
+
+describe("POST /api/dev/messages, the local stand-in for a number writing to us", () => {
+  beforeEach(async () => {
+    await markDatabase();
+  });
+
+  it("files the message in the number's thread, as the bridge's hook does", async () => {
+    expect((await write("local")).status).toBe(204);
+    expect((await threads()).results).toEqual([
+      { mobile_e164: "+919810000001", state: "open", direction: "in", text: "Is my visit still on?" },
+    ]);
+  });
+
+  it("is not there without DEV_ROUTES, even locally", async () => {
+    expect((await write("local", false)).status).toBe(404);
+    expect((await threads()).results).toEqual([]);
+  });
+});
+
+describe("POST /api/dev/messages, anywhere but locally", () => {
+  it("answers nothing on staging, even were the switch somehow on, and files nothing", async () => {
+    await markDatabase(EXPECTED_DATABASE_NAME.staging);
+    expect((await write("staging")).status).toBe(404);
+    expect((await threads()).results).toEqual([]);
+  });
+});

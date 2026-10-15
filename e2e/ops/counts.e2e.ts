@@ -6,6 +6,8 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
 import { counts as copy } from "../../apps/ops/src/content/counts.ts";
+import { stockLabels } from "../../apps/ops/src/content/stock-labels.ts";
+import { spend } from "../../apps/ops/src/content/spend.ts";
 
 const KIT = {
   id: "ct-1",
@@ -109,8 +111,8 @@ test("counts a hair system held under labels by scanning them, and flags one not
   const panel = page.getByRole("region", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
   await expect(panel).toContainText(copy.scanEach(PIECE.name));
   for (const label of ["MM-ESS-0000041-R", flagged[0] ?? ""]) {
-    await panel.getByLabel("Label", { exact: true }).fill(label);
-    await panel.getByRole("button", { name: "Add" }).click();
+    await panel.getByLabel(stockLabels.scan.label, { exact: true }).fill(label);
+    await panel.getByRole("button", { name: spend.add }).click();
   }
   await panel.getByLabel(copy.unlabelled(PIECE.name)).fill("1");
   const request = posted(page, "/api/count-tasks/ct-1/counts");

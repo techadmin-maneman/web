@@ -32,6 +32,10 @@ on:
         description: How long the canary serves before promotion.
         default: "300"
         type: string
+      accept_unjudged_soak:
+        description: Promote on the smoke checks alone if the soak cannot judge the canary (too little traffic, or a reading Cloudflare would not give).
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -85,6 +89,7 @@ jobs:
       SHA: ${{ inputs.sha }}
       CANARY: ${{ inputs.canary_percent }}
       SOAK: ${{ inputs.soak_seconds }}
+      ACCEPT_UNJUDGED: ${{ inputs.accept_unjudged_soak }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -167,12 +172,14 @@ jobs:
           --override "mm-api-production=${{ steps.api.outputs.version }}"
           --version-id "${{ steps.api.outputs.version }}" --version-tag "$SHA"
 
-      # Real visitors' requests, not only the smoke's: the soak fails if the new version's invocations error
-      # much more than the old one's, where the token can read Workers analytics (scripts/lib/soak.ts).
+      # Real visitors' requests, not only the smoke's: the soak fails if the new version errors or answers 5xx
+      # much more than the old one, reads past its ceilings or is slow; and, unless the release was started
+      # accepting it, if it could not judge one of those (scripts/lib/soak.ts).
       - name: Let it serve for a while, watching its errors
         run: >-
           node scripts/release/soak.ts --worker mm-api --env production --seconds "$SOAK"
           --new "${{ steps.api.outputs.version }}" --old "${{ steps.before.outputs.api }}"
+          --accept-unjudged "$ACCEPT_UNJUDGED"
 
       - name: Smoke the new version again
         run: >-

@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DispatchScreen } from "../../apps/ops/src/dispatch/DispatchScreen.tsx";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { BOARD } from "../../e2e/ops/fixtures/dispatch.ts";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const ROHIT = BOARD.technicians[0]?.days[0]?.blocks[0]?.appointment_id ?? "";
 const IN_THE_TRAY = BOARD.unassigned[1]?.appointment_id ?? "";
@@ -28,15 +30,16 @@ beforeEach(() => {
   });
   Reflect.set(Element.prototype, "scrollIntoView", () => undefined);
   reads = [];
-  vi.stubGlobal("fetch", (input: string | Request) => {
-    const address = new URL(typeof input === "string" ? input : input.url, "https://ops.maneman.test");
-    reads.push(`${address.pathname}${address.search}`);
-    if (address.pathname === "/api/dispatch") return Promise.resolve(Response.json(BOARD));
-    // Who is signed in: unknown, so every action is shown and the API refuses what it must.
-    return Promise.resolve(
-      Response.json({ error: { code: "unknown", message: "", request_id: "r" } }, { status: 500 }),
-    );
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (input: string | Request) => {
+      const address = new URL(typeof input === "string" ? input : input.url, "https://ops.maneman.test");
+      reads.push(`${address.pathname}${address.search}`);
+      if (address.pathname === "/api/dispatch") return Promise.resolve(Response.json(BOARD));
+      // Who is signed in: unknown, so every action is shown and the API refuses what it must.
+      return Promise.resolve(Response.json({ error: { code: "internal_error", request_id: "r" } }, { status: 500 }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -52,9 +55,7 @@ afterEach(() => {
 });
 
 async function settle() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 async function openAt(path: string) {

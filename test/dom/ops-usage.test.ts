@@ -6,6 +6,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { UsageScreen } from "../../apps/ops/src/usage/UsageScreen.tsx";
 import { usage as copy } from "../../apps/ops/src/content/usage.ts";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const USAGE = {
   since: "2026-08-24",
@@ -42,11 +44,14 @@ let answer: unknown;
 
 beforeEach(() => {
   answer = USAGE;
-  vi.stubGlobal("fetch", (url: string) => {
-    const address = new URL(url, "https://ops.maneman.test");
-    if (address.pathname === "/api/stock/usage") return Promise.resolve(Response.json(answer));
-    return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      if (address.pathname === "/api/stock/usage") return Promise.resolve(Response.json(answer));
+      return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -64,9 +69,7 @@ async function show() {
   act(() => {
     root.render(createElement(UsageScreen));
   });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 describe("the Usage page", () => {
@@ -77,7 +80,7 @@ describe("the Usage page", () => {
     expect(page.textContent).toContain(copy.percent(25));
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.items("Imran Qureshi")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(page.textContent).toContain("Solvent");
   });

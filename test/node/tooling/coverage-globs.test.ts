@@ -11,9 +11,9 @@ function expand(pattern: string): string[] {
   return names.split(",").map((each) => pattern.replace(whole, each));
 }
 
-const floors = [...readFileSync("vitest.config.ts", "utf8").matchAll(/^\s*"((?:src|scripts)\/[^"]+)":\s*\{/gm)].map(
-  (match) => match[1] ?? "",
-);
+const floors = [
+  ...readFileSync("vitest.config.ts", "utf8").matchAll(/^\s*"((?:src|scripts|apps)\/[^"]+)":\s*\{/gm),
+].map((match) => match[1] ?? "");
 
 describe("the coverage floors", () => {
   it("name some paths", () => {

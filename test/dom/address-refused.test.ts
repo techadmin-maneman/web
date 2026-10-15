@@ -6,6 +6,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Address } from "../../apps/app/src/api.ts";
 import { AddressForm } from "../../apps/app/src/profile/AddressForm.tsx";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const IN_MUMBAI: Address = {
   line1: "Sea View",
@@ -44,7 +46,10 @@ afterEach(() => {
 
 /** Every save is answered with this refusal. */
 function refuseWith(status: number, code: string) {
-  vi.stubGlobal("fetch", () => Promise.resolve(Response.json({ error: { code, request_id: "r-1" } }, { status })));
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("client", () => Promise.resolve(Response.json({ error: { code, request_id: "r-1" } }, { status }))),
+  );
 }
 
 async function save() {
@@ -66,9 +71,7 @@ async function save() {
   });
   // The answer arrives a few turns of the event loop later, and React draws it as each turn's act ends.
   for (let turn = 0; turn < 20 && page.querySelector('[role="alert"]') === null; turn += 1) {
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    await answered();
   }
 }
 

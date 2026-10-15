@@ -17,4 +17,4 @@ A client pays for a custom order before it is made, and waits weeks for it (ADR 
 ## Consequences
 
 - An order cancelled or refunded leaves Home; the client's data export keeps its record.
-- Tests: `test/worker/ops/custom-orders.test.ts`.
+- Tests: `test/worker/purchasing/custom-orders.test.ts`.

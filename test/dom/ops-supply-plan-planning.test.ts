@@ -7,6 +7,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Planning } from "../../apps/ops/src/supply-plan/Planning.tsx";
 import { supplyPlan as copy } from "../../apps/ops/src/content/supply-plan.ts";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const WEDDINGS = {
   id: "ev-1",
@@ -55,9 +57,7 @@ let next: unknown;
 const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
 async function settle() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 function type(input: HTMLInputElement | HTMLSelectElement | null | undefined, value: string) {
@@ -78,27 +78,30 @@ beforeEach(() => {
   posted = [];
   asked = [];
   next = CALENDAR;
-  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-    const address = new URL(url, "https://ops.maneman.test");
-    if (init?.method === "POST") {
-      posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
-      return Promise.resolve(
-        Response.json(next, { status: typeof next === "object" && next !== null && "error" in next ? 400 : 200 }),
-      );
-    }
-    if (address.pathname === "/api/demand-events") return Promise.resolve(Response.json(CALENDAR));
-    if (address.pathname === "/api/stock/forecast-accuracy") {
-      const measured = address.searchParams.get("city") === "Gurgaon" ? ACCURACY : { periods: [], items: [] };
-      return Promise.resolve(Response.json(measured));
-    }
-    if (address.pathname === "/api/stock/forecast") {
-      const city = address.searchParams.get("city") ?? "";
-      asked.push(city);
-      const lines = city === "Gurgaon" ? [line(city, 0, 12, 15), line(city, 1, 4.25, 4.25)] : [];
-      return Promise.resolve(Response.json({ run: RUN, lines }));
-    }
-    return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init?: RequestInit) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      if (init?.method === "POST") {
+        posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
+        return Promise.resolve(
+          Response.json(next, { status: typeof next === "object" && next !== null && "error" in next ? 400 : 200 }),
+        );
+      }
+      if (address.pathname === "/api/demand-events") return Promise.resolve(Response.json(CALENDAR));
+      if (address.pathname === "/api/stock/forecast-accuracy") {
+        const measured = address.searchParams.get("city") === "Gurgaon" ? ACCURACY : { periods: [], items: [] };
+        return Promise.resolve(Response.json(measured));
+      }
+      if (address.pathname === "/api/stock/forecast") {
+        const city = address.searchParams.get("city") ?? "";
+        asked.push(city);
+        const lines = city === "Gurgaon" ? [line(city, 0, 12, 15), line(city, 1, 4.25, 4.25)] : [];
+        return Promise.resolve(Response.json({ run: RUN, lines }));
+      }
+      return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -148,7 +151,7 @@ describe("the forecast and the events calendar", () => {
     next = { error: { code: "invalid_request", fields: ["ends_on"], request_id: "r-2" } };
     await act(async () => {
       button(copy.events.save)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(page.textContent).toContain(copy.events.errors.ends_on);
 
@@ -156,7 +159,7 @@ describe("the forecast and the events calendar", () => {
     next = { ...CALENDAR, events: [WEDDINGS, diwali] };
     await act(async () => {
       button(copy.events.save)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(posted[1]).toEqual({
       path: "/api/demand-events",
@@ -168,7 +171,7 @@ describe("the forecast and the events calendar", () => {
     next = { ...CALENDAR, events: [diwali] };
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.events.remove("Wedding season")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(posted[2]?.path).toBe("/api/demand-events/ev-1/remove");
     expect(page.textContent).not.toContain("Wedding season");

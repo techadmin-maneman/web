@@ -1,6 +1,6 @@
 // The reporting copy in Supabase's Postgres, through Hyperdrive (docs/decisions/0146-the-nightly-analytics-copy.md,
-// 0196-long-work-in-workflows.md). Every table is in the analytics schema, which Supabase's Data API does not expose; the
-// API writes as its own role. A night stages each table's rows in load_rows, a step at a time, then swaps them all in
+// 0196-long-work-in-workflows.md). Every table is in the analytics schema (warehouse/migrations), which Supabase's Data
+// API does not expose; the API writes as its own role. A night stages each table's rows in load_rows, a step at a time, then swaps them all in
 // one transaction: each row upserted so an unchanged one keeps its updated_at, which is what lets Zoho fetch only what
 // changed, and each row not staged deleted.
 
@@ -18,7 +18,7 @@ const quoted = (name: string) => `"${name.replaceAll('"', '""')}"`;
 const STAGED = `${quoted(SCHEMA)}."load_rows"`;
 
 /** One batch of a table's rows into load_rows, each as its key and its JSON: $1 the run, $2 the table, then pairs. */
-export function stageSql(rows: number): string {
+function stageSql(rows: number): string {
   const values = Array.from(
     { length: rows },
     (_, row) => `($1, $2, $${String(row * 2 + 3)}, ($${String(row * 2 + 4)}::text)::jsonb)`,
@@ -30,7 +30,7 @@ export function stageSql(rows: number): string {
  * A table's staged rows upserted into it: new rows inserted, a row whose values differ updated and stamped, an
  * unchanged row left as it was. $1 is the run, $2 the table. Answers one row for each new or changed.
  */
-export function upsertSql({ table, key, stamped, columns }: TableMeta): string {
+function upsertSql({ table, key, stamped, columns }: TableMeta): string {
   const target = `${quoted(SCHEMA)}.${quoted(table)}`;
   const others = columns.filter((column) => !key.includes(column));
   const set = others.map((column) => `${quoted(column)} = excluded.${quoted(column)}`);
@@ -52,27 +52,37 @@ export function upsertSql({ table, key, stamped, columns }: TableMeta): string {
  * Deletes every row of the table the run did not stage, its key's columns joined as text as the staged keys are; for
  * a table that keeps its earlier rows, only among those from its date on ($3). $1 is the run, $2 the table.
  */
-export function goneSql({ table, key, keepBefore }: TableMeta): string {
+function goneSql({ table, key, keepBefore }: TableMeta): string {
   const joined = key.map((column) => `${quoted(column)}::text`).join(` || '|' || `);
   const since = keepBefore === undefined ? "" : ` AND ${quoted(keepBefore.column)} >= $3::date`;
   return `DELETE FROM ${quoted(SCHEMA)}.${quoted(table)}
     WHERE (${joined}) NOT IN (SELECT key FROM ${STAGED} WHERE run_id = $1 AND table_name = $2)${since}`;
 }
 
+/** The little of the postgres package's client the copy uses, so its tests can run it on an in-process Postgres. */
+export interface Sql {
+  unsafe(query: string, params?: never[]): PromiseLike<readonly Record<string, unknown>[]>;
+  begin(work: (tx: Pick<Sql, "unsafe">) => Promise<void>): PromiseLike<unknown>;
+  end(options: { timeout: number }): PromiseLike<void>;
+}
+
 export function createSupabaseWarehouse(connectionString: string): WarehouseProvider {
   // One connection, as Hyperdrive pools them; no prepared statements, which a pooler does not carry between clients.
-  const sql = postgres(connectionString, { max: 1, prepare: false, fetch_types: false });
+  return warehouseOn(postgres(connectionString, { max: 1, prepare: false, fetch_types: false }));
+}
+
+export function warehouseOn(sql: Sql): WarehouseProvider {
   return {
     ranOn: async (date) => {
       const found = await sql.unsafe(
         `SELECT 1 FROM ${SCHEMA}.load_run WHERE source = 'd1' AND ended_at IS NOT NULL
          AND notes LIKE $1 LIMIT 1`,
-        [`date ${date}%`],
+        [`date ${date}%`] as never[],
       );
       return found.length > 0;
     },
     stage: async (run: string, table: TableRows) => {
-      await sql.unsafe(`DELETE FROM ${STAGED} WHERE run_id = $1 AND table_name = $2`, [run, table.table]);
+      await sql.unsafe(`DELETE FROM ${STAGED} WHERE run_id = $1 AND table_name = $2`, [run, table.table] as never[]);
       for (let start = 0; start < table.rows.length; start += BATCH) {
         const batch = table.rows.slice(start, start + BATCH);
         const params: Cell[] = batch.flatMap((row) => [rowKey(row, table.key), JSON.stringify(row)]);
@@ -86,11 +96,11 @@ export function createSupabaseWarehouse(connectionString: string): WarehouseProv
       await sql.begin(async (tx) => {
         for (const table of tables) {
           const since = table.keepBefore === undefined ? [] : [table.keepBefore.from];
-          if (table.rows > 0) changed += (await tx.unsafe(upsertSql(table), [run, table.table])).length;
+          if (table.rows > 0) changed += (await tx.unsafe(upsertSql(table), [run, table.table] as never[])).length;
           await tx.unsafe(goneSql(table), [run, table.table, ...since] as never[]);
           written += table.rows;
         }
-        await tx.unsafe(`DELETE FROM ${STAGED} WHERE run_id = $1`, [run]);
+        await tx.unsafe(`DELETE FROM ${STAGED} WHERE run_id = $1`, [run] as never[]);
       });
       return { written, changed };
     },
@@ -116,13 +126,15 @@ export function createSupabaseWarehouse(connectionString: string): WarehouseProv
           run.totalsChecked,
           run.databaseBytes,
           `date ${run.date}${run.notes === null ? "" : ` · ${run.notes}`}`,
-        ],
+        ] as never[],
       );
     },
     size: async () => {
       const [row] = await sql.unsafe("SELECT pg_database_size(current_database())::float8 AS n");
       return Number(row?.n ?? 0);
     },
-    close: () => sql.end({ timeout: 5 }),
+    close: async () => {
+      await sql.end({ timeout: 5 });
+    },
   };
 }

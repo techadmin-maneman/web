@@ -5,6 +5,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, TASKS, TASKS_READ_ON } from "./fixtures.ts";
 import { open } from "./settings-fixtures.ts";
+import { tasks, shell } from "../../apps/ops/src/content.ts";
 
 /** Whether the element the keyboard is on draws a ring: an outline wider than nothing. Null on nothing. */
 const ringDrawn = (page: Page) =>
@@ -19,7 +20,7 @@ test("draws where the keyboard is on the navigation and the Tasks board, in the 
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(TASKS) });
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: tasks.title })).toBeVisible();
   let seen = 0;
   for (let press = 0; press < 30; press += 1) {
     await page.keyboard.press("Tab");
@@ -42,5 +43,5 @@ test("keeps the navigation in place while a long section scrolls", async ({ page
   await page.getByRole("main").evaluate((main) => {
     main.scrollTop = main.scrollHeight;
   });
-  await expect(page.getByRole("navigation", { name: "Console" })).toBeInViewport();
+  await expect(page.getByRole("navigation", { name: shell.title })).toBeInViewport();
 });

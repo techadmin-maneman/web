@@ -24,7 +24,7 @@ import * as opsCopy from "../../apps/ops/src/content.ts";
 
 const SECOND = "Visit of Mon 20 Sep";
 
-const DECIDED_TODAY = "Decided today";
+const DECIDED_TODAY = opsCopy.noShows.decided.title;
 
 /** A case in the queue, found by the visit it heads. */
 const caseOf = (page: Page, visit: string) =>
@@ -112,7 +112,7 @@ test("shows what the phone said when the bounds would not take its time", async 
 // A reminder never sent once read "Never delivered", as if the client's phone had been off.
 test("says no reminder went to a client who never agreed to WhatsApp about visits", async ({ page }) => {
   await open(page);
-  await expect(fact(page, SECOND, "WhatsApp")).toHaveText("Not sent · client hasn’t opted in to WhatsApp");
+  await expect(fact(page, SECOND, "WhatsApp")).toHaveText(opsCopy.noShows.queue.message.no_consent);
 });
 
 test("tells a reminder sent and never delivered from one that was never sent", async ({ page }) => {
@@ -165,7 +165,7 @@ test("offers neither ruling until a reason is written", async ({ page }) => {
   const first = caseOf(page, FIRST);
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge })).toBeDisabled();
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.waive })).toBeDisabled();
-  await first.getByLabel("Your note · required").fill("   ");
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("   ");
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge })).toBeDisabled();
 });
 
@@ -173,7 +173,7 @@ test("offers neither ruling until a reason is written", async ({ page }) => {
 test("asks once more before it charges, with what it keeps, and sends the reason with the charge", async ({ page }) => {
   await open(page);
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("Delivered the evening before; nobody came down");
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("Delivered the evening before; nobody came down");
   await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
 
   const confirm = first.getByRole("group", { name: "Keep all Rs. 2,360 paid?" });
@@ -195,7 +195,7 @@ test("asks once more before it charges, with what it keeps, and sends the reason
 test("says what a charge keeps and what it refunds, and what it keeps of a credit", async ({ page }) => {
   await open(page);
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("Nobody came down");
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("Nobody came down");
   const ask = async (preview: object) => {
     await answer(page, { [PREVIEW]: json(preview) });
     await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
@@ -203,7 +203,7 @@ test("says what a charge keeps and what it refunds, and what it keeps of a credi
 
   await ask({ paid: 3_000_000, kept: 400_000, credit_kept: false });
   await expect(first.getByText("Keep Rs. 4,000 of the Rs. 30,000 paid, and refund Rs. 26,000?")).toBeVisible();
-  await first.getByRole("button", { name: "Back" }).click();
+  await first.getByRole("button", { name: opsCopy.noShows.queue.back }).click();
 
   await ask({ paid: 0, kept: 0, credit_kept: true });
   await expect(first.getByText(opsCopy.noShows.queue.confirm.keepsCredit)).toBeVisible();
@@ -213,7 +213,7 @@ test("sends no charge until it knows what the charge keeps", async ({ page }) =>
   await open(page);
   await answer(page, { [PREVIEW]: fails(503, "unavailable") });
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("Nobody came down");
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("Nobody came down");
   await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
   await expect(first.getByText("Couldn’t calculate the charge.")).toBeVisible();
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.confirmCharge })).toBeDisabled();
@@ -232,7 +232,7 @@ test("lists the cases ruled on today with their ruling, and reads them and the d
   await expect(decided.getByRole("listitem").filter({ hasText: "Arjun Mehra" })).toContainText("Waived · 9:05 am");
 
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("They were stuck in the lift; we have their call");
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("They were stuck in the lift; we have their call");
   const readAgain = Promise.all([
     page.waitForRequest((request) => request.url().includes("/api/no-shows/decided")),
     page.waitForRequest((request) => request.url().includes("/api/payments")),
@@ -258,9 +258,9 @@ test("sends nothing when the charge is taken back, and hands the keyboard to Cha
     return json({ decided: true })(route);
   });
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("Delivered the evening before");
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("Delivered the evening before");
   await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
-  await first.getByRole("button", { name: "Back" }).click();
+  await first.getByRole("button", { name: opsCopy.noShows.queue.back }).click();
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true })).toBeFocused();
   expect(sent).toBe(0);
 });
@@ -268,7 +268,7 @@ test("sends nothing when the charge is taken back, and hands the keyboard to Cha
 test("waives a case with its reason, and the case leaves the queue", async ({ page }) => {
   await open(page);
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("They were stuck in the lift; we have their call");
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("They were stuck in the lift; we have their call");
   const sent = page.waitForRequest((request) => request.url().includes("/decision") && request.method() === "POST");
   await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
   expect((await sent).postDataJSON()).toEqual({
@@ -286,7 +286,7 @@ test("shows no amount in the queue, and says what a charge costs and a waiver gi
 test("says so when someone else has ruled on the case already", async ({ page }) => {
   await open(page, fails(404, "not_found"));
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("Nobody came down");
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("Nobody came down");
   await first.getByRole("button", { name: opsCopy.noShows.queue.waive }).click();
   await expect(page.getByText("Already decided. Here’s the latest.")).toBeVisible();
   await expect(page.getByText(FIRST)).toBeVisible();
@@ -317,7 +317,7 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/payments": json(DAY_MONEY), "GET /api/no-shows": json(NO_SHOWS) });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: opsCopy.states.retry }).click();
   await expect(page.getByText(FIRST)).toBeVisible();
 });
 
@@ -329,7 +329,7 @@ test("meets WCAG 2.2 AA with the day’s money, a disputed charge and a queue, a
   expect(await axeViolations(page)).toEqual([]);
 
   const first = caseOf(page, FIRST);
-  await first.getByLabel("Your note · required").fill("Nobody came down");
+  await first.getByLabel(opsCopy.noShows.queue.reason.label).fill("Nobody came down");
   await first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true }).click();
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -344,7 +344,7 @@ test("offers Finance Act a charge and an uphold, and leaves waiving and refundin
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.charge, exact: true })).toBeVisible();
   await expect(first.getByRole("button", { name: opsCopy.noShows.queue.waive })).toHaveCount(0);
   await expect(disputeCard(page).getByRole("button", { name: opsCopy.noShows.dispute.uphold })).toBeVisible();
-  await expect(disputeCard(page).getByRole("button", { name: "Refund" })).toHaveCount(0);
+  await expect(disputeCard(page).getByRole("button", { name: opsCopy.noShows.dispute.refund })).toHaveCount(0);
 });
 
 test("shows Finance View the cases and the disputes, with nothing to rule on", async ({ page }) => {

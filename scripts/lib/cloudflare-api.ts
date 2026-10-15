@@ -54,6 +54,21 @@ export function accountIdFor(environment: RemoteEnvironmentName): string {
   return accountId;
 }
 
+const DatabaseIds = z.object({
+  env: z.record(
+    z.string(),
+    z.object({ d1_databases: z.array(z.object({ binding: z.string(), database_id: z.string() })) }),
+  ),
+});
+
+/** The database an environment's mm-api reads, as wrangler.jsonc binds it. */
+export function databaseIdFor(environment: RemoteEnvironmentName): string {
+  const databases = DatabaseIds.parse(readJsonc("wrangler.jsonc")).env[environment]?.d1_databases ?? [];
+  const id = databases.find((each) => each.binding === "DB")?.database_id;
+  if (id === undefined) throw new Error(`wrangler.jsonc binds no DB in ${environment}`);
+  return id;
+}
+
 /** One answer from Cloudflare's API. An HTTP error is an answer too; only a lost connection throws. */
 export interface ApiAnswer {
   readonly ok: boolean;

@@ -1,7 +1,7 @@
 // What the app's booking tests share (booking*.e2e.ts): a client's profile and what they have agreed to, a hold the
 // API answers, the sheet opened and walked to its pay step, and the prices it shows.
 
-import type { Page } from "@playwright/test";
+import { test, type Page } from "@playwright/test";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
 import { WINDOW_TIMES } from "../../src/config/scheduling.ts";
 import { expect } from "../support.ts";
@@ -9,14 +9,25 @@ import { axeViolations } from "../a11y.ts";
 import { bookerClient } from "./booker.ts";
 import { continueToPayment } from "./picking.ts";
 import { logIn } from "./signed-in.ts";
+import { titles, home, booking } from "../../apps/app/src/content.ts";
+import { priceFigures } from "../../apps/app/src/lib/money.ts";
+import { LOCAL_PRICES, PRICE } from "../prices.ts";
 
 /** A first fit and its late fee once GST applies, as it will in production (on staging GST is nothing). */
 export const FIRST_FIT = { amount_ex_gst: 3000000, amount: 3540000, gst_percent: 18 };
 
 export const LATE_FEE = { amount_ex_gst: 400000, amount: 472000, gst_percent: 18 };
 
-export const LATE_FEE_LINE =
-  "Moving or cancelling inside 24 hours costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST). The rest moves with your visit, or comes back to you.";
+/** The pay step's button for a service visit. */
+export const PAY_SERVICE = booking.pay.pay(PRICE.service);
+
+const LATE_FEE_FIGURES = priceFigures(LATE_FEE);
+
+/** The late fee's line, as the pay step writes it, under the notice the hold is sold with. */
+export const LATE_FEE_LINE = `${booking.lateFee.costs(LATE_FEE_FIGURES.amount, 24)}${booking.lateFee.split(LATE_FEE_FIGURES.split ?? "")}${booking.lateFee.rest}`;
+
+/** What the pay step says a change costs once the visit is already inside its notice, and the fee applies. */
+export const INSIDE_NOTICE_LATE_FEE = `${booking.pay.insideNotice.lateFee(24, LATE_FEE_FIGURES.amount)}${booking.lateFee.split(LATE_FEE_FIGURES.split ?? "")}.`;
 
 /** The pay step's promise for a visit ahead of its notice, and for one already inside it, whose payment is kept. */
 export const FREE_UNTIL = /^Free to move or cancel until .+\. After that, changes are charged\.$/;
@@ -48,19 +59,25 @@ export async function passedThrough(
 /** Opens the booking sheet from Visits. */
 export async function openSheet(page: Page): Promise<void> {
   await logIn(page, bookerClient().mobile);
-  await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
-  await page.getByRole("button", { name: "Book your next visit" }).click();
+  await page.getByRole("navigation").getByRole("link", { name: titles.visits }).click();
+  await page.getByRole("button", { name: home.next.book }).click();
 }
 
-/** Logs in and picks the first free day, as far as the window step. */
+/**
+ * Logs in and picks a free day of this worker's own, as far as the window step. Each worker runs one test at a time,
+ * so a day of its own is one no other test is booking at the same moment. None is the first free day, tomorrow at the
+ * soonest, so every window on it is more than a day away, whatever the time the test runs.
+ */
 export async function toWindows(page: Page): Promise<void> {
   await openSheet(page);
-  const sheet = page.getByRole("dialog", { name: "Pick a date" });
+  const sheet = page.getByRole("dialog", { name: booking.date.title });
   // The sheet asks the API for the services and the free days first; a busy machine can leave it "Loading" past the
   // five seconds an expectation waits by default.
   await expect(sheet.getByText("Step 1 of 3")).toBeVisible({ timeout: 30_000 });
-  await sheet.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await sheet.getByRole("button", { name: "Continue" }).click();
+  const free = sheet.getByRole("radio").and(page.locator(":enabled"));
+  const days = await free.count();
+  await free.nth(Math.min(days - 1, 1 + test.info().parallelIndex)).click();
+  await sheet.getByRole("button", { name: booking.service.continue }).click();
 }
 
 export async function toPayment(page: Page): Promise<void> {
@@ -146,7 +163,7 @@ export async function holdAs(page: Page, terms: Hold): Promise<() => Hold> {
       starts_at: `${asked.date}T06:30:00.000Z`,
       ends_at: `${asked.date}T10:30:00.000Z`,
       technician: { name: "Imran Qureshi", initials: "IQ" },
-      price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
+      price: { amount_ex_gst: LOCAL_PRICES.service, amount: LOCAL_PRICES.service, gst_percent: 0 },
       late_fee: null,
       free_until: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
       change_notice_hours: 24,

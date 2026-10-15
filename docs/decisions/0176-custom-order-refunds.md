@@ -19,4 +19,4 @@ A custom order is paid in full before it is ordered (ADR 0174). The owner ruled 
 
 - A client who changes their mind after the order has gone is refused by the API, so no one refunds them by mistake.
 - Books records the refund as any refund is, once Razorpay says it is processed.
-- Tests: `test/worker/ops/custom-orders.test.ts`.
+- Tests: `test/worker/purchasing/custom-orders.test.ts`.

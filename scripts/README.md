@@ -16,14 +16,14 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 
 ## dev/
 
-| Script               | What it does                                                              | Run as                                     | Writes             |
-| -------------------- | ------------------------------------------------------------------------- | ------------------------------------------ | ------------------ |
-| `dev-all.ts`         | the whole local stack: mm-api, the site and the three apps on their hosts | `npm run dev:all`                          | the local database |
-| `dev-api.ts`         | mm-api alone, as `dev:all` starts it                                      | `npm run dev`                              | the local database |
-| `ensure-dev-vars.ts` | creates `.dev.vars` from `.dev.vars.example` when it is missing           | `dev:all`, and CI                          | `.dev.vars`        |
-| `local.ts`           | the cron, Razorpay's webhook, and a technician's close, locally           | `npm run tick`, `pay:local`, `close:local` | the local database |
-| `seed-local.ts`      | enough of the story to click through                                      | `npm run db:seed:local`                    | the local database |
-| `serve-*.ts`         | serves a built site or app as its Worker does, `/api/*` passed to mm-api  | `dev:all`, and the browser tests           | no                 |
+| Script               | What it does                                                                                             | Run as                                                      | Writes             |
+| -------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------ |
+| `dev-all.ts`         | the whole local stack: mm-api, the site and the three apps on their hosts                                | `npm run dev:all`                                           | the local database |
+| `dev-api.ts`         | mm-api alone, as `dev:all` starts it                                                                     | `npm run dev`                                               | the local database |
+| `ensure-dev-vars.ts` | creates `.dev.vars` from `.dev.vars.example` when it is missing                                          | `dev:all`, and CI                                           | `.dev.vars`        |
+| `local.ts`           | the cron, Razorpay's webhook, a technician's close and a client's WhatsApp message, locally              | `npm run tick`, `pay:local`, `close:local`, `message:local` | the local database |
+| `seed-local.ts`      | enough of the story to click through, with a supplier, an order and two chats (`seed-stock-and-care.ts`) | `npm run db:seed:local`                                     | the local database |
+| `serve-*.ts`         | serves a built site or app as its Worker does, `/api/*` passed to mm-api                                 | `dev:all`, and the browser tests                            | no                 |
 
 ## build/
 
@@ -49,20 +49,21 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 
 ## ci/
 
-| Script                      | What it does                                                                         | Run by                           | Writes |
-| --------------------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------ |
-| `already-checked.ts`        | which checks these very files already passed                                         | `ci.yml`                         | no     |
-| `audit.ts`                  | `npm audit`, with the reviewed allowlist                                             | `npm run audit`, CI              | no     |
-| `auto-merge.ts`             | merges a pull request that passed and should merge itself                            | `auto-merge.yml`                 | GitHub |
-| `production-pages.ts`       | production's built pages opened in Chromium from a local server, failing on an error | `npm run build` first            | no     |
-| `check-migrations.ts`       | the migrations against the rules in `lib/migration-check.ts`                         | `npm run check:migrations`       | no     |
-| `check-open-points.ts`      | `docs/open-points.md` and every citation of a point                                  | `npm run check:open-points`      | no     |
-| `check-wrangler-config.ts`  | every environment redeclares its bindings, within the limits                         | `npm run check:config`, `ci.yml` | no     |
-| `ci-gate.ts`                | fails the gate job unless every job it waits on passed                               | `ci.yml`                         | no     |
-| `lighthouse.ts`             | Lighthouse on the built site and the client app                                      | `npm run lighthouse`, CI         | no     |
-| `lint.ts`                   | ESLint in four runs, each holding its own part's TypeScript projects                 | `npm run lint`, CI               | no     |
-| `old-code-on-new-schema.ts` | the deployed code's Worker tests against the new migrations                          | `ci.yml`                         | no     |
-| `pr-size.ts`                | warns when a pull request changes more by hand than one review reads well            | `ci.yml`                         | no     |
+| Script                      | What it does                                                                                                                       | Run by                           | Writes |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------ |
+| `already-checked.ts`        | which checks these very files already passed                                                                                       | `ci.yml`                         | no     |
+| `audit.ts`                  | `npm audit`, with the reviewed allowlist                                                                                           | `npm run audit`, CI              | no     |
+| `auto-merge.ts`             | merges a pull request that passed and should merge itself                                                                          | `auto-merge.yml`                 | GitHub |
+| `production-pages.ts`       | production's built pages opened in Chromium from a local server, failing on an error                                               | `npm run build` first            | no     |
+| `site-production-gate.ts`   | the production site built as it will go live: refused only on what waits for approval, or built with none of the design's material | CI's build job                   | no     |
+| `check-migrations.ts`       | the migrations against the rules in `lib/migration-check.ts`                                                                       | `npm run check:migrations`       | no     |
+| `check-open-points.ts`      | `docs/open-points.md` and every citation of a point                                                                                | `npm run check:open-points`      | no     |
+| `check-wrangler-config.ts`  | every environment redeclares its bindings, within the limits                                                                       | `npm run check:config`, `ci.yml` | no     |
+| `ci-gate.ts`                | fails the gate job unless every job it waits on passed                                                                             | `ci.yml`                         | no     |
+| `lighthouse.ts`             | Lighthouse on the built site and the client app                                                                                    | `npm run lighthouse`, CI         | no     |
+| `lint.ts`                   | ESLint in four runs, each holding its own part's TypeScript projects                                                               | `npm run lint`, CI               | no     |
+| `old-code-on-new-schema.ts` | the deployed code's Worker tests against the new migrations                                                                        | `ci.yml`                         | no     |
+| `pr-size.ts`                | warns when a pull request changes more by hand than one review reads well                                                          | `ci.yml`                         | no     |
 
 ## release/
 
@@ -98,20 +99,22 @@ Each writes **test records**, named "Staging test", on staging or in the owner's
 
 ## ops/
 
-| Script                   | What it does                                                                                             | With                                                                 | Writes                              |
-| ------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------- |
-| `import-pincodes.ts`     | loads the pincode list into an environment's database                                                    | the environment's name                                               | the database                        |
-| `import-referrals.ts`    | back-fills the referrals ops logged before January                                                       | the environment's name, `--file <path>`                              | the database                        |
-| `setup-crm.ts`           | the CRM fields and pick-list values the sync writes; `--check` only reads                                | `.env.crm-scripts`                                                   | the CRM, without `--check`          |
-| `check-zoho-setup.ts`    | the CRM org is set up as the sync expects                                                                | `.env.crm-scripts`                                                   | no                                  |
-| `backup-keys.ts`         | the key pair the weekly backup is encrypted to: prints the public key, writes the private one            | `--private <file>`                                                   | the file                            |
-| `backup-now.ts`          | a backup written now by the weekly job's own code, under today's date                                    | `--env`, `--public-key <file>`; wrangler signed in                   | the backups bucket                  |
-| `restore-backup.ts`      | a weekly backup downloaded and decrypted into SQL                                                        | `--env`, `--date`, `--key`, `--out`; wrangler signed in              | the SQL file                        |
-| `whatsapp-templates.ts`  | each WhatsApp template as it is submitted to MSG91 for approval                                          | none                                                                 | no                                  |
-| `cpu-report.ts`          | mm-api's CPU time over the last day                                                                      | `deploy-staging.yml`, `.env.cf-read`                                 | no                                  |
-| `table-sizes.ts`         | each table's rows in an environment's database, the largest first                                        | `--env`, `--top`; wrangler signed in                                 | no                                  |
-| `cost-model.ts`          | a city's month costed from the vendors' prices in `data/cost-model.json`                                 | `--visits`, `--leads`, `--renders`, `--seats`, `--share`, `--bridge` | no                                  |
-| `analytics-first-run.ts` | one of every record copied into the reporting copy twice, read back through Zoho's login, then taken out | `.env.analytics-supabase`                                            | the reporting copy, then empties it |
+| Script                   | What it does                                                                                                                                                        | With                                                                 | Writes                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------- |
+| `import-pincodes.ts`     | loads the pincode list into an environment's database                                                                                                               | the environment's name                                               | the database                        |
+| `import-referrals.ts`    | back-fills the referrals ops logged before January                                                                                                                  | the environment's name, `--file <path>`                              | the database                        |
+| `setup-crm.ts`           | the CRM fields and pick-list values the sync writes; `--check` only reads                                                                                           | `.env.crm-scripts`                                                   | the CRM, without `--check`          |
+| `check-zoho-setup.ts`    | the CRM org is set up as the sync expects                                                                                                                           | `.env.crm-scripts`                                                   | no                                  |
+| `backup-keys.ts`         | the key pair the weekly backup is encrypted to: prints the public key, writes the private one                                                                       | `--private <file>`                                                   | the file                            |
+| `backup-now.ts`          | a backup written now by the weekly job's own code, under today's date                                                                                               | `--env`, `--public-key <file>`; wrangler signed in                   | the backups bucket                  |
+| `restore-backup.ts`      | a weekly backup downloaded and decrypted into SQL                                                                                                                   | `--env`, `--date`, `--key`, `--out`; wrangler signed in              | the SQL file                        |
+| `whatsapp-templates.ts`  | each WhatsApp template as it is submitted to MSG91 for approval                                                                                                     | none                                                                 | no                                  |
+| `cpu-report.ts`          | mm-api's CPU time over the last day                                                                                                                                 | `deploy-staging.yml`, `.env.cf-read`                                 | no                                  |
+| `table-sizes.ts`         | each table's rows in an environment's database, the largest first                                                                                                   | `--env`, `--top`; wrangler signed in                                 | no                                  |
+| `cost-model.ts`          | a city's month costed from the vendors' prices in `data/cost-model.json`                                                                                            | `--visits`, `--leads`, `--renders`, `--seats`, `--share`, `--bridge` | no                                  |
+| `analytics-first-run.ts` | one of every record copied into the reporting copy twice, read back through Zoho's login, then taken out                                                            | `.env.analytics-supabase`                                            | the reporting copy, then empties it |
+| `warehouse-migrate.ts`   | the reporting copy's migrations (`warehouse/migrations`) it has not had; `--mark-applied <name>` for a schema made by hand, once it matches; `--pending` lists them | `.env.analytics-supabase` (`WAREHOUSE_ADMIN_URL`)                    | the reporting copy's schema         |
+| `warehouse-check.ts`     | whether the reporting copy's schema is what its migrations make                                                                                                     | `.env.analytics-supabase`                                            | no                                  |
 
 ## fidelity/
 

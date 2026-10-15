@@ -20,4 +20,4 @@ The ledger counts the hair systems each place holds (ADR 0156), but not which pi
 ## Consequences
 
 - Scanning labels by phone, the piece step scanning its piece from the kit, and the technician's Kit screen build on units.
-- Tests: `test/worker/ops/stock-units.test.ts`, `e2e/ops/stock.e2e.ts`.
+- Tests: `test/worker/inventory/stock-units.test.ts`, `e2e/ops/stock.e2e.ts`.

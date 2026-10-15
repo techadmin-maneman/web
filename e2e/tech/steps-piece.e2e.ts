@@ -17,7 +17,7 @@ test.describe("the piece (board B3, step 4)", () => {
     fake.pieces = [ROHITS_PIECE];
     startedThrough(fake, "before_photos", "checklist", "consumables");
     await page.goto(`/jobs/${JOB_ID}/piece`);
-    await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.piece })).toBeVisible();
     return fake;
   }
 
@@ -208,8 +208,8 @@ test.describe("the piece (board B3, step 4)", () => {
 
     // The new piece: typed, with its base and lot, which the pieces tab reads.
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-STD-5120-A");
-    await page.getByRole("textbox", { name: "Base" }).fill("PLACEHOLDER_STANDARD");
-    await page.getByRole("textbox", { name: "Supplier lot" }).fill("LOT-5120");
+    await page.getByRole("textbox", { name: techCopy.steps.piece.base }).fill("PLACEHOLDER_STANDARD");
+    await page.getByRole("textbox", { name: techCopy.steps.piece.lot }).fill("LOT-5120");
 
     // The one that came off, picked from the client's pieces rather than typed.
     await page.getByRole("button", { name: techCopy.steps.piece.pick }).click();
@@ -220,7 +220,7 @@ test.describe("the piece (board B3, step 4)", () => {
     expect(await axeViolations(page)).toEqual([]);
 
     await page.getByRole("button", { name: techCopy.steps.next }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.after_photos })).toBeVisible();
     await expect.poll(() => writesTo(fake, "piece").length).toBe(1);
     expect(writesTo(fake, "piece")[0]?.body).toEqual({
       piece_code: "MM-STD-5120-A",
@@ -242,7 +242,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     fake.checklist = ONE_VISIT_CHECKLIST;
     startedThrough(fake, "before_photos");
     await page.goto(`/jobs/${JOB_ID}/piece`);
-    await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.piece })).toBeVisible();
     return fake;
   }
 
@@ -294,7 +294,9 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("button", { name: techCopy.oneVisit.declined, exact: true }).click();
     await page.getByRole("button", { name: techCopy.steps.next }).click();
 
-    await expect(page.getByRole("heading", { level: 1, name: "Consultation checklist" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.consultation }),
+    ).toBeVisible();
     const items = checklistItems(page);
     await expect(items).toHaveCount(3);
     await expect(page.getByRole("button", { name: /Adhesive applied/ })).toHaveCount(0);
@@ -313,14 +315,14 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     await page.getByRole("textbox", { name: techCopy.steps.piece.label }).fill("MM-NAT-5120-A");
     await page.getByRole("button", { name: techCopy.steps.next }).click();
 
-    await expect(page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist })).toBeVisible();
     await expect(checklistItems(page)).toHaveCount(9);
   });
 
   // A declined visit offers no code and promises no link, and closes as what it became.
   test("ends a declined visit as a free consultation, with no code asked for, and closes as one", async ({ page }) => {
     const fake = await atTheOutcome(page, { declined: true }, { code: "AUDTEST", given_by: "client" });
-    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
 
     await expect(page.getByText(techCopy.oneVisit.endsAsConsultation)).toBeVisible();
     await expect(page.getByText(/payment link/)).toHaveCount(0);
@@ -335,7 +337,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("names the product the payment link is for, once the client chose it", async ({ page }) => {
     await atTheOutcome(page, { product: "natural" });
-    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
     await expect(page.getByText("Closing texts the client a payment link for Mane Man Natural.")).toBeVisible();
     await expect(page.getByLabel(techCopy.oneVisit.code.label)).toBeVisible();
   });
@@ -355,7 +357,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
     });
     const box = page.getByLabel(techCopy.oneVisit.code.label);
     await expect(box).toHaveCount(0);
-    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
     await box.fill("wrong1");
     await page.getByRole("button", { name: techCopy.oneVisit.code.apply }).click();
     await expect(page.getByRole("alert")).toHaveText("That code doesn’t apply to this visit.");
@@ -371,7 +373,7 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
   test("says the code the client booked with, and asks for none", async ({ page }) => {
     await atTheOutcome(page, { product: "natural" }, { code: "AUDTEST", given_by: "client" });
-    await page.getByRole("button", { name: "Done", exact: true }).click();
+    await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
     await expect(page.getByText("Code AUDTEST applied at booking. The payment link will take it off.")).toBeVisible();
     await expect(page.getByLabel(techCopy.oneVisit.code.label)).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);

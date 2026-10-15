@@ -68,7 +68,7 @@ test("Home offers the next service on the day it falls due, and the sheet opens 
   const { due } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, due.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   // Nothing is booked, so the prompt is the next service's, not the address or the invoice.
   await expect(
     page.getByText(`Your next service visit is due on ${shortDate(due.date)}, in the morning.`),
@@ -86,14 +86,14 @@ test("Home offers the next service on the day it falls due, and the sheet opens 
   expect(asked[0]?.searchParams.get("type")).toBe("service");
   expect(asked[0]?.searchParams.get("from")).toBe(daysAfter(due.date, -7));
   await accessible(page);
-  await dates.getByRole("button", { name: "Continue" }).click();
+  await dates.getByRole("button", { name: appCopy.booking.window.continueFree }).click();
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
   await expect(windows.getByRole("radio", { checked: true })).toBeVisible();
   await expect(windows.locator("label").filter({ has: page.getByRole("radio", { checked: true }) })).toContainText(
-    "Morning",
+    appCopy.WINDOW_NAMES.morning,
   );
   await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toBeEnabled();
-  await windows.getByRole("button", { name: "Close" }).click();
+  await windows.getByRole("button", { name: appCopy.booking.close }).click();
   await expect(windows).toHaveCount(0);
 });
 
@@ -117,12 +117,12 @@ test("Visits lets a fitted client book a service or a replacement, each in its o
   const { due } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, due.mobile);
-  await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Visits" })).toBeVisible();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.visits.title }).click();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.visits.title })).toBeVisible();
   await page.getByRole("button", { name: appCopy.home.next.orReplacement }).click();
   await expect(page.getByRole("dialog", { name: appCopy.booking.date.title })).toBeVisible();
   expect(asked.at(-1)?.searchParams.get("type")).toBe("replacement");
-  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: appCopy.booking.close }).click();
 
   await page.getByRole("button", { name: appCopy.home.next.book }).click();
   const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
@@ -149,24 +149,24 @@ test("Home offers the replacement where the piece falls due first, and a page sa
   const involves = page.getByRole("link", { name: appCopy.home.prompt.involves });
   await expect(involves).toHaveAttribute("href", "/replacement");
   await involves.click();
-  await expect(page.getByRole("heading", { level: 1, name: "What a replacement involves" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.replacement.title })).toBeVisible();
   await expect(page.getByText("Your technician removes your current hair system")).toBeVisible();
   await expect(page).toHaveTitle(/^Replacement · Mane Man$/);
   await accessible(page);
 
-  await page.getByRole("button", { name: "Book the replacement" }).click();
+  await page.getByRole("button", { name: appCopy.home.prompt.bookReplacement }).click();
   const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
   await expect(dates.getByRole("radio", { checked: true })).toHaveAccessibleName(weekdayDate(replacement.date));
   expect(asked.at(-1)?.searchParams.get("type")).toBe("replacement");
-  await dates.getByRole("button", { name: "Continue" }).click();
+  await dates.getByRole("button", { name: appCopy.booking.date.continue }).click();
   // No window is offered: the client chooses one.
   await expect(
     page.getByRole("dialog", { name: appCopy.booking.window.title }).getByRole("radio", { checked: true }),
   ).toHaveCount(0);
-  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: appCopy.booking.close }).click();
 
   await page.getByRole("link", { name: appCopy.replacement.back }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
 });
 
 test("Home recaps the consultation, and offers the first fit as the hair system recommended, in its window", async ({
@@ -175,7 +175,7 @@ test("Home recaps the consultation, and offers the first fit as the hair system 
   const { firstFit } = nextVisitClients();
   const asked = await everyWindowOpen(page);
   await logIn(page, firstFit.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your consultation" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.consultation.label })).toBeVisible();
   await expect(page.getByText(`${shortDate(firstFit.consulted)} · Imran`)).toBeVisible();
   await expect(page.getByText("Imran recommends Mane Man Essential.")).toBeVisible();
   // The first fit is Home's card, and never a prompt beneath it.
@@ -187,9 +187,9 @@ test("Home recaps the consultation, and offers the first fit as the hair system 
   await expect(dates.getByRole("radio", { checked: true })).toHaveAccessibleName(weekdayDate(firstFitDay()));
   expect(asked[0]?.searchParams.get("type")).toBe("first_fit");
   expect(asked[0]?.searchParams.get("tier")).toBe("essential");
-  await dates.getByRole("button", { name: "Continue" }).click();
+  await dates.getByRole("button", { name: appCopy.booking.window.continueFree }).click();
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
   await expect(windows.locator("label").filter({ has: page.getByRole("radio", { checked: true }) })).toContainText(
-    "Afternoon",
+    appCopy.WINDOW_NAMES.afternoon,
   );
 });

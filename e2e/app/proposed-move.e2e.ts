@@ -1,6 +1,6 @@
 // A move to another day ops asked the client to confirm (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md),
 // laid over the fitted client's next visit as the local API reads it: Home asks, Accept answers, and Reschedule offers
-// another time beside it. The proposal itself, and accepting it, are test/worker/ops/dispatch-proposals.test.ts's.
+// another time beside it. The proposal itself, and accepting it, are test/worker/dispatch/dispatch-proposals.test.ts's.
 
 import type { Page } from "@playwright/test";
 import { shortDate } from "../../packages/web-kit/dates.ts";
@@ -67,7 +67,7 @@ test("a proposed time taken since says so, and leaves the client to pick another
   await logIn(page, fittedClient().mobile);
 
   await page.getByRole("button", { name: `Accept ${shortDate(PROPOSED)}` }).click();
-  await expect(page.getByText("That time has just gone. Pick another.")).toBeVisible();
+  await expect(page.getByText(appCopy.home.proposal.gone)).toBeVisible();
   await expect(page.getByRole("button", { name: /^Accept / })).toHaveCount(0);
   await page.getByRole("button", { name: appCopy.home.proposal.pick }).click();
   await expect(page.getByRole("dialog", { name: /^Move \w+day’s visit$/ })).toBeVisible();

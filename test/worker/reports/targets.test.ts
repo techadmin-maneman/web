@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { captureLogs, markDatabase, request } from "../helpers.ts";
-import { enforce, listStaff, opsAs, person } from "./staff-fixtures.ts";
+import { enforce, listStaff, opsAs, person } from "../ops/staff-fixtures.ts";
 
 const ADMIN = "admin@maneman.test";
 const LOOKER = "looker@maneman.test";

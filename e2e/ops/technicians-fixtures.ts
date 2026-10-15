@@ -17,6 +17,7 @@ import {
   type Answers,
   type Call,
 } from "./fixtures.ts";
+import { technicians } from "../../apps/ops/src/content.ts";
 
 export const IMRAN = "88000000-0000-4000-8000-000000000001";
 
@@ -74,7 +75,7 @@ export async function open(page: Page, changed: Answers = {}): Promise<void> {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, answersWith(changed));
   await page.goto("/technicians");
-  await expect(page.getByRole("heading", { level: 1, name: "Technicians" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: technicians.title })).toBeVisible();
 }
 
 /** Opens a technician's page from the roster by their name, on the tab named, or on their week. */
@@ -87,6 +88,6 @@ export async function pageOf(page: Page, name: string, tab?: string) {
 
 /** Back to the roster from a technician's page. */
 export async function backToRoster(page: Page) {
-  await page.getByRole("link", { name: "All technicians" }).click();
+  await page.getByRole("link", { name: technicians.page.back }).click();
   await expect(page.getByRole("table")).toBeVisible();
 }

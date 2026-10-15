@@ -5,6 +5,7 @@ import type { Page } from "@playwright/test";
 import { LOCAL_LOGIN_CODE } from "../../scripts/lib/local-stack.ts";
 import { expect } from "../support.ts";
 import { bookedNumber } from "./booked-numbers.ts";
+import { home, login } from "../../apps/app/src/content.ts";
 
 export const CODE = LOCAL_LOGIN_CODE;
 
@@ -12,15 +13,15 @@ export const CODE = LOCAL_LOGIN_CODE;
 export async function signIn(page: Page): Promise<string> {
   const mobile = bookedNumber();
   await logIn(page, mobile);
-  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: home.consultation.label })).toBeVisible();
   return mobile;
 }
 
 /** Logs in with a number that may, from the app's first screen. */
 export async function logIn(page: Page, mobile: string): Promise<void> {
   await page.goto("/");
-  await page.getByRole("textbox", { name: "Mobile number" }).fill(mobile);
-  await page.getByRole("button", { name: "Send code on WhatsApp" }).click();
+  await page.getByRole("textbox", { name: login.mobile.label }).fill(mobile);
+  await page.getByRole("button", { name: login.mobile.send }).click();
   // The sixth digit sends it.
-  await page.getByRole("textbox", { name: "The 6-digit code" }).fill(CODE);
+  await page.getByRole("textbox", { name: login.code.label }).fill(CODE);
 }

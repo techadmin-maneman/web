@@ -1,87 +1,79 @@
-// The publish gate, end to end: the production site, built as it will be once it
-// goes live (--live), builds only when every notice and legal page is approved,
-// and then ships none of the design's placeholder material.
-// The gate's refusals are proven in test/node/site/site-content.test.ts.
-//
-// The try-on's look goes to WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md), and the only
-// notices that say so await counsel (docs/open-points.md, item 146). Until
-// counsel approves them, and the legal pages' wording for the apps, the production
-// build refuses them, and nothing else; what a production build ships is
-// checked again the day it builds.
+// The production site's publish gate end to end runs in CI's build job (scripts/ci/site-production-gate.ts), which
+// builds the site; these are its parts: which refusals only counsel's approval clears, the reasons read back from a
+// refused build, and what a passing build must not ship. The gate's refusals are proven in
+// test/node/site/site-content.test.ts.
 
-import { spawnSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { awaitsApproval, refusals, refusedFor, shippedPlaceholders } from "../../../scripts/lib/site-gate.ts";
 import { DESIGN_PLACEHOLDERS } from "../../../site/src/content/design-placeholders.ts";
-import { legalPages, notices } from "../../../site/src/content/site.ts";
 import { unreferencedAssets } from "../../../site/src/lib/static-files.ts";
 
-const OUT = "site/dist/production";
-const AWAITING_COUNSEL = Object.values(notices).filter((notice) => !notice.approved);
-const PAGES_AWAITING_COUNSEL = Object.values(legalPages).filter((page) => !page.approved);
-const BUILDS = AWAITING_COUNSEL.length === 0 && PAGES_AWAITING_COUNSEL.length === 0;
-
-describe("the production site build", () => {
-  it.runIf(!BUILDS)("refuses what awaits counsel, and nothing else", { timeout: 180_000 }, () => {
-    expect(AWAITING_COUNSEL.map((notice) => notice.version)).toEqual(["photo-v5", "gate-v5"]);
-    expect(PAGES_AWAITING_COUNSEL.map((page) => page.title)).toEqual(["Privacy", "Terms"]);
-    const build = spawnSync(process.execPath, ["scripts/build/build-site.ts", "--env", "production", "--live"], {
-      encoding: "utf8",
-    });
-    const output = `${build.stdout}${build.stderr}`;
-    expect(build.status, output).not.toBe(0);
-    const problems = output.split("\n").filter((line) => line.startsWith("  - "));
-    expect(problems.slice(0, 4)).toEqual([
-      "  - the photo notice (photo-v5) is not approved",
-      "  - the gate notice (gate-v5) is not approved",
-      "  - the privacy page’s wording is not approved",
-      "  - the terms page’s wording is not approved",
-    ]);
-    // The sentences counsel has still to see are marked in the site's content, and refused with the rest.
-    expect(problems.slice(4)).toEqual([
-      expect.stringMatching(/^ {2}- site\/src\/content\/site\/legal\.ts: \d+ lines marked/),
-    ]);
+describe("what stops the production site", () => {
+  it("is today only what waits for counsel's approval", () => {
+    expect(refusals().filter((problem) => !awaitsApproval(problem))).toEqual([]);
   });
 
-  it.runIf(BUILDS)("passes the publish gate", { timeout: 180_000 }, () => {
-    const build = spawnSync(process.execPath, ["scripts/build/build-site.ts", "--env", "production", "--live"], {
-      encoding: "utf8",
-    });
-    expect(build.status, `${build.stdout}${build.stderr}`).toBe(0);
+  it("tells a notice, a legal page or marked words, which approval clears, from a defect, which it does not", () => {
+    expect(awaitsApproval("the photo notice (photo-v9) is not approved")).toBe(true);
+    expect(awaitsApproval("the terms page’s wording is not approved")).toBe(true);
+    expect(awaitsApproval("site/src/content/site/legal.ts: 2 lines marked PLACEHOLDER, at 3, 9")).toBe(true);
+    expect(awaitsApproval('a price is typed by hand, "Rs. 2,000": the site gives no price of ours')).toBe(false);
+    expect(awaitsApproval("the home page is not published: production needs its text")).toBe(false);
   });
 
-  it.runIf(BUILDS)("ships no placeholder tag, no noindex and none of the design’s placeholder text", () => {
-    const pages = readdirSync(OUT).filter((file) => file.endsWith(".html"));
-    expect(pages.length).toBeGreaterThan(5);
-    const placeholders = Object.values(DESIGN_PLACEHOLDERS)
+  it("is read back from a refused build, a reason a line", () => {
+    const output = "The production build is blocked (docs/site.md):\n  - one\n  - two\nError: at astro.config.ts";
+    expect(refusedFor(output)).toEqual(["one", "two"]);
+  });
+});
+
+describe("a production site that passes its gate", () => {
+  let out: string;
+  const page = (name: string, html: string) => {
+    writeFileSync(path.join(out, name), html);
+  };
+
+  beforeEach(() => {
+    out = mkdtempSync(path.join(tmpdir(), "mm-site-"));
+    mkdirSync(path.join(out, "_astro"));
+    for (const name of ["index", "try", "book", "guides", "contact"]) page(`${name}.html`, "<h1>Mane Man</h1>");
+    page("404.html", '<meta name="robots" content="noindex">');
+    writeFileSync(path.join(out, "robots.txt"), "User-agent: *\nAllow: /");
+    writeFileSync(path.join(out, "_headers"), "/*\n  X-Content-Type-Options: nosniff");
+  });
+
+  afterEach(() => {
+    rmSync(out, { recursive: true, force: true });
+  });
+
+  it("ships nothing of the design's", () => {
+    expect(shippedPlaceholders(out)).toEqual([]);
+  });
+
+  it("is caught shipping a placeholder tag, a page kept from search, or the design's text", () => {
+    const text = Object.values(DESIGN_PLACEHOLDERS)
       .flat()
-      .filter((value) => value.length > 12);
-    for (const page of pages) {
-      const html = readFileSync(`${OUT}/${page}`, "utf8");
-      expect(html, page).not.toContain(">Placeholder<");
-      // Two pages stay out of search engines: the 404, and the referral landing, whose
-      // address holds one person's invite code (docs/decisions/0027-referral-landing.md).
-      if (page !== "404.html" && page !== "r.html") expect(html, page).not.toContain("noindex");
-      for (const value of placeholders) expect(html, `${page}: ${value}`).not.toContain(value);
-    }
-    expect(readFileSync(`${OUT}/robots.txt`, "utf8")).toContain("Allow: /");
-    expect(readFileSync(`${OUT}/_headers`, "utf8")).not.toContain("X-Robots-Tag");
+      .find((value) => value.length > 12 && !/\.(jpg|mp4)$/.test(value));
+    page("index.html", `<span>Placeholder</span><span>>Placeholder<</span> ${text ?? ""}`);
+    page("try.html", '<meta name="robots" content="noindex">');
+    expect(shippedPlaceholders(out)).toEqual([
+      "index.html carries a placeholder tag",
+      `index.html holds the design's "${text ?? ""}"`,
+      "try.html is kept out of search engines",
+    ]);
   });
 
-  // REQ-S4-01: a placeholder photograph is not published by leaving it at a hashed address nothing links to.
-  it.runIf(BUILDS)("ships none of the design’s placeholder photographs or footage, even unlinked", () => {
-    const files = readdirSync(`${OUT}/_astro`);
-    const stems = Object.values(DESIGN_PLACEHOLDERS)
+  // A placeholder photograph is not published by leaving it at a hashed address nothing links to.
+  it("is caught shipping a placeholder photograph, even unlinked", () => {
+    const photo = Object.values(DESIGN_PLACEHOLDERS)
       .flat()
-      .filter((value) => /\.(jpg|mp4)$/.test(value))
-      .map((file) => file.replace(/\.(jpg|mp4)$/, ""));
-    expect(stems.length).toBeGreaterThan(20);
-    for (const stem of stems) {
-      expect(
-        files.filter((file) => file.startsWith(`${stem}.`)),
-        stem,
-      ).toEqual([]);
-    }
+      .find((value) => value.endsWith(".jpg"));
+    const stem = (photo ?? "none.jpg").replace(/\.jpg$/, "");
+    writeFileSync(path.join(out, "_astro", `${stem}.Ab12Cd.webp`), "");
+    expect(shippedPlaceholders(out)).toEqual([`_astro/${stem}.Ab12Cd.webp was shipped`]);
   });
 });
 

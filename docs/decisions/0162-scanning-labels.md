@@ -20,4 +20,4 @@ Every hair system piece now carries a QR label (ADR 0161), but a movement that n
 ## Consequences
 
 - The piece step scanning its piece from the kit, and the technician's Kit screen, use the same scanner.
-- Tests: `test/worker/ops/stock-scans.test.ts`, `test/node/packages/ui-scan.test.ts`, `e2e/ops/stock.e2e.ts`, `e2e/ops/console.e2e.ts`.
+- Tests: `test/worker/inventory/stock-scans.test.ts`, `test/node/packages/ui-scan.test.ts`, `e2e/ops/stock.e2e.ts`, `e2e/ops/console.e2e.ts`.

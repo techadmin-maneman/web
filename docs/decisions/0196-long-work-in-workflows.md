@@ -31,4 +31,4 @@ The nightly analytics copy and the weekly backup each ran inside one cron run: e
 
 - Workflows bill as Workers requests and CPU, and each run's state past the plan's gigabyte: a night and a week together, a few hundred steps, cost well under a cent a month (`COST_NOTES`, ADR 0194).
 - The copy still works every table out from D1 each night; what changed is that only changed rows are written, and the whole night lands at once. Reading D1 incrementally waits until a table grows large enough to need it.
-- Tests: `test/worker/jobs/workflows.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-sql.test.ts`, `test/node/tooling/backups.test.ts`, `test/node/tooling/triggers.test.ts`.
+- Tests: `test/worker/jobs/workflows.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`, `test/node/api/warehouse-postgres.test.ts`, `test/node/tooling/backups.test.ts`, `test/node/tooling/triggers.test.ts`.

@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientVisit, DeletionRequest, ErasedClientRecord } from "../../apps/ops/src/api.ts";
 import { ErasedRecord } from "../../apps/ops/src/clients/Erase.tsx";
 import { DeletionsScreen } from "../../apps/ops/src/deletion-requests/DeletionsScreen.tsx";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 
@@ -99,12 +101,15 @@ beforeEach(() => {
   Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
   answers = new Map();
   // Anything not answered here is refused, as the API refuses a call it cannot serve.
-  vi.stubGlobal("fetch", (url: string, init?: { method?: string }) => {
-    const path = new URL(url, "https://ops.maneman.test").pathname;
-    const reply = answers.get(`${init?.method ?? "GET"} ${path}`);
-    const refused = () => Response.json({ error: { code: "unavailable", request_id: "request-1" } }, { status: 503 });
-    return Promise.resolve((reply ?? refused)());
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init?: { method?: string }) => {
+      const path = new URL(url, "https://ops.maneman.test").pathname;
+      const reply = answers.get(`${init?.method ?? "GET"} ${path}`);
+      const refused = () => Response.json({ error: { code: "unavailable", request_id: "request-1" } }, { status: 503 });
+      return Promise.resolve((reply ?? refused)());
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -122,9 +127,7 @@ async function show(element: React.ReactElement) {
   act(() => {
     root.render(element);
   });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 const buttonNamed = (name: string) =>
@@ -167,7 +170,7 @@ describe("a deletion decided in the queue", () => {
     });
     await act(async () => {
       buttonNamed(`Erase ${REQUEST.name}`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
 
     expect(page.querySelector('[role="status"]')?.textContent).toBe("Client erased. They’re told on WhatsApp.");

@@ -4,6 +4,7 @@
 import type { Page } from "@playwright/test";
 import { expect } from "../support.ts";
 import { answer, json, TASKS, TASKS_READ_ON, type OpsReply } from "./fixtures.ts";
+import { tasks } from "../../apps/ops/src/content.ts";
 
 /** No alert open: "Needs a hand" draws nothing. */
 export const NO_ALERTS: OpsReply<"/api/alerts"> = { count: 0, alerts: [] };
@@ -12,7 +13,7 @@ export async function open(page: Page, body: OpsReply<"/api/tasks"> = TASKS, ale
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(body), "GET /api/alerts": json(alerts) });
   await page.goto("/tasks");
-  await expect(page.getByRole("heading", { level: 1, name: "Tasks" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: tasks.title })).toBeVisible();
 }
 
 /** The list itself; the console's navigation is a list too. */

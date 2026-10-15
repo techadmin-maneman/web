@@ -21,4 +21,4 @@ Stock moved between the warehouse, a hub and a stockroom travels for days, and s
 ## Consequences
 
 - The ledger holds what each place has; in transit is the transfers not yet settled. An alert for a transfer long on its way comes with the expiry view's alerts.
-- Tests: `test/worker/ops/stock-transit.test.ts`, `e2e/ops/stock.e2e.ts`.
+- Tests: `test/worker/inventory/stock-transit.test.ts`, `e2e/ops/stock.e2e.ts`.

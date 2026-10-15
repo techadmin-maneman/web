@@ -27,6 +27,7 @@
 // written (src/domain/dispatch/technicians.ts). The token is generated here and never
 // printed.
 
+import { d1Query } from "../../scripts/lib/d1.ts";
 import { execFile } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -109,24 +110,9 @@ async function execute(statements: readonly string[]): Promise<void> {
   }
 }
 
-/** Reads rows from the staging database. */
-export async function query<T>(sql: string): Promise<T[]> {
-  const { stdout } = await wrangler(
-    "d1",
-    "execute",
-    DATABASE,
-    "--env",
-    "staging",
-    "--remote",
-    "--json",
-    "--command",
-    sql,
-  );
-  // wrangler prints its banner before the JSON when the terminal is not a TTY.
-  const start = stdout.indexOf("[");
-  if (start < 0) throw new Error("the staging query answered nothing that looks like JSON");
-  const answers = JSON.parse(stdout.slice(start)) as { results: T[] }[];
-  return answers[0]?.results ?? [];
+/** Reads rows from the staging database, its statement sent as a file (scripts/lib/d1.ts). */
+export function query<T>(sql: string): Promise<T[]> {
+  return Promise.resolve(d1Query<T>("staging", sql));
 }
 
 /** India's calendar date `days` from today. */

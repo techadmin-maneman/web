@@ -20,7 +20,7 @@ test.describe("the client’s hair profile", () => {
     fake.profile = profile;
     startedThrough(fake, "before_photos", "checklist", "consumables");
     await page.goto(`/jobs/${JOB_ID}/profile`);
-    await expect(page.getByRole("heading", { level: 1, name: "Hair profile" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.profile })).toBeVisible();
     return fake;
   }
 
@@ -29,7 +29,7 @@ test.describe("the client’s hair profile", () => {
   test("takes the fit spec, then the history, and sends them as one", async ({ page }) => {
     const fake = await atTheProfile(page);
     expect(await axeViolations(page)).toEqual([]);
-    await page.getByRole("radio", { name: "IV", exact: true }).click();
+    await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
     await page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm }).fill("57.5");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_width_in }).fill("8");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_length_in }).fill("10");
@@ -37,30 +37,32 @@ test.describe("the client’s hair profile", () => {
     await expect(page.getByText("20.3 × 25.4 cm")).toBeVisible();
     // Each field's choices are one group named by its title, so "Straight" says whether it is the wave or the hairline.
     for (const field of ["Wave", "Hairline"]) {
-      await expect(page.getByRole("radiogroup", { name: field }).getByRole("radio", { name: "Straight" })).toHaveCount(
-        1,
-      );
+      await expect(
+        page.getByRole("radiogroup", { name: field }).getByRole("radio", { name: techCopy.profile.waves.straight }),
+      ).toHaveCount(1);
     }
     // The suppliers' order, not #1 … #8 then #1B.
-    await expect(page.getByRole("radiogroup", { name: "Colour", exact: true }).getByRole("radio")).toHaveText([
-      "#1",
-      "#1B",
-      "#2",
-      "#3",
-      "#4",
-      "#5",
-      "#6",
-      "#7",
-      "#8",
+    await expect(
+      page.getByRole("radiogroup", { name: techCopy.profile.sections.colour, exact: true }).getByRole("radio"),
+    ).toHaveText([
+      techCopy.profile.colours["1"],
+      techCopy.profile.colours["1B"],
+      techCopy.profile.colours["2"],
+      techCopy.profile.colours["3"],
+      techCopy.profile.colours["4"],
+      techCopy.profile.colours["5"],
+      techCopy.profile.colours["6"],
+      techCopy.profile.colours["7"],
+      techCopy.profile.colours["8"],
     ]);
-    await page.getByRole("radio", { name: "#1B" }).click();
+    await page.getByRole("radio", { name: techCopy.profile.colours["1B"] }).click();
     await page.getByRole("radio", { name: techCopy.profile.densities["120"] }).click();
     await page.getByRole("radio", { name: "Mane Man Natural" }).click();
     await page.getByRole("radio", { name: techCopy.profile.attachments.tape, exact: true }).click();
     expect(await gilded(page)).toEqual(["Next"]);
     await next(page).click();
 
-    await expect(page.getByRole("heading", { level: 1, name: "History" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.profile.history.title })).toBeVisible();
     await page.getByRole("button", { name: techCopy.profile.remedies.minoxidil }).click();
     await page.getByRole("button", { name: techCopy.profile.remedies.transplant }).click();
     await page.getByRole("textbox", { name: techCopy.profile.history.year }).fill("2019");
@@ -69,7 +71,7 @@ test.describe("the client’s hair profile", () => {
     await next(page).click();
 
     // A consultation takes no after photographs, so the outcome follows.
-    await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
     await expect.poll(() => writesTo(fake, "profile").length).toBe(1);
     expect(writesTo(fake, "profile")[0]?.body).toEqual({
       fit: {
@@ -96,7 +98,7 @@ test.describe("the client’s hair profile", () => {
 
   test("keeps what was typed when the app closes part-way, and lets it go once sent", async ({ page }) => {
     const fake = await atTheProfile(page);
-    await page.getByRole("radio", { name: "IV", exact: true }).click();
+    await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
     await page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm }).fill("57.5");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_width_in }).fill("8");
     await page.getByRole("textbox", { name: techCopy.profile.measurements.base_length_in }).fill("10");
@@ -108,13 +110,13 @@ test.describe("the client’s hair profile", () => {
     await expect.poll(() => deviceRecordOnPhone(page, "profile_draft")).toContain("Dry at the crown");
 
     await page.reload();
-    await expect(page.getByRole("heading", { level: 1, name: "History" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.profile.history.title })).toBeVisible();
     await expect(page.getByRole("textbox", { name: techCopy.profile.history.skin })).toHaveValue("Dry at the crown");
-    await page.getByRole("button", { name: "Back" }).click();
+    await page.getByRole("button", { name: techCopy.steps.back }).click();
     await expect(page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm })).toHaveValue(
       "57.5",
     );
-    await expect(page.getByRole("radio", { name: "IV", exact: true })).toBeChecked();
+    await expect(page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true })).toBeChecked();
 
     await next(page).click();
     await next(page).click();
@@ -138,7 +140,7 @@ test.describe("the client’s hair profile", () => {
 
   test("starts from the profile as it stands, names it, and sends no history where none was said", async ({ page }) => {
     const fake = await atTheProfile(page, { ...ROHITS_PROFILE, history: null });
-    await expect(page.getByRole("radio", { name: "IV", exact: true })).toBeChecked();
+    await expect(page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true })).toBeChecked();
     await expect(page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm })).toHaveValue(
       "57.5",
     );
@@ -157,7 +159,7 @@ test.describe("the client’s hair profile", () => {
     const fake = await fakeTech(page);
     fake.profile = ROHITS_PROFILE;
     await page.goto(`/jobs/${JOB_ID}`);
-    const card = page.getByRole("region", { name: "Hair profile" });
+    const card = page.getByRole("region", { name: techCopy.steps.titles.profile });
     await expect(card.getByText("Mane Man Essential")).toBeVisible();
     await expect(card.getByText("8 × 10 in")).toBeVisible();
     await expect(card.getByText("#1B / 20% grey")).toBeVisible();

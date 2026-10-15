@@ -4,7 +4,7 @@ How a screen is put together from `packages/ui`, so a new one reads like the res
 
 ## The parts
 
-Take every control and every recurring piece from `packages/ui`; a screen's own stylesheet sets only where a part stands, never its colour or size (`test/node/architecture/shared-controls.test.ts`, `test/node/dom/ui-package.test.ts`).
+Take every control and every recurring piece from `packages/ui`; a screen's own stylesheet sets only where a part stands, never its colour or size (`test/node/architecture/shared-controls.test.ts`, `test/node/front-ends/ui-package.test.ts`).
 
 - **Text** is a named style, `typeLook("title-3")`, never a size: display, title 1 to 3, body large, body, label, caption, figure (`packages/ui/type.ts`).
 - **Colour** is a role where a part can stand on either ground: `--surface`, `--on-surface`, `--on-surface-muted`, `--border-subtle`, `--border-control`, `--status-*`. A screen on the ink says so with `data-ground="ink"` on its root, and every part beneath follows.

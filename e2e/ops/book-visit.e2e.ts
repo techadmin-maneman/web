@@ -94,7 +94,7 @@ test("books a fitted client’s service visit in a window someone is free in, se
       await json(LINK_SENT, 201)(route);
     },
   });
-  await page.getByRole("button", { name: "Book a visit" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
   const booking = panel(page);
   await expect(booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true })).toHaveValue("service");
   // Thursday's morning is full, so it is not offered.
@@ -121,9 +121,9 @@ test("says why a booking was refused, and books nothing", async ({ page }) => {
   await openVisits(page, {
     [BOOK]: json({ error: { code: "taken", request_id: "r-1" } }, 409),
   });
-  await page.getByRole("button", { name: "Book a visit" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
   await panel(page).getByRole("button", { name: opsCopy.clients.visits.book.book }).click();
-  await expect(panel(page).getByRole("alert")).toHaveText("That window was just taken. Choose another.");
+  await expect(panel(page).getByRole("alert")).toHaveText(opsCopy.clients.visits.book.errors.taken);
 });
 
 test("books a consultation asked for from its Tasks row, on the day and window asked, and the task goes", async ({
@@ -195,15 +195,15 @@ test("books a consultation asked for from its Tasks row, on the day and window a
   await tasks.getByRole("button", { name: `Book a visit · ${CLIENT.name}` }).click();
   const booking = panel(page);
   await expect(booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true })).toHaveValue("consultation");
-  await expect(booking.getByLabel("Day", { exact: true })).toHaveValue("2027-09-24");
+  await expect(booking.getByLabel(opsCopy.clients.visits.book.day, { exact: true })).toHaveValue("2027-09-24");
   await expect(booking).toContainText(opsCopy.clients.visits.book.pays.nothing);
   await booking.getByRole("button", { name: opsCopy.clients.visits.book.book }).click();
-  await expect(booking.getByRole("status")).toContainText("Booked.");
+  await expect(booking.getByRole("status")).toContainText(opsCopy.clients.visits.book.outcomes.booked);
   expect(sent).toEqual([
     { client: CLIENT.id, kind: "consultation", tier: "standard", date: "2027-09-24", window: "morning" },
   ]);
 
-  await booking.getByRole("button", { name: "Close" }).click();
+  await booking.getByRole("button", { name: opsCopy.clients.visits.book.close }).click();
   await expect(tasks.getByRole("listitem")).toHaveCount(0);
 });
 
@@ -278,7 +278,7 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
   expect(await axeViolations(page, (axe) => axe.include("dialog"))).toEqual([]);
 
   await booking.getByRole("button", { name: book.book }).click();
-  await expect(booking.getByRole("status")).toContainText("Booked.");
+  await expect(booking.getByRole("status")).toContainText(opsCopy.clients.visits.book.outcomes.booked);
   expect(sent).toEqual([
     {
       client: CLIENT.id,
@@ -289,7 +289,7 @@ test("books a first fit left partly done again, free, from its Tasks row, and th
       covers: FIT,
     },
   ]);
-  await booking.getByRole("button", { name: "Close" }).click();
+  await booking.getByRole("button", { name: opsCopy.clients.visits.book.close }).click();
   await expect(tasks.getByRole("listitem")).toHaveCount(0);
 });
 

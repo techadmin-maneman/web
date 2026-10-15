@@ -19,4 +19,4 @@ A technician could see their kit only as the hair systems listed on a job card. 
 ## Consequences
 
 - An alert for a piece not handed in, and the evening check of tomorrow's kit, come with the supply plan.
-- Tests: `test/worker/ops/kit.test.ts`, `e2e/tech/kit.e2e.ts`, `e2e/ops/stock.e2e.ts`.
+- Tests: `test/worker/inventory/kit.test.ts`, `e2e/tech/kit.e2e.ts`, `e2e/ops/stock.e2e.ts`.

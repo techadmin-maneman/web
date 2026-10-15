@@ -1,18 +1,21 @@
 // The canary's soak judged on real visitors' requests, not only the smoke's
 // (scripts/release/soak.ts): Workers analytics counts each version's invocations and
-// the ones that errored, and Workers Logs sums what each route read from D1
-// and how long Home and a job card took.
+// the ones that errored, and Workers Logs each version's 5xx answers, what each route
+// read from D1 and how long Home and a job card took.
 
 import { describe, expect, it } from "vitest";
-import { OTHER_ROUTE_ROWS_READ, ROUTE_ROWS_READ } from "../../../scripts/lib/usage-budget.ts";
+import { OTHER_ROUTE_ROWS_READ, routeRowsRead } from "../../../scripts/lib/usage-budget.ts";
 import {
+  busiestWeek,
   judgeRouteLatency,
   judgeRouteReads,
   judgeSoak,
   readInvocations,
-  readRouteReads,
   ROUTE_P95_MS,
 } from "../../../scripts/lib/soak.ts";
+import { readAnswers, readRouteReads, readVisitsByDay } from "../../../scripts/lib/soak-reads.ts";
+import { databaseIdFor } from "../../../scripts/lib/cloudflare-api.ts";
+import { readJsonc } from "../../../scripts/lib/jsonc.ts";
 
 const NEW = "22222222-2222-4222-8222-222222222222";
 const OLD = "11111111-1111-4111-8111-111111111111";
@@ -75,7 +78,7 @@ describe("reading each version's invocations", () => {
     expect(JSON.stringify(seen[0])).toContain("mm-api-production");
   });
 
-  it("says why when the token may not read analytics, rather than failing the release", async () => {
+  it("says why when the token may not read analytics", async () => {
     const body = { data: null, errors: [{ message: "not authorized for that account" }] };
     expect(await read(analytics({ status: 200, body }))).toEqual({
       unreadable: 'Workers analytics refused: "not authorized for that account"',
@@ -88,32 +91,53 @@ describe("reading each version's invocations", () => {
 });
 
 describe("what each route read from D1 while the new version served", () => {
+  // A board week of 31 visits, as staging's was when a load was measured at 484 rows.
+  const ceilings = routeRowsRead(31);
+
   it("passes routes that read within their ceilings", () => {
-    const verdict = judgeRouteReads({
-      "/api/dispatch": { requests: 60, rowsRead: 60 * 480 },
-      "/api/me": { requests: 200, rowsRead: 200 * 35 },
-    });
+    const verdict = judgeRouteReads(
+      {
+        "/api/dispatch": { requests: 60, rowsRead: 60 * 480 },
+        "/api/me": { requests: 200, rowsRead: 200 * 35 },
+      },
+      ceilings,
+    );
     expect(verdict).toEqual({ outcome: "passed", detail: "2 routes each read within their rows a request" });
   });
 
   it("fails a route that reads past its ceiling, as one reading a whole table would", () => {
-    const verdict = judgeRouteReads({
-      "/api/dispatch": { requests: 60, rowsRead: 60 * 480 },
-      "/api/me": { requests: 200, rowsRead: 200 * 5_000 },
-    });
+    const verdict = judgeRouteReads(
+      {
+        "/api/dispatch": { requests: 60, rowsRead: 60 * 480 },
+        "/api/me": { requests: 200, rowsRead: 200 * 5_000 },
+      },
+      ceilings,
+    );
     expect(verdict.outcome).toBe("failed");
     expect(verdict.detail).toBe(`/api/me read 5000 rows a request, past its ${String(OTHER_ROUTE_ROWS_READ)}`);
   });
 
   it("holds the dispatch board to its own ceiling, not the one for every other route", () => {
-    const board = ROUTE_ROWS_READ["/api/dispatch"] ?? 0;
+    const board = ceilings["/api/dispatch"] ?? 0;
     expect(board).toBeGreaterThan(OTHER_ROUTE_ROWS_READ);
-    expect(judgeRouteReads({ "/api/dispatch": { requests: 60, rowsRead: 60 * board } }).outcome).toBe("passed");
-    expect(judgeRouteReads({ "/api/dispatch": { requests: 60, rowsRead: 60 * (board + 1) } }).outcome).toBe("failed");
+    const judged = (rows: number) =>
+      judgeRouteReads({ "/api/dispatch": { requests: 60, rowsRead: 60 * rows } }, ceilings);
+    expect(judged(board).outcome).toBe("passed");
+    expect(judged(board + 1).outcome).toBe("failed");
+  });
+
+  // A fixed ceiling, measured on staging's week, would roll back a healthy release once production's weeks grew.
+  it("lets the board read more as its week holds more visits", () => {
+    const busy = routeRowsRead(400)["/api/dispatch"] ?? 0;
+    expect(busy).toBeGreaterThan(ceilings["/api/dispatch"] ?? 0);
+    const load = { "/api/dispatch": { requests: 60, rowsRead: 60 * 18 * 400 } };
+    expect(judgeRouteReads(load, ceilings).outcome).toBe("failed");
+    expect(judgeRouteReads(load, routeRowsRead(400)).outcome).toBe("passed");
   });
 
   it("does not judge a route on too few requests", () => {
-    expect(judgeRouteReads({ "/api/waitlist": { requests: 3, rowsRead: 3 * 9_000 } }).outcome).toBe("not judged");
+    const verdict = judgeRouteReads({ "/api/waitlist": { requests: 3, rowsRead: 3 * 9_000 } }, ceilings);
+    expect(verdict.outcome).toBe("not judged");
   });
 
   // Home and a job's card each waited on about 17 D1 round trips in turn, 1.6 to 2.1 s, before their reads
@@ -189,10 +213,107 @@ describe("what each route read from D1 while the new version served", () => {
     expect(asked).toContain('{"operator":"p95","key":"duration_ms"');
   });
 
-  it("says why when the token may not query Workers Logs, rather than failing the release", async () => {
+  it("says why when the token may not query Workers Logs", async () => {
     const body = { success: false, errors: [{ code: 10000, message: "Authentication error" }], result: null };
     expect(await readRoutes(analytics({ status: 403, body }))).toEqual({
       unreadable: 'Workers Logs: HTTP 403, "Authentication error"',
     });
+  });
+});
+
+describe("the busiest week the dispatch board shows", () => {
+  it("is the most visits any seven days running hold", () => {
+    const byDay = { "2026-10-12": 5, "2026-10-14": 9, "2026-10-18": 4, "2026-10-19": 30, "2026-10-26": 2 };
+    expect(busiestWeek(byDay)).toBe(43);
+    expect(busiestWeek({})).toBe(0);
+  });
+
+  it("is read from the environment's visits, a week before the soak to five after", async () => {
+    const seen: unknown[] = [];
+    const results = [
+      { day: "2026-10-19", visits: 30 },
+      { day: "2026-10-20", visits: 12 },
+    ];
+    const body = { success: true, errors: [], result: [{ success: true, results }] };
+    const reading = await readVisitsByDay({
+      token: "t",
+      accountId: "acct",
+      databaseId: "db",
+      script: "mm-api-production",
+      since: new Date("2026-10-15T10:00:00Z"),
+      until: new Date("2026-10-15T10:05:00Z"),
+      fetch: analytics({ status: 200, body }, seen),
+    });
+    expect(reading).toEqual({ byDay: { "2026-10-19": 30, "2026-10-20": 12 } });
+    expect(seen[0]).toMatchObject({ params: ["2026-10-08T10:00:00.000Z", "2026-11-19T10:00:00.000Z"] });
+  });
+
+  it("says why when D1 will not answer, so the soak counts the board as not judged", async () => {
+    const body = { success: false, errors: [{ code: 10000, message: "Authentication error" }], result: null };
+    const reading = await readVisitsByDay({
+      token: "t",
+      accountId: "acct",
+      databaseId: "db",
+      script: "mm-api-production",
+      since: new Date("2026-10-15T10:00:00Z"),
+      until: new Date("2026-10-15T10:05:00Z"),
+      fetch: analytics({ status: 403, body }),
+    });
+    expect(reading).toEqual({ unreadable: 'D1: HTTP 403, "Authentication error"' });
+  });
+
+  it("is read from the database production's mm-api binds", () => {
+    const config = JSON.stringify(readJsonc("wrangler.jsonc"));
+    expect(config).toContain(`"database_id":"${databaseIdFor("production")}"`);
+    expect(databaseIdFor("production")).not.toBe(databaseIdFor("staging"));
+  });
+});
+
+describe("each version's 5xx answers", () => {
+  const byVersionAndStatus = (version: string, status: number, value: number) => ({
+    value,
+    groups: [
+      { key: "$workers.scriptVersion.id", value: version },
+      { key: "status", value: status },
+    ],
+  });
+
+  // A 500 the app's error handler returns is an invocation that did not error, which analytics never counts.
+  it("counts the new and the old version's answers, and the 5xx among them", async () => {
+    const aggregates = [
+      byVersionAndStatus(NEW, 200, 140),
+      byVersionAndStatus(NEW, 500, 9),
+      byVersionAndStatus(NEW, 503, 1),
+      byVersionAndStatus(NEW, 404, 6),
+      byVersionAndStatus(OLD, 200, 1_400),
+      byVersionAndStatus(OLD, 500, 2),
+    ];
+    const body = { success: true, errors: [], result: { calculations: [{ alias: "requests", aggregates }] } };
+    const reading = await readAnswers({
+      token: "t",
+      accountId: "acct",
+      script: "mm-api-production",
+      since: new Date("2026-09-25T10:00:00Z"),
+      until: new Date("2026-09-25T10:05:00Z"),
+      fetch: analytics({ status: 200, body }),
+    });
+    expect(reading).toEqual({
+      byVersion: { [NEW]: { requests: 156, errors: 10 }, [OLD]: { requests: 1_402, errors: 2 } },
+    });
+    const none = { requests: 0, errors: 0 };
+    const counted = "byVersion" in reading ? reading.byVersion : {};
+    expect(judgeSoak(counted[NEW] ?? none, counted[OLD] ?? none).outcome).toBe("failed");
+  });
+
+  it("says why when Workers Logs does not answer at all", async () => {
+    const reading = await readAnswers({
+      token: "t",
+      accountId: "acct",
+      script: "mm-api-production",
+      since: new Date("2026-09-25T10:00:00Z"),
+      until: new Date("2026-09-25T10:05:00Z"),
+      fetch: () => Promise.reject(new Error("socket hang up")),
+    });
+    expect(reading).toEqual({ unreadable: "Workers Logs did not answer: socket hang up" });
   });
 });

@@ -7,6 +7,7 @@
 
 import { expect, test } from "@playwright/test";
 import { recordPolicyRefusals } from "../../scripts/lib/csp-refusals.ts";
+import { login } from "../../apps/app/src/content.ts";
 
 const CHECKOUT = "https://checkout.razorpay.com/v1/checkout.js";
 const RISK_DETECTION = "https://cdn.razorpay.com/static/cx/razorpay-risk-detection/bundle.js";
@@ -17,7 +18,7 @@ type Razorpay = new (options: object) => { open(): void };
 test("loads and opens Razorpay’s own Checkout with nothing refused", async ({ page }) => {
   const refused = await recordPolicyRefusals(page);
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: login.mobile.title })).toBeVisible();
 
   const riskDetection = page.waitForResponse(RISK_DETECTION);
   // Loaded as the pay step loads it (apps/app/src/booking/checkout.ts); the policy is the same on every page.

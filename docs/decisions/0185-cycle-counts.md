@@ -21,4 +21,4 @@ The scope: cycle counts, never a yearly shutdown. Hair systems weekly at each pl
 
 - The Counts page lists the tasks in the caller's places and those done in the last week; Operations ACT counts, MANAGE signs off and sets classes.
 - `POST /api/stock/counts` stays for opening counts and corrections outside a task.
-- Tests: `test/node/policy/cycle-counts.test.ts`, `test/worker/ops/cycle-counts.test.ts`, `test/dom/ops-counts.test.ts`, `e2e/ops/counts.e2e.ts`.
+- Tests: `test/node/policy/cycle-counts.test.ts`, `test/worker/inventory/cycle-counts.test.ts`, `test/dom/ops-counts.test.ts`, `e2e/ops/counts.e2e.ts`.

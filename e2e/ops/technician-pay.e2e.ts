@@ -6,6 +6,7 @@ import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { deleting, review } from "../../apps/ops/src/content/common.ts";
 import { technicianPay as copy } from "../../apps/ops/src/content/technician-pay.ts";
+import { shell } from "../../apps/ops/src/content.ts";
 
 const SENIOR = "5f8a6c1e-2b3d-4e5f-8a9b-0c1d2e3f4a5b";
 const TRAINEE = "6a9b7d2f-3c4e-4f6a-9b0c-1d2e3f4a5b6c";
@@ -73,7 +74,7 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
     ...extra,
   });
   await page.goto("/technician-pay");
-  await expect(page.getByRole("heading", { level: 1, name: "Technician pay" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: shell.sections["technician-pay"] })).toBeVisible();
 }
 
 const cellsOf = (page: Page, grade: string) =>

@@ -30,7 +30,7 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
   await page.clock.setFixedTime(new Date("2026-09-21T06:30:00.000Z"));
   await answer(page, { "GET /api/targets": json(SEPTEMBER), ...extra });
   await page.goto("/targets");
-  await expect(page.getByRole("heading", { level: 1, name: "Targets" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }
 
 test("sets a month’s target for a city, by measure", async ({ page }) => {

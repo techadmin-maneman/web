@@ -51,3 +51,13 @@ export async function settled(): Promise<void> {
     await Promise.resolve();
   });
 }
+
+/**
+ * Lets what the page asked for answer, and what that set reach the page: one turn of the event loop, inside act, as a
+ * faked fetch answers on one. Wait for it rather than a bare timer, which leaves React's updates outside act.
+ */
+export async function answered(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}

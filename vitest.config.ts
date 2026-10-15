@@ -96,6 +96,12 @@ export default defineConfig({
               // logic moves into node-tested modules; the console has a floor of its own, so its share keeps up.
               "{apps,packages,site}/**": { lines: 31, branches: 22 },
               "apps/ops/src/**": { lines: 31, branches: 24 },
+              // Where the client books and pays: the folders as a whole, and the files the payment itself goes through.
+              "apps/app/src/booking/**": { lines: 35, branches: 28 },
+              "apps/app/src/payments/**": { lines: 45, branches: 35 },
+              "apps/app/src/booking/{usePay,pay,checkout}.ts": { lines: 95, branches: 80 },
+              "apps/app/src/booking/steps/PayStep.tsx": { lines: 85, branches: 65 },
+              "apps/app/src/payments/entry.ts": { lines: 80, branches: 65 },
             }
           : {},
     },

@@ -36,7 +36,7 @@ const launchRoute = (preview: object, launched: object) => (route: Route) => {
 async function open(page: Page, routes: Answers, areas: OpsReply<"/api/waitlist"> = AREAS) {
   await answer(page, { "GET /api/waitlist": json(areas), ...routes });
   await page.goto("/areas");
-  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
 }
 
 // The panel opened 1,632 px down a 900 px window, and focus stayed put.
@@ -120,7 +120,7 @@ test("offers nothing to send where everyone in a live pincode has been told", as
 test("says where the message’s name for the area comes from, and leads there", async ({ page }) => {
   await open(page, { [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
-  await page.getByRole("link", { name: "Rename" }).click();
+  await page.getByRole("link", { name: opsCopy.waitlist.rename }).click();
   await expect(page).toHaveURL(/\/areas\/served$/);
 });
 
@@ -140,7 +140,7 @@ test("leads to the area’s name only those whose access reaches Service area", 
   await open(page, { "GET /api/whoami": growthInMumbai, [LAUNCH_BANDRA]: launchRoute(PREVIEW, LAUNCHED) });
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
-  await expect(panel.getByRole("link", { name: "Rename" })).toHaveCount(0);
+  await expect(panel.getByRole("link", { name: opsCopy.waitlist.rename })).toHaveCount(0);
 });
 
 // Every pincode on staging's waitlist was outside the service area, so
@@ -162,9 +162,9 @@ test("adds a pincode the service area does not hold, then marks it live in the s
   const adding = page.getByRole("region", { name: "Add 560001" });
   await expect(adding).toBeFocused();
   await adding.getByLabel(opsCopy.areas.add.area).fill("MG Road");
-  await adding.getByLabel("City").selectOption("Bengaluru");
+  await adding.getByLabel(opsCopy.areas.add.city).selectOption("Bengaluru");
   const sent = page.waitForRequest((request) => request.url().endsWith("/api/pincodes") && request.method() === "POST");
-  await adding.getByRole("button", { name: "Add" }).click();
+  await adding.getByRole("button", { name: opsCopy.areas.add.add }).click();
   expect((await sent).postDataJSON()).toEqual({ pincode: "560001", area: "MG Road", city: "Bengaluru" });
 
   const panel = page.getByRole("region", { name: "Mark 560001 live" });
@@ -179,9 +179,9 @@ test("says so when the pincode is held already, and adds nothing", async ({ page
   await page.getByRole("button", { name: "Add 560001, then mark live" }).click();
   const adding = page.getByRole("region", { name: "Add 560001" });
   await adding.getByLabel(opsCopy.areas.add.area).fill("MG Road");
-  await adding.getByLabel("City").selectOption("Bengaluru");
-  await adding.getByRole("button", { name: "Add" }).click();
-  await expect(adding.getByRole("alert")).toHaveText("Already added.");
+  await adding.getByLabel(opsCopy.areas.add.city).selectOption("Bengaluru");
+  await adding.getByRole("button", { name: opsCopy.areas.add.add }).click();
+  await expect(adding.getByRole("alert")).toHaveText(opsCopy.areas.add.errors.pincode_held);
   await expect(page.getByRole("region", { name: "Mark 560001 live" })).toHaveCount(0);
 });
 

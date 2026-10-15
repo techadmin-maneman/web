@@ -15,11 +15,11 @@ import { join } from "node:path";
 import { randomMobile } from "../support.ts";
 import { wrangler } from "./fitted.ts";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";
+import { addDays, indiaDate } from "../../src/lib/india-time.ts";
 
 /** Every test that takes one, with a retry each, and room to spare. */
 const POOL_SIZE = 120;
 const HANDOVER = "MM_E2E_BOOKED_NUMBERS";
-const DAY = 24 * 60 * 60 * 1000;
 
 interface Pool {
   /** Ten digits each, as the login's field takes them. */
@@ -30,7 +30,8 @@ interface Pool {
 
 export async function seedBookedNumbers(): Promise<void> {
   const now = new Date().toISOString();
-  const proposed = new Date(Date.now() + 2 * DAY).toISOString().slice(0, 10);
+  // India's date: between midnight and 5:30 am there, UTC's is still the day before.
+  const proposed = addDays(indiaDate(new Date()), 2);
   const mobiles = Array.from({ length: POOL_SIZE }, () => randomMobile());
   const sql = mobiles.flatMap((mobile) => {
     const person = crypto.randomUUID();

@@ -18,4 +18,4 @@ Each piece in a technician's kit now carries a label (ADR 0161), and labels can 
 ## Consequences
 
 - The tech app's Kit screen lists returned pieces to hand in, and receives kit top-ups by scan.
-- Tests: `test/worker/ops/piece-from-kit.test.ts`, `test/node/dom/tech-piece-form.test.ts`, `e2e/tech/steps-piece.e2e.ts`.
+- Tests: `test/worker/inventory/piece-from-kit.test.ts`, `test/node/front-ends/tech-piece-form.test.ts`, `e2e/tech/steps-piece.e2e.ts`.

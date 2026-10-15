@@ -17,4 +17,4 @@ The growth figures divide spend by new clients, by channel and city. Google's an
 ## Consequences
 
 - First-fit discounts count in the blended acquisition cost from the payments' own discount column, not from here.
-- Tests: `test/worker/ops/spend.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`, `e2e/ops/spend.e2e.ts`.
+- Tests: `test/worker/reports/spend.test.ts`, `test/worker/jobs/analytics-nightly.test.ts`, `e2e/ops/spend.e2e.ts`.

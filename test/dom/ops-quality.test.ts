@@ -7,6 +7,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QualityScreen } from "../../apps/ops/src/quality/QualityScreen.tsx";
 import { quality as copy } from "../../apps/ops/src/content/quality.ts";
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 const RECALL = {
   id: "rc-1",
@@ -15,6 +17,7 @@ const RECALL = {
   lot_code: "BAD-0921",
   consumable_code: "hs-1",
   name: "Essential 8x10",
+  unit: "piece",
   reason: "Supplier warned of shedding",
   raised_at: "2026-09-21T06:30:00.000Z",
   closed_at: null,
@@ -73,11 +76,9 @@ const button = (text: string) => [...page.querySelectorAll("button")].find((each
 async function press(element: Element | null | undefined) {
   await act(async () => {
     (element as HTMLElement | null | undefined)?.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await answered();
   });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 function type(input: HTMLInputElement | null, value: string) {
@@ -91,18 +92,21 @@ function type(input: HTMLInputElement | null, value: string) {
 beforeEach(() => {
   posted = [];
   answers = [];
-  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-    const address = new URL(url, "https://ops.maneman.test");
-    if (init?.method === "POST") {
-      posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
-      return Promise.resolve(Response.json(answers.shift() ?? DETAIL));
-    }
-    if (address.pathname === "/api/recalls") return Promise.resolve(Response.json(BOOK));
-    if (address.pathname === "/api/recalls/rc-1") return Promise.resolve(Response.json(DETAIL));
-    if (address.pathname === "/api/quality/failures") return Promise.resolve(Response.json(RATES));
-    if (address.pathname === "/api/stock/expiry-risk") return Promise.resolve(Response.json(RISK));
-    return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init?: RequestInit) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      if (init?.method === "POST") {
+        posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
+        return Promise.resolve(Response.json(answers.shift() ?? DETAIL));
+      }
+      if (address.pathname === "/api/recalls") return Promise.resolve(Response.json(BOOK));
+      if (address.pathname === "/api/recalls/rc-1") return Promise.resolve(Response.json(DETAIL));
+      if (address.pathname === "/api/quality/failures") return Promise.resolve(Response.json(RATES));
+      if (address.pathname === "/api/stock/expiry-risk") return Promise.resolve(Response.json(RISK));
+      return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -120,9 +124,7 @@ async function show() {
   act(() => {
     root.render(createElement(QualityScreen));
   });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 describe("the Quality page", () => {

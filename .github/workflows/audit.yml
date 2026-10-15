@@ -1,0 +1,44 @@
+# The dependency audit, daily, against what main installs (scripts/ci/audit.ts): a new advisory against a package
+# already here opens an issue, or adds to the open one, rather than failing whichever pull request runs next.
+name: audit
+
+on:
+  schedule:
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Dependency audit
+        run: npm run audit
+
+  tell:
+    name: tell whoever watches the repository
+    needs: audit
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/failing-issue
+        with:
+          title: "The dependency audit is failing"
+          body: "Today's audit of main's dependencies failed"
+          token: ${{ github.token }}

@@ -19,4 +19,4 @@ The dispatch board was a week grid by technician (audit finding OPS-03). Nothing
 ## Consequences
 
 - Kept drives and maps live in Cloudflare's cache, not the database, and expire on their own: nothing new holds a client's coordinates.
-- Tests: `test/worker/ops/dispatch-day.test.ts`, `test/node/api/google-routes.test.ts`, `e2e/ops/dispatch-day.e2e.ts`.
+- Tests: `test/worker/dispatch/dispatch-day.test.ts`, `test/node/api/google-routes.test.ts`, `e2e/ops/dispatch-day.e2e.ts`.

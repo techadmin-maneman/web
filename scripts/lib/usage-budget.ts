@@ -69,15 +69,20 @@ export const BOARD_ROWS_READ_FIXED = 70;
 export const BOARD_ROWS_READ_PER_VISIT = 18;
 export const BOARD_VERSION_ROWS_READ = 10;
 export const TASKS_ROWS_READ_PER_LOOK = 400;
+/** How far past what a board load was measured to read one may go while a release soaks. */
+const BOARD_READS_MARGIN = 2;
 /**
  * The most rows a request to a route may read, on average while a release soaks, before it is rolled back. The
- * dispatch board's is a load with 158 visits in its week: raise it as the week grows. A route not named has
- * OTHER_ROUTE_ROWS_READ, several times what the busiest of them read when measured.
+ * dispatch board's grows with the visits in the busiest week it shows; a look at Tasks reads its queues' first pages,
+ * however long they are. A route not named has OTHER_ROUTE_ROWS_READ, several times what the busiest of them read when
+ * measured.
  */
-export const ROUTE_ROWS_READ: Readonly<Record<string, number>> = {
-  "/api/dispatch": 2_914,
-  "/api/tasks": TASKS_ROWS_READ_PER_LOOK,
-};
+export function routeRowsRead(boardVisits: number): Readonly<Record<string, number>> {
+  return {
+    "/api/dispatch": BOARD_READS_MARGIN * (BOARD_ROWS_READ_FIXED + BOARD_ROWS_READ_PER_VISIT * boardVisits),
+    "/api/tasks": TASKS_ROWS_READ_PER_LOOK,
+  };
+}
 export const OTHER_ROUTE_ROWS_READ = 300;
 
 /** A visit's photographs: five before and five after, each re-encoded on the phone to about 250 KB. */

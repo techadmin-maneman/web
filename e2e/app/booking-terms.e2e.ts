@@ -12,8 +12,10 @@ import {
   LATE_FEE,
   FIRST_FIT,
   LATE_FEE_LINE,
+  INSIDE_NOTICE_LATE_FEE,
 } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { PRICE } from "../prices.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -33,11 +35,7 @@ test("says a visit sold inside its notice is charged to change from now, never f
   await holdAs(page, { free_until: PASSED() });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-  await expect(
-    pay.getByText(
-      "This visit is less than 24 hours away: if you move or cancel it, the Rs. 2,000 paid isn’t refunded.",
-    ),
-  ).toBeVisible();
+  await expect(pay.getByText(appCopy.booking.pay.insideNotice.payment(24, PRICE.service))).toBeVisible();
   await expect(pay.getByText(/Free to move/)).toHaveCount(0);
 });
 
@@ -51,11 +49,7 @@ test("says a first fit sold inside its notice costs its late fee to change from 
   });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-  await expect(
-    pay.getByText(
-      "This visit is less than 24 hours away: moving or cancelling it costs Rs. 4,720 (Rs. 4,000 + Rs. 720 GST).",
-    ),
-  ).toBeVisible();
+  await expect(pay.getByText(INSIDE_NOTICE_LATE_FEE)).toBeVisible();
   await expect(pay.getByText(/Free to move/)).toHaveCount(0);
 });
 
@@ -88,7 +82,7 @@ test("marks the days and windows inside the notice, which are still sold", async
   await expect(marked).toHaveCount(1);
   await expect(dates.getByText("Within 24 hours: changes are charged")).toBeVisible();
   await marked.click();
-  await dates.getByRole("button", { name: "Continue" }).click();
+  await dates.getByRole("button", { name: appCopy.booking.window.continueFree }).click();
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
   await expect(windows.getByRole("radio").first()).toBeVisible();
   const open = await windows.getByRole("radio").count();
@@ -109,9 +103,9 @@ test("takes a visit that costs nothing to Confirm, never to a payment", async ({
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
   await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
   await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toHaveCount(0);
-  await windows.getByRole("button", { name: "Continue", exact: true }).click();
+  await windows.getByRole("button", { name: appCopy.booking.window.continueFree, exact: true }).click();
   const confirm = page.getByRole("dialog", { name: appCopy.booking.pay.titleFree, exact: true });
-  await expect(confirm.getByText("Free", { exact: true })).toBeVisible();
+  await expect(confirm.getByText(appCopy.booking.pay.credit.zero, { exact: true })).toBeVisible();
   await expect(confirm.getByRole("button", { name: appCopy.booking.pay.confirm })).toBeVisible();
   await expect(page.getByRole("dialog", { name: appCopy.booking.pay.title })).toHaveCount(0);
 });

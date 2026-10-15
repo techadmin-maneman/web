@@ -58,7 +58,7 @@ The job's card carries every consumable offered on the job's day, with its unit 
 - **A row of `consumables_used` for each consumable**, which now also keeps its code, what the job's service expected of it and what one cost that day, so a later change of cost leaves a past job's as it was. Its `fsm_item_id` stays empty: the part is the consumable's, found through its code. One row an event for each consumable, by its code, so a step read again after ops renamed a consumable writes no second row under the new name (amended in review, 27 September 2026). A job's use is its latest event's rows.
 - **A movement out of the technician's kit** for each, reason `used`, naming the job and the event.
 - **Once, however often the step is replayed.** The use is read from the job's latest consumables step, and what the kit's rows for the job already took is subtracted, so a replay writes nothing, a replay of an older step changes nothing, and a corrected step writes only the difference. A unique index on the event and the consumable holds it under two replays at once.
-- **Once when two of the job's steps land together** (amended 28 September 2026, plan piece C26). The Worker serves requests at once, so an older step's use could be read, a newer step land and record its own use from rows that did not yet hold the older one's, and the older one then write its use as well: the job's use taken twice. The kit's rows are now written only while the step they were worked out from is still the job's latest (`INSERT … SELECT … WHERE` the step is the job's latest, in the same statement); the newer step's own request records the use. Nothing is retried: the step that lost is no longer the one to record. Reproduced first by holding the older step's write between its read and its batch (`test/worker/ops/stock.test.ts`).
+- **Once when two of the job's steps land together** (amended 28 September 2026, plan piece C26). The Worker serves requests at once, so an older step's use could be read, a newer step land and record its own use from rows that did not yet hold the older one's, and the older one then write its use as well: the job's use taken twice. The kit's rows are now written only while the step they were worked out from is still the job's latest (`INSERT … SELECT … WHERE` the step is the job's latest, in the same statement); the newer step's own request records the use. Nothing is retried: the step that lost is no longer the one to record. Reproduced first by holding the older step's write between its read and its batch (`test/worker/inventory/stock.test.ts`).
 - **FSM's summary names each consumable as before,** by the name the console gives it now, and no line is written to the work order.
 
 ### Stock
@@ -124,16 +124,16 @@ Each save shows what is renamed, added, taken off and moved before it is sent (A
 - **Tests.**
   - `test/node/policy/policy-stock.test.ts`: the rules.
   - `test/node/database/migration-0049.test.ts`: the migration.
-  - `test/worker/ops/consumables.test.ts`: the list, its retirement and what each service uses.
-  - `test/worker/ops/stock.test.ts`: the ledger, a job's use written once and corrected, writes that land together, and low stock.
+  - `test/worker/inventory/consumables.test.ts`: the list, its retirement and what each service uses.
+  - `test/worker/inventory/stock.test.ts`: the ledger, a job's use written once and corrected, writes that land together, and low stock.
   - `test/node/database/migration-0053.test.ts`: the balances, started from the ledger and kept by its triggers.
   - `test/worker/jobs/cron-reads.test.ts`: the Stock page and a count read no more as the ledger grows.
   - `test/worker/ops/job-sheet-settings.test.ts`: the job sheet, the committed lists and retired items.
   - `test/worker/fsm-catalogue.test.ts`: the parts, with the push off and on, and its bound; a catalogue past a thousand items, read whole and read in part.
   - `test/worker/fsm.test.ts`, `test/worker/fsm-zoho-replies.test.ts`: the two calls, on Zoho, the stub and the unconnected provider.
-  - `test/node/dom/fakes-contract.test.ts`: the console's fakes answer as the API does.
+  - `test/node/front-ends/fakes-contract.test.ts`: the console's fakes answer as the API does.
   - `test/worker/field/pieces.test.ts`: a piece is never built on a consumable's part.
   - `test/worker/ops/ops-tasks.test.ts`: a partial visit's reason in ops' words.
-  - `test/node/dom/tech-kept.test.ts`: a card an earlier build kept.
+  - `test/node/front-ends/tech-kept.test.ts`: a card an earlier build kept.
   - `e2e/ops/consumables.e2e.ts`, `e2e/ops/job-sheet.e2e.ts`, `e2e/ops/stock.e2e.ts`: the console.
   - `e2e/tech/steps.e2e.ts`: the step.

@@ -20,4 +20,4 @@ Adhesives, tapes, solvents and hair systems expire, and the owner ruled on 11 Oc
 ## Consequences
 
 - Two takes at once of one place's lots can each read the same lot; the balance stays right, and a count puts the lots right. The expiry view and its alerts, and lots in the reporting copy, come next in phase 1.
-- Tests: `test/worker/ops/stock-lots.test.ts`, `e2e/ops/stock.e2e.ts`, `e2e/ops/consumables.e2e.ts`.
+- Tests: `test/worker/inventory/stock-lots.test.ts`, `e2e/ops/stock.e2e.ts`, `e2e/ops/consumables.e2e.ts`.

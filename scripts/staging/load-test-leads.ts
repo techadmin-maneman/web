@@ -15,13 +15,10 @@
 //
 // The count is read from staging's D1 with wrangler, so CLOUDFLARE_API_TOKEN must be staging's as well.
 
-import { execFile } from "node:child_process";
-import { resolve } from "node:path";
-import { parseArgs, promisify } from "node:util";
+import { d1Query } from "../lib/d1.ts";
+import { parseArgs } from "node:util";
 import { consultationBody, lastBookableDay, testMobile } from "../lib/test-booking.ts";
 
-const run = promisify(execFile);
-const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
 /** Cloudflare Access's service token, for staging's host. */
 const ACCESS = {
   "CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID ?? "",
@@ -80,24 +77,12 @@ async function submit(person: number, mobile: string): Promise<Outcome> {
 }
 
 /** How many leads each number has in staging's D1. */
-async function leadsPerNumber(mobiles: readonly string[]): Promise<Map<string, number>> {
+function leadsPerNumber(mobiles: readonly string[]): Map<string, number> {
   const numbers = mobiles.map((mobile) => `'+91${mobile}'`).join(", ");
   const sql = `SELECT p.mobile_e164 AS mobile, COUNT(l.id) AS leads FROM people p JOIN leads l ON l.person_id = p.id
     WHERE p.mobile_e164 IN (${numbers}) GROUP BY p.mobile_e164`;
-  const { stdout } = await run(process.execPath, [
-    WRANGLER,
-    "d1",
-    "execute",
-    "maneman-staging",
-    "--env",
-    "staging",
-    "--remote",
-    "--json",
-    "--command",
-    sql,
-  ]);
-  const [answer] = JSON.parse(stdout) as { results: { mobile: string; leads: number }[] }[];
-  return new Map((answer?.results ?? []).map((row) => [row.mobile.slice(3), row.leads]));
+  const rows = d1Query<{ mobile: string; leads: number }>("staging", sql);
+  return new Map(rows.map((row) => [row.mobile.slice(3), row.leads]));
 }
 
 const mobiles = Array.from({ length: people }, () => testMobile());
@@ -127,7 +112,7 @@ if (outcomes.some((o) => o.state === "booked")) {
 const expected = (o: Outcome) => o.status === 201 || o.code === "idempotency_in_progress";
 if (!outcomes.every(expected)) process.exit(1);
 
-const leads = await leadsPerNumber(mobiles);
+const leads = leadsPerNumber(mobiles);
 const counts = mobiles.map((mobile) => leads.get(mobile) ?? 0);
 console.log(`leads per person in D1: ${[...new Set(counts)].join(", ")} (1 means no duplicate)`);
 if (counts.some((count) => count !== 1)) process.exit(1);

@@ -68,7 +68,7 @@ test.describe("chrome", () => {
   for (const screen of ["upload", "sent"] as const) {
     test(`back from the ${screen} screen returns to the site`, async ({ page }) => {
       await open(page, screen);
-      await page.getByRole("button", { name: "Back to the site" }).click();
+      await page.getByRole("button", { name: siteCopy.tryOn.sent.home }).click();
       await expect(page).toHaveURL(/\/$/);
     });
   }
@@ -123,7 +123,7 @@ test.describe("consent", () => {
   test("five rows, and Continue does nothing until the box is ticked", async ({ page }) => {
     await open(page, "consent");
     await expect(page.locator("[data-screen] dl > div")).toHaveCount(5);
-    const next = page.getByRole("button", { name: "Continue" });
+    const next = page.getByRole("button", { name: siteCopy.tryOn.looks.continue });
     await expect(next).toHaveAttribute("aria-disabled", "true");
     await next.click({ force: true }); // it stays focusable and clickable, but does nothing
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "consent");
@@ -136,7 +136,10 @@ test.describe("consent", () => {
   // /try has no footer, so the line names none.
   test("the words privacy notice link to /privacy, and nothing else is added", async ({ page }) => {
     await open(page, "consent");
-    await expect(page.getByRole("link", { name: "privacy notice" })).toHaveAttribute("href", "/privacy");
+    await expect(page.getByRole("link", { name: siteCopy.tryOn.consent.privacy.link })).toHaveAttribute(
+      "href",
+      "/privacy",
+    );
     await expect(page.getByText("Read the full privacy notice.")).toBeVisible();
     await expect(page.getByText("footer", { exact: false })).toHaveCount(0);
   });
@@ -159,7 +162,7 @@ test.describe("stage and looks", () => {
     const next = page.getByRole("button", { name: siteCopy.tryOn.looks.choose });
     await expect(next).toHaveAttribute("aria-disabled", "true");
     await page.getByRole("radio", { name: /Quiff/ }).check();
-    const onward = page.getByRole("button", { name: "Continue" });
+    const onward = page.getByRole("button", { name: siteCopy.tryOn.looks.continue });
     await expect(onward).toHaveAttribute("aria-disabled", "false");
     await onward.click();
     await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "gate");
@@ -194,7 +197,7 @@ test.describe("gate", () => {
     await page.getByRole("button", { name: siteCopy.tryOn.gate.submit }).click();
     await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAccessibleDescription(
-      "Enter a valid 10-digit mobile number.",
+      siteCopy.tryOn.gate.mobileError,
     );
     await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toBeFocused();
     await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
@@ -234,8 +237,8 @@ test.describe("sent", () => {
       page.getByText("It’ll reach WhatsApp on +91 98100 00000 within minutes. We delete it after 14 days."),
     ).toBeVisible();
     await expect(page.getByText("never shown on this site", { exact: false })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
-    await expect(page.getByRole("link", { name: "Back to the site" })).toHaveAttribute("href", "/");
+    await expect(page.getByRole("link", { name: siteCopy.tryOn.sent.book })).toHaveAttribute("href", "/book");
+    await expect(page.getByRole("link", { name: siteCopy.tryOn.sent.home })).toHaveAttribute("href", "/");
     await expect(page.locator("[data-screen] img")).toHaveCount(0);
     await expect(page.getByRole("slider")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Download" })).toHaveCount(0);
