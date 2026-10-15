@@ -2,6 +2,7 @@
 // each receipt a bill of what the supplier invoiced, and each claim credited a vendor credit, each found again by our
 // reference before another is made. Calls under ZohoBooks.contacts, .bills and .debitnotes (docs/provisioning.md).
 
+import { minorUnitDigits } from "../../config/currencies.ts";
 import { z } from "zod";
 import type { BooksBill, BooksProvider, NewBooksBill, NewBooksVendor, NewBooksVendorCredit } from "./index.ts";
 import type { BooksApi } from "./zoho.ts";
@@ -28,12 +29,12 @@ const creditOf = (credit: z.infer<typeof Credit>): BooksBill => ({
   reference: referenceOf(credit.reference_number),
 });
 
-/** A bill's or a credit's lines as Books takes them: each price in the currency's main unit. */
-const lineItems = (lines: NewBooksBill["lines"]) =>
+/** A bill's or a credit's lines as Books takes them: each price in the currency's main unit, whatever its decimals. */
+const lineItems = (lines: NewBooksBill["lines"], currency: string) =>
   lines.map((line) => ({
     description: line.description,
     account_id: line.accountId,
-    rate: line.unitPrice / 100,
+    rate: line.unitPrice / 10 ** minorUnitDigits(currency),
     quantity: line.quantity,
   }));
 
@@ -120,7 +121,7 @@ function documentCalls({ at, read }: BooksApi): Pick<BooksProvider, Exclude<Purc
             date: bill.date,
             due_date: bill.dueDate,
             exchange_rate: bill.exchangeRate,
-            line_items: lineItems(bill.lines),
+            line_items: lineItems(bill.lines, bill.currency),
           },
         },
       });
@@ -152,7 +153,7 @@ function documentCalls({ at, read }: BooksApi): Pick<BooksProvider, Exclude<Purc
             reference_number: credit.reference,
             date: credit.date,
             exchange_rate: credit.exchangeRate,
-            line_items: lineItems(credit.lines),
+            line_items: lineItems(credit.lines, credit.currency),
           },
         },
       });

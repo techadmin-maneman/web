@@ -8,6 +8,7 @@
 //
 // The key goes only to YouCam's API host, never to the signed upload URL or the result's.
 
+import { referenceUrlOf, REFERENCE_VERSION } from "./youcam-looks.ts";
 import { z } from "zod";
 import type { FailureReason } from "../../config/tryon.ts";
 import { inspectImage } from "../../lib/image-bytes.ts";
@@ -191,7 +192,15 @@ async function uploadPhoto(
   return { ok: true, fileId: target.file_id };
 }
 
-export function createYoucamProvider(options: { apiKey: string; fetch: typeof fetch; log: Logger }): ImageProvider {
+interface YoucamOptions {
+  readonly apiKey: string;
+  readonly fetch: typeof fetch;
+  readonly log: Logger;
+  /** Where the looks' reference photographs are served (./youcam-looks.ts). */
+  readonly refsUrl: string;
+}
+
+export function createYoucamProvider(options: YoucamOptions): ImageProvider {
   const { apiKey } = options;
   const http = { fetch: options.fetch, log: options.log };
   const scrub = (text: string): string => text.split(apiKey).join("***REDACTED***");
@@ -220,7 +229,9 @@ export function createYoucamProvider(options: { apiKey: string; fetch: typeof fe
   const api: Api = { http, call, failed };
 
   return {
-    async submit(image, referenceUrl): Promise<SubmitResult> {
+    looksVersion: `${REFERENCE_VERSION}:youcam`,
+
+    async submit(image, look): Promise<SubmitResult> {
       if (inspectImage(image)?.type !== "image/jpeg") {
         // The browser makes every photograph a JPEG: one that is not is a fault of ours.
         return {
@@ -232,7 +243,11 @@ export function createYoucamProvider(options: { apiKey: string; fetch: typeof fe
       if (!uploaded.ok) return uploaded;
 
       // The customer keeps their own colour: no colour is ever chosen.
-      const task = { src_file_id: uploaded.fileId, ref_file_url: referenceUrl, hair_color: "src" };
+      const task = {
+        src_file_id: uploaded.fileId,
+        ref_file_url: referenceUrlOf(options.refsUrl, look),
+        hair_color: "src",
+      };
       const response = await call("submit", TASK_PATH, { method: "POST", body: JSON.stringify(task) });
       if (response instanceof VendorUnreachable) return { ok: false, failure: unreachable(response) };
       const body = await readBody(response);

@@ -122,6 +122,13 @@ describe("approving an order", () => {
     expect(needsSecondApproval({ currency: "USD", total: 14_000 }, 10_000, rates)).toBe(true);
     expect(needsSecondApproval({ currency: "CNY", total: 14_000 }, 50_000, rates)).toBe(true);
   });
+
+  // A yen total is whole yen: read as hundredths, a JPY 200,000 order came to Rs. 1,120 and went out on one approval.
+  it("reads a total in its currency's own smallest unit", () => {
+    const rates = { default: 0, JPY: 0.56 };
+    expect(needsSecondApproval({ currency: "JPY", total: 200_000 }, 100_000, rates)).toBe(true);
+    expect(needsSecondApproval({ currency: "JPY", total: 200_000 }, 120_000, rates)).toBe(false);
+  });
 });
 
 describe("an approved order", () => {

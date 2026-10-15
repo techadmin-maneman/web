@@ -1,9 +1,11 @@
-// An erased person's files deleted from R2 (./erasure.ts): their try-ons, their visits' photographs and their
-// referral card, each before the row that names it; and, by the cron, what a failed run left.
+// An erased person's files deleted from R2 (./erasure.ts): their try-ons, their visits' photographs, the copies kept
+// of their invoices and receipts, and their referral card, each before the row that names it; and, by the cron, what
+// a failed run left.
 
 import type { Logger } from "../../log.ts";
 import { deleteCounted, deleteUnder } from "../platform/storage-meter.ts";
 import { copyKey, keptLookKey } from "../try-on/kept-try-ons.ts";
+import { documentsOf } from "../clients/client-documents.ts";
 
 /** R2 deletes at most 1,000 keys a call. */
 const R2_DELETE_BATCH = 1000;
@@ -23,6 +25,8 @@ export type ErasureEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "CLIENT_PHOTOS
 export async function deleteErasedFiles(env: ErasureEnv, personId: string, now: Date): Promise<void> {
   await deleteTryOnFiles(env, personId, now);
   await deleteVisitPhotos(env, personId);
+  // Books keeps its own for the tax record.
+  await deleteUnder(env.DB, env.CLIENT_PHOTOS, [documentsOf(personId)]);
   await deleteReferralCard(env, personId);
   await env.DB.prepare("UPDATE people SET files_erased_at = ?2 WHERE id = ?1").bind(personId, now.toISOString()).run();
 }

@@ -2211,7 +2211,7 @@ Indexes:
 
 Each receipt against a purchase order at the warehouse: who received it, the supplier's invoice, the rupee rate and the freight, duty and clearing (ADR 0167).
 
-Made by `0142_receipts.sql`; changed by `0143_books_bills.sql`.
+Made by `0142_receipts.sql`; changed by `0143_books_bills.sql`, `0178_receipt_rate_micro.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2227,6 +2227,7 @@ Made by `0142_receipts.sql`; changed by `0143_books_bills.sql`.
 | `note` | TEXT | yes |  |  | Ops' own words. Never a client's name. |
 | `books_bill_id` | TEXT | yes |  |  |  |
 | `books_checked_at` | TEXT | yes |  |  |  |
+| `rate_micro` | INTEGER | yes |  |  | A receipt's exchange rate in micro-rupees to one whole unit of the order's currency, beside rupee_rate's whole paise: a paisa to the yen, or to the dong, was too coarse a step, and its price in the currency's smallest unit was assumed to be hundredths (src/config/currencies.ts). The code reads rate_micro where it is set, and rupee_rate's paise until then. |
 
 Indexes:
 

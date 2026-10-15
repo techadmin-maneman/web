@@ -107,7 +107,7 @@ describe("tasks", () => {
 
   // Every other task leaves the board only when its thing is done.
   it("lets ops close a partial visit's task without a follow-up, and a City matter with what was done, and no other", () => {
-    expect(CLOSABLE_TASK_GROUPS).toEqual(["partial_visit", "city_matter"]);
-    expect(TASK_GROUPS.filter(isClosable)).toEqual(["city_matter", "partial_visit"]);
+    expect(CLOSABLE_TASK_GROUPS).toEqual(["partial_visit", "at_risk_client", "city_matter"]);
+    expect(TASK_GROUPS.filter(isClosable).sort()).toEqual(["at_risk_client", "city_matter", "partial_visit"]);
   });
 });

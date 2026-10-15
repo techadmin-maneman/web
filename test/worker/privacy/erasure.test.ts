@@ -368,7 +368,7 @@ describe("ops deciding a deletion", () => {
 
     expect(await decisions()).toEqual([]);
     expect(await env.DB.prepare("SELECT state FROM deletion_requests").first("state")).toBe("requested");
-    expect(await filesLeft()).toEqual({ upload: true, result: true, visitPhoto: true, card: true });
+    expect(await filesLeft()).toEqual({ upload: true, result: true, visitPhoto: true, card: true, document: true });
   });
 
   it("records one decision when the erasure is done", async () => {

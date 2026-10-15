@@ -8,7 +8,7 @@
 //               and failed after a day (src/scheduled/unsent-messages.ts)
 //   renders     queued but never started, or rendering past the give-up time -> render
 //   downloads   a stored result URL not yet fetched, until it expires  -> render
-//   units       YouCam's balance, against YOUCAM_UNIT_FLOOR
+//   units       YouCam's balance, against YOUCAM_UNIT_FLOOR (src/config/tryon.ts)
 //   expiry      abandoned uploads after an hour, results once RESULT_RETENTION_DAYS is up (14 in production,
 //               3 on staging), photos once their jobs are done; a client's try-on is kept on its look's day, and
 //               any other photo's small copy goes with the photo or the look (docs/decisions/0084)

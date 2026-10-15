@@ -24,20 +24,20 @@ Symptoms: jobs fail as `render_failed`. A refused key or an empty balance pages 
 
 ## Units are low
 
-The sweeper reads YouCam's balance once an hour and alerts once when it is below `YOUCAM_UNIT_FLOOR`, not every hour; a top-up that lifts it over the floor closes the alert. Top up in the YouCam API console. A render takes 2 units; at zero, every render fails and the try-on shows as paused.
+The sweeper reads YouCam's balance once an hour and alerts once when it is below `YOUCAM_UNIT_FLOOR` (500, `src/config/tryon.ts`), not every hour; a top-up that lifts it over the floor closes the alert. Top up in the YouCam API console. A render takes 2 units; at zero, every render fails and the try-on shows as paused.
 
 `node --env-file=<secrets> scripts/staging/youcam-probe.ts units` reads the balance by hand.
 
 ## A ceiling was reached
 
-The alert names the ceiling (`upload`, `render` or `result_read`). Try-ons answer `503 busy` until midnight IST, and the alert fires at most once a day per ceiling. The result-read ceiling also counts a client opening their try-on's photograph or look in the app (ADR 0082), so past it the app's Photos tab shows those two as blank blocks until midnight.
+The alert names the ceiling: the try-on's (`upload`, `render`, `result_read`), the codes' (`login_code`, `tech_code`, `form_code`), the address search's (`geocode`) or the dispatch board's (`route`, `route_map`). What it covers answers `503 busy` until midnight IST, and the alert fires at most once a day per ceiling, with one at 80% before it. The result-read ceiling also counts a client opening their try-on's photograph or look in the app (ADR 0082), so past it the app's Photos tab shows those two as blank blocks until midnight.
 
-- If the traffic is real, raise the ceiling in `wrangler.jsonc` and deploy. The free-tier budget test refuses any value that could take the account past 80% of a free allowance.
+- If the traffic is real, raise the ceiling in the console, Settings · Rules · Daily limits: it holds from the next request, with no release. Each goes only so far (`src/policy/ops-settings-ceilings.ts`), the try-on's within R2's monthly budget, which a test holds it to; past that is a release.
 - If the traffic is abuse, leave the ceiling: it is doing its job.
 
 ## A billed image was lost
 
-Alert: "its result was billed but never downloaded, and its URL has expired". The download was retried for 24 hours. The customer's job is `failed`, and nothing can recover the image. Check whether the result host (`ailab-outputs.oss-accelerate.aliyuncs.com`) is reachable at all.
+Alert: "its result was billed but never downloaded, and its URL has expired". The download was retried for 24 hours. The customer's job is `failed`, and nothing can recover the image. Check whether YouCam's result links are reachable at all.
 
 ## WhatsApp (Evolution) is down
 

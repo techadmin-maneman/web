@@ -6,8 +6,8 @@
 // past its replacement date, an invoice still a draft, a client past their next
 // service with nothing booked, a client
 // consulted and not fitted. Each task leaves when the thing itself is done,
-// wherever it is done, but for a visit left partly done, which ops may close
-// without a follow-up. What is kept about a task is whose it is, and why ops
+// wherever it is done, but for the groups ops may close with why: a visit left
+// partly done, an at-risk client, a City matter. What is kept about a task is whose it is, and why ops
 // closed it, keyed by its group and its row's id
 // (docs/decisions/0092-task-owners.md).
 //
@@ -23,7 +23,6 @@ import { staffMemberOf } from "../../http/audit.ts";
 import { closeTask } from "../../domain/ops/task-closures.ts";
 import { assignTask, handBackTask, staffSeenSince, type TaskKey } from "../../domain/ops/task-owners.ts";
 import { outstandingTasks, overdueCount, READ_CAP, type Task } from "../../domain/ops/tasks.ts";
-import { tasksWithin } from "../../domain/ops/task-reach.ts";
 import { lowStockPlaces } from "../../domain/inventory/low-stock.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -108,7 +107,9 @@ const TasksSchema = z
   .object({
     overdue: z.number().int().openapi({ description: "How many are past their day in India, across every group." }),
     truncated: z.boolean().openapi({
-      description: `More were waiting than one look reads (${String(READ_CAP)} a statement), so a count may be short.`,
+      description:
+        `More were waiting than one look reads (${String(READ_CAP)} a statement): every count is whole, but the ` +
+        "overdue figure may be short.",
     }),
     staff: z.array(z.string()).openapi({
       description:
@@ -207,7 +208,8 @@ const ownerRoute = opsRoute({
 const closeRoute = opsRoute({
   method: "post",
   path: "/api/tasks/{group}/{id}/close",
-  summary: "Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed",
+  summary:
+    "Close a visit left partly done, an at-risk client or a City matter without doing its thing, with why; it leaves the board and stays closed",
   request: {
     params: z.object({ group: z.enum(CLOSABLE_TASK_GROUPS), id: z.uuid() }),
     body: {
@@ -236,17 +238,18 @@ const closeRoute = opsRoute({
 });
 
 /**
- * Every task on the board in the caller's cities, as a look at it reads them now: each group's where their grants in
- * its department reach at the level asked.
+ * Every task on the board in the caller's cities, or one client's, as a look at it reads them now: each group's where
+ * their grants in its department reach at the level asked.
  */
-async function readTheBoard(c: Context<AppEnv>, level: Level) {
+async function readTheBoard(c: Context<AppEnv>, level: Level, person?: string) {
   const [inputs, access] = await Promise.all([opsInputs(c), callerAccess(c)]);
-  const board = await outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, {
+  return outstandingTasks(c.env.DB, c.var.deps.now(), inputs.taskSlaHours, {
     days: inputs.nextVisitDays,
     hours: inputs.careHours,
+    lostAfter: inputs.lostAfterDays,
+    reach: (group: TaskGroup) => placesReached(access, TASK_DEPARTMENTS[group], level),
+    person,
   });
-  const reachOf = (group: TaskGroup) => placesReached(access, TASK_DEPARTMENTS[group], level);
-  return { ...board, tasks: await tasksWithin(c.env.DB, board.tasks, reachOf) };
 }
 
 /** A task as the board answers it: the visit and the client's mobile only where its group carries them. */
@@ -261,9 +264,6 @@ function personBody(person: Task["person"]) {
   const { id, name, mobile } = person;
   return mobile === null ? { id, name } : { id, name, mobile };
 }
-
-/** Whether the task is about the client asked for; every task is, when none was. */
-const isAbout = (task: Task, person: string | undefined): boolean => person === undefined || task.person?.id === person;
 
 /** The members of staff a task may be given to: those who have used the console lately (src/policy/tasks.ts). */
 const staffNow = (c: Context<AppEnv>): Promise<string[]> =>
@@ -290,20 +290,19 @@ export function registerOpsTasks(app: App): void {
     const now = c.var.deps.now();
     const { person } = c.req.valid("query");
     const [board, staff, seen, lowStock] = await Promise.all([
-      readTheBoard(c, "view"),
+      readTheBoard(c, "view", person),
       staffNow(c),
       groupsSeenBy(c),
       lowStockPlaces(c.env.DB),
     ]);
-    const tasks = board.tasks.filter((task) => seen.includes(task.group) && isAbout(task, person));
+    const tasks = board.tasks.filter((task) => seen.includes(task.group));
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
     const groups = seen
       .map((group) => {
-        const waiting = tasks.filter((task) => task.group === group);
-        const shown = waiting.slice(0, TASKS_SHOWN);
+        const shown = tasks.filter((task) => task.group === group).slice(0, TASKS_SHOWN);
         return {
           group,
-          count: waiting.length,
+          count: board.counts.get(group) ?? 0,
           closable: isClosable(group),
           tasks: shown.map(taskBody),
         };

@@ -4,6 +4,7 @@
 // settings.
 
 import type { Settings } from "../config/settings.ts";
+import { CEILINGS, type Ceiling } from "./daily-ceilings.ts";
 import { CODE_CHECKS } from "./discount-codes.ts";
 import { GRIEVANCES_PER_DAY } from "./grievances.ts";
 import { INVITE_MISSES_PER_ADDRESS_HOURLY } from "./invites.ts";
@@ -72,7 +73,8 @@ export const RATE_LIMITS = {
   "csp_report:ip": { per: "hour", limit: 20 },
   "csp_report:all": { per: "hour", limit: 300 },
 
-  // The global daily ceilings (src/domain/platform/ceilings.ts), and their one alert a day each.
+  // The global daily ceilings as each environment's config gives them, until ops set their own in Settings · Rules
+  // (src/domain/platform/ceilings.ts), and their one alert a day each.
   "ceiling:upload": { per: "day", limit: (settings) => settings.tryon.uploadDailyCeiling },
   "ceiling:render": { per: "day", limit: (settings) => settings.tryon.renderDailyCeiling },
   "ceiling:result_read": { per: "day", limit: (settings) => settings.tryon.resultReadDailyCeiling },
@@ -95,6 +97,13 @@ export const COUNTERS = {
 } as const satisfies Readonly<Record<string, { readonly per: Period }>>;
 
 export type Counter = keyof typeof COUNTERS;
+
+/** Each ceiling as an environment's config gives it, which stands until ops set their own (./ops-settings-ceilings.ts). */
+export const ceilingsIn = (settings: Settings): Readonly<Record<Ceiling, number>> =>
+  Object.fromEntries(CEILINGS.map((ceiling) => [ceiling, limitOf(`ceiling:${ceiling}`, settings)])) as Record<
+    Ceiling,
+    number
+  >;
 
 /** How many uses the scope's window allows under these settings. */
 export function limitOf(scope: RateLimitScope, settings: Settings): number {

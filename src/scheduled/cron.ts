@@ -10,6 +10,8 @@
 // the vendors' own limits. Their statements to D1 are kept by each job's batch sizes, well under the 1,000 an
 // invocation may send (docs/decisions/0112-workers-paid.md).
 
+import { YOUCAM_UNIT_FLOOR } from "../config/tryon.ts";
+import { tellOfBooksCalls } from "../domain/books/books-calls.ts";
 import { OPS_ORIGIN } from "../config/environments.ts";
 import { NO_GST, type GstRegistration } from "../config/gst.ts";
 import type { Dependencies } from "../dependencies.ts";
@@ -348,7 +350,8 @@ async function booksJob({ env, deps, config, log, budget }: CronContext): Promis
   if (written > 0) log.info("books_synced", done);
 }
 
-const youcamUnitsJob = (context: CronContext) => checkYoucamUnits(context, context.config.settings.tryon.unitFloor);
+const youcamUnitsJob = (context: CronContext) => checkYoucamUnits(context, YOUCAM_UNIT_FLOOR);
+const booksCallsJob = ({ env, deps }: CronContext) => tellOfBooksCalls(env.DB, deps, deps.now());
 
 /**
  * Every job, and when it runs (src/scheduled/schedule.ts): every `every` minutes, at minute `at` of each such stretch.
@@ -386,6 +389,8 @@ export const CRON_JOBS: readonly CronJob[] = [
   { name: "books_items", needs: "books", every: 60, at: 4, run: booksItemsJob },
   { name: "expire_tryons", needs: "nothing", every: 60, at: 9, run: expireTryOns },
   { name: "youcam_units", needs: "nothing", every: 60, at: 14, run: youcamUnitsJob },
+  // Zoho Books' calls today against its allowance a day, told at 70% (src/domain/books/books-calls.ts).
+  { name: "books_calls", needs: "nothing", every: 60, at: 54, run: booksCallsJob },
   { name: "kept_looks", needs: "nothing", every: 60, at: 19, run: letKeptLooksGo },
   { name: "deletion_alerts", needs: "nothing", every: 60, at: 24, run: deletionAlertsJob },
   // The stock, a step a job, so one that throws stops none of the others, each in a minute no other job of five or

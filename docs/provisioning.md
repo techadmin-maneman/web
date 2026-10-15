@@ -595,7 +595,7 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
    | Places API (New) | Autocomplete requests per day  | **2000**  |
    | Places API (New) | Place Details requests per day | **500**   |
 
-   These sit just above our own daily ceiling (`GEOCODE_DAILY_CEILING`, 200) so our code refuses first and Google's quota is the backstop. Both are far under the free allowance — Geocoding gets 70,000 free requests a month on the India price list, and 300 a day cannot reach it. A quota change can take a few minutes to apply, and some quotas need a one-line reason.
+   These sit just above our own daily ceiling (`geocode` in Settings · Rules · Daily limits, 200 until ops set it) so our code refuses first and Google's quota is the backstop. Both are far under the free allowance — Geocoding gets 70,000 free requests a month on the India price list, and 300 a day cannot reach it. A quota change can take a few minutes to apply, and some quotas need a one-line reason.
 
    If a quota field will not go below its default, lower the one above it in the list; Google applies the smallest that matches.
 
@@ -623,8 +623,8 @@ Everything below is at <https://console.cloud.google.com>, signed in as the acco
 ### If the address search misbehaves
 
 - **Suggestions never appear, and the logs say `address_suggest_failed` with `refused`.** The key is wrong, restricted to the wrong APIs, or its quota is spent. The alert space is told at once and again each day while it lasts, with Google's own words, and the alert closes at the next search Google answers: the Places API refuses with a 403 and a message, the Geocoding API with a 200 whose `status` is `REQUEST_DENIED`, `OVER_DAILY_LIMIT` or `OVER_QUERY_LIMIT`. Check step 3's API restrictions first. The form still works: an address can always be typed.
-- **"busy" instead of suggestions.** A ceiling is reached. `geocode` is the ceiling's name in the alert. Either a client is hammering the form — the per-client limit is 120 a day — or `GEOCODE_DAILY_CEILING` is too low for real use. Raise it in `wrangler.jsonc` and deploy; the guard refuses anything above 1,800.
-- **To stop all spending at once.** Set `"GEOCODE_DAILY_CEILING": "0"` in `wrangler.jsonc` and deploy, or set `"GEOCODE_PROVIDER": "none"`. Either way the form keeps working, typed.
+- **"busy" instead of suggestions.** A ceiling is reached. `geocode` is the ceiling's name in the alert. Either a client is hammering the form — the per-client limit is 120 a day — or the `geocode` ceiling is too low for real use. Raise it in the console, Settings · Rules · Daily limits; it refuses anything above 1,800.
+- **To stop all spending at once.** Set the `geocode` ceiling to 0 in Settings · Rules · Daily limits, which holds from the next request, or set `"GEOCODE_PROVIDER": "none"` in `wrangler.jsonc` and deploy. Either way the form keeps working, typed.
 - **A charge appears at all.** Something is wrong, because the quotas in step 4 cannot reach the free allowance. Disable the key in **Credentials**, set `GEOCODE_PROVIDER` to `none`, and find out how before re-enabling it.
 
 ## 13a. The dispatch board's drive times and day map (Routes and Maps Static)

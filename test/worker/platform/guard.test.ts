@@ -207,8 +207,8 @@ describe("validateStaticConfig: try-on and messaging", () => {
   });
 
   it("needs the references' address over https outside local runs, ending in their version", () => {
-    expect(problemsOf({ ...production, TRYON_REFS_URL: "https://maneman.in/refs/v2" })).toEqual([
-      "TRYON_REFS_URL must end in /refs/v1, the references' version",
+    expect(problemsOf({ ...production, TRYON_REFS_URL: "https://maneman.in/refs" })).toEqual([
+      "TRYON_REFS_URL must end in the references' version, as /refs/v1",
     ]);
     expect(problemsOf({ ...production, TRYON_REFS_URL: "http://maneman.in/refs/v1" })).toEqual([
       "TRYON_REFS_URL must be https: YouCam fetches each reference from it",

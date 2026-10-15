@@ -39,13 +39,10 @@ export const SETTINGS = {
   RENDER_DAILY_CEILING: "20",
   UPLOAD_DAILY_CEILING: "40",
   RESULT_READ_DAILY_CEILING: "400",
-  GEOCODE_DAILY_CEILING: "200",
   RESULT_RETENTION_DAYS: "14",
-  YOUCAM_UNIT_FLOOR: "500",
   TRYON_REFS_URL: "https://maneman.in/refs/v1",
   RESULT_SIGNING_KEY: "a-signing-key-of-at-least-thirty-two-characters",
   MESSAGING_ENABLED: "false",
-  ACCESS_TEAM_DOMAIN: "summer-math-0275.cloudflareaccess.com",
   ACCESS_OPS_AUD: "ops-audience-tag",
   OTP_PEPPER: "a-login-code-pepper-of-at-least-thirty-two-chars",
 };

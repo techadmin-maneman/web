@@ -5,7 +5,7 @@
 import { Button } from "@maneman/ui/Button";
 import { Field, Fieldset, TextInput } from "@maneman/ui/Field";
 import { errorText, type Failure } from "@maneman/web-kit/refusal";
-import { paiseFromRupees } from "@maneman/web-kit/money";
+import { microRupeesFromRupees, paiseFromRupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
@@ -109,7 +109,7 @@ function receiptBody(order: Order, lines: readonly LineDraft[], extras: Extras) 
       };
     }),
     supplier_invoice: extras.invoice.trim() === "" ? null : extras.invoice.trim(),
-    rupee_rate: order.currency === "INR" ? null : paiseFromRupees(extras.rate),
+    rate_micro_rupees: order.currency === "INR" ? null : microRupeesFromRupees(extras.rate),
     freight_paise: paiseFromRupees(extras.freight),
     duty_paise: paiseFromRupees(extras.duty),
     clearing_paise: paiseFromRupees(extras.clearing),

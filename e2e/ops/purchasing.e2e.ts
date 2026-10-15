@@ -216,7 +216,7 @@ test("receives what arrived of a sent order, and lists the receipt with its land
   expect((await posted_).postDataJSON()).toEqual({
     lines: [{ po_line_id: "pl-1", received: 24, damaged: 2, qc_failed: 0, lot_code: "SV-7", expires_on: null }],
     supplier_invoice: "INV-88",
-    rupee_rate: null,
+    rate_micro_rupees: null,
     freight_paise: 24_000,
     duty_paise: 0,
     clearing_paise: 0,

@@ -1,8 +1,9 @@
 // A task ops closed without doing its thing (docs/decisions/0092-task-owners.md;
-// src/policy/tasks.ts): only a visit left partly done, whose follow-up the
-// client may never want. The closing is kept, with ops' reason and who closed
-// it, by the task's group and its row's id; the board then leaves the task out
-// (src/domain/ops/tasks.ts), and a later visit left partly done is a task of its own.
+// src/policy/tasks.ts): a visit left partly done, whose follow-up the client may
+// never want; an at-risk client, with what came of the call; a City matter. The
+// closing is kept, with ops' reason and who closed it, by the task's group and its
+// row's id; the board then leaves the task out (src/domain/ops/tasks.ts), and a
+// later visit left partly done, or a client at risk after a later visit, is a task of its own.
 
 import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import type { TaskKey } from "./task-owners.ts";

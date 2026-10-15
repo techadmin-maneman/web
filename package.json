@@ -40,6 +40,7 @@
     "adr-index": "node scripts/build/generate-adr-index.ts",
     "analytics:first-run": "node scripts/ops/analytics-first-run.ts",
     "schema": "node scripts/build/generate-schema-doc.ts",
+    "settings": "node scripts/build/generate-settings-doc.ts",
     "upkeep-sql": "node scripts/build/generate-upkeep-sql.ts",
     "words": "vitest run test/node/words -u",
     "words:reviewed": "node scripts/build/words-reviewed.ts",

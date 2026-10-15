@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, captureLogs, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { enforce, listStaff, opsAs, person as staffPerson } from "./staff-fixtures.ts";
+import { aVisit } from "../fixtures/index.ts";
 import {
   PERSON,
   REFERRED,
@@ -142,6 +143,15 @@ describe("POST /api/tasks/{group}/{id}/close", () => {
     expect((await close("partial_visit", VISIT, { reason: WHY })).status).toBe(204);
     expect((await close("partial_visit", VISIT, { reason: "Again" })).status).toBe(404);
     expect(await closures()).toHaveLength(1);
+  });
+
+  it("closes an at-risk client with what came of the call", async () => {
+    await aVisit({ id: VISIT, person_id: PERSON, window_start: "2026-08-01T04:30:00.000Z", status: "completed" });
+    const board = await tasks();
+    expect(board.groups.find((each) => each.group === "at_risk_client")?.closable).toBe(true);
+    expect((await close("at_risk_client", VISIT, { reason: "Moved abroad; no visits for now." })).status).toBe(204);
+    expect(groupNames(await tasks())).not.toContain("at_risk_client");
+    expect(await closures()).toMatchObject([{ task_group: "at_risk_client", subject_id: VISIT }]);
   });
 
   it("stays closed, and a visit left partly done after it is a task of its own", async () => {

@@ -1,7 +1,7 @@
 // The storage meter (docs/decisions/0093-the-storage-meter.md): what the app's
 // two buckets hold, client-photos and referral-cards. That is each visit's
 // photographs and their small copies, a try-on's small copy and a client's
-// kept look, and the referral cards.
+// kept look, the copies kept of a client's invoices and receipts, and the referral cards.
 //
 // It is one running figure in D1, beside a row for each object and its size
 // (stored_objects, migration 0055). Both are written in one batch as an object

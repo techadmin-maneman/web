@@ -22,6 +22,10 @@ export const FIXED_LIMITS = {
   TRYON_GENERATE_IP_HOURLY_LIMIT: 5,
   TRYON_CLAIM_MOBILE_DAILY_LIMIT: 3,
   RESULT_MESSAGE_MOBILE_DAILY_LIMIT: 3,
+  // Google's address lookups a day, across every client, until ops set another (src/policy/ops-settings-ceilings.ts).
+  // It refuses rather than spends (docs/decisions/0054-address-capture.md); a local raise is held to
+  // GEOCODE_CEILING_MAX.
+  GEOCODE_DAILY_CEILING: 200,
 } as const;
 
 export type FixedLimit = keyof typeof FIXED_LIMITS;

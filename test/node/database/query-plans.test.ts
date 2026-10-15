@@ -213,11 +213,9 @@ const UNPLANNED = [
   { file: "src/domain/clients/hair-profiles.ts", source: 'SELECT ${placeholders} WHERE (${latestIdQuery("?2")})' },
   // A record's city, for the console: the record by its key, its city by indexed lookups. The cron never runs it.
   { file: "src/domain/clients/places.ts", source: "FROM ${table} record WHERE record.id = ?1" },
-  // The cities of the tasks a look at the board found: each record by its key. The cron never runs it.
-  { file: "src/domain/clients/places.ts", source: "FROM ${RECORD_PLACES[kind].table} record WHERE record.id IN" },
   // The Tasks board, read once a night by the task spans job, as the console reads it at each look
-  // (docs/decisions/0147-task-spans.md).
-  { file: "src/domain/ops/tasks.ts", source: "withOwners(queue.sql)" },
+  // (docs/decisions/0147-task-spans.md), each queue kept to the caller's cities by each task's record, by its key.
+  { file: "src/domain/ops/tasks.ts", source: "read(queue.sql, kept)" },
   // One reason list's row, by its code (docs/decisions/0149-lost-reasons.md).
   { file: "src/domain/field/job-sheet-settings.ts", source: "INSERT INTO ${REASON_LISTS[which.list].table}" },
   // One row inserted from an object's columns, its conflict clause at most reading the row's own key.

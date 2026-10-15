@@ -21,6 +21,9 @@ export function rupees(paise: number): string {
 /** "499.50", as a form takes rupees, → 49950: the paise the API counts in, to the nearest paisa. */
 export const paiseFromRupees = (typed: string): number => Math.round(Number(typed) * 100);
 
+/** An exchange rate as typed in rupees to one unit of a currency, "0.56" or "83.25", in micro-rupees. */
+export const microRupeesFromRupees = (typed: string): number => Math.round(Number(typed) * 1_000_000);
+
 /** Paise as a form's box holds them, in rupees as typed: 1234500 is "12345", 12345 is "123.45". */
 export const rupeesTyped = (paise: number): string => String(paise / 100);
 

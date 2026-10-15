@@ -15,7 +15,7 @@ import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
 import { PRESET_IDS, findPreset } from "../../config/presets.ts";
 import { FAILURE_CODES, FAILURE_REASONS, HAIR_COLORS, JOB_STATES } from "../../config/tryon.ts";
-import { alertCeilingReached, takeFromCeiling } from "../../domain/platform/ceilings.ts";
+import { withinCeiling } from "../../domain/platform/ceilings.ts";
 import { takeOne } from "../../domain/sign-in/rate-limit.ts";
 import { failJob, loadJob, type JobRow, type RenderChoice } from "../../domain/try-on/tryon.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -156,9 +156,8 @@ async function startFirstLook(c: Context<AppEnv>, job: JobRow, choice: RenderCho
   }
 
   const at = { now, settings: c.var.config.settings };
-  if (!(await takeFromCeiling(db, "render", at))) {
+  if (!(await withinCeiling(db, c.var.deps.alert, "render", at))) {
     await failJob({ db, jobId: job.id, code: "busy", detail: null, now });
-    await alertCeilingReached(db, c.var.deps.alert, "render", at);
     return { error: "busy" };
   }
 

@@ -1,6 +1,7 @@
 // The image provider, behind an interface. Callers use ImageProvider; only this file knows which implementation runs,
 // and only youcam.ts knows YouCam (docs/decisions/0201-the-try-on-on-youcam.md). The render consumer is the only caller.
 
+import type { PresetId } from "../../config/presets.ts";
 import type { FailureCode, FailureReason } from "../../config/tryon.ts";
 import type { ImageType } from "../../lib/image-bytes.ts";
 import type { Logger } from "../../log.ts";
@@ -42,8 +43,10 @@ export type DownloadResult =
     };
 
 export interface ImageProvider {
-  /** Starts a render of the photograph with the hair of the look's reference photograph, at its public URL. */
-  submit(image: Uint8Array, referenceUrl: string): Promise<SubmitResult>;
+  /** Starts a render of the photograph in a look, named by its id; how the look is made is the provider's own. */
+  submit(image: Uint8Array, look: PresetId): Promise<SubmitResult>;
+  /** What a render made in a look today is made from, as the render cache keys it: a new way of making it is new. */
+  readonly looksVersion: string;
   poll(taskId: string): Promise<PollResult>;
   /** Fetches a result, without the API key, retrying a stalled host. */
   download(url: string): Promise<DownloadResult>;
@@ -54,8 +57,9 @@ export interface ImageProvider {
 /** YouCam with its key; with none, the stub, which fakes YouCam's HTTP API. */
 export function createImageProvider(
   apiKey: string | null,
-  deps: { fetch: typeof fetch; now: () => Date; log: Logger },
+  deps: { fetch: typeof fetch; now: () => Date; log: Logger; refsUrl: string },
 ): ImageProvider {
-  if (apiKey !== null) return createYoucamProvider({ apiKey, fetch: deps.fetch, log: deps.log });
-  return createYoucamProvider({ apiKey: STUB_API_KEY, fetch: createStubYoucamFetch(deps.now), log: deps.log });
+  const { log, refsUrl } = deps;
+  if (apiKey !== null) return createYoucamProvider({ apiKey, fetch: deps.fetch, log, refsUrl });
+  return createYoucamProvider({ apiKey: STUB_API_KEY, fetch: createStubYoucamFetch(deps.now), log, refsUrl });
 }

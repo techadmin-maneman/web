@@ -105,7 +105,7 @@ describe("POST /api/number-code", () => {
     expect(busy.body.error?.code).toBe("busy");
     expect(deps.sentCodes).toHaveLength(1);
     expect(deps.alerts).toEqual([
-      'The daily form_code ceiling (1) is reached; the site\'s WhatsApp codes for the one visit and the try-on answer "busy" until midnight IST.',
+      'The daily form_code ceiling (1) is reached; the site\'s WhatsApp codes for the one visit and the try-on answer "busy" until midnight IST. Raise it in Settings · Rules if the day calls for more.',
     ]);
     const oneCode = { ...LOCAL_SETTINGS, login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } };
     expect(await ceilingReached(env.DB, "login_code", { now: clock, settings: oneCode })).toBe(false);

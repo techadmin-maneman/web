@@ -12,6 +12,7 @@
 // issued depends on what was true then; the ADR gives the split.
 
 import { CARE_HOURS, CARE_HOURS_KEYS, careHoursConflicts } from "./care-hours.ts";
+import { CEILING_SETTINGS } from "./ops-settings-ceilings.ts";
 import { CHECKIN_RADIUS_M } from "./check-in.ts";
 import { LOST_AFTER_DAYS } from "./client-standing.ts";
 import { CLIENT_SETTINGS } from "./ops-settings-clients.ts";
@@ -331,6 +332,7 @@ export const OPS_SETTINGS = [
   },
   ...CLIENT_SETTINGS,
   ...STOCK_SETTINGS,
+  ...CEILING_SETTINGS,
 ] as const satisfies readonly OpsSetting[];
 
 export type OpsSettingName = (typeof OPS_SETTINGS)[number]["name"];

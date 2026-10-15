@@ -96,7 +96,7 @@ export function can({
 export type PlacesReached =
   { readonly kind: "everywhere" } | { readonly kind: "cities"; readonly cities: ReadonlySet<string> };
 
-const EVERYWHERE: PlacesReached = { kind: "everywhere" };
+export const EVERYWHERE: PlacesReached = { kind: "everywhere" };
 const NOWHERE: PlacesReached = { kind: "cities", cities: new Set() };
 
 /** The cities a zone or city grant names. A national grant names none: it reaches everywhere. */

@@ -159,6 +159,7 @@ describe("a receipt in Books", () => {
       date: "2026-09-21",
       dueDate: "2026-10-21",
       exchangeRate: 83.25,
+      currency: "USD",
     });
     expect(bill?.lines).toEqual([
       {
@@ -217,6 +218,7 @@ describe("a receipt in Books", () => {
         reference: claim,
         date: "2026-09-21",
         exchangeRate: 83.25,
+        currency: "USD",
         lines: [
           {
             description: `Staging test: Mane Man Essential 8x10 1B, 20% grey, 100% (CL-${String(number)}, ${await orderNumber()})`,

@@ -112,6 +112,9 @@ export const PUBLIC_ORIGIN: Readonly<Record<EnvironmentName, string>> = {
   production: "https://maneman.in",
 };
 
+/** The Cloudflare Access team every environment's console signs staff in through (docs/decisions/0031-access-and-audit.md). */
+export const ACCESS_TEAM_DOMAIN = "summer-math-0275.cloudflareaccess.com";
+
 export const ZONE_NAME = "maneman.in";
 export const ZONE_ID = "d33891be281c088bf3e0e927d7ed20f9";
 

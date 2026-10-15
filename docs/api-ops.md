@@ -5458,7 +5458,7 @@ Request body:
 
 ### POST /api/tasks/{group}/{id}/close
 
-Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed
+Close a visit left partly done, an at-risk client or a City matter without doing its thing, with why; it leaves the board and stays closed
 
 Request body:
 
@@ -8994,7 +8994,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, or rupee_rate for none on an order in another currency
+**400**: invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, or rate_micro_rupees for none on an order in another currency
 
 ```json
 {
@@ -21874,7 +21874,7 @@ Request body:
     },
     "truncated": {
       "type": "boolean",
-      "description": "More were waiting than one look reads (2000 a statement), so a count may be short."
+      "description": "More were waiting than one look reads (2000 a statement): every count is whole, but the overdue figure may be short."
     },
     "staff": {
       "type": "array",
@@ -23884,7 +23884,8 @@ Request body:
         "custom_order_grace_days",
         "planning_period_days",
         "planning_horizon_periods",
-        "forecast_assumptions"
+        "forecast_assumptions",
+        "daily_ceilings"
       ]
     },
     "title": {
@@ -24073,7 +24074,8 @@ Request body:
         "custom_order_grace_days",
         "planning_period_days",
         "planning_horizon_periods",
-        "forecast_assumptions"
+        "forecast_assumptions",
+        "daily_ceilings"
       ]
     },
     "title": {
@@ -28748,6 +28750,15 @@ Request body:
       "minLength": 1,
       "maxLength": 60
     },
+    "rate_micro_rupees": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 1000000000000,
+      "description": "Micro-rupees to one whole unit of the order's currency, as Rs. 83.25 to the dollar is 83,250,000 and Rs. 0.56 to the yen 560,000; null for rupees."
+    },
     "rupee_rate": {
       "type": [
         "integer",
@@ -28755,7 +28766,7 @@ Request body:
       ],
       "minimum": 1,
       "maximum": 10000000,
-      "description": "Paise to one unit of the order's currency, as Rs. 83.25 to the dollar is 8325; null for rupees."
+      "description": "Deprecated: send rate_micro_rupees. Paise to one unit of the order's currency."
     },
     "freight_paise": {
       "type": "integer",
@@ -28785,7 +28796,6 @@ Request body:
   "required": [
     "lines",
     "supplier_invoice",
-    "rupee_rate",
     "freight_paise",
     "duty_paise",
     "clearing_paise",

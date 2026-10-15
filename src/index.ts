@@ -108,10 +108,7 @@ const QUEUE_CONSUMERS: readonly {
         env: workerEnv,
         deps,
         log,
-        options: {
-          resultRetentionDays: config.settings.tryon.resultRetentionDays,
-          refsUrl: config.settings.tryon.refsUrl,
-        },
+        options: { resultRetentionDays: config.settings.tryon.resultRetentionDays },
       }),
   },
   {

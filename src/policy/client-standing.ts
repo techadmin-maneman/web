@@ -18,6 +18,10 @@ export interface StandingDays {
   readonly lostAfter: number;
 }
 
+/** The latest day a client's last first fit, service or replacement may have been done on for them to be lost today. */
+export const lostIfDoneBy = (today: string, days: StandingDays): string =>
+  addDays(today, -(days.cadence + days.grace + 1 + days.lostAfter));
+
 /** How a client stands on a day, by the day of their last first fit, service or replacement on or before it. */
 export function standingOn(day: string, lastFitting: string, days: StandingDays): Standing {
   const lapses = addDays(lastFitting, days.cadence + days.grace + 1);

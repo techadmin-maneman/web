@@ -15,7 +15,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { PRESETS, referenceUrlOf } from "../../src/config/presets.ts";
+import { PRESETS } from "../../src/config/presets.ts";
 import { createLogger } from "../../src/log.ts";
 import type { ImageProvider, PollResult } from "../../src/providers/image/index.ts";
 import { createYoucamProvider } from "../../src/providers/image/youcam.ts";
@@ -53,7 +53,7 @@ const { values, positionals } = parseArgs({
   options: { out: { type: "string" }, refs: { type: "string", default: "https://maneman.in/refs/v1" } },
 });
 const [command, argument] = positionals;
-const image = createYoucamProvider({ apiKey, fetch, log: createLogger() });
+const image = createYoucamProvider({ apiKey, fetch, log: createLogger(), refsUrl: values.refs });
 
 if (command === "units") {
   console.log(`balance: ${String(await units(image))} units`);
@@ -68,7 +68,7 @@ if (command === "units") {
   console.log(`balance before: ${String(before)} units`);
   for (const preset of PRESETS) {
     const started = Date.now();
-    const submitted = await image.submit(photo, referenceUrlOf(values.refs, preset));
+    const submitted = await image.submit(photo, preset.id);
     const result = submitted.ok ? await follow(image, submitted.taskId) : null;
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
     if (result?.state === "done") {

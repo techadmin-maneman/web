@@ -12,11 +12,15 @@
 //   - by one caller at a time, under a lease; another waits for its token;
 //   - not at all for ten minutes after Zoho refuses one ("Access Denied"),
 //     during which every call fails at once.
+//
+// Each call is counted by India's day, against Zoho's allowance a day
+// (src/domain/books/books-calls.ts).
 
 import { z } from "zod";
 import type { Logger } from "../log.ts";
 import { ProviderError } from "./provider-error.ts";
 import { MINUTE_MS } from "../lib/durations.ts";
+import { indiaDate } from "../lib/india-time.ts";
 import { parseAnswer, shapeOf, vendorAnswerOf, type VendorAnswer } from "./vendor-answer.ts";
 import { vendorFetch, VendorUnreachable, type Vendor } from "./vendor-fetch.ts";
 
@@ -57,6 +61,27 @@ export class ZohoError extends ProviderError {
 export type ZohoClientName = "crm" | "books";
 
 const vendorOf = (name: ZohoClientName): Vendor => `zoho-${name}`;
+
+/** The counters' scope each client's calls a day are kept under, keyed by the client's name and India's date. */
+export const ZOHO_CALLS_SCOPE = "zoho_calls";
+
+/**
+ * Counts one call to the client today. A count that fails is logged and goes uncounted: the call itself was made, and
+ * failing it now could have a write Zoho made tried again.
+ */
+async function counted(deps: ZohoRequesterDependencies, name: ZohoClientName): Promise<void> {
+  try {
+    await deps.db
+      .prepare(
+        `INSERT INTO counters (scope, key, window_start, count) VALUES (?1, ?2, ?3, 1)
+         ON CONFLICT (scope, key, window_start) DO UPDATE SET count = count + 1`,
+      )
+      .bind(ZOHO_CALLS_SCOPE, name, indiaDate(deps.now()))
+      .run();
+  } catch (error) {
+    deps.log.warn("zoho_call_uncounted", { client: name, reason: error instanceof Error ? error.name : "unknown" });
+  }
+}
 
 interface ZohoClient {
   readonly clientId: string;
@@ -108,11 +133,15 @@ export function createZohoRequester(
   const tokens = createTokenKeeper(name, client, { ...deps, timeoutMs });
 
   async function send(step: string, path: string, token: string, write: ZohoWrite | undefined): Promise<Response> {
-    // A multipart upload sets its own Content-Type, with the boundary.
-    return zohoSend(deps, { vendor: vendorOf(name), step, timeoutMs }, `https://${client.apiHost}${path}`, {
-      headers: { Authorization: `Zoho-oauthtoken ${token}`, ...headersOf(write) },
-      ...(write === undefined ? {} : { method: write.method, body: bodyOf(write) }),
-    });
+    try {
+      // A multipart upload sets its own Content-Type, with the boundary.
+      return await zohoSend(deps, { vendor: vendorOf(name), step, timeoutMs }, `https://${client.apiHost}${path}`, {
+        headers: { Authorization: `Zoho-oauthtoken ${token}`, ...headersOf(write) },
+        ...(write === undefined ? {} : { method: write.method, body: bodyOf(write) }),
+      });
+    } finally {
+      await counted(deps, name);
+    }
   }
 
   return async (step, path, write) => {

@@ -17,7 +17,7 @@ import {
   type ErasedContact,
 } from "../../domain/privacy/deletion.ts";
 import { changesAwaitingOps, decideNumberChange, type NumberHolder } from "../../domain/clients/number-change.ts";
-import { NUMBER_CHANGE_WAITING_SINCE } from "../../domain/ops/tasks.ts";
+import { NUMBER_CHANGE_WAITING_SINCE } from "../../domain/ops/task-queues.ts";
 import { queueContactSync } from "../../http/contact-sync.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";

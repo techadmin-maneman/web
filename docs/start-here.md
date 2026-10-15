@@ -164,7 +164,7 @@ this map, or when the map names something that no longer exists.
 
 ### Clients
 
-- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `profile`, `fitted`, `hair-profiles`, `client-notes`,
+- **Database work** (`src/domain/clients/`): `people`, `contact-updates` (what a CRM lead is still owed), `client-list`, `client-documents` (their invoices and receipts, kept once viewed), `profile`, `fitted`, `hair-profiles`, `client-notes`,
   `address-change`, `number-change`, `number-codes`, `home-prompt`, `places`, `area-names`, `service-area`
 - **Rules** (`src/policy/`): `hair-profile`, `address-change`, `number-proof`, `client-notes`, `home-prompt`
 - **Vendor** (`src/providers/`): `geocode/`
@@ -267,7 +267,7 @@ this map, or when the map names something that no longer exists.
 
 ### Ops' own work
 
-- **Database work** (`src/domain/ops/`): `needs-a-hand`, `tasks`, `task-facts` (what each task turns on),
+- **Database work** (`src/domain/ops/`): `needs-a-hand`, `tasks`, `task-queues` (the board's queues), `task-facts` (what each task turns on),
   `task-reach` (whose cities each is in), `task-closures`, `task-owners`, `grievances`, `activity`, `staff`,
   `task-spans` (when each task opened and closed), `targets` (each month's plan, city by city)
 - **Rules** (`src/policy/`): `tasks`, `alerts`, `grievances`, `ops-settings`, `console-routes`, `access`,

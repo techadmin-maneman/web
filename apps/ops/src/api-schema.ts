@@ -8119,13 +8119,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Close a visit left partly done without a follow-up, with why; it leaves the board and stays closed */
+        /** Close a visit left partly done, an at-risk client or a City matter without doing its thing, with why; it leaves the board and stays closed */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    group: "partial_visit" | "city_matter";
+                    group: "partial_visit" | "at_risk_client" | "city_matter";
                     id: string;
                 };
                 cookie?: never;
@@ -9379,7 +9379,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
+                    name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
                 };
                 cookie?: never;
             };
@@ -13585,7 +13585,7 @@ export interface paths {
                         "application/json": components["schemas"]["PurchaseOrders"];
                     };
                 };
-                /** @description invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, or rupee_rate for none on an order in another currency */
+                /** @description invalid_request: fields names lines.N for a line not of the order or more than 500 pieces of a hair system, lines for nothing received, or rate_micro_rupees for none on an order in another currency */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -17664,7 +17664,7 @@ export interface components {
         Tasks: {
             /** @description How many are past their day in India, across every group. */
             overdue: number;
-            /** @description More were waiting than one look reads (2000 a statement), so a count may be short. */
+            /** @description More were waiting than one look reads (2000 a statement): every count is whole, but the overdue figure may be short. */
             truncated: boolean;
             /** @description The members of staff a task may be given to: those who have used the console in the last 90 days, by e-mail. */
             staff: string[];
@@ -18131,7 +18131,7 @@ export interface components {
         OpsSetting: components["schemas"]["NumberRule"] | components["schemas"]["ChoiceRule"];
         NumberRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;
@@ -18164,7 +18164,7 @@ export interface components {
         };
         ChoiceRule: {
             /** @enum {string} */
-            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions";
+            name: "checkin_radius_m" | "no_show_wait_min" | "change_notice_hours" | "late_change_charge" | "no_show_charge" | "no_show_waiver" | "address_unlock_hour" | "reminder_hour" | "phone_clock" | "task_sla_hours" | "piece_cycle_days" | "payment_hold" | "dispute_window_days" | "technician_work" | "booking_days" | "referral_reward" | "care_hours" | "remedy_limit" | "lost_after_days" | "payment_links" | "arrival_notice_min" | "move_proposal_hours" | "credit_reminder_days" | "check_in_days" | "referral_monthly_cap" | "tryon_look_days" | "stock_watch" | "stock_usage" | "stock_quality" | "cycle_counts" | "kit_check" | "scorecard_days" | "po_second_approval_above_rupees" | "po_rupees_to_one" | "custom_order_grace_days" | "planning_period_days" | "planning_horizon_periods" | "forecast_assumptions" | "daily_ceilings";
             title: string;
             note: string;
             set_by: string | null;
@@ -19134,8 +19134,10 @@ export interface components {
                 expires_on: string | null;
             }[];
             supplier_invoice: string | null;
-            /** @description Paise to one unit of the order's currency, as Rs. 83.25 to the dollar is 8325; null for rupees. */
-            rupee_rate: number | null;
+            /** @description Micro-rupees to one whole unit of the order's currency, as Rs. 83.25 to the dollar is 83,250,000 and Rs. 0.56 to the yen 560,000; null for rupees. */
+            rate_micro_rupees?: number | null;
+            /** @description Deprecated: send rate_micro_rupees. Paise to one unit of the order's currency. */
+            rupee_rate?: number | null;
             freight_paise: number;
             duty_paise: number;
             clearing_paise: number;

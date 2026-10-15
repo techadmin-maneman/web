@@ -75,3 +75,6 @@ export const LOOK_COOKIE = "mm_look";
  * WhatsApp only (docs/decisions/0104-the-try-ons-look-on-whatsapp-only.md).
  */
 export const RESULT_LINK_MESSAGE_TTL_MS = HOUR_MS;
+
+/** YouCam units left below which ops are told, hourly, to buy more (docs/reference/youcam-api-notes.md). */
+export const YOUCAM_UNIT_FLOOR = 500;

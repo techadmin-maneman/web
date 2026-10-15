@@ -2,8 +2,7 @@
 // registration, Razorpay, geocoding, Access, the sign-in, the try-on, WhatsApp and the watchers.
 
 import type { Reader } from "./env-reader.ts";
-import { ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
-import { REFERENCE_VERSION } from "./presets.ts";
+import { ACCESS_TEAM_DOMAIN, ENABLED_SURFACES, type EnvironmentName, type ProviderVar } from "./environments.ts";
 import { MAX_RESULT_RETENTION_DAYS } from "./tryon.ts";
 import type {
   Settings,
@@ -41,7 +40,6 @@ export const TURNSTILE_TEST_SECRETS = new Set([
 ]);
 
 const ZOHO_HOST = /^[a-z0-9.-]+\.(zoho|zohoapis)\.[a-z.]+$/;
-const ACCESS_TEAM_DOMAIN = /^[a-z0-9-]+\.cloudflareaccess\.com$/;
 
 /** The provider vars as the guard read them, before it has refused any: one that failed its check is missing. */
 export type ProvidersRead = Partial<Record<ProviderVar, string>>;
@@ -193,10 +191,10 @@ function readWebhookSecret(read: Reader, selfServeBooking: boolean): string | nu
 }
 
 /** The address search: its key when there is one, and its daily ceiling always. */
-export function readGeocode(read: Reader, providers: ProvidersRead): GeocodeSettings {
+export function readGeocode(read: Reader, providers: ProvidersRead, isLocal: boolean): GeocodeSettings {
   const geocode: GeocodeSettings = {
     apiKey: providers.GEOCODE_PROVIDER === "google" ? read.text("GOOGLE_MAPS_API_KEY") : null,
-    dailyCeiling: read.count("GEOCODE_DAILY_CEILING"),
+    dailyCeiling: read.fixedLimit("GEOCODE_DAILY_CEILING", isLocal),
   };
   // A ceiling of nought is the runbook's kill switch and is deliberate; a
   // ceiling this high is not, and a card pays for it.
@@ -221,10 +219,7 @@ export function readAccess(
     }
     return null;
   }
-  const teamDomain = read.text("ACCESS_TEAM_DOMAIN");
-  if (teamDomain !== "" && !ACCESS_TEAM_DOMAIN.test(teamDomain)) {
-    read.problems.push("ACCESS_TEAM_DOMAIN must be a cloudflareaccess.com hostname, without https://");
-  }
+  const teamDomain = ACCESS_TEAM_DOMAIN;
   const opsOn = environment !== undefined && ENABLED_SURFACES[environment].includes("ops");
   return { teamDomain, opsAudience: opsOn ? read.text("ACCESS_OPS_AUD") : read.optionalText("ACCESS_OPS_AUD") };
 }
@@ -270,7 +265,6 @@ export function readTryon(read: Reader, providers: ProvidersRead, isLocal: boole
     uploadDailyCeiling: read.count("UPLOAD_DAILY_CEILING"),
     resultReadDailyCeiling: read.count("RESULT_READ_DAILY_CEILING"),
     resultRetentionDays: read.count("RESULT_RETENTION_DAYS"),
-    unitFloor: read.count("YOUCAM_UNIT_FLOOR"),
     linkSigningKey: {
       current: read.key("RESULT_SIGNING_KEY"),
       previous: read.optionalText("RESULT_SIGNING_KEY_PREVIOUS"),
@@ -278,8 +272,9 @@ export function readTryon(read: Reader, providers: ProvidersRead, isLocal: boole
     youcamApiKey: providers.IMAGE_PROVIDER === "youcam" ? read.text("YOUCAM_API_KEY") : null,
     refsUrl: read.text("TRYON_REFS_URL"),
   };
-  if (!tryon.refsUrl.endsWith(`/refs/${REFERENCE_VERSION}`)) {
-    read.problems.push(`TRYON_REFS_URL must end in /refs/${REFERENCE_VERSION}, the references' version`);
+  // Which version is the image provider's own; test/node/site/tryon-references.test.ts holds the deployed URL to it.
+  if (!/\/refs\/v\d+$/.test(tryon.refsUrl)) {
+    read.problems.push("TRYON_REFS_URL must end in the references' version, as /refs/v1");
   }
   if (!isLocal && !tryon.refsUrl.startsWith("https://")) {
     read.problems.push("TRYON_REFS_URL must be https: YouCam fetches each reference from it");

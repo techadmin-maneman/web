@@ -78,7 +78,7 @@ async function sentOrder(supplier: string, lines: { consumable_code: string; qua
 const receipt = (lines: Record<string, unknown>[], more: Record<string, unknown> = {}) => ({
   lines,
   supplier_invoice: "INV-88",
-  rupee_rate: null,
+  rate_micro_rupees: null,
   freight_paise: 0,
   duty_paise: 0,
   clearing_paise: 0,
@@ -222,10 +222,13 @@ describe("a receipt against an order in another currency", () => {
     const lineId = order.lines[0]?.id ?? "";
 
     const noRate = await job.opsPost(`/api/purchase-orders/${order.id}/receipts`, receipt([line(lineId, 2)]));
-    expect((await fieldsOf(noRate)).fields).toEqual(["rupee_rate"]);
+    expect((await fieldsOf(noRate)).fields).toEqual(["rate_micro_rupees"]);
     const received = await job.opsPost(
       `/api/purchase-orders/${order.id}/receipts`,
-      receipt([line(lineId, 2, { qc_failed: 1, lot_code: "HS-9" })], { rupee_rate: 8325, duty_paise: 300_000 }),
+      receipt([line(lineId, 2, { qc_failed: 1, lot_code: "HS-9" })], {
+        rate_micro_rupees: 83_250_000,
+        duty_paise: 300_000,
+      }),
     );
     const landed = (await received.json<Orders>()).orders.find((each) => each.id === order.id)?.receipts[0]?.lines[0];
     // $120.00 at Rs. 83.25 is Rs. 9,990; the duty of Rs. 3,000 shared over two pieces adds Rs. 1,500 each.
@@ -247,11 +250,24 @@ describe("the landed cost", () => {
           { unitPrice: 1000, received: 10 },
           { unitPrice: 3000, received: 10 },
         ],
-        100,
+        RUPEES,
         4000,
       ),
     ).toEqual([1100, 3300]);
-    expect(landedUnitCosts([{ unitPrice: 0, received: 4 }], 100, 400)).toEqual([100]);
-    expect(landedUnitCosts([{ unitPrice: 500, received: 0 }], 100, 400)).toEqual([500]);
+    expect(landedUnitCosts([{ unitPrice: 0, received: 4 }], RUPEES, 400)).toEqual([100]);
+    expect(landedUnitCosts([{ unitPrice: 500, received: 0 }], RUPEES, 400)).toEqual([500]);
+  });
+
+  // A yen price is whole yen, and a dinar's thousandths: costed as hundredths, one was 100 times too low.
+  it("reads a price in its currency's own smallest unit", () => {
+    expect(landedUnitCosts([{ unitPrice: 1050, received: 1 }], { currency: "USD", micro: 83_250_000 }, 0)).toEqual([
+      87_413,
+    ]);
+    expect(landedUnitCosts([{ unitPrice: 100, received: 1 }], { currency: "JPY", micro: 560_000 }, 0)).toEqual([5600]);
+    expect(landedUnitCosts([{ unitPrice: 1000, received: 1 }], { currency: "KWD", micro: 270_000_000 }, 0)).toEqual([
+      27_000,
+    ]);
   });
 });
+
+const RUPEES = { currency: "INR", micro: 1_000_000 };

@@ -17,7 +17,8 @@ import { syntheticJpeg } from "../tryon-fixtures.ts";
 
 const KEY = "live-key-that-must-never-leak";
 const UPLOAD_URL = "https://storage.youcam.test/upload/f1";
-const REFERENCE = "https://maneman.in/refs/v1/side-part.jpg";
+// A look, by its id: the provider knows its reference photograph.
+const LOOK = "side-part";
 const log = createLogger();
 const photo = syntheticJpeg(800, 800);
 
@@ -28,7 +29,7 @@ const uploadUrl = () =>
   });
 
 const youcam = (routes: Parameters<typeof fakeFetch>[0]) =>
-  createYoucamProvider({ apiKey: KEY, fetch: fakeFetch(routes).fetch, log });
+  createYoucamProvider({ apiKey: KEY, fetch: fakeFetch(routes).fetch, log, refsUrl: "https://maneman.in/refs/v1" });
 
 const unreachable = () => Promise.reject(new TypeError("fetch failed"));
 
@@ -37,17 +38,17 @@ describe("YouCam: an upload that does not go through", () => {
     const refused = youcam({
       [`${API_BASE_URL}${FILE_PATH}`]: () => json({ status: 401, error_code: "InvalidApiKey" }, 401),
     });
-    expect(await refused.submit(photo, REFERENCE)).toMatchObject({
+    expect(await refused.submit(photo, LOOK)).toMatchObject({
       ok: false,
       failure: { reason: "unavailable", urgentKey: "tryon_paused:key" },
     });
     const empty = youcam({ [`${API_BASE_URL}${FILE_PATH}`]: () => json({ status: 200, data: { files: [] } }) });
-    expect(await empty.submit(photo, REFERENCE)).toMatchObject({ ok: false, failure: { code: "render_failed" } });
+    expect(await empty.submit(photo, LOOK)).toMatchObject({ ok: false, failure: { code: "render_failed" } });
   });
 
   it("tries again after storage stalls or fails, and takes any other refusal for a fault of ours", async () => {
     const put = (answer: () => Response | Promise<Response>) =>
-      youcam({ [`${API_BASE_URL}${FILE_PATH}`]: uploadUrl, [UPLOAD_URL]: answer }).submit(photo, REFERENCE);
+      youcam({ [`${API_BASE_URL}${FILE_PATH}`]: uploadUrl, [UPLOAD_URL]: answer }).submit(photo, LOOK);
     expect(await put(() => new Response(null, { status: 503 }))).toMatchObject({
       ok: false,
       failure: { transient: true, alert: false, detail: "signed upload refused: HTTP 503" },
@@ -60,8 +61,8 @@ describe("YouCam: an upload that does not go through", () => {
   });
 
   it("tries again when YouCam cannot be reached at all", async () => {
-    const image = createYoucamProvider({ apiKey: KEY, fetch: unreachable, log });
-    expect(await image.submit(photo, REFERENCE)).toMatchObject({ ok: false, failure: { transient: true } });
+    const image = createYoucamProvider({ apiKey: KEY, fetch: unreachable, log, refsUrl: "https://maneman.in/refs/v1" });
+    expect(await image.submit(photo, LOOK)).toMatchObject({ ok: false, failure: { transient: true } });
     expect(await image.poll("t1")).toMatchObject({ state: "failed", failure: { transient: true } });
   });
 
@@ -71,7 +72,7 @@ describe("YouCam: an upload that does not go through", () => {
       [UPLOAD_URL]: () => new Response(null, { status: 200 }),
       [`${API_BASE_URL}${TASK_PATH}`]: () => json({ status: 200, data: {} }),
     });
-    expect(await image.submit(photo, REFERENCE)).toMatchObject({ ok: false, failure: { code: "render_failed" } });
+    expect(await image.submit(photo, LOOK)).toMatchObject({ ok: false, failure: { code: "render_failed" } });
   });
 });
 
@@ -114,9 +115,23 @@ describe("the image provider chosen", () => {
     const http = fakeFetch({
       [`${API_BASE_URL}${CREDIT_PATH}`]: () => json({ status: 200, results: [{ amount_dec: 7 }] }),
     });
-    expect(await createImageProvider("k", { fetch: http.fetch, now: () => NOW, log }).credits()).toBe(7);
+    expect(
+      await createImageProvider("k", {
+        fetch: http.fetch,
+        now: () => NOW,
+        log,
+        refsUrl: "https://maneman.in/refs/v1",
+      }).credits(),
+    ).toBe(7);
     expect(http.calls[0]?.headers.get("Authorization")).toBe("Bearer k");
-    expect(await createImageProvider(null, { fetch: unreachable, now: () => NOW, log }).credits()).toBe(1000);
+    expect(
+      await createImageProvider(null, {
+        fetch: unreachable,
+        now: () => NOW,
+        log,
+        refsUrl: "https://maneman.in/refs/v1",
+      }).credits(),
+    ).toBe(1000);
   });
 });
 
@@ -142,7 +157,7 @@ describe("the stub", () => {
   });
 
   it("refuses a task for a file it never took, and knows no task or result it never made", async () => {
-    const task = { src_file_id: "never", ref_file_url: REFERENCE, hair_color: "src" };
+    const task = { src_file_id: "never", ref_file_url: "https://maneman.in/refs/v1/side-part.jpg", hair_color: "src" };
     expect((await call(TASK_PATH, { method: "POST", body: JSON.stringify(task) })).status).toBe(400);
     expect((await call(`${TASK_PATH}/nobody.ok.1`)).status).toBe(404);
     expect((await stub("https://stub-results.youcam.test/nobody.png")).status).toBe(404);

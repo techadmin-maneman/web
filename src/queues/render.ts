@@ -20,7 +20,7 @@ import {
   RESULT_URL_LIFETIME_MS,
   SUBMIT_ATTEMPTS,
 } from "../config/pipeline.ts";
-import { findPreset, referenceUrlOf, REFERENCE_VERSION, type Preset } from "../config/presets.ts";
+import { findPreset, type Preset } from "../config/presets.ts";
 import type { Dependencies } from "../dependencies.ts";
 import { checkPhoto } from "../domain/try-on/photo.ts";
 import { failJob, loadJob, type JobRow } from "../domain/try-on/tryon.ts";
@@ -44,8 +44,6 @@ export type RenderEnv = Pick<Env, "DB" | "UPLOADS" | "RESULTS" | "MESSAGE_QUEUE"
 interface RenderOptions {
   /** Days a result is kept once ready (RESULT_RETENTION_DAYS). */
   readonly resultRetentionDays: number;
-  /** Where YouCam fetches the looks' reference photographs (TRYON_REFS_URL). */
-  readonly refsUrl: string;
 }
 
 type Next = Settle;
@@ -116,16 +114,16 @@ interface Step {
 }
 
 /** The render a look is: the photograph's own bytes, the look, the references' version, and who makes it. */
-async function renderKeyOf(image: Uint8Array, preset: Preset): Promise<string> {
+async function renderKeyOf(image: Uint8Array, preset: Preset, looksVersion: string): Promise<string> {
   const hex = (bytes: ArrayBuffer) =>
     [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
   const photo = hex(await crypto.subtle.digest("SHA-256", image));
-  const key = new TextEncoder().encode([photo, preset.id, REFERENCE_VERSION, "youcam"].join(":"));
+  const key = new TextEncoder().encode([photo, preset.id, looksVersion].join(":"));
   return hex(await crypto.subtle.digest("SHA-256", key));
 }
 
 async function submit(step: Step): Promise<Next> {
-  const { env, deps, log, job, options } = step;
+  const { env, deps, log, job } = step;
   const db = env.DB;
   const now = deps.now();
 
@@ -156,12 +154,12 @@ async function submit(step: Step): Promise<Next> {
     return fail(step, { code: "photo_invalid_file", transient: false, alert: false, detail: photo.problem });
   }
 
-  const renderKey = await renderKeyOf(image, preset);
+  const renderKey = await renderKeyOf(image, preset, deps.image.looksVersion);
   await db.prepare("UPDATE tryon_jobs SET render_key = ?2 WHERE id = ?1").bind(job.id, renderKey).run();
   const made = await copyOfMadeBefore(step, renderKey);
   if (made !== null) return made;
 
-  const result = await deps.image.submit(image, referenceUrlOf(options.refsUrl, preset));
+  const result = await deps.image.submit(image, preset.id);
   if (result.ok) {
     await db
       .prepare(

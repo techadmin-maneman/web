@@ -2,6 +2,7 @@
 // board's other queues (src/domain/ops/tasks.ts), and kept once the reply clock has run out.
 
 import { replyBy, type CareHours } from "../../policy/care-hours.ts";
+import type { TaskGroup } from "../../policy/tasks.ts";
 import { CITY_MATTERS_OPEN } from "./city-matters.ts";
 import { REMEDIES_AWAITING } from "./remedies.ts";
 
@@ -18,7 +19,11 @@ const CHATS_WAITING = `SELECT 'unanswered_chat' AS "group", c.id AS id, c.person
  * The board's queues from Customer Care's work: a chat waiting on us, kept once its reply-by time passes; a matter sent
  * to a city (./city-matters.ts); and a remedy awaiting a manager (./remedies.ts).
  */
-export const CARE_QUEUES: readonly string[] = [CHATS_WAITING, CITY_MATTERS_OPEN, REMEDIES_AWAITING];
+export const CARE_QUEUES: readonly { readonly group: TaskGroup; readonly sql: string }[] = [
+  { group: "unanswered_chat", sql: CHATS_WAITING },
+  { group: "city_matter", sql: CITY_MATTERS_OPEN },
+  { group: "remedy_approval", sql: REMEDIES_AWAITING },
+];
 
 interface BoardRow {
   readonly group: string;

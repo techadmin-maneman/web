@@ -212,7 +212,7 @@ describe("POST /api/tech/auth/otp, its limits", () => {
     expect(await refused.json()).toMatchObject({ error: { code: "busy" } });
     expect(deps.sentCodes).toHaveLength(1);
     expect(deps.alerts).toEqual([
-      'The daily tech_code ceiling (1) is reached; the technician app\'s login codes answer "busy" until midnight IST.',
+      'The daily tech_code ceiling (1) is reached; the technician app\'s login codes answer "busy" until midnight IST. Raise it in Settings · Rules if the day calls for more.',
       `Technician ${IMRAN} was refused a login code: today's 1 technician login codes are spent, so no technician ` +
         "can sign in on a new phone until midnight IST. http://ops.localhost:4323/technicians",
     ]);
@@ -220,7 +220,7 @@ describe("POST /api/tech/auth/otp, its limits", () => {
 
   // Clients' logins and number changes spent the one ceiling technicians shared, so a technician on a new
   // phone could not start their day.
-  it("still sends a technician his code once the client app's ceiling is spent", async () => {
+  it("still sends a technician their code once the client app’s ceiling is spent", async () => {
     const oneCode = { ...LOCAL_SETTINGS, login: { ...LOCAL_SETTINGS.login, codeDailyCeiling: 1 } };
     await takeFromCeiling(env.DB, "login_code", { now: NOW, settings: oneCode });
     tech = appFor("local", deps, oneCode, "tech");

@@ -421,6 +421,30 @@ describe("GET /api/documents/:id", () => {
     expect((await get(`/api/documents/${theirs}`)).status).toBe(404);
   });
 
+  // Every view fetched the PDF from Books, so a Zoho outage or a spent day's quota closed every client's documents.
+  it("keeps the invoice once viewed, counted on the storage meter, and serves it after without asking Books", async () => {
+    await visit(VISIT, P1, "stub-41");
+    expect((await get(`/api/documents/${VISIT}`)).status).toBe(200);
+    const key = `documents/${P1}/invoice-stub-41.pdf`;
+    expect(await env.CLIENT_PHOTOS.head(key)).not.toBeNull();
+    expect(await env.DB.prepare("SELECT key FROM stored_objects WHERE key = ?1").bind(key).first("key")).toBe(key);
+
+    const books = fakeDependencies().books;
+    const askedBooks: string[] = [];
+    const offline = {
+      ...books,
+      invoicePdf: (id: string) => {
+        askedBooks.push(id);
+        return Promise.resolve(null);
+      },
+    };
+    client = appFor("local", fakeDependencies({ books: offline }), {}, "client");
+    const again = await get(`/api/documents/${VISIT}`);
+    expect(again.status).toBe(200);
+    expect(await again.text()).toMatch(/^%PDF-1\.4/);
+    expect(askedBooks).toEqual([]);
+  });
+
   // A draft can still be edited, renumbered or deleted, so it is not a document the client may open (ADR 0056).
   it("says not ready while the invoice Books holds is still a draft", async () => {
     await visit(VISIT, P1, "stub-41", false);

@@ -135,42 +135,6 @@ export async function cityOf(db: D1Database, kind: PlacedRecord, id: string): Pr
   return city ?? null;
 }
 
-/** A record of a kind, by its ID. */
-export interface PlacedId {
-  readonly kind: PlacedRecord;
-  readonly id: string;
-}
-
-const placedKey = (record: PlacedId): string => `${record.kind}/${record.id}`;
-
-/**
- * The city of each record, read in one round trip: a statement for each kind, each record by its key. Null for one
- * whose city cannot be found.
- */
-export async function citiesOf(
-  db: D1Database,
-  records: readonly PlacedId[],
-): Promise<(record: PlacedId) => string | null> {
-  const kinds = [...new Set(records.map((record) => record.kind))];
-  const idsOf = (kind: PlacedRecord) => records.filter((record) => record.kind === kind).map((record) => record.id);
-  const statements = kinds.map((kind) =>
-    db
-      .prepare(
-        `SELECT record.id AS id, ${cityOfRow(kind, "record")} AS city FROM ${RECORD_PLACES[kind].table} record
-         WHERE record.id IN (SELECT value FROM json_each(?1))`,
-      )
-      .bind(JSON.stringify(idsOf(kind))),
-  );
-  const answers = statements.length === 0 ? [] : await db.batch<{ id: string; city: string | null }>(statements);
-  const cities = new Map<string, string | null>();
-  answers.forEach((answer, index) => {
-    const kind = kinds[index];
-    if (kind === undefined) return;
-    for (const row of answer.results) cities.set(placedKey({ kind, id: row.id }), row.city);
-  });
-  return (record) => cities.get(placedKey(record)) ?? null;
-}
-
 /** The technicians within reach, by ID; null when the reach is everywhere, so every one is. */
 export async function techniciansWithin(db: D1Database, reached: PlacesReached): Promise<ReadonlySet<string> | null> {
   if (reached.kind === "everywhere") return null;
@@ -193,6 +157,16 @@ export function isWithin(technicians: ReadonlySet<string> | null, technicianId: 
  */
 export function withinReach(kind: PlacedRecord, row: string, param: string): string {
   return `(${param} IS NULL OR ${cityOfRow(kind, row)} IN (SELECT value FROM json_each(${param})))`;
+}
+
+/**
+ * The same condition for a record named by its id alone, `id` an SQL expression, as a list read from elsewhere carries
+ * it.
+ */
+export function idWithinReach(kind: PlacedRecord, id: string, param: string): string {
+  const { table } = RECORD_PLACES[kind];
+  const city = `(SELECT ${cityOfRow(kind, "place_record")} FROM ${table} place_record WHERE place_record.id = ${id})`;
+  return `(${param} IS NULL OR ${city} IN (SELECT value FROM json_each(${param})))`;
 }
 
 /** Null for everywhere, else the cities as a JSON list. */
