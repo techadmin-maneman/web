@@ -292,6 +292,7 @@ export const clients = {
         terms_changed: "Their free service visit was just used. Try again.",
         unavailable: "Razorpay couldn’t create the link. Try again in a minute.",
         not_found: "This client can’t be booked.",
+        not_permitted: NOT_PERMITTED,
         offline: OFFLINE,
         unconfirmed: UNCONFIRMED,
         unknown: FAILED,

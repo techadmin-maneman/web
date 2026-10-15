@@ -14480,8 +14480,7 @@
             "description": "One of the cities the list names."
           },
           "reason": {
-            "type": "string",
-            "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} .,'()&/-]{0,59}$/u"
+            "type": "string"
           }
         },
         "required": [

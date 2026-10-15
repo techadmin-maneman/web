@@ -295,6 +295,7 @@ export const tasks = {
       not_due: "This visit isn’t paid at the visit.",
       already_paid: "This visit’s payment is already recorded.",
       reference_used: "That UTR is already recorded against another payment.",
+      not_permitted: NOT_PERMITTED,
       offline: OFFLINE,
       unknown: FAILED,
     },

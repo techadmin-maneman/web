@@ -21,12 +21,7 @@ import { listCities } from "../../domain/cities/cities.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { indiaDate } from "../../lib/india-time.ts";
-
-/**
- * Why a day is blacked out, as the console lists it: a letter or a digit first, so a spreadsheet opening an
- * exported list never reads it as a formula, then letters, digits, spaces and . , ' ( ) & / -.
- */
-const REASON = /^[\p{L}\p{N}][\p{L}\p{N} .,'()&/-]{0,59}$/u;
+import { isBlackoutReason } from "../../policy/blackouts.ts";
 
 /** A city of ours a day is closed in; left out, or null, for every city. */
 const CitySchema = z.string().min(1).max(60).openapi({ description: "One of the cities the list names." });
@@ -94,7 +89,7 @@ const addRoute = opsRoute({
       required: true,
       ...json(
         z
-          .object({ ...Period, city: CitySchema.optional(), reason: z.string().trim().regex(REASON) })
+          .object({ ...Period, city: CitySchema.optional(), reason: z.string().trim().refine(isBlackoutReason) })
           .strict()
           .openapi("BlackoutAdd"),
       ),

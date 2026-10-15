@@ -1,5 +1,6 @@
-// Every map of refusals in the console's copy says what a dropped connection is, and has a catch-all: a code a map
-// does not know falls to `unknown`, so a map without `offline` read a dropped connection as "That didn't work."
+// Every map of refusals in the console's copy says what a dropped connection is and what a grant that does not reach
+// is, and has a catch-all: a code a map does not know falls to `unknown`, so a map without `offline` read a dropped
+// connection as "That didn't work.", and one without `not_permitted` asked to try again what can never go through.
 
 import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -31,10 +32,9 @@ describe("the console’s refusals", () => {
     expect(maps.length).toBeGreaterThan(60);
   });
 
-  it("each say what a dropped connection is, and have a catch-all", () => {
-    const short = maps.filter(([, map]) => typeof map.offline !== "string" || typeof map.unknown !== "string");
-    expect(
-      short.map(([path, map]) => `${path}: ${["offline", "unknown"].filter((key) => !(key in map)).join(", ")}`),
-    ).toEqual([]);
+  it("each say what a dropped connection is, and a grant that does not reach, and have a catch-all", () => {
+    const keys = ["offline", "not_permitted", "unknown"];
+    const short = maps.filter(([, map]) => keys.some((key) => typeof map[key] !== "string"));
+    expect(short.map(([path, map]) => `${path}: ${keys.filter((key) => !(key in map)).join(", ")}`)).toEqual([]);
   });
 });
