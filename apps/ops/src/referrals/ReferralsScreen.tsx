@@ -1,9 +1,8 @@
 // Referrals: the grants the fraud rules held, approved or rejected with a reason here
-// (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts), over every referrer's figures, and the partners
-// who refer on their own code (./Partners.tsx). Approving a grant releases its credits.
+// (docs/decisions/0048-referrals.md, src/policy/decision-reasons.ts), over every referrer's figures. The partners who
+// refer on their own code are Settings' (./Partners.tsx). Approving a grant releases its credits.
 
 import { EmptyState } from "@maneman/ui/EmptyState";
-import { lazyScreen } from "@maneman/ui/lazyScreen";
 import { REASON_MAX_CHARS } from "@rules/policy/decision-reasons.ts";
 import { errorText } from "@maneman/web-kit/refusal";
 import { capsLook } from "@maneman/ui/Caps";
@@ -12,7 +11,7 @@ import { Field, TextArea } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type Held, type Referrer } from "../api.ts";
 import { DecisionQueue } from "../components/DecisionQueue.tsx";
 import { OpsLink } from "../components/Shell.tsx";
@@ -26,9 +25,6 @@ import { useTableView, type Column } from "../components/useTableView.ts";
 import styles from "./referrals.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { referralsApi } from "./referrals-api.ts";
-
-/** The partners' panel, fetched as the page draws it: it stays out of the console's first load. */
-const Partners = lazyScreen(() => import("./Partners.tsx").then((module) => module.Partners));
 
 type Choice = "approve" | "reject";
 
@@ -338,9 +334,6 @@ export function ReferralsScreen() {
         }}
       />
       <ReferrersTable version={version} />
-      <Suspense fallback={<Loading />}>
-        <Partners />
-      </Suspense>
     </div>
   );
 }

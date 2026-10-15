@@ -338,7 +338,7 @@ export const QUEUES: readonly Queue[] = [
    WHERE l.paid_at IS NULL AND pe.erased_at IS NULL`,
     binds: (at) => [at.linksClosedIfSentBy, at.now],
   },
-  // A visit paid by UPI at the visit, done and not yet recorded paid (docs/decisions/0208-paid-at-the-visit-by-upi.md):
+  // A visit paid by UPI at the visit, done and not yet recorded paid (docs/decisions/0209-paid-at-the-visit-by-upi.md):
   // ops record it once the money reaches the account. It waits from the visit's start, and falls due 12 hours on.
   {
     group: "upi_due",

@@ -2,13 +2,13 @@
 
 .history {
   max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
   padding: var(--sp-24);
 }
 
 .historyList {
   margin: 0;
-  border-top: var(--hairline) solid var(--text);
+  border-top: var(--hairline) solid var(--ui-text);
 }
 
 .historyRow {
@@ -18,12 +18,12 @@
   gap: var(--sp-16);
   min-height: var(--ops-row);
   padding: var(--sp-8) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
   font-size: var(--fs-14);
 }
 
 .historyKey {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .historyValue {

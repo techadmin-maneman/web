@@ -1,4 +1,4 @@
-// Areas' Waiting tab and the launch. Nothing is sent until the second
+// The Waitlist and the launch. Nothing is sent until the second
 // press: choosing a pincode only asks the API what a launch would send, and
 // the panel shows both counts so the gap between them is visible.
 
@@ -21,8 +21,8 @@ function launchRoute(confirmed = json(LAUNCHED)) {
 
 async function open(page: Page, confirmed?: ReturnType<typeof json>): Promise<void> {
   await answer(page, { "GET /api/waitlist": json(AREAS), [LAUNCH_IT]: launchRoute(confirmed) });
-  await page.goto("/areas");
-  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
+  await page.goto("/waitlist");
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.shell.sections.waitlist })).toBeVisible();
 }
 
 test("lists the pincodes with their counts, and marks the ones we already come to", async ({ page }) => {
@@ -38,24 +38,22 @@ test("lists the pincodes with their counts, and marks the ones we already come t
   await expect(served.getByRole("button")).toHaveAccessibleName("Tell those waiting in 122018, Sector 65");
 });
 
-// The area was packed into what the figure columns left, each drawn wider than the board draws it.
-test("gives the area the room the board does, and each figure the board’s own width", async ({ page }) => {
+// The area was packed into what the figure columns left, each drawn wider than it needs.
+test("gives the area the room the figures leave, and each figure its own width", async ({ page }) => {
   await open(page);
   const width = async (name: string) =>
     (await page.getByRole("columnheader", { name, exact: true }).boundingBox())?.width ?? 0;
-  expect(Math.round(await width("Pincode"))).toBe(76);
-  expect(Math.round(await width("Waiting"))).toBe(54);
-  expect(Math.round(await width("Oldest"))).toBe(76);
-  expect(Math.round(await width("Referred"))).toBe(60);
-  expect(Math.round(await width("Opted in"))).toBe(62);
-  // What is left of the panel's 442 px within its border and padding, as the board's 1fr is.
-  expect(Math.round(await width("Area"))).toBe(114);
+  const figures = { Pincode: 76, Waiting: 54, Oldest: 76, Referred: 60, "Opted in": 62 };
+  for (const [name, wide] of Object.entries(figures)) expect(Math.round(await width(name)), name).toBe(wide);
+  const table = (await page.getByRole("table").boundingBox())?.width ?? 0;
+  const taken = Object.values(figures).reduce((sum, wide) => sum + wide, 0);
+  expect(Math.abs((await width("Area")) - (table - taken))).toBeLessThan(2);
 });
 
 // The waitlist was read whole, however many pincodes had people waiting.
 test("says when more pincodes are waiting than the table lists", async ({ page }) => {
   await answer(page, { "GET /api/waitlist": json({ ...AREAS, more: true }) });
-  await page.goto("/areas");
+  await page.goto("/waitlist");
   await expect(page.getByText(opsCopy.waitlist.more)).toBeVisible();
 });
 
@@ -103,7 +101,7 @@ test("says so when the launch is refused, and keeps the panel open", async ({ pa
 
 test("says nobody is waiting when the list is empty", async ({ page }) => {
   await answer(page, { "GET /api/waitlist": json({ areas: [], more: false, cities: [] }) });
-  await page.goto("/areas");
+  await page.goto("/waitlist");
   await expect(page.getByText(opsCopy.waitlist.empty)).toBeVisible();
 });
 

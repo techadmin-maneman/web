@@ -1,4 +1,4 @@
-// Areas' Served tab: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md). The pincodes live in a
+// Settings › Areas: where we go, and from when (docs/decisions/0061-ops-editable-inputs.md). The pincodes live in a
 // spreadsheet (data/pincodes/README.md), so the tab does two things: launch one area, and take the whole file back,
 // shown pincode by pincode before the one Save. A save that would message people waiting opens the launch panel first
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
@@ -8,6 +8,7 @@ import { Fieldset } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
 import { Table } from "@maneman/ui/Table";
+import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useLoad } from "@maneman/ui/useLoad";
 import { todayInIndia } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -69,6 +70,11 @@ function PincodeTable(props: {
         <thead>
           <tr>
             <SortHeads view={view} />
+            {mayChange && (
+              <th scope="col">
+                <VisuallyHidden>{copy.edit}</VisuallyHidden>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>

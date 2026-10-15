@@ -1,24 +1,34 @@
-// Sections of one job, as the navigation shows them (../route.ts, SECTION_GROUPS): one entry for the group, named for
-// it, opening on the first of its sections the person may open; and, at the head of each of its pages, the group's
-// sections as tabs.
+// The navigation's entries over the pages of work (../route.ts, NAV): each entry opens on the first of its pages the
+// person may open and counts what waits across them; and, at the head of each page of an entry of several, the
+// entry's pages as tabs.
 
 import { Link } from "@maneman/ui/router";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
-import { shell } from "../content.ts";
 import { useMayCall } from "../lib/access.ts";
-import { groupOf, mayOpen, SECTION_NAMES, SECTIONS, type Section, type SectionPath } from "../route.ts";
+import {
+  mayOpen,
+  NAV,
+  NAV_NAMES,
+  navOf,
+  SECTION_NAMES,
+  sectionOf,
+  type MayCall,
+  type NavKey,
+  type Page,
+  type SectionPath,
+} from "../route.ts";
 import type { Waiting } from "../tasks/decided.ts";
 
-/** One entry of a department's list: a section on its own, or a group by its first section. */
-export interface NavEntry {
-  readonly key: string;
-  readonly section: Section;
+/** One entry of the navigation, as the person may open it. */
+export interface NavLine {
+  readonly entry: NavKey;
   readonly name: string;
+  readonly to: SectionPath;
   readonly current: boolean;
   readonly waiting: Waiting | undefined;
 }
 
-/** What waits across a group's sections: their counts together, overdue if any is; one section's own as it is. */
+/** What waits across an entry's pages: their counts together, overdue if any is; one page's own as it is. */
 function together(waits: readonly (Waiting | undefined)[]): Waiting | undefined {
   const known = waits.filter((each): each is Waiting => each !== undefined);
   if (known.length <= 1) return known[0];
@@ -29,54 +39,39 @@ function together(waits: readonly (Waiting | undefined)[]): Waiting | undefined 
   };
 }
 
-/** A department's entries: each section the person may open, a group's once, in the place of its first. */
-export function navEntries(
-  sections: readonly Section[],
-  current: SectionPath,
+/** The navigation's entries the person may open something in, each on its first such page. */
+export function navLines(
+  mayCall: MayCall,
+  current: Page | null,
   waiting: ReadonlyMap<SectionPath, Waiting>,
-): NavEntry[] {
-  return sections.flatMap((section): NavEntry[] => {
-    const group = groupOf(section.page);
-    if (group === null) {
-      return [
-        {
-          key: section.page,
-          section,
-          name: SECTION_NAMES[section.page],
-          current: section.path === current,
-          waiting: waiting.get(section.path),
-        },
-      ];
-    }
-    const members = sections.filter((each) => groupOf(each.page)?.group === group.group);
-    if (members[0] !== section) return [];
+): NavLine[] {
+  return NAV.flatMap((entry): NavLine[] => {
+    const pages = (entry.pages as readonly Page[]).filter((page) => mayOpen(mayCall, page));
+    const first = pages[0];
+    if (first === undefined) return [];
     return [
       {
-        key: group.group,
-        section,
-        name: shell.groups[group.group],
-        current: members.some((each) => each.path === current),
-        waiting: together(members.map((each) => waiting.get(each.path))),
+        entry: entry.entry,
+        name: NAV_NAMES[entry.entry],
+        to: sectionOf(first).path,
+        current: current !== null && pages.includes(current),
+        waiting: together(pages.map((page) => waiting.get(sectionOf(page).path))),
       },
     ];
   });
 }
 
-/** The group's sections as tabs at the head of one of its pages; nothing for a section that stands alone. */
-export function GroupTabs({ section }: { readonly section: SectionPath }) {
+/** The entry's pages as tabs at the head of one of them; nothing for an entry of one page. */
+export function GroupTabs({ page }: { readonly page: Page }) {
   const mayCall = useMayCall();
-  const page = SECTIONS.find((each) => each.path === section)?.page;
-  const group = page === undefined ? null : groupOf(page);
-  if (group === null) return null;
-  const open = SECTIONS.filter(
-    (each) => (group.pages as readonly string[]).includes(each.page) && mayOpen(mayCall, each.page),
-  );
+  const entry = navOf(page);
+  const open = (entry.pages as readonly Page[]).filter((each) => mayOpen(mayCall, each));
   if (open.length < 2) return null;
   return (
-    <Tabs label={shell.groups[group.group]}>
+    <Tabs label={NAV_NAMES[entry.entry]}>
       {open.map((each) => (
-        <Link key={each.page} className={TAB} to={each.path} current={each.path === section}>
-          {SECTION_NAMES[each.page]}
+        <Link key={each} className={TAB} to={sectionOf(each).path} current={each === page}>
+          {SECTION_NAMES[each]}
         </Link>
       ))}
     </Tabs>

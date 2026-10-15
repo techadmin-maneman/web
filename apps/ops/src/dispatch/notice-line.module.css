@@ -8,7 +8,7 @@
   justify-content: space-between;
   gap: var(--sp-8) var(--sp-16);
   padding: var(--sp-8) var(--sp-16);
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
   font-size: var(--fs-14);
   line-height: var(--lh-145);
 }

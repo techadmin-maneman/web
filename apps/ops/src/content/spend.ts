@@ -4,8 +4,6 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const spend = {
   title: "Spend",
-  intro:
-    "What we spend to win clients that no ad account reports, before GST. Google and Meta come from their own accounts.",
   month: "Month",
   city: "City",
   national: "National",
@@ -19,9 +17,10 @@ export const spend = {
   },
   campaign: "Campaign, if any",
   campaignNote: "Start its name with its city, or with national.",
-  amount: "Amount, Rs.",
+  amount: "Amount before GST, Rs.",
   note: "Note",
   add: "Add",
+  addOne: "Add spend",
   adding: "Adding…",
   none: "Nothing yet.",
   columns: { month: "Month", city: "City", channel: "Channel", amount: "Amount", note: "Note", by: "Added by" },

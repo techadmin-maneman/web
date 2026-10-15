@@ -9,6 +9,7 @@ import { CountsScreen } from "../../apps/ops/src/counts/CountsScreen.tsx";
 import { counts as copy } from "../../apps/ops/src/content/counts.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 
 const KIT = {
   id: "ct-1",
@@ -35,7 +36,8 @@ let root: Root;
 let posted: { path: string; body: unknown }[];
 let answers: unknown[];
 
-const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+const button = (text: string) =>
+  [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
 async function settle() {
   await answered();
@@ -59,11 +61,14 @@ function type(input: HTMLInputElement | HTMLSelectElement | null | undefined, va
 }
 
 const labelled = (label: string) => {
-  const id = [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === label)?.htmlFor ?? "";
-  return page.querySelector<HTMLInputElement>(`[id="${id}"]`);
+  const id =
+    [...document.body.querySelectorAll("label")].find((each) => each.textContent.trim() === label)?.htmlFor ?? "";
+  return document.body.querySelector<HTMLInputElement>(`[id="${id}"]`);
 };
 
 beforeEach(() => {
+  // The drawers open beside the page, as modal dialogs (../../apps/ops/src/components/FormDrawer.tsx).
+  openDialogsAsJsdomCan();
   posted = [];
   answers = [];
   vi.stubGlobal(
@@ -119,15 +124,15 @@ async function show() {
 }
 
 const opener = (place: string) =>
-  page.querySelector(`button[aria-label="${copy.open} ${copy.heading(place, copy.classes.weekly)}"]`);
+  document.body.querySelector(`button[aria-label="${copy.open} ${copy.heading(place, copy.classes.weekly)}"]`);
 
 describe("the Counts page", () => {
   it("counts a task blind, then counts again what differed", async () => {
     await show();
-    expect(page.textContent).toContain(copy.states.sign_off);
+    expect(document.body.textContent).toContain(copy.states.sign_off);
     await press(opener("Imran Qureshi"));
-    expect(page.textContent).toContain(copy.countNote);
-    expect(page.textContent).not.toContain("held");
+    expect(document.body.textContent).toContain(copy.countNote);
+    expect(document.body.textContent).not.toContain("held");
     answers = [
       { task: { ...KIT, state: "recount" }, items: [{ ...PIECE, state: "recount" }] },
       { task: { ...KIT, state: "done" }, items: [{ ...PIECE, state: "settled" }] },
@@ -138,30 +143,27 @@ describe("the Counts page", () => {
       path: "/api/count-tasks/ct-1/counts",
       body: { lines: [{ consumable_code: "hs-1", counted: 1 }] },
     });
-    expect(page.textContent).toContain(copy.countSaid(1));
+    expect(document.body.textContent).toContain(copy.countSaid(1));
     type(labelled(copy.counted(PIECE.name)), "1");
     await press(button(copy.saveRecount));
     expect(posted[1]?.path).toBe("/api/count-tasks/ct-1/recounts");
-    expect(page.textContent).toContain(copy.done);
+    expect(document.body.textContent).toContain(copy.done);
   });
 
   it("signs off a difference with why, beside what the ledger held, and changes an item’s class", async () => {
     await show();
     await press(opener("Delhi stockroom"));
-    expect(page.textContent).toContain(copy.differencesColumns[1]);
+    expect(document.body.textContent).toContain(copy.differencesColumns[1]);
     answers = [{ task: { ...ROOM, state: "done" }, items: [{ ...PIECE, state: "settled" }] }];
     type(labelled(copy.why), "One piece not found");
     await press(button(copy.signOff));
     expect(posted[0]).toEqual({ path: "/api/count-tasks/ct-2/sign-off", body: { note: "One piece not found" } });
-    expect(page.textContent).toContain(copy.signedSaid);
+    expect(document.body.textContent).toContain(copy.signedSaid);
 
     answers = [{ ...BOOK, classes: [{ ...BOOK.classes[0], count_class: "monthly", set: true }, BOOK.classes[1]] }];
-    type(
-      page.querySelector<HTMLSelectElement>(`select[id="${labelled(copy.classLabel("Solvent"))?.id ?? ""}"]`),
-      "monthly",
-    );
+    type(document.body.querySelector<HTMLSelectElement>(`select[id="${labelled("Solvent")?.id ?? ""}"]`), "monthly");
     await settle();
     expect(posted[1]).toEqual({ path: "/api/consumables/solvent/count-class", body: { count_class: "monthly" } });
-    expect(page.textContent).toContain(copy.classSaid);
+    expect(document.body.textContent).toContain(copy.classSaid);
   });
 });

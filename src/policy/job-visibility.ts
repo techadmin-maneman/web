@@ -68,7 +68,7 @@ export const PAYMENT_BADGES = ["prepaid", "credit", "free", "at_visit"] as const
 export type PaymentBadge = (typeof PAYMENT_BADGES)[number];
 
 /**
- * A one visit is paid for at the visit, as is a paid visit ops booked while online payment is off (ADR 0208);
+ * A one visit is paid for at the visit, as is a paid visit ops booked while online payment is off (ADR 0209);
  * a visit a service-visit credit paid
  * for is Credit; one the price book charges nothing for on its day is Free;
  * any other was paid for ahead. The technician's card and the dispatch board

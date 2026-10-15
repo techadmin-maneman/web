@@ -12,7 +12,8 @@
 }
 
 .panel {
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
 }
 
 .panelBody {
@@ -34,16 +35,16 @@
 
 /* Each name in the pair, a way to that client's page; the board draws them as plain text. */
 .person {
-  color: var(--text);
+  color: var(--ui-text);
   text-decoration: underline;
-  text-decoration-color: var(--paper-line);
+  text-decoration-color: var(--ui-line);
   text-underline-offset: var(--sp-4);
 }
 
 .when,
 .late {
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   white-space: nowrap;
 }
 
@@ -107,7 +108,7 @@
 }
 
 .quietFigure {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* The table's search, flush with the table beneath. */

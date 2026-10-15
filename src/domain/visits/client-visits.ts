@@ -61,7 +61,7 @@ interface VisitSummary {
   readonly prepaid: boolean;
   readonly technician: { readonly name: string; readonly initials: string } | null;
   readonly place: string;
-  /** What is still to pay by UPI at the visit, in paise (ADR 0208); null where nothing is owed at the visit. */
+  /** What is still to pay by UPI at the visit, in paise (ADR 0209); null where nothing is owed at the visit. */
   readonly pay_at_visit: number | null;
   /** A consultation and fit in one visit not yet closed: what it costs once fitted. Null for any other visit. */
   readonly one_visit: OneVisitPrice | null;

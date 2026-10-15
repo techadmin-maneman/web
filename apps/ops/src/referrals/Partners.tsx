@@ -24,7 +24,7 @@ import { PartnerForm } from "./PartnerForm.tsx";
 import { partnerQr } from "./partner-qr.ts";
 import form from "../components/forms.module.css";
 import styles from "./partners.module.css";
-import { ActionRow } from "../components/ActionRow.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { referralsApi } from "./referrals-api.ts";
 
@@ -114,7 +114,7 @@ function PartnerActingRow({ partner, list, acting, onAct, onDone }: { partner: P
     onAct(null);
   };
   return (
-    <ActionRow className={styles.acting}>
+    <FormDrawer title={partner.name} onClose={cancel}>
       {acting.kind === "edit" ? (
         <PartnerForm
           partner={partner}
@@ -127,7 +127,7 @@ function PartnerActingRow({ partner, list, acting, onAct, onDone }: { partner: P
       ) : (
         <PauseCheck partner={partner} onDone={onDone} onBack={cancel} />
       )}
-    </ActionRow>
+    </FormDrawer>
   );
 }
 
@@ -239,16 +239,23 @@ export function Partners() {
       }
     >
       {adding && (
-        <PartnerForm
-          partner={null}
-          limits={list.limits}
-          onDone={(next) => {
-            done(next, copy.done.added);
-          }}
-          onCancel={() => {
+        <FormDrawer
+          title={copy.add}
+          onClose={() => {
             setAdding(false);
           }}
-        />
+        >
+          <PartnerForm
+            partner={null}
+            limits={list.limits}
+            onDone={(next) => {
+              done(next, copy.done.added);
+            }}
+            onCancel={() => {
+              setAdding(false);
+            }}
+          />
+        </FormDrawer>
       )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>

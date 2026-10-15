@@ -84,6 +84,7 @@ export function Link({
   className,
   current,
   label,
+  title,
   children,
 }: {
   to: string;
@@ -91,12 +92,15 @@ export function Link({
   current?: boolean;
   /** Its name, where the words inside it are not enough: an icon alone, or a back arrow. */
   label?: string;
+  /** Shown to a pointer resting on it, where its words are folded away. */
+  title?: string;
   children: ReactNode;
 }) {
   return (
     <a
       className={className}
       href={to}
+      title={title}
       aria-current={current === true ? "page" : undefined}
       aria-label={label}
       onClick={(event) => {

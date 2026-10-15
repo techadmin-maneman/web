@@ -55,7 +55,7 @@ export interface HoldRow {
   one_visit: number;
   /** 1 for a visit ops booked that the client pays for by the payment link ops sent, and by nothing else. */
   pay_by_link: number;
-  /** 1 for a paid visit ops booked while online payment is off: paid by UPI at the visit (ADR 0208). */
+  /** 1 for a paid visit ops booked while online payment is off: paid by UPI at the visit (ADR 0209). */
   pay_at_visit: number;
   /** Set as its refund is asked of Razorpay, and cleared only if Razorpay refuses it. */
   refunded_at: string | null;

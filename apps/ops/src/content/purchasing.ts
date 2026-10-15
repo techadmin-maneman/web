@@ -83,7 +83,6 @@ export const purchasing = {
   /** What a printed order says of us, which a manager sets once. */
   letterhead: {
     title: "Letterhead",
-    intro: "What a printed order says of us.",
     missing: "Set the letterhead to print it on orders.",
     legalName: "Legal name",
     registeredOffice: "Registered office",

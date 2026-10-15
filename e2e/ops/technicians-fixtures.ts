@@ -17,7 +17,7 @@ import {
   type Answers,
   type Call,
 } from "./fixtures.ts";
-import { technicians } from "../../apps/ops/src/content.ts";
+import { shell, technicians } from "../../apps/ops/src/content.ts";
 
 export const IMRAN = "88000000-0000-4000-8000-000000000001";
 
@@ -81,13 +81,13 @@ export async function open(page: Page, changed: Answers = {}): Promise<void> {
 /** Opens a technician's page from the roster by their name, on the tab named, or on their week. */
 export async function pageOf(page: Page, name: string, tab?: string) {
   await page.getByRole("link", { name, exact: true }).click();
-  await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   if (tab !== undefined) await page.getByRole("link", { name: tab, exact: true }).click();
   return page.getByRole("main");
 }
 
 /** Back to the roster from a technician's page. */
 export async function backToRoster(page: Page) {
-  await page.getByRole("link", { name: technicians.page.back }).click();
+  await page.getByRole("navigation", { name: shell.crumbs }).getByRole("link", { name: technicians.title }).click();
   await expect(page.getByRole("table")).toBeVisible();
 }

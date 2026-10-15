@@ -31,7 +31,7 @@ test("stands each group under its department, in the navigation’s order, side 
 
 test("heads the list with how many have run over, and takes the keyboard to the first", async ({ page }) => {
   await open(page);
-  await list(page).getByRole("button", { name: "4 overdue, go to the first" }).click();
+  await page.getByRole("button", { name: "4 overdue, go to the first" }).click();
   await expect(row(page, "Kunal Mehta")).toBeFocused();
 });
 
@@ -69,7 +69,7 @@ test("shows a group’s five longest waits, the rest on asking, and unfolds it f
   await fewer.click();
   await expect(list(page).getByRole("listitem")).toHaveCount(5);
 
-  await list(page).getByRole("button", { name: "1 overdue, go to the first" }).click();
+  await page.getByRole("button", { name: "1 overdue, go to the first" }).click();
   await expect(list(page).getByRole("listitem")).toHaveCount(7);
   await expect(row(page, "Gautam Sharma")).toBeFocused();
 });

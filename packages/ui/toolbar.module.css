@@ -1,0 +1,28 @@
+/* The row above a list that narrows it (./Toolbar.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-8);
+  }
+
+  /* Its boxes' labels are read, not shown, so nothing above them needs room. */
+  .toolbar :is(input, select) {
+    margin-top: 0;
+  }
+
+  .end {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-12);
+    margin-left: auto;
+    font-size: var(--fs-13);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text-muted);
+  }
+}

@@ -24,16 +24,43 @@
   .table th,
   .table td {
     height: var(--table-row-height);
-    padding-block: var(--sp-8);
-    border-bottom: var(--hairline) solid var(--paper-line);
+    padding: var(--sp-8);
+    border-bottom: var(--hairline) solid var(--ui-line);
     font-weight: var(--weight-regular);
     text-align: left;
   }
 
+  /* The first and last columns sit in from the panel's edge, as its title does. */
+  .table th:first-child,
+  .table td:first-child {
+    padding-left: var(--sp-20);
+  }
+
+  .table th:last-child,
+  .table td:last-child {
+    padding-right: var(--sp-20);
+  }
+
+  /* The head stays in view as a long table scrolls under it. */
   .table thead th {
-    border-bottom-color: var(--text);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-raised);
+    border-bottom-color: var(--ui-line-control);
+    background: var(--ui-raised);
     font-size: var(--fs-13);
-    color: var(--text-muted);
+    color: var(--ui-text-muted);
+    white-space: nowrap;
+  }
+
+  .table tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+
+  @media (hover: hover) {
+    .table tbody tr:hover > * {
+      background: var(--ui-ground);
+    }
   }
 
   .table .figure {
@@ -50,16 +77,6 @@
   .controls td {
     padding: 0 var(--sp-8);
     vertical-align: middle;
-  }
-
-  .controls th:first-child,
-  .controls td:first-child {
-    padding-left: var(--sp-20);
-  }
-
-  .controls th:last-child,
-  .controls td:last-child {
-    padding-right: var(--sp-20);
   }
 
   .controls thead th {
@@ -81,7 +98,7 @@
 
   @media (hover: hover) {
     .sort:hover {
-      color: var(--text);
+      color: var(--ui-text);
     }
   }
 }

@@ -6,7 +6,7 @@ import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { deleting, review } from "../../apps/ops/src/content/common.ts";
 import { technicianPay as copy } from "../../apps/ops/src/content/technician-pay.ts";
-import { shell } from "../../apps/ops/src/content.ts";
+import { settingsPageNames, shell } from "../../apps/ops/src/content.ts";
 
 const SENIOR = "5f8a6c1e-2b3d-4e5f-8a9b-0c1d2e3f4a5b";
 const TRAINEE = "6a9b7d2f-3c4e-4f6a-9b0c-1d2e3f4a5b6c";
@@ -67,14 +67,15 @@ const STATEMENT = {
   ],
 } satisfies OpsReply<"/api/technician-pay/statement">;
 
+/** Settings' Pay grades, where the grades and their rates are set. */
 async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
   await answer(page, {
     "GET /api/technician-pay": json(PAY),
     "GET /api/technician-pay/statement": json(STATEMENT),
     ...extra,
   });
-  await page.goto("/technician-pay");
-  await expect(page.getByRole("heading", { level: 1, name: shell.sections["technician-pay"] })).toBeVisible();
+  await page.goto("/settings/pay-grades");
+  await expect(page.getByRole("heading", { level: 1, name: settingsPageNames["pay-grades"] })).toBeVisible();
 }
 
 const cellsOf = (page: Page, grade: string) =>
@@ -123,7 +124,12 @@ test("sets a rate from a date, in rupees, for every city, once it is reviewed", 
 test("shows last month’s pay at the rates per visit, says what no rate covered, and gives it as a CSV", async ({
   page,
 }) => {
-  await open(page);
+  await answer(page, {
+    "GET /api/technician-pay": json(PAY),
+    "GET /api/technician-pay/statement": json(STATEMENT),
+  });
+  await page.goto("/technician-pay");
+  await expect(page.getByRole("heading", { level: 1, name: shell.sections["technician-pay"] })).toBeVisible();
   const panel = page.getByRole("region", { name: copy.statement.title });
   await expect(panel.getByRole("combobox", { name: copy.statement.month })).toHaveValue("2026-08");
   await expect(panel.getByRole("row").filter({ hasText: copy.kinds.service })).toContainText("Rs. 4,800");

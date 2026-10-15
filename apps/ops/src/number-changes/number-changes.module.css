@@ -24,22 +24,22 @@
 /* The client's name, which reaches their record; opening it is audited. */
 .name {
   font-size: var(--fs-15);
-  color: var(--text);
+  color: var(--ui-text);
   text-decoration: underline;
 }
 
 .when {
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* The one line ops read digit by digit, so it is set in figures of one width. */
 .move {
   margin: var(--sp-12) 0 0;
   padding: var(--sp-8) 0;
-  border-top: var(--hairline) solid var(--paper-line);
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--ui-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
   font-size: var(--fs-16);
   font-variant-numeric: tabular-nums;
 }
@@ -47,7 +47,7 @@
 .proven {
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .decide {

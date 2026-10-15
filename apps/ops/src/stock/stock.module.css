@@ -43,7 +43,7 @@
 .counted {
   display: block;
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* A consumable no longer offered, still held somewhere. */
@@ -51,5 +51,5 @@
   display: block;
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }

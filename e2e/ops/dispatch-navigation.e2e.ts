@@ -134,7 +134,9 @@ test("keeps every day readable, and the navigation in reach, at 200% zoom", asyn
   }
   // Too narrow to keep the navigation beside the page, the header's Menu brings it in.
   await page.getByRole("button", { name: opsCopy.shell.menu }).click();
-  const settings = page.getByRole("link", { name: opsCopy.shell.sections.settings });
+  const settings = page
+    .getByRole("navigation", { name: opsCopy.shell.title })
+    .getByRole("link", { name: opsCopy.shell.settings, exact: true });
   await settings.scrollIntoViewIfNeeded();
   await expect(settings).toBeInViewport();
   await page.keyboard.press("Escape");

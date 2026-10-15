@@ -10,14 +10,14 @@
   flex-direction: column;
   gap: var(--sp-12);
   max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
   padding: var(--sp-24);
 }
 
 .title {
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .input {

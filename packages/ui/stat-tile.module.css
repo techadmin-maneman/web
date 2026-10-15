@@ -1,0 +1,47 @@
+/* One figure under its name, on the raised ground (./StatTile.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .tile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-8);
+    min-width: 0;
+    padding: var(--sp-16) var(--sp-20);
+    border: var(--hairline) solid var(--ui-line);
+    background: var(--ui-raised);
+    color: var(--ui-text);
+    text-decoration: none;
+  }
+
+  .label {
+    font-size: var(--fs-13);
+    color: var(--ui-text-muted);
+  }
+
+  .value {
+    font-family: var(--font-serif);
+    font-size: var(--fs-34);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--lh-100);
+  }
+
+  .attention {
+    color: var(--ui-attention);
+  }
+
+  .warning {
+    color: var(--ui-error);
+  }
+
+  .link:focus-visible {
+    outline-offset: var(--focus-inset);
+  }
+
+  @media (hover: hover) {
+    .link:hover {
+      border-color: var(--ui-line-control);
+    }
+  }
+}

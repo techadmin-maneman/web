@@ -4,5 +4,5 @@
 .said {
   font-size: var(--fs-14);
   overflow-wrap: anywhere;
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }

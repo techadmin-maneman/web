@@ -308,7 +308,7 @@ export async function retakeSlot(db: D1Database, hold: HeldTime, now: Date): Pro
 
 /**
  * A fitted one visit's booking, owing the hair system's price by UPI at the visit while online payment is off
- * (docs/decisions/0208-paid-at-the-visit-by-upi.md): the amount, with its GST, as the price book had it on the day.
+ * (docs/decisions/0209-paid-at-the-visit-by-upi.md): the amount, with its GST, as the price book had it on the day.
  */
 export function oneVisitOwedAtVisit(
   db: D1Database,

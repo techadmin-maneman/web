@@ -54,7 +54,6 @@ export const cities = {
   rules: {
     panel: "City rules",
     city: "City",
-    note: "A city follows the national rule until it sets its own.",
     names: { checkin_radius_m: "Check-in radius", reminder_hour: "Reminder time" },
     units: { checkin_radius_m: "metres", reminder_hour: "hour of the day" },
     national: "National",
@@ -70,7 +69,6 @@ export const cities = {
   },
   prices: {
     panel: "City prices",
-    note: "A city’s price comes before the national one there, from its day.",
     columns: ["City", "Service", "Before GST", "GST", "From", ""],
     none: "No city prices",
     inForce: "In force",
@@ -107,7 +105,6 @@ export const cities = {
   },
   registrations: {
     panel: "GST registrations",
-    note: "A state with no registration here is supplied from the one Books is set up with.",
     columns: ["State", "GSTIN", "Books branch", ""],
     none: "No registrations",
     add: "Add a registration",

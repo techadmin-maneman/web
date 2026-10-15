@@ -58,13 +58,15 @@ test("lists each supplier with its terms, and adds one once checked", async ({ p
   await expect(row).toContainText(copy.terms(30));
   await expect(row).toContainText(copy.warranty(90));
 
-  await page.getByLabel(copy.form.name, { exact: true }).fill("Kesh Supplies");
-  await page.getByLabel(copy.form.gstin).fill("07aabck1234m1z5");
-  await page.getByLabel(copy.form.terms).fill("15");
-  await page.getByRole("button", { name: review.next }).click();
-  await expect(page.getByText(copy.form.confirm.adding("Kesh Supplies", "IN", "INR"))).toBeVisible();
+  await page.getByRole("button", { name: copy.form.addTitle }).click();
+  const form = page.getByRole("dialog", { name: copy.form.addTitle });
+  await form.getByLabel(copy.form.name, { exact: true }).fill("Kesh Supplies");
+  await form.getByLabel(copy.form.gstin).fill("07aabck1234m1z5");
+  await form.getByLabel(copy.form.terms).fill("15");
+  await form.getByRole("button", { name: review.next }).click();
+  await expect(form.getByText(copy.form.confirm.adding("Kesh Supplies", "IN", "INR"))).toBeVisible();
   const sent = posted(page, "/api/suppliers");
-  await page.getByRole("button", { name: review.send }).click();
+  await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
     name: "Kesh Supplies",
     gstin: "07AABCK1234M1Z5",
@@ -86,13 +88,15 @@ test("shows what a supplier supplies, and sets a price old beside new", async ({
   const solvent = items.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Solvent" }) });
   await expect(solvent).toContainText("USD 12.50 per ml");
 
-  await items.getByLabel(copy.item.consumable).selectOption({ label: "Solvent" });
-  await items.getByLabel(copy.item.price("USD", "ml")).fill("13");
-  await items.getByRole("button", { name: review.next }).click();
-  await expect(items).toContainText("USD 12.50");
-  await expect(items).toContainText("USD 13.00");
+  await items.getByRole("button", { name: copy.item.addOne }).click();
+  const form = page.getByRole("dialog", { name: copy.item.title("Lumina Hair Co") });
+  await form.getByLabel(copy.item.consumable).selectOption({ label: "Solvent" });
+  await form.getByLabel(copy.item.price("USD", "ml")).fill("13");
+  await form.getByRole("button", { name: review.next }).click();
+  await expect(form).toContainText("USD 12.50");
+  await expect(form).toContainText("USD 13.00");
   const sent = posted(page, "/api/suppliers/sup-1/items");
-  await items.getByRole("button", { name: review.send }).click();
+  await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
     consumable_code: "solvent",
     their_code: "SV-500",

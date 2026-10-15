@@ -14,6 +14,8 @@ export async function open(page: Page, body: OpsReply<"/api/tasks"> = TASKS, ale
   await answer(page, { "GET /api/tasks": json(body), "GET /api/alerts": json(alerts) });
   await page.goto("/tasks");
   await expect(page.getByRole("heading", { level: 1, name: tasks.title })).toBeVisible();
+  // The frame draws the title before the list is read; a spec's own answers come after this.
+  await expect(list(page)).toBeVisible();
 }
 
 /** The list itself; the console's navigation is a list too. */

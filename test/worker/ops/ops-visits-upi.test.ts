@@ -1,5 +1,5 @@
 // A paid visit ops book while online payment is off: booked at once, paid by UPI at the visit, and recorded by ops
-// once the money reaches the account (docs/decisions/0208-paid-at-the-visit-by-upi.md).
+// once the money reaches the account (docs/decisions/0209-paid-at-the-visit-by-upi.md).
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";

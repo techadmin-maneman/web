@@ -8,7 +8,7 @@
     align-items: center;
     gap: var(--sp-8);
     padding: var(--sp-4) var(--sp-8);
-    border: var(--hairline) solid var(--paper-line);
+    border: var(--hairline) solid var(--ui-line);
     font-size: var(--fs-14);
   }
 
@@ -20,7 +20,7 @@
     padding: 0;
     border: 0;
     background: none;
-    color: var(--text-muted);
+    color: var(--ui-text-muted);
     font: inherit;
     font-size: var(--fs-16);
     cursor: pointer;
@@ -28,7 +28,7 @@
 
   @media (hover: hover) {
     .remove:hover {
-      color: var(--text);
+      color: var(--ui-text);
     }
   }
 }

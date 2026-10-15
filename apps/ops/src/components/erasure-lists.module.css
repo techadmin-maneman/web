@@ -8,7 +8,7 @@
   margin: 0;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .whatItems {

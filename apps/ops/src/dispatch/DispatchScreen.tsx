@@ -6,7 +6,7 @@
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { BoardQuery } from "../api.ts";
-import { useHeaderSub } from "../components/Shell.tsx";
+import { useHeaderSub } from "../components/PageHead.tsx";
 import { dispatch } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";

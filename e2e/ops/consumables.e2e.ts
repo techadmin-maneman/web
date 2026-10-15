@@ -1,4 +1,4 @@
-// Settings, Consumables: what a technician may record using on a job, what one
+// Items: what a technician may record using on a job, what one
 // costs us, and what each service is
 // expected to use (docs/decisions/0087-consumables-and-stock.md). As every panel
 // of Settings does, it shows a change old beside new before it is sent
@@ -9,6 +9,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, CONSUMABLES, fails, json, type Answers } from "./fixtures.ts";
+import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
 import { review } from "../../apps/ops/src/content/common.ts";
 import { dispatch } from "../../apps/ops/src/content.ts";
@@ -44,6 +45,7 @@ test.describe("the list", () => {
 test.describe("a consumable added or changed", () => {
   test("is shown before it is sent, and sent in paise with its levels", async ({ page }) => {
     await open(page, { "POST /api/consumables": json(CONSUMABLES) });
+    await page.getByRole("button", { name: settingsCopy.consumables.add }).click();
     const add = page.getByRole("group", { name: settingsCopy.consumables.form.addTitle });
     await add.getByLabel(settingsCopy.services.form.name).fill("Scalp wipes");
     await add.getByLabel(settingsCopy.consumables.form.unit).fill("wipe");
@@ -100,6 +102,7 @@ test.describe("a consumable added or changed", () => {
 
   test("names the box the API refused", async ({ page }) => {
     await open(page, { "POST /api/consumables": fails(400, "invalid_request", ["name"]) });
+    await page.getByRole("button", { name: settingsCopy.consumables.add }).click();
     const add = page.getByRole("group", { name: settingsCopy.consumables.form.addTitle });
     await add.getByLabel(settingsCopy.services.form.name).fill("tape strips");
     await add.getByLabel(settingsCopy.consumables.form.unit).fill("strip");
@@ -198,11 +201,15 @@ test.describe("what each service uses", () => {
 
 test.describe("hair systems", () => {
   const words = settingsCopy.consumables.hairSystems;
-  const panel = (page: Page) => page.getByRole("region", { name: words.title });
+  /** The form that adds one, opened from the page's head. */
+  async function addForm(page: Page) {
+    await page.getByRole("button", { name: words.add }).click();
+    return page.getByRole("dialog", { name: words.add });
+  }
 
   test("adds one by its spec, and reads the list again with it in", async ({ page }) => {
     await open(page, { "POST /api/hair-systems": json({ code: "hs_standard_8x10_1b_g20_d100" }) });
-    const form = panel(page);
+    const form = await addForm(page);
     await form.getByLabel(words.product).selectOption({ label: "First fit" });
     await form.getByLabel(words.width).fill("8");
     await form.getByLabel(words.length).fill("10");
@@ -232,7 +239,7 @@ test.describe("hair systems", () => {
 
   test("says when the spec is in stock already", async ({ page }) => {
     await open(page, { "POST /api/hair-systems": fails(400, "invalid_request", ["hair_system"]) });
-    const form = panel(page);
+    const form = await addForm(page);
     await form.getByLabel(words.width).fill("8");
     await form.getByLabel(words.length).fill("10");
     await form.getByLabel(words.cost).fill("12000");
@@ -242,11 +249,12 @@ test.describe("hair systems", () => {
   });
 });
 
-test("meets WCAG 2.2 AA, with a change being checked as well", async ({ page }) => {
+test("meets WCAG 2.2 AA, a box to a line, with a change being checked as well", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
 
   await page.getByRole("button", { name: "Change Tape strips" }).click();
+  await expectOneBoxALine(page, "Change Tape strips");
   await page
     .getByRole("group", { name: "Change Tape strips" })
     .getByLabel(settingsCopy.consumables.form.unit)

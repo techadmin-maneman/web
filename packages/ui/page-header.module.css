@@ -1,0 +1,46 @@
+/* The head of a console page (./PageHeader.tsx). */
+
+@layer base, ui;
+
+@layer ui {
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-12);
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-12) var(--sp-24);
+    min-height: var(--sp-40);
+  }
+
+  .heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--sp-4) var(--sp-16);
+    min-width: 0;
+  }
+
+  .title {
+    margin: 0;
+    color: var(--ui-text);
+  }
+
+  .meta {
+    font-size: var(--fs-14);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text-muted);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-8);
+  }
+}

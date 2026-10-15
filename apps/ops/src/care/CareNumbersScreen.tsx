@@ -12,9 +12,12 @@ import { useCallback, useState } from "react";
 import { care } from "../content/care.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { careApi, type CareNumbers, type CarePeriod } from "./care-api.ts";
-import form from "../components/forms.module.css";
 import shared from "./care.module.css";
-import styles from "./care-numbers-screen.module.css";
+import { Columns, Stack } from "@maneman/ui/Layout";
+import { StatTile } from "@maneman/ui/StatTile";
+import { useHeaderSub } from "../components/PageHead.tsx";
+import { EmptyState } from "@maneman/ui/EmptyState";
+import { Toolbar } from "@maneman/ui/Toolbar";
 
 const copy = care.numbers;
 const PERIODS: readonly CarePeriod[] = ["7", "30", "90"];
@@ -27,29 +30,65 @@ const percent = (share: number | null): string =>
 const minutes = (value: number | null): string => (value === null ? copy.nothing : copy.minutes(value));
 
 function Figures({ numbers }: { numbers: CareNumbers }) {
-  const figures: readonly (readonly [string, string])[] = [
-    [copy.chats, String(numbers.replies.chats)],
-    [copy.firstReply, minutes(numbers.replies.median_minutes)],
-    [copy.withinTarget, percent(numbers.replies.within_target)],
-    [copy.sameDay, percent(numbers.same_day)],
-    [copy.waitingOnUs, String(numbers.backlog.waiting_on_us)],
-    [copy.overdue, String(numbers.backlog.overdue)],
-    [copy.waitingOnClient, String(numbers.backlog.waiting_on_client)],
-  ];
+  const overdue = numbers.backlog.overdue;
   return (
-    <dl className={shared.facts}>
-      {figures.map(([label, value]) => (
-        <div key={label} className={styles.figureRow}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <Columns>
+      <StatTile label={copy.chats} value={numbers.replies.chats} />
+      <StatTile label={copy.firstReply} value={minutes(numbers.replies.median_minutes)} />
+      <StatTile label={copy.withinTarget} value={percent(numbers.replies.within_target)} />
+      <StatTile label={copy.sameDay} value={percent(numbers.same_day)} />
+      <StatTile label={copy.waitingOnUs} value={numbers.backlog.waiting_on_us} />
+      <StatTile label={copy.overdue} value={overdue} tone={overdue > 0 ? "warning" : "plain"} />
+      <StatTile label={copy.waitingOnClient} value={numbers.backlog.waiting_on_client} />
+    </Columns>
+  );
+}
+
+/** One of the counts by reason, a line each, or a dash with none. */
+function Counted({ titleId, title, lines }: { titleId: string; title: string; lines: readonly string[] }) {
+  return (
+    <Panel titleId={titleId} title={title} padded>
+      {lines.length === 0 ? (
+        <Note>{copy.nothing}</Note>
+      ) : (
+        <ul className={shared.leave}>
+          {lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+function Lists({ numbers }: { numbers: CareNumbers }) {
+  const reasons = numbers.reasons.map((row) =>
+    copy.counted(care.reasons[row.reason as keyof typeof care.reasons], row.chats),
+  );
+  const remedies = numbers.remedies.map((row) =>
+    copy.remedied(care.remedy.reasons[row.reason as keyof typeof care.remedy.reasons], row.remedies, row.visits),
+  );
+  return (
+    <>
+      <Counted titleId="care-reasons" title={copy.reasons} lines={reasons} />
+      <Counted titleId="care-remedies" title={copy.remedies} lines={remedies} />
+    </>
   );
 }
 
 function ByPerson({ numbers }: { numbers: CareNumbers }) {
-  if (numbers.by_person.length === 0) return <Note>{copy.noPeople}</Note>;
+  return (
+    <Panel titleId="care-people" title={copy.byPerson}>
+      {numbers.by_person.length === 0 ? (
+        <EmptyState look="panel" line={copy.noPeople} />
+      ) : (
+        <PeopleTable numbers={numbers} />
+      )}
+    </Panel>
+  );
+}
+
+function PeopleTable({ numbers }: { numbers: CareNumbers }) {
   return (
     <TableScroll labelledBy="care-numbers">
       <Table controls className={shared.table}>
@@ -84,37 +123,10 @@ function ByPerson({ numbers }: { numbers: CareNumbers }) {
   );
 }
 
-function Lists({ numbers }: { numbers: CareNumbers }) {
-  return (
-    <div className={shared.quick}>
-      <h3 className={form.ruleTitle}>{copy.reasons}</h3>
-      {numbers.reasons.length === 0 ? (
-        <Note>{copy.nothing}</Note>
-      ) : (
-        <ul className={shared.leave}>
-          {numbers.reasons.map((row) => (
-            <li key={row.reason}>{copy.counted(care.reasons[row.reason as keyof typeof care.reasons], row.chats)}</li>
-          ))}
-        </ul>
-      )}
-      <h3 className={form.ruleTitle}>{copy.remedies}</h3>
-      {numbers.remedies.length === 0 ? (
-        <Note>{copy.nothing}</Note>
-      ) : (
-        <ul className={shared.leave}>
-          {numbers.remedies.map((row) => (
-            <li key={row.reason}>
-              {copy.remedied(
-                care.remedy.reasons[row.reason as keyof typeof care.remedy.reasons],
-                row.remedies,
-                row.visits,
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+/** The days the figures count, beside the page's title. */
+function Span({ from, to }: { from: string; to: string }) {
+  useHeaderSub(copy.span(shortDate(from), shortDate(to)));
+  return null;
 }
 
 function Numbers({ period }: { period: CarePeriod }) {
@@ -125,7 +137,7 @@ function Numbers({ period }: { period: CarePeriod }) {
   const numbers = loaded.value;
   return (
     <>
-      <p className={shared.quick}>{copy.span(shortDate(numbers.from), shortDate(numbers.to))}</p>
+      <Span from={numbers.from} to={numbers.to} />
       <Figures numbers={numbers} />
       <Lists numbers={numbers} />
       <ByPerson numbers={numbers} />
@@ -133,33 +145,38 @@ function Numbers({ period }: { period: CarePeriod }) {
   );
 }
 
+/** Over how long the figures count: the last week, 30 days or 90. */
+function PeriodChoice({ period, onPeriod }: { period: CarePeriod; onPeriod: (period: CarePeriod) => void }) {
+  return (
+    <Field label={copy.period} labelHidden>
+      {(control) => (
+        <Select
+          {...control}
+          width="choice"
+          value={period}
+          onChange={(event) => {
+            if (isPeriod(event.target.value)) onPeriod(event.target.value);
+          }}
+        >
+          {PERIODS.map((each) => (
+            <option key={each} value={each}>
+              {copy.periods[each]}
+            </option>
+          ))}
+        </Select>
+      )}
+    </Field>
+  );
+}
+
 export function CareNumbersScreen() {
   const [period, setPeriod] = useState<CarePeriod>("7");
   return (
-    <div className={form.screen}>
-      <Panel titleId="care-numbers" title={copy.title} padded>
-        <div className={shared.tools}>
-          <Field label={copy.period}>
-            {(control) => (
-              <Select
-                {...control}
-                width="choice"
-                value={period}
-                onChange={(event) => {
-                  if (isPeriod(event.target.value)) setPeriod(event.target.value);
-                }}
-              >
-                {PERIODS.map((each) => (
-                  <option key={each} value={each}>
-                    {copy.periods[each]}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        </div>
-        <Numbers key={period} period={period} />
-      </Panel>
-    </div>
+    <Stack>
+      <Toolbar label={copy.period}>
+        <PeriodChoice period={period} onPeriod={setPeriod} />
+      </Toolbar>
+      <Numbers key={period} period={period} />
+    </Stack>
   );
 }

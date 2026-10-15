@@ -33,7 +33,7 @@ export const technicians = {
     /** When the phone timed fewer jobs than were finished, the average says what it is of. */
     base: (timed: number, jobs: number) => `${String(timed)} of ${String(jobs)}`,
     /** Beneath the table, where the board writes its own note: what the two columns count. */
-    period: (from: string, to: string) => `Jobs finished ${from} to ${to}.`,
+    period: (from: string, to: string) => `Jobs ${from} – ${to}`,
     /** The board's fifth column, which no route can answer (docs/open-points.md, item 59). */
   },
   /** Our words, all of them: the board draws the roster and no page for one technician. */

@@ -4,8 +4,8 @@
 .search {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
-  gap: var(--sp-12);
+  align-items: center;
+  gap: var(--sp-8);
 }
 
 /* Past the latest page: how many are shown, and the older ones on asking. */

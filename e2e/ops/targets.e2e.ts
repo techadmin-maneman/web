@@ -29,7 +29,7 @@ const SEPTEMBER: Month = {
 async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
   await page.clock.setFixedTime(new Date("2026-09-21T06:30:00.000Z"));
   await answer(page, { "GET /api/targets": json(SEPTEMBER), ...extra });
-  await page.goto("/targets");
+  await page.goto("/settings/targets");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }
 
@@ -42,10 +42,12 @@ test("sets a month’s target for a city, by measure", async ({ page }) => {
     },
   });
   await expect(page.getByRole("cell", { name: "40", exact: true })).toBeVisible();
-  await page.getByLabel(copy.city).selectOption("Bengaluru");
-  await page.getByLabel(copy.measure).selectOption("revenue");
-  await page.getByRole("textbox", { name: copy.target }).fill("500000");
-  await page.getByRole("button", { name: copy.set }).click();
+  await page.getByRole("button", { name: copy.setOne }).click();
+  const form = page.getByRole("dialog", { name: copy.setOne });
+  await form.getByLabel(copy.city).selectOption("Bengaluru");
+  await form.getByLabel(copy.measure).selectOption("revenue");
+  await form.getByRole("textbox", { name: copy.target }).fill("500000");
+  await form.getByRole("button", { name: copy.set }).click();
   await expect.poll(() => sent).toEqual({ month: "2026-09", city: "Bengaluru", measure: "revenue", target: 500000 });
 });
 

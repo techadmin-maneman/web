@@ -19,7 +19,7 @@
 .warning {
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--text);
+  color: var(--ui-text);
 }
 
 .error {

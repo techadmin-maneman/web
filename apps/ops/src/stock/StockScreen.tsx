@@ -12,6 +12,7 @@ import { fullDate, indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dat
 import { Suspense, useState } from "react";
 import { type Stock } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
+import { shell } from "../content/shell.ts";
 import { stock as copy } from "../content/stock.ts";
 import { useAccess, type OpsCall } from "../lib/access.ts";
 import { recordedBy } from "../lib/who.ts";
@@ -25,6 +26,8 @@ import { holdingOf, unitOf } from "./holdings.ts";
 import styles from "./stock.module.css";
 import { useStock } from "./useStock.ts";
 import { RowHead } from "../components/RowHead.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
+import { PageActions } from "../components/PageHead.tsx";
 
 /** The places, read only by national managers, so the panel loads only for them. */
 const PlacesPanel = lazyScreen(() => import("./PlacesPanel.tsx").then((module) => module.PlacesPanel));
@@ -48,10 +51,11 @@ function anyExpiring(stock: Stock): boolean {
 /** How the table adds up the places: each its own, or by zone or city. */
 function Grouping({ by, onBy }: { by: string; onBy: (by: "place" | "zone" | "city") => void }) {
   return (
-    <Field label={copy.totalsBy} className={styles.kitPicker}>
+    <Field label={copy.totalsBy} labelHidden>
       {(control) => (
         <Select
           {...control}
+          width="choice"
           value={by}
           onChange={(event) => {
             const picked = event.target.value;
@@ -98,12 +102,12 @@ function Held({ stock, code, place }: { stock: Stock; code: string; place: strin
   );
 }
 
-/** "Settings, Consumables", where each consumable and its low level is set. The sentence before it ends with it. */
-function ToSettings() {
+/** Items, where each consumable and its low level is set. The sentence before it ends with it. */
+function ToItems() {
   return (
     <>
       <OpsLink className={form.link} to="/items">
-        {copy.settings}
+        {shell.sections.items}
       </OpsLink>
       .
     </>
@@ -157,7 +161,7 @@ function OnHand({ stock }: { stock: Stock }) {
   if (stock.consumables.length === 0) {
     return (
       <Note>
-        {copy.none} <ToSettings />
+        {copy.none} <ToItems />
       </Note>
     );
   }
@@ -267,8 +271,7 @@ export function StockScreen() {
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {current !== null && (
         <div className={styles.screen}>
-          <Panel titleId="stock-on-hand" title={copy.onHand}>
-            <Grouping by={by} onBy={setBy} />
+          <Panel titleId="stock-on-hand" title={copy.onHand} actions={<Grouping by={by} onBy={setBy} />}>
             {by === "place" ? (
               <OnHand stock={current} />
             ) : (
@@ -283,17 +286,29 @@ export function StockScreen() {
             </Suspense>
           )}
           {firstKind !== undefined && current.consumables.length > 0 && (
-            <StockForm
-              stock={current}
-              kinds={[firstKind, ...otherKinds]}
-              onRecorded={(after, recorded) => {
-                setStock(after);
-                const hairSystem = after.consumables.some((each) => each.code === recorded.code && each.hair_system);
-                if (recorded.kind === "delivery" && hairSystem) {
-                  setLabelsFor({ at: { code: recorded.code, place: "central" }, time: (labelsFor?.time ?? 0) + 1 });
-                }
-              }}
-            />
+            <PageActions>
+              <DrawerButton primary label={copy.record.title}>
+                {(close) => (
+                  <StockForm
+                    stock={current}
+                    kinds={[firstKind, ...otherKinds]}
+                    onRecorded={(after, recorded) => {
+                      setStock(after);
+                      const hairSystem = after.consumables.some(
+                        (each) => each.code === recorded.code && each.hair_system,
+                      );
+                      if (recorded.kind === "delivery" && hairSystem) {
+                        setLabelsFor({
+                          at: { code: recorded.code, place: "central" },
+                          time: (labelsFor?.time ?? 0) + 1,
+                        });
+                        close();
+                      }
+                    }}
+                  />
+                )}
+              </DrawerButton>
+            </PageActions>
           )}
           <Suspense fallback={<Loading />}>
             <Demand stock={current} />

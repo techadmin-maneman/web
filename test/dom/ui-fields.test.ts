@@ -70,8 +70,10 @@ describe("the fields' look", () => {
   const css = readFileSync("packages/ui/field.module.css", "utf8");
 
   it("edges a field at 3:1 against paper and white, as ADR 0025 item 36 rules for every field", () => {
-    expect(css).toMatch(/border: var\(--hairline\) solid var\(--paper-control\)/);
-    expect(css).not.toContain("--paper-line");
+    const tokens = readFileSync("packages/brand/tokens.css", "utf8");
+    expect(css).toMatch(/border: var\(--hairline\) solid var\(--ui-line-control\)/);
+    expect(tokens).toContain("--ui-line-control: var(--paper-control);");
+    expect(css).not.toContain("--ui-line)");
   });
 
   it("draws its focus ring inside the box, where a panel’s edge cannot cut it", () => {

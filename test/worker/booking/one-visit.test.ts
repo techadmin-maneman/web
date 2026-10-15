@@ -170,7 +170,7 @@ describe("closing a one visit the client was fitted at", () => {
     expect(card).toMatchObject({ payment_link: { url: expect.stringMatching(/^https:\/\/rzp\.io\//) as string } });
   });
 
-  // At launch with no online payment: the hair system is paid by UPI at the visit, and ops record it (ADR 0208).
+  // At launch with no online payment: the hair system is paid by UPI at the visit, and ops record it (ADR 0209).
   it("owes the product's price by UPI at the visit, with no link, while online payment is off", async () => {
     const payments = createPaymentsProvider("none", null, { fetch, log: createLogger() });
     const job = await oneVisit({ payments });

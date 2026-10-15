@@ -5,7 +5,6 @@ import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
-import { Note } from "@maneman/ui/Note";
 import { useState } from "react";
 import { cities } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
@@ -94,7 +93,6 @@ export function CityRules({ cities, onSaved }: { cities: Cities; onSaved: () => 
   };
   return (
     <Panel titleId="city-rules" title={copy.panel}>
-      <Note>{copy.note}</Note>
       <Field label={copy.city} className={form.field}>
         {(control) => (
           <Select

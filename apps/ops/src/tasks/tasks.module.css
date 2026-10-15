@@ -14,13 +14,6 @@
   gap: var(--sp-24);
 }
 
-.panelTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-regular);
-  font-size: var(--fs-22);
-}
-
 /* The one figure the board sets in oxblood: how many have run over. */
 .overdue {
   font-size: var(--fs-14);
@@ -35,12 +28,9 @@
   gap: var(--sp-20);
 }
 
-.queueHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding-bottom: var(--sp-8);
-  border-bottom: var(--hairline) solid var(--text);
+/* The list takes the keyboard once a task leaves it; a region, not a control, so it has no ring. */
+.queue:focus {
+  outline: none;
 }
 
 .department {
@@ -73,27 +63,27 @@
 /* ---- One group ------------------------------------------------------------ */
 
 .group {
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
 }
 
 .groupHead {
   display: flex;
   justify-content: space-between;
   gap: var(--sp-16);
-  padding: var(--sp-8) var(--sp-20);
-  background: var(--paper-light);
+  padding: var(--sp-12) var(--sp-20);
 }
 
 .groupName {
   margin: 0;
   letter-spacing: var(--tracking-12);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .count {
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -118,17 +108,17 @@
   gap: var(--sp-12);
   min-height: var(--ops-row);
   padding: var(--sp-12) var(--sp-20);
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
 /* The row the head's overdue count went to, marked as a row a task's link lands on is. */
 .marked {
-  box-shadow: inset var(--rule-strong) 0 0 var(--brass);
+  box-shadow: inset var(--rule-strong) 0 0 var(--ui-accent);
 }
 
 .task:focus-visible,
 .marked:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
+  outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: var(--focus-inset);
 }
 
@@ -139,7 +129,7 @@
   align-items: start;
   gap: var(--sp-12);
   padding: var(--sp-12) var(--sp-20);
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
 .what {
@@ -152,7 +142,7 @@
 /* The client's name, which reaches their page: the board draws it as plain text. */
 .subject {
   font-size: var(--fs-15);
-  color: var(--text);
+  color: var(--ui-text);
 }
 
 a.subject {
@@ -161,14 +151,14 @@ a.subject {
 
 .sub {
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* The way to the row the task is decided on, in the section that decides it. */
 .decide {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   text-decoration: underline;
-  text-decoration-color: var(--paper-line);
+  text-decoration-color: var(--ui-line);
   text-underline-offset: var(--sp-4);
 }
 
@@ -177,7 +167,7 @@ a.subject {
   margin: 0;
   padding: var(--sp-8) var(--sp-20) var(--sp-12);
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* ---- What ops do with a task (TaskActions.tsx) ---------------------------- */

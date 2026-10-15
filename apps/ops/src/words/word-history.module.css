@@ -12,13 +12,13 @@
   align-items: baseline;
   gap: var(--sp-4) var(--sp-16);
   padding: var(--sp-8) 0;
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
 .when {
   min-width: var(--ops-figure);
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .said {

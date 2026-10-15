@@ -1,4 +1,4 @@
-// What the Served tab (./Served.tsx) works out, apart from how it draws it: the table as ops have it, what has moved
+// What Settings › Areas (./Served.tsx) works out, apart from how it draws it: the table as ops have it, what has moved
 // since it loaded, what a save would launch or the API refuse, and a file's changes before they go into the table.
 
 import type { AreaChange, ServedPincode } from "../api.ts";

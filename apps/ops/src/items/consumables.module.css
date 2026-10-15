@@ -12,7 +12,7 @@
   display: block;
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* A cell that carries its buttons after its words keeps them on the one line. */
@@ -22,5 +22,5 @@
 
 /* A consumable retired reads quieter than one in order. */
 .quiet {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }

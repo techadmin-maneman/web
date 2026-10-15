@@ -25,6 +25,7 @@ import styles from "./clients.module.css";
 import { RefundPayment } from "./RefundPayment.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { clientsApi } from "./clients-api.ts";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 
 type Credits = ClientRecord["credits"];
 type Reason = CreditAdjustment["reason"];
@@ -235,6 +236,32 @@ function Balance({ credits }: { credits: Credits }) {
   );
 }
 
+/** The free service visits they hold, and, where access allows, the way to add or remove some, in a drawer. */
+function CreditSection({
+  clientId,
+  credits,
+  onCredits,
+}: {
+  clientId: string;
+  credits: Credits;
+  onCredits: (credits: Credits) => void;
+}) {
+  const mayAdjust = useAccess().mayCall("POST /api/clients/{id}/credits");
+  return (
+    <section className={styles.credits} aria-labelledby="credits">
+      <h3 className={capsLook(styles.sectionTitle)} id="credits">
+        {creditCopy.title}
+      </h3>
+      <Balance credits={credits} />
+      {mayAdjust && (
+        <DrawerButton label={creditCopy.adjust} title={creditCopy.title}>
+          {() => <CreditForm clientId={clientId} credits={credits} onCredits={onCredits} />}
+        </DrawerButton>
+      )}
+    </section>
+  );
+}
+
 function CreditForm({
   clientId,
   credits,
@@ -247,7 +274,6 @@ function CreditForm({
   const [typed, setTyped] = useState("");
   const [reason, setReason] = useState<Reason | "">("");
   const [adjusting, setAdjusting] = useState<Adjusting>({ step: "open" });
-  const mayAdjust = useAccess().mayCall("POST /api/clients/{id}/credits");
   const visits = visitsOf(typed);
   const sending = adjusting.step === "sending";
 
@@ -265,68 +291,60 @@ function CreditForm({
   };
 
   return (
-    <section className={styles.credits} aria-labelledby="credits">
-      <h3 className={capsLook(styles.sectionTitle)} id="credits">
-        {creditCopy.title}
-      </h3>
-      <Balance credits={credits} />
-      {mayAdjust && (
-        <form
-          className={styles.creditForm}
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (visits !== null && reason !== "") void send({ visits, reason });
-          }}
-        >
-          <Field label={creditCopy.change}>
-            {(control) => (
-              <TextInput
-                {...control}
-                className={styles.numberField}
-                inputMode="numeric"
-                autoComplete="off"
-                value={typed}
-                disabled={sending}
-                onChange={(event) => {
-                  setTyped(event.target.value);
-                }}
-              />
-            )}
-          </Field>
-          <ChoiceGroup className={styles.reasons} legend={creditCopy.reason} disabled={sending} ruled>
-            {creditCopy.reasons.map((each) => (
-              <Radio
-                key={each.reason}
-                label={each.label}
-                name="credit-reason"
-                value={each.reason}
-                checked={reason === each.reason}
-                onChange={() => {
-                  setReason(each.reason);
-                }}
-              />
-            ))}
-          </ChoiceGroup>
-          <Button
-            variant="primary"
-            size="small"
-            className={styles.primary}
-            type="submit"
-            disabled={sending || visits === null || reason === ""}
-          >
-            {sending ? creditCopy.saving : creditCopy.save}
-          </Button>
-          {adjusting.step === "done" && (
-            <p className={styles.done} role="status">
-              {creditCopy.saved(adjusting.visits)}
-            </p>
-          )}
-          {adjusting.step === "failed" && (
-            <Refusal className={styles.error} said={creditRefusal(adjusting.code, credits?.visits ?? 0)} />
-          )}
-        </form>
+    <form
+      className={styles.creditForm}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (visits !== null && reason !== "") void send({ visits, reason });
+      }}
+    >
+      <Field label={creditCopy.change}>
+        {(control) => (
+          <TextInput
+            {...control}
+            className={styles.numberField}
+            inputMode="numeric"
+            autoComplete="off"
+            value={typed}
+            disabled={sending}
+            onChange={(event) => {
+              setTyped(event.target.value);
+            }}
+          />
+        )}
+      </Field>
+      <ChoiceGroup className={styles.reasons} legend={creditCopy.reason} disabled={sending} ruled>
+        {creditCopy.reasons.map((each) => (
+          <Radio
+            key={each.reason}
+            label={each.label}
+            name="credit-reason"
+            value={each.reason}
+            checked={reason === each.reason}
+            onChange={() => {
+              setReason(each.reason);
+            }}
+          />
+        ))}
+      </ChoiceGroup>
+      <Button
+        variant="primary"
+        size="small"
+        className={styles.primary}
+        type="submit"
+        disabled={sending || visits === null || reason === ""}
+      >
+        {sending ? creditCopy.saving : creditCopy.save}
+      </Button>
+      {adjusting.step === "done" && (
+        <p className={styles.done} role="status">
+          {creditCopy.saved(adjusting.visits)}
+        </p>
       )}
-    </section>
+      {adjusting.step === "failed" && (
+        <Refusal className={styles.error} said={creditRefusal(adjusting.code, credits?.visits ?? 0)} />
+      )}
+    </form>
   );
 }
 
@@ -348,7 +366,7 @@ export function Payments({
   return (
     <div className={styles.visits}>
       <MoneyRecords payments={payments} links={links} invoices={invoices} />
-      <CreditForm clientId={clientId} credits={credits} onCredits={onCredits} />
+      <CreditSection clientId={clientId} credits={credits} onCredits={onCredits} />
     </div>
   );
 }

@@ -1,0 +1,180 @@
+/*
+ * A side navigation on the ink (./SideNav.tsx), as wide as the app says (--nav-width, ./base.css). At a desk it folds
+ * to its icons; short of a desk it waits off the page's left edge until opened over it.
+ */
+
+@layer base, ui;
+
+@layer ui {
+  .nav {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    width: var(--nav-width);
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-right: var(--hairline) solid var(--nav-rule);
+    background: var(--nav-ground);
+    color: var(--nav-text);
+  }
+
+  .head {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--sp-12);
+    min-height: var(--header-h);
+    padding: 0 var(--sp-20);
+    border-bottom: var(--hairline) solid var(--nav-rule);
+    color: var(--nav-text-current);
+  }
+
+  .items {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin: 0;
+    padding: var(--sp-12) var(--sp-8);
+    list-style: none;
+  }
+
+  .foot {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-8);
+    border-top: var(--hairline) solid var(--nav-rule);
+  }
+
+  .item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-12);
+    width: 100%;
+    min-height: var(--sp-36);
+    padding: 0 var(--sp-12);
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-14);
+    color: var(--nav-text);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .item[aria-current="page"] {
+    background: var(--nav-current);
+    color: var(--nav-text-current);
+    box-shadow: inset var(--rule-strong) 0 0 0 var(--nav-mark);
+  }
+
+  .item:focus-visible {
+    outline: var(--focus-width) solid var(--nav-text-current);
+    outline-offset: var(--focus-inset);
+  }
+
+  .icon {
+    flex-shrink: 0;
+  }
+
+  .folds {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* How many wait: in the label's tone, or filled where some are overdue. */
+  .count,
+  .urgent {
+    min-width: var(--sp-20);
+    padding: 0 var(--sp-4);
+    font-size: var(--fs-13);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--lh-145);
+    text-align: center;
+  }
+
+  .count {
+    color: var(--nav-label);
+  }
+
+  .urgent {
+    background: var(--error-on-ink);
+    color: var(--ink);
+  }
+
+  @media (hover: hover) {
+    .item:hover {
+      color: var(--nav-text-current);
+    }
+  }
+
+  /* Folded, at a desk: the icons alone, and a dot where something is overdue. */
+  @media (min-width: 1024px) {
+    .nav[data-folded="true"] {
+      width: var(--nav-folded-width);
+    }
+
+    .nav[data-folded="true"] .head {
+      justify-content: center;
+      padding: 0;
+    }
+
+    .nav[data-folded="true"] .item {
+      justify-content: center;
+      padding: 0;
+    }
+
+    .nav[data-folded="true"] .name,
+    .nav[data-folded="true"] .folds,
+    .nav[data-folded="true"] .count {
+      position: absolute;
+      width: var(--sr-only-size);
+      height: var(--sr-only-size);
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .nav[data-folded="true"] .urgent {
+      position: absolute;
+      top: var(--sp-4);
+      right: var(--sp-8);
+      min-width: 0;
+      width: var(--sp-8);
+      height: var(--sp-8);
+      padding: 0;
+      font-size: 0;
+    }
+  }
+
+  /* Short of a desk: off the page's left edge until opened over it. */
+  @media (max-width: 1023px) {
+    .nav {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: var(--z-header);
+      transform: translateX(-100%);
+      visibility: hidden;
+      transition:
+        transform var(--duration-travel) var(--ease-house),
+        visibility var(--duration-travel) var(--ease-house) allow-discrete;
+    }
+
+    .nav[data-open="true"] {
+      transform: none;
+      visibility: visible;
+    }
+  }
+}

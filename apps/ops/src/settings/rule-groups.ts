@@ -1,9 +1,10 @@
-// Settings › Rules, by subject: each group is a section of its own, with its own anchor and its own Save.
+// Settings' policies, by subject: each group is a panel of its own on the Settings page that names it (../route.ts,
+// SETTINGS_PAGES), with its own anchor and its own change bar.
 
 import type { OpsSettingName } from "@rules/policy/ops-settings.ts";
 
 interface RuleGroup {
-  /** The section's anchor: "/settings#moves". */
+  /** The panel's anchor: "/settings/moves#moves". */
   readonly id: string;
   /** Its rules, in the order the section shows them. */
   readonly rules: readonly OpsSettingName[];
@@ -66,9 +67,6 @@ export function sectionsOf<Rule extends { readonly name: string }>(rules: readon
   sections.push({ id: OTHER_GROUP, rules: rules.filter((rule) => !grouped.has(rule.name)) });
   return sections.filter((section) => section.rules.length > 0);
 }
-
-/** A link to one rule, which Settings › Rules scrolls to once it has loaded. */
-export const rulePath = (name: OpsSettingName): string => `/settings#${name}`;
 
 /** The rules that charge a late fee, which is a price set in Prices, not a rule. */
 export const CHARGES_A_LATE_FEE: readonly string[] = ["late_change_charge", "no_show_charge"];

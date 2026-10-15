@@ -183,7 +183,7 @@ async function settleFree(
 }
 
 /**
- * A fitted one visit while online payment is off (docs/decisions/0208-paid-at-the-visit-by-upi.md): no link, but its
+ * A fitted one visit while online payment is off (docs/decisions/0209-paid-at-the-visit-by-upi.md): no link, but its
  * booking owes the product's price, less the visit's discount code, by UPI at the visit, as a paid visit ops booked
  * then does; ops record it once it is in the account. A code that leaves nothing to pay settles it, as with a link.
  */

@@ -42,9 +42,6 @@ export const counts = {
   waiting: "Waiting for a manager’s sign-off.",
   done: "Done.",
   classesTitle: "Count classes",
-  classesNote: "Hair systems are counted weekly and the rest quarterly, unless set here.",
-  classColumns: ["Item", "Class"],
-  classLabel: (name: string) => `Count class of ${name}`,
   /** "Default · Weekly" */
   ownClass: (countClass: string) => `Default · ${countClass}`,
   classSaid: "Class saved.",

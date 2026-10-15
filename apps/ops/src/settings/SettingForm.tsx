@@ -7,8 +7,9 @@ import { Fieldset, RefusedBoxes } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import type { Answer } from "@maneman/web-kit/api";
 import { boxError, type Failure } from "@maneman/web-kit/refusal";
-import { useState, type ReactNode } from "react";
+import { useContext, useState, type ReactNode } from "react";
 import { CheckPanel } from "../components/CheckPanel.tsx";
+import { InDrawer } from "../components/FormDrawer.tsx";
 import form from "../components/forms.module.css";
 import { review } from "../content/common.ts";
 import { FormRefusal } from "../components/Refusal.tsx";
@@ -146,8 +147,13 @@ export function SettingForm(props: {
   readonly boxes?: readonly string[];
 }) {
   const { steps } = props;
+  const inDrawer = useContext(InDrawer);
   return (
-    <Fieldset className={form.group} legend={props.title} legendLook="title">
+    <Fieldset
+      className={inDrawer ? form.inDrawer : form.group}
+      legend={props.title}
+      legendLook={inDrawer ? "hidden" : "title"}
+    >
       {props.above}
       <RefusedBoxes.Provider value={(box) => boxError(props.errors, steps.failed, box)}>
         {props.children}

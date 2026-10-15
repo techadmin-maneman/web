@@ -5,9 +5,9 @@
 
 .check {
   padding: var(--sp-16) var(--sp-20);
-  border: var(--hairline) solid var(--paper-line);
-  border-left: var(--rule-strong) solid var(--ink);
-  background: var(--paper-light);
+  border: var(--hairline) solid var(--ui-line);
+  border-left: var(--rule-strong) solid var(--ui-strong);
+  background: var(--ui-raised);
 }
 
 .title {

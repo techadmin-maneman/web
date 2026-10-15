@@ -28,14 +28,14 @@
   }
 
   .onPaper {
-    border: var(--hairline) solid var(--paper-control);
-    color: var(--text-muted);
+    border: var(--hairline) solid var(--ui-line-control);
+    color: var(--ui-text-muted);
   }
 
   .onPaper[aria-pressed="true"],
   .onPaper[aria-checked="true"] {
-    border-color: var(--ink);
-    color: var(--text);
+    border-color: var(--ui-strong);
+    color: var(--ui-text);
   }
 
   @media (hover: hover) {
@@ -44,7 +44,7 @@
     }
 
     .onPaper:hover {
-      color: var(--text);
+      color: var(--ui-text);
     }
   }
 }

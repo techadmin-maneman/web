@@ -25,7 +25,7 @@ import { monthCsv, statementCsv } from "./partner-commission-csv.ts";
 import { PayoutForm } from "./PayoutForm.tsx";
 import form from "../components/forms.module.css";
 import styles from "./partner-commission.module.css";
-import { ActionRow } from "../components/ActionRow.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 import { partnerCommissionApi } from "./partner-commission-api.ts";
 
 const copy = partnerCommission;
@@ -123,7 +123,7 @@ function StatementActingRow({
     onAct(null);
   };
   return (
-    <ActionRow className={styles.acting}>
+    <FormDrawer title={statement.name} onClose={cancel}>
       {acting.kind === "pay" ? (
         <PayoutForm
           statement={statement}
@@ -149,7 +149,7 @@ function StatementActingRow({
           />
         </div>
       )}
-    </ActionRow>
+    </FormDrawer>
   );
 }
 

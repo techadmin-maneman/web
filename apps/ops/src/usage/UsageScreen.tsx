@@ -59,7 +59,6 @@ function Technicians({ usage }: { usage: Usage }) {
   const opened = usage.technicians.find((technician) => technician.technician_id === open);
   return (
     <Panel titleId="usage-technicians" title={copy.technicians}>
-      <Note>{copy.techniciansNote}</Note>
       {usage.technicians.length === 0 ? (
         <Note>{copy.noTechnicians}</Note>
       ) : (
@@ -106,7 +105,6 @@ function Technicians({ usage }: { usage: Usage }) {
 function Places({ usage }: { usage: Usage }) {
   return (
     <Panel titleId="usage-places" title={copy.places}>
-      <Note>{copy.placesNote}</Note>
       {usage.places.length === 0 ? (
         <Note>{copy.noPlaces}</Note>
       ) : (
