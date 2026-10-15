@@ -8,7 +8,8 @@
 // pieces, payments and photographs, and two clients whose next visits can be
 // moved and cancelled (e2e/booking-area.ts, e2e/app/fitted.ts,
 // e2e/app/changing.ts). Beside them, a technician to sign in as on the
-// technician app, with jobs today and tomorrow at a client's address.
+// technician app, with jobs today and tomorrow at a client's address, and a
+// supplier, an order and two chats for the console (./seed-stock-and-care.ts).
 //
 // Every name and number is made up. Run it with mm-api idle or stopped: wrangler
 // writing to the local database while mm-api does meets it on SQLite's lock.
@@ -26,6 +27,7 @@ import { LOCAL_HAIR_SYSTEMS } from "../../src/config/local-hair-systems.ts";
 import { LOCAL_LOGIN_CODE, PORTS } from "../lib/local-stack.ts";
 import { sqlRow } from "../lib/sql-literal.ts";
 import { EVERY_VISIT_UPKEEP } from "../lib/every-visit-upkeep.ts";
+import { stockAndCare } from "./seed-stock-and-care.ts";
 
 /** The technician a developer signs in as, and their client: fixed, so a second run finds the same ones. */
 const TECHNICIAN = { id: "local-technician", fsmId: "local-resource-1", mobile: "9810099001", name: "Sandeep Yadav" };
@@ -146,6 +148,7 @@ async function seedTechnician(): Promise<void> {
     ...EVERY_VISIT_UPKEEP,
     ...consumables(now),
     ...products(now),
+    ...stockAndCare(new Date(now)),
   ];
   const folder = await mkdtemp(join(tmpdir(), "mm-seed-"));
   try {
@@ -158,7 +161,7 @@ async function seedTechnician(): Promise<void> {
 
 const spaced = (mobile: string) => `${mobile.slice(0, 5)} ${mobile.slice(5)}`;
 
-await seedBookingArea();
+seedBookingArea();
 await seedFitted();
 await seedChanging();
 await seedTechnician();
@@ -174,4 +177,7 @@ Seeded. Every login code is ${LOCAL_LOGIN_CODE}.
   technician app (http://tech.localhost:${String(PORTS.tech)})
     ${spaced(TECHNICIAN.mobile)}   ${TECHNICIAN.name}: two jobs today and one tomorrow at ${CLIENT.name}'s
   the four products a consultation and fit in one visit offers, as first-fit services, with made-up prices
+  ops console (http://ops.localhost:${String(PORTS.ops)})
+    a supplier and an order drafted to it on Purchasing; two chats in Messages, one past its reply-by time on Tasks
+    npm run message:local -- <mobile> <text> writes another
 `);

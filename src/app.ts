@@ -47,6 +47,7 @@ import { registerClientPayments } from "./routes/client/payments.ts";
 import { registerClientVisits } from "./routes/client/visits.ts";
 import { registerClientPhotos } from "./routes/client/photos.ts";
 import { registerDevVisits } from "./routes/dev-visits.ts";
+import { registerDevMessages } from "./routes/dev-messages.ts";
 import { registerEvolutionHook } from "./routes/hooks/evolution.ts";
 import { registerMsg91Hook } from "./routes/hooks/msg91.ts";
 import { registerRazorpayHook } from "./routes/hooks/razorpay.ts";
@@ -181,7 +182,10 @@ export function createApp(
   app.openAPIRegistry.register("ErrorResponse", ErrorResponseSchema);
   for (const register of SURFACE_ROUTES[surface]) register(app);
   // Locally only, and only when switched on: what stands in for a technician's phone on a laptop (src/routes/dev-visits.ts).
-  if (surface === "public" && config.environment === "local" && config.settings.devRoutes) registerDevVisits(app);
+  if (surface === "public" && config.environment === "local" && config.settings.devRoutes) {
+    registerDevVisits(app);
+    registerDevMessages(app);
+  }
 
   app.notFound((c) => refuse(c, "not_found"));
   app.onError((error, c) => {

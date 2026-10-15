@@ -16,14 +16,14 @@ checkout: a database, an org, Cloudflare or GitHub. A script that reads a secret
 
 ## dev/
 
-| Script               | What it does                                                              | Run as                                     | Writes             |
-| -------------------- | ------------------------------------------------------------------------- | ------------------------------------------ | ------------------ |
-| `dev-all.ts`         | the whole local stack: mm-api, the site and the three apps on their hosts | `npm run dev:all`                          | the local database |
-| `dev-api.ts`         | mm-api alone, as `dev:all` starts it                                      | `npm run dev`                              | the local database |
-| `ensure-dev-vars.ts` | creates `.dev.vars` from `.dev.vars.example` when it is missing           | `dev:all`, and CI                          | `.dev.vars`        |
-| `local.ts`           | the cron, Razorpay's webhook, and a technician's close, locally           | `npm run tick`, `pay:local`, `close:local` | the local database |
-| `seed-local.ts`      | enough of the story to click through                                      | `npm run db:seed:local`                    | the local database |
-| `serve-*.ts`         | serves a built site or app as its Worker does, `/api/*` passed to mm-api  | `dev:all`, and the browser tests           | no                 |
+| Script               | What it does                                                                                             | Run as                                                      | Writes             |
+| -------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------ |
+| `dev-all.ts`         | the whole local stack: mm-api, the site and the three apps on their hosts                                | `npm run dev:all`                                           | the local database |
+| `dev-api.ts`         | mm-api alone, as `dev:all` starts it                                                                     | `npm run dev`                                               | the local database |
+| `ensure-dev-vars.ts` | creates `.dev.vars` from `.dev.vars.example` when it is missing                                          | `dev:all`, and CI                                           | `.dev.vars`        |
+| `local.ts`           | the cron, Razorpay's webhook, a technician's close and a client's WhatsApp message, locally              | `npm run tick`, `pay:local`, `close:local`, `message:local` | the local database |
+| `seed-local.ts`      | enough of the story to click through, with a supplier, an order and two chats (`seed-stock-and-care.ts`) | `npm run db:seed:local`                                     | the local database |
+| `serve-*.ts`         | serves a built site or app as its Worker does, `/api/*` passed to mm-api                                 | `dev:all`, and the browser tests                            | no                 |
 
 ## build/
 

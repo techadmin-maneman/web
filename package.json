@@ -22,6 +22,7 @@
     "tick": "node scripts/dev/local.ts tick",
     "pay:local": "node scripts/dev/local.ts pay",
     "close:local": "node scripts/dev/local.ts close",
+    "message:local": "node scripts/dev/local.ts message",
     "typecheck": "tsc -b tsconfig.check.json && npm run check:site",
     "lint": "node scripts/ci/lint.ts",
     "format": "prettier --write .",

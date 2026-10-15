@@ -5,6 +5,7 @@
 //   npm run tick                              every cron job at once; staging runs a few each minute
 //   npm run pay:local [-- <hold-id>]          Razorpay's signed webhook for the last booking held, as if paid by UPI
 //   npm run close:local [-- <visit-id> [--partial]]   a technician closing a visit; alone, lists them
+//   npm run message:local -- <mobile> <text>  a number writing to our WhatsApp number, for the Care inbox
 
 import { createHmac, randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
@@ -115,15 +116,32 @@ async function close(visitId: string | undefined, outcome: "done" | "partial"): 
   console.log(`closed ${visitId}, ${outcome}: npm run tick runs what follows a close, such as the invoice`);
 }
 
-const [command, argument, flag] = process.argv.slice(2);
+/** A number writing to our WhatsApp number, filed as the bridge's hook files it; Care's reply goes to the stub. */
+async function message(mobile: string | undefined, words: readonly string[]): Promise<void> {
+  const digits = (mobile ?? "").replace(/\D/g, "").slice(-10);
+  const text = words.join(" ").trim();
+  if (digits.length !== 10 || text === "") throw new Error("npm run message:local -- <mobile> <text>");
+  const answer = await fetch(`${API_ORIGIN}/api/dev/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mobile: `+91${digits}`, text }),
+  });
+  if (!answer.ok) throw new Error(`the message answered ${String(answer.status)}: is npm run dev:all running?`);
+  console.log(`+91${digits} wrote "${text}": it is in the console's Messages`);
+}
+
+const [command, argument, flag, ...rest] = process.argv.slice(2);
 const COMMANDS: Readonly<Record<string, () => Promise<void>>> = {
   tick,
   pay: () => pay(argument),
   close: () => close(argument, flag === "--partial" ? "partial" : "done"),
+  message: () => message(argument, [flag ?? "", ...rest]),
 };
 const run = command === undefined ? undefined : COMMANDS[command];
 if (run === undefined) {
-  console.error("usage: node scripts/dev/local.ts <tick | pay [hold-id] | close [visit-id] [--partial]>");
+  console.error(
+    "usage: node scripts/dev/local.ts <tick | pay [hold-id] | close [visit-id] [--partial] | message <mobile> <text>>",
+  );
   process.exit(2);
 }
 try {

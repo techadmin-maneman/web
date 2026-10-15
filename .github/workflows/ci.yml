@@ -413,6 +413,9 @@ jobs:
         run: |
           node node_modules/wrangler/bin/wrangler.js d1 migrations list DB --local --env="" | tee migrations.txt
           grep -q "No migrations to apply" migrations.txt
+      # What a developer's laptop is seeded with, on today's schema, so a change that breaks the seed fails here.
+      - name: The local seed, on these migrations
+        run: npm run db:seed:local
       - name: Build the site (local)
         run: npm run build:site -- --env local
 

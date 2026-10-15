@@ -5,7 +5,7 @@
 // Every value here is made up. The pincodes are the design's own.
 
 import type { Page } from "@playwright/test";
-import { wrangler } from "./app/fitted.ts";
+import { d1Execute } from "../scripts/lib/d1.ts";
 import { technicianFor } from "./technicians.ts";
 
 export const SERVED = { pincode: "122018", area: "Gurgaon South City II", city: "Gurgaon" };
@@ -21,7 +21,7 @@ export async function fillAddress(page: Page): Promise<void> {
   await page.getByLabel("Sector or area").fill("Sector 65");
 }
 
-export async function seedBookingArea(): Promise<void> {
+export function seedBookingArea(): void {
   const now = new Date().toISOString();
   const sql = [
     // Both areas named, as ops name every area before launch: until then the page names the city instead.
@@ -31,6 +31,6 @@ export async function seedBookingArea(): Promise<void> {
        VALUES ('${UNSERVED.pincode}', '${UNSERVED.area}', '${UNSERVED.city}', 0, NULL, 'ops@localhost');`,
     // A technician for the slot to be claimed against; the booking holds one of their half-slots.
     ...technicianFor("booking", now),
-  ].join("\n");
-  await wrangler("d1", "execute", "DB", "--local", "--command", sql);
+  ];
+  d1Execute("local", sql);
 }
