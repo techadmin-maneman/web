@@ -150,7 +150,7 @@ describe("a stockroom's stock", () => {
     expect(await heldAt(id)).toMatchObject({ quantity: 15, low: true });
     expect(job.deps.alerts).toEqual([
       expect.stringContaining(
-        "of Tape strips for Gurgaon stockroom on the Stock page: 15 strip left, at or below its level of 20.",
+        "of Tape strips for Gurgaon stockroom on the Stock page: 15 strips left, at or below its level of 20.",
       ),
     ]);
 

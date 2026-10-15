@@ -263,7 +263,7 @@ describe("low stock", () => {
     expect(await held("tape_strips", IMRAN)).toEqual({ quantity: 4, low: true });
     expect(job.deps.alerts).toEqual([
       expect.stringContaining(
-        `of Tape strips for technician ${IMRAN}'s kit on the Stock page: 4 strip left, at or below its level of 5.`,
+        `of Tape strips for technician ${IMRAN}'s kit on the Stock page: 4 strips left, at or below its level of 5.`,
       ),
     ]);
     expect(job.deps.alerts[0]).not.toContain("Imran");
@@ -271,7 +271,7 @@ describe("low stock", () => {
     const listed = await (await request(job.ops, "/api/alerts")).json<{ alerts: { message: string }[] }>();
     expect(listed.alerts.map((alert) => alert.message)).toEqual([
       expect.stringContaining(
-        "of Tape strips for Imran Qureshi's kit on the Stock page: 4 strip left, at or below its level of 5.",
+        "of Tape strips for Imran Qureshi's kit on the Stock page: 4 strips left, at or below its level of 5.",
       ),
     ]);
 
@@ -313,7 +313,7 @@ describe("low stock", () => {
     });
     expect(job.deps.alerts).toEqual([
       expect.stringContaining(
-        "of Tape strips for National warehouse on the Stock page: 8 strip left, at or below its level of 20.",
+        "of Tape strips for National warehouse on the Stock page: 8 strips left, at or below its level of 20.",
       ),
     ]);
   });
