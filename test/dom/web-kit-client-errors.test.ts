@@ -6,6 +6,7 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorBoundary } from "../../packages/ui/ErrorBoundary.tsx";
+import { contractChecked } from "./contract-fetch.ts";
 
 interface Posted {
   readonly url: string;
@@ -17,10 +18,13 @@ let posted: Posted[];
 
 beforeEach(() => {
   posted = [];
-  vi.stubGlobal("fetch", (url: string, init: RequestInit) => {
-    posted.push({ url, init, report: JSON.parse(init.body as string) as Record<string, unknown> });
-    return Promise.resolve(new Response(null, { status: 204 }));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("client", (url: string, init: RequestInit) => {
+      posted.push({ url, init, report: JSON.parse(init.body as string) as Record<string, unknown> });
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }),
+  );
   // Each test gets the module afresh, and with it a page that has sent nothing yet.
   vi.resetModules();
 });

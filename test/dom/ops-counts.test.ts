@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CountsScreen } from "../../apps/ops/src/counts/CountsScreen.tsx";
 import { counts as copy } from "../../apps/ops/src/content/counts.ts";
 
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 const KIT = {
   id: "ct-1",
   place_id: "kit-1",
@@ -36,15 +38,13 @@ let answers: unknown[];
 const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
 async function settle() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 async function press(element: Element | null | undefined) {
   await act(async () => {
     (element as HTMLElement | null | undefined)?.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await answered();
   });
   await settle();
 }
@@ -66,24 +66,38 @@ const labelled = (label: string) => {
 beforeEach(() => {
   posted = [];
   answers = [];
-  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-    const address = new URL(url, "https://ops.maneman.test");
-    if (init?.method === "POST") {
-      posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
-      return Promise.resolve(Response.json(answers.shift() ?? BOOK));
-    }
-    const answer: Record<string, unknown> = {
-      "/api/count-tasks": BOOK,
-      "/api/count-tasks/ct-1": { task: KIT, items: [{ ...PIECE, state: "to_count" }] },
-      "/api/count-tasks/ct-2": { task: ROOM, items: [{ ...PIECE, state: "sign_off" }] },
-      "/api/count-tasks/ct-2/differences": {
-        lines: [{ ...PIECE, held: 2, counted: 1, recounted: 1, missing_labels: [], unknown_labels: [] }],
-      },
-    };
-    const body = answer[address.pathname];
-    if (body !== undefined) return Promise.resolve(Response.json(body));
-    return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init?: RequestInit) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      if (init?.method === "POST") {
+        posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
+        return Promise.resolve(Response.json(answers.shift() ?? BOOK));
+      }
+      const answer: Record<string, unknown> = {
+        "/api/count-tasks": BOOK,
+        "/api/count-tasks/ct-1": { task: KIT, items: [{ ...PIECE, state: "to_count" }] },
+        "/api/count-tasks/ct-2": { task: ROOM, items: [{ ...PIECE, state: "sign_off" }] },
+        "/api/count-tasks/ct-2/differences": {
+          lines: [
+            {
+              consumable_code: PIECE.consumable_code,
+              name: PIECE.name,
+              unit: "piece",
+              held: 2,
+              counted: 1,
+              recounted: 1,
+              missing_labels: [],
+              unknown_labels: [],
+            },
+          ],
+        },
+      };
+      const body = answer[address.pathname];
+      if (body !== undefined) return Promise.resolve(Response.json(body));
+      return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);

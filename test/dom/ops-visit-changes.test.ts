@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CancelVisit } from "../../apps/ops/src/clients/CancelVisit.tsx";
 import { CloseVisit } from "../../apps/ops/src/clients/CloseVisit.tsx";
 
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 const VISIT = "22222222-2222-4222-8222-222222222222";
 
 /** A service visit paid Rs. 2,000 by UPI, inside the 24 hours: free to the client gives it all back. */
@@ -46,16 +48,19 @@ beforeEach(() => {
   sent = [];
   answers = [];
   closedWith = [];
-  vi.stubGlobal("fetch", (url: string, init: { body: string }) => {
-    const call = {
-      path: new URL(url, "https://ops.maneman.test").pathname,
-      body: JSON.parse(init.body) as Sent["body"],
-    };
-    sent.push(call);
-    const reply = answers.shift();
-    if (reply === undefined) throw new Error(`Nothing answers ${call.path}`);
-    return Promise.resolve(reply(call));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init: { body: string }) => {
+      const call = {
+        path: new URL(url, "https://ops.maneman.test").pathname,
+        body: JSON.parse(init.body) as Sent["body"],
+      };
+      sent.push(call);
+      const reply = answers.shift();
+      if (reply === undefined) throw new Error(`Nothing answers ${call.path}`);
+      return Promise.resolve(reply(call));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -71,12 +76,10 @@ afterEach(() => {
 });
 
 const refusal = (status: number, code: string, fields: string[] = []) =>
-  Response.json({ error: { code, message: code, request_id: "request-1", fields } }, { status });
+  Response.json({ error: { code, request_id: "request-1", fields } }, { status });
 
 async function settle() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 async function show(panel: React.ReactElement) {

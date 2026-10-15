@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Address } from "../../apps/app/src/api.ts";
 import { AddressForm } from "../../apps/app/src/profile/AddressForm.tsx";
 import { GivenAddressForm } from "../../apps/ops/src/clients/GivenAddress.tsx";
+import { contractChecked } from "./contract-fetch.ts";
 
 const SUNRISE_GREENS = { place_id: "place-1", primary: "Sunrise Greens", secondary: "Sector 65, Gurugram" };
 /** Longer than the search's own pause after typing. */
@@ -21,11 +22,16 @@ beforeEach(() => {
   Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
   vi.useFakeTimers();
   searched = [];
-  vi.stubGlobal("fetch", (_url: string, init: { body: string }) => {
-    const sent = JSON.parse(init.body) as { q: string };
-    searched.push(sent.q);
-    return Promise.resolve(Response.json({ suggestions: [SUNRISE_GREENS] }));
-  });
+  // The app's form asks /api/address/suggestions, the console's /api/clients/{id}/address/suggestions.
+  const surfaceOf = (path: string) => (path.startsWith("/api/clients/") ? "ops" : "client");
+  vi.stubGlobal(
+    "fetch",
+    contractChecked(surfaceOf, (_url: string, init: { body: string }) => {
+      const sent = JSON.parse(init.body) as { q: string };
+      searched.push(sent.q);
+      return Promise.resolve(Response.json({ suggestions: [SUNRISE_GREENS], attribution: "Google Maps" }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);

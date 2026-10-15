@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StockMatch } from "../../apps/ops/src/clients/StockMatch.tsx";
 import { stockMatch as copy } from "../../apps/ops/src/content/stock-match.ts";
 
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 const CLIENT = "11111111-1111-4111-8111-111111111111";
 const NONE = { kind: "no_profile", missing: [], code: null, name: null, city: null, held: [], in_transit: 0 };
 
@@ -17,7 +19,10 @@ let answer: unknown;
 let shown = 0;
 
 beforeEach(() => {
-  vi.stubGlobal("fetch", () => Promise.resolve(Response.json(answer)));
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", () => Promise.resolve(Response.json(answer))),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -37,9 +42,7 @@ async function show(match: unknown) {
     shown += 1;
     root.render(createElement(StockMatch, { clientId: `${CLIENT}-${String(shown)}` }));
   });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 describe("the client’s match to stock", () => {

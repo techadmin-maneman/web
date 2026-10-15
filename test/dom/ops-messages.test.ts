@@ -11,6 +11,9 @@ import { CareSettingsScreen, MessagesScreen } from "../../apps/ops/src/care/Mess
 import { care as copy } from "../../apps/ops/src/content/care.ts";
 import { shortDate } from "../../packages/web-kit/dates.ts";
 
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
+import { RECORD } from "../../e2e/ops/fixtures/clients.ts";
 const ARJUN: Conversation = {
   id: "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e",
   person: { id: "11111111-1111-4111-8111-111111111111", name: "Arjun Mehta" },
@@ -60,121 +63,128 @@ let posted: { path: string; body: unknown }[];
 beforeEach(() => {
   asked = [];
   posted = [];
-  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-    const address = new URL(url, "https://ops.maneman.test");
-    asked.push(`${address.pathname}${address.search}`);
-    if (init?.method === "POST" && typeof init.body === "string") {
-      posted.push({ path: address.pathname, body: JSON.parse(init.body) as unknown });
-      if (address.pathname.endsWith("/city-matter")) return Promise.resolve(Response.json({ city: "Gurgaon" }));
-      if (address.pathname === "/api/clients/find") {
-        const found = {
-          id: ARJUN.person?.id,
-          name: "Arjun Mehta",
-          mobile: "+919810000001",
-          state: "fitted",
-          next_visit: null,
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init?: RequestInit) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      asked.push(`${address.pathname}${address.search}`);
+      if (init?.method === "POST" && typeof init.body === "string") {
+        posted.push({ path: address.pathname, body: JSON.parse(init.body) as unknown });
+        if (address.pathname.endsWith("/city-matter")) return Promise.resolve(Response.json({ city: "Gurgaon" }));
+        if (address.pathname === "/api/clients/find") {
+          const found = {
+            id: ARJUN.person?.id,
+            name: "Arjun Mehta",
+            mobile: "+919810000001",
+            state: "fitted",
+            next_visit: null,
+            under_way: false,
+          };
+          return Promise.resolve(Response.json({ clients: [found], more: false }));
+        }
+        if (address.pathname === "/api/quick-replies") return Promise.resolve(Response.json(LATE));
+        if (address.pathname.endsWith("/remedies"))
+          return Promise.resolve(Response.json({ id: AWAITING.id, state: "given" }));
+        if (address.pathname.startsWith("/api/remedies/")) return Promise.resolve(Response.json({ ok: true }));
+        if (address.pathname.endsWith("/link") || address.pathname.endsWith("/save")) {
+          return Promise.resolve(Response.json({ person_id: ARJUN.person?.id }));
+        }
+        if (address.pathname.endsWith("/care-person")) {
+          return Promise.resolve(Response.json({ care_person: "ravi@maneman.test" }));
+        }
+        if (address.pathname === "/api/care-team/leave") return Promise.resolve(Response.json({ id: LEAVE.id }));
+        if (address.pathname === "/api/care-team/move-all") return Promise.resolve(Response.json({ moved: 12 }));
+        if (address.pathname.startsWith("/api/care-team/")) return Promise.resolve(Response.json({ ok: true }));
+        const replied = {
+          kind: "out",
+          at: "2026-09-21T05:20:00.000Z",
+          author: "care@maneman.test",
+          text: "Yes, 6 pm works.",
+          delivery: "sent",
         };
-        return Promise.resolve(Response.json({ clients: [found], more: false }));
+        return Promise.resolve(Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied] }));
       }
-      if (address.pathname === "/api/quick-replies") return Promise.resolve(Response.json(LATE));
-      if (address.pathname.endsWith("/remedies"))
-        return Promise.resolve(Response.json({ id: AWAITING.id, state: "given" }));
-      if (address.pathname.startsWith("/api/remedies/")) return Promise.resolve(Response.json({ ok: true }));
-      if (address.pathname.endsWith("/link") || address.pathname.endsWith("/save")) {
-        return Promise.resolve(Response.json({ person_id: ARJUN.person?.id }));
+      if (address.pathname === "/api/care-team") {
+        return Promise.resolve(
+          Response.json({
+            team: [
+              {
+                email: "ravi@maneman.test",
+                on_team: true,
+                name: null,
+                clients: 3,
+                weekly_off: [0],
+                leave: [],
+                off_today: false,
+                covered_by: null,
+                on_shift_since: "2026-09-21T03:30:00.000Z",
+                day_off: false,
+                open_chats: 1,
+              },
+              {
+                email: "asha@maneman.test",
+                on_team: true,
+                name: "Asha",
+                clients: 12,
+                weekly_off: [],
+                leave: [LEAVE],
+                off_today: true,
+                covered_by: "ravi@maneman.test",
+                on_shift_since: null,
+                day_off: false,
+                open_chats: 2,
+              },
+            ],
+            me: "ravi@maneman.test",
+          }),
+        );
       }
-      if (address.pathname.endsWith("/care-person")) {
-        return Promise.resolve(Response.json({ care_person: "ravi@maneman.test" }));
+      if (address.pathname === "/api/conversations") {
+        const view = address.searchParams.get("view");
+        return Promise.resolve(
+          Response.json({ conversations: view === "closed" ? [] : [ARJUN, STRANGER], next_cursor: null }),
+        );
       }
-      const replied = {
-        kind: "out",
-        at: "2026-09-21T05:20:00.000Z",
-        author: "care@maneman.test",
-        text: "Yes, 6 pm works.",
-        delivery: "sent",
-      };
-      return Promise.resolve(Response.json({ conversation: { ...ARJUN, state: "waiting" }, items: [replied] }));
-    }
-    if (address.pathname === "/api/care-team") {
-      return Promise.resolve(
-        Response.json({
-          team: [
-            {
-              email: "ravi@maneman.test",
-              on_team: true,
-              name: null,
-              clients: 3,
-              weekly_off: [0],
-              leave: [],
-              off_today: false,
-              covered_by: null,
-              on_shift_since: "2026-09-21T03:30:00.000Z",
-              day_off: false,
-              open_chats: 1,
-            },
-            {
-              email: "asha@maneman.test",
-              on_team: true,
-              name: "Asha",
-              clients: 12,
-              weekly_off: [],
-              leave: [LEAVE],
-              off_today: true,
-              covered_by: "ravi@maneman.test",
-              on_shift_since: null,
-              day_off: false,
-              open_chats: 2,
-            },
-          ],
-          me: "ravi@maneman.test",
-        }),
-      );
-    }
-    if (address.pathname === "/api/conversations") {
-      const view = address.searchParams.get("view");
-      return Promise.resolve(Response.json({ conversations: view === "closed" ? [] : [ARJUN, STRANGER] }));
-    }
-    if (address.pathname === "/api/quick-replies") return Promise.resolve(Response.json({ replies: [LATE] }));
-    if (address.pathname === "/api/remedies") return Promise.resolve(Response.json({ remedies: [AWAITING] }));
-    if (address.pathname === `/api/clients/${ARJUN.person?.id ?? ""}`) {
-      const visit = {
-        id: "v1",
-        date: "2026-09-24",
-        starts_at: "2026-09-24T06:30:00.000Z",
-        type: "service",
-        service: null,
-      };
-      return Promise.resolve(
-        Response.json({
-          visits: { upcoming: [visit], past: [] },
-          credits: { visits: 2, earliest_expiry: null },
-          address: { city: "Gurgaon" },
-        }),
-      );
-    }
-    if (address.pathname === `/api/conversations/${STRANGER.id}`) {
-      return Promise.resolve(Response.json({ conversation: STRANGER, items: [] }));
-    }
-    if (address.pathname === `/api/conversations/${ARJUN.id}`) {
-      return Promise.resolve(
-        Response.json({
-          conversation: ARJUN,
-          items: [
-            {
-              kind: "auto",
-              at: "2026-09-20T04:00:01.000Z",
-              message: "visit_reminder",
-              state: "sent",
-              delivered_at: "2026-09-20T04:00:05.000Z",
-              read_at: null,
-            },
-            { kind: "in", at: ARJUN.last_message_at, author: "client", text: ARJUN.last_line },
-          ],
-        }),
-      );
-    }
-    return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
-  });
+      if (address.pathname === "/api/quick-replies") return Promise.resolve(Response.json({ replies: [LATE] }));
+      if (address.pathname === "/api/remedies") return Promise.resolve(Response.json({ remedies: [AWAITING] }));
+      if (address.pathname === `/api/clients/${ARJUN.person?.id ?? ""}`) {
+        const [booked] = RECORD.visits.upcoming;
+        const visit = { ...booked, date: "2026-09-24", starts_at: "2026-09-24T06:30:00.000Z" };
+        return Promise.resolve(
+          Response.json({
+            ...RECORD,
+            id: ARJUN.person?.id,
+            name: "Arjun Mehta",
+            mobile: ARJUN.mobile,
+            visits: { upcoming: [visit], past: [] },
+            credits: { visits: 2, earliest_expiry: null },
+          }),
+        );
+      }
+      if (address.pathname === `/api/conversations/${STRANGER.id}`) {
+        return Promise.resolve(Response.json({ conversation: STRANGER, items: [] }));
+      }
+      if (address.pathname === `/api/conversations/${ARJUN.id}`) {
+        return Promise.resolve(
+          Response.json({
+            conversation: ARJUN,
+            items: [
+              {
+                kind: "auto",
+                at: "2026-09-20T04:00:01.000Z",
+                message: "visit_reminder",
+                state: "sent",
+                delivered_at: "2026-09-20T04:00:05.000Z",
+                read_at: null,
+              },
+              { kind: "in", at: ARJUN.last_message_at, author: "client", text: ARJUN.last_line, delivery: null },
+            ],
+          }),
+        );
+      }
+      return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -188,10 +198,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const settle = () =>
-  act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+const settle = () => answered();
 
 async function show() {
   act(() => {
@@ -222,7 +229,7 @@ describe("the Messages page", () => {
     await show();
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(page.textContent).toContain(copy.thread.title("Arjun Mehta"));
     expect(page.textContent).toContain(copy.thread.auto("Visit reminder", [copy.thread.delivered]));
@@ -237,7 +244,7 @@ describe("the Messages page", () => {
         select.value = "closed";
         select.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(asked).toContain("/api/conversations?view=closed");
     expect(page.textContent).toContain(copy.none);
@@ -252,7 +259,7 @@ describe("the Messages page", () => {
         select.value = "mine";
         select.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(asked).toContain("/api/conversations?view=mine");
   });
@@ -261,7 +268,7 @@ describe("the Messages page", () => {
     await show();
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(page.textContent).toContain(`${copy.carePerson.label}: asha@maneman.test`);
     const choice = [...page.querySelectorAll("select")].find((each) =>
@@ -273,11 +280,11 @@ describe("the Messages page", () => {
         choice.value = "ravi@maneman.test";
         choice.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     await act(async () => {
       [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.carePerson.move)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(posted).toEqual([
       { path: "/api/clients/11111111-1111-4111-8111-111111111111/care-person", body: { email: "ravi@maneman.test" } },
@@ -290,7 +297,7 @@ describe("the Messages page", () => {
     await show();
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     const pick = [...page.querySelectorAll("select")].find((each) =>
       [...each.options].some((option) => option.value === LATE.id),
@@ -300,7 +307,7 @@ describe("the Messages page", () => {
         pick.value = LATE.id;
         pick.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     const box = [...page.querySelectorAll("textarea")].find((each) => each.maxLength === 4096);
     expect(box?.value).toBe("Hi Arjun, see you Thu 24 Sep, 12 pm.");
@@ -325,7 +332,7 @@ describe("the Messages page", () => {
     });
     await act(async () => {
       [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.quick.add)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(posted.at(-1)).toEqual({
       path: "/api/quick-replies",
@@ -337,12 +344,12 @@ describe("the Messages page", () => {
     await show();
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     const press = async (label: string) => {
       await act(async () => {
         [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await answered();
       });
     };
     await press(copy.remedy.open);
@@ -367,7 +374,7 @@ describe("the Messages page", () => {
     expect(panel.textContent).toContain(copy.remedy.states.awaiting);
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.remedy.approveLabel("Arjun Mehta")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(asked).toContain(`/api/remedies/${AWAITING.id}/approve`);
   });
@@ -376,7 +383,7 @@ describe("the Messages page", () => {
     await show();
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     const panel = page.querySelector(`[aria-label="${copy.panel.title}"]`);
     expect(panel?.textContent).toContain(copy.panel.visit("Thu 24 Sep, 12 pm", "Service visit"));
@@ -388,12 +395,12 @@ describe("the Messages page", () => {
     await show();
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     const press = async (label: string) => {
       await act(async () => {
         [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await answered();
       });
     };
     await press(copy.cityMatter.open);
@@ -417,7 +424,7 @@ describe("the Messages page", () => {
     const click = async (element: Element | null | undefined) => {
       await act(async () => {
         (element as HTMLElement | null | undefined)?.click();
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await answered();
       });
     };
     const type = (input: HTMLInputElement | undefined, value: string) => {
@@ -472,11 +479,11 @@ describe("the Messages page", () => {
       page
         .querySelector<HTMLButtonElement>(`button[aria-label="${copy.team.moveAllLabel("ravi@maneman.test")}"]`)
         ?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     await act(async () => {
       [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.move)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(posted.at(-1)).toEqual({
       path: "/api/care-team/move-all",
@@ -488,7 +495,7 @@ describe("the Messages page", () => {
     await showSettings();
     await act(async () => {
       [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.goOff)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(posted.at(-1)).toEqual({ path: "/api/care-team/shift", body: { on: false } });
   });
@@ -499,7 +506,7 @@ describe("the Messages page", () => {
       page
         .querySelector<HTMLButtonElement>(`button[aria-label="${copy.team.editNameLabel("ravi@maneman.test")}"]`)
         ?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     const box = page.querySelector<HTMLInputElement>('input[maxlength="40"]');
     act(() => {
@@ -510,7 +517,7 @@ describe("the Messages page", () => {
     });
     await act(async () => {
       [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.save)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     expect(posted.at(-1)).toEqual({ path: "/api/care-team/name", body: { email: "ravi@maneman.test", name: "Ravi" } });
     expect(page.textContent).toContain("Asha");
@@ -521,7 +528,7 @@ describe("the Messages page", () => {
     const click = async (element: Element | null | undefined) => {
       await act(async () => {
         (element as HTMLElement | null | undefined)?.click();
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await answered();
       });
     };
     const button = (label: string) => page.querySelector(`button[aria-label="${label}"]`);
@@ -560,7 +567,7 @@ describe("the Messages page", () => {
     await show();
     await act(async () => {
       page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await answered();
     });
     const box = page.querySelector("textarea");
     act(() => {
@@ -572,7 +579,7 @@ describe("the Messages page", () => {
     const press = async (label: string) => {
       await act(async () => {
         [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await answered();
       });
     };
     await press(copy.compose.send);

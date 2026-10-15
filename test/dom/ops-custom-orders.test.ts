@@ -9,6 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CustomOrders } from "../../apps/ops/src/clients/CustomOrders.tsx";
 import { customOrders as copy } from "../../apps/ops/src/content/custom-orders.ts";
 
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 const CLIENT = "11111111-1111-4111-8111-111111111111";
 
 const ORDER = {
@@ -38,16 +40,16 @@ const ORDER = {
 
 const BOOK = { orders: [ORDER], suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD" }] };
 
+/** Who is signed in: unknown, so every action is shown and the API refuses what it must. */
+const UNKNOWN_CALLER = () => Response.json({ error: { code: "internal_error", request_id: "r" } }, { status: 500 });
+
 let page: HTMLDivElement;
 let root: Root;
 let posted: { path: string; body: unknown }[];
 
 const button = (text: string) => [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
 
-const settle = () =>
-  act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+const settle = () => answered();
 
 function type(label: string, value: string) {
   const field = [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === label);
@@ -62,22 +64,26 @@ function type(label: string, value: string) {
 async function press(text: string) {
   await act(async () => {
     button(text)?.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await answered();
   });
 }
 
 beforeEach(() => {
   posted = [];
-  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-    const address = new URL(url, "https://ops.maneman.test");
-    if (init?.method === "POST") {
-      posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
-      const status = address.pathname.endsWith("/cancel") ? "cancelled" : "awaiting_payment";
-      const sent = { ...ORDER, status, short_url: "https://rzp.io/i/abc", link_sent_at: "2026-09-21T05:20:00.000Z" };
-      return Promise.resolve(Response.json({ ...BOOK, orders: [sent] }));
-    }
-    return Promise.resolve(Response.json(BOOK));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init?: RequestInit) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      if (init?.method === "POST") {
+        posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
+        const status = address.pathname.endsWith("/cancel") ? "cancelled" : "awaiting_payment";
+        const sent = { ...ORDER, status, short_url: "https://rzp.io/i/abc", link_sent_at: "2026-09-21T05:20:00.000Z" };
+        return Promise.resolve(Response.json({ ...BOOK, orders: [sent] }));
+      }
+      if (address.pathname === "/api/whoami") return Promise.resolve(UNKNOWN_CALLER());
+      return Promise.resolve(Response.json(BOOK));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -146,19 +152,23 @@ describe("the client’s custom orders", () => {
   });
 
   it("refunds a paid order in full for the reason chosen, and says when that reason does not hold", async () => {
-    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-      const address = new URL(url, "https://ops.maneman.test");
-      const paid = { ...ORDER, status: "ordered", paid_at: "2026-09-21T06:00:00.000Z", po_number: 3 };
-      if (init?.method !== "POST") return Promise.resolve(Response.json({ ...BOOK, orders: [paid] }));
-      posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
-      if (posted.length === 1) {
-        return Promise.resolve(
-          Response.json({ error: { code: "refund_not_due", request_id: "r-1" } }, { status: 409 }),
-        );
-      }
-      const refunded = { ...paid, status: "refunded", refund_reason: "late" };
-      return Promise.resolve(Response.json({ ...BOOK, orders: [refunded] }));
-    });
+    vi.stubGlobal(
+      "fetch",
+      contractChecked("ops", (url: string, init?: RequestInit) => {
+        const address = new URL(url, "https://ops.maneman.test");
+        const paid = { ...ORDER, status: "ordered", paid_at: "2026-09-21T06:00:00.000Z", po_number: 3 };
+        if (address.pathname === "/api/whoami") return Promise.resolve(UNKNOWN_CALLER());
+        if (init?.method !== "POST") return Promise.resolve(Response.json({ ...BOOK, orders: [paid] }));
+        posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
+        if (posted.length === 1) {
+          return Promise.resolve(
+            Response.json({ error: { code: "refund_not_due", request_id: "r-1" } }, { status: 409 }),
+          );
+        }
+        const refunded = { ...paid, status: "refunded", refund_reason: "late" };
+        return Promise.resolve(Response.json({ ...BOOK, orders: [refunded] }));
+      }),
+    );
     await show();
     await press(copy.refund);
     expect(page.textContent).toContain(copy.errors.refund_not_due);

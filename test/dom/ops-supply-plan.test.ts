@@ -8,11 +8,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SupplyPlanScreen } from "../../apps/ops/src/supply-plan/SupplyPlanScreen.tsx";
 import { supplyPlan as copy } from "../../apps/ops/src/content/supply-plan.ts";
 
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 const LOAN = {
   id: "pl-1",
   kind: "transfer",
   consumable_code: "solvent",
   name: "Solvent",
+  unit: "ml",
   city: "Gurgaon",
   from: "Delhi stockroom",
   to: "Gurgaon stockroom",
@@ -47,7 +50,7 @@ const button = (text: string) => [...page.querySelectorAll("button")].find((each
 async function press(element: HTMLButtonElement | undefined) {
   await act(async () => {
     element?.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await answered();
   });
 }
 
@@ -62,15 +65,18 @@ function type(input: HTMLInputElement | null, value: string) {
 beforeEach(() => {
   posted = [];
   next = { lines: [LOAN, ORDER] };
-  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
-    const address = new URL(url, "https://ops.maneman.test");
-    if (init?.method === "POST") {
-      posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
-      return Promise.resolve(Response.json(next));
-    }
-    if (address.pathname === "/api/supply-plan") return Promise.resolve(Response.json({ lines: [LOAN, ORDER] }));
-    return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string, init?: RequestInit) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      if (init?.method === "POST") {
+        posted.push({ path: address.pathname, body: typeof init.body === "string" ? JSON.parse(init.body) : null });
+        return Promise.resolve(Response.json(next));
+      }
+      if (address.pathname === "/api/supply-plan") return Promise.resolve(Response.json({ lines: [LOAN, ORDER] }));
+      return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -88,9 +94,7 @@ async function show() {
   act(() => {
     root.render(createElement(SupplyPlanScreen));
   });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await answered();
 }
 
 describe("the supply plan", () => {

@@ -9,6 +9,8 @@ import { Letterhead } from "../../apps/ops/src/purchasing/Letterhead.tsx";
 import type { Orders } from "../../apps/ops/src/purchasing/types.ts";
 import { purchasing } from "../../apps/ops/src/content/purchasing.ts";
 
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 const copy = purchasing.letterhead;
 
 const BOOK = {
@@ -44,10 +46,13 @@ beforeEach(() => {
   posted = [];
   saved = [];
   answer = () => Response.json({ ...BOOK, letterhead: SET });
-  vi.stubGlobal("fetch", (_url: string, init?: RequestInit) => {
-    posted.push(typeof init?.body === "string" ? JSON.parse(init.body) : null);
-    return Promise.resolve(answer());
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (_url: string, init?: RequestInit) => {
+      posted.push(typeof init?.body === "string" ? JSON.parse(init.body) : null);
+      return Promise.resolve(answer());
+    }),
+  );
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -74,7 +79,7 @@ afterEach(() => {
 async function save() {
   await act(async () => {
     button(copy.save)?.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await answered();
   });
 }
 

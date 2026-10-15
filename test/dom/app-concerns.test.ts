@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Profile } from "../../apps/app/src/api.ts";
 import { DataCard } from "../../apps/app/src/profile/DataCard.tsx";
 
+import { answered } from "./render-hook.ts";
+import { contractChecked } from "./contract-fetch.ts";
 const ANSWERED: Profile["grievances"][number] = {
   id: "6f1c2a4e-8b3d-4f5a-9c7e-1d2b3a4c5e6f",
   text: "Who sees my photographs?",
@@ -79,9 +81,7 @@ async function sendConcern(text: string) {
     button("Send").click();
   });
   for (let turn = 0; turn < 20 && page.querySelector('[role="alert"], [role="status"]') === null; turn += 1) {
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    await answered();
   }
 }
 
@@ -107,7 +107,10 @@ describe("the concerns a client raised", () => {
   });
 
   it("says a sent concern is received, and asks for the list again", async () => {
-    vi.stubGlobal("fetch", () => Promise.resolve(Response.json({ id: OPEN.id, state: "open" }, { status: 201 })));
+    vi.stubGlobal(
+      "fetch",
+      contractChecked("client", () => Promise.resolve(Response.json({ id: OPEN.id, state: "open" }, { status: 201 }))),
+    );
     draw([]);
     await sendConcern("Please stop the launch messages.");
     expect(page.querySelector('[role="status"]')?.textContent).toBe(
@@ -117,8 +120,11 @@ describe("the concerns a client raised", () => {
   });
 
   it("says when the day’s concerns are spent, and keeps the words", async () => {
-    vi.stubGlobal("fetch", () =>
-      Promise.resolve(Response.json({ error: { code: "rate_limited", request_id: "r-1" } }, { status: 429 })),
+    vi.stubGlobal(
+      "fetch",
+      contractChecked("client", () =>
+        Promise.resolve(Response.json({ error: { code: "rate_limited", request_id: "r-1" } }, { status: 429 })),
+      ),
     );
     draw([]);
     await sendConcern("One more thing.");

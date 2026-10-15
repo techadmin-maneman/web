@@ -6,6 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ActivityScreen } from "../../apps/ops/src/activity/ActivityScreen.tsx";
 import { activity } from "../../apps/ops/src/content/activity.ts";
+import { contractChecked } from "./contract-fetch.ts";
 
 let page: HTMLDivElement;
 let root: Root;
@@ -29,14 +30,17 @@ function choose(select: HTMLSelectElement | null, value: string) {
 
 beforeEach(() => {
   reads = [];
-  vi.stubGlobal("fetch", (url: string) => {
-    const address = new URL(url, "https://ops.maneman.test");
-    if (address.pathname === "/api/activity") {
-      reads.push(address.search);
-      return Promise.resolve(Response.json({ entries: [], next_cursor: null }));
-    }
-    return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
-  });
+  vi.stubGlobal(
+    "fetch",
+    contractChecked("ops", (url: string) => {
+      const address = new URL(url, "https://ops.maneman.test");
+      if (address.pathname === "/api/activity") {
+        reads.push(address.search);
+        return Promise.resolve(Response.json({ entries: [], next_cursor: null }));
+      }
+      return Promise.resolve(Response.json({ error: { code: "unavailable", request_id: "r-1" } }, { status: 503 }));
+    }),
+  );
   window.history.replaceState(null, "", "/activity?person=p-1");
   page = document.createElement("div");
   document.body.append(page);
