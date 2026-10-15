@@ -3,7 +3,7 @@
 // and it is ready for review. One that touches money or personal data, or updates dependencies, also waits for the
 // reviewed label, which a push takes off (.github/workflows/review-label.yml), and any pull request can be held by hand
 // with the hold label. Who may give the label is CONTRIBUTING.md's: today whoever lands the pull request, after reading
-// it, by the owner's choice; nothing here checks who.
+// it; nothing here checks who.
 //
 // It imports nothing from node_modules: its job installs nothing.
 
