@@ -47,7 +47,6 @@ const EMPTY: Draft = {
   place_id: null,
 };
 
-/** A part left blank is none, as the API holds it. */
 /** The draft with a building typed over any picked: words, and no pin. */
 const withTyped = (was: Draft, building: string): Draft => ({
   ...was,
@@ -63,6 +62,7 @@ const withPicked = (was: Draft, chosen: AddressSuggestion): Draft => ({
   locality: areaOfSuggestion(chosen.primary, chosen.secondary) ?? was.locality,
 });
 
+/** A part left blank is none, as the API holds it. */
 const orNull = (part: string | null | undefined): string | null => (given(part) ? part.trim() : null);
 
 /** The building search: the shared one (@maneman/ui/AddressSearch), in the console's words and on its form's look. */

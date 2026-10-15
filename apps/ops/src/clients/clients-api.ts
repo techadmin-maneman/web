@@ -52,8 +52,10 @@ export const clientsApi = {
   /** Visits added or taken away by hand, with the reason; the answer is the balance after it. */
   adjustCredits: (id: string, adjustment: CreditAdjustment) =>
     client.post("/api/clients/{id}/credits", { path: { id }, body: adjustment }),
-  /** Buildings matching what ops have typed of the address a client is giving them, in one billed session. */
-  /** Buildings matching what ops typed, kept near the pincode's city where the form has one. */
+  /**
+   * Buildings matching what ops have typed of the address a client is giving them, in one billed session, kept near
+   * the pincode's city where the form has one.
+   */
   addressSuggestions: (id: string, q: string, session: string, pincode: string) =>
     client.post("/api/clients/{id}/address/suggestions", {
       path: { id },
