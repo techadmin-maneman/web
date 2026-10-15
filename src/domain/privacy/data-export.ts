@@ -5,6 +5,7 @@
 // src/policy/personal-data.ts; the readable copy (src/domain/privacy/my-data-page.ts) labels each column and writes its time
 // in India.
 
+import { archivedMessages } from "../care/chat-archive.ts";
 import { exportedProfiles } from "../clients/hair-profiles.ts";
 import { allViews } from "../field/photo-views.ts";
 
@@ -104,7 +105,11 @@ type ExportQuery = keyof typeof EXPORT_QUERIES;
 /** The parts that are one row, or nothing; every other query's part is a list. */
 const ONE_ROW: readonly ExportQuery[] = ["person", "referral"];
 
-export async function readPersonData(db: D1Database, personId: string): Promise<Record<string, unknown>> {
+export async function readPersonData(
+  db: D1Database,
+  archive: R2Bucket,
+  personId: string,
+): Promise<Record<string, unknown>> {
   const queries = Object.keys(EXPORT_QUERIES) as ExportQuery[];
   const answers = await db.batch(queries.map((query) => db.prepare(EXPORT_QUERIES[query]).bind(personId)));
   const parts: Record<string, unknown> = {};
@@ -114,7 +119,48 @@ export async function readPersonData(db: D1Database, personId: string): Promise<
   });
   return {
     ...parts,
+    chats: await withArchivedChats(db, archive, personId, (parts.chats ?? []) as ChatLine[]),
     photo_views: await allViews(db, personId),
     hair_profile: await exportedProfiles(db, personId),
   };
+}
+
+/** A line of their chats, as the export gives it. */
+interface ChatLine {
+  readonly thread: string;
+  readonly last_message_at: string;
+  readonly closed_at: string | null;
+  readonly close_reason: string | null;
+  readonly direction: string | null;
+  readonly text: string | null;
+  readonly sent_at: string | null;
+}
+
+/** Their chats with the messages of each thread quiet a year beside them, from its archive file; never staff's notes. */
+async function withArchivedChats(
+  db: D1Database,
+  archive: R2Bucket,
+  personId: string,
+  lines: readonly ChatLine[],
+): Promise<ChatLine[]> {
+  const { results: threads } = await db
+    .prepare(
+      `SELECT created_at AS thread, last_message_at, closed_at, close_reason, archive_key FROM conversations
+       WHERE person_id = ?1 AND archive_key IS NOT NULL`,
+    )
+    .bind(personId)
+    .all<Omit<ChatLine, "direction" | "text" | "sent_at"> & { archive_key: string }>();
+  if (threads.length === 0) return [...lines];
+  const archived: ChatLine[] = [];
+  for (const { archive_key: key, ...thread } of threads) {
+    for (const message of await archivedMessages(archive, key)) {
+      if (message.direction === "note") continue;
+      archived.push({ ...thread, direction: message.direction, text: message.text, sent_at: message.sent_at });
+    }
+  }
+  // A thread with nothing left in D1 has its line of no message, which the archive's messages stand in for.
+  const said = lines.filter(
+    (line) => line.sent_at !== null || !threads.some((thread) => thread.thread === line.thread),
+  );
+  return [...archived, ...said].sort((one, other) => (one.sent_at ?? "").localeCompare(other.sent_at ?? ""));
 }

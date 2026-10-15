@@ -52,7 +52,7 @@ import { enqueueBatch, notifyMessage } from "../domain/platform/enqueue.ts";
 import { analyticsJob } from "./analytics.ts";
 import { razorpayCatchUpJob } from "./razorpay-catch-up.ts";
 import { referralPass } from "./referrals.ts";
-import { retentionJob } from "./retention.ts";
+import { chatArchiveJob, retentionJob } from "./retention.ts";
 import { taskSpansJob } from "./task-spans.ts";
 import {
   checkYoucamUnits,
@@ -430,6 +430,9 @@ export const CRON_JOBS: readonly CronJob[] = [
   // What the retention periods let go of: dormant people who never became clients, old check-in coordinates, and the
   // waitlist of areas launched a year ago (src/policy/retention.ts).
   { name: "retention", needs: "nothing", every: 60, at: 53, run: retentionJob },
+  // Clients' Care threads closed and quiet a year, their messages moved to the backups bucket
+  // (docs/decisions/0207-closed-chats-archived.md).
+  { name: "chat_archive", needs: "nothing", every: 60, at: 37, run: chatArchiveJob },
   // What an erasure could not delete from R2 at the time (docs/decisions/0066-erasure-all-or-nothing.md).
   { name: "erased_files", needs: "nothing", every: 60, at: 59, run: erasedFilesJob },
   { name: "requeue_crm_erasures", needs: "nothing", every: 60, at: 59, run: requeueCrmErasures },

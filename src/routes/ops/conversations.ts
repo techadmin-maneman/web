@@ -195,7 +195,7 @@ function registerAnswers(app: App): void {
     });
     if (replied === "not_found" || replied === "erased") return refuse(c, "not_found");
     if (replied === "unavailable") return refuse(c, "unavailable");
-    const thread = await conversationThread(c.env.DB, id, await inboxContext(c));
+    const thread = await conversationThread(c.env.DB, c.env.BACKUPS, id, await inboxContext(c));
     return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
   });
 
@@ -204,7 +204,7 @@ function registerAnswers(app: App): void {
     if ((await addNote(c.env.DB, { ...changeOf(c, id), text: c.req.valid("json").text })) === "not_found") {
       return refuse(c, "not_found");
     }
-    const thread = await conversationThread(c.env.DB, id, await inboxContext(c));
+    const thread = await conversationThread(c.env.DB, c.env.BACKUPS, id, await inboxContext(c));
     return thread === null ? refuse(c, "not_found") : c.json(thread, 200);
   });
 
@@ -212,7 +212,7 @@ function registerAnswers(app: App): void {
     const { id } = c.req.valid("param");
     const closed = await closeConversation(c.env.DB, { ...changeOf(c, id), reason: c.req.valid("json").reason });
     if (closed === "not_found") return refuse(c, "not_found");
-    const thread = await conversationThread(c.env.DB, id, await inboxContext(c));
+    const thread = await conversationThread(c.env.DB, c.env.BACKUPS, id, await inboxContext(c));
     if (thread === null) return refuse(c, "not_found");
     // The client's CRM lead gets when they were last in touch, and what about.
     if (thread.conversation.person !== null) await queueCrmContact(c, thread.conversation.person.id);
@@ -233,7 +233,7 @@ export function registerOpsConversations(app: App): void {
   });
 
   app.openapi(threadRoute, async (c) => {
-    const thread = await conversationThread(c.env.DB, c.req.valid("param").id, await inboxContext(c));
+    const thread = await conversationThread(c.env.DB, c.env.BACKUPS, c.req.valid("param").id, await inboxContext(c));
     if (thread === null) return refuse(c, "not_found");
     return c.json(thread, 200);
   });

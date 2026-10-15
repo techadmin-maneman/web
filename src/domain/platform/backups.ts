@@ -172,12 +172,15 @@ export async function writeBackup(input: {
   return { prefix, tables: written.length, rows: written.reduce((sum, table) => sum + table.rows, 0) };
 }
 
+/** A backup's folder, named for its date; the archive's, archive/, is none (src/domain/care/chat-archive.ts). */
+const BACKUP_FOLDER = /^\d{4}-\d{2}-\d{2}\//;
+
 /** Deletes every backup older than thirteen weeks; the folders sort as their dates do. */
 export async function deleteOldBackups(bucket: R2Bucket, now: Date): Promise<number> {
   const oldest = addDays(indiaDate(now), -7 * KEEP_WEEKS);
   const folders = (await bucket.list({ delimiter: "/" })).delimitedPrefixes;
   let deleted = 0;
-  for (const folder of folders.filter((each) => each.slice(0, 10) < oldest)) {
+  for (const folder of folders.filter((each) => BACKUP_FOLDER.test(each) && each.slice(0, 10) < oldest)) {
     const objects = (await bucket.list({ prefix: folder })).objects.map((object) => object.key);
     if (objects.length > 0) await bucket.delete(objects);
     deleted += 1;

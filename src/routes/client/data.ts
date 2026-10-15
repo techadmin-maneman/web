@@ -57,7 +57,7 @@ async function auditedExport(c: Context<AppEnv>): Promise<{ held: Record<string,
     },
     now,
   );
-  return { held: await readPersonData(c.env.DB, id), now };
+  return { held: await readPersonData(c.env.DB, c.env.BACKUPS, id), now };
 }
 
 const grievanceRoute = clientRoute({

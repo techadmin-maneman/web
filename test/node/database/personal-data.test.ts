@@ -15,6 +15,8 @@ import { asD1, migratedDatabase } from "../d1-over-sqlite.ts";
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const NOW = new Date("2026-10-04T06:30:00.000Z");
 const PERSON_COLUMNS = ["person_id", "subject_id", "referred_person_id"];
+/** No thread of the person's is archived, so the export reads no file. */
+const NO_ARCHIVE = {} as R2Bucket;
 
 function columnsOf(db: DatabaseSync, table: string): string[] {
   const columns = db.prepare(`PRAGMA table_info("${table}")`).all() as { name: string }[];
@@ -46,7 +48,7 @@ async function columnsExported(): Promise<Set<string>> {
       if (column.table !== null) given.add(`${column.table}.${String(column.column)}`);
     }
   };
-  await readPersonData(asD1(db, heard), PERSON);
+  await readPersonData(asD1(db, heard), NO_ARCHIVE, PERSON);
   return given;
 }
 
@@ -62,7 +64,14 @@ async function erasureTouches(): Promise<{ deleted: Set<string>; updated: Set<st
     return constants.SQLITE_OK;
   });
   const noFiles = {} as R2Bucket;
-  const env = { DB: asD1(db), UPLOADS: noFiles, RESULTS: noFiles, CLIENT_PHOTOS: noFiles, REFERRAL_CARDS: noFiles };
+  const env = {
+    DB: asD1(db),
+    UPLOADS: noFiles,
+    RESULTS: noFiles,
+    CLIENT_PHOTOS: noFiles,
+    REFERRAL_CARDS: noFiles,
+    BACKUPS: noFiles,
+  };
   await erasePerson({ env, personId: PERSON, now: NOW, log: createLogger() });
   return { deleted, updated };
 }
@@ -158,7 +167,7 @@ describe("the readable copy's labels", () => {
       now: NOW,
     });
 
-    const held = (await readPersonData(d1, PERSON)) as {
+    const held = (await readPersonData(d1, NO_ARCHIVE, PERSON)) as {
       hair_profile: Record<string, unknown>[];
       photo_views: Record<string, unknown>[];
     };
