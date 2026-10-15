@@ -15,15 +15,17 @@
 import { writeFileSync } from "node:fs";
 import sharp from "sharp";
 import { token } from "../../packages/web-kit/pwa.ts";
-import {
-  CARD_HEIGHT,
-  CARD_WIDTH,
-  HALF_WIDTH,
-  lockupPlaces,
-  RULE_WIDTH,
-  type Place,
-} from "../../apps/app/src/refer/card-layout.ts";
+import { runnerImport } from "vite";
+import type { Place } from "../../apps/app/src/refer/card-layout.ts";
 import { MARK, WORDMARK, WORDMARK_SMALL, type Drawing } from "../../packages/brand/marks.ts";
+import { RULES_ALIAS } from "./rules-alias.ts";
+
+// The app's own layout, through Vite as the app loads it, so its "@rules/…" resolves.
+const { module: layout } = await runnerImport<typeof import("../../apps/app/src/refer/card-layout.ts")>(
+  "./apps/app/src/refer/card-layout.ts",
+  { configFile: false, resolve: { alias: RULES_ALIAS }, logLevel: "error" },
+);
+const { CARD_HEIGHT, CARD_WIDTH, HALF_WIDTH, lockupPlaces, RULE_WIDTH } = layout;
 
 const OUTPUTS = ["site/public/images/invite-house.jpg", "apps/app/src/refer/invite-house.jpg"];
 const OVERLAY_MODULE = "src/config/card-overlay.ts";

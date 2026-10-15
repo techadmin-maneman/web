@@ -2,7 +2,7 @@
 // ./book-errors.e2e.ts.
 
 import type { Page, Request } from "@playwright/test";
-import { fillAddress } from "./booking-area.ts";
+import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
 import { expect, fakeTurnstile, mockNumberCode, visit } from "./support.ts";

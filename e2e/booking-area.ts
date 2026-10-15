@@ -4,23 +4,11 @@
 //
 // Every value here is made up. The pincodes are the design's own.
 
-import type { Page } from "@playwright/test";
 import { d1Execute } from "../scripts/lib/d1.ts";
 import { technicianFor } from "./technicians.ts";
-import { referral } from "../site/src/content/referral.ts";
 
 export const SERVED = { pincode: "122018", area: "Gurgaon South City II", city: "Gurgaon" };
 export const UNSERVED = { pincode: "400050", area: "Bandra", city: "Mumbai" };
-
-/**
- * The consultation's address as a visitor types it (docs/decisions/0081-the-site-takes-the-address.md): the flat,
- * the building and the area. The city is already the pincode's, and the pincode the one checked.
- */
-export async function fillAddress(page: Page): Promise<void> {
-  await page.getByLabel(referral.address.labels.flat).fill("Flat 402");
-  await page.getByLabel(referral.address.labels.line1).fill("Palm Grove Society");
-  await page.getByLabel(referral.address.labels.locality).fill("Sector 65");
-}
 
 export function seedBookingArea(): void {
   const now = new Date().toISOString();

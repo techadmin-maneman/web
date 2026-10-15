@@ -22,7 +22,7 @@ import { windowSpan } from "../../src/config/scheduling.ts";
 import { continueToPayment, TAKEN, windowsAskedAgain } from "./picking.ts";
 import { toPayment, toWindows, holdAs } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
-import { PAY_SERVICE } from "../prices.ts";
+import { PAY_SERVICE } from "./booking-fixtures.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.

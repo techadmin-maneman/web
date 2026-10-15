@@ -27,7 +27,7 @@ import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import sharp from "sharp";
 import { indiaDate } from "../../src/lib/india-time.ts";
-import { randomMobile } from "../support.ts";
+import { randomMobile } from "../numbers.ts";
 import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";
 import { EVERY_VISIT_UPKEEP } from "../../scripts/lib/every-visit-upkeep.ts";

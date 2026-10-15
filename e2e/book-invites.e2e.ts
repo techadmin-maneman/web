@@ -2,7 +2,7 @@
 // (docs/decisions/0089-an-invite-is-not-lost.md), against a mocked API (./book-fixtures.ts).
 
 import { axeViolations } from "./a11y.ts";
-import { fillAddress } from "./booking-area.ts";
+import { fillAddress } from "./address-form.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
 import { analyticsEvents, expect, expectNoPersonalData, test, visit } from "./support.ts";
