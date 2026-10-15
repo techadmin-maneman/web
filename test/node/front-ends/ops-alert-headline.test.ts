@@ -11,7 +11,9 @@ describe("an alert's headline", () => {
       ),
     ).toBe("Leave invoice INV-000091 as a draft in Books.");
     expect(
-      headlineOf("Books refused refund 616588bd-1111-4111-8111-111111111111 (Razorpay rfnd_TnFaWt08eJm3cD), saying no."),
+      headlineOf(
+        "Books refused refund 616588bd-1111-4111-8111-111111111111 (Razorpay rfnd_TnFaWt08eJm3cD), saying no.",
+      ),
     ).toBe("Books refused refund, saying no.");
     expect(headlineOf("Razorpay 400 BAD_REQUEST_ERROR: amount exceeds maximum amount allowed..")).toBe(
       "Razorpay 400 BAD_REQUEST_ERROR: amount exceeds maximum amount allowed.",
