@@ -16,6 +16,7 @@ import {
   NO_HAIR_PROFILE,
   PIECES,
   RECORD,
+  TASKS,
   TASKS_READ_ON,
   type OpsReply,
 } from "./fixtures.ts";
@@ -107,34 +108,28 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
   expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/visits`);
 });
 
-// Search lived on Clients alone, Back lost the results, and a result named no state or visit.
-test("finds a client from another page’s header, keeps the words out of the URL, and keeps the results across Back", async ({
-  page,
-}) => {
+// Search lived on Clients alone, and a search's words went into the URL.
+test("finds a client from any page through Search, and keeps the words out of the URL", async ({ page }) => {
   const asked: string[] = [];
   page.on("request", (request) => {
     if (request.url().includes("/clients/find")) asked.push((request.postDataJSON() as { text: string }).text);
   });
   await answer(page, {
+    "GET /api/tasks": json(TASKS),
     [FIND]: json({ clients: [FOUND], more: false }),
     [READ_RECORD]: json(RECORD),
     [READ_PIECES]: json(PIECES),
     [READ_HAIR_PROFILE]: json(NO_HAIR_PROFILE),
   });
-  await page.goto(`/clients/${CLIENT.id}/visits`);
-  await page.getByRole("searchbox", { name: opsCopy.shell.find.label }).fill("98100 0441");
-  await page.getByRole("button", { name: opsCopy.shell.find.submit }).click();
+  await page.goto("/tasks");
+  await page.keyboard.press("Control+k");
+  const palette = page.getByRole("dialog", { name: opsCopy.shell.palette.title });
+  await palette.getByLabel(opsCopy.shell.palette.label).fill("98100 0441");
+  await palette.getByRole("link", { name: opsCopy.shell.palette.client(FOUND.name, FOUND.mobile) }).click();
 
-  const found = page.getByRole("region", { name: opsCopy.clients.find.found });
-  await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${STANDING}${MOBILE}`]);
-  expect(new URL(page.url()).pathname).toBe("/clients");
-  expect(new URL(page.url()).search).toBe("");
-  await expect(page.getByLabel(opsCopy.shell.find.placeholder)).toHaveValue("98100 0441");
-
-  await found.getByRole("link", NAME).click();
   await expect(page.getByRole("heading", NAME)).toBeVisible();
-  await page.goBack();
-  await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${STANDING}${MOBILE}`]);
+  expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/visits`);
+  expect(new URL(page.url()).search).toBe("");
   expect(asked).toEqual(["98100 0441"]);
 });
 
@@ -161,6 +156,7 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
   await expect(recent.getByRole("link", NAME)).toHaveAttribute("href", `/clients/${CLIENT.id}/visits`);
 
   await page.route("**/cdn-cgi/access/logout", (route) => route.fulfill({ contentType: "text/html", body: "" }));
+  await page.getByRole("button", { name: opsCopy.shell.account.label }).click();
   await page.getByRole("link", { name: opsCopy.shell.account.signOut }).click();
   await page.waitForURL("**/cdn-cgi/access/logout");
   expect(await page.evaluate(() => sessionStorage.getItem("ops.recent-clients"))).toBeNull();

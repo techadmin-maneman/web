@@ -38,6 +38,16 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }
 
+/** Opens the form from the page's head and fills in an entry: Rs. 12,000 of organic social in Bengaluru. */
+async function fillEntry(page: Page) {
+  await page.getByRole("button", { name: copy.addOne }).click();
+  const form = page.getByRole("dialog", { name: copy.addOne });
+  await form.getByLabel(copy.city).selectOption("Bengaluru");
+  await form.getByLabel(copy.channel).selectOption("organic_social");
+  await form.getByRole("textbox", { name: copy.amount }).fill("12000");
+  return form;
+}
+
 test("adds a month’s offline spend for a city, in whole rupees", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
@@ -48,10 +58,8 @@ test("adds a month’s offline spend for a city, in whole rupees", async ({ page
   });
   await expect(page.getByRole("cell", { name: "Rs. 25,000", exact: true })).toBeVisible();
 
-  await page.getByLabel(copy.city).selectOption("Bengaluru");
-  await page.getByLabel(copy.channel).selectOption("organic_social");
-  await page.getByRole("textbox", { name: copy.amount }).fill("12000");
-  await page.getByRole("button", { name: copy.add }).click();
+  const form = await fillEntry(page);
+  await form.getByRole("button", { name: copy.add }).click();
 
   await expect
     .poll(() => sent)
@@ -67,12 +75,6 @@ test("takes an entry off the figures", async ({ page }) => {
 
 const ADDED = { ...FLYERS, id: "6d2e3f4a-5b6c-4d7e-8f9a-0b1c2d3e4f5a", month: "2026-09", note: null };
 
-async function fillEntry(page: Page) {
-  await page.getByLabel(copy.city).selectOption("Bengaluru");
-  await page.getByLabel(copy.channel).selectOption("organic_social");
-  await page.getByRole("textbox", { name: copy.amount }).fill("12000");
-}
-
 test("adds an entry once, however fast Add is pressed twice", async ({ page }) => {
   let sent = 0;
   await open(page, {
@@ -81,8 +83,8 @@ test("adds an entry once, however fast Add is pressed twice", async ({ page }) =
       return json(ADDED)(route);
     },
   });
-  await fillEntry(page);
-  await pressTwice(page.getByRole("button", { name: copy.add }));
+  const form = await fillEntry(page);
+  await pressTwice(form.getByRole("button", { name: copy.add }));
   await expect(page.getByRole("row")).toHaveCount(3);
   expect(sent).toBe(1);
 });
@@ -97,11 +99,11 @@ test("says an entry whose answer never came may have gone, and sends it again un
       return keys.length === 1 ? route.abort("timedout") : json(ADDED)(route);
     },
   });
-  await fillEntry(page);
-  await page.getByRole("button", { name: copy.add }).click();
-  await expect(page.getByText(UNCONFIRMED)).toBeVisible();
+  const form = await fillEntry(page);
+  await form.getByRole("button", { name: copy.add }).click();
+  await expect(form.getByText(UNCONFIRMED)).toBeVisible();
 
-  await page.getByRole("button", { name: copy.add }).click();
+  await form.getByRole("button", { name: copy.add }).click();
   await expect(page.getByRole("row")).toHaveCount(3);
   expect(keys).toHaveLength(2);
   expect(keys[1]).toBe(keys[0]);

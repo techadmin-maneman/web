@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0208. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0209. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -240,6 +240,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 - [0154](0154-targets-and-reporting-access.md) Targets and reporting access
 - [0189](0189-the-staff-list-on-by-default.md) The Staff list on by default
 - [0193](0193-the-rest-of-the-rules-in-the-console.md) The rest of the rules in the console
+- [0208](0208-the-console-redesigned.md) The console redesigned: work first, Settings in one place, and two themes
 
 ## Every decision, oldest first
 
@@ -351,7 +352,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
 | [0107](0107-referral-rewards-in-the-console.md) | What a referral earns, set in the console, each side apart | 2026-10-01 | accepted, on the owner's ruling of 1 October 2026 |  |
 | [0108](0108-discount-codes.md) | Discount codes | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
-| [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 | [0198](0198-cities-as-data.md) |
+| [0109](0109-console-departments-and-access.md) | The console by departments, and who may do what in it | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 | [0198](0198-cities-as-data.md), [0208](0208-the-console-redesigned.md) |
 | [0110](0110-field-work-without-fsm.md) | Field work without Zoho FSM | 2026-10-02 | accepted, on the owner's ruling of 2 October 2026 |  |
 | [0111](0111-a-technician-never-takes-two-visits-in-a-row.md) | A technician never takes two visits in a row | 2026-10-05 | accepted, on the owner's ruling of 5 October 2026 | [0118](0118-booking-never-dead-ends.md) |
 | [0112](0112-workers-paid.md) | Workers Paid | 2026-10-06 | accepted, on the owner's purchase of 6 October 2026 |  |
@@ -450,3 +451,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0205](0205-the-pipeline-as-it-runs.md) | The pipeline as it runs | 2026-10-15 | accepted |  |
 | [0206](0206-trusted-types-and-a-nonce-per-page.md) | Trusted Types enforced, and a nonce on every page | 2026-10-15 | accepted |  |
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
+| [0208](0208-the-console-redesigned.md) | The console redesigned: work first, Settings in one place, and two themes | 2026-10-15 | accepted |  |

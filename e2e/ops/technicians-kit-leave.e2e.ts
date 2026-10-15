@@ -1,6 +1,7 @@
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, fails, json, LEAVE_RECORDED, NO_LEAVE, STOCK, type OpsReply } from "./fixtures.ts";
+import { expectOneBoxALine } from "./one-box-a-line.ts";
 import {
   IMRAN,
   SANDEEP,
@@ -175,7 +176,7 @@ test("takes leave back only once asked, saying they can be booked on those days 
   await expect(main.getByText(opsCopy.technicians.leave.none)).toBeVisible();
 });
 
-test("meets WCAG 2.2 AA on the roster and the page, with a revoke, the leave form and its check open", async ({
+test("meets WCAG 2.2 AA, a box to a line, on the roster and the page, with a revoke, the leave form and its check open", async ({
   page,
 }) => {
   await open(page);
@@ -187,6 +188,7 @@ test("meets WCAG 2.2 AA on the roster and the page, with a revoke, the leave for
 
   await main.getByRole("link", { name: opsCopy.technicians.tabs.leave, exact: true }).click();
   await main.getByRole("button", { name: "Record leave for Imran Qureshi" }).click();
+  await expectOneBoxALine(page, "Record leave");
   expect(await axeViolations(page)).toEqual([]);
 
   await backToRoster(page);

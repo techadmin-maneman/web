@@ -5,6 +5,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, empty, json, type Answers, type OpsReply } from "./fixtures.ts";
+import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { cities as copy } from "../../apps/ops/src/content/cities.ts";
 import { review } from "../../apps/ops/src/content/common.ts";
 
@@ -49,7 +50,7 @@ const BOOK = {
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/cities": json(BOOK), ...extra });
-  await page.goto("/cities");
+  await page.goto("/settings/cities");
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }
 
@@ -64,10 +65,12 @@ test("lists each city with its state, zone and status, and meets WCAG 2.2 AA", a
   expect(await axeViolations(page)).toEqual([]);
 });
 
-test("adds a city once checked, and sends it as typed", async ({ page }) => {
+test("adds a city once checked, a box to a line, and sends it as typed", async ({ page }) => {
   const added = { ...MUMBAI, name: "Pune", sort: 70 };
   await open(page, { "POST /api/cities": json({ city: added }, 201) });
+  await page.getByRole("button", { name: copy.list.add, exact: true }).click();
   const form = page.getByRole("group", { name: copy.form.addTitle, exact: true });
+  await expectOneBoxALine(page, copy.form.addTitle);
   await form.getByLabel(copy.form.name).fill("Pune");
   await form.getByLabel(copy.form.stateCode).fill("mh");
   await form.getByLabel(copy.form.state, { exact: true }).fill("Maharashtra");
@@ -120,6 +123,7 @@ test("refuses a GSTIN another state has, in the form’s own words", async ({ pa
   await open(page, {
     "POST /api/gst-registrations": json({ error: { code: "taken", request_id: "test" } }, 409),
   });
+  await page.getByRole("button", { name: copy.registrations.add }).click();
   const form = page.getByRole("group", { name: copy.registrations.add });
   await form.getByLabel(copy.registrations.stateCode).fill("KA");
   await form.getByLabel(copy.registrations.gstin).fill("29AAACM1234A1Z3");

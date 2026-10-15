@@ -19,7 +19,7 @@ const ringDrawn = (page: Page) =>
 test("draws where the keyboard is on the navigation and the Tasks board, in the order they come", async ({ page }) => {
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/tasks": json(TASKS) });
-  await page.goto("/");
+  await page.goto("/tasks");
   await expect(page.getByRole("heading", { level: 1, name: tasks.title })).toBeVisible();
   let seen = 0;
   for (let press = 0; press < 30; press += 1) {
@@ -37,7 +37,7 @@ test("draws where the keyboard is on the navigation and the Tasks board, in the 
 // frame, so the navigation stays where it is.
 test("keeps the navigation in place while a long section scrolls", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 700 });
-  await open(page, "/settings");
+  await open(page, "/settings/booking");
   const scrollsPastTheWindow = () => page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight);
   expect(await scrollsPastTheWindow()).toBe(false);
   await page.getByRole("main").evaluate((main) => {
