@@ -31,16 +31,31 @@ export function usePath(): string {
 export function go(path: string): void {
   afterSheets(() => {
     if (window.location.pathname === path) return;
+    redirected = false;
     if (atSheetEntry()) window.history.replaceState(null, "", path);
     else window.history.pushState(null, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   });
 }
 
+/** Whether the path last changed by a redirect, which shows the page already open under its own address. */
+let redirected = false;
+
+/** Back and Forward open another page, as a link does. Node, where a test reads an app's routes, has no window. */
+if (typeof window !== "undefined") {
+  window.addEventListener("popstate", (event) => {
+    if (event.isTrusted) redirected = false;
+  });
+}
+
+/** Whether the path shown is one a redirect put in place of the one before, rather than another page opened. */
+export const wasRedirected = (): boolean => redirected;
+
 /** Puts `path` in place of the one shown, as a page that has moved does: no new entry in the history, and no reload. */
 export function redirect(path: string): void {
   afterSheets(() => {
     if (window.location.pathname === path) return;
+    redirected = true;
     window.history.replaceState(null, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   });

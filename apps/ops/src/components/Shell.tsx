@@ -7,7 +7,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { Button } from "@maneman/ui/Button";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Mark } from "@maneman/ui/Mark";
-import { Link, usePath } from "@maneman/ui/router";
+import { Link, usePath, wasRedirected } from "@maneman/ui/router";
 import { useLoad } from "@maneman/ui/useLoad";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { shell } from "../content.ts";
@@ -189,14 +189,14 @@ function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void })
 
 /**
  * Moves the focus to the heading when another page opens, so the keyboard starts at the new page and a screen reader
- * names it. The first page of a load leaves the focus where the browser put it, and a page that has put the focus
- * somewhere of its own keeps it there.
+ * names it. The first page of a load leaves the focus where the browser put it, as does a redirect, which shows the
+ * page already open under its own address, and a page that has put the focus somewhere of its own keeps it there.
  */
 function useFocusOnArrival(heading: RefObject<HTMLHeadingElement | null>, page: RefObject<HTMLElement | null>): void {
   const path = usePath();
   const shown = useRef<string | null>(null);
   useEffect(() => {
-    const arrived = shown.current !== null && shown.current !== path;
+    const arrived = shown.current !== null && shown.current !== path && !wasRedirected();
     shown.current = path;
     if (arrived && page.current?.contains(document.activeElement) !== true) heading.current?.focus();
   }, [heading, page, path]);

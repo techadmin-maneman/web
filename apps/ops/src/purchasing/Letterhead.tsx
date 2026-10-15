@@ -18,7 +18,7 @@ import { purchasingApi } from "./purchasing-api.ts";
 const copy = purchasing.letterhead;
 
 /** One of the letterhead's boxes: a line, in capitals for a number, or an address of a few lines. */
-function Box(props: {
+function LetterheadEntry(props: {
   readonly label: string;
   readonly hint?: string;
   readonly value: string;
@@ -59,16 +59,37 @@ function Box(props: {
   );
 }
 
+/** What ops type in each box, by the name the API takes it by. */
+type Draft = Record<"legal_name" | "registered_office" | "cin" | "gstin" | "deliver_to", string>;
+
+/** The letterhead's boxes, in the order a printed order reads them. */
+const ENTRIES: readonly {
+  readonly field: keyof Draft;
+  readonly label: string;
+  readonly hint?: string;
+  readonly maxLength: number;
+  readonly lines?: number;
+  readonly capitals?: boolean;
+}[] = [
+  { field: "legal_name", label: copy.legalName, maxLength: 120 },
+  { field: "registered_office", label: copy.registeredOffice, maxLength: 400, lines: 3 },
+  { field: "cin", label: copy.cin, maxLength: 21, capitals: true },
+  { field: "gstin", label: copy.gstin, maxLength: 15, capitals: true },
+  { field: "deliver_to", label: copy.deliverTo, hint: copy.deliverHint, maxLength: 400, lines: 4 },
+];
+
 /** A box left empty is sent as nothing to print. */
 const given = (text: string) => (text.trim() === "" ? null : text);
 
 export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next: Orders, said: string) => void }) {
   const set = orders.letterhead;
-  const [legalName, setLegalName] = useState(set?.legal_name ?? "");
-  const [office, setOffice] = useState(set?.registered_office ?? "");
-  const [cin, setCin] = useState(set?.cin ?? "");
-  const [gstin, setGstin] = useState(set?.gstin ?? "");
-  const [deliverTo, setDeliverTo] = useState(set?.deliver_to ?? "");
+  const [draft, setDraft] = useState<Draft>({
+    legal_name: set?.legal_name ?? "",
+    registered_office: set?.registered_office ?? "",
+    cin: set?.cin ?? "",
+    gstin: set?.gstin ?? "",
+    deliver_to: set?.deliver_to ?? "",
+  });
   const write = useWrite<Orders>((next) => {
     onSaved(next, copy.saved);
   });
@@ -83,41 +104,26 @@ export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next
         onSubmit={(event) => {
           event.preventDefault();
           const body = {
-            legal_name: legalName,
-            registered_office: given(office),
-            cin: given(cin),
-            gstin: given(gstin),
-            deliver_to: deliverTo,
+            legal_name: draft.legal_name,
+            registered_office: given(draft.registered_office),
+            cin: given(draft.cin),
+            gstin: given(draft.gstin),
+            deliver_to: draft.deliver_to,
           };
           void write.send(() => purchasingApi.setLetterhead(body));
         }}
       >
-        <Box
-          label={copy.legalName}
-          value={legalName}
-          onValue={setLegalName}
-          refused={refused("legal_name")}
-          maxLength={120}
-        />
-        <Box
-          label={copy.registeredOffice}
-          value={office}
-          onValue={setOffice}
-          refused={refused("registered_office")}
-          maxLength={400}
-          lines={3}
-        />
-        <Box label={copy.cin} value={cin} onValue={setCin} refused={refused("cin")} maxLength={21} capitals />
-        <Box label={copy.gstin} value={gstin} onValue={setGstin} refused={refused("gstin")} maxLength={15} capitals />
-        <Box
-          label={copy.deliverTo}
-          hint={copy.deliverHint}
-          value={deliverTo}
-          onValue={setDeliverTo}
-          refused={refused("deliver_to")}
-          maxLength={400}
-          lines={4}
-        />
+        {ENTRIES.map(({ field, ...entry }) => (
+          <LetterheadEntry
+            key={field}
+            {...entry}
+            value={draft[field]}
+            onValue={(value) => {
+              setDraft({ ...draft, [field]: value });
+            }}
+            refused={refused(field)}
+          />
+        ))}
         {write.failure !== null && write.failure.fields === undefined && (
           <Refusal className={form.error} said={errorText(copy.errors, write.failure)} />
         )}
@@ -126,7 +132,7 @@ export function Letterhead({ orders, onSaved }: { orders: Orders; onSaved: (next
             variant="primary"
             size="small"
             type="submit"
-            disabled={write.busy || legalName.trim() === "" || deliverTo.trim() === ""}
+            disabled={write.busy || draft.legal_name.trim() === "" || draft.deliver_to.trim() === ""}
           >
             {copy.save}
           </Button>
