@@ -103,7 +103,7 @@ test("records a delivery into the store, showing what it holds before and after"
 
   const check = form.getByRole("group", { name: review.title });
   await expect(check).toBeFocused();
-  await expect(check).toContainText(`${WAREHOUSE}: 120 stripss → 220 strips`);
+  await expect(check).toContainText(`${WAREHOUSE}: 120 strips → 220 strips`);
   const sent = posted(page, "/api/stock/deliveries");
   await check.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
