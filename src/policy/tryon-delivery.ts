@@ -12,10 +12,11 @@ export const LOOK_PER_NUMBER_DAYS = 30;
 
 /**
  * Whether the try-on runs at all: its look can be sent only while WhatsApp is on (MESSAGING_ENABLED), which
- * production keeps off until its WhatsApp number goes live (docs/go-live.md), and while the bridge is not down.
+ * production keeps off until its WhatsApp number goes live (docs/go-live.md), and while nothing stops it: the bridge
+ * down, or YouCam refusing our key or out of units.
  */
-export function tryOnRuns(messaging: { readonly enabled: boolean }, bridgeDown: boolean): boolean {
-  return messaging.enabled && !bridgeDown;
+export function tryOnRuns(messaging: { readonly enabled: boolean }, stopped: boolean): boolean {
+  return messaging.enabled && !stopped;
 }
 
 /** Why a look made now would not reach the visitor's WhatsApp. */

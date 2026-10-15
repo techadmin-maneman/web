@@ -22,7 +22,13 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { OPS_ORIGIN, type EnvironmentName } from "../../config/environments.ts";
 import { HOUR_MS, MINUTE_MS } from "../../lib/durations.ts";
 import type { Logger } from "../../log.ts";
-import { alertKind, BRIDGE_CLOSED_READINGS, isUrgent, retellAfterHours } from "../../policy/alerts.ts";
+import {
+  alertKind,
+  BRIDGE_CLOSED_READINGS,
+  isUrgent,
+  retellAfterHours,
+  TRYON_PAUSED_KEYS,
+} from "../../policy/alerts.ts";
 import type { Alert } from "../../providers/alerts.ts";
 
 export interface RaisedAlert {
@@ -78,6 +84,21 @@ export async function whatsAppBridgeDown(db: D1Database): Promise<boolean> {
     .bind(BRIDGE_CLOSED_READINGS)
     .first();
   return open !== null;
+}
+
+/**
+ * Whether the try-on cannot run now: the WhatsApp bridge is down, so its look could not be sent, or YouCam refuses our
+ * key or is out of units, so no look could be made. The hourly units check lifts a pause once YouCam answers again.
+ */
+export async function tryOnStopped(db: D1Database): Promise<boolean> {
+  const [bridgeDown, paused] = await Promise.all([
+    whatsAppBridgeDown(db),
+    db
+      .prepare("SELECT 1 FROM alerts WHERE key IN (?1, ?2) AND resolved_at IS NULL")
+      .bind(TRYON_PAUSED_KEYS.key, TRYON_PAUSED_KEYS.credits)
+      .first(),
+  ]);
+  return bridgeDown || paused !== null;
 }
 
 export function createAlertOnce(deps: {

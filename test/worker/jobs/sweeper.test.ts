@@ -215,6 +215,18 @@ describe("sweeper: YouCam units", () => {
     expect(deps.alerts).toHaveLength(2);
   });
 
+  it("lets a try-on paused for YouCam run again once YouCam answers with units", async () => {
+    await env.DB.prepare(
+      `INSERT INTO alerts (id, key, message, count, first_seen_at, last_seen_at)
+       VALUES ('a1', 'tryon_paused:credits', 'YouCam is out of units', 1, ?1, ?1)`,
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await check(fakeDependencies(), 200);
+    const open = await env.DB.prepare("SELECT COUNT(*) AS n FROM alerts WHERE resolved_at IS NULL").first();
+    expect(open).toEqual({ n: 0 });
+  });
+
   it("stays quiet above the floor", async () => {
     const deps = fakeDependencies();
     expect(await check(deps, 200)).toBe(1000);

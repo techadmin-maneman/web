@@ -9,7 +9,7 @@
 // returns that job; any other look is refused. The mm_look cookie then keeps
 // the browser from starting another photo.
 
-import { whatsAppBridgeDown } from "../../domain/platform/alerts.ts";
+import { tryOnStopped } from "../../domain/platform/alerts.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -106,7 +106,7 @@ export function registerTryonGenerate(app: App): void {
     if (preset === undefined) return refuse(c, "invalid_request", ["preset"]);
     // The claim gives the job its lead and its stage.
     if (job.lead_id === null || job.stage === null) return refuse(c, "claim_required");
-    if (!tryOnRuns(settings.messaging, await whatsAppBridgeDown(db))) return refuse(c, "whatsapp_unavailable");
+    if (!tryOnRuns(settings.messaging, await tryOnStopped(db))) return refuse(c, "whatsapp_unavailable");
 
     const choice = { stage: job.stage, preset: preset.id };
     const outcome = job.state === "awaiting_upload" ? await startFirstLook(c, job, choice) : sameLookAgain(job, choice);
