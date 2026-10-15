@@ -105,6 +105,8 @@ interface HoldInput {
   technicianId?: string;
   /** Paid for by a payment link ops send, rather than at the app's Checkout. */
   payByLink?: boolean;
+  /** Paid by UPI at the visit, nothing taken now: ops booked it while online payment is off. */
+  payAtVisit?: boolean;
   /** Written in the same batch, so they stand or fall with the hold: the person and their consent, from the site. */
   alongside?: readonly D1PreparedStatement[];
   /** Written after the hold, in its batch, given its ID: the site's discount code (docs/decisions/0108-discount-codes.md). */
@@ -193,6 +195,7 @@ function holdRow(
     no_show_charge: input.terms?.noShowCharge ?? null,
     one_visit: oneVisit ? 1 : 0,
     pay_by_link: input.payByLink === true ? 1 : 0,
+    pay_at_visit: input.payAtVisit === true ? 1 : 0,
   };
 }
 

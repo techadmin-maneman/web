@@ -21063,10 +21063,10 @@ export interface components {
             /** @description A first fit's hair system as the client's latest profile recommends it, by tier; null for none. */
             recommended: string | null;
             /**
-             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
+             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, a payment link Razorpay texts the client, or, while online payment is off, by UPI at the visit, which ops then record.
              * @enum {string}
              */
-            pays: "nothing" | "credit" | "link";
+            pays: "nothing" | "credit" | "link" | "at_visit";
             /** @description The service-visit credits the client has to spend. */
             credits: number;
             /** @description What a visit of this kind may make good for the client, free and with no late fee, oldest first (docs/decisions/0192-free-remakes.md). */
@@ -21133,10 +21133,10 @@ export interface components {
             /** @description The visit, once booked. */
             visit_id: string | null;
             /**
-             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client.
+             * @description How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, a payment link Razorpay texts the client, or, while online payment is off, by UPI at the visit, which ops then record.
              * @enum {string}
              */
-            pays: "nothing" | "credit" | "link";
+            pays: "nothing" | "credit" | "link" | "at_visit";
             service: components["schemas"]["VisitService"];
             price: components["schemas"]["VisitPrice"] & unknown;
             /** Format: date */

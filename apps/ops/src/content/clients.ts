@@ -223,7 +223,8 @@ export const clients = {
     },
     /**
      * Our words, all of them: booking a visit for the client from the console, which no board draws. Every kind; a
-     * paid visit goes out as a payment link, and is booked once the client pays.
+     * paid visit goes out as a payment link, and is booked once the client pays, or, while online payment is off, is
+     * booked at once and paid by UPI at the visit.
      */
     book: {
       open: "Book a visit",
@@ -263,6 +264,8 @@ export const clients = {
         oneVisit: "Nothing to pay now.",
         credit: (left: number) => `Uses a free service visit. ${String(left)} left.`,
         link: (amount: string) => `${amount}, by payment link.`,
+        /** While online payment is off: nothing now, and ops record the UPI payment once it arrives. */
+        atVisit: (amount: string) => `${amount}, by UPI at the visit. Record it when it arrives.`,
       },
       book: "Book",
       booking: "Booking…",

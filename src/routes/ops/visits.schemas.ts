@@ -27,7 +27,8 @@ const ServiceOfferSchema = z
 export const PaysSchema = z.enum(PAYS).openapi({
   description:
     "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link " +
-    "once fitted), a service-visit credit, or a payment link Razorpay texts the client.",
+    "once fitted), a service-visit credit, a payment link Razorpay texts the client, or, while online payment is " +
+    "off, by UPI at the visit, which ops then record.",
 });
 
 const OwedSchema = z

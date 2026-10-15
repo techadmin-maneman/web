@@ -211,6 +211,16 @@ async function giveReference(
   ]);
 }
 
+/** Gives a payment recorded by hand, as a UPI payment ops confirm is, the next reference of its India year. */
+export function referencePayment(db: D1Database, paymentId: string, now: Date): D1PreparedStatement {
+  return db
+    .prepare(
+      `UPDATE payments SET reference_year = ?2, reference_number = ${NEXT_NUMBER}, reference = ?3
+       WHERE id = ?1 AND reference IS NULL`,
+    )
+    .bind(paymentId, ...referenceOf(now));
+}
+
 /** Gives a one visit's payment link just written its reference, which its payment then takes. */
 export function referenceLink(db: D1Database, linkId: string, now: Date): D1PreparedStatement {
   return db

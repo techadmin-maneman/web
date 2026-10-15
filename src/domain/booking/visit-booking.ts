@@ -60,7 +60,7 @@ export interface VisitAsked {
   readonly covers: string | undefined;
 }
 
-export const PAYS = ["nothing", "credit", "link"] as const;
+export const PAYS = ["nothing", "credit", "link", "at_visit"] as const;
 /** How a visit ops book is paid for: nothing at booking, by a credit, or by a payment link. */
 export type Pays = (typeof PAYS)[number];
 
@@ -196,11 +196,18 @@ const remakeSale = (service: PricedService, covers: Remake): Sale => ({
   covers,
 });
 
-/** How it is paid: nothing at booking for a one visit or a free one, a credit where one pays, else a link. */
-export function paysFor(oneVisit: boolean, onCredit: boolean, price: Price): Pays {
+/**
+ * How it is paid: nothing at booking for a one visit or a free one, a credit where one pays, else a link; or, while
+ * online payment is off, by UPI at the visit.
+ */
+export function paysFor(oneVisit: boolean, onCredit: boolean, price: Price, online = true): Pays {
   if (oneVisit || price.amount === 0) return "nothing";
-  return onCredit ? "credit" : "link";
+  if (onCredit) return "credit";
+  return online ? "link" : "at_visit";
 }
+
+/** Paid at the visit, nothing was taken at booking, so a late change or a no-show has nothing to keep. */
+const AT_VISIT_CHARGES = { lateCharge: "nothing", noShowCharge: "nothing" } as const;
 
 /**
  * What the visit is sold as, or why it cannot be booked: the client, the kind, the day and the service checked, then
@@ -211,6 +218,8 @@ export async function saleFor(
   asked: VisitAsked,
   inputs: OpsInputs,
   now: Date,
+  /** Whether a payment can be taken online; off, a paid visit is paid by UPI at the visit. */
+  online = true,
 ): Promise<{ ok: true; sale: Sale } | Refused> {
   if (!(await isClient(db, asked.personId))) return refused({ code: "not_found" });
   if (asked.oneVisit && asked.kind !== "first_fit") {
@@ -239,7 +248,13 @@ export async function saleFor(
   const lateFeeItem = asked.oneVisit ? undefined : LATE_FEES[asked.kind];
   const lateFee = lateFeeItem === undefined ? null : await lateFeeOn(db, lateFeeItem, asked.date, city);
   const terms = asked.oneVisit ? ONE_VISIT_TERMS : termsInForce(inputs, asked.kind);
-  const pays = paysFor(asked.oneVisit, onCredit, price);
+  const pays = paysFor(asked.oneVisit, onCredit, price, online);
+  if (pays === "at_visit") {
+    return {
+      ok: true,
+      sale: { service, price, lateFee: null, terms: { ...terms, ...AT_VISIT_CHARGES }, pays, code, covers: null },
+    };
+  }
   return { ok: true, sale: { service, price, lateFee, terms, pays, code, covers: null } };
 }
 
@@ -366,6 +381,7 @@ export async function holdForSale({
       oneVisit: asked.oneVisit,
       from: "ops",
       payByLink: sale.pays === "link",
+      payAtVisit: sale.pays === "at_visit",
       ...(asked.technicianId === undefined ? {} : { technicianId: asked.technicianId }),
       afterHold: (holdId) => [
         ...(sale.code === null ? [] : [codeUse({ db, asked, code: sale.code, holdId, by: hold.by, now })]),

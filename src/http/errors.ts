@@ -176,6 +176,11 @@ export const ERROR_CODES = [
   "out_of_warranty",
   // A custom order's refund asked for a reason that does not hold (docs/decisions/0176-custom-order-refunds.md).
   "refund_not_due",
+  // A UPI payment recorded for a visit not paid at the visit, one already paid, or under a UTR already recorded
+  // (docs/decisions/0208-paid-at-the-visit-by-upi.md).
+  "not_due",
+  "already_paid",
+  "reference_used",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
@@ -321,6 +326,9 @@ export const ERROR_STATUS = {
   return_settled: 409,
   out_of_warranty: 409,
   refund_not_due: 409,
+  not_due: 409,
+  already_paid: 409,
+  reference_used: 409,
 } as const satisfies Record<ErrorCode, ContentfulStatusCode>;
 
 /** A refusal: the code, answered with its own status and the request's ID, and the fields it names. */

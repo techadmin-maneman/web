@@ -80,6 +80,7 @@ import { registerOpsTechnicianPay } from "./technician-pay.ts";
 import { registerOpsTechnicianPhones } from "./technician-phones.ts";
 import { registerOpsTechnicians } from "./technicians.ts";
 import { registerOpsVisitChanges } from "./visit-changes.ts";
+import { registerOpsUpiPayments } from "./upi-payments.ts";
 import { registerOpsVisitLostReason } from "./visit-lost-reason.ts";
 import { registerOpsVisits } from "./visits.ts";
 import { registerOpsWaitlist } from "./waitlist.ts";
@@ -98,6 +99,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsVisits,
   // A visit ops cancel for a client, or close by hand for a technician whose phone was lost.
   registerOpsVisitChanges,
+  registerOpsUpiPayments,
   registerOpsClientReferral,
   // An address a client gives ops on the phone (docs/decisions/0092-task-owners.md).
   registerOpsClientAddress,

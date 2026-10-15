@@ -59,6 +59,7 @@ import { composeRecallNotice } from "../domain/inventory/recall-notice.ts";
 import { composeFollowUp } from "../domain/visits/follow-ups.ts";
 import { ALERT_WORDS } from "../config/alert-words.ts";
 import { hasNumber } from "../lib/mobile.ts";
+import { composeUpiReceived } from "../domain/money/upi-payments.ts";
 
 const RETRY_DELAY_SECONDS = 30;
 /** A send claimed longer ago than this is taken to have died, and may be claimed again. */
@@ -223,6 +224,8 @@ async function contentOf(db: D1Database, config: StaticConfig, row: MessageRow, 
       return composeBookingRefunded(db, row.subject_id, row.person_id);
     case "link_paid":
       return composeLinkPaid(db, row.subject_id, row.person_id);
+    case "upi_received":
+      return composeUpiReceived(db, row.subject_id, row.person_id);
     case "friend_fitted":
       return composeFriendFitted(db, row.subject_id, row.person_id);
     case "friend_credited":

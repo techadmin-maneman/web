@@ -1,6 +1,6 @@
 // Booking a visit for a client from the console: every kind, in a window someone is free in, with the technician ops
-// choose or whoever is free. A paid visit goes out as a payment link and is booked once the client pays; anything
-// else is booked at once (src/routes/ops/visits.ts). No board draws it (docs/fidelity-method.md).
+// choose or whoever is free. A paid visit goes out as a payment link and is booked once the client pays, or, while
+// online payment is off, is paid by UPI at the visit; anything else is booked at once (src/routes/ops/visits.ts). No board draws it (docs/fidelity-method.md).
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { Button } from "@maneman/ui/Button";
@@ -39,7 +39,7 @@ function payLine(choice: Choice, offered: VisitAvailability, covered: boolean): 
   if (offered.pays === "credit") return copy.pays.credit(offered.credits - 1);
   if (offered.pays === "nothing") return copy.pays.nothing;
   const price = offered.services.find((service) => service.tier === offered.service.tier)?.price.amount ?? 0;
-  return copy.pays.link(rupees(price));
+  return offered.pays === "at_visit" ? copy.pays.atVisit(rupees(price)) : copy.pays.link(rupees(price));
 }
 
 /** What came of the booking: booked, on its way, or a link sent and the slot held until it closes. */

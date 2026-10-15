@@ -312,7 +312,7 @@ async function availability(c: Context<AppEnv>, query: AvailabilityQuery) {
       services: services.map((each) => ({ ...serviceBody(each), price: each.price })),
       service: serviceBody(service),
       recommended,
-      pays: paysFor(false, onCredit, service.price),
+      pays: paysFor(false, onCredit, service.price, takesPaymentOnline(c)),
       credits: credits.visits,
       owed: owedOf(owed, kind),
       days: strip,
@@ -320,6 +320,9 @@ async function availability(c: Context<AppEnv>, query: AvailabilityQuery) {
     200,
   );
 }
+
+/** Whether a payment can be taken online here; off, a paid visit ops book is paid by UPI at the visit. */
+const takesPaymentOnline = (c: Context<AppEnv>): boolean => c.var.config.settings.razorpay !== null;
 
 export function registerOpsVisits(app: App): void {
   app.openapi(availabilityRoute, (c) => availability(c, c.req.valid("query")));
@@ -331,7 +334,7 @@ export function registerOpsVisits(app: App): void {
     const elsewhere = await refusedElsewhere(c, asked);
     if (elsewhere !== null) return refuse(c, elsewhere.code);
     const inputs = await opsInputs(c);
-    const checked = await saleFor(db, asked, inputs, now);
+    const checked = await saleFor(db, asked, inputs, now, takesPaymentOnline(c));
     if (!checked.ok) {
       const { refusal } = checked;
       return refuse(c, refusal.code, "fields" in refusal ? refusal.fields : undefined);

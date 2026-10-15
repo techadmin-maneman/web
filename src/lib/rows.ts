@@ -1223,6 +1223,7 @@ export interface Rows {
     readonly reference_number: number | null;
     readonly auto_refund_reason: string | null;
     readonly payment_checked_at: string | null;
+    readonly pay_at_visit: number;
   };
   readonly slot_times: {
     readonly id: string;

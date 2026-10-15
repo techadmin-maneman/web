@@ -55,6 +55,8 @@ export interface HoldRow {
   one_visit: number;
   /** 1 for a visit ops booked that the client pays for by the payment link ops sent, and by nothing else. */
   pay_by_link: number;
+  /** 1 for a paid visit ops booked while online payment is off: paid by UPI at the visit (ADR 0208). */
+  pay_at_visit: number;
   /** Set as its refund is asked of Razorpay, and cleared only if Razorpay refuses it. */
   refunded_at: string | null;
   pincode: string | null;
@@ -71,7 +73,7 @@ export async function bookingHoldRow(db: D1Database, holdId: string): Promise<Ho
               h.start_unit, h.technician_id, h.amount, h.state, h.expires_at, h.grace_seconds, h.confirmed_at,
               h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind, h.created_at, h.use_credit,
               h.one_visit,
-              h.pay_by_link, h.refunded_at, h.pincode, sp.city, COALESCE(t.active, 0) AS technician_active
+              h.pay_by_link, h.pay_at_visit, h.refunded_at, h.pincode, sp.city, COALESCE(t.active, 0) AS technician_active
        FROM slot_holds h JOIN people p ON p.id = h.person_id
        LEFT JOIN serviceable_pincodes sp ON sp.pincode = h.pincode
        LEFT JOIN technicians t ON t.id = h.technician_id
@@ -82,7 +84,9 @@ export async function bookingHoldRow(db: D1Database, holdId: string): Promise<Ho
 }
 
 /** Whether the client pays money for it: not a free visit, and not one a credit covers. */
-export const paidInMoney = (hold: { amount: number; use_credit: number }) => hold.amount > 0 && hold.use_credit !== 1;
+/** Whether the hold is paid in money before it is booked: not when free, a credit pays, or it is paid at the visit. */
+export const paidInMoney = (hold: { amount: number; use_credit: number; pay_at_visit?: number }) =>
+  hold.amount > 0 && hold.use_credit !== 1 && hold.pay_at_visit !== 1;
 
 export interface CapturedPayment {
   razorpay_payment_id: string;

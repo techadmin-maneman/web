@@ -14,6 +14,7 @@ export const MESSAGE_KINDS = [
   "payment_receipt",
   "nothing_to_pay", // a one visit a discount code left nothing to pay for, once the client is fitted (ADR 0108)
   "link_paid", // the receipt for a one visit paid by its payment link, once the client is fitted
+  "upi_received", // the receipt for a visit paid by UPI at the visit, once ops record it; its subject is the payment
   "reschedule_confirmation",
   "cancel_confirmation",
   "visit_cancelled", // ops cancelled the visit from the console

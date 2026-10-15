@@ -29674,9 +29674,10 @@ Request body:
       "enum": [
         "nothing",
         "credit",
-        "link"
+        "link",
+        "at_visit"
       ],
-      "description": "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client."
+      "description": "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, a payment link Razorpay texts the client, or, while online payment is off, by UPI at the visit, which ops then record."
     },
     "credits": {
       "type": "integer",
@@ -29943,9 +29944,10 @@ Request body:
       "enum": [
         "nothing",
         "credit",
-        "link"
+        "link",
+        "at_visit"
       ],
-      "description": "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, or a payment link Razorpay texts the client."
+      "description": "How the visit is paid for: nothing at booking (free, or a consultation and fit in one visit, paid by a link once fitted), a service-visit credit, a payment link Razorpay texts the client, or, while online payment is off, by UPI at the visit, which ops then record."
     },
     "service": {
       "$ref": "#/components/schemas/VisitService"
