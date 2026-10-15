@@ -19,7 +19,8 @@ import { QuickRepliesPanel } from "./QuickReplies.tsx";
 import { RemediesPanel } from "./Remedies.tsx";
 import { Thread, whenOf, whoOf } from "./Thread.tsx";
 import form from "../components/forms.module.css";
-import styles from "./care.module.css";
+import shared from "./care.module.css";
+import styles from "./messages-screen.module.css";
 import { phoneWords } from "../lib/phone.ts";
 import { ActionRow } from "../components/ActionRow.tsx";
 
@@ -126,19 +127,19 @@ function ConversationRows(props: {
   return (
     <>
       <tr>
-        <th scope="row" className={styles.who}>
+        <th scope="row" className={shared.who}>
           {conversation.technician === null
             ? (conversation.person?.name ?? copy.unknown)
             : copy.technicianName(conversation.technician.name)}
         </th>
-        <td className={styles.number}>{phoneWords(conversation.mobile)}</td>
+        <td className={shared.number}>{phoneWords(conversation.mobile)}</td>
         <td>{carePersonOf(conversation)}</td>
-        <td className={styles.line}>{conversation.last_line ?? copy.noLine}</td>
-        <td className={styles.figure}>
+        <td className={shared.line}>{conversation.last_line ?? copy.noLine}</td>
+        <td className={shared.figure}>
           <ReplyBy at={conversation.reply_by} />
         </td>
-        <td className={styles.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
-        <td className={styles.actions}>
+        <td className={shared.figure}>{shortDate(indiaDate(conversation.last_message_at))}</td>
+        <td className={shared.actions}>
           <RowButton
             className={form.inline}
             aria-label={copy.openLabel(who)}
@@ -152,7 +153,7 @@ function ConversationRows(props: {
         </td>
       </tr>
       {props.open && (
-        <ActionRow className={styles.acting}>
+        <ActionRow className={shared.acting}>
           <Thread
             conversation={conversation}
             onClose={() => {
@@ -222,18 +223,18 @@ function ConversationTable(props: {
 }) {
   const columns = copy.columns;
   return (
-    <div className={styles.scroll}>
-      <Table className={classes(form.table, styles.table)}>
+    <div className={shared.scroll}>
+      <Table className={classes(form.table, shared.table)}>
         <thead>
           <tr>
             <th scope="col">{columns.client}</th>
             <th scope="col">{columns.number}</th>
             <th scope="col">{columns.carePerson}</th>
             <th scope="col">{columns.said}</th>
-            <th scope="col" className={styles.figure}>
+            <th scope="col" className={shared.figure}>
               {columns.replyBy}
             </th>
-            <th scope="col" className={styles.figure}>
+            <th scope="col" className={shared.figure}>
               {columns.at}
             </th>
             <th scope="col">
@@ -263,7 +264,7 @@ export function MessagesScreen() {
   return (
     <div className={form.screen}>
       <Panel titleId="messages" title={copy.title} className={form.panel}>
-        <div className={styles.tools}>
+        <div className={shared.tools}>
           <ViewChoice view={view} onView={setView} />
           <Search search={search} onSearch={setSearch} />
         </div>

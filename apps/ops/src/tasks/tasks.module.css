@@ -180,18 +180,6 @@ a.subject {
   color: var(--text-muted);
 }
 
-/* The member of staff it is theirs, by first name, as the board writes "Priya". */
-.owner {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  overflow-wrap: anywhere;
-}
-
-/* How long it has left, in words: "2 days left", "3 days overdue". */
-.due {
-  text-align: right;
-}
-
 /* ---- What ops do with a task (TaskActions.tsx) ---------------------------- */
 
 .acts,
@@ -212,44 +200,7 @@ a.subject {
   }
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-8);
-  margin-top: var(--sp-8);
-}
-
-.reason {
-  min-height: var(--sp-48);
-  resize: vertical;
-}
-
-.formActions {
-  display: flex;
-  gap: var(--sp-8);
-}
-
 .error {
   font-size: var(--fs-14);
   color: var(--status-error);
-}
-
-/* What copying or sending a payment link came to; empty until then. */
-.said {
-  font-size: var(--fs-14);
-  overflow-wrap: anywhere;
-  color: var(--text-muted);
-}
-
-.sla {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-  text-align: right;
-}
-
-.note {
-  margin: 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--text-muted);
 }

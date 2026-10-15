@@ -1,0 +1,7 @@
+/* What ./PhotosScreen.tsx alone draws; what it shares is in ./photos.module.css. */
+
+/* Photos' way on while it is empty: the site's try-on, its width its words'. */
+.tryOn {
+  align-self: flex-start;
+  margin-top: var(--sp-8);
+}

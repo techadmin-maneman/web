@@ -16,7 +16,8 @@ import { csvText } from "../lib/csv.ts";
 import { saveFile } from "../lib/save-file.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
-import styles from "./technician-pay.module.css";
+import shared from "./technician-pay.module.css";
+import styles from "./pay-statement.module.css";
 import { technicianPayApi } from "./technician-pay-api.ts";
 
 const copy = technicianPay.statement;
@@ -68,8 +69,8 @@ function byTechnician(lines: readonly Line[]) {
 
 function StatementTable({ lines }: { lines: readonly Line[] }) {
   return (
-    <div className={styles.scroll}>
-      <Table className={classes(form.table, styles.table, styles.people)}>
+    <div className={shared.scroll}>
+      <Table className={classes(form.table, shared.table, shared.people)}>
         <thead>
           <tr>
             {copy.columns.map((column) => (
@@ -86,16 +87,16 @@ function StatementTable({ lines }: { lines: readonly Line[] }) {
                 <th scope="row">{technician.name}</th>
                 <td>{line.city ?? copy.noCity}</td>
                 <td>{technicianPay.kinds[line.kind]}</td>
-                <td className={styles.figure}>{line.visits}</td>
-                <td className={styles.figure}>{amountOf(line.rate)}</td>
-                <td className={styles.figure}>{amountOf(line.amount)}</td>
+                <td className={shared.figure}>{line.visits}</td>
+                <td className={shared.figure}>{amountOf(line.rate)}</td>
+                <td className={shared.figure}>{amountOf(line.amount)}</td>
               </tr>
             )),
             <tr key={`${technician.id}-total`} className={styles.total}>
               <th scope="row" colSpan={copy.columns.length - 1}>
                 {technician.unpriced ? copy.totalUnpriced(technician.name) : copy.total(technician.name)}
               </th>
-              <td className={styles.figure}>{rupees(technician.total)}</td>
+              <td className={shared.figure}>{rupees(technician.total)}</td>
             </tr>,
           ])}
         </tbody>
@@ -112,7 +113,7 @@ export function PayStatement({ today }: { today: string }) {
   const [loaded, retry] = useLoad(load);
   return (
     <Panel titleId="pay-statement" title={copy.title} className={form.panel}>
-      <div className={styles.tools}>
+      <div className={shared.tools}>
         <Field label={copy.month} className={form.field}>
           {(control) => (
             <Select

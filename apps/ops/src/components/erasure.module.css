@@ -58,27 +58,6 @@
   color: var(--status-warning);
 }
 
-.what {
-  margin-top: var(--sp-12);
-}
-
-.whatTitle {
-  margin: 0;
-  letter-spacing: var(--tracking-12);
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-.whatItems {
-  margin: var(--sp-4) 0 0;
-  padding-left: var(--sp-16);
-}
-
-.whatItem {
-  font-size: var(--fs-14);
-  line-height: var(--lh-145);
-}
-
 .checkLine {
   margin-top: var(--sp-16);
   padding-top: var(--sp-12);
@@ -92,11 +71,6 @@
   margin-top: var(--sp-16);
 }
 
-.reasonField {
-  min-height: var(--sp-48);
-  resize: vertical;
-}
-
 /* ---- The two decisions ----------------------------------------------------- */
 
 .actions {
@@ -107,9 +81,4 @@
 
 .error {
   margin: var(--sp-12) 0 0;
-}
-
-.settleOn {
-  color: inherit;
-  text-decoration: underline;
 }

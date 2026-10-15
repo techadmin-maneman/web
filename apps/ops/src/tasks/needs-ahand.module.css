@@ -1,0 +1,7 @@
+/* What ./NeedsAHand.tsx alone draws; what it shares is in ./tasks.module.css. */
+
+.sla {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  text-align: right;
+}

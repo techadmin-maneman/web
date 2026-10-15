@@ -21,7 +21,8 @@ import { Left } from "../lib/Left.tsx";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Distance } from "./Distance.tsx";
-import styles from "./no-shows.module.css";
+import shared from "./no-shows.module.css";
+import styles from "./disputes.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { paymentsApi } from "./payments-api.ts";
 
@@ -78,11 +79,11 @@ function Evidence({ each }: { each: NoShowDispute }) {
     [copy.facts.waited, waitedOf(each)],
   ] as const;
   return (
-    <dl className={styles.facts}>
+    <dl className={shared.facts}>
       {rows.map(([name, value]) => (
-        <div className={styles.fact} key={name}>
-          <dt className={styles.factName}>{name}</dt>
-          <dd className={styles.factValue}>{value}</dd>
+        <div className={shared.fact} key={name}>
+          <dt className={shared.factName}>{name}</dt>
+          <dd className={shared.factValue}>{value}</dd>
         </div>
       ))}
     </dl>
@@ -122,7 +123,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
   const titleId = `dispute-title-${each.id}`;
   return (
     <section aria-labelledby={titleId}>
-      <div className={styles.caseHead}>
+      <div className={shared.caseHead}>
         <p className={capsLook(styles.disputeLabel)}>{copy.label}</p>
         <Left due={each.due} now={now} />
       </div>
@@ -135,15 +136,15 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
       ) : (
         <blockquote className={styles.disputeWords}>{each.reason}</blockquote>
       )}
-      <p className={styles.caseSub}>{tookOf(each)}</p>
+      <p className={shared.caseSub}>{tookOf(each)}</p>
       <Evidence each={each} />
       {may.uphold && (
         <>
-          <Field label={copy.reason.label} look={{ label: styles.reasonLabel }}>
+          <Field label={copy.reason.label} look={{ label: shared.reasonLabel }}>
             {(control) => (
               <TextArea
                 {...control}
-                className={styles.reasonField}
+                className={shared.reasonField}
                 maxLength={REASON_MAX_CHARS}
                 placeholder={copy.reason.placeholder}
                 value={reason}
@@ -154,7 +155,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
               />
             )}
           </Field>
-          <div className={styles.actions} role="group" aria-label={copy.ruling}>
+          <div className={shared.actions} role="group" aria-label={copy.ruling}>
             {may.refund && (
               <Button
                 variant="primary"
@@ -172,7 +173,7 @@ function Dispute({ each, now, may, onRuled }: DisputeProps) {
         </>
       )}
       {step.kind === "failed" && (
-        <Refusal className={styles.error} said={errorText(copy.errors, { code: step.code })} />
+        <Refusal className={shared.error} said={errorText(copy.errors, { code: step.code })} />
       )}
     </section>
   );

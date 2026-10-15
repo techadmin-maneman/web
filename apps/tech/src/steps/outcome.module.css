@@ -1,0 +1,8 @@
+/* What ./Outcome.tsx alone draws; what it shares is in ./steps.module.css. */
+
+.reason {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+}

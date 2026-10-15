@@ -1,0 +1,27 @@
+/* What ./WordHistory.tsx alone draws; what it shares is in ./words.module.css. */
+
+.versions {
+  margin: var(--sp-12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.version {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-4) var(--sp-16);
+  padding: var(--sp-8) 0;
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.when {
+  min-width: var(--ops-figure);
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.said {
+  flex: 1;
+  white-space: pre-line;
+}

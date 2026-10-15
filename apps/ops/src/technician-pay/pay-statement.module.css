@@ -1,0 +1,8 @@
+/* What ./PayStatement.tsx alone draws; what it shares is in ./technician-pay.module.css. */
+
+/* A technician's total beneath their month's lines. */
+.total > th,
+.total > td {
+  font-weight: var(--weight-medium);
+  border-top: var(--hairline) solid var(--paper-line);
+}

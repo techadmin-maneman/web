@@ -1,0 +1,20 @@
+/* What ./ReferScreen.tsx alone draws; what it shares is in ./refer.module.css. */
+
+/* Refer's credit tile, ruled above and below. */
+.credit {
+  padding: var(--sp-20) 0;
+  border-top: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* Where the credits of the invite the client came with stand, while they are not in the balance. */
+.inviteCredits {
+  font-size: var(--fs-16);
+  line-height: var(--lh-160);
+}
+
+.shareSmall {
+  align-self: flex-start;
+  margin-top: var(--sp-8);
+  padding: 0 var(--sp-20);
+}

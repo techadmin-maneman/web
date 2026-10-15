@@ -15,7 +15,8 @@ import { useState } from "react";
 import type { Angle, PhotoSet } from "../api.ts";
 import { photos } from "../content.ts";
 import type { Relink } from "./relink.ts";
-import styles from "./photos.module.css";
+import shared from "./photos.module.css";
+import styles from "./photo-row.module.css";
 
 export const ANGLES: readonly Angle[] = ["front", "top", "left", "right", "hair"];
 
@@ -52,7 +53,7 @@ export function Thumb(props: {
   const [arrived, setArrived] = useState(false);
   return (
     <img
-      className={classes(styles.thumb, arrived && styles.arrived, className)}
+      className={classes(shared.thumb, arrived && styles.arrived, className)}
       src={link.url}
       alt={alt}
       width={link.width ?? undefined}
@@ -80,7 +81,7 @@ export function PhotoCell(props: {
   const failed = lost === opened.link;
   return (
     <Tile
-      className={styles.cell}
+      className={shared.cell}
       aria-label={failed ? photos.notLoaded(opened.alt) : opened.alt}
       onClick={() => {
         if (failed) relink.reload();
@@ -107,10 +108,10 @@ export function PhotoRow(props: { set: PhotoSet; date: string; onOpen: (photo: O
   const { set, date } = props;
   const phase = shownPhase(set);
   return (
-    <div className={styles.row}>
+    <div className={shared.row}>
       {ANGLES.map((angle) => {
         const link = set[phase].find((each) => each.angle === angle);
-        if (link === undefined) return <div key={angle} className={styles.cell} />;
+        if (link === undefined) return <div key={angle} className={shared.cell} />;
         const thumbnail: ImageLink = { ...link, url: link.thumbnail_url ?? link.url };
         const alt = photos.alt(photos.angles[angle], phase, fullDate(date));
         const opened: OpenPhoto = {

@@ -36,7 +36,7 @@ import {
   entryTitle,
   paymentsAndCredits,
 } from "./entry.ts";
-import styles from "./payments.module.css";
+import styles from "./payments-screen.module.css";
 
 function EntryRow({ entry, thisYear }: { entry: Entry; thisYear: number }) {
   const beneath = entryBeneath(entry);

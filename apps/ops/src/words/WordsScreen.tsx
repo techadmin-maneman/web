@@ -21,7 +21,7 @@ import { placeOf, WordForm, type Messages } from "./WordForm.tsx";
 import { WordHistory } from "./WordHistory.tsx";
 import { LastPublished, PublishCheck } from "./WordsPublish.tsx";
 import form from "../components/forms.module.css";
-import styles from "./words.module.css";
+import styles from "./words-screen.module.css";
 import { ActionRow } from "../components/ActionRow.tsx";
 import { wordsApi } from "./words-api.ts";
 

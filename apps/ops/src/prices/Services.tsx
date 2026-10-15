@@ -32,7 +32,7 @@ import {
   type Action,
 } from "./service-actions.ts";
 import form from "../components/forms.module.css";
-import styles from "./prices.module.css";
+import styles from "./services.module.css";
 import { FormActions } from "../components/FormActions.tsx";
 import { type Opened, OpenAction, Outcome, ActionButton } from "./ServiceActions.tsx";
 import { pricesApi } from "./prices-api.ts";

@@ -8,7 +8,7 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { BookingWindow, Unassigned } from "../api.ts";
 import { dispatch } from "../content.ts";
-import styles from "./dispatch.module.css";
+import styles from "./tray.module.css";
 import { nameOf, type Job, windowWord } from "./job.ts";
 
 const windowOrUnknown = (window: BookingWindow | null) => (window === null ? dispatch.unknown : windowWord(window));

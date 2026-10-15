@@ -1,53 +1,3 @@
-/*
- * The job card, and the evidence chain beneath it. The screen
- * is the phone's height: the head at the top, the one action fixed at the
- * foot, and the card scrolling between them.
- */
-
-.back {
-  --icon-button-size: var(--tech-min);
-
-  margin-left: calc(-1 * var(--sp-12));
-  color: var(--paper);
-}
-
-.headWho {
-  min-width: 0;
-}
-
-.name {
-  margin: 0;
-  font-size: var(--fs-18);
-  font-weight: var(--weight-regular);
-  color: var(--paper);
-}
-
-.name:focus {
-  outline: none;
-}
-
-.when {
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
-}
-
-.badge {
-  flex-shrink: 0;
-  align-self: flex-start;
-  margin-left: auto;
-}
-
-.body {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.address {
-  padding: var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
 .line {
   margin: 0;
   font-size: var(--fs-18);
@@ -104,103 +54,6 @@
   margin-top: var(--sp-12);
 }
 
-.locked {
-  padding: var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.lockedTitle {
-  margin: 0;
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
-}
-
-.lockedBody {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-17);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-}
-
-.sector {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-18);
-  color: var(--paper);
-}
-
-/* ---- The piece, and the last visit ------------------------------- */
-
-.piece {
-  padding: var(--sp-16) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.pieceTitle {
-  margin: 0;
-  font-size: var(--fs-15);
-  color: var(--ink-muted);
-}
-
-.pieceNone {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-16);
-  color: var(--ink-soft);
-}
-
-.pieceWarn {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-16);
-  line-height: var(--lh-160);
-  color: var(--error-on-ink);
-}
-
-.rows {
-  margin: var(--sp-8) 0 0;
-  border-top: var(--hairline) solid var(--ink-rule);
-}
-
-.row {
-  display: flex;
-  gap: var(--sp-16);
-  justify-content: space-between;
-  padding: var(--sp-12) 0;
-  border-bottom: var(--hairline) solid var(--ink-rule);
-}
-
-.rowKey {
-  font-size: var(--fs-16);
-  color: var(--ink-muted);
-}
-
-.rowValue {
-  margin: 0;
-  font-size: var(--fs-17);
-  text-align: right;
-  color: var(--paper);
-}
-
-.lastVisit {
-  display: flex;
-  gap: var(--sp-16);
-  align-items: center;
-  margin-top: var(--sp-16);
-}
-
-.lastVisitPhoto {
-  flex-shrink: 0;
-  width: var(--tech-stepper);
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
-  background: var(--ink-frame);
-}
-
-.lastVisitLine {
-  margin: 0;
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-}
-
 /* ---- Where the job stands -------------------------------------------------- */
 
 .state {
@@ -210,13 +63,6 @@
   font-size: var(--fs-17);
   line-height: var(--lh-145);
   color: var(--paper);
-}
-
-/* Ops changed the job under the phone: the evidence chain's failure, across the card. */
-.changed {
-  padding: var(--sp-24) var(--sp-20);
-  border-top: var(--rule-strong) solid var(--error-on-ink);
-  border-bottom: var(--hairline) solid var(--ink-rule);
 }
 
 .changedTitle {
@@ -330,10 +176,4 @@
 .second {
   width: 100%;
   margin-top: var(--sp-16);
-}
-
-/* The way to a closed job's close-out, the foot's one action: as tall as the gold one it stands in for. */
-.atFoot {
-  height: var(--tech-primary);
-  margin-top: 0;
 }

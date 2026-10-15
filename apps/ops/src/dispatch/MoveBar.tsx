@@ -7,7 +7,8 @@ import { shortDate } from "@maneman/web-kit/dates";
 import { useState, type Ref } from "react";
 import type { BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
-import styles from "./dispatch.module.css";
+import shared from "./dispatch.module.css";
+import styles from "./move-bar.module.css";
 import type { InHand } from "./Grid.tsx";
 import { nameOf, type Target, windowWord } from "./job.ts";
 
@@ -70,7 +71,7 @@ export function MoveBar({ inHand, checking, rows, dates, onLand, onStop, ref }: 
       {!checking && destinations.length === 0 && <p className={styles.barNote}>{copy.nowhere}</p>}
       {!checking && destinations.length > 0 && (
         <div className={styles.list}>
-          <Field label={copy.list} className={styles.field}>
+          <Field label={copy.list} className={shared.field}>
             {(control) => (
               <Select
                 {...control}

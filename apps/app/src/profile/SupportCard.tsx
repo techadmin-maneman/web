@@ -6,7 +6,8 @@ import { ICONS } from "@maneman/brand/icons";
 import { Icon } from "@maneman/ui/Icon";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { profile, whatsapp } from "../content.ts";
-import styles from "./profile.module.css";
+import shared from "./profile.module.css";
+import styles from "./support-card.module.css";
 
 export function SupportCard({
   carePerson,
@@ -18,8 +19,8 @@ export function SupportCard({
   const copy = profile.support;
   const open = copy.hours(copy.hour(hours.opens), copy.hour(hours.closes));
   return (
-    <section className={styles.card} aria-labelledby="support">
-      <h2 className={capsLook(styles.cardLabel)} id="support">
+    <section className={shared.card} aria-labelledby="support">
+      <h2 className={capsLook(shared.cardLabel)} id="support">
         {copy.label}
       </h2>
       <ButtonLink
@@ -32,8 +33,8 @@ export function SupportCard({
         <Icon d={ICONS.whatsapp} size="md" />
         <span>{copy.message}</span>
       </ButtonLink>
-      {carePerson !== null && <p className={styles.cardHint}>{copy.carePerson(carePerson)}</p>}
-      <p className={styles.cardHint}>{copy.hint(copy.within(hours.first_reply), open)}</p>
+      {carePerson !== null && <p className={shared.cardHint}>{copy.carePerson(carePerson)}</p>}
+      <p className={shared.cardHint}>{copy.hint(copy.within(hours.first_reply), open)}</p>
     </section>
   );
 }

@@ -15,7 +15,8 @@ import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
-import styles from "./clients.module.css";
+import shared from "./clients.module.css";
+import styles from "./client-list.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 import { clientsApi } from "./clients-api.ts";
 
@@ -160,7 +161,7 @@ export function ClientList() {
   const page = later && trail.length === 0 ? null : trail.length + 1;
   return (
     <section className={styles.list} aria-labelledby="all-clients">
-      <h2 className={styles.foundTitle} id="all-clients">
+      <h2 className={shared.foundTitle} id="all-clients">
         {copy.title}
       </h2>
       {loaded.state === "loading" && <Loading />}

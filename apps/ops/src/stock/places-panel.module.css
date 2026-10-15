@@ -1,0 +1,14 @@
+/* What ./PlacesPanel.tsx alone draws; what it shares is in ./stock.module.css. */
+
+/* A place under another, set in by how deep it sits in the tree. */
+.depth1 {
+  padding-left: var(--sp-16);
+}
+
+.depth2 {
+  padding-left: calc(var(--sp-16) * 2);
+}
+
+.depth3 {
+  padding-left: calc(var(--sp-16) * 3);
+}

@@ -1,0 +1,20 @@
+/* What ./TechniciansScreen.tsx alone draws; what it shares is in ./technicians.module.css. */
+
+/* The third column is Jobs: a count, so it and its head read from the right, as the board sets them. */
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  padding-right: var(--sp-4);
+  text-align: right;
+}
+
+.offRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-12);
+  border-bottom: var(--hairline) solid var(--paper-line);
+}
+
+/* The roster's search and zone list, flush with the table beneath. */
+.narrow {
+  margin-inline: 0;
+}

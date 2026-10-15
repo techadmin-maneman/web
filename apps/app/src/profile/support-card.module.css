@@ -1,0 +1,6 @@
+/* What ./SupportCard.tsx alone draws; what it shares is in ./profile.module.css. */
+
+.whatsapp {
+  justify-content: flex-start;
+  gap: var(--sp-16);
+}

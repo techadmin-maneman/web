@@ -14,7 +14,8 @@ import form from "../components/forms.module.css";
 import { supplyPlan } from "../content/supply-plan.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { AccuracyPart } from "./Accuracy.tsx";
-import styles from "./supply-plan.module.css";
+import shared from "./supply-plan.module.css";
+import styles from "./forecast.module.css";
 import { RowHead } from "../components/RowHead.tsx";
 import { supplyPlanApi } from "./supply-plan-api.ts";
 
@@ -41,7 +42,7 @@ function Periods({ forecast, city }: { forecast: Forecast; city: string }) {
   return (
     <>
       <p className={form.note}>{copy.note(run.period_days, dayAfter(run.run_on, 0, true))}</p>
-      <div className={styles.scroll}>
+      <div className={shared.scroll}>
         <Table className={`${form.table} ${styles.forecast}`}>
           <thead>
             <tr>

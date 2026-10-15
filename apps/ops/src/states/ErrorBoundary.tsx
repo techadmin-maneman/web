@@ -7,7 +7,8 @@ import { ErrorBoundary } from "@maneman/ui/ErrorBoundary";
 import { reportRenderError } from "@maneman/web-kit/client-errors";
 import type { ReactNode } from "react";
 import { broken } from "../content.ts";
-import styles from "./states.module.css";
+import shared from "./states.module.css";
+import styles from "./error-boundary.module.css";
 
 const reload = () => {
   window.location.reload();
@@ -15,7 +16,7 @@ const reload = () => {
 
 function Broken({ home }: { home: boolean }) {
   return (
-    <div className={styles.failed}>
+    <div className={shared.failed}>
       <p role="alert">{broken.message}</p>
       <div className={styles.actions}>
         <Button variant="primary" size="small" onClick={reload}>

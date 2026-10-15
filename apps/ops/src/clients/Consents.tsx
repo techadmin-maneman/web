@@ -10,7 +10,8 @@ import { useCallback } from "react";
 import { type Consent } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "./clients.module.css";
+import shared from "./clients.module.css";
+import styles from "./consents.module.css";
 import { Erase } from "./Erase.tsx";
 import { clientsApi } from "./clients-api.ts";
 
@@ -56,7 +57,7 @@ export function Consents({ clientId, name, onErased }: { clientId: string; name:
   const { consents, deletion } = loaded.value;
   return (
     <section className={styles.consents} aria-label={copy.title}>
-      <Table className={styles.table}>
+      <Table className={shared.table}>
         <thead>
           <tr>
             {COLUMNS.map((column) => (

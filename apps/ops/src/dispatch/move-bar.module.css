@@ -1,0 +1,36 @@
+/* What ./MoveBar.tsx alone draws; what it shares is in ./dispatch.module.css. */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-8) var(--sp-16);
+  padding: var(--sp-8) var(--sp-16);
+  border-bottom: var(--hairline) solid var(--paper-line);
+  background: var(--paper-light);
+}
+
+.bar:focus {
+  outline: none;
+}
+
+.barText {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--fs-14);
+}
+
+.barNote {
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+/* The keyboard's way to a destination: a list, and a button to take the one chosen. */
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-8);
+}

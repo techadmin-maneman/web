@@ -9,7 +9,7 @@ import { type ChoiceRule, type NumberRule, type OpsSetting } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import { keyLabel, boundsOf, choiceLabel, rangeWords, whole, READ_AS, type Draft } from "./rule-drafts.ts";
 import form from "../components/forms.module.css";
-import styles from "./rules.module.css";
+import styles from "./rule-fields.module.css";
 
 const copy = settings.rules;
 

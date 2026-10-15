@@ -87,16 +87,6 @@
   color: var(--text-muted);
 }
 
-.metaValue {
-  margin: var(--sp-4) 0 0;
-  font-size: var(--fs-15);
-}
-
-/* The board letters the replacement due in brass, as it does the live piece's date. */
-.metaBrass {
-  color: var(--status-attention);
-}
-
 /* What waits on Tasks for the client, beneath the head and set in as it is. */
 .open {
   padding: var(--sp-16) var(--sp-28);
@@ -255,36 +245,6 @@
   text-underline-offset: var(--sp-4);
 }
 
-/* A visit left partly done that ops closed without a follow-up, beneath its state. */
-/* Every client, beneath the search: how they are narrowed, the table, and its pages. */
-.list {
-  margin-top: var(--sp-32);
-  max-width: var(--ops-list);
-}
-
-.listNarrow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-16);
-  margin: var(--sp-12) 0 var(--sp-16);
-}
-
-.listScroll {
-  overflow-x: auto;
-}
-
-.listPages {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-12);
-  margin-top: var(--sp-16);
-}
-
-.listPage {
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
 /* A visit's own action, beneath where it stands in its row. */
 .rowAction {
   display: flex;
@@ -369,19 +329,8 @@
   margin-top: var(--sp-16);
 }
 
-.inviteReasonField {
-  height: var(--skeleton-card);
-}
-
 .creditForm {
   margin-top: var(--sp-16);
-}
-
-.fieldLabel {
-  display: block;
-  padding: 0;
-  font-size: var(--fs-14);
-  color: var(--text-muted);
 }
 
 .numberField {
@@ -400,56 +349,6 @@
   margin: var(--sp-12) 0 0;
   font-size: var(--fs-14);
   color: var(--status-done);
-}
-
-/* ---- The pieces ---------------------------------------------------------- */
-
-/* The board's own column widths; the failure and its reason take the slack. */
-.code {
-  --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack */
-  width: var(--local-piece-code);
-  padding-inline: 0 var(--sp-8);
-  font-variant-numeric: tabular-nums;
-}
-
-.base {
-  --local-piece-base: 84px;
-  width: var(--local-piece-base);
-}
-
-.fitted,
-.lot {
-  width: var(--local-piece-column);
-}
-
-.due {
-  width: var(--ops-column-wide);
-}
-
-.base,
-.fitted,
-.lot,
-.due,
-.failure {
-  padding-inline: var(--sp-8);
-}
-
-.lot {
-  font-variant-numeric: tabular-nums;
-}
-
-.lot,
-.failure {
-  color: var(--text-muted);
-}
-
-/* The piece still in wear: the board sets its replacement date in brass and leaves the replaced ones quiet. */
-.due {
-  color: var(--text-muted);
-}
-
-.dueSoon {
-  color: var(--status-attention);
 }
 
 /* ---- The photographs ----------------------------------------------------- */
@@ -538,58 +437,9 @@
 
 /* ---- The consents -------------------------------------------------------- */
 
-.consents {
-  max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--paper-line);
-  padding: var(--sp-24);
-}
-
 /* Fixed, so each column keeps the width the board draws it at and the purpose wraps as it does (packages/ui/Table.tsx). */
 .table {
   table-layout: fixed;
-}
-
-.purpose {
-  width: auto;
-  padding-inline: 0 var(--sp-8);
-}
-
-.state,
-.date,
-.source {
-  padding-inline: var(--sp-8);
-}
-
-.state {
-  --local-consent-state: 92px; /* a consent's state, date and source, beside the purpose */
-  width: var(--local-consent-state);
-}
-
-.date {
-  width: var(--ops-column);
-}
-
-.source {
-  width: var(--ops-column-narrow);
-}
-
-.date,
-.source,
-.quiet {
-  color: var(--text-muted);
-}
-
-/* A consent the client has taken back, in oxblood, as the board marks it. */
-.withdrawn {
-  color: var(--status-warning);
-}
-
-/* The client's own erasure request, which the board draws nowhere and the route answers with. */
-.deletion {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-14);
-  line-height: var(--lh-160);
-  color: var(--status-warning);
 }
 
 .note {
@@ -597,74 +447,6 @@
   font-size: var(--fs-14);
   line-height: var(--lh-160);
   color: var(--text-muted);
-}
-
-/* ---- Erasing the client, for a request made outside the app -------------- */
-
-.erase {
-  margin-top: var(--sp-24);
-  padding-top: var(--sp-16);
-  border-top: var(--hairline) solid var(--paper-line);
-}
-
-.eraseTitle {
-  margin: 0;
-  letter-spacing: var(--tracking-12);
-  font-size: var(--fs-14);
-  color: var(--text-muted);
-}
-
-/* What stands in for the page once the client is erased. */
-.erased {
-  max-width: var(--ops-panel);
-  padding: var(--sp-24) var(--sp-28);
-}
-
-.erasedBack {
-  display: inline-block;
-  margin-top: var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--text);
-  text-decoration: underline;
-}
-
-/* ---- History: the record in figures, which the board draws no tab for ----- */
-
-.history {
-  max-width: var(--ops-panel);
-  border: var(--hairline) solid var(--paper-line);
-  padding: var(--sp-24);
-}
-
-.historyList {
-  margin: 0;
-  border-top: var(--hairline) solid var(--text);
-}
-
-.historyRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-16);
-  min-height: var(--ops-row);
-  padding: var(--sp-8) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
-  font-size: var(--fs-14);
-}
-
-.historyKey {
-  color: var(--text-muted);
-}
-
-.historyValue {
-  margin: 0;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.historyActivity {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-14);
 }
 
 /* ---- Shared ------------------------------------------------------------- */
@@ -682,24 +464,4 @@
 .secondary {
   display: inline-flex;
   margin-top: var(--sp-16);
-}
-
-/* A discount code typed on a visit (docs/decisions/0108-discount-codes.md): the box and its two buttons on a line. */
-.codeForm {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-8);
-}
-
-.codeInput {
-  width: var(--local-piece-column);
-  text-transform: uppercase;
-}
-
-.codeError {
-  flex-basis: 100%;
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-14);
-  color: var(--status-error);
 }

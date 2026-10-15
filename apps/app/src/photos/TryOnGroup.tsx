@@ -11,7 +11,8 @@ import type { TryOn } from "../api.ts";
 import { photos } from "../content.ts";
 import { PhotoCell, type OpenPhoto } from "./PhotoRow.tsx";
 import type { Relink } from "./relink.ts";
-import styles from "./photos.module.css";
+import shared from "./photos.module.css";
+import styles from "./try-on-group.module.css";
 
 const IMAGES = ["photo", "look"] as const;
 
@@ -48,16 +49,16 @@ export function TryOnGroup(props: { tryOn: TryOn; onOpen: (photo: OpenPhoto) => 
   const heading = `try-on-${tryOn.id}`;
   return (
     <section aria-labelledby={heading}>
-      <div className={styles.group}>
-        <h2 className={styles.groupDate} id={heading}>
+      <div className={shared.group}>
+        <h2 className={shared.groupDate} id={heading}>
           {date}
         </h2>
-        <p className={styles.groupWhat}>{photos.tryOn.title}</p>
+        <p className={shared.groupWhat}>{photos.tryOn.title}</p>
       </div>
-      <div className={classes(styles.row, styles.pair)}>
+      <div className={classes(shared.row, styles.pair)}>
         {IMAGES.map((image) => {
           const link = tryOn[image];
-          if (link === null) return <div key={image} className={styles.cell} />;
+          if (link === null) return <div key={image} className={shared.cell} />;
           const name = photos.tryOn.images[image];
           const opened: OpenPhoto = {
             link,

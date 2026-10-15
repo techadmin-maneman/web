@@ -1,0 +1,14 @@
+/* What ./JobScreen.tsx alone draws; what it shares is in ./job.module.css. */
+
+/* Ops changed the job under the phone: the evidence chain's failure, across the card. */
+.changed {
+  padding: var(--sp-24) var(--sp-20);
+  border-top: var(--rule-strong) solid var(--error-on-ink);
+  border-bottom: var(--hairline) solid var(--ink-rule);
+}
+
+/* The way to a closed job's close-out, the foot's one action: as tall as the gold one it stands in for. */
+.atFoot {
+  height: var(--tech-primary);
+  margin-top: 0;
+}

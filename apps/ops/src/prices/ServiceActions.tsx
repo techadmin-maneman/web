@@ -19,7 +19,7 @@ import {
 import { PriceForm, TakeBack } from "./PriceForms.tsx";
 import { actionWhere, type Action } from "./service-actions.ts";
 import form from "../components/forms.module.css";
-import styles from "./prices.module.css";
+import styles from "./service-actions.module.css";
 
 export interface Opened {
   readonly action: Action | null;

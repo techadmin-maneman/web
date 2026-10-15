@@ -48,11 +48,6 @@
   line-height: var(--lh-160);
 }
 
-/* The link Razorpay texted, whole, so ops can read it out or send it again. */
-.link {
-  overflow-wrap: anywhere;
-}
-
 .error {
   margin: var(--sp-12) 0 0;
 }
@@ -61,14 +56,4 @@
 .reason {
   min-height: var(--sp-48);
   resize: vertical;
-}
-
-.choices {
-  margin-top: var(--sp-16);
-}
-
-.times {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-16);
 }

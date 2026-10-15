@@ -28,7 +28,8 @@ import { CardFrame } from "./CardFrame.tsx";
 import { JobCard } from "./JobCard.tsx";
 import { NotHome } from "./NotHome.tsx";
 import frame from "../components/frame.module.css";
-import styles from "./job.module.css";
+import shared from "./job.module.css";
+import styles from "./job-screen.module.css";
 
 /** What ops changed, in the app's words: the new time when the card now carries one, else the field that moved. */
 function whatChanged(job: Job, queued: readonly Queued[]): string {
@@ -40,25 +41,25 @@ function whatChanged(job: Job, queued: readonly Queued[]): string {
 function Changed({ job, queued }: { job: Job; queued: readonly Queued[] }) {
   return (
     <section className={styles.changed} role="alert" aria-labelledby="changed-title">
-      <h2 className={capsLook(styles.changedTitle)} id="changed-title">
+      <h2 className={capsLook(shared.changedTitle)} id="changed-title">
         {copy.changed.title}
       </h2>
-      <p className={styles.changedLine}>{whatChanged(job, queued)}</p>
-      <p className={styles.stageNote}>{copy.changed.body}</p>
+      <p className={shared.changedLine}>{whatChanged(job, queued)}</p>
+      <p className={shared.stageNote}>{copy.changed.body}</p>
     </section>
   );
 }
 
 /** The line that says where a job stands, for the stages that are not the door. */
 function StateLine({ stage, job, queued }: { stage: Stage; job: Job; queued: readonly Queued[] }) {
-  if (stage === "started") return <p className={styles.state}>{copy.states.inProgress}</p>;
+  if (stage === "started") return <p className={shared.state}>{copy.states.inProgress}</p>;
   if (stage === "closed") {
     const outcome = outcomeOf(job, queued) ?? "done";
-    return <p className={styles.state}>{copy.closedAs(closeOutCopy.outcomes[outcome])}</p>;
+    return <p className={shared.state}>{copy.closedAs(closeOutCopy.outcomes[outcome])}</p>;
   }
   if (stage === "not_today") {
     const tomorrow = job.date === dayAfter(todayInIndia());
-    return <p className={styles.state}>{tomorrow ? copy.notToday.tomorrow : copy.notToday.other}</p>;
+    return <p className={shared.state}>{tomorrow ? copy.notToday.tomorrow : copy.notToday.other}</p>;
   }
   return null;
 }
@@ -85,7 +86,7 @@ function footFor(stage: Stage, job: Job, queued: readonly Queued[]): ReactNode {
       <Button
         variant="outlineOnInk"
         size="control"
-        className={classes(styles.second, styles.atFoot)}
+        className={classes(shared.second, styles.atFoot)}
         onClick={() => {
           go(`/jobs/${job.id}/done`);
         }}

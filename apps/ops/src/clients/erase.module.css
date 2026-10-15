@@ -1,0 +1,28 @@
+/* What ./Erase.tsx alone draws; what it shares is in ./clients.module.css. */
+
+.erase {
+  margin-top: var(--sp-24);
+  padding-top: var(--sp-16);
+  border-top: var(--hairline) solid var(--paper-line);
+}
+
+.eraseTitle {
+  margin: 0;
+  letter-spacing: var(--tracking-12);
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+}
+
+/* What stands in for the page once the client is erased. */
+.erased {
+  max-width: var(--ops-panel);
+  padding: var(--sp-24) var(--sp-28);
+}
+
+.erasedBack {
+  display: inline-block;
+  margin-top: var(--sp-16);
+  font-size: var(--fs-14);
+  color: var(--text);
+  text-decoration: underline;
+}

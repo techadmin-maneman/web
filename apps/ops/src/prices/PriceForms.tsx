@@ -11,7 +11,7 @@ import { useState } from "react";
 import { type Price } from "../api.ts";
 import { settings } from "../content/settings.ts";
 import form from "../components/forms.module.css";
-import styles from "./prices.module.css";
+import styles from "./price-forms.module.css";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import { Refusal } from "../components/Refusal.tsx";
 

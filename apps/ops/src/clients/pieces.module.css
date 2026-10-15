@@ -1,0 +1,49 @@
+/* What ./Pieces.tsx alone draws; what it shares is in ./clients.module.css. */
+
+/* The board's own column widths; the failure and its reason take the slack. */
+.code {
+  --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack */
+  width: var(--local-piece-code);
+  padding-inline: 0 var(--sp-8);
+  font-variant-numeric: tabular-nums;
+}
+
+.base {
+  --local-piece-base: 84px;
+  width: var(--local-piece-base);
+}
+
+.fitted,
+.lot {
+  width: var(--local-piece-column);
+}
+
+.due {
+  width: var(--ops-column-wide);
+}
+
+.base,
+.fitted,
+.lot,
+.due,
+.failure {
+  padding-inline: var(--sp-8);
+}
+
+.lot {
+  font-variant-numeric: tabular-nums;
+}
+
+.lot,
+.failure {
+  color: var(--text-muted);
+}
+
+/* The piece still in wear: the board sets its replacement date in brass and leaves the replaced ones quiet. */
+.due {
+  color: var(--text-muted);
+}
+
+.dueSoon {
+  color: var(--status-attention);
+}

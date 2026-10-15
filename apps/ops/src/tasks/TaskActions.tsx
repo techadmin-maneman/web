@@ -13,7 +13,8 @@ import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useRef, useState, type RefObject } from "react";
 import { type ClosableGroup, type Task, type TaskGroup } from "../api.ts";
 import { tasks } from "../content.ts";
-import styles from "./tasks.module.css";
+import shared from "./tasks.module.css";
+import styles from "./task-actions.module.css";
 import { useRereadOnChange } from "../components/Refusal.tsx";
 import { tasksApi } from "./tasks-api.ts";
 
@@ -252,7 +253,7 @@ export function TaskActions({
   const refused = useRowRefusal(failed);
   return (
     <>
-      <span className={styles.ownerActs}>
+      <span className={shared.ownerActs}>
         {mine && (
           <Act
             label={tasks.owner.handBack}
@@ -317,7 +318,7 @@ export function TaskActions({
         />
       )}
       {refused !== null && (
-        <span className={styles.error} role="alert">
+        <span className={shared.error} role="alert">
           {refused}
         </span>
       )}

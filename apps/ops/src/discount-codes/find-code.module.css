@@ -1,0 +1,7 @@
+/* What ./FindCode.tsx alone draws; what it shares is in ./discount-codes.module.css. */
+
+.find {
+  display: flex;
+  align-items: end;
+  gap: var(--sp-8);
+}

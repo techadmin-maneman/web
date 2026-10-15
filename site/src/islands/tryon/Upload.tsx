@@ -5,7 +5,8 @@ import { Button } from "@maneman/ui/Button";
 import { useRef } from "preact/hooks";
 import { tryOn } from "../../content/site.ts";
 import { Title, type HeadingRef } from "./Title.tsx";
-import styles from "./TryOn.module.css";
+import shared from "./TryOn.module.css";
+import styles from "./upload.module.css";
 
 /** The guide a photo is framed to: a dashed oval with gilt corners, and its line beneath. */
 function Oval() {
@@ -54,12 +55,12 @@ export function Upload(props: { photo: string | null; heading: HeadingRef; onCho
   }
 
   return (
-    <div class={styles.split}>
+    <div class={shared.split}>
       <div>
-        <Title heading={props.heading} className={styles.titleLarge}>
+        <Title heading={props.heading} className={shared.titleLarge}>
           {tryOn.upload.title}
         </Title>
-        <p class={styles.body}>{tryOn.upload.body}</p>
+        <p class={shared.body}>{tryOn.upload.body}</p>
         <ol class={styles.guidelines}>
           {tryOn.upload.guidelines.map((guideline) => (
             <li key={guideline.n} class={styles.guideline}>

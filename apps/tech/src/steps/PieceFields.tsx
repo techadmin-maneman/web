@@ -15,7 +15,8 @@ import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
 import { dayMonth } from "../lib/when.ts";
 import { asLabel, isLabel } from "./label.ts";
 import { DECLINED, given, type Choice, type ClientPiece, type KitHairSystem } from "./piece-form.ts";
-import styles from "./steps.module.css";
+import shared from "./steps.module.css";
+import styles from "./piece-fields.module.css";
 
 export type Looked =
   | { readonly state: "none" }
@@ -28,7 +29,7 @@ export const NOT_LOOKED: Looked = { state: "none" };
 /** A field on the ink, labelled as the technician board labels its boxes. */
 function InkField(props: { label: string; children: (control: FieldControl) => ReactNode }) {
   return (
-    <Field onInk label={props.label} look={{ label: styles.fieldLabel }}>
+    <Field onInk label={props.label} look={{ label: shared.fieldLabel }}>
       {props.children}
     </Field>
   );
@@ -48,17 +49,17 @@ export function ChoiceList({
     { id: DECLINED, label: oneVisit.declined },
   ];
   return (
-    <section className={styles.field} aria-labelledby="client-choice-title">
-      <h2 className={capsLook(styles.fieldTitle)} id="client-choice-title">
+    <section className={shared.field} aria-labelledby="client-choice-title">
+      <h2 className={capsLook(shared.fieldTitle)} id="client-choice-title">
         {oneVisit.choice}
       </h2>
-      {products.length === 0 && <p className={styles.note}>{oneVisit.noProducts}</p>}
-      <div className={styles.choiceList}>
+      {products.length === 0 && <p className={shared.note}>{oneVisit.noProducts}</p>}
+      <div className={shared.choiceList}>
         {options.map((option) => (
           <ToggleButton
             key={option.id}
             onInk
-            className={styles.choice}
+            className={shared.choice}
             pressed={choice === option.id}
             onClick={() => {
               onChoose(option.id);
@@ -68,7 +69,7 @@ export function ChoiceList({
           </ToggleButton>
         ))}
       </div>
-      {choice === DECLINED && <p className={styles.note}>{oneVisit.declinedNote}</p>}
+      {choice === DECLINED && <p className={shared.note}>{oneVisit.declinedNote}</p>}
     </section>
   );
 }
@@ -88,23 +89,23 @@ export function KitPieces({
 }) {
   if (choices.length === 0) return null;
   return (
-    <section className={styles.field} aria-labelledby="kit-pieces-title">
-      <h2 className={capsLook(styles.fieldTitle)} id="kit-pieces-title">
+    <section className={shared.field} aria-labelledby="kit-pieces-title">
+      <h2 className={capsLook(shared.fieldTitle)} id="kit-pieces-title">
         {copy.piece.kit.title}
       </h2>
-      <div className={styles.choiceList}>
+      <div className={shared.choiceList}>
         {choices.map(({ hairSystem, matches }) => (
           <ToggleButton
             key={hairSystem.code}
             onInk
-            className={styles.choice}
+            className={shared.choice}
             pressed={stock === hairSystem.code}
             onClick={() => {
               onStock(stock === hairSystem.code ? null : hairSystem.code);
             }}
           >
             {hairSystem.name} · {copy.piece.kit.held(hairSystem.held)}
-            {matches && <span className={styles.note}> · {copy.piece.kit.matches}</span>}
+            {matches && <span className={shared.note}> · {copy.piece.kit.matches}</span>}
           </ToggleButton>
         ))}
       </div>
@@ -118,13 +119,13 @@ export function PaidFor({ job }: { job: Job }) {
   if (paid === null) return null;
   const inProfile = profileNamesAnother(job);
   return (
-    <section className={styles.field} aria-labelledby="paid-for-title">
-      <h2 className={capsLook(styles.fieldTitle)} id="paid-for-title">
+    <section className={shared.field} aria-labelledby="paid-for-title">
+      <h2 className={capsLook(shared.fieldTitle)} id="paid-for-title">
         {jobCopy.piece.rows.paidFor}
       </h2>
-      <p className={styles.paidFor}>{paid}</p>
+      <p className={shared.paidFor}>{paid}</p>
       {inProfile !== null && (
-        <p className={styles.hint} role="alert">
+        <p className={shared.hint} role="alert">
           {jobCopy.piece.mismatch(inProfile)}
         </p>
       )}
@@ -134,13 +135,13 @@ export function PaidFor({ job }: { job: Job }) {
 
 function PieceList({ pieces, onPick }: { pieces: readonly ClientPiece[]; onPick: (piece: ClientPiece) => void }) {
   return (
-    <ul className={styles.picks}>
+    <ul className={shared.picks}>
       {pieces.map((piece) => (
         <li key={piece.piece_code}>
           <Button
             variant="outlineOnInk"
             size="control"
-            className={styles.pick}
+            className={shared.pick}
             onClick={() => {
               onPick(piece);
             }}
@@ -166,7 +167,7 @@ function Picker(props: {
       <Button
         variant="outlineOnInk"
         size="control"
-        className={styles.second}
+        className={shared.second}
         aria-expanded={props.open}
         onClick={props.onToggle}
       >
@@ -185,7 +186,7 @@ function ScanButton({ onCode }: { onCode: (code: string) => void }) {
       <Button
         variant="outlineOnInk"
         size="control"
-        className={styles.second}
+        className={shared.second}
         aria-pressed={scanning}
         onClick={() => {
           setScanning(!scanning);
@@ -224,12 +225,12 @@ export function LabelField(props: {
   const malformed = given(code) && !isLabel(code);
   return (
     <>
-      <div className={styles.field}>
+      <div className={shared.field}>
         <Field
           onInk
           label={copy.piece.label}
           error={malformed ? copy.piece.malformed : null}
-          look={{ label: styles.fieldLabel, error: styles.hint }}
+          look={{ label: shared.fieldLabel, error: shared.hint }}
         >
           {(control) => (
             <TextInput
@@ -252,7 +253,7 @@ export function LabelField(props: {
         <Button
           variant="outlineOnInk"
           size="control"
-          className={styles.second}
+          className={shared.second}
           disabled={!isLabel(code) || props.looking}
           busy={props.looking}
           onClick={props.onLook}
@@ -262,7 +263,7 @@ export function LabelField(props: {
         <Picker pieces={props.pieces} open={props.picking} onToggle={props.onTogglePicking} onPick={props.onPick} />
       </div>
       {props.expired && (
-        <p className={styles.warn} role="alert">
+        <p className={shared.warn} role="alert">
           {copy.piece.expired}
         </p>
       )}
@@ -275,7 +276,7 @@ export function LabelField(props: {
 function LookedNote({ looked }: { looked: Looked }) {
   if (looked.state === "unknown" || looked.state === "offline") {
     return (
-      <p className={styles.note} role="status">
+      <p className={shared.note} role="status">
         {looked.state === "unknown" ? copy.piece.unknown : copy.piece.offline}
       </p>
     );
@@ -284,14 +285,14 @@ function LookedNote({ looked }: { looked: Looked }) {
   const { found } = looked;
   if (found.in_kit) {
     return (
-      <p className={styles.note} role="status">
+      <p className={shared.note} role="status">
         {copy.piece.inKit(found.piece.base ?? found.piece.piece_code, found.piece.supplier_lot)}
       </p>
     );
   }
   if (found.belongs_to_this_job) return null;
   return (
-    <p className={styles.warn} role="alert">
+    <p className={shared.warn} role="alert">
       {copy.piece.notThisClient}
     </p>
   );
@@ -305,13 +306,13 @@ export function BaseAndLot(props: {
   onLot: (lot: string) => void;
 }) {
   return (
-    <div className={styles.field}>
+    <div className={shared.field}>
       <InkField label={copy.piece.base}>
         {(control) => (
           <TextInput
             {...control}
             onInk
-            className={styles.box64}
+            className={shared.box64}
             value={props.base}
             autoComplete="off"
             spellCheck={false}
@@ -326,7 +327,7 @@ export function BaseAndLot(props: {
           <TextInput
             {...control}
             onInk
-            className={styles.box64}
+            className={shared.box64}
             value={props.lot}
             autoCapitalize="characters"
             autoComplete="off"
@@ -353,8 +354,8 @@ export function OldPiece(props: {
   onPick: (piece: ClientPiece) => void;
 }) {
   return (
-    <section className={styles.field} aria-labelledby="old-piece-title">
-      <h2 className={capsLook(styles.fieldTitle)} id="old-piece-title">
+    <section className={shared.field} aria-labelledby="old-piece-title">
+      <h2 className={capsLook(shared.fieldTitle)} id="old-piece-title">
         {copy.piece.old.title}
       </h2>
       <InkField label={copy.piece.old.label}>
@@ -362,7 +363,7 @@ export function OldPiece(props: {
           <TextInput
             {...control}
             onInk
-            className={styles.box64}
+            className={shared.box64}
             value={props.code}
             placeholder={copy.piece.placeholder}
             autoCapitalize="characters"
@@ -380,7 +381,7 @@ export function OldPiece(props: {
           <TextInput
             {...control}
             onInk
-            className={styles.box64}
+            className={shared.box64}
             value={props.reason}
             autoComplete="off"
             onChange={(event) => {

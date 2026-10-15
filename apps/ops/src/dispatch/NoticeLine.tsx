@@ -1,6 +1,6 @@
 import { Button } from "@maneman/ui/Button";
 import { dispatch } from "../content.ts";
-import styles from "./dispatch.module.css";
+import styles from "./notice-line.module.css";
 import type { Notice } from "./landing.ts";
 
 /** What a move did or why it was refused; a call still to make carries the button that records it. */

@@ -13,7 +13,8 @@ import { api, isErased, type ClientInvite } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
-import styles from "./clients.module.css";
+import shared from "./clients.module.css";
+import styles from "./invite.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { clientsApi } from "./clients-api.ts";
 
@@ -39,16 +40,16 @@ function Details({ invite, news }: { invite: ClientInvite; news: InviteNews | nu
   ];
   return (
     <>
-      <dl className={styles.address}>
+      <dl className={shared.address}>
         {rows.map((row) => (
-          <div className={styles.addressRow} key={row.key}>
-            <dt className={styles.metaKey}>{row.key}</dt>
-            <dd className={styles.addressValue}>{row.value}</dd>
+          <div className={shared.addressRow} key={row.key}>
+            <dt className={shared.metaKey}>{row.key}</dt>
+            <dd className={shared.addressValue}>{row.value}</dd>
           </div>
         ))}
       </dl>
       {news !== null && (
-        <p className={styles.done} role="status">
+        <p className={shared.done} role="status">
           {copy.news[news]}
         </p>
       )}
@@ -89,18 +90,18 @@ function AttachForm({
 
   return (
     <form
-      className={styles.creditForm}
+      className={shared.creditForm}
       onSubmit={(event) => {
         event.preventDefault();
         if (ready) void send();
       }}
     >
-      <p className={styles.findHint}>{copy.none}</p>
+      <p className={shared.findHint}>{copy.none}</p>
       <Field label={copy.form.code}>
         {(control) => (
           <TextInput
             {...control}
-            className={styles.numberField}
+            className={shared.numberField}
             autoComplete="off"
             autoCapitalize="characters"
             spellCheck={false}
@@ -113,7 +114,7 @@ function AttachForm({
           />
         )}
       </Field>
-      <Field className={styles.inviteReason} label={copy.form.reason}>
+      <Field className={shared.inviteReason} label={copy.form.reason}>
         {(control) => (
           <TextArea
             {...control}
@@ -127,11 +128,11 @@ function AttachForm({
           />
         )}
       </Field>
-      <Button variant="primary" size="small" className={styles.primary} type="submit" disabled={sending || !ready}>
+      <Button variant="primary" size="small" className={shared.primary} type="submit" disabled={sending || !ready}>
         {sending ? copy.form.saving : copy.form.save}
       </Button>
       {attaching.step === "failed" && (
-        <Refusal className={styles.error} said={errorText(copy.form.errors, { code: attaching.code })} />
+        <Refusal className={shared.error} said={errorText(copy.form.errors, { code: attaching.code })} />
       )}
     </form>
   );
@@ -151,13 +152,13 @@ export function Invite({
 }) {
   const mayAttach = useAccess().mayCall("POST /api/clients/{id}/referral");
   return (
-    <section className={styles.invite} aria-labelledby="invite">
-      <h3 className={capsLook(styles.sectionTitle)} id="invite">
+    <section className={shared.invite} aria-labelledby="invite">
+      <h3 className={capsLook(shared.sectionTitle)} id="invite">
         {copy.title}
       </h3>
       {invite !== null && <Details invite={invite} news={news} />}
       {invite === null && mayAttach && <AttachForm clientId={clientId} onInvite={onInvite} />}
-      {invite === null && !mayAttach && <p className={styles.findHint}>{copy.noInvite}</p>}
+      {invite === null && !mayAttach && <p className={shared.findHint}>{copy.noInvite}</p>}
     </section>
   );
 }

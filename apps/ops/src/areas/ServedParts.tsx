@@ -10,7 +10,7 @@ import { TabButton, Tabs } from "@maneman/ui/Tabs";
 import type { AreaChange, ServedPincode } from "../api.ts";
 import { areas } from "../content.ts";
 import form from "../components/forms.module.css";
-import styles from "./areas.module.css";
+import styles from "./served-parts.module.css";
 import { LaunchPanel } from "./LaunchPanel.tsx";
 import type { Draft, FileChange, Row } from "./served-draft.ts";
 import { Refusal } from "../components/Refusal.tsx";

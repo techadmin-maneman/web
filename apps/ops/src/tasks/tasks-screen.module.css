@@ -1,0 +1,20 @@
+/* What ./TasksScreen.tsx alone draws; what it shares is in ./tasks.module.css. */
+
+/* The member of staff it is theirs, by first name, as the board writes "Priya". */
+.owner {
+  font-size: var(--fs-14);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* How long it has left, in words: "2 days left", "3 days overdue". */
+.due {
+  text-align: right;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: var(--lh-160);
+  color: var(--text-muted);
+}

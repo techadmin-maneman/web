@@ -28,7 +28,8 @@ import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
 import { subOf } from "./task-subs.ts";
 import { TaskActions } from "./TaskActions.tsx";
-import styles from "./tasks.module.css";
+import shared from "./tasks.module.css";
+import styles from "./tasks-screen.module.css";
 import { nameParts } from "../lib/who.ts";
 
 type Group = TaskGroup["group"];
@@ -85,19 +86,19 @@ function TaskRow({ group, task, now, acting, marked }: RowProps) {
   const { owner } = acting;
 
   return (
-    <li id={taskRowId(group, task.id)} tabIndex={-1} className={marked ? styles.marked : styles.task}>
-      <div className={styles.what}>
+    <li id={taskRowId(group, task.id)} tabIndex={-1} className={marked ? shared.marked : shared.task}>
+      <div className={shared.what}>
         {task.person === null ? (
-          <span className={styles.subject}>{subject}</span>
+          <span className={shared.subject}>{subject}</span>
         ) : (
-          <OpsLink className={styles.subject} to={taskClientPath(group, task.person.id)}>
+          <OpsLink className={shared.subject} to={taskClientPath(group, task.person.id)}>
             {subject}
           </OpsLink>
         )}
-        <span className={styles.sub}>{subOf(task, now)}</span>
+        <span className={shared.sub}>{subOf(task, now)}</span>
         {where !== null && action !== undefined && (
-          <span className={styles.sub}>
-            <OpsLink className={styles.decide} to={where}>
+          <span className={shared.sub}>
+            <OpsLink className={shared.decide} to={where}>
               {action}
               {/* Every row of a group links the same words, so each says whose it is to a screen reader. */}
               <VisuallyHidden>{` · ${subject}`}</VisuallyHidden>
@@ -136,19 +137,19 @@ function GroupCard({ group, unfolded, onFold, rowOf }: GroupProps) {
   const listId = `group-${group.group}`;
 
   return (
-    <div className={styles.group}>
-      <div className={styles.groupHead}>
-        <h4 className={capsLook(styles.groupName)}>{name}</h4>
-        <span className={styles.count}>{group.count}</span>
+    <div className={shared.group}>
+      <div className={shared.groupHead}>
+        <h4 className={capsLook(shared.groupName)}>{name}</h4>
+        <span className={shared.count}>{group.count}</span>
       </div>
-      <ul className={styles.tasks} id={listId}>
+      <ul className={shared.tasks} id={listId}>
         {shown.map(rowOf)}
       </ul>
       {folds && (
         <TextButton
           tone="muted"
           compact
-          className={styles.fold}
+          className={shared.fold}
           aria-expanded={unfolded}
           aria-controls={listId}
           onClick={onFold}
@@ -158,7 +159,7 @@ function GroupCard({ group, unfolded, onFold, rowOf }: GroupProps) {
         </TextButton>
       )}
       {shown.length === listed && group.count > listed && (
-        <p className={styles.shown}>{tasks.shown(listed, group.count)}</p>
+        <p className={shared.shown}>{tasks.shown(listed, group.count)}</p>
       )}
     </div>
   );
@@ -167,19 +168,19 @@ function GroupCard({ group, unfolded, onFold, rowOf }: GroupProps) {
 /** A department's groups under its name and how many wait in all of them. */
 function DepartmentSection({ section, children }: { section: TaskSection; children: ReactNode }) {
   return (
-    <div className={styles.department}>
-      <div className={styles.departmentHead}>
-        <h3 className={styles.departmentName}>{tasks.departments[section.department]}</h3>
-        <span className={styles.count}>{section.count}</span>
+    <div className={shared.department}>
+      <div className={shared.departmentHead}>
+        <h3 className={shared.departmentName}>{tasks.departments[section.department]}</h3>
+        <span className={shared.count}>{section.count}</span>
       </div>
-      <div className={styles.groups}>{children}</div>
+      <div className={shared.groups}>{children}</div>
     </div>
   );
 }
 
 /** The head's count of what has run over: it takes the keyboard to the first, where one is listed. */
 function OverdueCount({ count, onJump }: { count: number; onJump: (() => void) | null }) {
-  if (onJump === null) return <span className={styles.overdue}>{tasks.overdue(count)}</span>;
+  if (onJump === null) return <span className={shared.overdue}>{tasks.overdue(count)}</span>;
   return (
     <TextButton tone="danger" compact aria-label={tasks.overdueJump(count)} onClick={onJump}>
       {tasks.overdue(count)}
@@ -287,9 +288,9 @@ function TaskQueue() {
   );
 
   return (
-    <section className={styles.queue} aria-labelledby="tasks">
-      <div className={styles.queueHead}>
-        <h2 className={styles.panelTitle} id="tasks" ref={heading} tabIndex={-1}>
+    <section className={shared.queue} aria-labelledby="tasks">
+      <div className={shared.queueHead}>
+        <h2 className={shared.panelTitle} id="tasks" ref={heading} tabIndex={-1}>
           {tasks.openCount(groups.reduce((sum, group) => sum + group.count, 0))}
         </h2>
         <OverdueCount count={overdue} onJump={first === null ? null : goToFirstOverdue} />
@@ -310,7 +311,7 @@ function TaskQueue() {
 
 export function TasksScreen() {
   return (
-    <div className={styles.board}>
+    <div className={shared.board}>
       <NeedsAHand />
       <TaskQueue />
     </div>

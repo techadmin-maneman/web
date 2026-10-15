@@ -17,7 +17,8 @@ import type { PincodeAnswer, ReferralReward } from "../../lib/api.ts";
 import { fill } from "../../lib/text.ts";
 import { StageDrawing } from "../Drawings.tsx";
 import { MobileField, NameField } from "../PersonFields.tsx";
-import styles from "./Invite.module.css";
+import shared from "./Invite.module.css";
+import styles from "./fields.module.css";
 import type { PersonField, PersonFields } from "./useTurnstileForm.ts";
 
 /** What the island gives either form. */
@@ -37,7 +38,7 @@ export interface FormProps {
 /** "For 122018 · Change": the pincode the form is for, and the way back to the field. */
 export function ForPincode(props: { text: string; onChange: () => void }) {
   return (
-    <p class={styles.forPincode}>
+    <p class={shared.forPincode}>
       {props.text}
       {" · "}
       <TextButton aria-label={referral.pincode.changeLabel} onClick={props.onChange}>
@@ -55,13 +56,13 @@ export function ForPincode(props: { text: string; onChange: () => void }) {
 export function ExtentFieldset(props: { extent: LossExtent | null; onChange: (extent: LossExtent) => void }) {
   return (
     <Fieldset legend={booking.extent} legendLook="caps">
-      <div class={styles.extents}>
+      <div class={shared.extents}>
         {stageOptions.map((option) => (
           <ChoiceCard
             key={option.id}
             name="extent"
             look="picture"
-            className={styles.extent}
+            className={shared.extent}
             checked={props.extent === option.id}
             onChange={() => {
               props.onChange(option.id);
@@ -69,7 +70,7 @@ export function ExtentFieldset(props: { extent: LossExtent | null; onChange: (ex
           >
             <>
               <StageDrawing hair={option.hair} zone={option.zone} size="small" />
-              <span class={styles.extentText}>{option.short}</span>
+              <span class={shared.extentText}>{option.short}</span>
             </>
           </ChoiceCard>
         ))}
@@ -90,7 +91,7 @@ export function PersonFieldset(props: {
   const { fields, idPrefix } = props;
   return (
     <>
-      <div class={styles.fields}>
+      <div class={shared.fields}>
         <NameField
           id={`${idPrefix}-name`}
           value={fields.name}
@@ -137,7 +138,7 @@ export function AgreementBox(props: {
   const { required } = props;
   return (
     <Checkbox
-      className={styles.consent}
+      className={shared.consent}
       checked={props.checked}
       aria-required={required === undefined ? undefined : "true"}
       aria-invalid={required?.bad}
@@ -146,9 +147,9 @@ export function AgreementBox(props: {
         props.onChange(event.currentTarget.checked);
       }}
       label={
-        <span class={styles.consentText}>
+        <span class={shared.consentText}>
           {props.label}
-          {props.note !== "" && <span class={styles.consentNote}>{` ${props.note}`}</span>}
+          {props.note !== "" && <span class={shared.consentNote}>{` ${props.note}`}</span>}
         </span>
       }
     />
@@ -176,7 +177,7 @@ export function ConsentBox(props: {
       />
       <div aria-live="polite">
         {bad && (
-          <div id={`${idPrefix}-consent-error`} class={messageLook({ tone: "error", className: styles.error })}>
+          <div id={`${idPrefix}-consent-error`} class={messageLook({ tone: "error", className: shared.error })}>
             {referral.form.consentError}
           </div>
         )}
@@ -217,7 +218,7 @@ export function StepLine(props: { at: number; of: number; name: string; focus: b
     line.current?.scrollIntoView({ block: "start" });
   }, [props.focus]);
   return (
-    <p ref={line} tabIndex={-1} data-says-where class={capsLook(styles.step)}>
+    <p ref={line} tabIndex={-1} data-says-where class={capsLook(shared.step)}>
       {fill(booking.step, { at: String(props.at), of: String(props.of), name: props.name })}
     </p>
   );
@@ -226,7 +227,7 @@ export function StepLine(props: { at: number; of: number; name: string; focus: b
 /** "For Karan Bhatia, +91 98100 00002 · Change": the name and number /book kept first, and the way back to them. */
 export function BookingFor(props: { person: PersonFields; onChange: () => void }) {
   return (
-    <p class={styles.forPincode}>
+    <p class={shared.forPincode}>
       {fill(booking.bookingFor, { name: props.person.name.trim(), mobile: props.person.mobile })}
       {" · "}
       <TextButton aria-label={booking.changeYouLabel} onClick={props.onChange}>
@@ -256,7 +257,7 @@ export function Send(props: {
     <>
       <div aria-live="polite">
         {line !== null && (
-          <div class={messageLook({ tone: "error", className: styles.failure })}>
+          <div class={messageLook({ tone: "error", className: shared.failure })}>
             {line}
             {line === referral.errors.rateLimited && (
               <>
@@ -289,8 +290,8 @@ export function Send(props: {
  */
 export function RememberedInvite(props: { line: string; without: string; onWithout: () => void }) {
   return (
-    <div class={styles.remembered}>
-      <p class={styles.told}>{props.line}</p>
+    <div class={shared.remembered}>
+      <p class={shared.told}>{props.line}</p>
       <TextButton onClick={props.onWithout}>{props.without}</TextButton>
     </div>
   );

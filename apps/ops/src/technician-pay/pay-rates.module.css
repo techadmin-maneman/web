@@ -1,0 +1,16 @@
+/* What ./PayRates.tsx alone draws; what it shares is in ./technician-pay.module.css. */
+
+.rates {
+  min-width: var(--ops-table-min);
+}
+
+/* A rate set to start later, beneath the one in force. */
+.later {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+}
+
+.ask {
+  padding: var(--sp-12) var(--sp-20) 0;
+}

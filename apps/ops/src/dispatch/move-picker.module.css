@@ -1,0 +1,45 @@
+/* What ./MovePicker.tsx alone draws; what it shares is in ./dispatch.module.css. */
+
+.picker {
+  padding: var(--sp-24);
+}
+
+.pickerTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-size: var(--fs-24);
+  line-height: var(--lh-115);
+}
+
+.pickerWhen {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  color: var(--text-muted);
+}
+
+.reasons {
+  margin-top: var(--sp-20);
+}
+
+/* What the move does, behind the board's brass rule. */
+.consequence {
+  margin: var(--sp-16) 0 0;
+  padding-left: var(--sp-16);
+  border-left: var(--rule-strong) solid var(--brass);
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+}
+
+/* Round, not the house square: only one reason is kept. */
+
+.blackoutReason {
+  margin-top: var(--sp-16);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  margin-top: var(--sp-20);
+}

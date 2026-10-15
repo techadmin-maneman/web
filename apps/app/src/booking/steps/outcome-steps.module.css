@@ -1,0 +1,48 @@
+/* What ./OutcomeSteps.tsx alone draws; what it shares is in ../booking.module.css. */
+
+.failed {
+  padding-left: var(--sp-16);
+  border-left: var(--rule-strong) solid var(--error-on-paper);
+}
+
+.confirmed {
+  margin: calc(-1 * var(--sp-24)) calc(-1 * var(--sp-20)) calc(-1 * var(--sp-24));
+  padding: var(--sp-24) var(--sp-20);
+  background: var(--ink);
+  color: var(--paper);
+  --focus-colour: var(--paper);
+}
+
+.confirmedLabel {
+  font-size: var(--fs-14);
+  color: var(--ink-muted);
+}
+
+.confirmedTick {
+  display: block;
+  margin-top: var(--sp-16);
+  color: var(--gilt);
+}
+
+.paidAmount {
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+
+.note,
+.done {
+  justify-content: center;
+  width: 100%;
+}
+
+.confirmedCalendar {
+  margin-top: var(--sp-24);
+}
+
+.note {
+  margin-top: var(--sp-24);
+}
+
+.done {
+  margin-top: var(--sp-8);
+}

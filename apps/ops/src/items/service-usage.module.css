@@ -1,0 +1,17 @@
+/* What ./ServiceUsage.tsx alone draws; what it shares is in ./consumables.module.css. */
+
+.uses {
+  margin: var(--sp-16) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.use {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8) var(--sp-16);
+  padding: var(--sp-8) 0;
+  border-bottom: var(--hairline) solid var(--paper-line);
+}

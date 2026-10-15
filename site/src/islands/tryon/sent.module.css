@@ -1,0 +1,5 @@
+/* What ./Sent.tsx alone draws; what it shares is in ./TryOn.module.css. */
+.number {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

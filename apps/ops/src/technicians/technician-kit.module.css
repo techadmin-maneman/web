@@ -1,0 +1,19 @@
+/* What ./TechnicianKit.tsx alone draws; what it shares is in ./technicians.module.css. */
+
+.kit {
+  margin-top: var(--sp-12);
+}
+
+/* At or below its level: said in words, and in oxblood, never by colour alone. */
+.low {
+  margin-left: var(--sp-8);
+  font-size: var(--fs-13);
+  font-weight: var(--weight-medium);
+  color: var(--status-warning);
+}
+
+.counted {
+  font-size: var(--fs-13);
+  color: var(--text-muted);
+  white-space: nowrap;
+}

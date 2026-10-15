@@ -11,7 +11,7 @@ import { words as copy } from "../content/words.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { placeOf } from "./WordForm.tsx";
 import form from "../components/forms.module.css";
-import styles from "./words.module.css";
+import styles from "./word-history.module.css";
 import { FormActions } from "../components/FormActions.tsx";
 import { wordsApi } from "./words-api.ts";
 

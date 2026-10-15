@@ -1,0 +1,34 @@
+/* What ./Looks.tsx alone draws; what it shares is in ./TryOn.module.css. */
+.lookGrid {
+  margin-top: var(--space-s);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(46%, var(--look-min)), 1fr));
+  gap: var(--sp-16);
+}
+.thumb {
+  aspect-ratio: 4 / 3;
+  display: block;
+  overflow: hidden;
+  background: var(--ink-frame);
+}
+.thumbImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lookText {
+  display: block;
+  padding: var(--sp-12) var(--sp-16) var(--sp-16);
+}
+.lookName {
+  display: block;
+  font-size: var(--fs-15);
+}
+.lookDetail {
+  display: block;
+  font-size: var(--fs-13);
+  color: var(--ink-muted);
+  margin-top: var(--sp-4);
+  line-height: var(--lh-145);
+}

@@ -15,7 +15,8 @@ import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import { api, type ConsentPurpose, type Profile } from "../api.ts";
 import { profile } from "../content.ts";
-import styles from "./profile.module.css";
+import shared from "./profile.module.css";
+import styles from "./consent-list.module.css";
 
 export type Consent = Profile["consents"][number];
 
@@ -29,8 +30,8 @@ const NO_SWITCH: readonly ConsentPurpose[] = ["photos_own_record"];
 
 function VisitPhotos() {
   return (
-    <li className={styles.consent}>
-      <p className={styles.consentName}>{profile.visitPhotos}</p>
+    <li className={shared.consent}>
+      <p className={shared.consentName}>{profile.visitPhotos}</p>
     </li>
   );
 }
@@ -63,23 +64,23 @@ export function ConsentList({
 
   return (
     <section aria-labelledby="agreed" aria-busy={busy}>
-      <h2 className={capsLook(styles.label)} id="agreed">
+      <h2 className={capsLook(shared.label)} id="agreed">
         {copy.agreed}
       </h2>
-      <ul className={styles.consents}>
+      <ul className={shared.consents}>
         <VisitPhotos />
         {consents
           .filter((consent) => !NO_SWITCH.includes(consent.purpose))
           .map((consent) => {
             const name = copy.purposes[consent.purpose];
             return (
-              <li key={consent.purpose} className={styles.consent}>
-                <div className={styles.consentRow}>
+              <li key={consent.purpose} className={shared.consent}>
+                <div className={shared.consentRow}>
                   <div>
-                    <p className={styles.consentName} id={`consent-${consent.purpose}`}>
+                    <p className={shared.consentName} id={`consent-${consent.purpose}`}>
                       {name}
                     </p>
-                    <p className={styles.consentWhen}>
+                    <p className={shared.consentWhen}>
                       {consent.granted && consent.since !== null ? copy.given(longDate(consent.since)) : copy.notGiven}
                     </p>
                   </div>
@@ -97,26 +98,26 @@ export function ConsentList({
                 {WHEN_OFF[consent.purpose] !== undefined && (
                   // Always in the page, so a screen reader hears the line come and go with the switch.
                   <div role="status">
-                    {!consent.granted && <p className={styles.consequence}>{WHEN_OFF[consent.purpose]}</p>}
+                    {!consent.granted && <p className={shared.consequence}>{WHEN_OFF[consent.purpose]}</p>}
                   </div>
                 )}
                 {failed === consent.purpose && (
-                  <InlineMessage tone="error" className={styles.error}>
+                  <InlineMessage tone="error" className={shared.error}>
                     {copy.switchFailed}
                   </InlineMessage>
                 )}
                 {confirming === consent.purpose && (
-                  <div className={styles.confirm}>
+                  <div className={shared.confirm}>
                     <ul className={styles.lines}>
                       {copy.referralCards.lines.map((line) => (
                         <li key={line}>{line}</li>
                       ))}
                     </ul>
-                    <div className={styles.row}>
+                    <div className={shared.row}>
                       <Button
                         variant="primary"
                         size="control"
-                        className={styles.primary}
+                        className={shared.primary}
                         disabled={busy}
                         onClick={() => void switchTo(consent.purpose, true)}
                       >
@@ -125,7 +126,7 @@ export function ConsentList({
                       <Button
                         variant="quiet"
                         size="control"
-                        className={styles.secondary}
+                        className={shared.secondary}
                         onClick={() => {
                           setConfirming(null);
                           setFailed(null);

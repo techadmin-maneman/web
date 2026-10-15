@@ -1,0 +1,16 @@
+/* What ./PhotoRow.tsx alone draws; what it shares is in ./photos.module.css. */
+
+.arrived {
+  opacity: 1;
+}
+
+/* A photograph whose link would not load, in its place in a row: a tap reads fresh links. */
+.reload {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: var(--sp-8);
+  font-size: var(--fs-13);
+  text-align: center;
+  color: var(--text-muted);
+}

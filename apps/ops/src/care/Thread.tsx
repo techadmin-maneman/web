@@ -20,7 +20,7 @@ import { ClientPanel } from "./ClientPanel.tsx";
 import { Stranger } from "./Stranger.tsx";
 import { Composer } from "./Composer.tsx";
 import form from "../components/forms.module.css";
-import styles from "./care.module.css";
+import styles from "./thread.module.css";
 import { FormActions } from "../components/FormActions.tsx";
 
 const thread = copy.thread;

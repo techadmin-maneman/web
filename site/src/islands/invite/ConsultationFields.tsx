@@ -13,7 +13,8 @@ import { whatsapp } from "../../content/site.ts";
 import type { OpenWindows } from "../../lib/api.ts";
 import { stripMonths, type StripDay } from "../../lib/dates.ts";
 import { dayOpen, hoursOn, isOpen, type OpenDays, type Slot } from "../../lib/open-windows.ts";
-import styles from "./Invite.module.css";
+import shared from "./Invite.module.css";
+import styles from "./consultation-fields.module.css";
 
 const { consultation } = referral;
 
@@ -37,11 +38,11 @@ export function PlanChoice({ plan, onPlanChange }: { plan: Plan; onPlanChange: (
               onPlanChange(option.id);
             }}
           >
-            <span class={styles.windowLabel}>{option.label}</span>
+            <span class={shared.windowLabel}>{option.label}</span>
           </ChoiceCard>
         ))}
       </div>
-      {plan === "one_visit" && <p class={styles.planNote}>{choices.note}</p>}
+      {plan === "one_visit" && <p class={shared.planNote}>{choices.note}</p>}
     </Fieldset>
   );
 }
@@ -74,11 +75,11 @@ export function DiscountCode({
         }}
       />
       {refused && (
-        <div id="invite-consultation-code-error" class={messageLook({ tone: "error", className: styles.error })}>
+        <div id="invite-consultation-code-error" class={messageLook({ tone: "error", className: shared.error })}>
           {referral.errors.codeNotApplicable}
         </div>
       )}
-      <p id="invite-consultation-code-hint" class={styles.hint}>
+      <p id="invite-consultation-code-hint" class={shared.hint}>
         {consultation.code.hint}
       </p>
     </div>
@@ -104,14 +105,14 @@ export function DayStrip({
   return (
     <Fieldset legend={consultation.date} legendLook="caps">
       {nothingOpen && (
-        <p class={styles.planNote}>
+        <p class={shared.planNote}>
           {consultation.noneOpen}{" "}
           <TextLink href={whatsappChat(whatsapp.number)} newTab inline>
             {consultation.noneOpenAction}
           </TextLink>
         </p>
       )}
-      <p class={styles.months}>{stripMonths(days)}</p>
+      <p class={shared.months}>{stripMonths(days)}</p>
       <DateStrip
         name="date"
         days={days.map((day) => ({ ...day, open: dayOpen(open, day.date, windowIds) }))}

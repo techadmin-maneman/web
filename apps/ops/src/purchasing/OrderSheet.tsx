@@ -10,7 +10,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { purchasing as copy } from "../content/purchasing.ts";
 import type { Order, Orders } from "./types.ts";
-import styles from "./purchasing.module.css";
+import styles from "./order-sheet.module.css";
 
 const sheet = copy.sheet;
 

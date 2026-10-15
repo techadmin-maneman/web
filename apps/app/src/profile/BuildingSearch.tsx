@@ -8,7 +8,7 @@
 import { AddressSearch } from "@maneman/ui/AddressSearch";
 import { api } from "../api.ts";
 import { profile } from "../content.ts";
-import styles from "./profile.module.css";
+import styles from "./building-search.module.css";
 
 interface ChosenBuilding {
   readonly placeId: string;

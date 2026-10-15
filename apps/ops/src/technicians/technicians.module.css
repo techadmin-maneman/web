@@ -78,13 +78,6 @@
   white-space: nowrap;
 }
 
-/* The third column is Jobs: a count, so it and its head read from the right, as the board sets them. */
-.table th:nth-child(3),
-.table td:nth-child(3) {
-  padding-right: var(--sp-4);
-  text-align: right;
-}
-
 /*
  * The name is the control: the board draws the row with no button, and its
  * five columns leave no room for one. Its underline is the only sign, quiet
@@ -180,13 +173,6 @@
   list-style: none;
 }
 
-.offRow {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-12);
-  border-bottom: var(--hairline) solid var(--paper-line);
-}
-
 .offZone {
   font-size: var(--fs-13);
   color: var(--text-muted);
@@ -254,12 +240,6 @@
   list-style: none;
 }
 
-.phone + .phone {
-  margin-top: var(--sp-12);
-  padding-top: var(--sp-12);
-  border-top: var(--hairline) solid var(--paper-line);
-}
-
 .phoneLine {
   display: flex;
   align-items: baseline;
@@ -319,12 +299,6 @@
 
 /* ---- Leave, which the dispatch board and booking both read (ADR 0062) ----- */
 
-.period + .period {
-  margin-top: var(--sp-8);
-  padding-top: var(--sp-8);
-  border-top: var(--hairline) solid var(--paper-line);
-}
-
 /* The jobs still booked on a period's days, behind the oxblood rule the console gives what needs doing. */
 .stranded {
   display: flex;
@@ -355,77 +329,11 @@
   padding: var(--sp-8) 0;
 }
 
-.leavePeriod {
-  font-size: var(--fs-14);
-  white-space: nowrap;
-}
-
-.jobRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--sp-8) var(--sp-12);
-  padding: var(--sp-4) 0;
-  font-size: var(--fs-13);
-}
-
-.show {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
-  font-size: var(--fs-13);
-  color: var(--text);
-  text-underline-offset: var(--sp-4);
-}
-
-.leaveNote {
-  flex: 1;
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-}
-
 .leaveForm {
-  margin-top: var(--sp-8);
-}
-
-.fields {
-  display: flex;
-  gap: var(--sp-12);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
   margin-top: var(--sp-8);
 }
 
 .label {
   font-size: var(--fs-13);
   color: var(--text-muted);
-}
-
-/* ---- Their kit, as the stock ledger counts it ---------------------------- */
-
-.kit {
-  margin-top: var(--sp-12);
-}
-
-/* At or below its level: said in words, and in oxblood, never by colour alone. */
-.low {
-  margin-left: var(--sp-8);
-  font-size: var(--fs-13);
-  font-weight: var(--weight-medium);
-  color: var(--status-warning);
-}
-
-.counted {
-  font-size: var(--fs-13);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-/* The roster's search and zone list, flush with the table beneath. */
-.narrow {
-  margin-inline: 0;
 }

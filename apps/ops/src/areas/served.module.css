@@ -1,0 +1,6 @@
+/* What ./Served.tsx alone draws; what it shares is in ./areas.module.css. */
+
+/* The launch panel where Served opens it, inside the table's own panel. */
+.inPanel {
+  margin: var(--sp-16) var(--sp-20) 0;
+}

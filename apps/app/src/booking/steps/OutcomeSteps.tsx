@@ -13,7 +13,8 @@ import { booking, change, messages, VISIT_TYPES, windowHours } from "../../conte
 import { AddToCalendar } from "../../components/AddToCalendar.tsx";
 import { whatsappWith } from "../../lib/whatsapp.ts";
 import { NoteSheet } from "../NoteSheet.tsx";
-import styles from "../booking.module.css";
+import bookingSheet from "../booking.module.css";
+import styles from "./outcome-steps.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
 import { TITLE_ID, minutesAndSeconds, useHoldLeft, LastMinute } from "./shared.tsx";
 
@@ -25,18 +26,25 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
   return (
     // Busy while the payment is being started again, so a screen reader is told the step is working.
     <div aria-busy={busy}>
-      <p className={capsLook(styles.caption)}>{copy.label}</p>
+      <p className={capsLook(bookingSheet.caption)}>{copy.label}</p>
       <div className={styles.failed}>
         <div role="alert">
-          <h2 className={styles.outcome} id={TITLE_ID}>
+          <h2 className={bookingSheet.outcome} id={TITLE_ID}>
             {copy.title}
           </h2>
         </div>
         {/* Outside the alert, which a screen reader reads again whenever it changes: here, every second. */}
-        <p className={styles.outcomeLine}>{copy.held(minutesAndSeconds(left))}</p>
+        <p className={bookingSheet.outcomeLine}>{copy.held(minutesAndSeconds(left))}</p>
         <LastMinute left={left} />
       </div>
-      <Button variant="primary" size="action" className={styles.primary} disabled={busy} busy={busy} onClick={onRetry}>
+      <Button
+        variant="primary"
+        size="action"
+        className={bookingSheet.primary}
+        disabled={busy}
+        busy={busy}
+        onClick={onRetry}
+      >
         {copy.retry}
       </Button>
     </div>
@@ -47,11 +55,11 @@ export function FailedStep(props: { hold: Hold; busy: boolean; onRetry: () => vo
 export function ExpiredStep({ onPickAgain }: { onPickAgain: () => void }) {
   return (
     <div role="alert">
-      <p className={capsLook(styles.caption)}>{booking.expired.label}</p>
-      <h2 className={styles.outcome} id={TITLE_ID}>
+      <p className={capsLook(bookingSheet.caption)}>{booking.expired.label}</p>
+      <h2 className={bookingSheet.outcome} id={TITLE_ID}>
         {booking.expired.title}
       </h2>
-      <Button variant="primary" size="action" className={styles.primary} onClick={onPickAgain}>
+      <Button variant="primary" size="action" className={bookingSheet.primary} onClick={onPickAgain}>
         {booking.expired.pickAgain}
       </Button>
     </div>
@@ -63,7 +71,7 @@ function Settled({ hold }: { hold: Hold }) {
   const copy = booking;
   if (hold.credit !== null) {
     return (
-      <p className={styles.paid}>
+      <p className={bookingSheet.paid}>
         <span>{copy.pay.credit.used}</span>
         <span className={styles.paidAmount}>{copy.pay.credit.remaining(hold.credit.remaining)}</span>
       </p>
@@ -71,7 +79,7 @@ function Settled({ hold }: { hold: Hold }) {
   }
   if (hold.price.amount === 0) return null;
   return (
-    <p className={styles.paid}>
+    <p className={bookingSheet.paid}>
       <span>{copy.confirmed.paid}</span>
       <span className={styles.paidAmount}>{rupees(hold.price.amount)}</span>
     </p>
@@ -93,8 +101,8 @@ export function ConfirmedStep(props: { hold: Hold; moved: boolean; reminded: boo
         {moved ? change.moved : copy.label}
       </h2>
       <Icon className={styles.confirmedTick} d={ICONS.tick} size="xl" />
-      <p className={styles.confirmedTitle}>{when}</p>
-      {reminded && <p className={styles.confirmedLine}>{copy.tellsYou}</p>}
+      <p className={bookingSheet.confirmedTitle}>{when}</p>
+      {reminded && <p className={bookingSheet.confirmedLine}>{copy.tellsYou}</p>}
       <Settled hold={hold} />
       <div className={styles.confirmedCalendar}>
         <AddToCalendar
@@ -167,11 +175,11 @@ function ConfirmedNote({ hold, technician }: { hold: Hold; technician: string })
 export function WaitStep({ text, onClose }: { text: string; onClose?: () => void }) {
   return (
     <div role="status">
-      <h2 className={styles.outcome} id={TITLE_ID}>
+      <h2 className={bookingSheet.outcome} id={TITLE_ID}>
         {text}
       </h2>
       {onClose !== undefined && (
-        <Button variant="outline" size="control" className={styles.secondary} onClick={onClose}>
+        <Button variant="outline" size="control" className={bookingSheet.secondary} onClick={onClose}>
           {booking.close}
         </Button>
       )}

@@ -1,0 +1,21 @@
+/* What ./VisitCode.tsx alone draws; what it shares is in ./clients.module.css. */
+
+/* A discount code typed on a visit (docs/decisions/0108-discount-codes.md): the box and its two buttons on a line. */
+.codeForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-8);
+}
+
+.codeInput {
+  width: var(--local-piece-column);
+  text-transform: uppercase;
+}
+
+.codeError {
+  flex-basis: 100%;
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-14);
+  color: var(--status-error);
+}

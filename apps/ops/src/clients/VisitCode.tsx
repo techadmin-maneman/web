@@ -13,7 +13,8 @@ import { useState } from "react";
 import { type ClientVisit, type VisitDiscountCode } from "../api.ts";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import styles from "./clients.module.css";
+import shared from "./clients.module.css";
+import styles from "./visit-code.module.css";
 import { clientsApi } from "./clients-api.ts";
 
 const copy = clients.visits.code;
@@ -26,7 +27,7 @@ function Shown({ code }: { code: VisitDiscountCode | null }) {
   return (
     <>
       {copy.applied(code.code, off)}
-      <span className={styles.closedLine}>{copy.givenBy[code.given_by]}</span>
+      <span className={shared.closedLine}>{copy.givenBy[code.given_by]}</span>
     </>
   );
 }
@@ -120,12 +121,12 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
   return (
     <>
       <Shown code={code} />
-      {requested !== null && <span className={styles.closedLine}>{copy.requested(requested)}</span>}
+      {requested !== null && <span className={shared.closedLine}>{copy.requested(requested)}</span>}
       {mayEnter && code === null && (
         <Button
           variant="outline"
           size="small"
-          className={styles.secondary}
+          className={shared.secondary}
           aria-label={copy.enterLabel(when)}
           onClick={() => {
             setTyped(requested ?? "");
@@ -139,7 +140,7 @@ export function VisitCode({ visit }: { visit: ClientVisit }) {
         <Button
           variant="outline"
           size="small"
-          className={styles.secondary}
+          className={shared.secondary}
           aria-label={copy.removeLabel(when)}
           disabled={step === "removing"}
           onClick={() => void remove()}

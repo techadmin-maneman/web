@@ -14,7 +14,7 @@ import { useScreen } from "../lib/useScreen.ts";
 import { clock, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
 import frame from "../components/frame.module.css";
-import styles from "./job.module.css";
+import styles from "./card-frame.module.css";
 
 /** The day, written only when it is not today: "Tomorrow", or "Fri 27 Sep". */
 function dayOf(date: string): string | null {

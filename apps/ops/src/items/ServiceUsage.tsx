@@ -14,7 +14,7 @@ import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { review } from "../content/common.ts";
 import form from "../components/forms.module.css";
-import styles from "./consumables.module.css";
+import styles from "./service-usage.module.css";
 import { SettingForm, sentOf, useSteps, type Sent } from "../settings/index.ts";
 import { itemsApi } from "./items-api.ts";
 

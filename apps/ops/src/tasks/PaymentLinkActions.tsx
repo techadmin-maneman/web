@@ -10,7 +10,8 @@ import { useState } from "react";
 import { type Task } from "../api.ts";
 import { tasks } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import styles from "./tasks.module.css";
+import shared from "./tasks.module.css";
+import styles from "./payment-link-actions.module.css";
 import { tasksApi } from "./tasks-api.ts";
 
 const copy = tasks.link;
@@ -49,7 +50,7 @@ export function PaymentLinkActions({ task, subject }: { task: Task; subject: str
 
   return (
     <>
-      <span className={styles.acts}>
+      <span className={shared.acts}>
         {url !== null && (
           <TextButton tone="muted" compact onClick={() => void copyLink(url)}>
             {copy.copy}
@@ -67,7 +68,7 @@ export function PaymentLinkActions({ task, subject }: { task: Task; subject: str
         {done}
       </span>
       {failed !== null && (
-        <span className={styles.error} role="alert">
+        <span className={shared.error} role="alert">
           {failed}
         </span>
       )}

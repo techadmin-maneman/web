@@ -10,7 +10,8 @@ import { useState } from "react";
 import { type Device, type Technician } from "../api.ts";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import styles from "./technicians.module.css";
+import shared from "./technicians.module.css";
+import styles from "./technician-phones.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { techniciansApi } from "./technicians-api.ts";
 
@@ -31,9 +32,9 @@ type Revoking =
   | { readonly step: "failed"; readonly code: string };
 
 function PhoneState({ phone, revokedAt }: { phone: Device; revokedAt: string | null }) {
-  if (revokedAt !== null) return <p className={styles.revoked}>{copy.revoked(longDate(revokedAt))}</p>;
-  if (phone.signed_in) return <p className={styles.signedIn}>{copy.signedIn}</p>;
-  return <p className={styles.revoked}>{copy.signedOut}</p>;
+  if (revokedAt !== null) return <p className={shared.revoked}>{copy.revoked(longDate(revokedAt))}</p>;
+  if (phone.signed_in) return <p className={shared.signedIn}>{copy.signedIn}</p>;
+  return <p className={shared.revoked}>{copy.signedOut}</p>;
 }
 
 function Phone({ phone, technician }: { phone: Device; technician: Technician }) {
@@ -57,19 +58,19 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
 
   return (
     <li className={styles.phone}>
-      <div className={styles.phoneLine}>
-        <span className={styles.phoneName}>{name}</span>
-        <span className={styles.seen}>{copy.seen(dateAndTime(phone.last_seen_at))}</span>
+      <div className={shared.phoneLine}>
+        <span className={shared.phoneName}>{name}</span>
+        <span className={shared.seen}>{copy.seen(dateAndTime(phone.last_seen_at))}</span>
       </div>
       <PhoneState phone={phone} revokedAt={revokedAt} />
       {asking && (
-        <div className={styles.asking}>
-          <p className={styles.warning}>{copy.warning}</p>
-          <div className={styles.actions}>
+        <div className={shared.asking}>
+          <p className={shared.warning}>{copy.warning}</p>
+          <div className={shared.actions}>
             <Button
               variant="danger"
               size="small"
-              className={styles.revoke}
+              className={shared.revoke}
               disabled={sending}
               onClick={() => void revoke()}
             >
@@ -78,7 +79,7 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
             <Button
               variant="outline"
               size="small"
-              className={styles.quiet}
+              className={shared.quiet}
               disabled={sending}
               onClick={() => {
                 setRevoking({ step: "listed" });
@@ -90,11 +91,11 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
         </div>
       )}
       {offered && (
-        <div className={styles.actions}>
+        <div className={shared.actions}>
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={shared.quiet}
             aria-label={copy.revokeLabel(name, technician.name)}
             onClick={() => {
               setRevoking({ step: "asking" });
@@ -105,7 +106,7 @@ function Phone({ phone, technician }: { phone: Device; technician: Technician })
         </div>
       )}
       {revoking.step === "failed" && (
-        <Refusal className={styles.error} said={errorText(copy.errors, { code: revoking.code })} />
+        <Refusal className={shared.error} said={errorText(copy.errors, { code: revoking.code })} />
       )}
     </li>
   );
@@ -131,20 +132,20 @@ function SignInStopped({ technician, since }: { technician: Technician; since: s
 
   if (allowing.step === "allowed") {
     return (
-      <p className={styles.signedIn} role="status">
+      <p className={shared.signedIn} role="status">
         {copy.allowed}
       </p>
     );
   }
   return (
     <div className={styles.phone}>
-      <p className={styles.warning}>{copy.stopped(longDate(since))}</p>
+      <p className={shared.warning}>{copy.stopped(longDate(since))}</p>
       {mayAllow && (
-        <div className={styles.actions}>
+        <div className={shared.actions}>
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={shared.quiet}
             disabled={allowing.step === "sending"}
             onClick={() => void allow()}
           >
@@ -153,7 +154,7 @@ function SignInStopped({ technician, since }: { technician: Technician; since: s
         </div>
       )}
       {allowing.step === "failed" && (
-        <Refusal className={styles.error} said={errorText(copy.errors, { code: allowing.code })} />
+        <Refusal className={shared.error} said={errorText(copy.errors, { code: allowing.code })} />
       )}
     </div>
   );
@@ -167,7 +168,7 @@ export function Phones({ technician }: { technician: Technician }) {
       {technician.devices.length === 0 ? (
         <EmptyState look="panel" line={copy.none} />
       ) : (
-        <ul className={styles.phoneList}>
+        <ul className={shared.phoneList}>
           {technician.devices.map((phone) => (
             <Phone key={phone.device_id} phone={phone} technician={technician} />
           ))}

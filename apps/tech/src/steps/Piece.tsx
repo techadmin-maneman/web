@@ -39,7 +39,7 @@ import {
 import { pieceSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
-import styles from "./steps.module.css";
+import styles from "./piece.module.css";
 
 /** The outcome "Can't fit today" closes a fit with: partly done, no piece of the client's spec to fit. */
 const CANNOT_FIT: EventBody<"outcome"> = { outcome: "partial", reason: "no_piece", cannot_fit: true };

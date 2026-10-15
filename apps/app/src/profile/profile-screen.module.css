@@ -1,0 +1,13 @@
+/* What ./ProfileScreen.tsx alone draws; what it shares is in ./profile.module.css. */
+
+/* Under the profile's header the page starts 24 px down. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-24);
+  padding: var(--sp-24) var(--sp-20);
+}
+
+.logout {
+  width: 100%;
+}

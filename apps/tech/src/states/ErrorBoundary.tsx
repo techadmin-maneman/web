@@ -8,7 +8,7 @@ import { reportRenderError } from "@maneman/web-kit/client-errors";
 import type { ReactNode } from "react";
 import { broken as copy } from "../content.ts";
 import { Failed } from "./States.tsx";
-import styles from "./states.module.css";
+import styles from "./error-boundary.module.css";
 
 function Broken() {
   return (

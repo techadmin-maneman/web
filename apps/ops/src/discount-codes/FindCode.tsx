@@ -5,7 +5,7 @@ import { Field, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { settings } from "../content/settings.ts";
 import form from "../components/forms.module.css";
-import styles from "./discount-codes.module.css";
+import styles from "./find-code.module.css";
 
 const copy = settings.discountCodes;
 

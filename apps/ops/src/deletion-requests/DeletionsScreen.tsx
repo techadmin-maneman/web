@@ -21,7 +21,8 @@ import { Left } from "../lib/Left.tsx";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "../components/erasure.module.css";
+import shared from "../components/erasure.module.css";
+import styles from "./deletions-screen.module.css";
 import { ErasureLists } from "../components/ErasureLists.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { deletionRequestsApi } from "./deletion-requests-api.ts";
@@ -57,11 +58,11 @@ function ConfirmDelete({
   const [checked, setChecked] = useState(false);
 
   return (
-    <div className={styles.confirm} ref={panel} tabIndex={-1} role="group" aria-label={copy.confirmLabel(request.name)}>
-      <p className={styles.warning}>{copy.warning}</p>
+    <div className={shared.confirm} ref={panel} tabIndex={-1} role="group" aria-label={copy.confirmLabel(request.name)}>
+      <p className={shared.warning}>{copy.warning}</p>
       <ErasureLists />
       <Checkbox
-        className={styles.checkLine}
+        className={shared.checkLine}
         label={copy.checked}
         checked={checked}
         disabled={sending}
@@ -69,7 +70,7 @@ function ConfirmDelete({
           setChecked(event.target.checked);
         }}
       />
-      <div className={styles.actions}>
+      <div className={shared.actions}>
         <Button variant="destructive" size="small" disabled={sending || !checked} onClick={onDelete}>
           {sending ? copy.deleting : copy.confirm(request.name)}
         </Button>
@@ -99,7 +100,7 @@ function RejectReason(props: {
 }) {
   const { reason, sending } = props;
   return (
-    <div className={styles.reason}>
+    <div className={shared.reason}>
       <Field label={copy.reason.label}>
         {(control) => (
           <TextArea
@@ -115,7 +116,7 @@ function RejectReason(props: {
           />
         )}
       </Field>
-      <div className={styles.actions}>
+      <div className={shared.actions}>
         <Button variant="outline" size="small" disabled={sending || reason.trim() === ""} onClick={props.onReject}>
           {sending ? copy.rejecting : copy.reason.confirm}
         </Button>
@@ -154,13 +155,13 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
 
   return (
     <>
-      <div className={styles.head}>
-        <OpsLink className={styles.name} to={clientPath(request.person_id, "consents")}>
+      <div className={shared.head}>
+        <OpsLink className={shared.name} to={clientPath(request.person_id, "consents")}>
           {request.name}
         </OpsLink>
         <Left due={request.due} now={now} />
       </div>
-      <p className={styles.who}>{copy.requested(phoneWords(request.mobile), longDate(request.requested_at))}</p>
+      <p className={shared.who}>{copy.requested(phoneWords(request.mobile), longDate(request.requested_at))}</p>
       <Reach name={request.name} mobile={request.mobile} />
       {asking?.choice === "delete" && (
         <ConfirmDelete
@@ -184,7 +185,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
         />
       )}
       {asking === null && mayDecide && (
-        <div className={styles.actions}>
+        <div className={shared.actions}>
           <Button
             variant="destructive"
             size="small"
@@ -210,7 +211,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
         </div>
       )}
       {deciding.step === "failed" && (
-        <Refusal className={styles.error} said={errorText(copy.errors, { code: deciding.code })}>
+        <Refusal className={shared.error} said={errorText(copy.errors, { code: deciding.code })}>
           <SettleOn personId={request.person_id} code={deciding.code} />
         </Refusal>
       )}
@@ -271,7 +272,7 @@ function DeletionQueue() {
 
 export function DeletionsScreen() {
   return (
-    <div className={styles.column}>
+    <div className={shared.column}>
       <DeletionQueue />
     </div>
   );

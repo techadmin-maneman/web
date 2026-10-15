@@ -57,21 +57,3 @@
   font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
-
-/* The kinds of movement, as a row of choices above the form's boxes. */
-.kinds {
-  margin-top: var(--sp-8);
-}
-
-/* A place under another, set in by how deep it sits in the tree. */
-.depth1 {
-  padding-left: var(--sp-16);
-}
-
-.depth2 {
-  padding-left: calc(var(--sp-16) * 2);
-}
-
-.depth3 {
-  padding-left: calc(var(--sp-16) * 3);
-}

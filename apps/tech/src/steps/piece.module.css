@@ -1,0 +1,7 @@
+/* What ./Piece.tsx alone draws; what it shares is in ./steps.module.css. */
+
+/* The piece step's way out, "Can't fit today": below the step's own fields, apart from its one action. */
+.wayOut {
+  align-self: flex-start;
+  margin-top: var(--sp-24);
+}

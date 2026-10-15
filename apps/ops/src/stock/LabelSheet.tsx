@@ -4,7 +4,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { encode } from "uqr";
-import styles from "./labels.module.css";
+import styles from "./label-sheet.module.css";
 
 export interface PrintedLabel {
   readonly code: string;

@@ -12,7 +12,8 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useState } from "react";
 import { type BookingWindow, type VisitAvailability, type VisitBooked, type VisitToBook } from "../api.ts";
-import styles from "../components/visit-dialog.module.css";
+import shared from "../components/visit-dialog.module.css";
+import styles from "./book-visit.module.css";
 import { CoverChoice } from "./book-choices.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { clientsApi } from "./clients-api.ts";
@@ -55,10 +56,10 @@ function Booked({ booked }: { booked: VisitBooked }) {
   const outcome = outcomeOf(booked);
   return (
     <div role="status">
-      <p className={styles.done}>{outcome}</p>
-      <p className={styles.done}>{summary}</p>
+      <p className={shared.done}>{outcome}</p>
+      <p className={shared.done}>{summary}</p>
       {booked.link !== null && (
-        <p className={styles.done}>
+        <p className={shared.done}>
           {copy.link}: <span className={styles.link}>{booked.link.url}</span>
         </p>
       )}
@@ -70,8 +71,8 @@ function Booked({ booked }: { booked: VisitBooked }) {
 function Unreadable({ onRetry }: { onRetry: () => void }) {
   return (
     <div>
-      <Refusal className={styles.error} said={copy.unreadable} />
-      <Button variant="outline" size="small" className={styles.quiet} onClick={onRetry}>
+      <Refusal className={shared.error} said={copy.unreadable} />
+      <Button variant="outline" size="small" className={shared.quiet} onClick={onRetry}>
         {copy.retry}
       </Button>
     </div>
@@ -149,7 +150,7 @@ function BookingForm({
     setPicked((was) => ({ ...was, ...next }));
   };
 
-  if (loaded.state === "loading") return <p className={styles.note}>{copy.loading}</p>;
+  if (loaded.state === "loading") return <p className={shared.note}>{copy.loading}</p>;
   if (loaded.state === "failed") return <Unreadable onRetry={retry} />;
 
   const offered = loaded.value;
@@ -202,7 +203,7 @@ function BookingForm({
       <StripButtons busy={busy} from={from} firstDay={firstDay} onFrom={setFrom} />
       <CoverChoice owed={offered.owed} value={cover} busy={busy} onChoose={setCovers} />
       {takesCode && (
-        <Field className={styles.field} label={copy.code}>
+        <Field className={shared.field} label={copy.code}>
           {(control) => (
             <TextInput
               {...control}
@@ -219,12 +220,12 @@ function BookingForm({
           )}
         </Field>
       )}
-      <p className={styles.pays}>{payLine(choice, offered, cover !== "")}</p>
-      <div className={styles.actions}>
+      <p className={shared.pays}>{payLine(choice, offered, cover !== "")}</p>
+      <div className={shared.actions}>
         <Button
           variant="primary"
           size="small"
-          className={styles.primary}
+          className={shared.primary}
           type="submit"
           busy={busy}
           disabled={day === undefined || window === undefined}
@@ -232,7 +233,7 @@ function BookingForm({
           {busy ? copy.booking : copy.book}
         </Button>
       </div>
-      {failed !== null && <Refusal className={styles.error} said={errorText(copy.errors, { code: failed })} />}
+      {failed !== null && <Refusal className={shared.error} said={errorText(copy.errors, { code: failed })} />}
     </form>
   );
 }
@@ -261,7 +262,7 @@ export function BookVisit({
         <Button
           variant="outline"
           size="small"
-          className={styles.quiet}
+          className={shared.quiet}
           onClick={() => {
             onClose(booked);
           }}

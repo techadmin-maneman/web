@@ -1,0 +1,6 @@
+/* What ./PieceFields.tsx alone draws; what it shares is in ./steps.module.css. */
+
+/* The label's field: the primary's height, so a gloved tap lands in it. */
+.labelInput {
+  height: var(--tech-primary);
+}

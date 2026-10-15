@@ -8,7 +8,7 @@ import { Panel } from "@maneman/ui/Panel";
 import { useRef, useState, type ReactNode } from "react";
 import { firstShown } from "../content.ts";
 import { rowId, useTargetRow } from "../lib/target.ts";
-import styles from "./queue.module.css";
+import styles from "./decision-queue.module.css";
 
 export function DecisionQueue<T extends { readonly id: string }>({
   titleId,

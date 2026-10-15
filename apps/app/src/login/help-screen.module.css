@@ -1,0 +1,35 @@
+/* What ./HelpScreen.tsx alone draws; what it shares is in ./login.module.css. */
+
+.helpTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-app-title-long);
+  font-weight: var(--weight-regular);
+  line-height: var(--lh-115);
+  color: var(--paper);
+}
+
+.helpBody {
+  margin: var(--sp-16) 0 0;
+  font-size: var(--fs-16);
+  line-height: var(--lh-160);
+  color: var(--ink-soft);
+}
+
+/* The design's box keeps 30 px above its line and 20 below. */
+.helpBox {
+  margin-top: var(--sp-32);
+  padding: var(--sp-32) var(--sp-20) var(--sp-20);
+  border: var(--hairline) solid var(--ink-line);
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+  color: var(--ink-soft);
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  margin-top: auto;
+  padding-top: var(--sp-24);
+}

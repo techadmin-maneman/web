@@ -14,7 +14,8 @@ import { type Stock, type StockPlaceChange } from "../api.ts";
 import { stockPlaces as copy } from "../content/stock-places.ts";
 import form from "../components/forms.module.css";
 import { placeName } from "./StockForm.tsx";
-import styles from "./stock.module.css";
+import shared from "./stock.module.css";
+import styles from "./places-panel.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { stockApi } from "./stock-api.ts";
@@ -221,7 +222,7 @@ function PlaceRows({ stock, onEdit }: { stock: Stock; onEdit: (id: string) => vo
             </th>
             <td>
               {copy.kinds[place.kind]}
-              {!place.active && place.kind !== "kit" && <span className={styles.retired}>{copy.closed}</span>}
+              {!place.active && place.kind !== "kit" && <span className={shared.retired}>{copy.closed}</span>}
             </td>
             <td>{place.kind === "hub" ? place.zone : place.city}</td>
             <td>
@@ -248,7 +249,7 @@ export function PlacesPanel({ stock, onChanged }: { stock: Stock; onChanged: (st
   return (
     <Panel titleId="stock-places" title={copy.title}>
       <p className={form.note}>{copy.intro}</p>
-      <div className={styles.scroll}>
+      <div className={shared.scroll}>
         <PlaceRows stock={stock} onEdit={setEditing} />
       </div>
       {place === undefined ? (

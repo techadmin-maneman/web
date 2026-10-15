@@ -11,7 +11,7 @@ import { stockLabels as copy } from "../content/stock-labels.ts";
 import form from "../components/forms.module.css";
 import { recordedBy } from "../lib/who.ts";
 import { placeName } from "./StockForm.tsx";
-import styles from "./labels.module.css";
+import styles from "./label-found.module.css";
 import { Refusal } from "../components/Refusal.tsx";
 import { stockApi } from "./stock-api.ts";
 

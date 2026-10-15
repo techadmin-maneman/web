@@ -13,7 +13,8 @@ import { Suspense, useCallback } from "react";
 import { type Piece } from "../api.ts";
 import { clients } from "../content.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import styles from "./clients.module.css";
+import shared from "./clients.module.css";
+import styles from "./pieces.module.css";
 import { clientsApi } from "./clients-api.ts";
 
 const HairProfile = lazyScreen(() => import("./HairProfile.tsx").then((module) => module.HairProfile));
@@ -76,7 +77,7 @@ function PieceTable({ clientId }: { clientId: string }) {
       {pieces.length === 0 ? (
         <EmptyState look="panel" line={copy.empty} />
       ) : (
-        <Table className={styles.table}>
+        <Table className={shared.table}>
           <thead>
             <tr>
               {COLUMNS.map((column) => (

@@ -1,0 +1,26 @@
+/* What ./CodeBox.tsx alone draws; what it shares is in ./booking.module.css. */
+
+/*
+ * A discount code at the pay step (docs/decisions/0108-discount-codes.md), which no board draws: quiet until it is
+ * asked for, as the move sheet's way to the cancel sheet is, then a box and its button on one line.
+ */
+.code {
+  margin-top: var(--sp-12);
+}
+
+.codeApplied {
+  margin: 0;
+  font-size: var(--fs-15);
+}
+
+.codeRow {
+  display: flex;
+  gap: var(--sp-8);
+  margin-top: var(--sp-8);
+}
+
+.codeInput {
+  flex: 1;
+  min-width: 0;
+  text-transform: uppercase;
+}

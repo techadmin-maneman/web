@@ -9,7 +9,7 @@ import { smallJpeg } from "@maneman/web-kit/small-jpeg";
 import { useState } from "react";
 import { purchasing as copy } from "../content/purchasing.ts";
 import form from "../components/forms.module.css";
-import styles from "./purchasing.module.css";
+import styles from "./stock-photo.module.css";
 import { purchasingApi } from "./purchasing-api.ts";
 
 /** The file made small and stored: its ID, or the refusal's code. */

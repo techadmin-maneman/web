@@ -2,7 +2,7 @@
 // "240 m · over 200 m fence", over it in the ink the panel keeps for what argues against the charge.
 
 import { noShows } from "../content.ts";
-import styles from "./no-shows.module.css";
+import styles from "./distance.module.css";
 
 /** `letIn`: ops let them check in past the fence for this visit, with their reason; null when they did not. */
 export function Distance({

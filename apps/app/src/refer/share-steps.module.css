@@ -1,0 +1,28 @@
+/* What ./ShareSteps.tsx alone draws; what it shares is in ./refer.module.css. */
+
+.bubblePreview {
+  background: var(--wa-preview);
+}
+
+.bubbleTitle {
+  font-size: var(--fs-14);
+  line-height: var(--lh-130);
+}
+
+.inkProblem {
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+  color: var(--error-on-ink);
+}
+
+.ways {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.way {
+  justify-content: flex-start;
+  gap: var(--sp-16);
+  width: 100%;
+}

@@ -28,11 +28,6 @@
   }
 }
 
-/* The frame's head (../components/frame.module.css), closer set: the step's count sits beside its title. */
-.head {
-  gap: var(--sp-12);
-}
-
 .back {
   --icon-button-size: var(--tech-min);
 
@@ -50,31 +45,6 @@
 .title:focus,
 .closeWho:focus {
   outline: none;
-}
-
-.progress {
-  margin-left: auto;
-  font-size: var(--fs-18);
-  font-variant-numeric: tabular-nums;
-  color: var(--paper);
-}
-
-.body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-/* The API refused what this step sent, and the technician is putting it right. */
-.notice {
-  margin: 0;
-  padding: var(--sp-16) var(--sp-20);
-  border-top: var(--rule-strong) solid var(--error-on-ink);
-  border-bottom: var(--hairline) solid var(--ink-rule);
-  font-size: var(--fs-17);
-  line-height: var(--lh-145);
-  color: var(--paper);
 }
 
 .list {
@@ -192,14 +162,6 @@
   color: var(--error-on-ink);
 }
 
-/* A figure's range beneath it, until a figure outside it turns it into .hint. */
-.range {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-17);
-  line-height: var(--lh-145);
-  color: var(--ink-muted);
-}
-
 .paidFor {
   margin: 0;
   font-size: var(--fs-17);
@@ -273,34 +235,6 @@
   list-style: none;
 }
 
-/* ---- The hair profile, which no board draws (ADR 0106) --------------------- */
-
-/* Short choices, a stage or a colour code, sit side by side and wrap: 56 px each, the outcome's edge when chosen. */
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-8);
-}
-
-/* The head's four figures and the base's two, two to a row. */
-/* The base in centimetres, beneath its figures in inches. */
-.inCentimetres {
-  margin: var(--sp-12) 0 0;
-  font-size: var(--fs-16);
-  color: var(--ink-muted);
-}
-
-.figures {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-16);
-}
-
-.figure {
-  display: flex;
-  flex-direction: column;
-}
-
 /* ---- The close-out ----------------------------------------------- */
 
 .close {
@@ -333,13 +267,6 @@
   border-top: var(--hairline) solid var(--ink-rule);
 }
 
-.closeNote {
-  margin: var(--sp-16) 0 0;
-  font-size: var(--fs-17);
-  line-height: var(--lh-160);
-  color: var(--ink-soft);
-}
-
 /* ---- The one action, bottom of every screen, clear of an iPhone's home indicator ---- */
 
 /* A full-width row inside the scrolling body draws its ring inside itself, so the body's edge never cuts it. */
@@ -356,31 +283,4 @@
 /* A chosen option is filled in paper, so what it says beside its name takes the option's ink, not the note's. */
 .choice[aria-pressed="true"] .note {
   color: inherit;
-}
-
-.reason {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  text-align: left;
-}
-
-.chip {
-  min-width: var(--tech-stepper);
-}
-
-/* A stepper's minus and plus: the shared IconButton, at the stepper's square. */
-.step {
-  --icon-button-size: var(--tech-stepper);
-}
-
-/* The label's field: the primary's height, so a gloved tap lands in it. */
-.labelInput {
-  height: var(--tech-primary);
-}
-
-/* The piece step's way out, "Can't fit today": below the step's own fields, apart from its one action. */
-.wayOut {
-  align-self: flex-start;
-  margin-top: var(--sp-24);
 }

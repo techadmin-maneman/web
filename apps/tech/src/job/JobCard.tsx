@@ -24,7 +24,8 @@ import { job as copy, profile as profileCopy } from "../content.ts";
 import { callLink, wayTo } from "../lib/navigate.ts";
 import { dayMonth, where } from "../lib/when.ts";
 import { paidFor, profileNamesAnother } from "../lib/paid-for.ts";
-import styles from "./job.module.css";
+import shared from "./job.module.css";
+import styles from "./job-card.module.css";
 import { firstNameOf } from "@rules/lib/names.ts";
 
 type Piece = NonNullable<Job["pieces"]>[number];
@@ -161,22 +162,22 @@ export function JobCard({ job }: { job: Job }) {
   return (
     <>
       <section className={styles.address}>
-        <p className={styles.line}>{addressLine(job.address)}</p>
+        <p className={shared.line}>{addressLine(job.address)}</p>
         {job.address.landmark !== null && job.address.landmark.trim() !== "" && (
-          <dl className={styles.landmark}>
-            <dt className={styles.landmarkLabel}>{copy.landmark}</dt>
-            <dd className={styles.access}>{job.address.landmark}</dd>
+          <dl className={shared.landmark}>
+            <dt className={shared.landmarkLabel}>{copy.landmark}</dt>
+            <dd className={shared.access}>{job.address.landmark}</dd>
           </dl>
         )}
-        {job.access_notes !== null && <p className={styles.access}>{job.access_notes}</p>}
+        {job.access_notes !== null && <p className={shared.access}>{job.access_notes}</p>}
         {client !== null && clientNote !== null && (
-          <p className={styles.access}>{copy.clientNote(firstNameOf(client.name), clientNote)}</p>
+          <p className={shared.access}>{copy.clientNote(firstNameOf(client.name), clientNote)}</p>
         )}
         {/* A new tab, so a technician who has taken the route back still has the app open behind it. */}
         <ButtonLink
           variant="outlineOnInk"
           size="control"
-          className={styles.navigate}
+          className={shared.navigate}
           href={wayTo(job.address)}
           target="_blank"
           rel="noopener noreferrer"
@@ -185,7 +186,7 @@ export function JobCard({ job }: { job: Job }) {
           <span>{copy.navigate}</span>
         </ButtonLink>
         {client !== null && (
-          <div className={styles.reach}>
+          <div className={shared.reach}>
             <ButtonLink variant="outlineOnInk" size="control" href={callLink(client.mobile)}>
               {copy.call(firstNameOf(client.name))}
             </ButtonLink>

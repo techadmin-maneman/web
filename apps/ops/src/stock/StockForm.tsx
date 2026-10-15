@@ -16,7 +16,7 @@ import form from "../components/forms.module.css";
 import { LotFields } from "./LotFields.tsx";
 import { PieceScans } from "./PieceScans.tsx";
 import { holdingOf, unitOf } from "./holdings.ts";
-import styles from "./stock.module.css";
+import styles from "./stock-form.module.css";
 import { FormRefusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";
 import { NoteBox, Quantity, StockChoice, stockBoxes, type Refused } from "./StockBoxes.tsx";

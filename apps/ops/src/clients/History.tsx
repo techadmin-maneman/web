@@ -9,7 +9,7 @@ import { OpsLink } from "../components/Shell.tsx";
 import { clients } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { activityPath } from "../route.ts";
-import styles from "./clients.module.css";
+import styles from "./history.module.css";
 
 const copy = clients.history;
 

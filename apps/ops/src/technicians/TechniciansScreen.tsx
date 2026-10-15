@@ -26,7 +26,8 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
 import { AddTechnician } from "./TechnicianForms.tsx";
-import styles from "./technicians.module.css";
+import shared from "./technicians.module.css";
+import styles from "./technicians-screen.module.css";
 import { techniciansApi } from "./technicians-api.ts";
 
 /** The route's period ends the day after the last one counted; the note names that last day. */
@@ -44,17 +45,17 @@ function Service({ figures }: { figures: TechnicianWork | undefined }) {
   const average = figures?.average_minutes ?? null;
   const planned = figures?.average_planned_minutes ?? null;
   if (figures === undefined || average === null || planned === null) {
-    return <span className={styles.none}>{technicians.unknown}</span>;
+    return <span className={shared.none}>{technicians.unknown}</span>;
   }
 
   return (
     <>
-      <span className={figures.runs_over ? styles.over : undefined}>
+      <span className={figures.runs_over ? shared.over : undefined}>
         {copy.average(Math.floor(average / 60), average % 60)}
       </span>
       {/* The average is of the jobs the phone timed, so it says so when that is not all of them. */}
       {figures.timed_jobs < figures.jobs && (
-        <span className={styles.base}>{copy.base(figures.timed_jobs, figures.jobs)}</span>
+        <span className={shared.base}>{copy.base(figures.timed_jobs, figures.jobs)}</span>
       )}
     </>
   );
@@ -63,27 +64,27 @@ function Service({ figures }: { figures: TechnicianWork | undefined }) {
 /** The Leave column: away today and until when, the first day of leave still to come, or a gap. */
 function LeaveCell({ leave, today }: { leave: readonly Leave[]; today: string }) {
   const next = leave[0];
-  if (next === undefined) return <span className={styles.none}>{technicians.unknown}</span>;
+  if (next === undefined) return <span className={shared.none}>{technicians.unknown}</span>;
   const year = Number(today.slice(0, 4));
   if (next.from <= today)
-    return <span className={capsLook(styles.away)}>{technicians.away(listDate(next.to, year))}</span>;
+    return <span className={capsLook(shared.away)}>{technicians.away(listDate(next.to, year))}</span>;
   return <span>{technicians.from(listDate(next.from, year))}</span>;
 }
 
 /** The technicians switched off, beneath the table: they cannot sign in, and nothing is booked on them. */
 function SwitchedOff({ list }: { list: readonly TechnicianSummary[] }) {
   return (
-    <section className={styles.off} aria-labelledby="switched-off">
-      <h3 className={capsLook(styles.sectionTitle)} id="switched-off">
+    <section className={shared.off} aria-labelledby="switched-off">
+      <h3 className={capsLook(shared.sectionTitle)} id="switched-off">
         {technicians.switchedOff}
       </h3>
-      <ul className={styles.offList}>
+      <ul className={shared.offList}>
         {list.map((technician) => (
           <li className={styles.offRow} key={technician.id}>
-            <OpsLink className={styles.choose} to={technicianPath(technician.id)}>
+            <OpsLink className={shared.choose} to={technicianPath(technician.id)}>
               {technician.name}
             </OpsLink>
-            <span className={styles.offZone}>{technician.city ?? technicians.unknown}</span>
+            <span className={shared.offZone}>{technician.city ?? technicians.unknown}</span>
           </li>
         ))}
       </ul>
@@ -116,25 +117,25 @@ function RosterTable({
       <Table className={styles.table}>
         <thead>
           <tr>
-            <SortHeads view={view} className={styles.head} />
+            <SortHeads view={view} className={shared.head} />
           </tr>
         </thead>
         <tbody>
           {view.shown.map((technician) => (
             <tr key={technician.id}>
-              <th scope="row" className={styles.name}>
-                <OpsLink className={styles.choose} to={technicianPath(technician.id)}>
+              <th scope="row" className={shared.name}>
+                <OpsLink className={shared.choose} to={technicianPath(technician.id)}>
                   {technician.name}
                 </OpsLink>
               </th>
-              <td className={classes(styles.city, technician.city === null && styles.noCity)}>
+              <td className={classes(shared.city, technician.city === null && shared.noCity)}>
                 {technician.city ?? technicians.noCity}
               </td>
-              <td className={styles.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
-              <td className={styles.service}>
+              <td className={shared.jobs}>{figures.get(technician.id)?.jobs ?? technicians.unknown}</td>
+              <td className={shared.service}>
                 <Service figures={figures.get(technician.id)} />
               </td>
-              <td className={styles.leaveCell}>
+              <td className={shared.leaveCell}>
                 <LeaveCell leave={technician.leave} today={today} />
               </td>
             </tr>
@@ -178,16 +179,16 @@ function Roster() {
   };
 
   return (
-    <section className={styles.panel} aria-labelledby="roster">
+    <section className={shared.panel} aria-labelledby="roster">
       <VisuallyHidden as="h2" id="roster">
         {technicians.title}
       </VisuallyHidden>
       {mayAdd && (
-        <div className={styles.toolbar}>
+        <div className={shared.toolbar}>
           <Button
             variant="outline"
             size="small"
-            className={styles.quiet}
+            className={shared.quiet}
             onClick={() => {
               setAdded(null);
               setAdding(true);
@@ -198,7 +199,7 @@ function Roster() {
         </div>
       )}
       {added !== null && (
-        <p className={styles.notice} role="status">
+        <p className={shared.notice} role="status">
           {technicians.add.added(added)}
         </p>
       )}
@@ -207,7 +208,7 @@ function Roster() {
       ) : (
         <RosterTable active={roster.technicians} figures={figures} />
       )}
-      <p className={styles.note}>
+      <p className={shared.note}>
         {technicians.work.period(fullDate(work.value.from), fullDate(lastDay(work.value.to)))}
       </p>
       {roster.switched_off.length > 0 && <SwitchedOff list={roster.switched_off} />}

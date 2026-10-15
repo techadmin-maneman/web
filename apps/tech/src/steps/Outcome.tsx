@@ -13,7 +13,8 @@ import { DiscountCode } from "./DiscountCode.tsx";
 import { outcomeSent } from "./sent-before.ts";
 import { StepFrame } from "./StepFrame.tsx";
 import { useStep } from "./useStep.ts";
-import styles from "./steps.module.css";
+import shared from "./steps.module.css";
+import styles from "./outcome.module.css";
 
 type Choice = "done" | "partial" | null;
 
@@ -46,16 +47,16 @@ function OneVisitClose({
   onChecking: (checking: boolean) => void;
 }) {
   if (clientChoice !== null && "declined" in clientChoice) {
-    return <p className={styles.note}>{oneVisit.endsAsConsultation}</p>;
+    return <p className={shared.note}>{oneVisit.endsAsConsultation}</p>;
   }
   const standingCode = job.discount_code;
   return (
     <>
-      <p className={styles.note}>{linkNote(job, clientChoice)}</p>
+      <p className={shared.note}>{linkNote(job, clientChoice)}</p>
       {standingCode === null ? (
         <DiscountCode jobId={job.id} onChecking={onChecking} />
       ) : (
-        <p className={styles.note}>{codeSaid(standingCode)}</p>
+        <p className={shared.note}>{codeSaid(standingCode)}</p>
       )}
     </>
   );
@@ -68,12 +69,12 @@ function Pair<T extends string | boolean>(props: {
   onChoose: (value: T) => void;
 }) {
   return (
-    <div className={styles.choices}>
+    <div className={shared.choices}>
       {props.options.map((option) => (
         <ToggleButton
           key={String(option.value)}
           onInk
-          className={styles.choice}
+          className={shared.choice}
           pressed={props.chosen === option.value}
           onClick={() => {
             props.onChoose(option.value);
@@ -89,7 +90,7 @@ function Pair<T extends string | boolean>(props: {
 /** Ops' reasons, one to a row, one of which may be picked. */
 function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | null; onPick: (id: string) => void }) {
   return (
-    <ul className={styles.reasons}>
+    <ul className={shared.reasons}>
       {props.reasons.map((one) => (
         <li key={one.id}>
           <ToggleButton
@@ -112,7 +113,7 @@ function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | n
 function GoingAhead(props: { answer: boolean | null; onAnswer: (value: boolean) => void }) {
   return (
     <>
-      <p className={styles.note}>{copy.outcome.goingAhead}</p>
+      <p className={shared.note}>{copy.outcome.goingAhead}</p>
       <Pair<boolean>
         options={[
           { value: true, label: copy.outcome.yes },
@@ -197,7 +198,7 @@ function Choosing({
       )}
       {notGoingAhead && (
         <>
-          <p className={styles.note}>{copy.outcome.why}</p>
+          <p className={shared.note}>{copy.outcome.why}</p>
           <ReasonList reasons={job.lost_reasons} picked={lost} onPick={setLost} />
         </>
       )}

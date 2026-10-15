@@ -67,12 +67,6 @@
   margin: var(--sp-16) var(--sp-20) var(--sp-8);
 }
 
-.find {
-  display: flex;
-  align-items: end;
-  gap: var(--sp-8);
-}
-
 .narrow {
   flex: 1;
   margin: 0;

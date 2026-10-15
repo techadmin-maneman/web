@@ -31,13 +31,14 @@ import { Loading } from "../states/Loading.tsx";
 import { NotFound } from "../states/NotFound.tsx";
 import { go } from "../route.ts";
 import { PageFailed } from "../states/PageFailed.tsx";
-import styles from "./visits.module.css";
+import shared from "./visits.module.css";
+import styles from "./visit-screen.module.css";
 
 function Fact({ name, value, numeric = false }: { name: string; value: string; numeric?: boolean }) {
   return (
-    <div className={styles.fact}>
+    <div className={shared.fact}>
       <dt>{name}</dt>
-      <dd className={numeric ? styles.numeric : undefined}>{value}</dd>
+      <dd className={numeric ? shared.numeric : undefined}>{value}</dd>
     </div>
   );
 }
@@ -102,7 +103,7 @@ function NoShow({ visitId, note, onDisputed }: { visitId: string; note: NoShowNo
   const copy = visits.detail.noShow;
   return (
     <section className={styles.noShow} aria-labelledby="no-show">
-      <h2 className={capsLook(styles.label)} id="no-show">
+      <h2 className={capsLook(shared.label)} id="no-show">
         {copy.label}
       </h2>
       <p className={styles.noShowLine}>{copy.line(note.waited_minutes)}</p>
@@ -142,18 +143,18 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
   const copy = visits.detail;
   const photographed = visit.photos.before.length > 0 || visit.photos.after.length > 0;
   return (
-    <div className={styles.detail}>
+    <div className={shared.detail}>
       {visit.status === "cancelled" && <p className={styles.cancelled}>{copy.cancelled}</p>}
       {visit.no_show !== null && <NoShow visitId={visit.id} note={visit.no_show} onDisputed={onChanged} />}
       {photographed && (
         <section aria-labelledby="photographs">
-          <h2 className={capsLook(styles.label)} id="photographs">
+          <h2 className={capsLook(shared.label)} id="photographs">
             {copy.photographs}
           </h2>
           <PhotoRow set={visit.photos} date={visit.date} onOpen={setOpen} relink={relink} />
         </section>
       )}
-      <dl className={styles.facts}>
+      <dl className={shared.facts}>
         {visit.technician !== null && <Fact name={copy.technician} value={visit.technician.name} />}
         {visit.duration_minutes !== null && (
           <Fact name={copy.duration} value={visitLength(visit.duration_minutes)} numeric />

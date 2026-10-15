@@ -12,7 +12,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { api, type Hold } from "../api.ts";
 import { booking } from "../content.ts";
 import { amountOff } from "../lib/money.ts";
-import styles from "./booking.module.css";
+import shared from "./booking.module.css";
+import styles from "./code-box.module.css";
 
 const copy = booking.pay.code;
 
@@ -86,7 +87,7 @@ export function CodeBox(props: {
     });
 
   const shown = problem !== null && (
-    <p className={styles.problem} role="alert">
+    <p className={shared.problem} role="alert">
       {problem}
     </p>
   );
@@ -127,7 +128,7 @@ export function CodeBox(props: {
         label={copy.label}
         error={problem}
         announce
-        look={{ label: capsLook(styles.label), error: styles.problem }}
+        look={{ label: capsLook(shared.label), error: shared.problem }}
       >
         {(control) => (
           <div className={styles.codeRow}>

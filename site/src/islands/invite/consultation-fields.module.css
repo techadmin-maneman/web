@@ -1,0 +1,10 @@
+/* What ./ConsultationFields.tsx alone draws; what it shares is in ./Invite.module.css. */
+
+.windows {
+  display: grid;
+  gap: var(--sp-8);
+}
+
+.window {
+  min-height: var(--btn-lg);
+}

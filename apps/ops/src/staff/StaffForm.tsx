@@ -21,7 +21,7 @@ import {
   whereValue,
 } from "../lib/grants.ts";
 import form from "../components/forms.module.css";
-import styles from "./staff.module.css";
+import styles from "./staff-form.module.css";
 import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import { Refusal } from "../components/Refusal.tsx";
 import { FormActions } from "../components/FormActions.tsx";

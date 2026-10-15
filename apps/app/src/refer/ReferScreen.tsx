@@ -22,15 +22,16 @@ import { Loading } from "../states/Loading.tsx";
 import { PageFailed } from "../states/PageFailed.tsx";
 import { pendingInviteOf, rewardOf } from "./reward.ts";
 import { ShareSheet } from "./ShareSheet.tsx";
-import styles from "./refer.module.css";
+import shared from "./refer.module.css";
+import styles from "./refer-screen.module.css";
 
 function CreditTile({ credits }: { credits: Refer["credits"] }) {
   if (credits.visits === 0) return null;
   const expiry = credits.earliest_expiry;
   return (
     <div className={styles.credit}>
-      <p className={styles.creditLabel}>{refer.credit.count(credits.visits)}</p>
-      {expiry !== null && <p className={styles.creditExpiry}>{refer.credit.useBy(fullDate(indiaDate(expiry)))}</p>}
+      <p className={shared.creditLabel}>{refer.credit.count(credits.visits)}</p>
+      {expiry !== null && <p className={shared.creditExpiry}>{refer.credit.useBy(fullDate(indiaDate(expiry)))}</p>}
     </div>
   );
 }
@@ -51,7 +52,7 @@ export function ShareButton({
       <Button
         variant="primary"
         size={small ? "control" : "action"}
-        className={small ? styles.shareSmall : styles.share}
+        className={small ? styles.shareSmall : shared.share}
         onClick={() => {
           setSharing(true);
         }}
@@ -75,16 +76,16 @@ export function ShareButton({
 function Invite({ state, onChanged }: { state: Refer; onChanged: () => void }) {
   const { me } = useSession();
   return (
-    <div className={styles.page}>
-      <p className={styles.promise}>{refer.promise(rewardOf(me))}</p>
+    <div className={shared.page}>
+      <p className={shared.promise}>{refer.promise(rewardOf(me))}</p>
       <CreditTile credits={state.credits} />
       {state.invite_credits !== null && (
         <p className={styles.inviteCredits}>{refer.inviteCredits[state.invite_credits]}</p>
       )}
       {/* The board puts the two ways on at the foot of the screen, above the tabs. */}
-      <div className={styles.actions}>
+      <div className={shared.actions}>
         <ShareButton state={state} onChanged={onChanged} />
-        <AppLink className={styles.quiet} to="/refer/fitted">
+        <AppLink className={shared.quiet} to="/refer/fitted">
           <span>{refer.tracker}</span>
         </AppLink>
       </div>
