@@ -58,7 +58,7 @@ const madeTo = (each: KitHairSystem, fit: Fit): boolean =>
  * Whether the kit hair system chosen is not the one this fit is for: another product than the one paid for or chosen,
  * or, with a hair profile, made to another fit. False for none chosen, or a piece from elsewhere.
  */
-export function otherThanFitted(
+function otherThanFitted(
   job: Pick<Job, "kit_hair_systems" | "profile" | "service" | "one_visit" | "type">,
   choice: Choice,
   stock: string | null,
@@ -110,7 +110,7 @@ function kitPieceOf(
 }
 
 /** Whether a label is of a piece in the kit that expires before the visit's day. */
-export function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string): boolean {
+function expiredInKit(job: Pick<Job, "kit_hair_systems" | "date">, label: string): boolean {
   const piece = kitPieceOf(job, label);
   return piece !== null && piece.expires_on !== null && piece.expires_on < job.date;
 }
