@@ -4,7 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, fakeTurnstile, test, visit } from "./support.ts";
-import { WCAG_22_AA } from "./a11y.ts";
+import { atRest, WCAG_22_AA } from "./a11y.ts";
 import * as siteCopy from "../site/src/content/site.ts";
 import * as referralCopy from "../site/src/content/referral.ts";
 
@@ -46,7 +46,7 @@ const PAGES = [
 ];
 
 async function violations(page: Page): Promise<string[]> {
-  const results = await new AxeBuilder({ page }).withTags(WCAG_22_AA).analyze();
+  const results = await atRest(page, () => new AxeBuilder({ page }).withTags(WCAG_22_AA).analyze());
   return results.violations.map(
     (violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`,
   );
