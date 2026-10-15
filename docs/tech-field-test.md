@@ -22,15 +22,15 @@ Print this, or copy it into a notes app, and fill it in as you go.
 
 Ops do these once. Tick each before the phone leaves the office.
 
-| #   | Set up                                                                                                                                                                                    | Done |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-| 1   | The technician is on the console's Technicians page, active, **with their own mobile number**, their city and zone, and trained to fit if Part 1 has a first fit |      |
-| 2   | Nothing to do here: a login code answers whoever asks for it, on any number (ADR 0097, "logins open, reminders fenced") |      |
-| 3   | Three visits are booked from the console for that technician, today, at the three buildings in Part 1 (each client's page, Book a visit) |      |
-| 4   | Each client's address has its pin placed on the client's page, so the check-in can be measured (open point 54) |      |
-| 5   | The phone is charged to 100%, with the battery percentage switched on in the status bar. Android or iPhone, whichever the technician owns                                                 |      |
+| #   | Set up                                                                                                                                                            | Done |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| 1   | The technician is on the console's Technicians page, active, **with their own mobile number**, their city and zone, and trained to fit if Part 1 has a first fit  |      |
+| 2   | Nothing to do here: a login code answers whoever asks for it, on any number (ADR 0097, "logins open, reminders fenced")                                           |      |
+| 3   | Three visits are booked from the console for that technician, today, at the three buildings in Part 1 (each client's page, Book a visit)                          |      |
+| 4   | Each client's address has its pin placed on the client's page, so the check-in can be measured (open point 54)                                                    |      |
+| 5   | The phone is charged to 100%, with the battery percentage switched on in the status bar. Android or iPhone, whichever the technician owns                         |      |
 | 6   | The phone can reach `https://tech-staging.maneman.in` — it is behind Cloudflare Access, so the technician signs in to Access first, or ops open the site for them |      |
-| 7   | Ops can see this technician's phones, so they can count the rows before and after Part 0a (the Technicians page, Phones)                                                                 |      |
+| 7   | Ops can see this technician's phones, so they can count the rows before and after Part 0a (the Technicians page, Phones)                                          |      |
 
 **The phone the day starts on**
 
