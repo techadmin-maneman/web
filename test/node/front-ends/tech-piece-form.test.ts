@@ -30,7 +30,7 @@ describe("the piece step", () => {
       kit_hair_systems: [{ code: "hs_exact", units: [{ code: LABEL, lot_code: null, expires_on: null }] }],
     } as unknown as typeof FIRST_FIT;
     const typed = { ...EMPTY, code: "MM-STD-9999-Z" };
-    expect(stillMissing(typed, FIRST_FIT, "none")).toBe(copy.piece.checkFirst);
+    expect(stillMissing(typed, FIRST_FIT, "none")).toBe(copy.piece.uncheckedAction);
     expect(stillMissing(typed, FIRST_FIT, "unknown")).toBe(copy.piece.notInKitAction);
     // With no signal to check it, the label goes as typed, and the API checks it once the phone is back.
     expect(stillMissing(typed, FIRST_FIT, "offline")).toBeNull();

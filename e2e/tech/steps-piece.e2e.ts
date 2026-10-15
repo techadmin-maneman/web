@@ -7,24 +7,8 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { JOB_ID, ONE_VISIT_CHECKLIST, ROHITS_PIECE, ROHITS_PROFILE } from "./fixtures.ts";
 import { fakeTech, type Fake } from "./fake-tech.ts";
-import { startedThrough, writesTo, checklistItems } from "./steps-fixtures.ts";
+import { holding, startedThrough, writesTo, checklistItems } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
-
-/** A hair system in the technician's kit, held under the one label given: what a fit goes on with. */
-const holding = (product: string, label: string): Fake["kitHairSystems"] => [
-  {
-    product,
-    base_width_in: 8,
-    base_length_in: 10,
-    colour: "1B",
-    grey_percent: 20,
-    density_percent: 100,
-    code: `hs_${product}`,
-    name: `Mane Man ${product} 8x10 1B, 20% grey, 100%`,
-    held: 1,
-    units: [{ code: label, lot_code: null, expires_on: null }],
-  },
-];
 
 test.describe("the piece (board B3, step 4)", () => {
   async function onThePiece(page: Page): Promise<Fake> {
@@ -47,7 +31,7 @@ test.describe("the piece (board B3, step 4)", () => {
     await label.fill("mm-std-7193 c");
     await expect(label).toHaveValue("MM-STD-7193-C");
     // Not in the kit, so it is checked before the fit goes on.
-    await expect(page.getByRole("button", { name: techCopy.steps.piece.checkFirst })).toBeDisabled();
+    await expect(page.getByRole("button", { name: techCopy.steps.piece.uncheckedAction })).toBeDisabled();
 
     await label.fill("MM-STD-71");
     await expect(page.getByRole("button", { name: techCopy.steps.piece.checkFirst })).toBeDisabled();

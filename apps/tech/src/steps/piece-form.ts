@@ -162,7 +162,7 @@ export function stillMissing(
   if (!isLabel(form.code)) return copy.piece.checkFirst;
   if (checked === "another_client") return copy.piece.notThisClientAction;
   const fromKit = form.stock !== null || kitPieceOf(job, form.code) !== null;
-  if (!fromKit && checked === "none") return copy.piece.checkFirst;
+  if (!fromKit && checked === "none") return copy.piece.uncheckedAction;
   if (!fromKit && checked === "unknown") return copy.piece.notInKitAction;
   return given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;
 }
