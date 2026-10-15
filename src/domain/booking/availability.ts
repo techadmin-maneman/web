@@ -14,9 +14,12 @@ import { visitsOfClient } from "./technician-rotation.ts";
 import type { Fitting } from "./occupancy.ts";
 import { missedDayOver, todayStartsOf } from "../visits/visit-begun.ts";
 
-/** The client ?1's visit booked and still to happen: not one nobody arrived at, once its day is over (missedDayOver). */
-const stillToHappen = (todayStarts: string) => `a.person_id = ?1 AND a.deleted_at IS NULL
-  AND ${statusIn("a.status", VISIT_LIVE)} AND NOT ${missedDayOver("a", todayStarts)}`;
+/**
+ * The client ?1's visit booked and still to happen: not one nobody arrived at, once its day is over (missedDayOver).
+ * ?2 is the start of today in India.
+ */
+const STILL_TO_HAPPEN = `a.person_id = ?1 AND a.deleted_at IS NULL
+  AND ${statusIn("a.status", VISIT_LIVE)} AND NOT ${missedDayOver("a", "?2")}`;
 
 const PAID_HOLD = paidNotBooked("slot_holds");
 
@@ -25,11 +28,11 @@ const STAGE = `SELECT
   ${FITTED} AS fitted,
   EXISTS (SELECT 1 FROM appointments WHERE person_id = ?1 AND deleted_at IS NULL AND status = 'completed'
     AND type = 'consultation') AS consulted,
-  EXISTS (SELECT 1 FROM appointments a WHERE ${stillToHappen("?2")}
+  EXISTS (SELECT 1 FROM appointments a WHERE ${STILL_TO_HAPPEN}
       AND (a.type = 'consultation' OR a.one_visit = 'booked'))
     OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD}
       AND (type = 'consultation' OR one_visit = 1)) AS consultation_live,
-  EXISTS (SELECT 1 FROM appointments a WHERE ${stillToHappen("?2")} AND a.type = 'first_fit')
+  EXISTS (SELECT 1 FROM appointments a WHERE ${STILL_TO_HAPPEN} AND a.type = 'first_fit')
     OR EXISTS (SELECT 1 FROM slot_holds WHERE person_id = ?1 AND ${PAID_HOLD} AND type = 'first_fit')
     AS first_fit_live`;
 
@@ -76,10 +79,10 @@ export async function liveVisitOf(
     db
       .prepare(
         `SELECT a.window_start FROM appointments a
-         WHERE ${stillToHappen("?3")} AND (a.type = ?2 OR (?2 = 'consultation' AND a.one_visit = 'booked'))
+         WHERE ${STILL_TO_HAPPEN} AND (a.type = ?3 OR (?3 = 'consultation' AND a.one_visit = 'booked'))
          ORDER BY a.window_start LIMIT 1`,
       )
-      .bind(personId, type, todayStartsOf(now))
+      .bind(personId, todayStartsOf(now), type)
       .first<{ window_start: string }>(),
     db
       .prepare(

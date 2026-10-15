@@ -75,6 +75,8 @@ const box = (label: string) => {
 };
 
 beforeEach(() => {
+  // The forecast's first week, so neither of its periods is over.
+  vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-22T06:00:00.000Z"));
   posted = [];
   asked = [];
   next = CALENDAR;
@@ -113,6 +115,7 @@ afterEach(() => {
   });
   page.remove();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 async function show() {

@@ -20,6 +20,7 @@ import { describe, expect, it } from "vitest";
 import * as STATUSES from "../../../src/config/statuses.ts";
 import { graceEnds, keepingItsTime, ownUnpaid, paidNotBooked } from "../../../src/domain/booking/hold-stages.ts";
 import { creditSpentOn } from "../../../src/domain/visits/visit-facts.ts";
+import { missedDayOver } from "../../../src/domain/visits/visit-begun.ts";
 import { visitCity } from "../../../src/domain/clients/places.ts";
 import { tierOf } from "../../../src/config/visit-types.ts";
 import { indiaDateSql } from "../../../src/lib/india-time.ts";
@@ -247,6 +248,7 @@ const FRAGMENTS: Readonly<Record<string, (...names: never[]) => string>> = {
   graceEnds,
   indiaDateSql,
   keepingItsTime,
+  missedDayOver,
   ownUnpaid,
   paidNotBooked,
   statusIn: STATUSES.statusIn,
