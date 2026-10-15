@@ -30,7 +30,7 @@
 import { inviteDescription, invitePageTitle, inviteTitle } from "./content/referral.ts";
 import type { Invite, ReferralReward } from "./lib/api.ts";
 import { partOf } from "./lib/byte-range.ts";
-import { isServedCities, namingCities, type ServedCities } from "./lib/cities.ts";
+import { citySlug, isServedCities, namingCities, type ServedCities } from "./lib/cities.ts";
 import { cardPath, HOUSE_CARD, INVITE_PATH, isInvite } from "./lib/invite.ts";
 import { isReferralReward } from "./lib/reward.ts";
 
@@ -269,6 +269,24 @@ class AreasListed {
   }
 }
 
+/** A city's link, in a list of the cities we come to: left out while no pincode there is served. */
+class UnservedLeftOut {
+  private readonly served: ReadonlySet<string>;
+
+  constructor(cities: readonly string[]) {
+    this.served = new Set(cities);
+  }
+
+  element(element: Element): void {
+    const city = element.getAttribute("data-city");
+    if (city !== null && !this.served.has(city)) element.remove();
+  }
+}
+
+/** Whether a city's page, by its address, is one of a city with a pincode served. */
+const isServedPage = (pathname: string, cities: readonly string[]): boolean =>
+  cities.some((city) => pathname === `/areas/${citySlug(city)}`);
+
 export interface SiteWorkerOptions {
   /** What the reward and the cities are kept a minute on: a test gives it its own. */
   readonly clock?: () => number;
@@ -300,8 +318,15 @@ export function createSiteWorker({ clock = Date.now }: SiteWorkerOptions = {}) {
         saysReward ? referralReward(env, url.origin) : null,
         namesCities ? servedCities(env, url.origin) : null,
       ]);
+      // A city's page says a technician comes there: never of a city with no pincode served.
+      if (cityPage && cities !== null && cities.cities.length > 0 && !isServedPage(url.pathname, cities.cities)) {
+        return Response.redirect(`${url.origin}/areas`, 302);
+      }
       const rewriter = new HTMLRewriter();
-      if (cities !== null && cities.cities.length > 0) rewriter.on("[data-cities]", new CitiesNamed(cities.cities));
+      if (cities !== null && cities.cities.length > 0) {
+        rewriter.on("[data-cities]", new CitiesNamed(cities.cities));
+        rewriter.on("[data-city]", new UnservedLeftOut(cities.cities));
+      }
       if (cityPage && cities?.areas !== undefined) {
         rewriter.on("[data-city-areas], [data-areas-of]", new AreasListed(cities.areas));
       }

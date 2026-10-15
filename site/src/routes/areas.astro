@@ -38,7 +38,7 @@ const trail = [
       <h2 id="city-pages">{areasPage.cityPages}</h2>
       <ul>
         {business.areaServed.map((city) => (
-          <li>
+          <li data-city={city}>
             <a class={textLinkLook({ inline: true })} href={`/areas/${citySlug(city)}`}>
               {fill(cityPage.title, { city })}
             </a>
