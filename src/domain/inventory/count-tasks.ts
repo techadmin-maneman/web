@@ -127,9 +127,9 @@ async function itemsToCount(
       `SELECT b.consumable_code AS code, i.name,
          EXISTS (SELECT 1 FROM stock_units u INDEXED BY stock_units_held
                  WHERE u.place = b.place AND u.consumable_code = b.consumable_code AND u.state = 'held') AS labelled
-       FROM stock_balances b INDEXED BY stock_balances_by_place
+       FROM stock_balances b INDEXED BY stock_balances_counted
        JOIN consumables i ON i.code = b.consumable_code LEFT JOIN hair_systems h ON h.code = b.consumable_code
-       WHERE b.place = ?1 AND b.quantity > 0
+       WHERE b.place = ?1 AND b.quantity <> 0
          AND COALESCE(i.count_class, CASE WHEN h.code IS NULL THEN 'quarterly' ELSE 'weekly' END) = ?2
          AND (?3 IS NULL OR b.consumable_code = ?3)
        ORDER BY i.name COLLATE NOCASE`,

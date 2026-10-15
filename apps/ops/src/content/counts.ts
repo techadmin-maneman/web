@@ -27,7 +27,9 @@ export const counts = {
   /** "Not held here: MM-ESS-0000041-R. Look into it." */
   notHeld: (labels: readonly string[]) =>
     `Not held here: ${labels.join(", ")}. Look into ${labels.length === 1 ? "it" : "them"}.`,
-  notScanned: (labels: readonly string[]) => `Not scanned: ${labels.join(", ")}.`,
+  /** At sign-off: what signing off does to the pieces whose labels went unscanned. */
+  notScanned: (labels: readonly string[]) =>
+    `Not scanned: ${labels.join(", ")}. Signing off marks ${labels.length === 1 ? "it" : "them"} missing; scan ${labels.length === 1 ? "it" : "them"} on a recount if ${labels.length === 1 ? "it is" : "they are"} there.`,
   saveCount: "Save count",
   saveRecount: "Save recount",
   countSaid: (waiting: number) => (waiting === 0 ? "Counted." : `Counted. ${String(waiting)} to count again.`),

@@ -191,6 +191,16 @@ describe("GET /api/tasks", () => {
       expect(groupNames(await tasks())).not.toContain("partial_visit");
     });
 
+    it("stays for a fit left partly done while the client books anything but its refit", async () => {
+      await closed("partial", "piece_not_ready");
+      await env.DB.prepare("UPDATE appointments SET type = 'first_fit' WHERE id = ?1").bind(VISIT).run();
+      await consultationFor(PERSON, "scheduled");
+      expect(groupNames(await tasks())).toContain("partial_visit");
+
+      await env.DB.prepare("UPDATE appointments SET type = 'first_fit' WHERE id = ?1").bind(CONSULTATION).run();
+      expect(groupNames(await tasks())).not.toContain("partial_visit");
+    });
+
     it("is not a no-show, which ops rule on in its own group", async () => {
       await closed("no_show", null);
       expect(groupNames(await tasks())).toEqual([]);

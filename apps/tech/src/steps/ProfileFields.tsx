@@ -28,8 +28,8 @@ function moveAlong(event: KeyboardEvent<HTMLDivElement>): void {
 }
 
 /**
- * A field's choices under its title, one tap each. One of them, as a radio group a second tap clears; or `many`, as
- * buttons each pressed or not. Either way the group is named by its title, so a screen reader says which "Straight".
+ * A field's choices under its title, one tap each. One of them, as a radio group, where a tap on the one chosen keeps
+ * it, so a stray tap never clears what the last profile said; or `many`, as buttons each pressed or not. Either way the group is named by its title, so a screen reader says which "Straight".
  */
 export function Chips<T extends string | number>({
   title,

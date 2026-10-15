@@ -39,11 +39,14 @@ export function visitUpkeep(db: D1Database, whose: Whose): D1PreparedStatement[]
          WHERE person_id IN (${people})`,
       )
       .bind(list),
+    // A visit left partly done is followed up by a later one of its own kind, a fit's by the refit it is owed; a
+    // consultation's by any.
     db
       .prepare(
         `UPDATE visit_outcomes SET followed_up = EXISTS (
            SELECT 1 FROM appointments a JOIN appointments later ON later.person_id = a.person_id
-            WHERE a.id = visit_outcomes.appointment_id AND ${STANDS("later")} AND later.window_start > a.window_start)
+            WHERE a.id = visit_outcomes.appointment_id AND ${STANDS("later")} AND later.window_start > a.window_start
+              AND (a.type = 'consultation' OR later.type = a.type))
          WHERE outcome = 'partial' AND appointment_id IN (SELECT id FROM appointments WHERE person_id IN (${people}))`,
       )
       .bind(list),

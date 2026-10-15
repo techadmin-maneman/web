@@ -31,10 +31,10 @@ export async function raiseCountTasks(
          AND NOT EXISTS (SELECT 1 FROM count_tasks d INDEXED BY count_tasks_by_place
                          WHERE d.place_id = p.id AND d.count_class = json_each.key
                            AND d.due_on > date(?1, '-' || json_each.value || ' days') AND d.consumable_code IS NULL)
-         AND EXISTS (SELECT 1 FROM stock_balances b INDEXED BY stock_balances_by_place
+         AND EXISTS (SELECT 1 FROM stock_balances b INDEXED BY stock_balances_counted
                      JOIN consumables i ON i.code = b.consumable_code
                      LEFT JOIN hair_systems h ON h.code = b.consumable_code
-                     WHERE b.place = p.id AND b.quantity > 0
+                     WHERE b.place = p.id AND b.quantity <> 0
                        AND COALESCE(i.count_class, CASE WHEN h.code IS NULL THEN 'quarterly' ELSE 'weekly' END) = json_each.key)`,
     )
     .bind(today, now.toISOString(), JSON.stringify(classDays))

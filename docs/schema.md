@@ -2680,7 +2680,7 @@ Made by `0130_standard_costs.sql`.
 
 What each place holds of each consumable, and when it last counted it: the sum of its rows in `stock_movements`, kept by triggers as each is written (ADR 0087).
 
-Made by `0053_balances_and_last_visits.sql`; changed by `0154_cycle_counts.sql`.
+Made by `0053_balances_and_last_visits.sql`; changed by `0154_cycle_counts.sql`, `0182_counts_below_zero.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2692,6 +2692,7 @@ Made by `0053_balances_and_last_visits.sql`; changed by `0154_cycle_counts.sql`.
 Indexes:
 
 - `stock_balances_by_place`: on (`place`, `consumable_code`), where `quantity > 0`
+- `stock_balances_counted`: on (`place`, `consumable_code`), where `quantity <> 0`
 
 ## stock_lot_balances
 

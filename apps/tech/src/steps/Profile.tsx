@@ -110,7 +110,7 @@ function FitFields({
   const choose =
     <K extends keyof Choices>(key: K) =>
     (id: NonNullable<Choices[K]>) => {
-      onChange({ ...form, choices: { ...form.choices, [key]: form.choices[key] === id ? null : id } });
+      onChange({ ...form, choices: { ...form.choices, [key]: id } });
     };
   const chosen =
     <K extends keyof Choices>(key: K) =>
