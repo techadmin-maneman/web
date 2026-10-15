@@ -511,6 +511,7 @@ export const steps = {
     look: "Check the label",
     unknown: "Not in your kit. Check the label, or close with Can’t fit today.",
     notInKitAction: "That label isn’t in your kit",
+    uncheckedAction: "Waiting for the label check",
     inKit: (name: string, lot: string | null) =>
       lot === null ? `From your kit: ${name}.` : `From your kit: ${name} · lot ${lot}.`,
     // The board draws no lookup with no signal.
