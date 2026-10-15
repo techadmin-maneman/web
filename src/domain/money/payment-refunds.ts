@@ -9,12 +9,14 @@ import { auditStatement } from "../platform/audit.ts";
 import type { Written } from "../platform/audit.ts";
 import { askRefund, refundLeftToOps, refundReceipt } from "./refunds.ts";
 import { REFUND_NOT_FAILED, statusIn } from "../../config/statuses.ts";
+import { paidOutsideRazorpay } from "../../policy/upi.ts";
 
 export type PaymentRefund =
   | { readonly kind: "refunded"; readonly amount: number }
   | { readonly kind: "missing" }
   | { readonly kind: "nothing_left" }
-  | { readonly kind: "left_to_ops" };
+  | { readonly kind: "left_to_ops" }
+  | { readonly kind: "by_upi" };
 
 type PaidRow = {
   person_id: string;
@@ -48,6 +50,8 @@ export async function refundPayment(
   if (paid === null) return { kind: "missing" };
   const amount = paid.amount - paid.refunded;
   if (amount <= 0) return { kind: "nothing_left" };
+  // Paid by UPI to the bank, not through Razorpay: ops refund it the same way (docs/decisions/0209).
+  if (paidOutsideRazorpay(paid.razorpay_payment_id)) return { kind: "by_upi" };
   const outcome = await askRefund(deps.payments, paid.razorpay_payment_id, {
     amount,
     receipt: refundReceipt({ kind: "payment", paymentId: asked.paymentId }),

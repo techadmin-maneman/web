@@ -231,6 +231,7 @@ const paid = ({
   method,
   reference,
   refunded_amount: 0,
+  utr: null,
   purpose: "visit",
   charge: null,
   no_show: null,

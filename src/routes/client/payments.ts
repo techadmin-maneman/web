@@ -68,6 +68,9 @@ const PaymentEntrySchema = z
     method: z.union([z.string(), z.null()]).openapi({ description: "upi, card, netbanking and so on." }),
     reference: z.union([z.string(), z.null()]).openapi({ description: "Ours, e.g. MM-7KQ3-9F2D, once captured." }),
     refunded_amount: z.number().int().openapi({ description: "In paise: refunds Razorpay has processed." }),
+    utr: z.union([z.string(), z.null()]).openapi({
+      description: "Paid by UPI at the visit: the bank's reference ops recorded it under. Null for any other payment.",
+    }),
     purpose: z.enum(["visit", "late_fee"]).openapi({ description: "What it paid for: the visit, or a late fee." }),
     charge: z
       .union([

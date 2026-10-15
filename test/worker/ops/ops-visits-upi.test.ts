@@ -106,6 +106,17 @@ describe("a paid visit booked while online payment is off", () => {
     expect(await again.json()).toMatchObject({ error: { code: "already_paid" } });
   });
 
+  it("is refunded by UPI from the bank, not through Razorpay: the console's refund is refused with that said", async () => {
+    await bookFit();
+    const visit = (await env.DB.prepare("SELECT appointment_id FROM slot_holds").first<string>("appointment_id")) ?? "";
+    const paid = await post(`/api/visits/${visit}/upi-payment`, { utr: "412345678901" });
+    const { payment_id: paymentId } = await paid.json<{ payment_id: string }>();
+
+    const refund = await post(`/api/payments/${paymentId}/refund`, { reason: "Asked for it back" });
+    expect(refund.status).toBe(409);
+    expect(await refund.json()).toMatchObject({ error: { code: "paid_by_upi" } });
+  });
+
   it("refuses a UTR already recorded, and a visit not paid at the visit", async () => {
     await bookFit();
     const visit = (await env.DB.prepare("SELECT appointment_id FROM slot_holds").first<string>("appointment_id")) ?? "";

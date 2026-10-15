@@ -178,6 +178,8 @@ export const ERROR_CODES = [
   "out_of_warranty",
   // A custom order's refund asked for a reason that does not hold (docs/decisions/0176-custom-order-refunds.md).
   "refund_not_due",
+  // A payment made by UPI at the visit, to the bank, which no refund through Razorpay reaches (docs/decisions/0209).
+  "paid_by_upi",
   // A UPI payment recorded for a visit not paid at the visit, one already paid, or under a UTR already recorded
   // (docs/decisions/0209-paid-at-the-visit-by-upi.md).
   "not_due",
@@ -329,6 +331,7 @@ export const ERROR_STATUS = {
   return_settled: 409,
   out_of_warranty: 409,
   refund_not_due: 409,
+  paid_by_upi: 409,
   not_due: 409,
   already_paid: 409,
   reference_used: 409,

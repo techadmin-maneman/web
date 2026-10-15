@@ -5533,6 +5533,7 @@ Request body:
             "return_settled",
             "out_of_warranty",
             "refund_not_due",
+            "paid_by_upi",
             "not_due",
             "already_paid",
             "reference_used"
@@ -8868,6 +8869,17 @@ Request body:
       "type": "integer",
       "description": "In paise: refunds Razorpay has processed."
     },
+    "utr": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Paid by UPI at the visit: the bank's reference ops recorded it under. Null for any other payment."
+    },
     "purpose": {
       "type": "string",
       "enum": [
@@ -8974,6 +8986,7 @@ Request body:
     "method",
     "reference",
     "refunded_amount",
+    "utr",
     "purpose",
     "charge",
     "no_show",
@@ -9456,6 +9469,17 @@ Request body:
       "type": "integer",
       "description": "In paise: refunds Razorpay has processed."
     },
+    "utr": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Paid by UPI at the visit: the bank's reference ops recorded it under. Null for any other payment."
+    },
     "purpose": {
       "type": "string",
       "enum": [
@@ -9596,6 +9620,7 @@ Request body:
     "method",
     "reference",
     "refunded_amount",
+    "utr",
     "purpose",
     "charge",
     "no_show",
