@@ -20640,6 +20640,14 @@ export interface components {
             /** @description Each finished visit sold for a price, with its invoice; the latest visit first. */
             invoices: components["schemas"]["ClientInvoice"][];
             history: components["schemas"]["ClientRecordHistory"];
+            /** @description What the client app offers them next, which Book a visit opens on: the replacement where the piece falls due first. Null while a visit is booked, and before their consultation is done. */
+            next_visit: {
+                /** @enum {string} */
+                type: "first_fit" | "service" | "replacement";
+                tier: string | null;
+                /** Format: date */
+                due_on: string;
+            } | null;
             /** @description The invite they came with, or ops attached; null for none. */
             invite: components["schemas"]["ClientInvite"] | null;
             /** @description Bookings that refunded their payment by themselves; the latest refund first. */

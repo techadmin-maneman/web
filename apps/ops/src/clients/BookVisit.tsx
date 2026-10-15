@@ -28,6 +28,8 @@ export interface Prefill {
   readonly code?: string;
   /** What the visit makes good, free: one of availability's `owed`. */
   readonly covers?: string;
+  /** The label of the hair system in wear, which a replacement replaces. */
+  readonly replacing?: string;
 }
 
 /** "Wed 23 Sep, 9 am": when the link closes. */
@@ -219,6 +221,9 @@ function BookingForm({
             />
           )}
         </Field>
+      )}
+      {choice === "replacement" && prefill.replacing !== undefined && (
+        <p className={shared.pays}>{copy.replaces(prefill.replacing)}</p>
       )}
       <p className={shared.pays}>{payLine(choice, offered, cover !== "")}</p>
       <div className={shared.actions}>

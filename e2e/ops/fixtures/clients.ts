@@ -156,6 +156,8 @@ export const RECORD = {
     spend: 4_956_000,
     replacement_due: { on: "2028-03-01", month: "2028-03", piece_code: "MM-STD-4417-C" },
   },
+  // A visit to come, so the app offers nothing next.
+  next_visit: null,
   /** They came through a friend's invite, whose 3 visits were given at their first fit. */
   invite: {
     code: "VSAB23",

@@ -117,6 +117,16 @@ test("books a fitted client’s service visit in a window someone is free in, se
   ]);
 });
 
+// With a replacement due first, Book a visit opened on a service visit and said nothing of the piece it replaces.
+test("opens on the replacement the app offers next, naming the hair system it replaces", async ({ page }) => {
+  const due = { ...RECORD, next_visit: { type: "replacement" as const, tier: "standard", due_on: "2027-09-25" } };
+  await openVisits(page, { [`GET /api/clients/${CLIENT.id}`]: json(due) });
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.open }).click();
+  const booking = panel(page);
+  await expect(booking.getByLabel(opsCopy.clients.visits.book.kind, { exact: true })).toHaveValue("replacement");
+  await expect(booking).toContainText(opsCopy.clients.visits.book.replaces("MM-STD-4417-C"));
+});
+
 test("says why a booking was refused, and books nothing", async ({ page }) => {
   await openVisits(page, {
     [BOOK]: json({ error: { code: "taken", request_id: "r-1" } }, 409),

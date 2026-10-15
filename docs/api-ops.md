@@ -27553,6 +27553,43 @@ Request body:
     "history": {
       "$ref": "#/components/schemas/ClientRecordHistory"
     },
+    "next_visit": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "first_fit",
+                "service",
+                "replacement"
+              ]
+            },
+            "tier": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "due_on": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "required": [
+            "type",
+            "tier",
+            "due_on"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client app offers them next, which Book a visit opens on: the replacement where the piece falls due first. Null while a visit is booked, and before their consultation is done."
+    },
     "invite": {
       "anyOf": [
         {
@@ -27605,6 +27642,7 @@ Request body:
     "payment_links",
     "invoices",
     "history",
+    "next_visit",
     "invite",
     "auto_refunds",
     "lost_reasons"
