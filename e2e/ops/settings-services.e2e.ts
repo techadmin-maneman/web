@@ -39,7 +39,7 @@ test.describe("the services and their prices", () => {
       "Rs. 2,000",
       "18%",
       "Rs. 2,500 from 1 Oct 2027",
-      "Edit",
+      settingsCopy.rules.confirm.back,
     ]);
     await expect(row(page, "Premium")).toContainText("240 min");
     await expect(row(page, "Premium")).not.toContainText("premium");
@@ -75,7 +75,7 @@ test.describe("the services and their prices", () => {
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await expect(page.getByLabel(settingsCopy.services.form.amount)).toHaveValue("2000");
-    await expect(page.getByLabel("GST", { exact: true })).toHaveValue("18");
+    await expect(page.getByLabel(settingsCopy.services.form.gst, { exact: true })).toHaveValue("18");
   });
 
   // A new price once started from today, and changed what clients had been quoted that day.
@@ -99,11 +99,11 @@ test.describe("the services and their prices", () => {
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
     await page.getByLabel(settingsCopy.services.form.amount).fill("2500");
-    await page.getByLabel("GST", { exact: true }).fill("0");
+    await page.getByLabel(settingsCopy.services.form.gst, { exact: true }).fill("0");
     await page.getByLabel(settingsCopy.services.form.from).fill("2027-11-01");
-    await page.getByRole("button", { name: "Review" }).click();
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
 
-    const check = page.getByRole("group", { name: "Review the change" });
+    const check = page.getByRole("group", { name: settingsCopy.rules.confirm.title });
     await expect(check).toBeFocused();
     await expect(check).toContainText("Service visit: Rs. 2,000 + 18% GST → Rs. 2,500 + 0% GST, from 1 Nov 2027");
     await expect(check).toContainText("GST: 18% → 0%");
@@ -125,10 +125,10 @@ test.describe("the services and their prices", () => {
     await open(page, "/prices");
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
-    await page.getByRole("button", { name: "Review" }).click();
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
     await page.getByRole("group", { name: review.title }).getByRole("button", { name: review.edit }).click();
-    await expect(page.getByRole("group", { name: "Review the change" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Review" })).toBeEnabled();
+    await expect(page.getByRole("group", { name: settingsCopy.rules.confirm.title })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: settingsCopy.discountCodes.check })).toBeEnabled();
   });
 
   // A day typed before tomorrow reached the check, and was refused only when sent.
@@ -139,8 +139,8 @@ test.describe("the services and their prices", () => {
     const from = page.getByLabel(settingsCopy.services.form.from);
     await from.fill("2027-09-21");
     await expect(from).toHaveAttribute("aria-invalid", "true");
-    await expect(from).toHaveAccessibleDescription("Choose tomorrow or later.");
-    await expect(page.getByRole("button", { name: "Review" })).toBeDisabled();
+    await expect(from).toHaveAccessibleDescription(settingsCopy.services.form.fromTooSoon);
+    await expect(page.getByRole("button", { name: settingsCopy.discountCodes.check })).toBeDisabled();
   });
 
   test("says a price applies from tomorrow at the earliest when the API refuses the date", async ({ page }) => {
@@ -149,8 +149,11 @@ test.describe("the services and their prices", () => {
     });
     await edit(page, "Service visit");
     await page.getByRole("button", { name: "Change the price of Service visit" }).click();
-    await page.getByRole("button", { name: "Review" }).click();
-    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: review.send }).click();
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await page
+      .getByRole("group", { name: settingsCopy.rules.confirm.title })
+      .getByRole("button", { name: review.send })
+      .click();
     await expect(page.getByRole("alert")).toContainText("starts tomorrow at the earliest");
   });
 
@@ -158,7 +161,7 @@ test.describe("the services and their prices", () => {
     await open(page, "/prices", { "POST /api/prices": fails(400, "service_retired", ["valid_from"]) });
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Change the price of Premium" }).click();
-    await page.getByRole("button", { name: "Review" }).click();
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
     await page.getByRole("button", { name: review.send }).click();
     await expect(page.getByRole("alert")).toContainText("It’s retired by then");
   });
@@ -185,8 +188,8 @@ test.describe("the services and their prices", () => {
     await expect(page.getByLabel(settingsCopy.services.form.amount)).toHaveValue("2500");
     await expect(page.getByLabel(settingsCopy.services.form.from)).toHaveValue("2027-10-01");
     await page.getByLabel(settingsCopy.services.form.from).fill("2027-10-05");
-    await page.getByRole("button", { name: "Review" }).click();
-    await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await expect(page.getByRole("group", { name: settingsCopy.rules.confirm.title })).toContainText(
       "Service visit: Rs. 2,500 + 18% GST from 1 Oct 2027 → Rs. 2,500 + 18% GST from 5 Oct 2027",
     );
 
@@ -214,36 +217,36 @@ test.describe("the services and their prices", () => {
   }) => {
     await open(page, "/prices", { "POST /api/services": json(SERVICES, 201) });
     await page.getByRole("button", { name: settingsCopy.services.actions.addHairSystem }).click();
-    await page.getByLabel("Name", { exact: true }).fill("Thin skin");
-    await expect(page.getByLabel("Code")).toHaveValue("thin_skin");
+    await page.getByLabel(settingsCopy.services.form.name, { exact: true }).fill("Thin skin");
+    await expect(page.getByLabel(settingsCopy.discountCodes.code)).toHaveValue("thin_skin");
     await expect(page.getByLabel(settingsCopy.services.form.minutes)).toHaveValue("180");
-    await page.getByRole("button", { name: "Review" }).click();
-    await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await expect(page.getByRole("group", { name: settingsCopy.rules.confirm.title })).toContainText(
       "Add Thin skin to First fit: 180 minutes. Hidden until priced.",
     );
 
     const request = posted(page, "/api/services");
-    await page.getByRole("button", { name: "Confirm" }).click();
+    await page.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({
       kind: "first_fit",
       name: "Thin skin",
       tier: "thin_skin",
       minutes: 180,
     });
-    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: settingsCopy.rules.saved })).toBeVisible();
   });
 
   test("renames a service and says its code, and so its prices, stay", async ({ page }) => {
     await open(page, "/prices", { "POST /api/services/first_fit/premium/name": json(SERVICES) });
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Rename Premium" }).click();
-    await page.getByLabel("Name", { exact: true }).fill("Premium first fit");
-    await page.getByRole("button", { name: "Review" }).click();
-    await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
+    await page.getByLabel(settingsCopy.services.form.name, { exact: true }).fill("Premium first fit");
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await expect(page.getByRole("group", { name: settingsCopy.rules.confirm.title })).toContainText(
       "Premium → Premium first fit (code stays premium)",
     );
     const request = posted(page, "/api/services/first_fit/premium/name");
-    await page.getByRole("button", { name: "Confirm" }).click();
+    await page.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({ name: "Premium first fit" });
   });
 
@@ -252,14 +255,19 @@ test.describe("the services and their prices", () => {
     await expect(row(page, "Premium")).toContainText("A finer lace front, for a closer look.");
     await edit(page, "Premium");
     await page.getByRole("button", { name: "Edit the description of Premium" }).click();
-    await expect(page.getByLabel("Description", { exact: true })).toHaveAttribute("maxlength", "160");
-    await page.getByLabel("Description", { exact: true }).fill("Natural, even at the parting.");
-    await page.getByRole("button", { name: "Review" }).click();
-    await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
+    await expect(page.getByLabel(settingsCopy.services.actions.describe, { exact: true })).toHaveAttribute(
+      "maxlength",
+      "160",
+    );
+    await page
+      .getByLabel(settingsCopy.services.actions.describe, { exact: true })
+      .fill("Natural, even at the parting.");
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await expect(page.getByRole("group", { name: settingsCopy.rules.confirm.title })).toContainText(
       "Premium: “A finer lace front, for a closer look.” → “Natural, even at the parting.”",
     );
     const request = posted(page, "/api/services/first_fit/premium/description");
-    await page.getByRole("button", { name: "Confirm" }).click();
+    await page.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({ description: "Natural, even at the parting." });
   });
 
@@ -269,10 +277,12 @@ test.describe("the services and their prices", () => {
     await page.getByRole("button", { name: "Change the length of Premium" }).click();
     await expect(page.getByLabel(settingsCopy.services.form.minutes)).toHaveAttribute("max", "360");
     await page.getByLabel(settingsCopy.services.form.minutes).fill("300");
-    await page.getByRole("button", { name: "Review" }).click();
-    await expect(page.getByRole("group", { name: "Review the change" })).toContainText("Premium: 240 → 300 minutes");
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await expect(page.getByRole("group", { name: settingsCopy.rules.confirm.title })).toContainText(
+      "Premium: 240 → 300 minutes",
+    );
     const request = posted(page, "/api/services/first_fit/premium/length");
-    await page.getByRole("button", { name: "Confirm" }).click();
+    await page.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({ minutes: 300 });
   });
 
@@ -283,12 +293,12 @@ test.describe("the services and their prices", () => {
     await edit(page, "Replacement");
     await page.getByRole("button", { name: "Retire Replacement" }).click();
     await page.getByLabel(settingsCopy.services.form.retireFrom).fill("2027-10-01");
-    await page.getByRole("button", { name: "Review" }).click();
-    await expect(page.getByRole("group", { name: "Review the change" })).toContainText(
+    await page.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await expect(page.getByRole("group", { name: settingsCopy.rules.confirm.title })).toContainText(
       "Replacement is hidden from 1 Oct 2027.",
     );
     const request = posted(page, "/api/services/replacement/standard/retire");
-    await page.getByRole("button", { name: "Confirm" }).click();
+    await page.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-10-01" });
     await expect(page.getByRole("alert")).toContainText("Each kind needs one priced service");
   });
@@ -300,9 +310,9 @@ test.describe("the services and their prices", () => {
     const asked = page.getByRole("group", { name: /Offer Lace replacement again/ });
     await expect(asked).toBeFocused();
     const request = posted(page, "/api/services/replacement/lace/restore");
-    await asked.getByRole("button", { name: "Confirm" }).click();
+    await asked.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     await request;
-    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: settingsCopy.rules.saved })).toBeVisible();
   });
 
   test("moves a service up its kind, showing the new order before it is sent", async ({ page }) => {
@@ -314,13 +324,19 @@ test.describe("the services and their prices", () => {
     const asked = page.getByRole("group", { name: review.title });
     await expect(asked).toBeFocused();
     const request = posted(page, "/api/services/first_fit/order");
-    await asked.getByRole("button", { name: "Confirm" }).click();
+    await asked.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({ tiers: ["premium", "standard"] });
   });
 
   test("prices a late fee beside its kind, one figure a kind", async ({ page }) => {
     await open(page, "/prices");
-    await expect(row(page, "Late fee", "First fit").getByRole("cell")).toHaveText(["", "Rs. 4,000", "0%", "", "Edit"]);
+    await expect(row(page, "Late fee", "First fit").getByRole("cell")).toHaveText([
+      "",
+      "Rs. 4,000",
+      "0%",
+      "",
+      settingsCopy.rules.confirm.back,
+    ]);
     await edit(page, "Late fee on a first fit");
     await page.getByRole("button", { name: "Change the price of Late fee on a first fit" }).click();
     await expect(page.getByLabel(settingsCopy.services.form.amount)).toHaveValue("4000");

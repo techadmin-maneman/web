@@ -20,7 +20,7 @@ test.describe("header", () => {
     await page.goto("/");
     const header = page.locator("header");
     await expect(header.getByRole("link", { name: siteCopy.header.homeLabel })).toHaveAttribute("href", "/");
-    await expect(header.getByRole("link", { name: "Book a consultation" })).toHaveAttribute("href", "/book");
+    await expect(header.getByRole("link", { name: siteCopy.header.book })).toHaveAttribute("href", "/book");
   });
 
   // The built pages are book.html and r.html, whose addresses the rule never matched, so both offered themselves.
@@ -98,7 +98,7 @@ test.describe("sticky bar and footer: the home page only", () => {
     for (const link of siteCopy.footer.pages) {
       await expect(pages.getByRole("link", { name: link.label, exact: true })).toHaveAttribute("href", link.href);
     }
-    await pages.getByRole("link", { name: "Try-on", exact: true }).click();
+    await pages.getByRole("link", { name: siteCopy.tryOnTeaser.eyebrow, exact: true }).click();
     await expect(page).toHaveURL(/\/try$/);
   });
 });
@@ -129,7 +129,7 @@ test.describe("skip link", () => {
     await page.goto("/");
     const book = page
       .getByRole("navigation", { name: siteCopy.stickyBar.label })
-      .getByRole("link", { name: "Book a consultation" });
+      .getByRole("link", { name: siteCopy.header.book });
     await expect(book).toBeVisible();
     expect((await book.boundingBox())?.width ?? 0).toBeLessThanOrEqual(480);
   });
@@ -185,7 +185,7 @@ test.describe("home sections", () => {
     await page.goto("/");
     const hero = page.locator('[data-section="hero"]');
     await expect(hero.getByRole("link", { name: siteCopy.hero.tryOn })).toHaveAttribute("href", "/try");
-    await expect(hero.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
+    await expect(hero.getByRole("link", { name: siteCopy.hero.book })).toHaveAttribute("href", "/book");
   });
 
   test("the hero’s opening line is read whole, once, over the footage", async ({ page }) => {
@@ -219,7 +219,7 @@ test.describe("home sections", () => {
     await expect(norwood.locator(".early > li")).toHaveCount(2);
     await expect(norwood.locator(".flow > li")).toHaveCount(5);
     await expect(norwood.getByText(siteCopy.norwood.early.note)).toBeVisible();
-    await expect(norwood.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
+    await expect(norwood.getByRole("link", { name: siteCopy.hero.book })).toHaveAttribute("href", "/book");
   });
 
   test("comparison: seven rows, ticks and crosses read as Yes and No", async ({ page }) => {
@@ -228,7 +228,11 @@ test.describe("home sections", () => {
     await expect(table.getByRole("row")).toHaveCount(8);
     // "Surgery" ticked the transplant, so at a glance surgery read as the plus.
     const surgery = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "No surgery" }) });
-    await expect(surgery.getByRole("cell")).toHaveText(["No", "Yes", "Yes"]);
+    await expect(surgery.getByRole("cell")).toHaveText([
+      siteCopy.comparison.no,
+      siteCopy.comparison.yes,
+      siteCopy.comparison.yes,
+    ]);
     const effects = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Side effects" }) });
     await expect(effects.getByRole("cell")).toHaveText([
       "Surgical risks",
@@ -316,7 +320,7 @@ test.describe("home sections", () => {
     await page.goto("/");
     const closing = page.locator('[data-section="closing"]');
     await expect(closing).toContainText(siteCopy.closing.title);
-    await expect(closing.getByRole("link", { name: "Book a free consultation" })).toHaveAttribute("href", "/book");
+    await expect(closing.getByRole("link", { name: siteCopy.hero.book })).toHaveAttribute("href", "/book");
   });
 });
 

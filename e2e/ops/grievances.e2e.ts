@@ -18,7 +18,7 @@ async function open(page: Page, resolve = json({ state: "resolved" })): Promise<
   await page.clock.setFixedTime(TASKS_READ_ON);
   await answer(page, { "GET /api/grievances": json(GRIEVANCES), [ANSWER_IT]: resolve });
   await page.goto("/grievances");
-  await expect(page.getByRole("heading", { level: 1, name: "Concerns" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.grievances.title })).toBeVisible();
 }
 
 const queue = (page: Page) => page.getByRole("region", { name: opsCopy.grievances.queue.title });
@@ -112,7 +112,7 @@ test("says so when the queue cannot be loaded, and loads it on Try again", async
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { "GET /api/grievances": json(GRIEVANCES) });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: opsCopy.states.retry }).click();
   await expect(page.getByText("Rohit Malhotra")).toBeVisible();
 });
 

@@ -79,7 +79,7 @@ test("shows the piece on the client’s head and the last visit’s after photog
   fake.lastVisit = true;
   await page.goto(`/jobs/${JOB_ID}`);
 
-  const piece = page.getByRole("region", { name: "The piece" });
+  const piece = page.getByRole("region", { name: techCopy.job.piece.title });
   await expect(piece).toContainText(ROHITS_PIECE.piece_code);
   await expect(piece).toContainText("PLACEHOLDER_STANDARD");
   await expect(piece).toContainText("LOT-4417");
@@ -98,8 +98,8 @@ test("says what a first fit was paid for, apart from the hair profile, and warns
   fake.profile = ROHITS_PROFILE;
   await page.goto(`/jobs/${JOB_ID}`);
 
-  await expect(page.getByRole("region", { name: "Hair profile" })).toContainText("Mane Man Essential");
-  const piece = page.getByRole("region", { name: "The piece" });
+  await expect(page.getByRole("region", { name: techCopy.job.profileTitle })).toContainText("Mane Man Essential");
+  const piece = page.getByRole("region", { name: techCopy.job.piece.title });
   await expect(piece).toContainText(techCopy.job.piece.rows.paidFor);
   await expect(piece).toContainText("Mane Man Natural");
   await expect(piece).toContainText("The hair profile says Mane Man Essential. Check with ops before you fit.");
@@ -111,8 +111,8 @@ test("gives a consultation’s card the hair profile and no piece", async ({ pag
   fake.profile = ROHITS_PROFILE;
   await page.goto(`/jobs/${JOB_ID}`);
 
-  await expect(page.getByRole("region", { name: "Hair profile" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "The piece" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: techCopy.job.profileTitle })).toBeVisible();
+  await expect(page.getByRole("region", { name: techCopy.job.piece.title })).toHaveCount(0);
   await expect(page.getByText(techCopy.job.piece.none)).toHaveCount(0);
 });
 
@@ -150,9 +150,9 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
   await expect(
     page.getByText(/^Go to the door and tap again\. Still refused\? Ask ops to let you check in\./),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Close as no-show" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toHaveCount(0);
   // The evidence chain draws the failure with its own outlined Try again, and no second gold "I have arrived" beside it.
-  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(page.getByRole("button", { name: techCopy.notHome.failed.action })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
 
   expect(await axeViolations(page)).toEqual([]);
@@ -163,7 +163,7 @@ test("keeps Close as no-show dim and outlined beside the gold Start job until th
   fake.waitLeftMs = 4_000;
   await arrive(page);
 
-  const close = page.getByRole("button", { name: "Close as no-show" });
+  const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
   await expect(close).toBeDisabled();
   await expect(foot(page)).toHaveText(techCopy.job.start);
   // One gold action per screen: Close as no-show is never the same button as Start job.
@@ -182,7 +182,7 @@ test("asks before closing as a no-show, since ops may charge the client", async 
   fake.reminderDelivered = new Date().toISOString();
   await arrive(page);
 
-  const close = page.getByRole("button", { name: "Close as no-show" });
+  const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
   await expect(close).toBeEnabled({ timeout: 10_000 });
   await close.click();
 
@@ -190,16 +190,16 @@ test("asks before closing as a no-show, since ops may charge the client", async 
   await expect(sheet).toBeVisible();
   await expect(sheet).toContainText("The client may be charged");
   // It opens on the safe answer, so one stray Enter charges nobody.
-  await expect(sheet.getByRole("button", { name: "Not yet" })).toBeFocused();
+  await expect(sheet.getByRole("button", { name: techCopy.notHome.confirm.no })).toBeFocused();
   expect(await axeViolations(page)).toEqual([]);
 
   // A mis-tap is undone with one tap, and nothing was sent.
-  await sheet.getByRole("button", { name: "Not yet" }).click();
+  await sheet.getByRole("button", { name: techCopy.notHome.confirm.no }).click();
   await expect(sheet).toBeHidden();
   expect(fake.writes.filter((write) => write.path.endsWith("/no-show"))).toHaveLength(0);
 
   await close.click();
-  await page.getByRole("dialog").getByRole("button", { name: "Close as no-show" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.waiting.close }).click();
 
   // The evidence chain's close: the evidence ops rule on, and what happens next.
   await expect(page.getByRole("heading", { name: "Rohit M. · no-show" })).toBeVisible();
@@ -217,10 +217,10 @@ test("a no-show the API refuses as early stays open on the card, and never reads
   fake.tooEarly = true;
   await arrive(page);
 
-  const close = page.getByRole("button", { name: "Close as no-show" });
+  const close = page.getByRole("button", { name: techCopy.notHome.waiting.close });
   await expect(close).toBeEnabled({ timeout: 10_000 });
   await close.click();
-  await page.getByRole("dialog").getByRole("button", { name: "Close as no-show" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: techCopy.notHome.waiting.close }).click();
 
   // The phone's clock ran ahead of ours: nothing was recorded, and the card says so.
   await expect(page.getByText(techCopy.notHome.waiting.early)).toBeVisible();
@@ -248,7 +248,7 @@ test("a phone that lost its copy of the check-in still counts the wait and can c
   await expect(page.getByText(techCopy.notHome.waiting.step)).toBeVisible();
   await expect(page.getByText(/^No signal/)).toHaveCount(0);
   await expect(page.getByText("0:00")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Close as no-show" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toBeEnabled();
 });
 
 test("with no signal the wait still counts down from the tap, and says what closing needs", async ({
@@ -271,7 +271,7 @@ test("with no signal the wait still counts down from the tap, and says what clos
   await expect(page.getByText(/^1[45]:\d\d$/)).toBeVisible();
   await expect(page.getByText(/^No signal\. The wait counts from your tap/)).toBeVisible();
   // Ours has to hold the check-in for the wait as well (ADR 0065), so the close waits for signal.
-  await expect(page.getByRole("button", { name: "Close as no-show" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toBeDisabled();
 });
 
 test("a started job offers only its next step: no check-in, no no-show, no second Start job", async ({ page }) => {
@@ -287,13 +287,13 @@ test("a started job offers only its next step: no check-in, no no-show, no secon
   await page.goto(`/jobs/${JOB_ID}`);
 
   await expect(foot(page)).toHaveText(techCopy.job.continueJob);
-  await expect(page.getByRole("button", { name: "Close as no-show" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: techCopy.notHome.waiting.close })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
   await expect(page.getByText(techCopy.job.states.inProgress)).toBeVisible();
 
   await foot(page).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
 });
 
 test("a closed job reads as closed, with no gold Continue", async ({ page }) => {
@@ -334,40 +334,40 @@ test("walks the six steps of a service visit and closes it out (boards B1 to B4)
   await page.getByRole("button", { name: techCopy.job.start }).click();
 
   // Step 1: the before set.
-  await expect(page.getByRole("heading", { level: 1, name: "Before photos" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.before })).toBeVisible();
   const capture = page.getByRole("button", { name: techCopy.capture.take });
   await expect(capture).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
     await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
   }
-  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.done }).click();
 
   // Step 2: the checklist, which will not let the job on until it is finished.
-  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.steps.checklist.unfinished })).toBeDisabled();
   for (const item of await page.getByRole("listitem").getByRole("button").all()) await item.click();
   expect(await axeViolations(page)).toEqual([]);
   await page.getByRole("button", { name: techCopy.steps.next }).click();
 
   // Step 3: the consumables' steppers, no keyboard anywhere.
-  await expect(page.getByRole("heading", { level: 1, name: "Consumables used" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await expect(page.locator("input")).toHaveCount(0);
   await page.getByRole("button", { name: "One more tape strips" }).click();
   await page.getByRole("button", { name: "One more tape strips" }).click();
   await page.getByRole("button", { name: techCopy.steps.next }).click();
 
   // Step 5: the after set. A service visit has no piece step; the API leaves it out.
-  await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.capture.after })).toBeVisible();
   await expect(capture).toBeEnabled();
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
     await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
   }
-  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.done }).click();
 
   // Step 6: the outcome, with nothing chosen for them.
-  await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.choose })).toBeDisabled();
   await page.getByRole("button", { name: techCopy.steps.outcome.partial }).click();
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.pickReason })).toBeDisabled();

@@ -22,7 +22,7 @@ function launchRoute(confirmed = json(LAUNCHED)) {
 async function open(page: Page, confirmed?: ReturnType<typeof json>): Promise<void> {
   await answer(page, { "GET /api/waitlist": json(AREAS), [LAUNCH_IT]: launchRoute(confirmed) });
   await page.goto("/areas");
-  await expect(page.getByRole("heading", { level: 1, name: "Areas" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: opsCopy.areas.title })).toBeVisible();
 }
 
 test("lists the pincodes with their counts, and marks the ones we already come to", async ({ page }) => {
@@ -67,7 +67,7 @@ test("asks what a launch would send before anything goes out", async ({ page }) 
 
   const panel = page.getByRole("region", { name: "Mark 400050 live" });
   await expect(panel.getByText("Messages 84 people")).toBeVisible();
-  await expect(panel.getByText("Waiting")).toBeVisible();
+  await expect(panel.getByText(opsCopy.areas.launch.rows.waiting)).toBeVisible();
   await expect(panel.getByText(opsCopy.areas.launch.rows.alerts)).toBeVisible();
   await expect(panel.getByText(opsCopy.areas.launch.rows.referred)).toBeVisible();
   await expect(panel).toContainText("Mane Man now comes to Bandra W");
@@ -89,7 +89,7 @@ test("launches the pincode on the second press, and says how many went out", asy
 test("closes the panel on Not now, without sending anything", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
-  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("button", { name: opsCopy.areas.launch.cancel }).click();
   await expect(page.getByText("Messages 84 people")).toBeHidden();
 });
 
@@ -97,7 +97,7 @@ test("says so when the launch is refused, and keeps the panel open", async ({ pa
   await open(page, fails(404, "not_found"));
   await page.getByRole("button", { name: "Mark 400050 live, Bandra W" }).click();
   await page.getByRole("button", { name: "Send to 84" }).click();
-  await expect(page.getByRole("alert")).toContainText("Unknown pincode. Add it first.");
+  await expect(page.getByRole("alert")).toContainText(opsCopy.areas.launch.errors.not_found);
   await expect(page.getByRole("button", { name: "Send to 84" })).toBeVisible();
 });
 
@@ -119,8 +119,8 @@ test("meets WCAG 2.2 AA with the list, and with the launch panel open", async ({
 test("sorts the waitlist by a column, and narrows it by a search", async ({ page }) => {
   await open(page);
   const rows = page.getByRole("table").getByRole("row");
-  await page.getByRole("button", { name: "Pincode", exact: true }).click();
-  await expect(page.getByRole("columnheader", { name: "Pincode", exact: true })).toHaveAttribute(
+  await page.getByRole("button", { name: opsCopy.areas.add.pincode, exact: true }).click();
+  await expect(page.getByRole("columnheader", { name: opsCopy.areas.add.pincode, exact: true })).toHaveAttribute(
     "aria-sort",
     "ascending",
   );

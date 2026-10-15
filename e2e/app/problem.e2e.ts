@@ -14,7 +14,7 @@ test("tells Care what is wrong with the hair system, from Home, and offers Whats
 }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   await page.getByRole("button", { name: copy.link.hair_system }).click();
 
   // The sheet is named by its heading, which says it was sent once it was.
@@ -30,7 +30,7 @@ test("tells Care what is wrong with the hair system, from Home, and offers Whats
 test("offers the same on a visit that is done", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   await page.goto(`/visits/${client.firstFit.id}`);
   await page.getByRole("button", { name: copy.link.visit }).click();
   await expect(page.getByRole("dialog", { name: copy.title.visit })).toBeVisible();

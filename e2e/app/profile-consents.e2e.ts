@@ -89,7 +89,7 @@ test("a consent that did not go through says so, and the switch stays as it was"
   );
   const visits = page.getByRole("switch", { name: appCopy.profile.purposes.whatsapp_visits });
   await visits.click();
-  await expect(page.getByRole("alert")).toHaveText("Couldn’t save that. Try again.");
+  await expect(page.getByRole("alert")).toHaveText(appCopy.profile.switchFailed);
   await expect(visits).toHaveAttribute("aria-checked", "false");
 });
 
@@ -168,7 +168,7 @@ test("raises one grievance when Send is tapped twice", async ({ page }) => {
   // Every grievance ops see carries its own answer-time clock, so two rows would be one client's
   // one concern counted twice against a regulated 30 days (docs/decisions/0049-dpdp.md).
   const held = await holdOpen(page, "**/api/grievances");
-  const send = page.getByRole("button", { name: "Send" });
+  const send = page.getByRole("button", { name: appCopy.profile.data.send });
   await send.click();
   const liveWhileBusy = await send.isEnabled();
   await send.click({ force: true });

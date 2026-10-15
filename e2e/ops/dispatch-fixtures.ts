@@ -4,6 +4,7 @@
 import type { Page } from "@playwright/test";
 import { expect } from "../support.ts";
 import { answer, BOARD, json, ROOM, type Answers, type Call } from "./fixtures.ts";
+import { dispatch } from "../../apps/ops/src/content.ts";
 
 export const BOARD_PATH = "/api/dispatch";
 
@@ -25,7 +26,7 @@ export const ROHIT_JOB = BOARD.technicians[0]?.days[0]?.blocks[0];
 export async function open(page: Page, writes: Answers = {}): Promise<void> {
   await answer(page, { [READ_BOARD]: json(BOARD), [READ_ROOM]: json(ROOM), ...writes });
   await page.goto("/dispatch");
-  await expect(page.getByRole("heading", { level: 1, name: "Dispatch" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: dispatch.title })).toBeVisible();
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeVisible();
 }
 

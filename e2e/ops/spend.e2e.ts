@@ -35,7 +35,7 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
   await page.clock.setFixedTime(new Date("2026-09-21T06:30:00.000Z"));
   await answer(page, { "GET /api/spend": json(LIST), ...extra });
   await page.goto("/spend");
-  await expect(page.getByRole("heading", { level: 1, name: "Spend" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 }
 
 test("adds a month’s offline spend for a city, in whole rupees", async ({ page }) => {

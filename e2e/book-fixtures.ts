@@ -111,20 +111,20 @@ export async function openInvite(page: Page): Promise<void> {
 export const remembered = (page: Page) => page.evaluate(() => localStorage.getItem("mm_invite"));
 
 /** Where the agreement on /book's first step, and on the consultation's, is ticked. */
-export const CONSULTATION_CONSENT = "You may contact me on WhatsApp about this consultation.";
+export const CONSULTATION_CONSENT = referralCopy.referral.consultation.consent;
 
 /** /book's first step: the name, the number and the agreement, kept before anything else (ADR 0116). */
 export async function leaveDetails(page: Page, mobile = "9810000000"): Promise<void> {
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill(mobile);
   await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
 }
 
 /** A pincode checked. */
 export async function checkPincode(page: Page, pincode: string): Promise<void> {
-  await page.getByLabel("Pincode").fill(pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
 }
 
@@ -148,7 +148,7 @@ export async function openWaitlist(page: Page): Promise<void> {
 
 /** On from the visit to the address. */
 export async function toAddress(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: siteCopy.booking.next }).click();
   await expect(page.getByText("Step 4 of 4 · Your address")).toBeFocused();
 }
 

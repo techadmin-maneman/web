@@ -7,8 +7,8 @@ import * as appCopy from "../../apps/app/src/content.ts";
 test("opens from Home’s button, with the client’s name and a way back", async ({ page }) => {
   await loggedIn(page);
   await expect(page.getByRole("banner")).toContainText("Rohit Malhotra");
-  await page.getByRole("link", { name: "Back" }).click();
-  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  await page.getByRole("link", { name: appCopy.profile.back }).click();
+  await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
 });
 
 test("keeps the tabs at the foot of the screen, and scrolls only the page, however long it is", async ({ page }) => {
@@ -56,7 +56,7 @@ test("takes an address and its access notes, and shows them", async ({ page }) =
   await expect(page.getByRole("button", { name: appCopy.profile.editAddress })).toBeVisible();
 
   // Home's consultation card now shows the address.
-  await page.getByRole("link", { name: "Back" }).click();
+  await page.getByRole("link", { name: appCopy.profile.back }).click();
   await expect(page.getByText("Sector 65, Gurgaon 122018")).toBeVisible();
 });
 
@@ -149,15 +149,11 @@ test("refuses an address without a six-digit pincode", async ({ page }) => {
   await page.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
   await page.getByLabel(appCopy.profile.form.pincode).fill("1220");
   await page.getByRole("button", { name: appCopy.profile.form.save }).click();
-  await expect(page.getByRole("alert")).toHaveText(
-    "Add your flat or house number, building or street, area, city and 6-digit pincode.",
-  );
+  await expect(page.getByRole("alert")).toHaveText(appCopy.profile.form.invalid);
   // The field that is wrong is marked, named by the error, and given the focus.
   const pincode = page.getByLabel(appCopy.profile.form.pincode);
   await expect(pincode).toHaveAttribute("aria-invalid", "true");
-  await expect(pincode).toHaveAccessibleDescription(
-    "Add your flat or house number, building or street, area, city and 6-digit pincode.",
-  );
+  await expect(pincode).toHaveAccessibleDescription(appCopy.profile.form.invalid);
   await expect(pincode).toBeFocused();
   await expect(page.getByLabel(appCopy.profile.form.city)).not.toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel(appCopy.profile.form.city)).toHaveAttribute("required", "");
@@ -172,9 +168,7 @@ test("refuses an address without the flat or house number, and says so on the fl
   await page.getByLabel(appCopy.profile.form.city).fill("Gurgaon");
   await page.getByLabel(appCopy.profile.form.pincode).fill("122018");
   await page.getByRole("button", { name: appCopy.profile.form.save }).click();
-  await expect(page.getByRole("alert")).toHaveText(
-    "Add your flat or house number, building or street, area, city and 6-digit pincode.",
-  );
+  await expect(page.getByRole("alert")).toHaveText(appCopy.profile.form.invalid);
   const flat = page.getByLabel(appCopy.profile.form.flat);
   await expect(flat).toHaveAttribute("aria-invalid", "true");
   await expect(flat).toHaveAttribute("required", "");

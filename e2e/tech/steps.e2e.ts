@@ -21,7 +21,7 @@ test("a double tap on Start job starts the job once", async ({ page }) => {
   await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
 
   await page.getByRole("button", { name: techCopy.job.start }).dblclick();
-  await expect(page.getByRole("heading", { level: 1, name: "Before photos" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.before_photos })).toBeVisible();
   await expect.poll(() => writesTo(fake, "start").length).toBe(1);
   // And nothing else was queued behind it: the phone holds nothing more to send.
   await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
@@ -37,19 +37,19 @@ test("each screen names itself in the title and takes the focus to its heading",
   await page.getByRole("button", { name: techCopy.notHome.arrived.action }).click();
   await page.getByRole("button", { name: techCopy.job.start }).click();
   await expect(page).toHaveTitle("Before photos · Mane Man technician");
-  await expect(page.getByRole("heading", { level: 1, name: "Before photos" })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.before_photos })).toBeFocused();
 });
 
 test("a double tap on Next finishes one step, and never the step it opens", async ({ page }) => {
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
   for (const item of await checklistItems(page).all()) await item.click();
 
   await page.getByRole("button", { name: techCopy.steps.next }).dblclick();
 
-  await expect(page.getByRole("heading", { level: 1, name: "Consumables used" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.consumables })).toBeVisible();
   await expect.poll(async () => (await heldOnPhone(page)).outbox).toBe(0);
   expect(writesTo(fake, "checklist")).toHaveLength(1);
   // The consumables' Next sits where the checklist's was, and the second tap did not reach it.
@@ -61,7 +61,7 @@ test("the outcome has nothing chosen for the technician, and Next waits for thei
   startedThrough(fake, "before_photos", "checklist", "consumables", "after_photos");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
 
-  const done = page.getByRole("button", { name: "Done", exact: true });
+  const done = page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true });
   await expect(done).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.choose })).toBeDisabled();
 
@@ -81,7 +81,7 @@ test("a consultation’s outcome asks whether the client is going ahead, and why
   startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
   await page.goto(`/jobs/${JOB_ID}/outcome`);
 
-  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
   await expect(page.getByText(techCopy.steps.outcome.goingAhead)).toBeVisible();
   await page.getByRole("button", { name: techCopy.steps.outcome.notNow }).click();
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.pickWhy })).toBeDisabled();
@@ -116,13 +116,13 @@ test("keeps the checklist’s ticks when the app closes part-way, and lets them 
   const fake = await fakeTech(page);
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
   await checklistItems(page).nth(0).click();
   await checklistItems(page).nth(1).click();
   await expect.poll(() => deviceRecordOnPhone(page, "checklist_draft")).toContain(fake.checklist[1]?.id ?? "");
 
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
   await expect(checklistItems(page).nth(0)).toHaveAttribute("aria-pressed", "true");
   await expect(checklistItems(page).nth(1)).toHaveAttribute("aria-pressed", "true");
   await expect(checklistItems(page).nth(2)).toHaveAttribute("aria-pressed", "false");
@@ -139,8 +139,8 @@ test("names the checklist for the visit it is on", async ({ page }) => {
   startedThrough(fake, "before_photos");
   await page.goto(`/jobs/${JOB_ID}/checklist`);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Replacement checklist" })).toBeVisible();
-  await expect(page.getByText("Service checklist")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.checklistTitles.replacement })).toBeVisible();
+  await expect(page.getByText(techCopy.steps.titles.checklist)).toHaveCount(0);
 });
 
 test("says each count as it changes, and ties it to the buttons that change it", async ({ page }) => {
@@ -190,7 +190,7 @@ test.describe("the consumables step", () => {
     await page.getByRole("button", { name: "Add Shampoo sachet" }).click();
     await page.getByRole("button", { name: techCopy.steps.next }).click();
 
-    await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.after_photos })).toBeVisible();
     await expect.poll(() => writesTo(fake, "consumables").length).toBe(1);
     expect(writesTo(fake, "consumables")[0]?.body).toEqual({
       items: [
@@ -244,7 +244,7 @@ test.describe("on a 360 × 640 phone", () => {
     startedThrough(fake, "before_photos", "piece");
     await page.goto(`/jobs/${JOB_ID}/checklist`);
 
-    const heading = page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" });
+    const heading = page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist });
     await expect(heading).toBeInViewport({ ratio: 1 });
     await expect(footAction(page)).toHaveText(techCopy.steps.checklist.unfinished);
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
@@ -267,7 +267,7 @@ test.describe("on a 360 × 640 phone", () => {
     startedThrough(fake, "before_photos", "checklist", "consumables");
     await page.goto(`/jobs/${JOB_ID}/profile`);
 
-    const heading = page.getByRole("heading", { level: 1, name: "Hair profile" });
+    const heading = page.getByRole("heading", { level: 1, name: techCopy.steps.titles.profile });
     await expect(heading).toBeInViewport({ ratio: 1 });
     await expect(footAction(page)).toBeInViewport({ ratio: 1 });
     expect(await pageScrolls(page)).toBe(false);
@@ -300,7 +300,7 @@ test.describe("with motion", () => {
 
     // "Nothing animates while capturing."
     await page.goto(`/jobs/${JOB_ID}/after-photos`);
-    await expect(page.getByRole("heading", { level: 1, name: "After photos" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.after_photos })).toBeVisible();
     expect(await page.locator("main").evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
   });
 });
@@ -329,11 +329,11 @@ test("a step the API refused can be corrected where it stands in the queue, not 
   await page.getByRole("button", { name: techCopy.queue.correct }).click();
 
   // The step opens as it was sent, so only the label is typed again.
-  await expect(page.getByRole("heading", { level: 1, name: "The piece" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.piece })).toBeVisible();
   await expect(page.getByText(techCopy.steps.corrected.piece)).toBeVisible();
   const label = page.getByRole("textbox", { name: techCopy.steps.piece.label });
   await expect(label).toHaveValue("MM-STD-7193 C");
-  await expect(page.getByRole("textbox", { name: "Supplier lot" })).toHaveValue("LOT-5120");
+  await expect(page.getByRole("textbox", { name: techCopy.steps.piece.lot })).toHaveValue("LOT-5120");
   await label.fill("MM-STD-7193-C");
   await page.getByRole("button", { name: techCopy.steps.next }).click();
 
@@ -364,7 +364,7 @@ test("a refused outcome opens as it was chosen", async ({ page }) => {
   await expect(page.getByText("That reason wasn’t accepted.")).toBeVisible();
   await page.getByRole("button", { name: techCopy.queue.correct }).click();
 
-  await expect(page.getByRole("heading", { level: 1, name: "Outcome" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.outcome })).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.steps.outcome.partial })).toHaveAttribute(
     "aria-pressed",
     "true",

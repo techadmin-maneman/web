@@ -10,13 +10,13 @@ import * as appCopy from "../../apps/app/src/content.ts";
 
 test.use({ serviceWorkers: "allow" });
 
-const OFFLINE = "No connection. Showing your last update.";
+const OFFLINE = appCopy.states.offline;
 
 /** Waits for the service worker to take the page, then reloads, so Home comes through it and is kept. */
 async function keepHome(page: Page): Promise<void> {
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
 }
 
 /** The path of every response the service worker keeps. */
@@ -65,7 +65,7 @@ test("opens offline on the last Home, with the offline banner, and Reschedule wa
   await page.context().setOffline(true);
   await page.reload();
   await expect(page.getByRole("status").filter({ hasText: OFFLINE })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeDisabled();
   await expect(page.getByRole("link", { name: appCopy.home.note })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
@@ -81,7 +81,7 @@ test("opens in seconds on a signal that never answers, on the last Home", async 
   // A signal that shows a bar and never answers: every request that reaches the network waits for ever.
   await page.context().route("**/*", () => new Promise<void>(() => undefined));
   await page.reload({ timeout: 5_000 });
-  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible({ timeout: 6_000 });
+  await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible({ timeout: 6_000 });
   await expect(page.getByRole("status").filter({ hasText: OFFLINE })).toBeVisible();
 });
 
@@ -95,7 +95,7 @@ test("says the visit is still booked when the API fails and the phone kept Home"
       route.fulfill({ status: 503, json: { error: { code: "unavailable", request_id: "test" } } }),
     );
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your account." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.states.error.title })).toBeVisible();
   await expect(page.getByText(appCopy.states.error.booked)).toBeVisible();
 });
 
@@ -113,7 +113,7 @@ test("offline on Visits, which the phone does not keep, says the visits load onc
   await signIn(page);
   await page.context().setOffline(true);
   await expect(page.getByRole("status").filter({ hasText: OFFLINE })).toBeVisible();
-  await page.getByRole("navigation").getByRole("link", { name: "Visits" }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.visits }).click();
   await expect(page.getByRole("status").filter({ hasText: appCopy.states.offlineOnly })).toBeVisible();
   await expect(page.getByText(OFFLINE)).toHaveCount(0);
   const waiting = page.getByText(appCopy.visits.offline);
@@ -133,16 +133,16 @@ test("keeps no API answer but Home, and forgets Home at logout", async ({ page }
   await expect(page.getByRole("heading", { name: appCopy.profile.where })).toBeVisible();
   expect((await keptPaths(page)).filter((path) => path.startsWith("/api/"))).toEqual(["/api/me"]);
 
-  await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await page.getByRole("button", { name: appCopy.profile.logout }).click();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
   expect((await keptPaths(page)).filter((path) => path.startsWith("/api/"))).toEqual([]);
 
   // The app itself still opens offline. With no Home kept on a phone that logged out, it opens on the login,
   // not on the design's error, which is for a client who is still in.
   await page.context().setOffline(true);
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your account." })).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.states.error.title })).toHaveCount(0);
 });
 
 test("offers a new build’s worker on Home, and loads the page on it at the tap", async ({ page }) => {
@@ -157,7 +157,7 @@ test("offers a new build’s worker on Home, and loads the page on it at the tap
   const update = page.getByRole("button", { name: appCopy.update.action });
   await expect(update).toBeVisible({ timeout: 15_000 });
   await update.click();
-  await expect(page.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
   // The page loaded again under the new build's worker.
   await expect
     .poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL ?? ""))

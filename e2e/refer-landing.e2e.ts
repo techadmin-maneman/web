@@ -103,22 +103,20 @@ test("the invite names the referrer, and a served pincode opens the consultation
   await visit(page, `/r/${CODE}`);
 
   await expect(page.getByText("Rohit sent you this")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "A hair system, fitted at home. The consultation is free.",
-  );
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(referralCopy.referral.arrival.title);
   await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeVisible();
 
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText("We come to Sector 65")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Book a free consultation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: referralCopy.referral.consultation.title })).toBeVisible();
   await expect(page.getByText("Rohit is told when you are fitted. That is when the 3 visits land.")).toBeVisible();
 
   await fillForm(page);
   // The radio lies unseen over its card, where a person's tap lands.
   await page.getByRole("radio", { name: /Afternoon/ }).check();
   await expect(page.getByRole("radio", { name: /Afternoon/ })).toBeChecked();
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
@@ -136,11 +134,11 @@ test("the invite names the referrer, and a served pincode opens the consultation
 test("a booking through the invite is counted, with nothing personal and no code", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
   await page.getByRole("radio", { name: /Afternoon/ }).check();
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
 
@@ -168,10 +166,10 @@ test("a valid invite is remembered in this browser, and forgotten once its own b
   // The island remembers it in an effect after the name is drawn, so the test waits for it rather than racing it.
   await expect.poll(async () => JSON.parse((await remembered()) ?? "{}") as unknown).toMatchObject({ code: CODE });
 
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   // The landing books with its own invite, and sends no other.
@@ -182,7 +180,7 @@ test("a valid invite is remembered in this browser, and forgotten once its own b
 test("the invited page does say who is told, and what lands when", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText("Rohit is told when you are fitted. That is when the 3 visits land.")).toBeVisible();
 });
@@ -195,7 +193,7 @@ test("says what ops set each side gets, and promises the friend nothing ops do n
   await page.route("**/api/referral-reward", (route) => route.fulfill({ json: reward }));
   await visit(page, `/r/${CODE}`);
   await expect(page.getByText("Get fitted and you get 2 service visits free. Your friend gets 3.")).toBeVisible();
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText("Rohit is told when you are fitted. That is when the 2 visits land.")).toBeVisible();
 
@@ -204,7 +202,7 @@ test("says what ops set each side gets, and promises the friend nothing ops do n
   await expect(page.getByText("Get fitted and your friend gets 3 service visits free.")).toBeVisible();
   await expect(page.getByText("Rohit is told when you are fitted.", { exact: true })).toBeVisible();
   await fillForm(page);
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText(/land when you are fitted/)).toHaveCount(0);
@@ -214,11 +212,11 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   const requests = await mockApi(page);
   await visit(page, `/r/${CODE}`);
 
-  await page.getByLabel("Pincode").fill(UNSERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(UNSERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   // The navy block says what the pincode answered, in place of the pincode field.
   await expect(page.getByText("We’re not in Bandra yet")).toBeVisible();
-  await expect(page.getByLabel("Pincode", { exact: true })).toBeHidden();
+  await expect(page.getByLabel(referralCopy.referral.pincode.label, { exact: true })).toBeHidden();
   await expect(page.getByText("For 400050, Bandra")).toBeVisible();
   // Nothing is booked, so nothing asks where (ADR 0081).
   await expect(page.getByLabel(referralCopy.referral.address.labels.line1)).toHaveCount(0);
@@ -230,7 +228,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
   ).toBeVisible();
 
   await fillPerson(page);
-  await page.getByText("You may contact me about this request.").click();
+  await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
   await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert)).toBeChecked();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
@@ -273,22 +271,22 @@ test("a code we do not know still books, without the invite’s visits", async (
   await visit(page, `/r/${CODE}`);
 
   // Headed as /book is, with no line saying there is an invite above the one saying there is not.
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Book a free consultation");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(referralCopy.referral.arrival.unknown.title);
   await expect(page).toHaveTitle("Book a free consultation — Mane Man");
   await expect(page.getByText(referralCopy.referral.arrival.unnamed)).toBeHidden();
-  await expect(page.getByText("We don’t recognise this invite")).toBeVisible();
-  await expect(page.getByRole("img", { name: "A Mane Man before and after" })).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.arrival.unknown.notice)).toBeVisible();
+  await expect(page.getByRole("img", { name: referralCopy.referral.arrival.card.house })).toBeVisible();
   await expect(page.getByText("The consultation is still free; the 3 service visits do not apply.")).toBeVisible();
   await expect(page.getByText("Get fitted and you both get 3 service visits free.")).toBeHidden();
 
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   // The API books this one with no invite, so nobody is told and no visits land (REQ-S8-01).
   await expect(page.getByRole("button", { name: referralCopy.referral.consultation.submit })).toBeVisible();
   await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 
   await fillForm(page);
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await expect(page.getByText("The 3 service visits land when you are fitted.")).toBeHidden();
@@ -306,7 +304,7 @@ test("a code we do not know promises nothing to hold on the waitlist either", as
     },
   });
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel("Pincode").fill(UNSERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(UNSERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByRole("button", { name: referralCopy.referral.waitlist.submit })).toBeVisible();
   await expect(page.getByText(/invite stays valid/)).toHaveCount(0);
@@ -321,13 +319,11 @@ test("an invite that cannot be fetched is neither refused nor promised", async (
   );
   await visit(page, `/r/${CODE}`);
 
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "A hair system, fitted at home. The consultation is free.",
-  );
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(referralCopy.referral.arrival.title);
   await expect(page.getByText(referralCopy.referral.arrival.unnamed)).toBeVisible();
-  await expect(page.getByText("We don’t recognise this invite")).toBeHidden();
+  await expect(page.getByText(referralCopy.referral.arrival.unknown.notice)).toBeHidden();
   await expect(page.getByText(/3 service visits/)).toHaveCount(0);
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText(/is told when you are fitted/)).toHaveCount(0);
 });
@@ -369,10 +365,10 @@ test("a consultation nobody can book outright is confirmed as a request", async 
   });
   await visit(page, `/r/${CODE}`);
 
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.requested.label)).toBeVisible();
@@ -392,7 +388,7 @@ test("a pincode that is not six digits is refused before the API is asked", asyn
   });
   await visit(page, `/r/${CODE}`);
 
-  await page.getByLabel("Pincode").fill("12");
+  await page.getByLabel(referralCopy.referral.pincode.label).fill("12");
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText(referralCopy.referral.pincode.invalid)).toBeVisible();
   expect(asked).toBe(false);
@@ -404,10 +400,10 @@ test("a window found full says so, and the form stays", async ({ page }) => {
   });
   await visit(page, `/r/${CODE}`);
 
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.errors.taken)).toBeVisible();
@@ -420,7 +416,7 @@ test("the page does not scroll sideways, whatever the pincode says", async ({ pa
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
   for (const pincode of [SERVED.pincode, UNSERVED.pincode]) {
-    await page.getByLabel("Pincode").fill(pincode);
+    await page.getByLabel(referralCopy.referral.pincode.label).fill(pincode);
     await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
     await expect(page.getByRole("button", { name: /Book the consultation|Add me to the list/ })).toBeVisible();
     const width = page.viewportSize()?.width ?? 0;
@@ -433,13 +429,13 @@ test("the form will not send without the address, a name, a number and the agree
   const requests = await mockApi(page);
   await visit(page, `/r/${CODE}`);
 
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 
   await expect(page.getByText(referralCopy.referral.form.nameError)).toBeVisible();
   await expect(page.getByText(siteCopy.tryOn.gate.mobileError)).toBeVisible();
-  await expect(page.getByText("We need this to contact you.")).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.form.consentError)).toBeVisible();
   await expect(page.getByText(referralCopy.referral.address.errors.line1)).toBeVisible();
   await expect(page.getByText(referralCopy.referral.address.errors.locality)).toBeVisible();
   expect(requests).toHaveLength(0);
@@ -450,14 +446,14 @@ test("the form will not send without the address, a name, a number and the agree
 test("the pincode’s answer is announced, and the pincode can be changed", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel("Pincode").fill(UNSERVED.pincode);
-  await page.getByLabel("Pincode").press("Enter");
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(UNSERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).press("Enter");
   await expect(page.getByRole("heading", { name: "We’re not in Bandra yet" })).toBeFocused();
 
   await page.getByRole("button", { name: referralCopy.referral.pincode.changeLabel }).click();
-  await expect(page.getByLabel("Pincode")).toBeFocused();
-  await expect(page.getByLabel("Pincode")).toHaveValue(UNSERVED.pincode);
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
+  await expect(page.getByLabel(referralCopy.referral.pincode.label)).toHaveValue(UNSERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
   await expect(page.getByText(`For ${SERVED.pincode}`)).toBeVisible();
@@ -468,8 +464,8 @@ test("the pincode’s answer is announced, and the pincode can be changed", asyn
 test("the fields the form needs are marked as required", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
-  await expect(page.getByLabel("Pincode")).toHaveAttribute("aria-required", "true");
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await expect(page.getByLabel(referralCopy.referral.pincode.label)).toHaveAttribute("aria-required", "true");
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveAttribute("aria-required", "true");
   await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveAttribute("aria-required", "true");
@@ -500,8 +496,8 @@ function outlineOf(page: Page, drawn: "label" | "box"): Promise<string> {
 test("a keyboard user sees which day, window and agreement has focus", async ({ page }) => {
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
-  await page.getByLabel("Pincode").press("Enter");
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).press("Enter");
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
 
   await page.keyboard.press("Tab"); // Change the pincode
@@ -547,10 +543,10 @@ test("pressing again after a lost answer sends the same request key", async ({ p
     return route.fulfill({ status: 201, json: body });
   });
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect(page.getByText(referralCopy.referral.errors.network)).toBeVisible();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
@@ -583,10 +579,10 @@ test("gives up on a request that never answers, says so, and sends it again unde
     return route.fulfill({ status: 201, json: body });
   });
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
   await expect.poll(() => keys.length).toBe(1);
 
@@ -615,10 +611,10 @@ test("Turnstile that failed to load is tried again when the form is sent", async
 });
 
 async function bookThrough(page: Page): Promise<void> {
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await fillForm(page);
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submit }).click();
 }
 
@@ -653,7 +649,7 @@ test("a booking sends the details to WhatsApp, and opens the app with the number
   ).toBeVisible();
   await expect(page.getByText(referralCopy.referral.booked.appHint)).toBeVisible();
   await expect(page.getByRole("button", { name: "Add to calendar" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Back to the site" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: referralCopy.referral.booked.back })).toHaveAttribute("href", "/");
   const app = page.getByRole("link", { name: referralCopy.referral.booked.app });
   await expect(app).toHaveAttribute("href", "http://app.localhost:4322");
   await page.route(/^http:\/\/app\.localhost:4322\//, (route) =>
@@ -681,7 +677,7 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   };
   const requests = await mockApi(page, { consultation: { status: 201, body: asked } });
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
 
   const plan = page.getByRole("group", { name: referralCopy.referral.consultation.plan.legend });
@@ -691,7 +687,9 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
     plan.getByText(/Choose your hair system with your technician and have it fitted there and then\./),
   ).toBeVisible();
   // The form's heading follows what it books.
-  await expect(page.getByRole("heading", { level: 2, name: "Book a consultation and fit" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 2, name: referralCopy.referral.consultation.titleOneVisit }),
+  ).toBeVisible();
   // The morning or the afternoon: the first fit's three hours cannot start in the evening.
   await expect(
     page.getByRole("group", { name: referralCopy.referral.consultation.window }).getByRole("radio"),
@@ -701,7 +699,7 @@ test("offers the consultation alone or with the fit in one visit, and asks ops f
   expect(await axeViolations(page)).toEqual([]);
 
   await fillForm(page);
-  await page.getByText("You may contact me on WhatsApp about this consultation.").click();
+  await page.getByText(referralCopy.referral.consultation.consent).click();
   await page.getByRole("button", { name: referralCopy.referral.consultation.submitOneVisit }).click();
   // Asked for only once the WhatsApp code sent to the number is entered.
   await enterNumberCode(page, "Confirm and book");
@@ -742,7 +740,7 @@ test("the desktop page is the design’s two columns, and its fields keep to the
   expect(card?.x ?? 0).toBeGreaterThan(width / 2);
   expect(card?.y ?? 0).toBeLessThan(title?.y ?? 0);
 
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   for (const field of ["Building, society or street", "Name"]) {
     const box = await page.getByLabel(field).boundingBox();
@@ -756,7 +754,7 @@ test("on a phone the pincode comes before how it works, on the first screen", as
   test.skip(size.width >= 1024, "the desktop design puts how it works in the other column");
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
-  const pincode = await page.getByLabel("Pincode").boundingBox();
+  const pincode = await page.getByLabel(referralCopy.referral.pincode.label).boundingBox();
   const steps = await page.getByRole("heading", { name: siteCopy.howItWorks.title }).boundingBox();
   expect(pincode).not.toBeNull();
   expect(steps).not.toBeNull();
@@ -769,7 +767,7 @@ test("the form fits a 320 px screen", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await mockApi(page);
   await visit(page, `/r/${CODE}`);
-  await page.getByLabel("Pincode").fill(SERVED.pincode);
+  await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByRole("button", { name: referralCopy.referral.consultation.submit })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);

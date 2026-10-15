@@ -23,7 +23,7 @@ test("captures the five before angles into the app’s own store, never a file i
   await fakeTech(page);
   await page.goto(BEFORE);
 
-  await expect(page.getByText("Before photos")).toBeVisible();
+  await expect(page.getByText(techCopy.capture.before)).toBeVisible();
   await expect(page.getByText("0 of 5")).toBeVisible();
 
   // A file input is what could write to the camera roll; this screen has none.
@@ -49,7 +49,7 @@ test("captures the five before angles into the app’s own store, never a file i
 
   // Once five are taken there is nothing more to capture, and the same key finishes the step.
   await expect(capture).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Done" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: techCopy.capture.finish })).toBeEnabled();
 });
 
 test("a double tap on Capture keeps one frame for one angle, and moves on by one", async ({ page }) => {
@@ -85,7 +85,7 @@ test("Capture is the key at the foot of the screen, Retake beside it, over board
   expect(key?.height).toBe(64);
   expect((await page.getByRole("button", { name: techCopy.capture.retake }).boundingBox())?.width).toBe(88);
   // No second bar beneath it: Capture is the one gold action until the set is done.
-  await expect(page.getByRole("button", { name: "Done" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: techCopy.capture.finish })).toHaveCount(0);
   // The head's outline, the hairline and the corners, drawn over the camera and not read out.
   await expect(page.locator('svg[aria-hidden="true"] path[stroke-dasharray]')).toHaveCount(1);
 
@@ -94,7 +94,7 @@ test("Capture is the key at the foot of the screen, Retake beside it, over board
     await expect(page.getByRole("status").filter({ hasText: `${String(angle)} of 5` })).toBeAttached();
   }
   // Once the five are in, the same key finishes the step, in the same place.
-  const done = page.getByRole("button", { name: "Done" });
+  const done = page.getByRole("button", { name: techCopy.capture.finish });
   expect(await done.boundingBox()).toEqual(key);
 });
 
@@ -149,7 +149,7 @@ test("uploads each frame to the link the API hands out, then lands the set", asy
     await expect(page.getByText(`${String(angle)} of 5`)).toBeVisible();
   }
 
-  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("button", { name: techCopy.capture.finish }).click();
 
   // One PUT per angle and one for its thumbnail, in the order the design guides them, and then the set itself.
   const angles = ["before-front", "before-top", "before-left", "before-right", "before-hair"];
@@ -248,7 +248,7 @@ test("a camera the phone refused can be asked for again", async ({ page }) => {
   await page.goto(BEFORE);
 
   await expect(page.getByText(/won’t open its camera/)).toBeVisible();
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: techCopy.today.retry }).click();
   await expect(page.getByRole("button", { name: techCopy.capture.take })).toBeEnabled();
 });
 

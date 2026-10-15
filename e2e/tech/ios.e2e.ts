@@ -69,7 +69,7 @@ test("tells a technician why the app on their home screen is signed out", async 
   await page.route("**/api/tech/me", (route) => route.fulfill(noSession));
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   await expect(page.getByText(/Sign in here once, then use the home-screen app/)).toBeVisible();
 });
 
@@ -89,14 +89,14 @@ test("draws its screens without one refusal from its own security policy", async
   await page.goto(`/jobs/${JOB_ID}`);
   await expect(page.getByRole("link", { name: techCopy.job.navigate })).toBeVisible();
   await page.goto(`/jobs/${JOB_ID}/checklist`);
-  await expect(page.getByRole("heading", { level: 1, name: "Service checklist" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.steps.titles.checklist })).toBeVisible();
   await page.goto("/waiting");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
   // The sign-in, as a phone whose session ended sees it.
   await page.route("**/api/tech/me", (route) => route.fulfill(noSession));
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
 
   expect(refused).toEqual([]);
 });
@@ -115,7 +115,7 @@ test("keeps a long checklist’s action at the foot of the screen, with its head
   };
   await page.goto(`/jobs/${JOB_ID}/checklist`);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Consultation and fit checklist" })).toBeInViewport({
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.oneVisit.checklist })).toBeInViewport({
     ratio: 1,
   });
   await expect(page.getByRole("button", { name: techCopy.steps.checklist.unfinished })).toBeInViewport({ ratio: 1 });
@@ -144,7 +144,7 @@ test("wipes everything the phone holds when the technician signs out", async ({ 
 
   await page.getByRole("button", { name: techCopy.today.signOut }).click();
   await page.getByRole("alert").getByRole("button", { name: techCopy.today.signOut }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: techCopy.signIn.title })).toBeVisible();
   const after = await page.evaluate(() => indexedDB.databases().then((each) => each.map((one) => one.name)));
   expect(after).not.toContain("mm-tech");
 });

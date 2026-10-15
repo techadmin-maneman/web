@@ -12,7 +12,7 @@ import * as appCopy from "../../apps/app/src/content.ts";
 test("Home says a paid visit FSM has not taken yet is being booked, with the payment in", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const waiting = {
     type: "service",
@@ -32,8 +32,8 @@ test("Home says a paid visit FSM has not taken yet is being booked, with the pay
   await expect(card).toContainText(shortDate("2027-09-25"));
   await expect(card).toContainText("Morning, 9 am–12 noon");
   await expect(card).toContainText(appCopy.VISIT_TYPES.service);
-  await expect(card).toContainText("Your payment is in. We’re booking your visit.");
-  await expect(card).toContainText("We’ll message you on WhatsApp when it’s booked.");
+  await expect(card).toContainText(appCopy.booking.paidIn);
+  await expect(card).toContainText(appCopy.home.beingBooked.told);
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
   await expect(page.getByRole("button", { name: appCopy.home.next.book })).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
@@ -47,7 +47,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
 }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
   const price = { amount: 3_000_000, from: false, code: null };
@@ -65,7 +65,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   );
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [] } }));
   await page.reload();
-  const home = page.getByRole("region", { name: "Your consultation and fit" });
+  const home = page.getByRole("region", { name: appCopy.home.oneVisit.label });
   await expect(home).toContainText(shortDate("2027-09-25"));
   await expect(home).toContainText("Rs. 30,000, only if you go ahead");
   await expect(home).not.toContainText(appCopy.home.beingBooked.free);
@@ -77,7 +77,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
   await expect(card).toContainText(shortDate("2027-09-25"));
   await expect(card).toContainText("Consultation and fit · 9 am–12 noon");
   await expect(card).not.toContainText(appCopy.home.beingBooked.free);
-  await expect(page.getByText("Nothing booked yet.")).toHaveCount(0);
+  await expect(page.getByText(appCopy.home.next.none)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
 });
 
@@ -86,7 +86,7 @@ test("Visits lists a visit FSM has not taken yet as Home says it, a consultation
 test("Home and Visits name a consultation and fit, what it costs once fitted, and what to expect", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const list = await page.evaluate(async () => (await fetch("/api/visits")).json() as Promise<Record<string, unknown>>);
   const oneVisit = {
@@ -99,7 +99,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   await page.route("**/api/visits", (route) => route.fulfill({ json: { ...list, upcoming: [oneVisit] } }));
   await page.reload();
 
-  const card = page.getByRole("region", { name: "Your consultation and fit" });
+  const card = page.getByRole("region", { name: appCopy.home.oneVisit.label });
   await expect(card).toContainText("Consultation and fit · 3 hr");
   await expect(card).toContainText("Rs. 27,000, only if you go ahead");
   await expect(card).toContainText("Code TENPC applied");
@@ -117,7 +117,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
 test("Home and Payments show a payment owed once fitted, with the link to pay by", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   const me = await page.evaluate(async () => (await fetch("/api/me")).json() as Promise<Record<string, unknown>>);
   const owed = {
     visit_id: client.firstFit.id,
@@ -129,7 +129,7 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
   await page.route("**/api/me", (route) => route.fulfill({ json: { ...me, payment_owed: owed } }));
   await page.reload();
 
-  const home = page.getByRole("region", { name: "To pay" });
+  const home = page.getByRole("region", { name: appCopy.home.owed.label });
   await expect(home).toContainText("Mane Man Natural hair system · Rs. 45,000");
   await expect(home.getByRole("link", { name: /^Pay now ?, opens Razorpay in a new tab$/ })).toHaveAttribute(
     "href",
@@ -139,7 +139,7 @@ test("Home and Payments show a payment owed once fitted, with the link to pay by
   const payments = await page.evaluate(async () => (await fetch("/api/payments")).json() as Promise<object>);
   await page.route("**/api/payments", (route) => route.fulfill({ json: { ...payments, owed: [owed] } }));
   await tab(page, "Payments").click();
-  const toPay = page.getByRole("region", { name: "To pay" });
+  const toPay = page.getByRole("region", { name: appCopy.home.owed.label });
   await expect(toPay.getByRole("link")).toHaveAttribute("href", owed.url);
   await expect(toPay).toContainText("Rs. 45,000");
   expect(await axeViolations(page)).toEqual([]);

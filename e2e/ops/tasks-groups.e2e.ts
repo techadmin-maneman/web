@@ -42,7 +42,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText(["Consultation request"]);
+  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.consultation_request]);
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon");
 });
 
@@ -115,7 +115,11 @@ test("names an At-risk client’s weeks since the last visit, a first fit to boo
     ],
   };
   await open(page, body);
-  await expect(groupNames(page)).toHaveText(["Consultation request", "First fit to book", "At-risk client"]);
+  await expect(groupNames(page)).toHaveText([
+    opsCopy.tasks.groups.consultation_request,
+    opsCopy.tasks.groups.first_fit_to_book,
+    opsCopy.tasks.groups.at_risk_client,
+  ]);
   await expect(row(page, "Neha Kapoor")).toContainText("Asked for 24 Sep 2027, afternoon + first fit, morning");
   await expect(row(page, "Sanjay Arora")).toContainText("Consultation Fri 10 Sep, afternoon · not fitted");
   await expect(row(page, "Deepak Rao")).toContainText("9 weeks since last visit · due Fri 20 Aug");
@@ -154,7 +158,7 @@ test("names a draft invoice’s visit", async ({ page }) => {
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText(["Draft invoice"]);
+  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.draft_invoice]);
   await expect(row(page, "Sanjay Arora")).toContainText("Visit of Mon 20 Sep · draft in Books");
 });
 
@@ -235,7 +239,10 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText(["Consultation request", "Payment owed"]);
+  await expect(groupNames(page)).toHaveText([
+    opsCopy.tasks.groups.consultation_request,
+    opsCopy.tasks.groups.payment_owed,
+  ]);
   await expect(row(page, "Arjun Kapoor")).toContainText(opsCopy.tasks.subs.withOneVisit);
   await expect(row(page, "Nikhil Suri")).toContainText("Mane Man Natural, Rs. 35,000 · link sent");
   await expect(row(page, "Manoj Iyer")).toContainText("Mane Man Essential, Rs. 25,000 · link not sent");
@@ -256,7 +263,7 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
   // A client who lost the SMS is texted the link again from the row.
   await answer(page, { "POST /api/payment-links/{id}/resend": json({ outcome: "resent" }) });
   await row(page, "Nikhil Suri").getByRole("button", { name: "Send again · Nikhil Suri" }).click();
-  await expect(row(page, "Nikhil Suri").getByRole("status")).toHaveText("Sent again.");
+  await expect(row(page, "Nikhil Suri").getByRole("status")).toHaveText(opsCopy.tasks.link.outcomes.resent);
 });
 
 // Money owed back that no refund reached waited nowhere.
@@ -299,7 +306,7 @@ test("lists each payment to refund, why, and what is owed back, and leads to the
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText(["Payment to refund"]);
+  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.payment_to_refund]);
   await expect(row(page, "Nikhil Suri")).toContainText("Rs. 2,000 to refund on pay_Q1late · refund refused");
   await expect(row(page, "Manoj Iyer")).toContainText("Rs. 35,400 to refund on pay_Q2fail · refund failed");
   await expect(row(page, "Manoj Iyer").getByRole("link", { name: "Manoj Iyer", exact: true })).toHaveAttribute(
@@ -353,7 +360,7 @@ test("names a disputed charge and what it kept, and leads to the dispute in Char
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText(["Disputed charge"]);
+  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.no_show_dispute]);
   const vikram = row(page, "Vikram Sethi");
   await expect(vikram).toContainText("Disputes a charge: Rs. 2,360");
   await expect(vikram.getByRole("link", { name: "Vikram Sethi", exact: true })).toHaveAttribute(
@@ -426,7 +433,7 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
       },
     ],
   });
-  await expect(groupNames(page)).toHaveText(["Concern"]);
+  await expect(groupNames(page)).toHaveText([opsCopy.tasks.groups.grievance]);
   const grievance = row(page, "Neha Kapoor");
   await expect(grievance).toContainText(opsCopy.tasks.subs.grievance);
   await expect(grievance).toContainText("22 days left");

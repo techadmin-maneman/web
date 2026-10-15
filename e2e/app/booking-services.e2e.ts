@@ -22,6 +22,8 @@ import {
   LATE_FEE_LINE,
 } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { PRICE } from "../prices.ts";
+import { priceFigures } from "../../apps/app/src/lib/money.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -40,6 +42,9 @@ const PREMIUM = {
   minutes: 120,
   price: { amount_ex_gst: 300000, amount: 354000, gst_percent: 18 },
 };
+
+/** The premium service's price as the app writes it: what is charged, and its GST split beneath. */
+const PREMIUM_FIGURES = priceFigures(PREMIUM.price);
 
 interface Offered {
   readonly type: string;
@@ -105,14 +110,14 @@ function holdsSent(page: Page): unknown[] {
 async function pickVisit(page: Page, name: RegExp): Promise<void> {
   const visits = page.getByRole("dialog", { name: appCopy.booking.service.title });
   await visits.getByRole("radio", { name }).check();
-  await visits.getByRole("button", { name: "Continue" }).click();
+  await visits.getByRole("button", { name: appCopy.booking.service.continue }).click();
 }
 
 /** From the date step, the first free day and a free window, as far as the pay step. */
 async function datesToPayment(page: Page): Promise<void> {
   const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
   await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await dates.getByRole("button", { name: "Continue" }).click();
+  await dates.getByRole("button", { name: appCopy.booking.service.continue }).click();
   await continueToPayment(page);
 }
 
@@ -131,13 +136,13 @@ test("offers every service of the kind it books, the one offered chosen, with ho
   const standard = kind.getByRole("radio", { name: /^Service visit/ });
   await expect(standard).toBeChecked();
   await expect(kind).toContainText("1 hr 30 min");
-  await expect(kind).toContainText("Rs. 2,000");
+  await expect(kind).toContainText(PRICE.service);
   await expect(kind).toContainText("2 hr");
   // The line ops wrote for a service sits under its name; one with none shows its name alone.
   await expect(kind).toContainText("A deeper clean and a fresh bond.");
   // Once GST applies, what is charged leads and its split sits beneath.
-  await expect(kind).toContainText("Rs. 3,540");
-  await expect(kind).toContainText("Rs. 3,000 + Rs. 540 GST");
+  await expect(kind).toContainText(PREMIUM_FIGURES.amount);
+  await expect(kind).toContainText(PREMIUM_FIGURES.split ?? "");
   await expect(visits.getByRole("link")).toHaveCount(0);
   await scanOf(page);
   // One choice among them, one tab stop, and the arrow keys move between them.
@@ -154,13 +159,13 @@ test("opens on the service offered, books it, and names it on the pay step", asy
   await openSheet(page);
   const visits = page.getByRole("dialog", { name: appCopy.booking.service.title });
   await expect(visits.getByRole("radio", { name: /^Premium service visit/ })).toBeChecked();
-  await visits.getByRole("button", { name: "Continue" }).click();
+  await visits.getByRole("button", { name: appCopy.booking.service.continue }).click();
   await datesToPayment(page);
 
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText("Premium service visit", { exact: true })).toBeVisible();
-  await expect(pay.getByText("Rs. 3,540", { exact: true })).toBeVisible();
-  await expect(pay.getByText("Rs. 3,000 + Rs. 540 GST", { exact: true })).toBeVisible();
+  await expect(pay.getByText(PREMIUM_FIGURES.amount, { exact: true })).toBeVisible();
+  await expect(pay.getByText(PREMIUM_FIGURES.split ?? "", { exact: true })).toBeVisible();
   expect(held).toMatchObject([{ type: "service", tier: "premium" }]);
 });
 
@@ -204,7 +209,7 @@ test("names a first fit’s service and how long it takes, and sends no one to W
   });
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-  await expect(pay.getByText("First fit", { exact: true })).toBeVisible();
+  await expect(pay.getByText(appCopy.VISIT_TYPES.first_fit, { exact: true })).toBeVisible();
   await expect(pay.getByText("3 hr", { exact: true })).toBeVisible();
   await expect(pay.getByText("Premium? Message us")).toHaveCount(0);
   await expect(pay.locator('a[href*="wa.me"]')).toHaveCount(0);

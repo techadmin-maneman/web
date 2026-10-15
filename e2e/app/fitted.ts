@@ -31,6 +31,7 @@ import { randomMobile } from "../support.ts";
 import { E2E_TECHNICIANS, technicianFor } from "../technicians.ts";
 import { sqlRow } from "../../scripts/lib/sql-literal.ts";
 import { EVERY_VISIT_UPKEEP } from "../../scripts/lib/every-visit-upkeep.ts";
+import { LOCAL_PRICES } from "../prices.ts";
 
 const run = promisify(execFile);
 const WRANGLER = resolve("node_modules/wrangler/bin/wrangler.js");
@@ -132,8 +133,8 @@ export async function seedFitted(): Promise<void> {
        ${sqlRow(id(), visits.firstFit, firstFit.start, firstFit.end, 150, "done", now)};`,
     `INSERT INTO payments (id, reference, person_id, appointment_id, razorpay_payment_id, amount, currency, method,
        status, captured_at, created_at, updated_at, books_payment_id) VALUES
-       ${sqlRow(servicePaid, reference, person, visits.service, `pay_${servicePaid}`, 200000, "INR", "upi", "captured", service.end, service.end, now, `stub-e2e-${servicePaid}`)},
-       ${sqlRow(firstFitPaid, null, person, visits.firstFit, `pay_${firstFitPaid}`, 3000000, "INR", "card", "captured", firstFit.end, firstFit.end, now, null)};`,
+       ${sqlRow(servicePaid, reference, person, visits.service, `pay_${servicePaid}`, LOCAL_PRICES.service, "INR", "upi", "captured", service.end, service.end, now, `stub-e2e-${servicePaid}`)},
+       ${sqlRow(firstFitPaid, null, person, visits.firstFit, `pay_${firstFitPaid}`, LOCAL_PRICES.firstFit, "INR", "card", "captured", firstFit.end, firstFit.end, now, null)};`,
     `INSERT INTO refunds (id, payment_id, razorpay_refund_id, amount, status, speed, created_at, updated_at)
        VALUES ${sqlRow(id(), servicePaid, `rfnd_${servicePaid}`, 100000, "created", "normal", day(-18).end, now)};`,
     // The piece fitted at the first fit, still in wear, due 180 days after it.

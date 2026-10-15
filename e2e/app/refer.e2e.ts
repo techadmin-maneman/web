@@ -77,8 +77,8 @@ const scan = async (page: Page) => {
 
 async function toRefer(page: Page) {
   await logIn(page, fittedClient().mobile);
-  await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Refer" })).toBeVisible();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.refer.title })).toBeVisible();
 }
 
 test("Refer: the invite, the house card, the preview, and the empty tracker", async ({ page }) => {
@@ -109,9 +109,9 @@ test("Refer: the invite, the house card, the preview, and the empty tracker", as
   expect(copied).toMatch(/\/r\/[A-Z0-9]{8}$/);
   await scan(page);
 
-  await preview.getByRole("button", { name: "Close" }).click();
+  await preview.getByRole("button", { name: appCopy.refer.close }).click();
   await page.getByRole("link", { name: appCopy.refer.tracker }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Who has been fitted" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.refer.fitted.title })).toBeVisible();
   await expect(page.getByText(appCopy.refer.fitted.none)).toBeVisible();
   await scan(page);
 
@@ -137,7 +137,7 @@ test("says when the link could not be shared, and tries again", async ({ page })
   });
   await page.getByRole("button", { name: appCopy.refer.preview.copy }).click();
   await expect(page.getByRole("alert")).toContainText(appCopy.refer.preview.failed.line);
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: appCopy.refer.preview.failed.retry }).click();
   await expect(page.getByRole("button", { name: appCopy.refer.preview.copied })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
@@ -248,7 +248,7 @@ test("says when the phone refused the card’s share, and nothing when the clien
   const failed = preview.getByRole("alert");
   await expect(failed).toContainText(appCopy.refer.preview.failed.label);
   await expect(failed).toContainText(appCopy.refer.preview.failed.line);
-  await preview.getByRole("button", { name: "Try again" }).click();
+  await preview.getByRole("button", { name: appCopy.refer.preview.failed.retry }).click();
   await expect(preview.getByRole("alert")).toHaveCount(0);
   await expect.poll(() => sharedSoFar(page)).toEqual([cardWithInvite(HOUSE_CARD.byteLength)]);
 
@@ -318,10 +318,10 @@ test("asks for the consent before choosing their own card, and sends the example
   await toRefer(page);
   await page.getByRole("button", { name: appCopy.refer.share }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
-  await expect(page.getByRole("heading", { name: "Before you send your own photos" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: appCopy.refer.consent.title })).toBeVisible();
   await expect(page.getByText("Your first name appears on your invite.")).toBeVisible();
 
-  const allow = page.getByRole("button", { name: "Allow for referral cards" });
+  const allow = page.getByRole("button", { name: appCopy.refer.consent.allow });
   await allow.click();
   // Forced, because the tap this guards against is one the client makes whether it is taken or not.
   await allow.click({ force: true });
@@ -363,7 +363,7 @@ test("makes their own card, records one consent and asks for one card, when Allo
   await toRefer(page);
   await page.getByRole("button", { name: appCopy.refer.share }).click();
   await page.getByRole("radio", { name: /My before and after/ }).click();
-  const allow = page.getByRole("button", { name: "Allow for referral cards" });
+  const allow = page.getByRole("button", { name: appCopy.refer.consent.allow });
   await allow.click();
   await allow.click({ force: true });
 
@@ -422,7 +422,7 @@ test("says what ops set each side gets, and beside each friend what the client e
   await expect(
     preview.getByText("Home-fitted hair systems across Delhi NCR. 4 service visits free when you’re fitted."),
   ).toBeVisible();
-  await preview.getByRole("button", { name: "Close" }).click();
+  await preview.getByRole("button", { name: appCopy.refer.close }).click();
 
   await page.getByRole("link", { name: appCopy.refer.tracker }).click();
   const friends = page.getByRole("listitem");
@@ -446,7 +446,7 @@ test("draws Refer, its preview and its tracker, with no count, where the answers
   await sheet.getByRole("button", { name: appCopy.refer.card.next }).click();
   const preview = page.getByRole("dialog", { name: appCopy.refer.preview.title });
   await expect(preview.getByText("Home-fitted hair systems across Delhi NCR.", { exact: true })).toBeVisible();
-  await preview.getByRole("button", { name: "Close" }).click();
+  await preview.getByRole("button", { name: appCopy.refer.close }).click();
 
   await page.getByRole("link", { name: appCopy.refer.tracker }).click();
   const karan = page.getByRole("listitem").filter({ hasText: "Karan" });
@@ -459,7 +459,7 @@ test("draws a lead’s empty Refer, with no count, where the Home carries no rew
   outsideContract("GET /api/me 200");
   await changed(page, "/api/me", ({ referral_reward: _gone, ...me }) => me);
   await signIn(page);
-  await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
   await expect(page.getByText("Your invite opens after your first fit.")).toBeVisible();
   await expect(page.getByText("When a friend you refer is fitted, we tell you.")).toBeVisible();
 });
@@ -469,7 +469,7 @@ test("draws a lead’s empty Refer, with no count, where the Home carries no rew
 // told them that nobody they referred had been fitted.
 test("a client not yet fitted sees Refer’s empty state, with no invite to send", async ({ page }) => {
   await signIn(page);
-  await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
   await expect(page.getByText("Your invite opens after your first fit.")).toBeVisible();
   await expect(page.getByText("When a friend you refer is fitted, you both get 3 free service visits.")).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.refer.share })).toHaveCount(0);
@@ -481,7 +481,7 @@ test("a client not yet fitted sees Refer’s empty state, with no invite to send
 test("a client not yet fitted who came with an invite is told what it gives them at their fit", async ({ page }) => {
   await changed(page, "/api/me", (me) => ({ ...me, pending_invite: { referrer_first_name: "Rohit" } }));
   await signIn(page);
-  await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.refer.title }).click();
   await expect(page.getByText("Rohit’s invite: your 3 free service visits arrive when you’re fitted.")).toBeVisible();
   await expect(page.getByText("Your own invite opens after your first fit.")).toBeVisible();
 });

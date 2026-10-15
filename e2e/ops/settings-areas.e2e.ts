@@ -48,11 +48,11 @@ test.describe("the service area, Areas' Served tab", () => {
     await open(page, "/areas/served", {
       "POST /api/service-area": json({ changed: 1, served: 1, alerted: 0 }),
     });
-    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
     await page.getByLabel("Launch date for 110017").fill("2026-09-02");
 
     const sent = posted(page, "/api/service-area");
-    await page.getByRole("button", { name: "Save" }).click();
+    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110017", served: true, launch_on: "2026-09-02" }],
     });
@@ -67,11 +67,11 @@ test.describe("the service area, Areas' Served tab", () => {
     await page.getByRole("button", { name: "Gurgaon · 0 of 1" }).click();
     await area(page, "122018").fill("=Sector 65");
     await expect(page.getByRole("alert")).toContainText("122018: 2–40 characters");
-    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
 
     await area(page, "122018").fill("Sector 65 ");
     const sent = posted(page, "/api/service-area");
-    await page.getByRole("button", { name: "Save" }).click();
+    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "122018", served: false, launch_on: null, area: "Sector 65" }],
     });
@@ -91,7 +91,7 @@ test.describe("the service area, Areas' Served tab", () => {
       "POST /api/service-area": json({ changed: 1, served: 2, alerted: 3 }),
     });
     await page.getByRole("checkbox", { name: "Served 110024" }).check();
-    await page.getByRole("button", { name: "Save" }).click();
+    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
 
     const check = page.getByRole("region", { name: "Mark 110024 live" });
     await expect(check).toBeFocused();
@@ -112,8 +112,8 @@ test.describe("the service area, Areas' Served tab", () => {
       "POST /api/service-area": fails(400, "no_service_area"),
     });
     await page.getByRole("checkbox", { name: "Served 110017" }).uncheck();
-    await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("alert")).toContainText("At least one pincode must stay served.");
+    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
+    await expect(page.getByRole("alert")).toContainText(opsCopy.areas.served.errors.no_service_area);
   });
 
   const upload = (page: Page, csv: string) =>
@@ -130,18 +130,18 @@ test.describe("the service area, Areas' Served tab", () => {
     });
     await upload(page, "pincode,served,launch_on\n110017,yes,2026-09-01\n110024,no,2026-11-01\n");
     const preview = page.getByRole("row").filter({ hasText: "110024" }).last();
-    await expect(preview).toContainText("Not served");
+    await expect(preview).toContainText(opsCopy.cities.list.notServed);
     await expect(preview).toContainText("Not served, launch 2026-11-01");
     await page.getByRole("button", { name: opsCopy.areas.served.upload.apply }).click();
     await expect(page.getByLabel("Launch date for 110024")).toHaveValue("2026-11-01");
 
     const sent = posted(page, "/api/service-area");
-    await page.getByRole("button", { name: "Save" }).click();
+    await page.getByRole("button", { name: opsCopy.areas.served.save }).click();
     expect((await sent).postDataJSON()).toEqual({
       changes: [{ pincode: "110024", served: false, launch_on: "2026-11-01" }],
     });
     await expect(page.getByLabel("Launch date for 110024")).toHaveValue("2026-11-01");
-    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
   });
 
   // A pincode served from a later day was served at once.
@@ -151,7 +151,7 @@ test.describe("the service area, Areas' Served tab", () => {
     await page.getByRole("checkbox", { name: "Served 110024" }).check();
     await page.getByLabel("Launch date for 110024").fill("2026-10-20");
     await expect(page.getByRole("alert")).toContainText("110024: the launch date must be today or earlier");
-    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: opsCopy.areas.served.save })).toBeDisabled();
   });
 
   // No screen could add a pincode the reference file does not hold.
@@ -167,16 +167,16 @@ test.describe("the service area, Areas' Served tab", () => {
     };
     await open(page, "/areas/served", { "POST /api/pincodes": json(added, 201) });
     const form = page.getByRole("group", { name: opsCopy.areas.add.title });
-    await form.getByLabel("Pincode").fill("400050");
+    await form.getByLabel(opsCopy.areas.add.pincode).fill("400050");
     await form.getByLabel(opsCopy.areas.add.area).fill("Bandra West");
-    await form.getByLabel("City").selectOption("Mumbai");
+    await form.getByLabel(opsCopy.areas.add.city).selectOption("Mumbai");
     const sent = posted(page, "/api/pincodes");
     let adds = 0;
     page.on("request", (request) => {
       if (request.method() === "POST" && request.url().endsWith("/api/pincodes")) adds += 1;
     });
     // However fast Add is pressed twice, the pincode is sent once.
-    await pressTwice(form.getByRole("button", { name: "Add" }));
+    await pressTwice(form.getByRole("button", { name: opsCopy.areas.add.add }));
     expect((await sent).postDataJSON()).toEqual({ pincode: "400050", area: "Bandra West", city: "Mumbai" });
 
     await expect(form.getByRole("status")).toHaveText("400050 added to Mumbai.");
@@ -188,12 +188,12 @@ test.describe("the service area, Areas' Served tab", () => {
   test("refuses a pincode the API could not hold before it is sent", async ({ page }) => {
     await open(page, "/areas/served");
     const form = page.getByRole("group", { name: opsCopy.areas.add.title });
-    await form.getByLabel("Pincode").fill("012345");
+    await form.getByLabel(opsCopy.areas.add.pincode).fill("012345");
     await expect(form.getByRole("alert")).toHaveText(opsCopy.areas.add.badPincode);
     // The refusal is the box's own: a screen reader hears it with the box.
-    await expect(form.getByLabel("Pincode")).toHaveAccessibleDescription(opsCopy.areas.add.badPincode);
-    await expect(form.getByLabel("Pincode")).toHaveAttribute("aria-invalid", "true");
-    await expect(form.getByRole("button", { name: "Add" })).toBeDisabled();
+    await expect(form.getByLabel(opsCopy.areas.add.pincode)).toHaveAccessibleDescription(opsCopy.areas.add.badPincode);
+    await expect(form.getByLabel(opsCopy.areas.add.pincode)).toHaveAttribute("aria-invalid", "true");
+    await expect(form.getByRole("button", { name: opsCopy.areas.add.add })).toBeDisabled();
   });
 
   // A file without its served column switched every pincode in it off.
@@ -238,16 +238,16 @@ test.describe("the blackout days", () => {
     await open(page, "/settings/blackouts", { "POST /api/blackouts": json(added) });
     const add = page.getByRole("button", { name: review.next });
     await expect(add).toBeDisabled();
-    await page.getByLabel("From", { exact: true }).fill("2027-12-24");
-    await page.getByLabel("To", { exact: true }).fill("2027-12-24");
-    await page.getByLabel("Reason").fill("  Christmas ");
+    await page.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2027-12-24");
+    await page.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2027-12-24");
+    await page.getByLabel(settingsCopy.blackouts.reason).fill("  Christmas ");
     const request = posted(page, "/api/blackouts");
     await add.click();
     await page.getByRole("button", { name: review.send }).click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-12-24", to: "2027-12-24", reason: "Christmas" });
     await expect(page.getByRole("status").filter({ hasText: settingsCopy.blackouts.added })).toBeVisible();
     await expect(page.getByRole("listitem").filter({ hasText: "Fri 24 Dec · Every city · Christmas" })).toBeVisible();
-    await expect(page.getByLabel("Reason")).toHaveValue("");
+    await expect(page.getByLabel(settingsCopy.blackouts.reason)).toHaveValue("");
   });
 
   test("closes the days in one city alone, and names it", async ({ page }) => {
@@ -262,10 +262,10 @@ test.describe("the blackout days", () => {
     await open(page, "/settings/blackouts", {
       "POST /api/blackouts": json({ ...BLACKOUTS, blackouts: [...BLACKOUTS.blackouts, holi] }),
     });
-    await page.getByLabel("From", { exact: true }).fill("2028-03-10");
-    await page.getByLabel("To", { exact: true }).fill("2028-03-10");
-    await page.getByLabel("City").selectOption("Gurgaon");
-    await page.getByLabel("Reason").fill("Holi");
+    await page.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2028-03-10");
+    await page.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2028-03-10");
+    await page.getByLabel(opsCopy.areas.add.city).selectOption("Gurgaon");
+    await page.getByLabel(settingsCopy.blackouts.reason).fill("Holi");
     const request = posted(page, "/api/blackouts");
     await page.getByRole("button", { name: review.next }).click();
     await page.getByRole("button", { name: review.send }).click();
@@ -280,12 +280,12 @@ test.describe("the blackout days", () => {
 
   test("says why the API refused the days, of the box it refused", async ({ page }) => {
     await open(page, "/settings/blackouts", { "POST /api/blackouts": fails(400, "invalid_request", ["to"]) });
-    await page.getByLabel("From", { exact: true }).fill("2027-10-01");
-    await page.getByLabel("To", { exact: true }).fill("2027-12-01");
-    await page.getByLabel("Reason").fill("Too long");
+    await page.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2027-10-01");
+    await page.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2027-12-01");
+    await page.getByLabel(settingsCopy.blackouts.reason).fill("Too long");
     await page.getByRole("button", { name: review.next }).click();
     await page.getByRole("button", { name: review.send }).click();
-    await expect(page.getByRole("alert")).toHaveText("The last day must follow the first, within a month.");
+    await expect(page.getByRole("alert")).toHaveText(settingsCopy.blackouts.errors.to);
   });
 
   // Review of #145, item 7: a run named only its first day's setter.

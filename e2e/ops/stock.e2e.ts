@@ -14,6 +14,7 @@ import { stockTransit } from "../../apps/ops/src/content/stock-transit.ts";
 import { stockLabels } from "../../apps/ops/src/content/stock-labels.ts";
 import { stockViews } from "../../apps/ops/src/content/stock-views.ts";
 import { review } from "../../apps/ops/src/content/common.ts";
+import { activity } from "../../apps/ops/src/content/activity.ts";
 
 const WAREHOUSE = "National warehouse";
 
@@ -23,7 +24,7 @@ const NO_DEMAND = { days: 28, demand: [], at_risk: [] };
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/stock": json(STOCK), "GET /api/stock/demand": json(NO_DEMAND), ...extra });
   await page.goto("/stock");
-  await expect(page.getByRole("heading", { level: 1, name: "Stock" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: stock.title })).toBeVisible();
 }
 
 const posted = (page: Page, path: string) =>
@@ -35,7 +36,7 @@ const recording = (page: Page) => page.getByRole("region", { name: stock.record.
 test("is a section of its own beside the technicians, titled by what it is", async ({ page }) => {
   await open(page);
   await expect(page).toHaveTitle("Stock · Mane Man operations");
-  await expect(page.getByRole("navigation").getByRole("link", { name: "Stock" })).toHaveAttribute(
+  await expect(page.getByRole("navigation").getByRole("link", { name: stock.title })).toHaveAttribute(
     "aria-current",
     "page",
   );
@@ -53,8 +54,8 @@ test("shows what each place holds, a low kit in words, a store below nothing, an
   await expect(tape.getByRole("cell").nth(0)).toContainText("120 strip");
   await expect(tape.getByRole("cell").nth(0)).toContainText("Counted Mon 20 Sep");
   await expect(tape.getByRole("cell").nth(1)).toContainText("3 strip");
-  await expect(tape.getByRole("cell").nth(1)).toContainText("Low");
-  await expect(tape.getByRole("cell").nth(2)).not.toContainText("Low");
+  await expect(tape.getByRole("cell").nth(1)).toContainText(stock.low);
+  await expect(tape.getByRole("cell").nth(2)).not.toContainText(stock.low);
   const solvent = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Solvent" }) });
   await expect(solvent.getByRole("cell").nth(0)).toHaveText("-20 ml");
 });
@@ -80,25 +81,25 @@ test("past six places, shows the warehouse and one place, picked, marking each p
   await answer(page, { "GET /api/stock/demand": json(NO_DEMAND), "GET /api/stock": json(many) });
   await page.goto("/stock");
   const table = onHand(page);
-  await expect(table.getByRole("columnheader")).toHaveText(["Item", WAREHOUSE, "Technician 1"]);
+  await expect(table.getByRole("columnheader")).toHaveText([stock.record.consumable, WAREHOUSE, "Technician 1"]);
 
-  const kit = table.getByLabel("Place");
+  const kit = table.getByLabel(stockLabels.place);
   await expect(kit.getByRole("option", { name: "Technician 5 · low" })).toHaveCount(1);
   await kit.selectOption({ label: "Technician 5 · low" });
-  await expect(table.getByRole("columnheader")).toHaveText(["Item", WAREHOUSE, "Technician 5"]);
+  await expect(table.getByRole("columnheader")).toHaveText([stock.record.consumable, WAREHOUSE, "Technician 5"]);
   const tape = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Tape strips" }) });
   await expect(tape.getByRole("cell").nth(1)).toContainText("5 strip");
-  await expect(tape.getByRole("cell").nth(1)).toContainText("Low");
+  await expect(tape.getByRole("cell").nth(1)).toContainText(stock.low);
   expect(await axeViolations(page)).toEqual([]);
 });
 
 test("records a delivery into the store, showing what it holds before and after", async ({ page }) => {
   await open(page, { "POST /api/stock/deliveries": json(STOCK) });
   const form = recording(page);
-  await form.getByLabel("Item").selectOption({ label: "Tape strips" });
-  await form.getByLabel("How many").fill("100");
+  await form.getByLabel(stock.record.consumable).selectOption({ label: "Tape strips" });
+  await form.getByLabel(stock.record.quantity).fill("100");
   await form.getByLabel(stock.record.note).fill("Supplier’s note 4418");
-  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByRole("button", { name: stock.record.check }).click();
 
   const check = form.getByRole("group", { name: review.title });
   await expect(check).toBeFocused();
@@ -118,11 +119,11 @@ test("records a delivery into the store, showing what it holds before and after"
 test("takes a delivery’s supplier lot and its expiry", async ({ page }) => {
   await open(page, { "POST /api/stock/deliveries": json(STOCK) });
   const form = recording(page);
-  await form.getByLabel("Item").selectOption({ label: "Solvent" });
-  await form.getByLabel("How many").fill("500");
+  await form.getByLabel(stock.record.consumable).selectOption({ label: "Solvent" });
+  await form.getByLabel(stock.record.quantity).fill("500");
   await form.getByLabel(stock.record.lot).fill("SV-2611");
   await form.getByLabel(stock.record.expires).fill("2027-11-30");
-  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByRole("button", { name: stock.record.check }).click();
   const sent = posted(page, "/api/stock/deliveries");
   await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toMatchObject({ lot_code: "SV-2611", expires_on: "2027-11-30" });
@@ -149,12 +150,12 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
   await expect(tape.getByRole("cell").nth(0)).toContainText("Expires 31 Oct 2027");
 
   const form = recording(page);
-  await form.getByLabel("Write-off").check();
-  await form.getByLabel("Item").selectOption({ label: "Tape strips" });
+  await form.getByLabel(stock.record.kinds.write_off).check();
+  await form.getByLabel(stock.record.consumable).selectOption({ label: "Tape strips" });
   await form.getByLabel(stock.record.lostLot).selectOption({ label: "TS-0901 · expires 31 Oct 2027" });
-  await form.getByLabel("How many").fill("20");
+  await form.getByLabel(stock.record.quantity).fill("20");
   await form.getByLabel(stock.record.lossNote).fill("Past its date");
-  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByRole("button", { name: stock.record.check }).click();
   const sent = posted(page, "/api/stock/write-offs");
   await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toMatchObject({ lot_id: "lot-1", quantity: 20 });
@@ -163,19 +164,19 @@ test("says when the soonest lot a place holds expires, and writes off the lot na
 test("a transfer shows both places, and says when the store would hold less than nothing", async ({ page }) => {
   await open(page, { "POST /api/stock/transfers": json(STOCK) });
   const form = recording(page);
-  await form.getByLabel("Transfer").check();
-  await form.getByLabel("Item").selectOption({ label: "Solvent" });
-  await form.getByLabel("From", { exact: true }).selectOption({ label: WAREHOUSE });
-  await form.getByLabel("To", { exact: true }).selectOption({ label: "Imran Qureshi" });
-  await form.getByLabel("How many").fill("10");
-  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByLabel(stock.record.kinds.transfer).check();
+  await form.getByLabel(stock.record.consumable).selectOption({ label: "Solvent" });
+  await form.getByLabel(stock.record.from, { exact: true }).selectOption({ label: WAREHOUSE });
+  await form.getByLabel(stock.record.to, { exact: true }).selectOption({ label: "Imran Qureshi" });
+  await form.getByLabel(stock.record.quantity).fill("10");
+  await form.getByRole("button", { name: stock.record.check }).click();
   const check = form.getByRole("group", { name: review.title });
   await expect(check).toContainText(stock.confirm.onItsWay("Imran Qureshi"));
   await check.getByRole("button", { name: review.edit }).click();
 
   // Handed over in person, it arrives at once.
   await form.getByLabel(stock.record.waitForScan).uncheck();
-  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByRole("button", { name: stock.record.check }).click();
   await expect(check).toContainText(`${WAREHOUSE}: -20 ml → -30 ml`);
   await expect(check).toContainText("Imran Qureshi: 150 ml → 160 ml");
   await expect(check).toContainText(`${WAREHOUSE} would go below zero`);
@@ -193,28 +194,26 @@ test("a transfer shows both places, and says when the store would hold less than
 test("will not move stock to the place it is in", async ({ page }) => {
   await open(page);
   const form = recording(page);
-  await form.getByLabel("Transfer").check();
-  await form.getByLabel("From", { exact: true }).selectOption({ label: "Imran Qureshi" });
-  await form.getByLabel("To", { exact: true }).selectOption({ label: "Imran Qureshi" });
-  await form.getByLabel("How many").fill("2");
-  await expect(form.getByRole("button", { name: "Review" })).toBeDisabled();
+  await form.getByLabel(stock.record.kinds.transfer).check();
+  await form.getByLabel(stock.record.from, { exact: true }).selectOption({ label: "Imran Qureshi" });
+  await form.getByLabel(stock.record.to, { exact: true }).selectOption({ label: "Imran Qureshi" });
+  await form.getByLabel(stock.record.quantity).fill("2");
+  await expect(form.getByRole("button", { name: stock.record.check })).toBeDisabled();
 });
 
 test("a count shows the figure it finds, and one that agrees says it records only the count", async ({ page }) => {
   await open(page, { "POST /api/stock/counts": json(STOCK) });
   const form = recording(page);
-  await form.getByLabel("Count").check();
-  await form.getByLabel("Item").selectOption({ label: "Tape strips" });
-  await form.getByLabel("Where").selectOption({ label: "Imran Qureshi" });
+  await form.getByLabel(stock.record.kinds.count).check();
+  await form.getByLabel(stock.record.consumable).selectOption({ label: "Tape strips" });
+  await form.getByLabel(stock.record.place).selectOption({ label: "Imran Qureshi" });
   await form.getByLabel(stock.record.counted).fill("3");
-  await form.getByRole("button", { name: "Review" }).click();
-  await expect(form.getByRole("group", { name: review.title })).toContainText(
-    "Matches what’s held. Records the count only.",
-  );
+  await form.getByRole("button", { name: stock.record.check }).click();
+  await expect(form.getByRole("group", { name: review.title })).toContainText(stock.confirm.same);
 
-  await form.getByRole("button", { name: "Edit" }).click();
+  await form.getByRole("button", { name: stockPlaces.edit }).click();
   await form.getByLabel(stock.record.counted).fill("2");
-  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByRole("button", { name: stock.record.check }).click();
   await expect(form.getByRole("group", { name: review.title })).toContainText("Imran Qureshi: 3 strip → 2 strip");
   const sent = posted(page, "/api/stock/counts");
   await form.getByRole("button", { name: review.send }).click();
@@ -231,12 +230,12 @@ test("a count shows the figure it finds, and one that agrees says it records onl
 test("a loss needs its words, and a refusal names what was wrong", async ({ page }) => {
   await open(page, { "POST /api/stock/write-offs": fails(400, "invalid_request", ["place_id"]) });
   const form = recording(page);
-  await form.getByLabel("Write-off").check();
-  await form.getByLabel("How many").fill("2");
-  await expect(form.getByRole("button", { name: "Review" })).toBeDisabled();
+  await form.getByLabel(stock.record.kinds.write_off).check();
+  await form.getByLabel(stock.record.quantity).fill("2");
+  await expect(form.getByRole("button", { name: stock.record.check })).toBeDisabled();
 
   await form.getByLabel(stock.record.lossNote).fill("Two burst in the heat");
-  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByRole("button", { name: stock.record.check }).click();
   await form.getByRole("button", { name: review.send }).click();
   await expect(page.getByText("Unknown place. Here’s the latest.")).toBeVisible();
 });
@@ -255,16 +254,22 @@ test("sorts the movements by a column, and narrows them by a list or a search", 
   await open(page);
   const movements = page.getByRole("region", { name: stock.movements.title });
   const rows = movements.getByRole("row");
-  await expect(movements.getByRole("columnheader", { name: "When" })).toHaveAttribute("aria-sort", "descending");
-  await expect(rows.nth(1)).toContainText("Used on a visit");
+  await expect(movements.getByRole("columnheader", { name: activity.columns.when })).toHaveAttribute(
+    "aria-sort",
+    "descending",
+  );
+  await expect(rows.nth(1)).toContainText(stock.movements.reasons.used);
 
-  await movements.getByRole("button", { name: "Change", exact: true }).click();
-  await expect(movements.getByRole("columnheader", { name: "Change" })).toHaveAttribute("aria-sort", "ascending");
+  await movements.getByRole("button", { name: opsCopy.cities.list.change, exact: true }).click();
+  await expect(movements.getByRole("columnheader", { name: opsCopy.cities.list.change })).toHaveAttribute(
+    "aria-sort",
+    "ascending",
+  );
   await expect(rows.nth(1)).toContainText("-4");
-  await movements.getByRole("button", { name: "Change", exact: true }).click();
+  await movements.getByRole("button", { name: opsCopy.cities.list.change, exact: true }).click();
   await expect(rows.nth(1)).toContainText("+100");
 
-  await movements.getByLabel("Why").selectOption("Delivered");
+  await movements.getByLabel(opsCopy.clients.payments.refundReason).selectOption("Delivered");
   await expect(rows).toHaveCount(2);
   await expect(movements).toContainText("1 of 2");
   await movements.getByRole("button", { name: opsCopy.tables.clear, exact: true }).click();
@@ -272,7 +277,7 @@ test("sorts the movements by a column, and narrows them by a list or a search", 
 
   await movements.getByLabel(opsCopy.tables.search).fill("imran");
   await expect(rows).toHaveCount(2);
-  await expect(rows.nth(1)).toContainText("Used on a visit");
+  await expect(rows.nth(1)).toContainText(stock.movements.reasons.used);
   await movements.getByLabel(opsCopy.tables.search).fill("nothing like it");
   await expect(movements.getByText(opsCopy.tables.none)).toBeVisible();
 });
@@ -363,7 +368,7 @@ test("adds up every place, and each city, and lists the lots that expire soon", 
   const table = onHand(page);
   await table.getByLabel(stock.totalsBy).selectOption({ label: stock.byCity });
   await expect(table.getByRole("columnheader")).toHaveText([
-    "Item",
+    stock.record.consumable,
     stockViews.totals.national,
     "Gurgaon",
     stockViews.totals.noCity,
@@ -435,9 +440,9 @@ test("opens a hair system’s labels after its delivery, the latest batch ticked
   });
   const printed = await catchPrints(page);
   const form = recording(page);
-  await form.getByLabel("Item").selectOption({ label: HAIR.name });
-  await form.getByLabel("How many").fill("2");
-  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByLabel(stock.record.consumable).selectOption({ label: HAIR.name });
+  await form.getByLabel(stock.record.quantity).fill("2");
+  await form.getByRole("button", { name: stock.record.check }).click();
   await form.getByRole("button", { name: review.send }).click();
 
   const labels = page.getByRole("region", { name: stockLabels.title });
@@ -490,7 +495,7 @@ test("names a hair system’s pieces by their labels, as a scanner types them, a
   await open(page, { "GET /api/stock": json(withPieces), "POST /api/stock/transfers": json(withPieces) });
   const form = recording(page);
   await form.getByRole("radio", { name: stock.record.kinds.transfer }).check();
-  await form.getByLabel("Item").selectOption({ label: HAIR.name });
+  await form.getByLabel(stock.record.consumable).selectOption({ label: HAIR.name });
   const scan = form.getByLabel(stockLabels.scan.label, { exact: true });
   for (const typed of ["mm-ess-0000001-b", "MM-ESS-0000002-C", "MM-ESS-0000002-C"]) {
     await scan.fill(typed);
@@ -500,7 +505,7 @@ test("names a hair system’s pieces by their labels, as a scanner types them, a
   await expect(form.getByLabel(/^How many/)).toHaveCount(0);
   await form.getByRole("button", { name: stockLabels.removeLabel("MM-ESS-0000001-B") }).click();
   await expect(form).toContainText(stockLabels.scanned(1));
-  await form.getByRole("button", { name: "Review" }).click();
+  await form.getByRole("button", { name: stock.record.check }).click();
   const sent = posted(page, "/api/stock/transfers");
   await form.getByRole("button", { name: review.send }).click();
   expect((await sent).postDataJSON()).toEqual({
@@ -587,8 +592,8 @@ test("meets WCAG 2.2 AA, with a movement being checked as well", async ({ page }
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
 
-  await recording(page).getByLabel("How many").fill("5");
-  await recording(page).getByRole("button", { name: "Review" }).click();
+  await recording(page).getByLabel(stock.record.quantity).fill("5");
+  await recording(page).getByRole("button", { name: stock.record.check }).click();
   await expect(recording(page).getByRole("group", { name: review.title })).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
 });

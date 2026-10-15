@@ -14,6 +14,14 @@
 import type { BrowserContext, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { INSIDE, OUTSIDE, query, stagingFixture } from "./seed.ts";
+import {
+  signIn as signInWords,
+  notHome,
+  today,
+  job,
+  capture as captureWords,
+  session,
+} from "../../apps/tech/src/content.ts";
 
 const fixture = stagingFixture();
 const TECH = "https://tech-staging.maneman.in";
@@ -128,17 +136,17 @@ test("the code request carries the phone’s own ID, and a wrong code is not an 
   expect(without.status()).toBe(400);
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: signInWords.title })).toBeVisible();
 
   // A number no technician has. Nothing is sent at all: with no technician there
   // is no number to send to (src/routes/tech/auth.ts).
   const unlisted = page.waitForRequest((request) => request.url().endsWith("/api/tech/auth/otp"));
-  await page.getByLabel("Mobile number").fill(fixture.unknownMobile);
-  await page.getByRole("button", { name: "Send the code" }).click();
+  await page.getByLabel(signInWords.mobileLabel).fill(fixture.unknownMobile);
+  await page.getByRole("button", { name: signInWords.sendCode }).click();
   const unlistedBody = (await unlisted).postDataJSON() as { device_id?: string };
   record("otp for an unlisted number", { device_id_sent: unlistedBody.device_id !== undefined });
   expect(unlistedBody.device_id ?? "").toMatch(/^[A-Za-z0-9_-]{8,64}$/);
-  await expect(page.getByText("A 6-digit code is on its way.")).toBeVisible();
+  await expect(page.getByText(signInWords.codeSent)).toBeVisible();
 
   // The seeded technician stays active: an inactive technician's session, the one the seed wrote, ends on its next
   // call (ADR 0065).
@@ -154,15 +162,15 @@ test("the code request carries the phone’s own ID, and a wrong code is not an 
   // Nothing is sent, exactly as before that ruling.
   await page.reload();
   const sending = page.waitForResponse((response) => response.url().endsWith("/api/tech/auth/otp"));
-  await page.getByLabel("Mobile number").fill(fixture.technicianMobile);
-  await page.getByRole("button", { name: "Send the code" }).click();
+  await page.getByLabel(signInWords.mobileLabel).fill(fixture.technicianMobile);
+  await page.getByRole("button", { name: signInWords.sendCode }).click();
   const challenge = await sending;
   record("otp for the seeded technician", `${String(challenge.status())} ${await challenge.text()}`);
   expect(challenge.status()).toBe(202);
 
   const verifying = page.waitForResponse((response) => response.url().endsWith("/api/tech/auth/verify"));
-  await page.getByLabel("Code").fill("000000");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel(signInWords.codeLabel).fill("000000");
+  await page.getByRole("button", { name: signInWords.submit }).click();
   const wrong = await verifying;
   const wrongBody = await bodyOf<Verify>(wrong);
   record("a wrong code", `${String(wrong.status())} ${JSON.stringify(wrongBody)}`);
@@ -239,23 +247,23 @@ test("check-in: outside the fence it fails with the distance, inside it passes",
   await page.goto(`/jobs/${fixture.today.id}`);
 
   const far = page.waitForResponse((response) => response.url().endsWith("/checkin"));
-  await page.getByRole("button", { name: "I have arrived" }).click();
+  await page.getByRole("button", { name: notHome.arrived.action }).click();
   const farBody = await bodyOf<CheckIn>(await far);
   record("check-in from outside", farBody);
   expect(farBody.passed).toBe(false);
   expect(farBody.radius_m).toBe(200);
   expect(farBody.distance_m ?? 0).toBeGreaterThan(200);
-  await expect(page.getByText("Check-in failed")).toBeVisible();
+  await expect(page.getByText(notHome.failed.title)).toBeVisible();
 
   await context.setGeolocation(INSIDE);
   const near = page.waitForResponse((response) => response.url().endsWith("/checkin"));
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: today.retry }).click();
   const nearBody = await bodyOf<CheckIn>(await near);
   record("check-in from inside", nearBody);
   expect(nearBody.passed).toBe(true);
   expect(nearBody.distance_m ?? 9999).toBeLessThanOrEqual(200);
   expect(nearBody.wait_ends_at).not.toBeNull();
-  await expect(page.getByText("2 · Waiting")).toBeVisible();
+  await expect(page.getByText(notHome.waiting.step)).toBeVisible();
 
   // Both attempts are on the record, with the radius in force: what open point 56 is tuned from.
   const rows = await query<{ distance_m: number; radius_m: number; passed: number }>(
@@ -269,11 +277,11 @@ test("a step taken with no signal reaches the API when signal returns, and only 
   await signIn(context);
   await context.setGeolocation(INSIDE);
   await page.goto(`/jobs/${fixture.today.id}`);
-  await expect(page.getByRole("button", { name: "Start job" })).toBeVisible();
+  await expect(page.getByRole("button", { name: job.start })).toBeVisible();
 
   // A real network cut, not a fake: the browser itself has no route out.
   await context.setOffline(true);
-  await page.getByRole("button", { name: "Start job" }).click();
+  await page.getByRole("button", { name: job.start }).click();
   await expect(page).toHaveURL(new RegExp(`/jobs/${fixture.today.id}/before-photos$`));
   record("start events while the phone was offline", await landed("start"));
   expect(await landed("start")).toBe(0);
@@ -307,7 +315,7 @@ test("the before set: a link for each angle, the PUT, then the set", async ({ pa
   });
 
   await page.goto(`/jobs/${fixture.today.id}/before-photos`);
-  const capture = page.getByRole("button", { name: "Capture" });
+  const capture = page.getByRole("button", { name: captureWords.take });
   await expect(capture).toBeEnabled({ timeout: 60_000 });
   for (let angle = 1; angle <= 5; angle += 1) {
     await capture.click();
@@ -317,7 +325,7 @@ test("the before set: a link for each angle, the PUT, then the set", async ({ pa
   const setLanding = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith(`/${fixture.today.id}/photos`),
   );
-  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("button", { name: captureWords.finish }).click();
   const set = await bodyOf<Accepted>(await setLanding);
   record("POST /photos", set);
 
@@ -367,7 +375,7 @@ test("the deployed service worker keeps the shell and no API answer", async ({ p
   await context.setOffline(true);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "1 job today" })).toBeVisible();
-  await expect(page.getByText("No signal · working offline")).toBeVisible();
+  await expect(page.getByText(today.offline.title)).toBeVisible();
   await context.setOffline(false);
 });
 
@@ -392,8 +400,8 @@ test("a revoked phone learns so on its next call, and drops what it held", async
   record("the phone’s next /tech/me", `${String(answer.status())} ${await answer.text()}`);
   expect(answer.status()).toBe(401);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Technician sign in" })).toBeVisible();
-  await expect(page.getByText("This phone is no longer signed in. Ask ops, then sign in again.")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: signInWords.title })).toBeVisible();
+  await expect(page.getByText(session.revoked)).toBeVisible();
 
   const device = await query<{ revoked_at: string | null; wiped_at: string | null }>(
     `SELECT revoked_at, wiped_at FROM technician_devices WHERE technician_id = '${fixture.technicianId}';`,

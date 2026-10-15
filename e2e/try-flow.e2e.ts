@@ -309,7 +309,7 @@ test("a visitor whose upload is refused for having had their look is told it was
     .first()
     .setInputFiles(await drawnHeadPhoto());
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
   await expect(page.getByRole("heading", { name: siteCopy.tryOn.sent.returning.title })).toBeVisible();
   expect((await analyticsEvents(page)).map(([name]) => name)).not.toContain("try_on_failed");
 });
@@ -353,7 +353,7 @@ for (const [name, answers, heading] of [
       .first()
       .setInputFiles(await drawnHeadPhoto());
     await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
   });
 }
@@ -406,7 +406,7 @@ test("the gate marks the field a claim’s refusal names, and focuses it", async
 
   const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
   await expect(mobile).toHaveAttribute("aria-invalid", "true");
-  await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
+  await expect(mobile).toHaveAccessibleDescription(siteCopy.tryOn.gate.mobileError);
   await expect(mobile).toBeFocused();
   await expect(page.getByText(/did not go through/)).toHaveCount(0);
   await screenIs(page, "gate");
@@ -462,7 +462,7 @@ test("Back from the gate offers every look again, and nothing has been made", as
   await expect(page.getByRole("radio", { name: /^Quiff/ })).toBeChecked();
   await page.getByRole("radio", { name: /^Side part/ }).check();
   await expect(page.getByRole("radio", { name: /^Side part/ })).toBeChecked();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
   await screenIs(page, "gate");
   expect(named(seen, "generate")).toHaveLength(0);
 });
@@ -515,7 +515,7 @@ test("a large photograph with a location in it is uploaded smaller and without i
     .setInputFiles({ name: "big.jpg", mimeType: "image/jpeg", buffer: large });
   await page.locator('[data-screen="consent"]').waitFor({ timeout: 30_000 });
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: siteCopy.tryOn.consent.continue }).click();
   await expect.poll(() => named(seen, "upload").length, { timeout: 90_000 }).toBe(1);
 
   const sent = named(seen, "upload")[0]?.postDataBuffer() ?? Buffer.alloc(0);

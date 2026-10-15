@@ -42,7 +42,7 @@ async function home(page: Page): Promise<void> {
 test("opens on the mobile number, as the design draws it", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Your mobile number · Mane Man");
-  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
   await expect(page.getByRole("textbox", { name: appCopy.login.mobile.label })).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.login.mobile.send })).toBeVisible();
   await expect(page.getByText(appCopy.login.mobile.hint)).toBeVisible();
@@ -78,14 +78,17 @@ test("reaches mm-api as the client surface, on its own host", async ({ page }) =
 test("says the error when the API cannot be reached, with a way to try again", async ({ page }) => {
   await page.route("**/api/me", (route) => route.abort());
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "We couldn’t load your account." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.states.error.title })).toBeVisible();
   await expect(page).toHaveTitle("We couldn’t load your account. · Mane Man");
-  await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute("href", "https://wa.me/919007973247");
+  await expect(page.getByRole("link", { name: appCopy.change.message })).toHaveAttribute(
+    "href",
+    "https://wa.me/919007973247",
+  );
   expect(await axeViolations(page)).toEqual([]);
 
   await page.unroute("**/api/me");
-  await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await page.getByRole("button", { name: appCopy.problem.tryAgain }).click();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
 });
 
 test("shows the loading shape on paper while it asks whether there is a session, not a blank screen", async ({
@@ -103,7 +106,7 @@ test("shows the loading shape on paper while it asks whether there is a session,
   await expect(page.getByRole("status").filter({ hasText: appCopy.states.loading })).toBeAttached();
   expect(await page.evaluate(() => document.body.dataset.ground)).toBe("paper");
   answer();
-  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
   expect(await page.evaluate(() => document.body.dataset.ground)).toBe("ink");
 });
 
@@ -142,14 +145,14 @@ test("offers a way on, not a blank page, when a page fails to draw", async ({ pa
   // An answer the page cannot draw.
   outsideContract("GET /api/payments 200");
   await page.route("**/api/payments", (route) => route.fulfill({ json: { entries: null } }));
-  await page.getByRole("navigation").getByRole("link", { name: "Payments" }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.payments }).click();
   await expect(page.getByRole("alert")).toContainText(appCopy.broken.message);
   await expect(page.getByRole("button", { name: appCopy.broken.reload })).toBeVisible();
 });
 
 test("makes each tab a full 64 px target", async ({ page }) => {
   await home(page);
-  const tab = await page.getByRole("navigation").getByRole("link", { name: "Home" }).boundingBox();
+  const tab = await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.home }).boundingBox();
   expect(tab?.height).toBeGreaterThanOrEqual(64);
 });
 
@@ -240,7 +243,7 @@ test("edges fields and switches at 3:1 or more against the ground (WCAG 1.4.11)"
 
 test("moves nothing under reduced motion, the share sheet included", async ({ page }) => {
   await home(page);
-  await page.getByRole("navigation").getByRole("link", { name: "Refer" }).click();
+  await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.refer }).click();
   await page.getByRole("button", { name: appCopy.refer.share }).click();
   const sheet = page.getByRole("dialog");
   await expect(sheet).toBeVisible();

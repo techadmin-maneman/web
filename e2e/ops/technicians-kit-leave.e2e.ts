@@ -19,6 +19,7 @@ import {
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { review } from "../../apps/ops/src/content/common.ts";
 import { pressTwice } from "./twice.ts";
+import { stock } from "../../apps/ops/src/content/stock.ts";
 
 const INK = "rgb(22, 35, 58)";
 
@@ -45,7 +46,7 @@ test("lists what their kit holds, marking what is low, with the way to Stock", a
 
   const tape = main.getByRole("row").filter({ hasText: "Tape strips" });
   await expect(tape).toContainText("3 strip");
-  await expect(tape).toContainText("Low");
+  await expect(tape).toContainText(stock.low);
   await expect(main.getByRole("row").filter({ hasText: "Solvent" })).toContainText("150 ml");
   await expect(main.getByRole("row").filter({ hasText: "Solvent" })).toContainText("Mon 20 Sep");
   await expect(main.getByText("40 ml")).toBeHidden();
@@ -97,7 +98,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
   // The form takes the keyboard as it opens, where the button stood.
   await expect(main.getByLabel(opsCopy.technicians.leave.from)).toBeFocused();
   // A routine entry, drawn as every other save is, not as a danger.
-  await expect(main.getByRole("button", { name: "Record" })).toHaveCSS("background-color", INK);
+  await expect(main.getByRole("button", { name: opsCopy.technicians.leave.save })).toHaveCSS("background-color", INK);
 
   await main.getByLabel(opsCopy.technicians.leave.from).fill("2027-10-12");
   await main.getByLabel(opsCopy.technicians.leave.to).fill("2027-10-14");
@@ -129,7 +130,7 @@ test("records leave, saying first that nobody can be booked on those days, and s
     if (request.method() === "POST" && request.url().endsWith(LEAVE)) records += 1;
   });
   // However fast Record is pressed twice, the leave is sent once.
-  await pressTwice(main.getByRole("button", { name: "Record" }));
+  await pressTwice(main.getByRole("button", { name: opsCopy.technicians.leave.save }));
   expect((await sent).postDataJSON()).toEqual({ from: "2027-10-12", to: "2027-10-14", note: "Away" });
 
   await expect(main.getByRole("status")).toHaveText(opsCopy.technicians.leave.recorded);
@@ -145,7 +146,7 @@ test("says so when the dates do not make a period, and records nothing", async (
   await main.getByRole("button", { name: "Record leave for Imran Qureshi" }).click();
   await main.getByLabel(opsCopy.technicians.leave.from).fill("2027-10-14");
   await main.getByLabel(opsCopy.technicians.leave.to).fill("2027-10-12");
-  await main.getByRole("button", { name: "Record" }).click();
+  await main.getByRole("button", { name: opsCopy.technicians.leave.save }).click();
 
   await expect(main.getByRole("alert")).toContainText("The last day must follow the first");
 });

@@ -11,6 +11,7 @@ import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fa
 import { continueToPayment } from "./picking.ts";
 import { toPayment, toWindows, openSheet, profileAs, profileOf, PHOTOS, scanOf } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { PAY_SERVICE } from "../prices.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -54,10 +55,10 @@ test("asks a client with no address for it first, then books", async ({ page }) 
   const dates = page.getByRole("dialog", { name: appCopy.booking.date.title });
   await expect(dates.getByText("Step 2 of 4")).toBeVisible();
   await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await dates.getByRole("button", { name: "Continue" }).click();
+  await dates.getByRole("button", { name: appCopy.booking.date.continue }).click();
   await expect(page.getByRole("dialog", { name: appCopy.booking.window.title }).getByText("Step 3 of 4")).toBeVisible();
   await continueToPayment(page);
-  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await page.getByRole("button", { name: PAY_SERVICE }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
 });
 
@@ -96,7 +97,7 @@ test("offers no day at an address we do not come to, but the address to change a
   );
   await expect(where.getByLabel(appCopy.profile.form.pincode)).toHaveValue("122018");
   await expect(where.getByRole("button", { name: appCopy.booking.address.save })).toBeVisible();
-  await expect(where.getByRole("link", { name: "Join the waitlist" })).toHaveAttribute("href", /\/book$/);
+  await expect(where.getByRole("link", { name: appCopy.profile.form.waitlist })).toHaveAttribute("href", /\/book$/);
 });
 
 // Every visit is photographed for the client's record, said one tap away beneath Pay; booking agrees to no consent.
@@ -107,7 +108,7 @@ test("puts Pay above what every visit’s photographs are, one tap away, and sen
   const sent = bookingsSent(page);
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-  const payButton = pay.getByRole("button", { name: "Pay Rs. 2,000" });
+  const payButton = pay.getByRole("button", { name: PAY_SERVICE });
   const photos = pay.getByText(appCopy.booking.pay.photos.open);
   const line = pay.getByText(appCopy.profile.visitPhotos);
   await expect(payButton).toBeInViewport();

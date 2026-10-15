@@ -96,7 +96,7 @@ test("says nothing about an invite to someone who came here directly", async ({ 
 
   await openForm(page);
   // The page is headed and introduced once: the form beneath it repeats neither.
-  await expect(page.getByRole("heading", { name: "Book a free consultation" })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: referralCopy.referral.consultation.title })).toHaveCount(1);
   await expect(page.getByText(/^Your technician measures your scalp and matches your colour/)).toBeVisible();
   await expect(page.getByText(referralCopy.referral.consultation.body)).toHaveCount(0);
   for (const words of invited) await expect(page.getByText(words)).toHaveCount(0);
@@ -116,7 +116,7 @@ test("a pincode we do not serve lists the number kept, with the launch alert off
   await expect(page.getByText("Step 3 of 3 · The list")).toBeVisible();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
 
-  await page.getByText("You may contact me about this request.").click();
+  await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
   // Joining the list is asking to be told at launch, so the box starts ticked.
   await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert)).toBeChecked();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
@@ -146,7 +146,7 @@ test("a booking and a waitlist are both counted, with nothing personal", async (
   await expectNoPersonalData(page, ["Test Visitor", "9810000000", "98100 00000", "Flat 402", "Palm Grove Society"]);
 
   await openWaitlist(page);
-  await page.getByText("You may contact me about this request.").click();
+  await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
   await expect(page.getByRole("heading", { name: "You are on the Bandra list" })).toBeVisible();
   expect(await analyticsEvents(page)).toEqual([
@@ -208,13 +208,9 @@ test("a friend who opened an invite joins a waitlist here with it, and is told t
   });
   await openInvite(page);
   await openWaitlist(page);
-  await expect(
-    page.getByText(
-      "You have an invite. It stays valid for 12 months after we launch there. Whoever invited you is told when you are fitted.",
-    ),
-  ).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.remembered.waitlist)).toBeVisible();
   await expect(page.getByRole("button", { name: referralCopy.referral.remembered.joinWithout })).toBeVisible();
-  await page.getByText("You may contact me about this request.").click();
+  await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
   await page.getByText(referralCopy.referral.waitlist.launchAlert).click();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
@@ -241,7 +237,7 @@ test("an invite opened more than 30 days ago, or one we do not know, is not sent
     }),
   );
   await visit(page, "/r/ZZ9999");
-  await expect(page.getByText("We don’t recognise this invite")).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.arrival.unknown.notice)).toBeVisible();
   expect(await remembered(page)).toBeNull();
 
   const opened = new Date(Date.now() - 31 * 86_400_000).toISOString();

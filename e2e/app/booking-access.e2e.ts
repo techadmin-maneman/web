@@ -3,6 +3,7 @@ import { confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fa
 import { continueToPayment } from "./picking.ts";
 import { toPayment, openSheet, scanOf } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { PAY_SERVICE } from "../prices.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -17,7 +18,7 @@ test("takes focus to each step’s heading as the sheet moves on", async ({ page
   await openSheet(page);
   const sheet = page.getByRole("dialog");
   await sheet.getByRole("radio").and(page.locator(":enabled")).first().click();
-  await sheet.getByRole("button", { name: "Continue" }).click();
+  await sheet.getByRole("button", { name: appCopy.booking.date.continue }).click();
   await expect(sheet.getByRole("heading", { name: appCopy.booking.window.title })).toBeFocused();
   await continueToPayment(page);
   await expect(sheet.getByRole("heading", { name: appCopy.booking.pay.title })).toBeFocused();
@@ -37,7 +38,7 @@ test("makes the days one tab stop, with arrow keys between", async ({ page }) =>
   // "Later dates" sits between the days and Continue.
   await expect(page.getByRole("button", { name: appCopy.booking.date.later })).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "Continue" })).toBeFocused();
+  await expect(page.getByRole("button", { name: appCopy.booking.date.continue })).toBeFocused();
 });
 
 test("fits all fourteen days on a 320 px screen", async ({ page }) => {
@@ -55,7 +56,7 @@ test("fits all fourteen days on a 320 px screen", async ({ page }) => {
 test("has a Close anyone can see, a full target, ringed in paper on the ground it stands on", async ({ page }) => {
   await openSheet(page);
   const sheet = page.getByRole("dialog", { name: appCopy.booking.date.title });
-  const close = sheet.getByRole("button", { name: "Close" });
+  const close = sheet.getByRole("button", { name: appCopy.booking.close });
   await expect(close).toBeVisible();
   expect(await close.evaluate((button) => getComputedStyle(button).opacity)).toBe("1");
   const box = await close.boundingBox();
@@ -85,7 +86,7 @@ test("the payment’s outcomes meet WCAG 2.2 AA: failed, the slot gone back, and
   await fakeCheckout(page, "failed");
   await page.clock.install();
   await toPayment(page);
-  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await page.getByRole("button", { name: PAY_SERVICE }).click();
   await expect(page.getByRole("dialog", { name: appCopy.booking.failed.title })).toBeVisible();
   await scanOf(page);
 
@@ -98,7 +99,7 @@ test("a confirmed booking meets WCAG 2.2 AA", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   await toPayment(page);
-  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await page.getByRole("button", { name: PAY_SERVICE }).click();
   await expect(page.getByRole("dialog", { name: appCopy.booking.confirmed.label })).toBeVisible({ timeout: 15_000 });
   await scanOf(page);
 });
@@ -118,7 +119,7 @@ test.describe("with motion, as most phones have it", () => {
     await expect.poll(() => dates.evaluate((sheet) => sheet.contains(document.activeElement))).toBe(true);
 
     await dates.getByRole("radio").and(page.locator(":enabled")).first().click();
-    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByRole("button", { name: appCopy.booking.date.continue }).click();
     const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
     await expect(windows).toBeVisible();
     await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
@@ -134,7 +135,7 @@ test("each booking step meets WCAG 2.2 AA", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: appCopy.booking.date.title })).toBeVisible();
   await scan();
   await page.getByRole("dialog").getByRole("radio").and(page.locator(":enabled")).first().click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: appCopy.booking.date.continue }).click();
   await expect(page.getByRole("dialog", { name: appCopy.booking.window.title })).toBeVisible();
   await scan();
   await continueToPayment(page);

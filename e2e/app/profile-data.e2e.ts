@@ -6,7 +6,7 @@ import * as appCopy from "../../apps/app/src/content.ts";
 
 test("offers support on WhatsApp, with the design’s line", async ({ page }) => {
   await loggedIn(page);
-  await expect(page.getByRole("link", { name: "Message us on WhatsApp" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: appCopy.profile.support.message })).toHaveAttribute(
     "href",
     "https://wa.me/919007973247",
   );
@@ -21,7 +21,7 @@ test("Your data: a download of everything held, and a concern sent to ops", asyn
   );
   await page.getByRole("button", { name: appCopy.profile.data.raise }).click();
   await page.getByRole("textbox", { name: appCopy.profile.data.field }).fill("Please explain who sees my photographs.");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: appCopy.profile.data.send }).click();
   await expect(page.getByText(appCopy.profile.data.sent)).toBeVisible();
   const concerns = page.getByRole("list", { name: appCopy.profile.data.concerns });
   await expect(concerns).toContainText("Please explain who sees my photographs.");
@@ -101,14 +101,14 @@ test("says when ops kept the account, and why, and still lets the client ask aga
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
   await expect(page.getByText("On 2 Oct 2026 we didn’t delete your account.")).toBeVisible();
   await expect(page.getByText("Our reason: You still have a consultation booked")).toBeVisible();
-  await expect(page.getByText("Message us if you disagree, or ask again.")).toBeVisible();
+  await expect(page.getByText(appCopy.profile.deletion.disagree)).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.profile.deletion.request })).toBeVisible();
 });
 
 test("logs out from the foot of the profile", async ({ page }) => {
   await loggedIn(page);
-  await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await page.getByRole("button", { name: appCopy.profile.sessions.signOut }).click();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
 });
 
 // A lost or handed-on phone stayed signed in for 90 days, with no way to end it short of erasure.
@@ -120,7 +120,7 @@ test("lists where the client is signed in, and signs another browser out", async
     await browser.newContext({ baseURL: test.info().project.use.baseURL, userAgent: iPhone })
   ).newPage();
   await logIn(phone, mobile);
-  await expect(phone.getByRole("heading", { name: "Your consultation" })).toBeVisible();
+  await expect(phone.getByRole("heading", { name: appCopy.home.consultation.label })).toBeVisible();
 
   await page.getByRole("link", { name: appCopy.titles.profile }).click();
   const card = page.getByRole("region", { name: appCopy.profile.sessions.label });
@@ -129,7 +129,7 @@ test("lists where the client is signed in, and signs another browser out", async
   await expect(card.getByText("Safari on iOS")).toHaveCount(0);
 
   await phone.reload();
-  await expect(phone.getByRole("heading", { level: 1, name: "Your mobile number" })).toBeVisible();
+  await expect(phone.getByRole("heading", { level: 1, name: appCopy.login.mobile.title })).toBeVisible();
 });
 
 test("meets WCAG 2.2 AA, with the address form and the card’s lines open", async ({ page }) => {

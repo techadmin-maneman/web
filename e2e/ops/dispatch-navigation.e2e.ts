@@ -25,9 +25,9 @@ test("moves between weeks and cities, asking the route for each", async ({ page 
 
   await page.getByRole("button", { name: opsCopy.dispatch.tools.next }).click();
   await expect.poll(() => asked.at(-1)).toBe("?from=2025-09-26");
-  await page.getByLabel("City", { exact: true }).selectOption("Delhi");
+  await page.getByLabel(opsCopy.dispatch.tools.city, { exact: true }).selectOption("Delhi");
   await expect.poll(() => asked.at(-1)).toBe("?from=2025-09-26&city=Delhi");
-  await page.getByRole("button", { name: "This week" }).click();
+  await page.getByRole("button", { name: opsCopy.dispatch.tools.thisWeek }).click();
   await expect.poll(() => asked.at(-1)).toBe("?city=Delhi");
 });
 
@@ -52,7 +52,7 @@ test("opens the visit a link names, in its drawer, on the week the link asks for
   await page.goto(`/dispatch?from=2025-09-19&visit=${ROHIT_JOB?.appointment_id ?? ""}`);
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
-  await page.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: opsCopy.dispatch.drawer.close, exact: true }).click();
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toBeFocused();
   await expect(page).toHaveURL(/\/dispatch\?from=2025-09-19$/);
 });
@@ -62,7 +62,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
 }) => {
   await open(page);
   await page.getByRole("button", { name: opsCopy.dispatch.tools.next }).click();
-  await page.getByLabel("City", { exact: true }).selectOption("Delhi");
+  await page.getByLabel(opsCopy.dispatch.tools.city, { exact: true }).selectOption("Delhi");
   await page.getByLabel(opsCopy.dispatch.tools.find).fill("Rohit");
   await press(page, opsCopy.dispatch.board.found(ROHIT_BLOCK));
   const kept = `?from=2025-09-26&city=Delhi&find=Rohit&visit=${ROHIT_JOB?.appointment_id ?? ""}`;
@@ -73,7 +73,7 @@ test("keeps its week, city, search and open visit in the address, so Back from a
   await page.goBack();
 
   await expect(page.getByRole("dialog", { name: "Rohit Malhotra" })).toBeVisible();
-  await expect(page.getByLabel("City", { exact: true })).toHaveValue("Delhi");
+  await expect(page.getByLabel(opsCopy.dispatch.tools.city, { exact: true })).toHaveValue("Delhi");
   await expect(page.getByLabel(opsCopy.dispatch.tools.find)).toHaveValue("Rohit");
 });
 
@@ -134,7 +134,7 @@ test("keeps every day readable, and the navigation in reach, at 200% zoom", asyn
   }
   // Too narrow to keep the navigation beside the page, the header's Menu brings it in.
   await page.getByRole("button", { name: opsCopy.shell.menu }).click();
-  const settings = page.getByRole("link", { name: "Settings" });
+  const settings = page.getByRole("link", { name: opsCopy.shell.sections.settings });
   await settings.scrollIntoViewIfNeeded();
   await expect(settings).toBeInViewport();
   await page.keyboard.press("Escape");

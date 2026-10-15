@@ -44,7 +44,7 @@ test("writes a client with no record in words, and their true noughts as noughts
       .locator("+ dd");
   await expect(fact("First fit")).toHaveText(opsCopy.clients.history.noFirstFit);
   await expect(fact("Last visit")).toHaveText(opsCopy.clients.history.noVisit);
-  await expect(fact("Replacement due")).toHaveText("No hair system fitted");
+  await expect(fact("Replacement due")).toHaveText(opsCopy.clients.history.noPiece);
   await expect(fact("Service visits")).toHaveText("0");
   await expect(fact("Paid")).toHaveText("Rs. 0");
 });
@@ -64,7 +64,7 @@ test("moves between the tabs without reading the record again, and keeps the pho
   });
   await page.getByRole("button", { name: opsCopy.clients.photos.open }).click();
   await expect(page.getByRole("img")).toHaveCount(10);
-  await page.getByRole("link", { name: "Consents" }).click();
+  await page.getByRole("link", { name: opsCopy.clients.consents.title }).click();
   await page.getByRole("link", { name: opsCopy.clients.photos.angles.hair }).click();
   await expect(page.getByText("MM-STD-4417-C")).toBeVisible();
   // Visits, Payments and History are drawn from the record already loaded, so they ask the API for nothing.
@@ -88,7 +88,7 @@ test("says so when the client cannot be loaded, and loads them on Try again", as
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await clientRoutes(page);
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.retry }).click();
   await expect(page.getByRole("heading", NAME)).toBeVisible();
 });
 
@@ -99,8 +99,8 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
 
   await answer(page, { [FIND]: json({ clients: [FOUND], more: false }) });
   await page.goto("/clients");
-  await page.getByLabel("Name or number").fill("malhotra");
-  await page.getByRole("button", { name: "Find" }).click();
+  await page.getByLabel(opsCopy.clients.find.label).fill("malhotra");
+  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
   await expect(page.getByRole("link", NAME)).toBeVisible();
   await clean("/clients");
 
@@ -113,7 +113,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await clean("visits");
 
   await clientTab(page, "Payments").click();
-  await expect(page.getByRole("region", { name: "Free service visits" })).toBeVisible();
+  await expect(page.getByRole("region", { name: opsCopy.clients.meta.credits })).toBeVisible();
   await clean("payments");
 
   await clientTab(page, "Referrals").click();
@@ -128,7 +128,7 @@ test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", as
   await expect(page.getByRole("img").first()).toBeVisible();
   await clean("photos, open");
 
-  await page.getByRole("link", { name: "Consents" }).click();
+  await page.getByRole("link", { name: opsCopy.clients.consents.title }).click();
   await clean("consents");
 
   await page.getByRole("link", { name: opsCopy.clients.history.title }).click();

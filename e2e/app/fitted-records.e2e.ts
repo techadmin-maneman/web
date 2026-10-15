@@ -8,6 +8,7 @@ import { fittedClient } from "./fitted.ts";
 import { logIn } from "./signed-in.ts";
 import { tab } from "./fitted-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { PRICE } from "../prices.ts";
 
 /**
  * Taps a document and answers the name of the file the tab it opened was given. Headless Chromium has no PDF viewer,
@@ -27,7 +28,7 @@ async function opensTheFile(page: Page, document: Locator): Promise<string> {
 test("a past visit carries its own invoice, or says why there is none", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
 
   await page.goto(`/visits/${client.service.id}`);
   // The whole accessible name, so a screen reader is told the document leaves the app.
@@ -40,11 +41,11 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   // no longer true of it, so the client is told it is late and how to ask for it.
   await page.goto(`/visits/${client.firstFit.id}`);
   await expect(page.getByText(appCopy.visits.detail.invoice.late)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: appCopy.visits.detail.invoice.message })).toHaveAttribute(
     "href",
     new RegExp(encodeURIComponent("Please send me the invoice for my first fit on")),
   );
-  await expect(page.getByRole("link", { name: "Tax invoice" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: appCopy.visits.detail.invoice.open })).toHaveCount(0);
 
   // The consultation was free, so no invoice will ever exist.
   await page.goto(`/visits/${client.consultation.id}`);
@@ -54,7 +55,7 @@ test("a past visit carries its own invoice, or says why there is none", async ({
 test("a visit to come offers itself to the client’s calendar, at its window; one done does not", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   await page.goto(`/visits/${client.next.id}`);
   const google = new URL((await page.getByRole("link", { name: appCopy.calendar.google }).getAttribute("href")) ?? "");
   const { start, end } = windowSpan(client.next.date, WINDOW_TIMES.afternoon);
@@ -97,14 +98,14 @@ test("Photos: the timeline, a photograph saved to the phone, and the compare", a
   const download = page.waitForEvent("download");
   await sheet.getByRole("link", { name: appCopy.photos.download }).click();
   expect((await download).suggestedFilename()).toBe(`mane-man-${client.service.date}-after-front.jpg`);
-  await sheet.getByRole("button", { name: "Close" }).click();
+  await sheet.getByRole("button", { name: appCopy.booking.close }).click();
   await expect(sheet).toBeHidden();
 
-  await page.getByRole("link", { name: "Compare" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Compare" })).toBeVisible();
+  await page.getByRole("link", { name: appCopy.titles.compare }).click();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.titles.compare })).toBeVisible();
   await expect(page.getByRole("navigation")).toHaveCount(0);
   await expect(page.getByLabel(appCopy.photos.from, { exact: true })).toHaveValue(client.firstFit.id);
-  await expect(page.getByLabel("To", { exact: true })).toHaveValue(client.service.id);
+  await expect(page.getByLabel(appCopy.photos.to, { exact: true })).toHaveValue(client.service.id);
 
   const divider = page.getByRole("slider", { name: appCopy.photos.divider });
   await expect(divider).toHaveValue("50");
@@ -171,15 +172,15 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
   await expect(entries.nth(0)).toContainText("back to your UPI");
   await expect(entries.nth(0)).toContainText(appCopy.payments.status.created);
   await expect(entries.nth(1)).toContainText(appCopy.VISIT_TYPES.service);
-  await expect(entries.nth(1)).toContainText("Rs. 2,000");
+  await expect(entries.nth(1)).toContainText(PRICE.service);
   await expect(entries.nth(1)).not.toContainText("incl.");
-  await expect(entries.nth(1)).toContainText("Paid");
-  await expect(entries.nth(2)).toContainText("First fit");
-  await expect(entries.nth(2)).toContainText("Rs. 30,000");
+  await expect(entries.nth(1)).toContainText(appCopy.payments.status.captured);
+  await expect(entries.nth(2)).toContainText(appCopy.VISIT_TYPES.first_fit);
+  await expect(entries.nth(2)).toContainText(PRICE.firstFit);
 
   await entries.nth(1).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
-  await expect(page.getByText("Rs. 2,000", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.service })).toBeVisible();
+  await expect(page.getByText(PRICE.service, { exact: true })).toBeVisible();
   // No rate was recorded for this payment, so nothing is said of GST at all.
   await expect(page.getByText(/GST at/)).toHaveCount(0);
   await expect(page.getByText(client.reference)).toBeVisible();
@@ -190,9 +191,9 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
 
   await page.getByRole("link", { name: appCopy.payments.back }).click();
   await entries.nth(2).click();
-  await expect(page.getByRole("heading", { level: 1, name: "First fit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.first_fit })).toBeVisible();
   // Sixty days after the fit, its invoice is late rather than "usually ready within the hour".
-  await page.getByRole("button", { name: "Tax invoice" }).click();
+  await page.getByRole("button", { name: appCopy.visits.detail.invoice.open }).click();
   await expect(page.getByText(appCopy.payments.unavailable.invoiceLate)).toBeVisible();
   await page.getByRole("button", { name: appCopy.payments.receipt }).click();
   const receipt = page.getByRole("status").filter({ hasText: appCopy.payments.unavailable.receipt });
@@ -204,10 +205,10 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
 
   await page.getByRole("link", { name: appCopy.payments.back }).click();
   await entries.nth(0).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Refund", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.payments.refund, exact: true })).toBeVisible();
   // Begun eighteen days ago, it is past Razorpay's 5 to 7 working days, and the client is told so.
   await expect(page.getByText(appCopy.payments.lateRefund)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Message us" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: appCopy.visits.detail.invoice.message })).toHaveAttribute(
     "href",
     new RegExp(encodeURIComponent("My refund for my service visit on")),
   );
@@ -219,7 +220,7 @@ test("Payments: one list of payments and refunds, an entry’s documents, and a 
 test("a payment made with a discount code names the code, and what it took off", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
-  await expect(page.getByRole("heading", { level: 1, name: "Your next visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   const path = `/api/payments/${client.servicePayment}`;
   // Read by the page, whose app.localhost only the browser resolves.
   const entry = await page.evaluate(async (url) => (await fetch(url)).json() as Promise<object>, path);
@@ -227,7 +228,7 @@ test("a payment made with a discount code names the code, and what it took off",
   assertInContract("client", "GET", path, 200, body);
   await page.route(`**${path}`, (route) => route.fulfill({ json: body }));
   await page.goto(`/payments/${client.servicePayment}`);
-  await expect(page.getByRole("heading", { level: 1, name: "Service visit" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.service })).toBeVisible();
   await expect(page.getByText("AUDTEST: Rs. 1,000 off")).toBeVisible();
 });
 

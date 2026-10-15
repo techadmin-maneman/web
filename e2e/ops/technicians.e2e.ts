@@ -146,8 +146,13 @@ test("opens a technician’s own page from their name, a tab at a time, each at 
   await expect(page).toHaveTitle("This week · Technicians · Mane Man operations");
 
   const tabs = main.getByRole("navigation", { name: "Imran Qureshi: week, leave, phones and kit" });
-  await expect(tabs.getByRole("link")).toHaveText(["This week", "Leave", "Phones", "Kit"]);
-  await expect(tabs.getByRole("link", { name: "This week" })).toHaveAttribute("aria-current", "page");
+  await expect(tabs.getByRole("link")).toHaveText([
+    opsCopy.technicians.tabs.week,
+    opsCopy.technicians.tabs.leave,
+    opsCopy.technicians.tabs.phones,
+    opsCopy.technicians.tabs.kit,
+  ]);
+  await expect(tabs.getByRole("link", { name: opsCopy.technicians.tabs.week })).toHaveAttribute("aria-current", "page");
   await expect(main.getByRole("link", { name: opsCopy.technicians.week.open })).toHaveAttribute(
     "href",
     "/dispatch?find=Imran+Qureshi",
@@ -239,7 +244,7 @@ test("keeps the phone when the revoke is called off", async ({ page }) => {
   await open(page);
   const main = await pageOf(page, "Imran Qureshi", "Phones");
   await main.getByRole("button", { name: PHONE }).click();
-  await main.getByRole("button", { name: "Cancel" }).click();
+  await main.getByRole("button", { name: opsCopy.technicians.phones.cancel }).click();
   await expect(main.getByRole("button", { name: PHONE })).toBeVisible();
   await expect(main.getByText("Revoked 22 Sep 2027")).toBeHidden();
 });
@@ -258,7 +263,7 @@ test("says so when the roster cannot be loaded, and loads it on Try again", asyn
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: json(TECHNICIAN_WORK) });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.retry }).click();
   await expect(page.getByText("Imran Qureshi")).toBeVisible();
 });
 
@@ -270,7 +275,7 @@ test("says so when the figures cannot be loaded, and loads them on Try again", a
   await expect(page.getByRole("alert")).toContainText(opsCopy.states.failed);
 
   await answer(page, { [READ_ROSTER]: json(TECHNICIANS), [READ_WORK]: json(TECHNICIAN_WORK) });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.visits.book.retry }).click();
   await expect(page.getByRole("row").filter({ hasText: "Faizan Ali" })).toContainText("1 h 48 m");
 });
 

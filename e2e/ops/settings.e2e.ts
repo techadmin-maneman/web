@@ -14,6 +14,7 @@ import { axeViolations } from "../a11y.ts";
 import { fails, json, SETTINGS } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
+import { cities, dispatch, referrals } from "../../apps/ops/src/content.ts";
 
 const PANELS = ["/settings", "/prices", "/discount-codes", "/areas/served", "/settings/blackouts"];
 
@@ -44,16 +45,16 @@ test("says what photos and referral cards hold, and the database, under The cons
   await expect(theConsole.getByText("Database: 212 MB of 10 GB", { exact: true })).toBeVisible();
 
   await open(page, "/settings/blackouts", { "GET /api/storage": storage });
-  await expect(page.getByRole("heading", { name: "Closed days" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: settingsCopy.tabs.blackouts })).toBeVisible();
   await expect(page.getByText("Photos and referral cards")).toHaveCount(0);
 });
 
 test.describe("the rules", () => {
   test("shows each rule with its figure and unit, and nothing more", async ({ page }) => {
     await open(page);
-    const radius = page.getByRole("group", { name: "Check-in radius" });
-    await expect(radius.getByLabel("Check-in radius")).toHaveValue("200");
-    await expect(radius).toContainText("metres");
+    const radius = page.getByRole("group", { name: cities.rules.names.checkin_radius_m });
+    await expect(radius.getByLabel(cities.rules.names.checkin_radius_m)).toHaveValue("200");
+    await expect(radius).toContainText(cities.rules.units.checkin_radius_m);
     await expect(radius).not.toContainText("50–1000");
   });
 
@@ -81,7 +82,7 @@ test.describe("the rules", () => {
     await open(page, "/settings", { "GET /api/settings": json({ settings: [reminders] }) });
     const rule = page.getByRole("main");
     await expect(rule.getByText("6 pm", { exact: true })).toBeVisible();
-    await page.getByLabel("Reminder time").fill("9");
+    await page.getByLabel(cities.rules.names.reminder_hour).fill("9");
     await expect(rule.getByText("9 am", { exact: true })).toBeVisible();
     await expect(rule).not.toContainText(".access");
   });
@@ -89,8 +90,8 @@ test.describe("the rules", () => {
   test("names each box of a keyed rule as the rest of the console names it", async ({ page }) => {
     await open(page);
     const wait = page.getByRole("group", { name: "No-show wait" });
-    await expect(wait.getByLabel("First fit", { exact: true })).toHaveValue("20");
-    await expect(wait.getByLabel("Service visit", { exact: true })).toHaveValue("15");
+    await expect(wait.getByLabel(settingsCopy.discountCodes.coverShort.first_fit, { exact: true })).toHaveValue("20");
+    await expect(wait.getByLabel(dispatch.typeNames.service, { exact: true })).toHaveValue("15");
     await expect(wait).not.toContainText("first_fit");
   });
 
@@ -107,51 +108,59 @@ test.describe("the rules", () => {
         })(route);
       },
     });
-    await page.getByLabel("Check-in radius").fill("150");
-    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
+    await page.getByLabel(cities.rules.names.checkin_radius_m).fill("150");
+    await section(page, "Visits in the field").getByRole("button", { name: settingsCopy.discountCodes.check }).click();
 
     // ADR 0071's rule for a price, followed for a rule (docs/decisions/0086-the-next-visit-is-offered.md).
-    const check = page.getByRole("group", { name: "Review the change" });
+    const check = page.getByRole("group", { name: settingsCopy.rules.confirm.title });
     await expect(check).toBeFocused();
     await expect(check).toContainText("Check-in radius: 200 metres → 150 metres");
     expect(sent).toBe(0);
 
     const request = posted(page, "/api/settings/checkin_radius_m");
-    await check.getByRole("button", { name: "Confirm" }).click();
+    await check.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({ value: 150 });
-    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: settingsCopy.rules.saved })).toBeVisible();
   });
 
   test("goes back to the figures without sending when the change is not the one meant", async ({ page }) => {
     await open(page);
-    await page.getByLabel("Check-in radius").fill("150");
-    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
-    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Edit" }).click();
-    await expect(page.getByRole("group", { name: "Review the change" })).toHaveCount(0);
-    await expect(page.getByLabel("Check-in radius")).toHaveValue("150");
+    await page.getByLabel(cities.rules.names.checkin_radius_m).fill("150");
+    await section(page, "Visits in the field").getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await page
+      .getByRole("group", { name: settingsCopy.rules.confirm.title })
+      .getByRole("button", { name: settingsCopy.rules.confirm.back })
+      .click();
+    await expect(page.getByRole("group", { name: settingsCopy.rules.confirm.title })).toHaveCount(0);
+    await expect(page.getByLabel(cities.rules.names.checkin_radius_m)).toHaveValue("150");
   });
 
   test("will not send an empty box, which would read as nought, nor a figure that has not changed", async ({
     page,
   }) => {
     await open(page);
-    const save = section(page, "Visits in the field").getByRole("button", { name: "Review" });
+    const save = section(page, "Visits in the field").getByRole("button", { name: settingsCopy.discountCodes.check });
     await expect(save).toBeDisabled();
-    await page.getByLabel("Check-in radius").fill("");
+    await page.getByLabel(cities.rules.names.checkin_radius_m).fill("");
     await expect(save).toBeDisabled();
     // A change elsewhere in the section is not sent while a box holds what its rule cannot take.
-    await page.getByRole("group", { name: "No-show wait" }).getByLabel("First fit", { exact: true }).fill("25");
+    await page
+      .getByRole("group", { name: "No-show wait" })
+      .getByLabel(settingsCopy.discountCodes.coverShort.first_fit, { exact: true })
+      .fill("25");
     await expect(save).toBeDisabled();
   });
 
   // A figure past its bounds left Save grey with no reason.
   test("says beside the box why a figure past its bounds cannot be saved", async ({ page }) => {
     await open(page);
-    const radius = page.getByLabel("Check-in radius");
+    const radius = page.getByLabel(cities.rules.names.checkin_radius_m);
     await radius.fill("1440");
     await expect(radius).toHaveAttribute("aria-invalid", "true");
     await expect(radius).toHaveAccessibleDescription("Enter 50–1000 metres.");
-    await expect(section(page, "Visits in the field").getByRole("button", { name: "Review" })).toBeDisabled();
+    await expect(
+      section(page, "Visits in the field").getByRole("button", { name: settingsCopy.discountCodes.check }),
+    ).toBeDisabled();
     await radius.fill("150");
     await expect(radius).not.toHaveAttribute("aria-invalid", "true");
   });
@@ -162,9 +171,12 @@ test.describe("the rules", () => {
       "POST /api/settings/no_show_wait_min": fails(400, "invalid_request", ["no_show_wait_min.first_fit"]),
     });
     const wait = page.getByRole("group", { name: "No-show wait" });
-    await wait.getByLabel("First fit", { exact: true }).fill("90");
-    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
-    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
+    await wait.getByLabel(settingsCopy.discountCodes.coverShort.first_fit, { exact: true }).fill("90");
+    await section(page, "Visits in the field").getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await page
+      .getByRole("group", { name: settingsCopy.rules.confirm.title })
+      .getByRole("button", { name: settingsCopy.discountCodes.send })
+      .click();
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
       /^First fit: Enter \d+–\d+ minutes\.$/,
     );
@@ -181,8 +193,11 @@ test.describe("the rules", () => {
     const days = page.getByRole("group", { name: "Booking and next visits" });
     await days.getByText("Show all 8").click();
     await days.getByLabel("Between service visits").fill("60");
-    await section(page, "Booking and payment").getByRole("button", { name: "Review" }).click();
-    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
+    await section(page, "Booking and payment").getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await page
+      .getByRole("group", { name: settingsCopy.rules.confirm.title })
+      .getByRole("button", { name: settingsCopy.discountCodes.send })
+      .click();
     await expect(page.getByRole("listitem").filter({ has: days }).getByRole("alert")).toHaveText(
       "“Bookable ahead” must be at least “Between service visits”.",
     );
@@ -193,18 +208,18 @@ test.describe("the rules", () => {
     await open(page);
     const jump = page.getByRole("navigation", { name: settingsCopy.rules.jump });
     await expect(jump.getByRole("link")).toHaveText([
-      "Moves, cancels and no-shows",
-      "Booking and payment",
-      "Visits in the field",
-      "Reminders and replacements",
-      "Referrals",
-      "The console",
+      settingsCopy.rules.groups.moves,
+      settingsCopy.rules.groups.booking,
+      settingsCopy.rules.groups.field,
+      settingsCopy.rules.groups.reminders,
+      settingsCopy.rules.groups.referrals,
+      settingsCopy.rules.groups.console,
     ]);
     const field = section(page, "Visits in the field");
     await expect(field.getByRole("group")).toHaveText([/^Check-in radius/, /^No-show wait/, /^Phone clock limits/]);
-    await expect(page.getByRole("button", { name: "Review", exact: true })).toHaveCount(6);
+    await expect(page.getByRole("button", { name: settingsCopy.discountCodes.check, exact: true })).toHaveCount(6);
 
-    await jump.getByRole("link", { name: "Referrals" }).click();
+    await jump.getByRole("link", { name: settingsCopy.rules.groups.referrals }).click();
     await expect(page).toHaveURL(/\/settings#referrals$/);
     await expect(section(page, "Referrals")).toBeInViewport();
     expect(await axeViolations(page)).toEqual([]);
@@ -221,20 +236,25 @@ test.describe("the rules", () => {
       "POST /api/settings/checkin_radius_m": saved(ruleNamed("checkin_radius_m")),
       "POST /api/settings/no_show_wait_min": saved(ruleNamed("no_show_wait_min")),
     });
-    await page.getByLabel("Check-in radius").fill("150");
-    await page.getByRole("group", { name: "No-show wait" }).getByLabel("Service visit", { exact: true }).fill("20");
-    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
+    await page.getByLabel(cities.rules.names.checkin_radius_m).fill("150");
+    await page
+      .getByRole("group", { name: "No-show wait" })
+      .getByLabel(dispatch.typeNames.service, { exact: true })
+      .fill("20");
+    await section(page, "Visits in the field").getByRole("button", { name: settingsCopy.discountCodes.check }).click();
 
-    const check = page.getByRole("group", { name: "Review the change" });
+    const check = page.getByRole("group", { name: settingsCopy.rules.confirm.title });
     await expect(check.getByRole("listitem")).toHaveText([
       "Check-in radius: 200 metres → 150 metres",
       "No-show wait · Service visit: 15 minutes → 20 minutes",
     ]);
     expect(sent).toEqual([]);
-    await check.getByRole("button", { name: "Confirm" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+    await check.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
+    await expect(page.getByRole("status").filter({ hasText: settingsCopy.rules.saved })).toBeVisible();
     expect(sent).toEqual(["checkin_radius_m", "no_show_wait_min"]);
-    await expect(section(page, "Visits in the field").getByRole("button", { name: "Review" })).toBeDisabled();
+    await expect(
+      section(page, "Visits in the field").getByRole("button", { name: settingsCopy.discountCodes.check }),
+    ).toBeDisabled();
   });
 
   test("says which rule was refused when one of a section’s changes is, and keeps the one that saved", async ({
@@ -250,17 +270,20 @@ test.describe("the rules", () => {
       }),
       "POST /api/settings/no_show_wait_min": fails(400, "invalid_request", ["no_show_wait_min.service"]),
     });
-    await page.getByLabel("Check-in radius").fill("150");
+    await page.getByLabel(cities.rules.names.checkin_radius_m).fill("150");
     const wait = page.getByRole("group", { name: "No-show wait" });
-    await wait.getByLabel("Service visit", { exact: true }).fill("20");
-    await section(page, "Visits in the field").getByRole("button", { name: "Review" }).click();
-    await page.getByRole("group", { name: "Review the change" }).getByRole("button", { name: "Confirm" }).click();
+    await wait.getByLabel(dispatch.typeNames.service, { exact: true }).fill("20");
+    await section(page, "Visits in the field").getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    await page
+      .getByRole("group", { name: settingsCopy.rules.confirm.title })
+      .getByRole("button", { name: settingsCopy.discountCodes.send })
+      .click();
 
     await expect(page.getByRole("listitem").filter({ has: wait }).getByRole("alert")).toHaveText(
       /^Service visit: Enter \d+–\d+ minutes\.$/,
     );
-    const radiusItem = page.getByRole("listitem").filter({ has: page.getByLabel("Check-in radius") });
-    await expect(radiusItem.getByLabel("Check-in radius")).toHaveValue("150");
+    const radiusItem = page.getByRole("listitem").filter({ has: page.getByLabel(cities.rules.names.checkin_radius_m) });
+    await expect(radiusItem.getByLabel(cities.rules.names.checkin_radius_m)).toHaveValue("150");
     await expect(radiusItem.getByRole("alert")).toHaveCount(0);
   });
 
@@ -300,19 +323,19 @@ test.describe("the rules", () => {
     // A horizon shorter than the fortnight the strip shows is not offered.
     const booking = section(page, "Booking and payment");
     await days.getByLabel("Bookable ahead").fill("10");
-    await expect(booking.getByRole("button", { name: "Review" })).toBeDisabled();
+    await expect(booking.getByRole("button", { name: settingsCopy.discountCodes.check })).toBeDisabled();
     await days.getByLabel("Bookable ahead").fill("45");
 
     await days.getByLabel("Between service visits").fill("28");
-    await booking.getByRole("button", { name: "Review" }).click();
-    const check = page.getByRole("group", { name: "Review the change" });
+    await booking.getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    const check = page.getByRole("group", { name: settingsCopy.rules.confirm.title });
     await expect(check.getByRole("listitem")).toHaveText([
       "Booking and next visits · Between service visits: 30 days → 28 days",
     ]);
     expect(await axeViolations(page)).toEqual([]);
 
     const request = posted(page, "/api/settings/booking_days");
-    await check.getByRole("button", { name: "Confirm" }).click();
+    await check.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({
       value: {
         first_fit_lead: 0,
@@ -325,7 +348,7 @@ test.describe("the rules", () => {
         replacement_order_lead: 30,
       },
     });
-    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: settingsCopy.rules.saved })).toBeVisible();
   });
 
   // Each side's visits, and how long they last
@@ -339,25 +362,25 @@ test.describe("the rules", () => {
       },
     });
     const reward = page.getByRole("group", { name: "Referral reward" });
-    await expect(reward.getByLabel("Referrer")).toHaveValue("3");
+    await expect(reward.getByLabel(referrals.table.columns.referrer)).toHaveValue("3");
     await expect(reward.getByLabel("Friend")).toHaveValue("3");
     await expect(reward.getByLabel("Free service visits valid for")).toHaveValue("365");
 
-    await reward.getByLabel("Referrer").fill("2");
+    await reward.getByLabel(referrals.table.columns.referrer).fill("2");
     await reward.getByLabel("Friend").fill("0");
-    await section(page, "Referrals").getByRole("button", { name: "Review" }).click();
-    const check = page.getByRole("group", { name: "Review the change" });
+    await section(page, "Referrals").getByRole("button", { name: settingsCopy.discountCodes.check }).click();
+    const check = page.getByRole("group", { name: settingsCopy.rules.confirm.title });
     await expect(check.getByRole("listitem")).toHaveText([
       "Referral reward · Referrer: 3 service visits → 2 service visits",
       "Referral reward · Friend: 3 service visits → 0 service visits",
     ]);
 
     const request = posted(page, "/api/settings/referral_reward");
-    await check.getByRole("button", { name: "Confirm" }).click();
+    await check.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({
       value: { referrer_visits: 2, friend_visits: 0, valid_days: 365 },
     });
-    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: settingsCopy.rules.saved })).toBeVisible();
   });
 
   // Every figure a rule of the code held is ops' now (docs/decisions/0088-every-policy-in-the-console.md).
@@ -381,25 +404,25 @@ test.describe("the rules", () => {
       },
     });
     const charges = page.getByRole("group", { name: "Late move or cancel charge" });
-    const service = charges.getByLabel("Service visit", { exact: true });
+    const service = charges.getByLabel(dispatch.typeNames.service, { exact: true });
     await expect(service).toHaveValue("visit");
     await expect(service.locator("option")).toHaveText(["Nothing", "The full visit"]);
-    await expect(charges.getByLabel("First fit", { exact: true }).locator("option")).toHaveText([
-      "Nothing",
-      "Late fee",
-      "The full visit",
-    ]);
+    await expect(
+      charges.getByLabel(settingsCopy.discountCodes.coverShort.first_fit, { exact: true }).locator("option"),
+    ).toHaveText(["Nothing", settingsCopy.services.lateFee, "The full visit"]);
 
     await service.selectOption("nothing");
-    await section(page, "Moves, cancels and no-shows").getByRole("button", { name: "Review" }).click();
-    const check = page.getByRole("group", { name: "Review the change" });
+    await section(page, "Moves, cancels and no-shows")
+      .getByRole("button", { name: settingsCopy.discountCodes.check })
+      .click();
+    const check = page.getByRole("group", { name: settingsCopy.rules.confirm.title });
     await expect(check).toContainText("Late move or cancel charge · Service visit: The full visit → Nothing");
     const request = posted(page, "/api/settings/late_change_charge");
-    await check.getByRole("button", { name: "Confirm" }).click();
+    await check.getByRole("button", { name: settingsCopy.discountCodes.send }).click();
     expect((await request).postDataJSON()).toEqual({
       value: { consultation: "nothing", first_fit: "late_fee", service: "nothing", replacement: "late_fee" },
     });
-    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: settingsCopy.rules.saved })).toBeVisible();
   });
 
   test("offers a base of its own on the open rule, and none where the keys are fixed", async ({ page }) => {

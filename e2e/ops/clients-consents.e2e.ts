@@ -40,12 +40,12 @@ test("lists every consent with its state, date and where it was given, and says 
 }) => {
   await openClient(page, `/clients/${CLIENT.id}/consents`);
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
-  await expect(page.getByRole("columnheader", { name: "Source" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: opsCopy.clients.consents.columns.source })).toBeVisible();
   await expect(row("Photos for the visit record")).toHaveText(/Given\s*14 Nov 2026\s*Profile$/);
-  await expect(row("Photos on referral cards")).toContainText("Refer");
+  await expect(row("Photos on referral cards")).toContainText(opsCopy.clients.consents.sources.app_share_sheet);
   await expect(row("Photos in marketing")).toHaveText(/Not given\s*—\s*—$/);
-  await expect(row("WhatsApp about visits")).toContainText("Site");
-  await expect(row("WhatsApp about launches")).toContainText("Withdrawn");
+  await expect(row("WhatsApp about visits")).toContainText(opsCopy.clients.consents.sources.site_booking);
+  await expect(row("WhatsApp about launches")).toContainText(opsCopy.clients.consents.states.withdrawn);
   // Read only: the tab offers no way to change one.
   await expect(page.getByRole("switch")).toHaveCount(0);
   await expect(page.getByRole("checkbox")).toHaveCount(0);
@@ -64,7 +64,7 @@ test("names a consent given by booking, and says where a place was not recorded"
   );
   await openClient(page, `/clients/${CLIENT.id}/consents`, { [READ_CONSENTS]: json({ ...CONSENTS, consents }) });
   const row = (purpose: string) => page.getByRole("row").filter({ hasText: purpose });
-  await expect(row("Photos for the visit record")).toContainText("Booking");
+  await expect(row("Photos for the visit record")).toContainText(opsCopy.clients.consents.sources.app_booking);
   await expect(row("Photos on referral cards")).toContainText(opsCopy.clients.profile.notRecorded);
   await expect(row("WhatsApp about visits")).toContainText(opsCopy.clients.invite.title);
   expect(await axeViolations(page)).toEqual([]);

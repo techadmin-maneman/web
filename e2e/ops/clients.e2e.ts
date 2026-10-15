@@ -92,15 +92,15 @@ test("finds clients by part of a name, and sends it in the body, never in the UR
   await page.goto("/clients");
 
   const sent = page.waitForRequest((request) => request.url().includes("/clients/find"));
-  await page.getByLabel("Name or number").fill("malhotra");
-  await page.getByRole("button", { name: "Find" }).click();
+  await page.getByLabel(opsCopy.clients.find.label).fill("malhotra");
+  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
 
   const request = await sent;
   expect(request.method()).toBe("POST");
   expect(request.postDataJSON()).toEqual({ text: "malhotra" });
   expect(new URL(request.url()).search).toBe("");
 
-  const found = page.getByRole("region", { name: "Clients" });
+  const found = page.getByRole("region", { name: opsCopy.clients.find.found });
   await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${STANDING}${MOBILE}`]);
   await found.getByRole("link", NAME).click();
   await expect(page.getByRole("heading", NAME)).toBeVisible();
@@ -125,11 +125,11 @@ test("finds a client from another page’s header, keeps the words out of the UR
   await page.getByRole("searchbox", { name: opsCopy.shell.find.label }).fill("98100 0441");
   await page.getByRole("button", { name: opsCopy.shell.find.submit }).click();
 
-  const found = page.getByRole("region", { name: "Clients" });
+  const found = page.getByRole("region", { name: opsCopy.clients.find.found });
   await expect(found.getByRole("listitem")).toHaveText([`${CLIENT.name}${STANDING}${MOBILE}`]);
   expect(new URL(page.url()).pathname).toBe("/clients");
   expect(new URL(page.url()).search).toBe("");
-  await expect(page.getByLabel("Name or number")).toHaveValue("98100 0441");
+  await expect(page.getByLabel(opsCopy.shell.find.placeholder)).toHaveValue("98100 0441");
 
   await found.getByRole("link", NAME).click();
   await expect(page.getByRole("heading", NAME)).toBeVisible();
@@ -169,21 +169,21 @@ test("offers the clients opened this session, and forgets them on sign-out", asy
 test("says so when nobody matches, and when more match than are listed", async ({ page }) => {
   await answer(page, { [FIND]: json({ clients: [], more: false }) });
   await page.goto("/clients");
-  await page.getByLabel("Name or number").fill("98100 0441");
-  await page.getByRole("button", { name: "Find" }).click();
+  await page.getByLabel(opsCopy.clients.find.label).fill("98100 0441");
+  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
   await expect(page.getByRole("status")).toContainText("No match for “98100 0441”.");
 
   await answer(page, { [FIND]: json({ clients: [FOUND], more: true }) });
-  await page.getByRole("button", { name: "Find" }).click();
+  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
   await expect(page.getByText("Too many matches.")).toBeVisible();
 });
 
 test("asks for two letters or four digits when given fewer", async ({ page }) => {
   await answer(page, { [FIND]: fails(400, "invalid_request") });
   await page.goto("/clients");
-  await page.getByLabel("Name or number").fill("r");
-  await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.getByRole("alert")).toContainText("Type 2+ letters of a name, or 4+ digits.");
+  await page.getByLabel(opsCopy.clients.find.label).fill("r");
+  await page.getByRole("button", { name: opsCopy.clients.find.submit }).click();
+  await expect(page.getByRole("alert")).toContainText(opsCopy.clients.find.errors.invalid_request);
 });
 
 test("heads the page with the client’s standing and the number to reach them on", async ({ page }) => {
@@ -191,7 +191,13 @@ test("heads the page with the client’s standing and the number to reach them o
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   // "Fitted" heads a column of the pieces table beneath, so the standing is read from its own list.
   // The replacement is the month the board's head writes, never the day the pieces table carries.
-  await expect(meta(page)).toHaveText(["Fitted", "2 · use by 3 Jan 2028", "Mar 2028", MOBILE, "Vikram Sethi (VSAB23)"]);
+  await expect(meta(page)).toHaveText([
+    opsCopy.clients.pieces.columns.fitted,
+    "2 · use by 3 Jan 2028",
+    "Mar 2028",
+    MOBILE,
+    "Vikram Sethi (VSAB23)",
+  ]);
   await expect(page.getByRole("link", { name: `Call ${CLIENT.name} on ${MOBILE}` })).toHaveAttribute(
     "href",
     `tel:${CLIENT.mobile}`,
@@ -251,20 +257,25 @@ test("opens a WhatsApp chat with the client from beside their name, as the board
 
 test("says in words that a client wearing no piece falls due on no date", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: json(NEW_RECORD) });
-  await expect(meta(page)).toHaveText(["Booked", "2 · use by 3 Jan 2028", "No hair system fitted", MOBILE]);
+  await expect(meta(page)).toHaveText([
+    opsCopy.clients.states.lead,
+    "2 · use by 3 Jan 2028",
+    opsCopy.clients.noPiece,
+    MOBILE,
+  ]);
 });
 
 // The page opened on an empty Pieces tab, a click away from the visit.
 test("opens on the visits, with the invite on a Referrals tab of its own", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}`);
   await expect(page.getByRole("navigation", { name: CLIENT.name }).getByRole("link")).toHaveText([
-    "Visits",
-    "Hair systems",
+    opsCopy.clients.history.rows.visits,
+    opsCopy.clients.pieces.title,
     "Payments",
-    "Referrals",
-    "Consents",
+    opsCopy.referrals.title,
+    opsCopy.clients.consents.title,
     "Photos",
-    "Overview",
+    opsCopy.clients.history.title,
   ]);
   await expect(clientTab(page, "Visits")).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("Gate 4417, bay B")).toBeVisible();

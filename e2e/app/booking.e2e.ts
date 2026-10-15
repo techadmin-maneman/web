@@ -10,6 +10,7 @@ import { expect, test } from "../support.ts";
 import { checkoutOnTop, confirmedByRazorpay, fakeCheckout, noRealCheckout } from "./checkout-fakes.ts";
 import { FREE_UNTIL, toPayment, profileAs, type Hold, holdAs, scanOf } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { PAY_SERVICE, PRICE } from "../prices.ts";
 
 // One client, one hold at a time: a new hold lets the client's earlier one go, so these run one after another, in
 // order. One failing leaves the rest to run.
@@ -19,9 +20,9 @@ test.beforeEach(async ({ page }) => {
   await noRealCheckout(page);
 });
 
-const REMIND = "Send me visit updates on WhatsApp";
+const REMIND = appCopy.booking.pay.remind;
 
-const REMINDED = "We’ll remind you on WhatsApp the day before.";
+const REMINDED = appCopy.booking.confirmed.tellsYou;
 
 /** A booking with nothing to pay: the API books it at once, and the hold's poll finds it booked. */
 async function bookedWithoutPaying(page: Page, hold: () => Hold): Promise<void> {
@@ -42,7 +43,7 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await expect(pay.getByText(/^Held for \d:\d\d$/)).toBeVisible();
-  await expect(pay.getByText("Rs. 2,000", { exact: true })).toBeVisible();
+  await expect(pay.getByText(PRICE.service, { exact: true })).toBeVisible();
   // GST is nothing here, so the figure is said once, with no "incl. GST" repeating it.
   await expect(pay.getByText(/GST/)).toHaveCount(0);
   // The day picked is never tomorrow, so its window is outside the notice whatever the time of day.
@@ -56,12 +57,12 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   // Booking agrees to no photograph consent, whatever the client decided.
   await expect(pay.getByText(/^By booking this visit/)).toHaveCount(0);
 
-  await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await pay.getByRole("button", { name: PAY_SERVICE }).click();
   const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label });
   await expect(confirmed.getByRole("status").getByText(REMINDED)).toBeVisible();
-  await expect(confirmed.getByText("Paid", { exact: true })).toBeVisible();
-  await expect(confirmed.getByText("Rs. 2,000")).toBeVisible();
-  await page.getByRole("button", { name: "Done" }).click();
+  await expect(confirmed.getByText(appCopy.booking.confirmed.paid, { exact: true })).toBeVisible();
+  await expect(confirmed.getByText(PRICE.service)).toBeVisible();
+  await page.getByRole("button", { name: appCopy.booking.confirmed.close }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 });
 
@@ -69,7 +70,7 @@ test("lets Checkout’s own window through, in front of the sheet", async ({ pag
   await checkoutOnTop(page);
   await confirmedByRazorpay(page);
   await toPayment(page);
-  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await page.getByRole("button", { name: PAY_SERVICE }).click();
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __checkoutOnTop: boolean | null }).__checkoutOnTop)).toBe(
     true,
@@ -88,8 +89,8 @@ test("confirms a visit a credit covers as a credit used, never as a payment", as
   await expect(confirmed.getByText(appCopy.booking.confirmed.label)).toBeVisible();
   await expect(confirmed.getByText(appCopy.booking.pay.credit.used)).toBeVisible();
   await expect(confirmed.getByText("2 remaining")).toBeVisible();
-  await expect(confirmed.getByText("Paid", { exact: true })).toHaveCount(0);
-  await expect(confirmed.getByText("Rs. 2,000")).toHaveCount(0);
+  await expect(confirmed.getByText(appCopy.booking.confirmed.paid, { exact: true })).toHaveCount(0);
+  await expect(confirmed.getByText(PRICE.service)).toHaveCount(0);
 });
 
 test("shows the price, and opens no Checkout, when the credit went on another booking in the meantime", async ({
@@ -118,13 +119,9 @@ test("shows the price, and opens no Checkout, when the credit went on another bo
 
   // Now there is a price to pay, the step is named for paying it.
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
-  await expect(
-    pay.getByText(
-      "Your free service visit is already used on another booking. This visit is charged at the price below.",
-    ),
-  ).toBeVisible();
+  await expect(pay.getByText(appCopy.booking.creditGone)).toBeVisible();
   await expect(pay.getByText(appCopy.booking.pay.credit.used)).toHaveCount(0);
-  await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
+  await expect(pay.getByRole("button", { name: PAY_SERVICE })).toBeVisible();
 });
 
 // A discount code at the pay step (docs/decisions/0108-discount-codes.md), which no board draws. The API prices the
@@ -148,19 +145,19 @@ test("takes a discount code off the price at the pay step, says only that a wron
   await toPayment(page);
   const pay = page.getByRole("dialog", { name: appCopy.booking.pay.title });
   await pay.getByRole("button", { name: appCopy.booking.pay.code.open }).click();
-  await pay.getByLabel("Discount code").fill("wrong1");
+  await pay.getByLabel(appCopy.booking.pay.code.label).fill("wrong1");
   await pay.getByRole("button", { name: appCopy.booking.pay.code.apply }).click();
   await expect(pay.getByRole("alert")).toHaveText("That code doesn’t apply to this visit.");
 
   applies = true;
-  await pay.getByLabel("Discount code").fill("weddng25");
+  await pay.getByLabel(appCopy.booking.pay.code.label).fill("weddng25");
   await pay.getByRole("button", { name: appCopy.booking.pay.code.apply }).click();
   await expect(pay.getByText("Code WEDDNG25: Rs. 200 off")).toBeVisible();
   await expect(pay.getByRole("button", { name: "Pay Rs. 1,800" })).toBeVisible();
   await scanOf(page);
 
   await pay.getByRole("button", { name: appCopy.booking.pay.code.remove }).click();
-  await expect(pay.getByRole("button", { name: "Pay Rs. 2,000" })).toBeVisible();
+  await expect(pay.getByRole("button", { name: PAY_SERVICE })).toBeVisible();
 });
 
 test("asks whether to remind the client on WhatsApp, and records it when they say yes", async ({ page }) => {
@@ -177,7 +174,7 @@ test("asks whether to remind the client on WhatsApp, and records it when they sa
   const remind = pay.getByRole("checkbox", { name: REMIND });
   await expect(remind).not.toBeChecked();
   await remind.check();
-  await pay.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await pay.getByRole("button", { name: PAY_SERVICE }).click();
 
   await expect(page.getByRole("dialog").getByRole("status").getByText(REMINDED)).toBeVisible();
   // Kept as given on the booking sheet (docs/decisions/0094-where-a-consent-was-given.md).
@@ -189,7 +186,7 @@ test("promises no reminder the client has not agreed to", async ({ page }) => {
   await confirmedByRazorpay(page);
   await profileAs(page, { reminders: false });
   await toPayment(page);
-  await page.getByRole("button", { name: "Pay Rs. 2,000" }).click();
+  await page.getByRole("button", { name: PAY_SERVICE }).click();
   const confirmed = page.getByRole("dialog").getByRole("status");
   await expect(confirmed.getByText(appCopy.booking.confirmed.label)).toBeVisible();
   await expect(confirmed.getByText(REMINDED)).toHaveCount(0);

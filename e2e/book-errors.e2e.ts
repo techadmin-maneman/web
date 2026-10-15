@@ -31,11 +31,11 @@ test("an empty first step marks the name, the number and the agreement, focuses 
   await mockApi(page);
   const leads = await leadCalls(page);
   await visit(page, "/book");
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: siteCopy.booking.next }).click();
 
   await expect(page.getByText(referralCopy.referral.form.nameError)).toBeVisible();
   await expect(page.getByText(siteCopy.tryOn.gate.mobileError)).toBeVisible();
-  await expect(page.getByText("We need this to contact you.")).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.form.consentError)).toBeVisible();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toBeFocused();
   await expect(page.getByText("Check the 3 fields marked above.")).toBeVisible();
   expect(await axeViolations(page)).toEqual([]);
@@ -68,11 +68,11 @@ test("a number that is not a mobile is marked at its field, focused, and not sen
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("5876543210");
   await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: siteCopy.booking.next }).click();
 
   const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
   await expect(mobile).toHaveAttribute("aria-invalid", "true");
-  await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
+  await expect(mobile).toHaveAccessibleDescription(siteCopy.tryOn.gate.mobileError);
   await expect(mobile).toBeFocused();
   await expect(page.getByText(/fields marked above/)).toHaveCount(0);
   expect(leads).toHaveLength(0);
@@ -86,11 +86,11 @@ test("a name that is not letters is marked at its field, focused, and not sent",
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Win at example.com");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
   await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: siteCopy.booking.next }).click();
 
   const name = page.getByLabel(siteCopy.tryOn.gate.name);
   await expect(name).toHaveAttribute("aria-invalid", "true");
-  await expect(name).toHaveAccessibleDescription("Enter your name.");
+  await expect(name).toHaveAccessibleDescription(siteCopy.tryOn.gate.nameError);
   await expect(name).toBeFocused();
   expect(leads).toHaveLength(0);
 });
@@ -107,13 +107,13 @@ test("the fields the API refuses are marked where they are, the first focused, a
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000000");
   await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: siteCopy.booking.next }).click();
 
   const mobile = page.getByLabel(siteCopy.tryOn.gate.mobile);
   await expect(mobile).toHaveAttribute("aria-invalid", "true");
-  await expect(mobile).toHaveAccessibleDescription("Enter a valid 10-digit mobile number.");
+  await expect(mobile).toHaveAccessibleDescription(siteCopy.tryOn.gate.mobileError);
   await expect(mobile).toBeFocused();
-  await expect(page.getByLabel("Pincode")).toHaveCount(0);
+  await expect(page.getByLabel(referralCopy.referral.address.pincode)).toHaveCount(0);
   await expect(page.getByText(/at our end/)).toHaveCount(0);
   await mobile.fill("9810000001");
   await expect(mobile).toHaveAttribute("aria-invalid", "false");
@@ -137,7 +137,7 @@ test("an empty waitlist submit marks the agreement, and sends nothing", async ({
   await openWaitlist(page);
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
-  await expect(page.getByText("We need this to contact you.")).toBeVisible();
+  await expect(page.getByText(referralCopy.referral.form.consentError)).toBeVisible();
   await expect(page.getByRole("checkbox", { name: /You may contact me about this request\./ })).toHaveAttribute(
     "aria-invalid",
     "true",
@@ -211,7 +211,7 @@ test("a window found full on booking says so back at the visit, and the strip is
   expect(calls).toBe(2);
 
   // On again, the address typed is still there, and what was said of the window is not.
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: siteCopy.booking.next }).click();
   await expect(page.getByLabel(referralCopy.referral.address.labels.flat)).toHaveValue("Flat 402");
   await expect(page.getByText(referralCopy.referral.errors.taken)).toHaveCount(0);
 });
@@ -233,7 +233,7 @@ test("a fortnight with nothing open says so, and offers WhatsApp", async ({ page
     page.getByRole("group", { name: referralCopy.referral.consultation.date }).getByRole("radio", { disabled: false }),
   ).toHaveCount(0);
   // There is no visit to go on from.
-  await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: siteCopy.booking.next })).toHaveCount(0);
 });
 
 // Back after the pincode's answer, or after the confirmation, left /book and lost everything typed.
@@ -244,12 +244,12 @@ test("Back steps back through the page, and Forward returns to the confirmation"
 
   await page.goBack();
   expect(new URL(page.url()).pathname).toMatch(/^\/book\/?$/);
-  await expect(page.getByLabel("Pincode")).toHaveValue(SERVED.pincode);
-  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await expect(page.getByLabel(referralCopy.referral.address.pincode)).toHaveValue(SERVED.pincode);
+  await expect(page.getByLabel(referralCopy.referral.address.pincode)).toBeFocused();
   await page.goBack();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
   await page.goForward();
-  await expect(page.getByLabel("Pincode")).toBeFocused();
+  await expect(page.getByLabel(referralCopy.referral.address.pincode)).toBeFocused();
   await page.goForward();
   await expect(page.getByRole("heading", { name: "We come to Sector 65" })).toBeFocused();
 
@@ -337,6 +337,6 @@ test("an empty pincode is asked for, and Change is a full-size target", async ({
   expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
   expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
   await change.click();
-  await expect(page.getByLabel("Pincode")).toBeFocused();
-  await expect(page.getByLabel("Pincode")).toHaveValue(SERVED.pincode);
+  await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
+  await expect(page.getByLabel(referralCopy.referral.pincode.label)).toHaveValue(SERVED.pincode);
 });

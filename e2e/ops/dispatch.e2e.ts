@@ -94,7 +94,7 @@ test("lists the tray’s jobs with their client, the window asked beside the one
   const tray = page.getByRole("complementary", { name: opsCopy.dispatch.tray.title });
   const first = tray.getByRole("listitem").first();
   await expect(first).toContainText("Vikram Sethi");
-  await expect(first).toContainText("First fit");
+  await expect(first).toContainText(opsCopy.dispatch.typeNames.first_fit);
   // The client asked for a morning, on no recorded day, and is being offered a Saturday evening.
   await expect(first).toContainText("Asked · morning");
   await expect(first).not.toContainText("Asked · Sat");
@@ -141,10 +141,10 @@ test("opens a block’s drawer with the client, the badge, and both ways to reac
 
   const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });
   await expect(drawer).toContainText("Fri 19 Sep · 9 am–12 noon · Imran Qureshi");
-  await expect(drawer).toContainText("Prepaid");
+  await expect(drawer).toContainText(opsCopy.dispatch.drawer.badges.prepaid);
   await expect(drawer).toContainText("Service visit · 1 slot");
   await expect(drawer).toContainText("Sec 65 · 122018");
-  await expect(drawer).toContainText("Scheduled");
+  await expect(drawer).toContainText(opsCopy.dispatch.drawer.states.scheduled);
   await expect(drawer.getByRole("link", { name: "WhatsApp Rohit" })).toHaveAttribute(
     "href",
     "https://wa.me/919810000001",
@@ -166,12 +166,15 @@ test("lets the technician check in to a visit today past the geofence, with a re
   const sent = sentTo(page, `/api/visits/${ROHIT_JOB?.appointment_id ?? ""}/let-in`);
   await open(page, { [`POST /api/visits/${ROHIT_JOB?.appointment_id ?? ""}/let-in`]: json({ let_in: true }) });
   await press(page, ROHIT_BLOCK);
-  await page.getByRole("dialog", { name: "Rohit Malhotra" }).getByRole("button", { name: "Allow check-in" }).click();
+  await page
+    .getByRole("dialog", { name: "Rohit Malhotra" })
+    .getByRole("button", { name: opsCopy.dispatch.drawer.letIn })
+    .click();
 
   const panel = page.getByRole("dialog", { name: "Allow Imran Qureshi to check in" });
-  const confirm = panel.getByRole("button", { name: "Allow check-in" });
+  const confirm = panel.getByRole("button", { name: opsCopy.dispatch.drawer.letIn });
   await expect(confirm).toBeDisabled();
-  await panel.getByRole("textbox", { name: "Reason" }).fill("The pin is at the society gate");
+  await panel.getByRole("textbox", { name: opsCopy.dispatch.letIn.reason }).fill("The pin is at the society gate");
   await confirm.click();
   await expect(panel.getByRole("status")).toContainText("Imran Qureshi can check in now");
   expect(sent).toEqual([{ reason: "The pin is at the society gate" }]);
@@ -181,7 +184,7 @@ test("offers no way past the geofence for a visit on another day", async ({ page
   await open(page);
   await press(page, ROHIT_BLOCK);
   await expect(
-    page.getByRole("dialog", { name: "Rohit Malhotra" }).getByRole("button", { name: "Allow check-in" }),
+    page.getByRole("dialog", { name: "Rohit Malhotra" }).getByRole("button", { name: opsCopy.dispatch.drawer.letIn }),
   ).toHaveCount(0);
 });
 

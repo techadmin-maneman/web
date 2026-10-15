@@ -7,6 +7,8 @@ import { LOCAL_LOGIN_CODE } from "../scripts/lib/local-stack.ts";
 import sharp from "sharp";
 import { drawnHead, HEAD_HEIGHT, HEAD_WIDTH, type Rgb } from "../test/node/drawn-head.ts";
 import { contractErrors, type Surface } from "./contract.ts";
+import { booking, numberCode, tryOn } from "../site/src/content/site.ts";
+import { referral } from "../site/src/content/referral.ts";
 
 export { expect };
 
@@ -161,12 +163,12 @@ export async function throughToGate(page: Page): Promise<void> {
     .setInputFiles(await drawnHeadPhoto());
   await reach("consent");
   await page.getByText("I understand, and I agree to my photograph being used this way.").click();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: booking.next }).click();
   await reach("stage");
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: booking.next }).click();
   await reach("looks");
   await page.getByRole("radio", { name: /Quiff/ }).first().check();
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: booking.next }).click();
   await reach("gate");
 }
 
@@ -183,15 +185,15 @@ export async function mockNumberCode(page: Page): Promise<void> {
 
 /** Enters the WhatsApp code sent to the number, and presses the form's button, which now confirms it. */
 export async function enterNumberCode(page: Page, confirm: string): Promise<void> {
-  await page.getByLabel("WhatsApp code").fill(NUMBER_CODE);
+  await page.getByLabel(numberCode.label).fill(NUMBER_CODE);
   await page.getByRole("button", { name: confirm }).click();
 }
 
 /** Fills in the gate, which the look is sent to, and sends it, entering the WhatsApp code sent to the number. */
 export async function sendFromGate(page: Page, mobile: string, name = "Test Visitor"): Promise<void> {
-  await page.getByLabel("Name").fill(name);
-  await page.getByLabel("Mobile").fill(mobile);
-  await page.getByRole("button", { name: "Send my look" }).click();
+  await page.getByLabel(referral.form.name).fill(name);
+  await page.getByLabel(referral.form.mobile).fill(mobile);
+  await page.getByRole("button", { name: tryOn.gate.submit }).click();
   await enterNumberCode(page, "Confirm and send my look");
 }
 
