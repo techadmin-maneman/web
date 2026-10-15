@@ -70,9 +70,8 @@ export interface ChangeableVisit {
 export async function changeableVisit(
   db: D1Database,
   personId: string,
-  visitId: string,
+  visit: { readonly id: string; readonly evenPast?: boolean },
   now: Date,
-  evenPast = false,
 ): Promise<ChangeableVisit | null> {
   const row = await db
     .prepare(
@@ -82,7 +81,7 @@ export async function changeableVisit(
        WHERE a.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL AND ${statusIn("a.status", VISIT_NOT_BEGUN)}
          AND a.type IS NOT NULL AND (a.window_start > ?3 OR ?4 = 1) AND NOT ${visitBegun("a")}`,
     )
-    .bind(visitId, personId, now.toISOString(), evenPast ? 1 : 0)
+    .bind(visit.id, personId, now.toISOString(), visit.evenPast === true ? 1 : 0)
     .first<{
       id: string;
       person_id: string;
@@ -114,7 +113,7 @@ export async function changeableVisitFor(db: D1Database, visitId: string, now: D
     .bind(visitId)
     .first<{ person_id: string }>();
   if (owner === null) return null;
-  return changeableVisit(db, owner.person_id, visitId, now, true);
+  return changeableVisit(db, owner.person_id, { id: visitId, evenPast: true }, now);
 }
 
 /** When the visit's window starts, by the times in force on its day, which the 24 hours count back from. */

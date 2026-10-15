@@ -110,7 +110,7 @@ describe("a visit cancelled by the client", () => {
   it("writes nothing and refunds nothing for a visit the technician checked in to after the terms were read", async () => {
     await fittedClient();
     await booked(THURSDAY_NOON);
-    const visit = await changeableVisit(env.DB, PERSON, VISIT, NOW);
+    const visit = await changeableVisit(env.DB, PERSON, { id: VISIT }, NOW);
     if (visit === null) throw new Error("the visit should be changeable");
     const terms = await changeTerms({
       db: env.DB,
@@ -155,7 +155,7 @@ describe("a visit the client and ops cancel at the same moment", () => {
 
   /** Both read the terms before either cancels, as two requests at the same moment do; then both cancel. */
   async function cancelledByBoth(deps: TestDependencies) {
-    const visit = await changeableVisit(env.DB, PERSON, VISIT, NOW);
+    const visit = await changeableVisit(env.DB, PERSON, { id: VISIT }, NOW);
     if (visit === null) throw new Error("the visit should be changeable");
     const terms = await changeTerms({
       db: env.DB,
