@@ -120,7 +120,7 @@ Care, dispatch and city staff sign in to the console with Google Workspace, neve
 5. **Who gets in:** the Allow policy names the staff by their maneman.in emails, or a Google group, never `@maneman.in` as a whole. The console's own Staff list ([ADR 0189](decisions/0189-the-staff-list-on-by-default.md)) still decides what each can do once in.
 6. **Check:** in a private window, open the console: Google's sign-in comes up at once, a personal Gmail is refused, and a maneman.in account without 2-Step Verification cannot finish signing in.
 
-Staging, 15 October 2026: Google Workspace is `ops-staging.maneman.in`'s only login method, and Google takes its client, for `maneman.in` accounts. Instant Auth is not on yet, so the login page still shows the Google button rather than going straight to Google.
+Staging, 15 October 2026: Google Workspace is `ops-staging.maneman.in`'s only login method, with Instant Auth: a browser opening the console goes straight to Google's sign-in, for `maneman.in` accounts. The session length, the login-method rule and 2-Step Verification are set as above.
 
 ## 4. Database
 

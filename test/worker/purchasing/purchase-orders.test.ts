@@ -158,15 +158,22 @@ describe("an approved order", () => {
 describe("the letterhead a printed order carries", () => {
   const LETTERHEAD = { legal_name: "Mane Man Grooming Services Private Limited", gstin: null, deliver_to: "Sector 37" };
 
-  it("is none until set, then is the one row each change replaces, the GSTIN taken in capitals", async () => {
+  it("is none until set, then is the one row each change replaces, the CIN and GSTIN taken in capitals", async () => {
     const read = async () =>
       (await (await request(job.ops, "/api/purchase-orders")).json<{ letterhead: unknown }>()).letterhead;
     expect(await read()).toBeNull();
 
     expect((await job.opsPost("/api/purchase-orders/letterhead", LETTERHEAD)).status).toBe(200);
-    const again = { ...LETTERHEAD, gstin: "06aabcm1234a1z5", deliver_to: "Warehouse 4, Sector 37\nGurgaon 122001" };
+    expect(await read()).toEqual({ ...LETTERHEAD, registered_office: null, cin: null });
+    const again = {
+      ...LETTERHEAD,
+      registered_office: "Plot 12, Okhla Phase II\nNew Delhi 110020",
+      cin: "u74999dl2026ptc123456",
+      gstin: "06aabcm1234a1z5",
+      deliver_to: "Warehouse 4, Sector 37\nGurgaon 122001",
+    };
     expect((await job.opsPost("/api/purchase-orders/letterhead", again)).status).toBe(200);
-    expect(await read()).toEqual({ ...again, gstin: "06AABCM1234A1Z5" });
+    expect(await read()).toEqual({ ...again, cin: "U74999DL2026PTC123456", gstin: "06AABCM1234A1Z5" });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM po_letterhead").first("n")).toBe(1);
     const audited = await env.DB.prepare("SELECT COUNT(*) AS n FROM audit_log WHERE action = ?1")
       .bind("purchase_order.letterhead_set")
@@ -174,13 +181,14 @@ describe("the letterhead a printed order carries", () => {
     expect(audited).toBe(2);
   });
 
-  it("refuses a GSTIN that is not one, and an empty address", async () => {
+  it("refuses a GSTIN or a CIN that is not one, and an empty address", async () => {
     const refused = await job.opsPost("/api/purchase-orders/letterhead", {
       ...LETTERHEAD,
+      cin: "U123",
       gstin: "123",
       deliver_to: "",
     });
     expect(refused.status).toBe(400);
-    expect((await fieldsOf(refused)).fields).toEqual(expect.arrayContaining(["gstin", "deliver_to"]));
+    expect((await fieldsOf(refused)).fields).toEqual(expect.arrayContaining(["cin", "gstin", "deliver_to"]));
   });
 });

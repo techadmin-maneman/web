@@ -65,6 +65,8 @@ export const purchasing = {
     from: "From",
     supplier: "To",
     gstin: (gstin: string) => `GSTIN ${gstin}`,
+    registeredOffice: "Registered office",
+    cin: (cin: string) => `CIN ${cin}`,
     deliverTo: "Deliver to",
     /** "24 strip (2 packs of 12)" */
     quantity: (quantity: number, unit: string, pack: number | null) =>
@@ -81,6 +83,8 @@ export const purchasing = {
     intro: "What a printed order says of us.",
     missing: "Set the letterhead to print it on orders.",
     legalName: "Legal name",
+    registeredOffice: "Registered office",
+    cin: "CIN",
     gstin: "GSTIN (optional)",
     deliverTo: "Deliver to",
     deliverHint: "The address, as it prints, a line at a time.",
@@ -88,6 +92,8 @@ export const purchasing = {
     saved: "Letterhead saved.",
     errors: {
       legal_name: "Give the legal name, 2 to 120 characters.",
+      registered_office: "Give the address, 5 to 400 characters.",
+      cin: "A CIN is 21 characters, like U74999DL2026PTC123456.",
       gstin: "A GSTIN is 15 characters, like 06AABCM1234A1Z5.",
       deliver_to: "Give the address, 5 to 400 characters.",
       not_permitted: NOT_PERMITTED,

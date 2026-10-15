@@ -21,8 +21,14 @@ function FromUs({ letterhead }: { letterhead: Orders["letterhead"] }) {
     <>
       <p>
         {sheet.from}: {letterhead.legal_name}
+        {letterhead.cin !== null && ` · ${sheet.cin(letterhead.cin)}`}
         {letterhead.gstin !== null && ` · ${sheet.gstin(letterhead.gstin)}`}
       </p>
+      {letterhead.registered_office !== null && (
+        <p className={styles.sheetAddress}>
+          {sheet.registeredOffice}: {letterhead.registered_office}
+        </p>
+      )}
       <p className={styles.sheetAddress}>
         {sheet.deliverTo}: {letterhead.deliver_to}
       </p>

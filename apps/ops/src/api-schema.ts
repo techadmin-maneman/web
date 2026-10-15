@@ -17992,7 +17992,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** What a printed order says of us: the legal name, the GSTIN and where the supplier delivers */
+        /** What a printed order says of us: the legal name, the registered office and CIN, the GSTIN and where the supplier delivers */
         post: {
             parameters: {
                 query?: never;
@@ -24437,12 +24437,18 @@ export interface components {
             /** @description What a printed order says of us; null until ops set it. */
             letterhead: {
                 legal_name: string;
+                registered_office: string | null;
+                cin: string | null;
                 gstin: string | null;
                 deliver_to: string;
             } | null;
         };
         PurchaseOrderLetterhead: {
             legal_name: string;
+            /** @default null */
+            registered_office: string | null;
+            /** @default null */
+            cin: string | null;
             gstin: string | null;
             deliver_to: string;
         };

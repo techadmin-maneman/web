@@ -21,7 +21,13 @@ const BOOK = {
   letterhead: null,
 } satisfies Orders;
 
-const SET = { legal_name: "Kesh Grooming Private Limited", gstin: null, deliver_to: "Plot 9, Sector 18" };
+const SET = {
+  legal_name: "Kesh Grooming Private Limited",
+  registered_office: null,
+  cin: null,
+  gstin: null,
+  deliver_to: "Plot 9, Sector 18",
+};
 
 let page: HTMLDivElement;
 let root: Root;
@@ -84,7 +90,7 @@ async function save() {
 }
 
 describe("the letterhead", () => {
-  it("asks to be set, and sends the GSTIN in capitals, or none for an empty box", async () => {
+  it("asks to be set, and sends the CIN and GSTIN in capitals, or none for an empty box", async () => {
     expect(page.textContent).toContain(copy.missing);
     expect(button(copy.save)?.disabled).toBe(true);
     type(copy.legalName, SET.legal_name);
@@ -93,9 +99,16 @@ describe("the letterhead", () => {
     expect(posted).toEqual([SET]);
     expect(saved.map((each) => each.said)).toEqual([copy.saved]);
 
+    type(copy.registeredOffice, "Plot 2, Lajpat Nagar\nNew Delhi 110024");
+    type(copy.cin, "u74999dl2026ptc123456");
     type(copy.gstin, "06aabcm1234a1z5");
     await save();
-    expect(posted[1]).toEqual({ ...SET, gstin: "06AABCM1234A1Z5" });
+    expect(posted[1]).toEqual({
+      ...SET,
+      registered_office: "Plot 2, Lajpat Nagar\nNew Delhi 110024",
+      cin: "U74999DL2026PTC123456",
+      gstin: "06AABCM1234A1Z5",
+    });
   });
 
   it("says a refused box beside it", async () => {

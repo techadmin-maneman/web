@@ -23,7 +23,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { opsInputs } from "../../http/ops-inputs.ts";
 import { needsSecondApproval, PO_STATES } from "../../policy/purchasing.ts";
-import { GSTIN } from "../../policy/suppliers.ts";
+import { CIN, GSTIN } from "../../policy/suppliers.ts";
 
 const Text = z.string();
 const MaybeText = z.union([z.string(), z.null()]);
@@ -126,7 +126,7 @@ const OrdersSchema = z
     ),
     second_approval_above_rupees: z.number().int(),
     letterhead: z
-      .object({ legal_name: Text, gstin: MaybeText, deliver_to: Text })
+      .object({ legal_name: Text, registered_office: MaybeText, cin: MaybeText, gstin: MaybeText, deliver_to: Text })
       .strict()
       .nullable()
       .openapi({ description: "What a printed order says of us; null until ops set it." }),
@@ -178,7 +178,8 @@ export const Note = z
 const letterheadRoute = opsRoute({
   method: "post",
   path: "/api/purchase-orders/letterhead",
-  summary: "What a printed order says of us: the legal name, the GSTIN and where the supplier delivers",
+  summary:
+    "What a printed order says of us: the legal name, the registered office and CIN, the GSTIN and where the supplier delivers",
   request: {
     body: {
       required: true,
@@ -186,6 +187,8 @@ const letterheadRoute = opsRoute({
         z
           .object({
             legal_name: z.string().trim().min(2).max(120),
+            registered_office: z.string().trim().min(5).max(400).nullable().default(null),
+            cin: z.string().trim().toUpperCase().regex(CIN).nullable().default(null),
             gstin: z.string().trim().toUpperCase().regex(GSTIN).nullable(),
             deliver_to: z.string().trim().min(5).max(400),
           })
@@ -329,7 +332,13 @@ export async function ordersAnswer(c: Context<AppEnv>) {
     letterhead:
       letterhead === null
         ? null
-        : { legal_name: letterhead.legalName, gstin: letterhead.gstin, deliver_to: letterhead.deliverTo },
+        : {
+            legal_name: letterhead.legalName,
+            registered_office: letterhead.registeredOffice,
+            cin: letterhead.cin,
+            gstin: letterhead.gstin,
+            deliver_to: letterhead.deliverTo,
+          },
   };
 }
 
@@ -345,7 +354,13 @@ export function registerOpsPurchasing(app: App): void {
 
   app.openapi(letterheadRoute, async (c) => {
     const body = c.req.valid("json");
-    const letterhead = { legalName: body.legal_name, gstin: body.gstin, deliverTo: body.deliver_to };
+    const letterhead = {
+      legalName: body.legal_name,
+      registeredOffice: body.registered_office,
+      cin: body.cin,
+      gstin: body.gstin,
+      deliverTo: body.deliver_to,
+    };
     await setPoLetterhead(c.env.DB, letterhead, written(c));
     return c.json(await ordersAnswer(c), 200);
   });
