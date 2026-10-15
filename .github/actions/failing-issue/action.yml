@@ -1,0 +1,29 @@
+name: Failing issue
+description: Opens an issue for a run that keeps failing, or adds this run to the one already open under its title.
+inputs:
+  title:
+    description: The issue's title, which the next failure finds it by.
+    required: true
+  body:
+    description: What the issue says first, before the run's address.
+    required: true
+  token:
+    description: A token that may write issues, the job's own.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Open the issue, or add this run to the open one
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TITLE: ${{ inputs.title }}
+        BODY: ${{ inputs.body }}
+        RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+        if [ -n "$open" ]; then
+          gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "Failed again: $RUN"
+        else
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY: $RUN. Close this once it passes again."
+        fi

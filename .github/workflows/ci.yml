@@ -260,10 +260,9 @@ jobs:
           pattern: unit-*
           path: .vitest-reports/
           merge-multiple: true
-      - name: Coverage of lines and branches on src/ and scripts/lib/, from both halves, against the floors
+      # mm-api's, the scripts' shared modules' and the front ends', each against its floors: one run of the tests.
+      - name: Coverage of lines and branches, from both halves, against the floors
         run: npx vitest --merge-reports --coverage
-      - name: The front ends' coverage, of the apps, the shared packages and the site
-        run: npm run test:coverage:front
 
   # Migrations run before code, so the code now deployed runs on this branch's schema until the deploy, and
   # again after a rollback: its own Worker tests must pass on these migrations (docs/decisions/0006).

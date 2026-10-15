@@ -50,9 +50,16 @@ export default defineConfig({
     ],
     coverage: {
       provider: "istanbul",
-      include: ["src/**/*.ts", "scripts/lib/**/*.ts"],
-      // "src/**" also matches the apps' and the site's own src/ folders, which the report then counted as mm-api's.
-      exclude: ["src/**/*.d.ts", "apps/**", "site/**", "packages/**"],
+      // mm-api's code and the scripts' shared modules, and the front ends', each held to floors of their own below,
+      // so one run of the suite measures them all.
+      include: [
+        "src/**/*.ts",
+        "scripts/lib/**/*.ts",
+        "apps/*/src/**/*.{ts,tsx}",
+        "packages/*/**/*.{ts,tsx}",
+        "site/src/**/*.{ts,tsx}",
+      ],
+      exclude: ["**/*.d.ts", "**/api-schema.ts", "**/node_modules/**", "**/dist/**"],
       reporter: ["text", "json-summary"],
       /*
        * Branches as well as lines: the integrations were where branches went untested behind a line figure
@@ -65,7 +72,8 @@ export default defineConfig({
       thresholds:
         process.env.COVERAGE_SHARD === undefined
           ? {
-              // Just under what the suite reaches, so a fall shows.
+              // Just under what the suite reaches, so a fall shows. A file a glob below matches counts to that
+              // glob's floor and not to these, so the front ends' own floors leave mm-api's whole figure as it was.
               lines: 97,
               branches: 87,
               "src/providers/**": { lines: 90, branches: 85 },
@@ -84,6 +92,11 @@ export default defineConfig({
               // What the deploy and check scripts share. A release's recovery from a lost reply first runs in an incident.
               "scripts/lib/**": { lines: 85, branches: 70 },
               "scripts/lib/release.ts": { lines: 95, branches: 90 },
+              // The front ends: the node tests of the apps' logic and the DOM tests of their components and hooks.
+              // Just under the 32% of lines and 23% of branches they reached when the report began, rising as screens'
+              // logic moves into node-tested modules; the console has a floor of its own, so its share keeps up.
+              "{apps,packages,site}/**": { lines: 31, branches: 22 },
+              "apps/ops/src/**": { lines: 31, branches: 24 },
             }
           : {},
     },

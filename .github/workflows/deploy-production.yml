@@ -266,10 +266,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: A push to the urgent topic (docs/runbook/alerts.md)
-        env:
-          URGENT_PUSH_URL: ${{ secrets.URGENT_PUSH_URL }}
-          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          if [ -z "$URGENT_PUSH_URL" ]; then echo "No URGENT_PUSH_URL: nobody to page"; exit 0; fi
-          curl -fsS -H "Title: Production release failed" -H "Priority: urgent" -H "Tags: rotating_light" -H "Click: $RUN" -d "Production release failed: $RUN" "$URGENT_PUSH_URL"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/page
+        with:
+          title: "Production release failed"
+          url: ${{ secrets.URGENT_PUSH_URL }}

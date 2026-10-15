@@ -44,24 +44,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      contents: read
       issues: write
     steps:
-      - name: Page whoever is on call (docs/runbook/alerts.md)
-        env:
-          URGENT_PUSH_URL: ${{ secrets.URGENT_PUSH_URL }}
-          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          if [ -z "$URGENT_PUSH_URL" ]; then echo "No URGENT_PUSH_URL: nobody to page"; exit 0; fi
-          curl -fsS -H "Title: Staging failed its hourly watch" -H "Priority: urgent" -H "Tags: rotating_light" -H "Click: $RUN" -d "Staging failed its hourly watch: $RUN" "$URGENT_PUSH_URL"
-      - name: Open the issue, or add this run to the open one
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          title="Staging is failing its hourly watch"
-          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
-          if [ -n "$open" ]; then
-            gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "Failed again: $RUN"
-          else
-            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "The hourly watch of staging failed: $RUN. Close this once it passes again."
-          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/page
+        with:
+          title: "Staging failed its hourly watch"
+          url: ${{ secrets.URGENT_PUSH_URL }}
+      - uses: ./.github/actions/failing-issue
+        with:
+          title: "Staging is failing its hourly watch"
+          body: "The hourly watch of staging failed"
+          token: ${{ github.token }}
