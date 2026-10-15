@@ -156,7 +156,9 @@ test("adds a grade, and gives a technician one", async ({ page }) => {
   await page.getByRole("button", { name: copy.technicians.changeLabel("Test technician Two") }).click();
   await page.getByLabel(copy.form.grade, { exact: true }).selectOption("Trainee");
   await page.getByRole("button", { name: review.next }).click();
-  await expect(page.getByText(copy.check.grade("Test technician Two", "No grade", "Trainee"))).toBeVisible();
+  await expect(
+    page.getByText(copy.check.grade("Test technician Two", copy.technicians.noGrade, "Trainee")),
+  ).toBeVisible();
   await page.getByRole("button", { name: review.send }).click();
   await expect.poll(() => posts).toEqual([{ name: "Lead" }, { grade_id: TRAINEE }]);
 });
