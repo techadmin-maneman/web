@@ -71,6 +71,15 @@ describe("GET /api/clients", () => {
     expect(page.cities).toContain("Gurgaon");
   });
 
+  // Clients could not be narrowed to Mumbai, whose pincodes were served though the city was not marked so.
+  it("offers every city with a pincode served, whatever the city is marked", async () => {
+    await env.DB.prepare("UPDATE cities SET served = 0 WHERE name = 'Mumbai'").run();
+    await env.DB.prepare(
+      "INSERT INTO serviceable_pincodes (pincode, area, city, served) VALUES ('400050', 'Bandra West', 'Mumbai', 1)",
+    ).run();
+    expect((await list()).cities).toContain("Mumbai");
+  });
+
   it("narrows to where they stand, and to a city", async () => {
     expect(await names("?state=fitted")).toEqual(["Rohit Malhotra"]);
     expect(await names("?state=lead")).toEqual(["Vikram Sethi"]);

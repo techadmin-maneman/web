@@ -176,7 +176,9 @@ export function registerOpsClients(app: App): void {
     const [listed, served] = await Promise.all([
       listClients(c.env.DB, { state, city, page, reach }),
       c.env.DB.prepare(
-        "SELECT name FROM cities WHERE served = 1 AND (?1 IS NULL OR name IN (SELECT value FROM json_each(?1))) ORDER BY name",
+        `SELECT name FROM cities c
+         WHERE (served = 1 OR EXISTS (SELECT 1 FROM serviceable_pincodes p WHERE p.city = c.name AND p.served = 1))
+           AND (?1 IS NULL OR name IN (SELECT value FROM json_each(?1))) ORDER BY name`,
       )
         .bind(reach)
         .all<{ name: string }>(),
