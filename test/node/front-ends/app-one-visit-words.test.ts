@@ -12,10 +12,7 @@ const PRICE = { amount: 3_000_000, from: false, code: null };
 
 describe("a one visit’s card", () => {
   it("says what it costs once fitted, only if the client goes ahead, and that it is paid once fitted", () => {
-    expect(oneVisitLines(PRICE)).toEqual([
-      "Rs. 30,000, only if you go ahead",
-      "Paid once fitted",
-    ]);
+    expect(oneVisitLines(PRICE)).toEqual(["Rs. 30,000, only if you go ahead", "Paid once fitted"]);
   });
 
   it("says where the prices start when the hair systems differ, and names the code taken off", () => {
