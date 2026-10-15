@@ -7,6 +7,7 @@
 // Every run goes ahead whatever the one before found, so one pass reports every part; arguments go to each run.
 
 import { spawnSync } from "node:child_process";
+import { FRONT_PINNED } from "../../eslint.front-pinned.ts";
 
 const WORKER = ["src", "test/worker"];
 const FRONT_ENDS = ["apps", "packages/ui", "e2e", "test/dom"];
@@ -22,4 +23,6 @@ const failed = RUNS.filter((paths) => {
   });
   return run.status !== 0;
 });
+// The files held past the size rules, which only fall (test/node/tooling/front-pinned.test.ts).
+console.log(`${String(Object.keys(FRONT_PINNED).length)} front-end files are held past the size rules`);
 process.exitCode = failed.length === 0 ? 0 : 1;

@@ -20,7 +20,7 @@ One page on getting a change from your laptop to staging. `README.md` says what 
 
 - By where it runs first, then by the part of the product it checks: `test/worker/<area>/` runs against the API in workerd (`booking`, `money`, `field`, `dispatch`, `inventory`, `purchasing`, `care`, `reports`, `words`, `ops` for the console's own work, `site`, `app`, `referrals`, `messages`, `vendors`, `privacy`, `jobs`, `platform`), mirroring `src/domain/`'s folders where a test is of one, and `test/node/<area>/` in plain Node (`policy`, `api`, `database`, `apps/<app>`, `site`, `packages`, `architecture`, `tooling`, `words`).
 - A test of an app's code that runs in plain Node but needs the DOM's types goes in `test/node/front-ends/`; one of a component on a page, in a DOM, in `test/dom/`; a browser test, in `e2e/<surface>/`.
-- A file past 500 lines is warned of: split it by what each part checks, with its shared setup in a `-fixtures.ts` beside it.
+- A test file past 700 lines fails lint: split it by what each part checks, with its shared setup in a `-fixtures.ts` beside it.
 - A worker test writes its people, addresses, visits, technicians, holds and payments through `test/worker/fixtures/` (`aPerson`, `aVisit`, `aTechnician`…), each with its defaults and your overrides, never as an INSERT of its own; `test/node/tooling/test-data.test.ts` counts those still written by hand, and the count only falls.
 - A query's row type comes from `src/lib/rows.ts`, written from the migrations by `npm run schema`: `Pick<Rows["people"], "id" | "name">`, never typed again by hand.
 
