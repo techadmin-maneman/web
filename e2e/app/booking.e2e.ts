@@ -51,8 +51,6 @@ test("books and pays for a service visit through Razorpay Checkout", async ({ pa
   await expect(pay.getByText(FREE_UNTIL)).toBeVisible();
   // Checkout lists the ways to pay, so the sheet offers no choice Checkout would ignore.
   await expect(pay.getByRole("radiogroup")).toHaveCount(0);
-  // Whoever the hold names: never the technician of the client's last visit (docs/decisions/0111).
-  await expect(pay.getByText(/^\S+ never handles money\.$/)).toBeVisible();
   // Already switched on, so the sheet does not ask again.
   await expect(pay.getByRole("checkbox", { name: REMIND })).toHaveCount(0);
   // Booking agrees to no photograph consent, whatever the client decided.

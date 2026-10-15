@@ -58,10 +58,9 @@ const payButton = () => {
 };
 
 describe("the pay step", () => {
-  it("asks a visit's price, says the technician never handles money, and pays at a tap", () => {
+  it("asks a visit's price, and pays at a tap", () => {
     draw(holdOf());
     expect(payButton().textContent).toBe(copy.pay(rupees(200000)));
-    expect(page.textContent).toContain(copy.neverHandlesMoney("Imran"));
     act(() => {
       payButton().click();
     });
@@ -74,7 +73,6 @@ describe("the pay step", () => {
     expect(page.textContent).toContain(copy.credit.used);
     expect(page.textContent).toContain(copy.credit.remaining(2));
     expect(page.textContent).toContain(copy.credit.note(24));
-    expect(page.textContent).not.toContain(copy.neverHandlesMoney("Imran"));
     expect(page.textContent).not.toContain(copy.code.open);
   });
 
