@@ -10,6 +10,7 @@ import { words as copy } from "../../apps/ops/src/content/words.ts";
 import { WordsScreen } from "../../apps/ops/src/words/WordsScreen.tsx";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 
 const REMINDER: Word = {
   key: "message:visit_reminder_v1",
@@ -42,6 +43,8 @@ let answers: Map<string, (init?: RequestInit) => Response>;
 let sent: unknown[];
 
 beforeEach(() => {
+  // The drawers open beside the page, as modal dialogs (../../apps/ops/src/components/FormDrawer.tsx).
+  openDialogsAsJsdomCan();
   answers = new Map([
     ["GET /api/words", () => Response.json({ words: [REMINDER, HERO], published: null, messages: "at_once" })],
   ]);
@@ -79,7 +82,7 @@ async function show() {
 }
 
 const button = (label: string) =>
-  [...page.querySelectorAll("button")].find(
+  [...document.body.querySelectorAll("button")].find(
     (each) => each.getAttribute("aria-label") === label || each.textContent.trim() === label,
   );
 
@@ -91,7 +94,7 @@ async function press(label: string) {
 }
 
 function type(text: string) {
-  const box = page.querySelector("textarea");
+  const box = document.body.querySelector("textarea");
   if (box === null) throw new Error("no wording box");
   act(() => {
     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(box, text);
@@ -102,27 +105,29 @@ function type(text: string) {
 describe("the Words page", () => {
   it("lists each line with the wording in force, and who changed it", async () => {
     await show();
-    expect(page.textContent).toContain("Hair, fitted at home.");
-    expect(page.textContent).toContain(copy.changed("growth@maneman.test", "Mon 5 Oct"));
-    expect(page.textContent).toContain("Visit reminder");
-    expect(page.textContent).not.toContain("visit_reminder_v1");
+    expect(document.body.textContent).toContain("Hair, fitted at home.");
+    expect(document.body.textContent).toContain(copy.changed("growth@maneman.test", "Mon 5 Oct"));
+    expect(document.body.textContent).toContain("Visit reminder");
+    expect(document.body.textContent).not.toContain("visit_reminder_v1");
   });
 
   // Half the client's copy was written in code and never read in a copy review, with nothing to say which.
   it("marks a line whose wording in the code no copy review has read", async () => {
     await show();
-    const rows = [...page.querySelectorAll("tbody tr")].map((row) => row.textContent);
+    const rows = [...document.body.querySelectorAll("tbody tr")].map((row) => row.textContent);
     expect(rows.find((row) => row.includes("Hair, fitted at home."))).toContain(copy.review.notReviewed);
     expect(rows.find((row) => row.includes("Visit reminder"))).not.toContain(copy.review.notReviewed);
     // Find words lists those lines alone.
-    const find = page.querySelector<HTMLInputElement>(`input[aria-label="${copy.narrow}"], input[type="search"]`);
+    const find = document.body.querySelector<HTMLInputElement>(
+      `input[aria-label="${copy.narrow}"], input[type="search"]`,
+    );
     if (find === null) throw new Error("no Find words box");
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(find, copy.review.notReviewed);
       find.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await settle();
-    const found = [...page.querySelectorAll("tbody tr")].map((row) => row.textContent);
+    const found = [...document.body.querySelectorAll("tbody tr")].map((row) => row.textContent);
     expect(found.some((row) => row.includes("Hair, fitted at home."))).toBe(true);
     expect(found.some((row) => row.includes("Visit reminder"))).toBe(false);
   });
@@ -136,15 +141,15 @@ describe("the Words page", () => {
     );
     await show();
     await press(copy.editLabel("Visit reminder"));
-    expect(page.textContent).toContain(copy.form.inCode(REMINDER.text));
-    expect(page.textContent).toContain(copy.form.atOnce);
+    expect(document.body.textContent).toContain(copy.form.inCode(REMINDER.text));
+    expect(document.body.textContent).toContain(copy.form.atOnce);
     type(reworded);
     await press(copy.form.next);
-    expect(page.textContent).toContain(copy.check.now(reworded));
+    expect(document.body.textContent).toContain(copy.check.now(reworded));
     expect(sent).toEqual([]);
     await press(copy.check.send);
     expect(sent).toEqual([{ key: REMINDER.key, text: reworded }]);
-    expect(page.querySelector('[role="status"]')?.textContent).toBe(copy.done);
+    expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.done);
   });
 
   it("says why the words were refused", async () => {
@@ -156,9 +161,9 @@ describe("the Words page", () => {
     type("Hi {{1}}, see you tomorrow.");
     await press(copy.form.next);
     await press(copy.check.send);
-    expect(page.querySelector('[role="alert"]')?.textContent).toBe(copy.errors.holes);
+    expect(document.body.querySelector('[role="alert"]')?.textContent).toBe(copy.errors.holes);
     // Said on the box it names, which is marked as refused and described by it.
-    const box = page.querySelector("textarea");
+    const box = document.body.querySelector("textarea");
     expect(box?.getAttribute("aria-invalid")).toBe("true");
     const described = (box?.getAttribute("aria-describedby") ?? "").split(" ").map((id) => document.getElementById(id));
     expect(described.map((each) => each?.textContent)).toContain(copy.errors.holes);
@@ -182,9 +187,9 @@ describe("the Words page", () => {
     );
     await show();
     await press(copy.historyLabel("Top of the page · Title"));
-    expect(page.textContent).toContain(copy.versions.by("growth@maneman.test", "Mon 5 Oct"));
+    expect(document.body.textContent).toContain(copy.versions.by("growth@maneman.test", "Mon 5 Oct"));
     await press(copy.form.toCode);
-    expect(page.querySelector("textarea")?.value).toBe(HERO.text);
+    expect(document.body.querySelector("textarea")?.value).toBe(HERO.text);
     await press(copy.form.next);
     await press(copy.check.send);
     expect(sent).toEqual([{ key: HERO.key, text: null }]);
@@ -195,11 +200,11 @@ describe("the Words page", () => {
       Response.json({ published: { at: "2026-10-11T06:30:00.000Z", by: "growth@maneman.test", lines: 1 } }),
     );
     await show();
-    expect(page.textContent).toContain(copy.publish.never);
-    expect(page.textContent).toContain(copy.notOnSite);
+    expect(document.body.textContent).toContain(copy.publish.never);
+    expect(document.body.textContent).toContain(copy.notOnSite);
     await press(copy.publish.open);
-    expect(page.textContent).toContain(copy.publish.changed(1));
+    expect(document.body.textContent).toContain(copy.publish.changed(1));
     await press(review.send);
-    expect(page.querySelector('[role="status"]')?.textContent).toBe(copy.publish.done);
+    expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.publish.done);
   });
 });

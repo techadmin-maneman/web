@@ -120,7 +120,7 @@ test("puts Leave where the board draws Skill, with no design note beneath the ta
   await expect(page.getByRole("columnheader", { name: "Skill" })).toBeHidden();
   await expect(page.getByRole("columnheader", { name: opsCopy.technicians.tabs.leave })).toBeVisible();
   await expect(page.getByText("Nothing records what a technician is trained for")).toBeHidden();
-  await expect(page.getByText("Jobs finished 24 Jun 2027 to 22 Sep 2027.")).toBeVisible();
+  await expect(page.getByText(opsCopy.technicians.work.period("24 Jun 2027", "22 Sep 2027"))).toBeVisible();
 });
 
 // "AWAY" never said until when.
@@ -164,7 +164,7 @@ test("opens a technician’s own page from their name, a tab at a time, each at 
 
   // A tab's address opens it directly, as a link from anywhere would.
   await page.goto(`/technicians/${SANDEEP}/leave`);
-  await expect(page.getByRole("heading", { level: 2, name: "Sandeep Yadav" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Sandeep Yadav" })).toBeVisible();
   await expect(main.getByText("Family wedding")).toBeVisible();
 
   await backToRoster(page);

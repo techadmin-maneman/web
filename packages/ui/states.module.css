@@ -20,7 +20,7 @@
   }
 
   .onPaper {
-    background: var(--paper-shade);
+    background: var(--ui-shade);
   }
 
   .onInk {

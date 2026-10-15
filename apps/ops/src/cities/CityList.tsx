@@ -11,25 +11,53 @@ import form from "../components/forms.module.css";
 import type { Cities, City } from "./types.ts";
 import { CityForm } from "./CityForm.tsx";
 import { RowHead } from "../components/RowHead.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 
 const copy = cities.list;
-
-/** What the form beneath is doing: adding a city, or changing the one named. */
-type Doing = { readonly kind: "add" } | { readonly kind: "change"; readonly name: string };
 
 const statusOf = (city: City): string => {
   if (!city.active) return copy.hidden;
   return city.served ? copy.served : copy.notServed;
 };
 
+/** Adding a city, from the list's head. */
+function AddCity({ zones, onSaved }: { zones: readonly string[]; onSaved: (said: string) => void }) {
+  return (
+    <DrawerButton label={copy.add}>
+      {(close) => (
+        <CityForm
+          city={null}
+          zones={zones}
+          onSaved={(words) => {
+            onSaved(words);
+            close();
+          }}
+          onCancel={close}
+        />
+      )}
+    </DrawerButton>
+  );
+}
+
 export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => void }) {
   const mayChange = useAccess().mayCall("PATCH /api/cities/{name}");
   const mayAdd = useAccess().mayCall("POST /api/cities");
-  const [doing, setDoing] = useState<Doing>({ kind: "add" });
+  const [changingName, setChangingName] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
-  const changing = doing.kind === "change" ? cities.cities.find((city) => city.name === doing.name) : undefined;
+  const changing = cities.cities.find((city) => city.name === changingName);
+  const saved = (words: string) => {
+    setSaid(words);
+    setChangingName(null);
+    onSaved();
+  };
   return (
-    <Panel titleId="cities" title={copy.panel} count={cities.cities.length}>
+    <Panel
+      titleId="cities"
+      title={copy.panel}
+      count={cities.cities.length}
+      actions={mayAdd && <AddCity zones={cities.zones} onSaved={saved} />}
+    >
       <Table controls>
         <thead>
           <tr>
@@ -54,7 +82,7 @@ export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => v
                     aria-label={copy.changeLabel(city.name)}
                     onClick={() => {
                       setSaid(null);
-                      setDoing({ kind: "change", name: city.name });
+                      setChangingName(city.name);
                     }}
                   >
                     {copy.change}
@@ -70,24 +98,23 @@ export function CityList({ cities, onSaved }: { cities: Cities; onSaved: () => v
           {said}
         </InlineMessage>
       )}
-      {(doing.kind === "add" ? mayAdd : changing !== undefined) && (
-        <CityForm
-          key={doing.kind === "add" ? "add" : doing.name}
-          city={changing ?? null}
-          zones={cities.zones}
-          onSaved={(words) => {
-            setSaid(words);
-            setDoing({ kind: "add" });
-            onSaved();
+      {changing !== undefined && (
+        <FormDrawer
+          title={changing.name}
+          onClose={() => {
+            setChangingName(null);
           }}
-          onCancel={
-            doing.kind === "add"
-              ? null
-              : () => {
-                  setDoing({ kind: "add" });
-                }
-          }
-        />
+        >
+          <CityForm
+            key={changing.name}
+            city={changing}
+            zones={cities.zones}
+            onSaved={saved}
+            onCancel={() => {
+              setChangingName(null);
+            }}
+          />
+        </FormDrawer>
       )}
     </Panel>
   );

@@ -18,7 +18,8 @@
 }
 
 .panel {
-  border: var(--hairline) solid var(--paper-line);
+  border: var(--hairline) solid var(--ui-line);
+  background: var(--ui-raised);
 }
 
 /* ---- The day's money, and the charges beneath it --------------------------- */
@@ -58,7 +59,7 @@
   gap: var(--sp-32);
   margin: 0;
   padding: var(--sp-20) var(--sp-20) var(--sp-16);
-  border-bottom: var(--hairline) solid var(--text);
+  border-bottom: var(--hairline) solid var(--ui-text);
 }
 
 /* The amount over its name, as the board draws it; the pair is read in its own order. */
@@ -80,7 +81,7 @@
 .figureName {
   margin-top: var(--sp-8);
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* The second line of a figure's name: what the figure leaves out, or what it is not. */
@@ -96,14 +97,14 @@
  */
 .unrecorded {
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .chargesTitle {
   margin: var(--sp-16) 0 0;
   padding: 0 var(--sp-20);
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .charges {
@@ -121,7 +122,7 @@
 /* Named apart from .charge, which is the queue's button and stands on ink. */
 .chargeRow {
   padding: var(--sp-12) var(--sp-20);
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 .chargeLine {
@@ -144,13 +145,13 @@
   margin: var(--sp-8) 0 0;
   font-size: var(--fs-14);
   line-height: var(--lh-145);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* A ruling of the day, and when it was made, where a charge's amount stands above. */
 .ruling {
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   white-space: nowrap;
   font-variant-numeric: lining-nums tabular-nums;
 }
@@ -171,7 +172,7 @@
 /* The client, whose page is where their visit and their number are. */
 .client {
   font-size: var(--fs-15);
-  color: var(--text);
+  color: var(--ui-text);
   text-decoration: underline;
   text-underline-offset: var(--sp-4);
 }
@@ -179,7 +180,7 @@
 .caseSub {
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* ---- The note a ruling needs, drawn beneath the evidence ----------------- */
@@ -202,11 +203,11 @@
 .confirm {
   margin-top: var(--sp-16);
   padding-left: var(--sp-16);
-  border-left: var(--rule-strong) solid var(--brass);
+  border-left: var(--rule-strong) solid var(--ui-accent);
 }
 
 .confirm:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
+  outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: var(--focus-offset-wide);
 }
 
@@ -220,12 +221,12 @@
   margin: var(--sp-4) 0 0;
   font-size: var(--fs-14);
   line-height: var(--lh-145);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .facts {
   margin: var(--sp-16) 0 0;
-  border-top: var(--hairline) solid var(--paper-line);
+  border-top: var(--hairline) solid var(--ui-line);
 }
 
 .fact {
@@ -233,12 +234,12 @@
   justify-content: space-between;
   gap: var(--sp-16);
   padding: var(--sp-8) 0;
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
   font-size: var(--fs-15);
 }
 
 .factName {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .factValue {

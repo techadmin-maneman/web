@@ -5,6 +5,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, json, type Answers, type OpsReply } from "./fixtures.ts";
+import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { purchasing as copy } from "../../apps/ops/src/content/purchasing.ts";
 
 const ORDER = {
@@ -140,9 +141,16 @@ test("cancels an order, with why", async ({ page }) => {
   await expect(panel).toContainText(copy.order.cancelledWhy("Out of stock"));
 });
 
-test("drafts an order from a supplier’s list, its total shown first", async ({ page }) => {
+/** The form that drafts an order, opened from the page's head. */
+async function newOrder(page: Page) {
+  await page.getByRole("button", { name: copy.draft.title }).click();
+  return page.getByRole("dialog", { name: copy.draft.title });
+}
+
+test("drafts an order from a supplier’s list, a box to a line, its total shown first", async ({ page }) => {
   await open(page, { "POST /api/purchase-orders": json(BOOK) });
-  const draft = page.getByRole("region", { name: copy.draft.title });
+  const draft = await newOrder(page);
+  await expectOneBoxALine(page, copy.draft.title);
   await expect(draft.getByLabel(copy.draft.quantity)).toHaveValue("24");
   await draft.getByLabel(copy.draft.quantity).fill("36");
   await expect(draft).toContainText(copy.draft.total("Rs. 1,620"));
@@ -163,13 +171,15 @@ test("questions a price far above what Settings say an item costs, and clears th
 }) => {
   const cheap = { ...BOOK, consumables: [{ code: "solvent", name: "Solvent", unit: "ml", unit_cost: 450 }] };
   await open(page, { "GET /api/purchase-orders": json(cheap), "POST /api/purchase-orders": json(cheap) });
-  const draft = page.getByRole("region", { name: copy.draft.title });
+  const draft = await newOrder(page);
   await expect(draft).toContainText(copy.draft.farAbove("Rs. 45", "ml", 10, "Rs. 4.50"));
   await draft.getByLabel(copy.draft.quantity).fill("36");
   await draft.getByLabel(copy.draft.note).fill("Rush");
   await draft.getByRole("button", { name: copy.draft.send }).click();
-  await expect(draft.getByLabel(copy.draft.quantity)).toHaveValue("24");
-  await expect(draft.getByLabel(copy.draft.note)).toHaveValue("");
+  await expect(draft).toBeHidden();
+  const again = await newOrder(page);
+  await expect(again.getByLabel(copy.draft.quantity)).toHaveValue("24");
+  await expect(again.getByLabel(copy.draft.note)).toHaveValue("");
 });
 
 test("receives what arrived of a sent order, and lists the receipt with its landed cost", async ({ page }) => {

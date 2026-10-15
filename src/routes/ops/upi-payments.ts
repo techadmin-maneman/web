@@ -1,5 +1,5 @@
 // A visit paid by UPI at the visit, while online payment is off: ops record the payment once it reaches the account
-// (docs/decisions/0208-paid-at-the-visit-by-upi.md), which sends the client their receipt.
+// (docs/decisions/0209-paid-at-the-visit-by-upi.md), which sends the client their receipt.
 
 import { z } from "@hono/zod-openapi";
 import { recordUpiPayment } from "../../domain/money/upi-payments.ts";

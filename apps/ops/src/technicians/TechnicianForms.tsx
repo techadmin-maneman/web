@@ -3,7 +3,7 @@
 // board.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { capsLook } from "@maneman/ui/Caps";
+import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
@@ -11,6 +11,7 @@ import { mobileDigits } from "@maneman/web-kit/mobile";
 import { useState } from "react";
 import { type ReturnedVisit, type TechnicianChange, type TechnicianSummary } from "../api.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
+import { FormDrawer } from "../components/FormDrawer.tsx";
 import { technicians } from "../content.ts";
 import { GIVING_NO_CITY, useAccess } from "../lib/access.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -276,36 +277,27 @@ function ChangeForm({
   );
 }
 
-/** The number they sign in with, their zone and their city; a gap where none is recorded. */
+/** The number they sign in with, their zone, their city and whether they fit; a gap where none is recorded. */
 function Facts({ technician }: { technician: TechnicianSummary }) {
   const copy = technicians.details;
   return (
-    <dl className={styles.facts}>
-      <div className={styles.fact}>
-        <dt className={styles.label}>{copy.mobile}</dt>
-        <dd className={styles.factValue}>
-          {technician.mobile === null ? technicians.unknown : phoneWords(technician.mobile)}
-        </dd>
-      </div>
-      <div className={styles.fact}>
-        <dt className={styles.label}>{copy.zone}</dt>
-        <dd className={styles.factValue}>{technician.zone ?? technicians.unknown}</dd>
-      </div>
-      <div className={styles.fact}>
-        <dt className={styles.label}>{copy.city}</dt>
-        <dd className={styles.factValue}>{technician.city ?? technicians.noCity}</dd>
-      </div>
-      <div className={styles.fact}>
-        <dt className={styles.label}>{copy.fitting}</dt>
-        <dd className={styles.factValue}>{technician.fits_trained ? copy.trained : copy.notTrained}</dd>
-      </div>
-    </dl>
+    <DescriptionList
+      items={[
+        {
+          term: copy.mobile,
+          details: technician.mobile === null ? technicians.unknown : phoneWords(technician.mobile),
+        },
+        { term: copy.zone, details: technician.zone ?? technicians.unknown },
+        { term: copy.city, details: technician.city ?? technicians.noCity },
+        { term: copy.fitting, details: technician.fits_trained ? copy.trained : copy.notTrained },
+      ]}
+    />
   );
 }
 
 /**
- * Their details, with the ways to change them and to switch them off or back on where they are ours to change. Each
- * change reads the roster again, because the dispatch board and the sign-in read the same rows.
+ * Their details, with the ways to change them, in a drawer, and to switch them off or back on where they are ours to
+ * change. Each change reads the roster again, because the dispatch board and the sign-in read the same rows.
  */
 export function Details({
   technician,
@@ -336,52 +328,48 @@ export function Details({
   };
 
   return (
-    <section className={styles.section} aria-labelledby="details-title">
-      <h3 className={capsLook(styles.sectionTitle)} id="details-title">
-        {copy.title}
-      </h3>
+    <section aria-label={copy.title}>
       {!active && <p className={styles.offNote}>{technicians.switchOn.note}</p>}
-      {changing ? (
-        <ChangeForm
-          technician={technician}
-          cities={cities}
-          onSaved={async () => {
-            await onChange();
-            stopChanging();
-          }}
-          onCancel={stopChanging}
-        />
-      ) : (
-        <Facts technician={technician} />
-      )}
-      {!changing && (
-        <>
-          {mayChange && (
-            <div className={styles.actions}>
-              <Button
-                variant="outline"
-                size="small"
-                className={styles.quiet}
-                aria-label={copy.changeLabel(technician.name)}
-                onClick={() => {
-                  setChanging(true);
-                }}
-              >
-                {copy.change}
-              </Button>
-            </div>
-          )}
-          {maySwitchOff && <SwitchOff technician={technician} onSwitchedOff={onSwitchedOff} />}
-          {maySwitchOn && <SwitchOn technician={technician} onSwitchedOn={onSwitchedOn} />}
-          {mayDelete && (
-            <DeleteAction
-              name={technician.name}
-              send={() => techniciansApi.deleteTechnician(technician.id)}
-              refusal={(code) => (code === "in_use" ? technicians.inUse : refusal(code))}
-              onDeleted={onDeleted}
-            />
-          )}
-        </>
+      <Facts technician={technician} />
+      <div className={styles.recordActions}>
+        {mayChange && (
+          <div className={styles.actions}>
+            <Button
+              variant="outline"
+              size="small"
+              className={styles.quiet}
+              aria-label={copy.changeLabel(technician.name)}
+              onClick={() => {
+                setChanging(true);
+              }}
+            >
+              {copy.change}
+            </Button>
+          </div>
+        )}
+        {maySwitchOff && <SwitchOff technician={technician} onSwitchedOff={onSwitchedOff} />}
+        {maySwitchOn && <SwitchOn technician={technician} onSwitchedOn={onSwitchedOn} />}
+        {mayDelete && (
+          <DeleteAction
+            name={technician.name}
+            send={() => techniciansApi.deleteTechnician(technician.id)}
+            refusal={(code) => (code === "in_use" ? technicians.inUse : refusal(code))}
+            onDeleted={onDeleted}
+          />
+        )}
+      </div>
+      {changing && (
+        <FormDrawer title={technician.name} onClose={stopChanging}>
+          <ChangeForm
+            technician={technician}
+            cities={cities}
+            onSaved={async () => {
+              await onChange();
+              stopChanging();
+            }}
+            onCancel={stopChanging}
+          />
+        </FormDrawer>
       )}
     </section>
   );

@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { CLIENT, empty, fails, json, NEW_RECORD, RECORD, type Call, type OpsReply } from "./fixtures.ts";
@@ -215,13 +216,24 @@ test("says so when nothing was linked or invoiced yet", async ({ page }) => {
   );
 });
 
+/** The form that changes a client's free service visits, opened from their panel. */
+async function creditForm(page: Page) {
+  await page
+    .getByRole("region", { name: opsCopy.clients.credits.title })
+    .getByRole("button", { name: opsCopy.clients.credits.adjust })
+    .click();
+  return page.getByRole("dialog", { name: opsCopy.clients.credits.title });
+}
+
 // A credit given or taken in error once needed SQL to put right.
 test("puts a client’s credits right, with the reason, and shows the balance it answers", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
     [ADD_CREDITS]: json({ visits: 1, earliest_expiry: "2028-01-03T06:00:00.000Z" }),
   });
-  const credits = page.getByRole("region", { name: opsCopy.clients.credits.title });
-  await expect(credits).toContainText("2 visits · use by 3 Jan 2028");
+  await expect(page.getByRole("region", { name: opsCopy.clients.credits.title })).toContainText(
+    "2 visits · use by 3 Jan 2028",
+  );
+  const credits = await creditForm(page);
   const save = credits.getByRole("button", { name: opsCopy.clients.credits.save });
   await expect(save).toBeDisabled();
 
@@ -238,7 +250,7 @@ test("puts a client’s credits right, with the reason, and shows the balance it
 
 test("offers no change of nought, or of more than twelve visits either way", async ({ page }) => {
   await openClient(page, `/clients/${CLIENT.id}/payments`);
-  const credits = page.getByRole("region", { name: opsCopy.clients.credits.title });
+  const credits = await creditForm(page);
   await credits.getByRole("radio", { name: "Goodwill" }).check();
   const field = credits.getByLabel(opsCopy.clients.credits.change);
   const save = credits.getByRole("button", { name: opsCopy.clients.credits.save });
@@ -254,7 +266,7 @@ test("says so when the API would take away more than the client holds", async ({
   await openClient(page, `/clients/${CLIENT.id}/payments`, {
     [ADD_CREDITS]: fails(400, "invalid_request"),
   });
-  const credits = page.getByRole("region", { name: opsCopy.clients.credits.title });
+  const credits = await creditForm(page);
   await credits.getByLabel(opsCopy.clients.credits.change).fill("-5");
   await credits.getByRole("radio", { name: "Correction" }).check();
   await credits.getByRole("button", { name: opsCopy.clients.credits.save }).click();

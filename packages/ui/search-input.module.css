@@ -1,0 +1,28 @@
+/* A search box (./SearchInput.tsx), as wide as the app's search (--search-width, ./base.css). */
+
+@layer base, ui;
+
+@layer ui {
+  .search {
+    width: var(--search-width);
+    max-width: 100%;
+  }
+
+  .box {
+    position: relative;
+  }
+
+  .icon {
+    position: absolute;
+    top: 50%;
+    left: var(--sp-12);
+    transform: translateY(-50%);
+    color: var(--ui-text-muted);
+    pointer-events: none;
+  }
+
+  .box .input {
+    margin-top: 0;
+    padding-left: var(--sp-32);
+  }
+}

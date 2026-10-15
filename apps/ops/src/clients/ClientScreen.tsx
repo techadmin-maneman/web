@@ -5,7 +5,7 @@
 import { TextLink } from "@maneman/ui/TextLink";
 import { ButtonLink } from "@maneman/ui/Button";
 import { Icon } from "@maneman/ui/Icon";
-import { classes } from "@maneman/ui/classes";
+import { DescriptionList } from "@maneman/ui/DescriptionList";
 import { ICONS } from "@maneman/brand/icons";
 import { Tabs, TAB } from "@maneman/ui/Tabs";
 import { failedRequestId, useLoad, whenLoaded } from "@maneman/ui/useLoad";
@@ -14,6 +14,7 @@ import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { useCallback, useEffect, useState } from "react";
 import { api, isErased, type ClientInvite, type ClientRecord } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
+import { PageActions, useRecordTitle } from "../components/PageHead.tsx";
 import { clients } from "../content.ts";
 import { rememberClient } from "../lib/client-search.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -56,20 +57,33 @@ function InvitedBy({ invite }: { invite: ClientInvite }) {
   );
 }
 
+/** The client's name as the page's title, the way to message them at its right, and their standing beneath. */
 function Head({ record, credits, invite }: { record: ClientRecord; credits: Credits; invite: ClientInvite | null }) {
+  useRecordTitle(record.name);
   const mobile = phoneWords(record.mobile);
-  const meta = [
-    { key: clients.meta.state, value: clients.states[record.state] },
-    { key: clients.meta.credits, value: creditsOf(credits) },
+  const facts = [
+    { term: clients.meta.state, details: clients.states[record.state] },
+    { term: clients.meta.credits, details: creditsOf(credits) },
+    {
+      term: clients.meta.replacement,
+      details: <span className={styles.metaBrass}>{replacementDueOf(record.history)}</span>,
+    },
+    {
+      term: clients.meta.mobile,
+      details: (
+        <TextLink compact href={`tel:${record.mobile}`} aria-label={clients.callLabel(record.name, mobile)}>
+          {mobile}
+        </TextLink>
+      ),
+    },
+    ...(invite === null ? [] : [{ term: clients.meta.invitedBy, details: <InvitedBy invite={invite} /> }]),
   ];
   return (
-    <div className={shared.head}>
-      <div className={shared.headLine}>
-        <h2 className={shared.name}>{record.name}</h2>
+    <>
+      <PageActions>
         <ButtonLink
           variant="outline"
           size="small"
-          className={shared.whatsapp}
           href={whatsappChat(record.mobile)}
           target="_blank"
           rel="noopener noreferrer"
@@ -78,36 +92,9 @@ function Head({ record, credits, invite }: { record: ClientRecord; credits: Cred
           <Icon d={ICONS.whatsapp} size="sm" className={shared.icon} />
           {clients.whatsapp}
         </ButtonLink>
-      </div>
-      <dl className={shared.meta}>
-        {meta.map((each) => (
-          <div key={each.key}>
-            <dt className={shared.metaKey}>{each.key}</dt>
-            <dd className={styles.metaValue}>{each.value}</dd>
-          </div>
-        ))}
-        <div>
-          <dt className={shared.metaKey}>{clients.meta.replacement}</dt>
-          <dd className={classes(styles.metaValue, styles.metaBrass)}>{replacementDueOf(record.history)}</dd>
-        </div>
-        <div>
-          <dt className={shared.metaKey}>{clients.meta.mobile}</dt>
-          <dd className={styles.metaValue}>
-            <TextLink href={`tel:${record.mobile}`} aria-label={clients.callLabel(record.name, mobile)}>
-              {mobile}
-            </TextLink>
-          </dd>
-        </div>
-        {invite !== null && (
-          <div>
-            <dt className={shared.metaKey}>{clients.meta.invitedBy}</dt>
-            <dd className={styles.metaValue}>
-              <InvitedBy invite={invite} />
-            </dd>
-          </div>
-        )}
-      </dl>
-    </div>
+      </PageActions>
+      <DescriptionList items={facts} />
+    </>
   );
 }
 
@@ -196,16 +183,8 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
   return (
     <>
       {whenLoaded(loaded, {
-        loading: (
-          <div className={shared.waiting}>
-            <Loading />
-          </div>
-        ),
-        failed: (
-          <div className={shared.waiting}>
-            <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />
-          </div>
-        ),
+        loading: <Loading />,
+        failed: <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />,
         loaded: (record) =>
           isErased(record) ? (
             <ErasedRecord record={record} onChanged={retry} />
@@ -217,7 +196,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                 invite={attached?.invite ?? record.invite}
               />
               <OpenTasks clientId={clientId} />
-              <Tabs className={shared.tabs} label={record.name}>
+              <Tabs label={record.name}>
                 {clients.tabs.map((each) => (
                   <OpsLink
                     key={each.tab}
@@ -229,7 +208,7 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
                   </OpsLink>
                 ))}
               </Tabs>
-              <div className={shared.panel}>
+              <div>
                 <Tab
                   clientId={clientId}
                   tab={tab}

@@ -26,7 +26,7 @@
 .reference {
   display: block;
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .table .figure {
@@ -40,11 +40,6 @@
 
 .actions button:first-child {
   margin-left: 0;
-}
-
-.table .acting > td {
-  padding: 0 0 var(--sp-16);
-  background: var(--paper-light);
 }
 
 .ask {

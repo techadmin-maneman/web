@@ -10,5 +10,5 @@
 
 .caps {
   letter-spacing: var(--tracking-12);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }

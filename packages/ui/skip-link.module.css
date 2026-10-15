@@ -9,8 +9,8 @@
     left: var(--sp-8);
     z-index: var(--z-skip);
     padding: var(--sp-8) var(--sp-16);
-    background: var(--paper);
-    color: var(--text);
+    background: var(--ui-ground);
+    color: var(--ui-text);
     transform: translateY(-200%);
   }
 

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { TaskGroup, Tasks } from "../../../../../apps/ops/src/api.ts";
 import { SECTIONS } from "../../../../../apps/ops/src/route.ts";
 import { DECIDED_IN, waitingIn } from "../../../../../apps/ops/src/tasks/decided.ts";
-import { TASK_DEPARTMENTS } from "../../../../../src/policy/console-routes.ts";
+import { ROUTE_NEEDS, TASK_DEPARTMENTS } from "../../../../../src/policy/console-routes.ts";
 
 const NOW = new Date("2027-09-22T05:00:00.000Z");
 
@@ -92,10 +92,13 @@ describe("the counts beside the console’s sections", () => {
     expect(waitingIn(board([]), NOW).size).toBe(0);
   });
 
-  it("counts a group only in a section of the department that decides it, which the board shows that group to", () => {
+  // The page's department is the one its opening call needs (src/policy/console-routes.ts).
+  it("counts a group only on a page of the department that decides it, which the board shows that group to", () => {
     for (const [group, decided] of Object.entries(DECIDED_IN)) {
       const section = SECTIONS.find((each) => each.path === decided.page);
-      expect(section?.department, group).toBe(TASK_DEPARTMENTS[group as TaskGroup["group"]]);
+      const need = section === undefined ? undefined : ROUTE_NEEDS[section.reads];
+      const department = typeof need === "object" ? need.department : undefined;
+      expect(department, group).toBe(TASK_DEPARTMENTS[group as TaskGroup["group"]]);
     }
   });
 });

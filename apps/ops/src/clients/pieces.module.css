@@ -36,12 +36,12 @@
 
 .lot,
 .failure {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* The piece still in wear: the board sets its replacement date in brass and leaves the replaced ones quiet. */
 .due {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .dueSoon {

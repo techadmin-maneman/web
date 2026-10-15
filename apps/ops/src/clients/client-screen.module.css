@@ -1,10 +1,5 @@
 /* What ./ClientScreen.tsx alone draws; what it shares is in ./clients.module.css. */
 
-.metaValue {
-  margin: var(--sp-4) 0 0;
-  font-size: var(--fs-15);
-}
-
 /* The board letters the replacement due in brass, as it does the live piece's date. */
 .metaBrass {
   color: var(--status-attention);

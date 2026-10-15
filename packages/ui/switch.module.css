@@ -12,8 +12,8 @@
     width: var(--switch-width);
     height: var(--sp-24);
     padding: var(--sp-2);
-    border: var(--hairline) solid var(--paper-control);
-    background: var(--white);
+    border: var(--hairline) solid var(--ui-line-control);
+    background: var(--ui-box);
     cursor: pointer;
   }
 
@@ -27,17 +27,17 @@
   .knob {
     width: var(--sp-20);
     height: var(--sp-20);
-    background: var(--paper-line);
+    background: var(--ui-line);
   }
 
   .switch[aria-checked="true"] {
     justify-content: flex-end;
-    border-color: var(--ink);
-    background: var(--ink);
+    border-color: var(--ui-strong);
+    background: var(--ui-strong);
   }
 
   .switch[aria-checked="true"] .knob {
-    background: var(--paper);
+    background: var(--ui-on-strong);
   }
 
   .switch:disabled {

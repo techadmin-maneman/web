@@ -46,18 +46,18 @@
   display: block;
   font-size: var(--fs-13);
   font-weight: var(--weight-regular);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 .retired th,
 .retired td {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 .edit {
   text-align: right;
 } /* The open row's strip: no padding of its own, as its actions and forms set their own margins. */
 .table .strip > td {
   padding: 0 0 var(--sp-16);
-  background: var(--paper-light);
+  background: var(--ui-raised);
 }
 .add {
   margin-top: var(--sp-16);
@@ -67,7 +67,7 @@
   font-size: var(--fs-14);
 }
 .muted {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 .ruleLink {
   align-self: center;
@@ -75,7 +75,7 @@
 } /* A kind of visit, its heading over its table of services, on the panel's rules. */
 .kindSection {
   margin-top: var(--sp-20);
-  border-top: var(--hairline) solid var(--text);
+  border-top: var(--hairline) solid var(--ui-text);
 }
 .kindTitle {
   margin: var(--sp-16) var(--sp-20) 0;

@@ -25,17 +25,28 @@ export function ratio(first: string, second: string): number {
   return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05);
 }
 
-/** The colour roles (packages/brand/tokens.css), each as the palette token it aliases on paper and on the ink. */
-function rolesIn(selector: string): Map<string, string> {
-  const css = readFileSync("packages/brand/tokens.css", "utf8");
-  const start = css.lastIndexOf(`${selector} {`);
-  const block = css.slice(start, css.indexOf("}", start));
-  return new Map(
-    [...block.matchAll(/(--[\w-]+):\s*var\((--[\w-]+)\)/g)].map(([, role = "", token = ""]) => [role, token]),
-  );
+/** The colour roles a stylesheet's blocks for one selector set, each as the palette token it aliases. */
+function rolesIn(file: string, selector: string): Map<string, string> {
+  const css = readFileSync(file, "utf8");
+  const roles = new Map<string, string>();
+  for (let start = css.indexOf(`${selector} {`); start !== -1; start = css.indexOf(`${selector} {`, start + 1)) {
+    const block = css.slice(start, css.indexOf("}", start));
+    for (const [, role = "", token = ""] of block.matchAll(/(--[\w-]+):\s*var\((--[\w-]+)\)/g)) roles.set(role, token);
+  }
+  return roles;
 }
 
-const ROLES = { paper: rolesIn(":root"), ink: rolesIn('[data-ground="ink"]') };
+/**
+ * The roles on paper (packages/brand/tokens.css), and on the ink: a ground of ink, and the console's dark theme
+ * (apps/ops/src/styles/theme.css), which takes the paper looks' roles to the ink's.
+ */
+const ROLES = {
+  paper: rolesIn("packages/brand/tokens.css", ":root"),
+  ink: new Map([
+    ...rolesIn("packages/brand/tokens.css", '[data-ground="ink"]'),
+    ...rolesIn("apps/ops/src/styles/theme.css", ':root[data-theme="dark"]'),
+  ]),
+};
 const INK_GROUNDS = new Set(["--ink", "--ink-deep", "--ink-night"]);
 
 /** WCAG's contrast ratio between two of the brand's tokens, given by name; a role is read as it is on that ground. */

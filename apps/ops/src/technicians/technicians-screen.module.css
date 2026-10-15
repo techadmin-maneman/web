@@ -11,7 +11,7 @@
   display: flex;
   align-items: baseline;
   gap: var(--sp-12);
-  border-bottom: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
 }
 
 /* The roster's search and zone list, flush with the table beneath. */

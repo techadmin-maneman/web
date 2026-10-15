@@ -3,6 +3,8 @@
 
 import type { Page } from "@playwright/test";
 import { expect } from "../support.ts";
+import { settingsPageNames } from "../../apps/ops/src/content/settings-shell.ts";
+import type { SettingsTab } from "../../apps/ops/src/route.ts";
 import { answer, BLACKOUTS, DISCOUNT_CODES, json, SERVICE_AREA, SERVICES, SETTINGS, type Answers } from "./fixtures.ts";
 
 export const ROUTES: Answers = {
@@ -14,17 +16,12 @@ export const ROUTES: Answers = {
   "GET /api/discount-codes": json(DISCOUNT_CODES),
 };
 
-/** The panels that were tabs of Settings and are now in sections of their own departments, by their headings. */
-export const OWN_SECTIONS: Readonly<Record<string, string>> = {
-  "/prices": "Prices",
-  "/discount-codes": "Discount codes",
-  "/areas/served": "Areas",
-};
-
-export async function open(page: Page, path = "/settings", extra: Answers = {}): Promise<void> {
+/** A Settings page by its path's last part: "/settings/booking" is headed "Booking". */
+export async function open(page: Page, path: `/settings/${SettingsTab}`, extra: Answers = {}): Promise<void> {
   await answer(page, { ...ROUTES, ...extra });
   await page.goto(path);
-  await expect(page.getByRole("heading", { level: 1, name: OWN_SECTIONS[path] ?? "Settings" })).toBeVisible();
+  const tab = path.slice("/settings/".length) as SettingsTab;
+  await expect(page.getByRole("heading", { level: 1, name: settingsPageNames[tab] })).toBeVisible();
 }
 
 export const posted = (page: Page, path: string) =>

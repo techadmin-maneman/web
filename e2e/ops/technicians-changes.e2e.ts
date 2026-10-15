@@ -113,16 +113,17 @@ test("changes a technician’s details, sending only what changed", async ({ pag
   await expect(main.getByText("+91 98100 00001")).toBeVisible();
 
   await main.getByRole("button", { name: "Edit Imran Qureshi’s details" }).click();
-  await main.getByRole("textbox", { name: opsCopy.technicians.fields.zone }).fill("Sec 1–39");
+  const form = page.getByRole("dialog", { name: "Imran Qureshi" });
+  await form.getByRole("textbox", { name: opsCopy.technicians.fields.zone }).fill("Sec 1–39");
   const sent = page.waitForRequest((request) => request.method() === "PATCH");
   roster.current = {
     ...TECHNICIANS,
     technicians: TECHNICIANS.technicians.map((each) => (each.id === IMRAN ? { ...each, zone: "Sec 1–39" } : each)),
   };
-  await main.getByRole("button", { name: opsCopy.technicians.details.save }).click();
+  await form.getByRole("button", { name: opsCopy.technicians.details.save }).click();
 
   expect((await sent).postDataJSON()).toEqual({ zone: "Sec 1–39" });
-  await expect(main.getByRole("button", { name: opsCopy.technicians.details.save })).toBeHidden();
+  await expect(form).toBeHidden();
   await expect(main).toContainText("Sec 1–39");
 });
 
@@ -132,11 +133,12 @@ test("moves a technician to another city, or to none", async ({ page }) => {
   await expect(main.getByRole("definition").filter({ hasText: "Gurgaon" })).toBeVisible();
 
   await main.getByRole("button", { name: "Edit Imran Qureshi’s details" }).click();
-  const city = main.getByRole("combobox", { name: opsCopy.technicians.fields.city });
+  const form = page.getByRole("dialog", { name: "Imran Qureshi" });
+  const city = form.getByRole("combobox", { name: opsCopy.technicians.fields.city });
   await expect(city).toHaveValue("Gurgaon");
   await city.selectOption("No city · no bookings");
   const sent = page.waitForRequest((request) => request.method() === "PATCH");
-  await main.getByRole("button", { name: opsCopy.technicians.details.save }).click();
+  await form.getByRole("button", { name: opsCopy.technicians.details.save }).click();
 
   expect((await sent).postDataJSON()).toEqual({ city: null });
 });

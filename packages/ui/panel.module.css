@@ -1,33 +1,43 @@
-/* The console's panel (./Panel.tsx): a hairline box, headed by its title over a rule in the text's own ink. */
+/* The console's panel (./Panel.tsx): a card raised off the page, its title over a hairline, its actions at the right. */
 
 @layer base, ui;
 
 @layer ui {
   .panel {
-    border: var(--hairline) solid var(--border-subtle);
+    min-width: 0;
+    border: var(--hairline) solid var(--ui-line);
+    background: var(--ui-raised);
   }
 
   .padded {
-    min-width: 0;
     padding-bottom: var(--sp-16);
   }
 
   .head {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--sp-16);
-    padding: var(--sp-16) var(--sp-20);
-    border-bottom: var(--hairline) solid var(--on-surface);
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-8) var(--sp-16);
+    min-height: var(--sp-48);
+    padding: var(--sp-8) var(--sp-20);
+    border-bottom: var(--hairline) solid var(--ui-line);
+  }
+
+  /* A choice in the head, its label read and not shown, sits on the head's line. */
+  .head :is(input, select) {
+    margin-top: 0;
   }
 
   .title {
+    flex: 1;
+    min-width: 0;
     margin: 0;
+    color: var(--ui-text);
   }
 
   .count {
     font-size: var(--fs-14);
-    color: var(--on-surface-muted);
+    color: var(--ui-text-muted);
     font-variant-numeric: tabular-nums;
   }
 }

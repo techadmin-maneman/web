@@ -34,10 +34,16 @@ describe("gold", () => {
     ]);
   });
 
+  // The navigation's mark and its chosen entry are gilt through the shared side navigation's own role. The dark theme
+  // draws on the ink, where what to look at is gilt, as on every ink ground (tokens-apps.css); it says so twice, once
+  // for a choice of dark and once for the computer's.
   it("marks only the console's selection, beside the mark; its one primary action is on ink", () => {
     expect(gilded(stylesheets("apps/ops/src"))).toEqual([
-      "apps/ops/src/components/shell.module.css .mark",
-      'apps/ops/src/components/shell.module.css .section[aria-current="page"]',
+      'apps/ops/src/styles/theme.css :root[data-theme="dark"]',
+      'apps/ops/src/styles/theme.css :root:not([data-theme="light"])',
     ]);
+    expect(readFileSync("packages/ui/base.css", "utf8")).toContain("--nav-mark: var(--gilt);");
+    const nav = readFileSync("packages/ui/side-nav.module.css", "utf8");
+    expect(nav).toMatch(/\.item\[aria-current="page"\] \{[^}]*var\(--nav-mark\)/);
   });
 });

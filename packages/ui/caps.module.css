@@ -18,7 +18,7 @@
   }
 
   .brass {
-    color: var(--brass-text);
+    color: var(--ui-attention);
   }
 
   .muted {

@@ -9,6 +9,7 @@ const STYLES = {
   "title-1": styles.title1,
   "title-2": styles.title2,
   "title-3": styles.title3,
+  "title-4": styles.title4,
   "body-large": styles.bodyLarge,
   body: styles.body,
   label: styles.label,

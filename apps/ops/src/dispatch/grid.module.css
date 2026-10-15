@@ -25,16 +25,16 @@
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  border-bottom: var(--hairline) solid var(--text);
-  background: var(--paper);
+  border-bottom: var(--hairline) solid var(--ui-text);
+  background: var(--ui-ground);
 }
 
 .tech {
   position: sticky;
   left: 0;
   z-index: var(--z-raised);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  background: var(--paper);
+  border-bottom: var(--hairline) solid var(--ui-line);
+  background: var(--ui-ground);
 }
 
 .corner {
@@ -44,7 +44,7 @@
 
 .day {
   padding: var(--sp-8) var(--sp-8);
-  border-left: var(--hairline) solid var(--paper-line);
+  border-left: var(--hairline) solid var(--ui-line);
   font-weight: var(--weight-regular);
   text-align: left;
   vertical-align: top;
@@ -64,7 +64,7 @@
 }
 
 .util {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 /* The day the week turns on, which the board letters in brass so the peak reads without a chart. */
@@ -74,14 +74,14 @@
 
 .zone {
   margin-top: var(--sp-4);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .cell {
   height: var(--ops-cell);
   padding: var(--sp-4);
-  border-bottom: var(--hairline) solid var(--paper-line);
-  border-left: var(--hairline) solid var(--paper-line);
+  border-bottom: var(--hairline) solid var(--ui-line);
+  border-left: var(--hairline) solid var(--ui-line);
   vertical-align: top;
 }
 
@@ -91,7 +91,7 @@
  * even if something is.
  */
 .away {
-  background: var(--paper-shade);
+  background: var(--ui-shade);
 }
 
 /* The "Leave" mark, in the console's label (components/label.module.css), not sans capitals. */
@@ -144,15 +144,15 @@
 }
 
 .svc {
-  border-left-color: var(--paper-line);
-  background: var(--paper-light);
-  color: var(--text);
+  border-left-color: var(--ui-line);
+  background: var(--ui-raised);
+  color: var(--ui-text);
 }
 
 .repl {
-  border-left-color: var(--brass);
-  background: var(--paper-shade);
-  color: var(--text);
+  border-left-color: var(--ui-accent);
+  background: var(--ui-shade);
+  color: var(--ui-text);
 }
 
 /* The board's rule is gilt; gold marks only the one primary action (ADR 0025, item 59), so it is the ink's own line. */
@@ -190,7 +190,7 @@
 
 .svc .what,
 .repl .what {
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .fit .what {
@@ -199,12 +199,12 @@
 
 /* A block the search found. */
 .block[data-match] {
-  outline: var(--rule-strong) solid var(--ink);
+  outline: var(--rule-strong) solid var(--focus-colour);
   outline-offset: calc(-1 * var(--rule-strong));
 }
 
 .block:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
+  outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: var(--focus-inset);
 }
 
@@ -222,23 +222,23 @@
 .target {
   min-height: var(--sp-28);
   padding: 0 var(--sp-4);
-  border: var(--hairline) dashed var(--paper-placeholder);
+  border: var(--hairline) dashed var(--ui-line-control);
   background: transparent;
   font: inherit;
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
   text-align: left;
   cursor: pointer;
 }
 
 .target:hover {
   border-style: solid;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--ui-strong);
+  color: var(--ui-on-strong);
 }
 
 .target:focus-visible {
-  outline: var(--focus-width) solid var(--ink);
+  outline: var(--focus-width) solid var(--focus-colour);
   outline-offset: var(--focus-inset);
 }
 
@@ -247,7 +247,7 @@
   display: block;
   margin-top: var(--sp-2);
   font-size: var(--fs-13);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .dayMap {

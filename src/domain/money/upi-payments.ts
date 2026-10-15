@@ -1,4 +1,4 @@
-// A visit paid by UPI at the visit, while online payment is off (docs/decisions/0208-paid-at-the-visit-by-upi.md).
+// A visit paid by UPI at the visit, while online payment is off (docs/decisions/0209-paid-at-the-visit-by-upi.md).
 // Ops booked it with nothing taken; the client pays Mane Man's UPI ID at the door, the technician never handling
 // money; and ops record the payment here once it reaches the account, under the UPI transaction's reference, which
 // sends the client their receipt. Such a payment never passed through Razorpay, so it is refunded by UPI too.

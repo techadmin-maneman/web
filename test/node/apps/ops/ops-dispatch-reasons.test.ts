@@ -23,7 +23,7 @@ describe("a move’s reasons", () => {
   });
 
   it("are drawn in the ink, at 3:1 against the paper", () => {
-    expect(valueOf("packages/ui/field.module.css", ".check", "accent-color")).toBe("var(--ink)");
-    expect(tokenRatio("--ink", "--paper")).toBeGreaterThanOrEqual(3);
+    expect(valueOf("packages/ui/field.module.css", ".check", "accent-color")).toBe("var(--ui-strong)");
+    expect(tokenRatio("--ui-strong", "--paper")).toBeGreaterThanOrEqual(3);
   });
 });

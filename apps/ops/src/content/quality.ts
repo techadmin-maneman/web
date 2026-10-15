@@ -33,7 +33,7 @@ export const quality = {
   close: "Close recall",
   closedSaid: "Closed. The lot stays blocked.",
   failures: "Failure rates",
-  failuresNote: "Pieces fitted from labelled stock in the last year, and how many failed.",
+  failuresPeriod: "Last 12 months",
   noFailures: "No pieces fitted from labelled stock yet.",
   failuresBy: "Group by",
   ways: { code: "Stock code", lot: "Lot", supplier: "Supplier", technician: "Technician" },

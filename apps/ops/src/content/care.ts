@@ -14,7 +14,7 @@ export const care = {
   /** More chats than one page holds. */
   more: "Show older chats",
   loadingMore: "Loading…",
-  latest: (count: number) => `The latest ${String(count)}. Find a chat by name or number, or show older ones.`,
+  latest: (count: number) => `Latest ${String(count)}`,
   columns: {
     client: "Client",
     number: "Number",
@@ -109,6 +109,7 @@ export const care = {
     /** "Fit problem · 2 remedies, 3 free service visits" */
     remedied: (label: string, remedies: number, visits: number) =>
       `${label} · ${String(remedies)} ${remedies === 1 ? "remedy" : "remedies"}, ${String(visits)} free service ${visits === 1 ? "visit" : "visits"}`,
+    byPerson: "By Care person",
     columns: { person: "Care person" },
     noPeople: "No chats with a Care person yet.",
   },
@@ -151,6 +152,7 @@ export const care = {
     text: "Answer",
     holes: "{name} becomes the client’s first name, and {next_visit} their next visit.",
     add: "Add",
+    addOne: "Add a quick reply",
     retire: "Retire",
     retireLabel: (title: string) => `Retire the quick reply ${title}`,
     errors: { not_permitted: NOT_PERMITTED, offline: OFFLINE, unknown: FAILED },

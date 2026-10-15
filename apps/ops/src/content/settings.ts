@@ -2,7 +2,7 @@
 
 import { amountOf } from "@maneman/web-kit/figures";
 import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.ts";
-import { grantPhrasing, settingsTabs } from "./settings-shell.ts";
+import { grantPhrasing } from "./settings-shell.ts";
 import { dispatch } from "./dispatch.ts";
 import { tasks } from "./tasks.ts";
 
@@ -23,7 +23,6 @@ export const settings = {
     `Photos and referral cards: ${(held / 1e9).toFixed(2)} GB of ${String(share / 1e9)} GB`,
   /** Megabytes as Cloudflare counts them, a million bytes. */
   database: (held: number, limit: number) => `Database: ${(held / 1e6).toFixed(0)} MB of ${String(limit / 1e9)} GB`,
-  tabs: settingsTabs,
   /** No board draws discount codes (docs/decisions/0108-discount-codes.md). */
   discountCodes: {
     title: "Discount codes",
@@ -134,7 +133,6 @@ export const settings = {
     },
   },
   rules: {
-    title: "Policies",
     groups: {
       moves: "Moves, cancels and no-shows",
       booking: "Booking and payment",
@@ -151,8 +149,7 @@ export const settings = {
       console: "The console",
       other: "Other policies",
     },
-    jump: "Jump to",
-    lateFees: "Late fees are set in Prices",
+    lateFees: "Late fees are set in Services",
     allowed: (min: number, max: number, unit: string) => `${String(min)}–${String(max)} ${unit}`,
     /** A figure read in words, its range as the words say it: "5 pm to 10 pm, on a 24-hour clock". */
     allowedWords: (min: string, max: string, how: string) => `${min} to ${max}, ${how}`,
@@ -169,12 +166,14 @@ export const settings = {
       ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][day] ?? String(day),
     /** A figure typed outside its bounds, said in the hint's place, since it leaves Save with nothing to send. */
     outOfBounds: (min: string, max: string) => `Enter ${min}–${max}.`,
-    /** A rule with many boxes, shut: "Show all 18". */
-    showAll: (count: number) => `Show all ${String(count)}`,
     save: "Save",
     saving: "Saving…",
     saved: "Saved.",
     reset: "Reset to default",
+    changes: (count: number) => (count === 1 ? "1 change" : `${String(count)} changes`),
+    discard: "Discard",
+    /** Beside the title of a page of policies the person may read and not change. */
+    viewOnly: "View only",
     /** The open-keyed rule's extra row: a base, and the cycle for it. */
     keyName: "Base, as the technician records it",
     keyValue: "Days",
@@ -403,12 +402,11 @@ export const settings = {
   /** What each hair system costs us, for the margin figures (docs/decisions/0152-standard-costs.md). */
   standardCosts: {
     title: "Hair system costs",
-    note: "Cost before GST. Changes count from today.",
-    columns: { product: "Product", cost: "Cost, Rs.", since: "Since" },
+    unit: "Rs., before GST",
+    since: (date: string) => `since ${date}`,
     kinds: { first_fit: "First fit", replacement: "Replacement" },
     notSet: "Not set",
     saved: "Saved.",
-    costLabel: (product: string) => `Cost of ${product}, Rs.`,
     reviewLabel: (product: string) => `Review the cost of ${product}`,
     change: (product: string, was: string, now: string) => `${product}: ${was} → ${now}, from today`,
     errors: {
@@ -635,6 +633,7 @@ export const settings = {
     },
     item: {
       title: (name: string) => `What ${name} supplies`,
+      addOne: "Add an item",
       columns: ["Item", "Their code", "Price", "Pack", "Minimum", "Lead time"],
       none: "Nothing listed yet.",
       consumable: "Item",
@@ -672,6 +671,7 @@ export const settings = {
   },
   consumables: {
     title: "Consumables",
+    add: "Add a consumable",
     columns: ["Consumable", "Cost each", "Low at", "Status"],
     none: "No consumables yet.",
     /** "Kit 5 · hub or stockroom 20 · warehouse 50", the levels each kind of place is low at. */
@@ -704,7 +704,7 @@ export const settings = {
     // No design draws it (docs/decisions/0156-hair-systems-in-stock.md).
     hairSystems: {
       title: "Hair systems",
-      intro: "Each spec kept in stock, counted in pieces. Cost and levels change in the list above.",
+      add: "Add a hair system",
       noProducts: "Add a first-fit service in Services first.",
       product: "Product",
       width: "Base width, inches",
@@ -949,7 +949,6 @@ export const settings = {
       stopLine: "Everyone signed in will see every section.",
       sending: "Saving…",
       back: "Cancel",
-      onlyNational: "Only national Admin · Manage can change this.",
       errors: {
         not_permitted: "Only national Admin · Manage can change this.",
         offline: OFFLINE,
@@ -970,7 +969,6 @@ export const settings = {
       removeLabel: (label: string) => `Remove ${label}`,
       removeTitle: (label: string) => `Remove ${label}?`,
       removeLine: "It’s refused once access control is on.",
-      onlyNational: "Only national Admin · Manage can change service tokens.",
       errors: {
         client_id: "Paste the client ID exactly as shown.",
         label: "Give it a short name.",

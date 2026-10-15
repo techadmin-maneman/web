@@ -8,11 +8,11 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
+import { PageActions, useHeaderSub } from "../components/PageHead.tsx";
 import { tasks } from "../content.ts";
 import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
@@ -24,7 +24,7 @@ import { BookFromTask } from "./BookFromTask.tsx";
 import { CallAboutMove } from "./CallAboutMove.tsx";
 import { PaymentLinkActions } from "./PaymentLinkActions.tsx";
 import { UpiPaymentAction } from "./UpiPaymentAction.tsx";
-import { decidedAt, taskClientPath } from "../lib/task-links.ts";
+import { decidedAt, subjectOf, taskClientPath } from "../lib/task-links.ts";
 import { NeedsAHand } from "./NeedsAHand.tsx";
 import { firstOverdue, ROWS_FOLDED, sectionsOf, type TaskSection } from "./sections.ts";
 import { subOf } from "./task-subs.ts";
@@ -34,17 +34,6 @@ import styles from "./tasks-screen.module.css";
 import { nameParts } from "../lib/who.ts";
 
 type Group = TaskGroup["group"];
-
-/**
- * The first line of a task with no client to name: an erased client has no
- * name left, so the visit heads a no-show, and a disputed charge says only that.
- */
-function unnamedSubject(group: Group, task: Task): string {
-  if (group === "no_show_dispute") return tasks.disputeErased;
-  // A chat from a number we don't know is named by the number.
-  if (task.facts.group === "unanswered_chat") return task.facts.mobile;
-  return tasks.visit(shortDate(indiaDate(task.since)));
-}
 
 /** "priya.sharma@maneman.in" reads "Priya", as the board names an owner in ops by their first name. */
 function ownerName(email: string): string {
@@ -81,7 +70,7 @@ interface RowProps {
 }
 
 function TaskRow({ group, task, now, acting, marked }: RowProps) {
-  const subject = task.person?.name ?? unnamedSubject(group, task);
+  const subject = subjectOf(group, task);
   const where = decidedAt(group, task);
   const action = tasks.decide[group];
   const { owner } = acting;
@@ -225,7 +214,7 @@ function TaskQueue() {
   const [closed, setClosed] = useState<readonly string[]>([]);
   const [unfolded, setUnfolded] = useState<ReadonlySet<Group>>(new Set());
   const [marked, setMarked] = useState<string | null>(null);
-  const heading = useRef<HTMLHeadingElement>(null);
+  const heading = useRef<HTMLElement>(null);
 
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
@@ -262,7 +251,7 @@ function TaskQueue() {
       },
       onClosed: () => {
         setClosed((was) => [...was, key]);
-        // The row is gone, so the keyboard goes to the list's heading rather than to the top of the page.
+        // The row is gone, so the keyboard goes to the list rather than to the top of the page.
         heading.current?.focus();
       },
     };
@@ -289,14 +278,13 @@ function TaskQueue() {
     />
   );
 
+  const open = groups.reduce((sum, group) => sum + group.count, 0);
   return (
-    <section className={shared.queue} aria-labelledby="tasks">
-      <div className={shared.queueHead}>
-        <h2 className={shared.panelTitle} id="tasks" ref={heading} tabIndex={-1}>
-          {tasks.openCount(groups.reduce((sum, group) => sum + group.count, 0))}
-        </h2>
-        <OverdueCount count={overdue} onJump={first === null ? null : goToFirstOverdue} />
-      </div>
+    <section className={shared.queue} aria-labelledby="tasks" ref={heading} tabIndex={-1}>
+      <QueueHead open={open} overdue={overdue} onJump={first === null ? null : goToFirstOverdue} />
+      <VisuallyHidden as="h2" id="tasks">
+        {tasks.openCount(open)}
+      </VisuallyHidden>
       {truncated && <p className={styles.note}>{tasks.truncated}</p>}
       {sections.length === 0 ? (
         <EmptyState look="panel" line={tasks.empty} />
@@ -308,6 +296,17 @@ function TaskQueue() {
         ))
       )}
     </section>
+  );
+}
+
+/** How many are open, beside the page's title, and how many have run over, among its actions. */
+function QueueHead({ open, overdue, onJump }: { open: number; overdue: number; onJump: (() => void) | null }) {
+  useHeaderSub(tasks.openCount(open));
+  if (overdue === 0) return null;
+  return (
+    <PageActions>
+      <OverdueCount count={overdue} onJump={onJump} />
+    </PageActions>
   );
 }
 

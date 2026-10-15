@@ -90,7 +90,7 @@ export const tasks = {
     draft_invoice: "Draft invoice",
     // A group the board does not draw (docs/decisions/0105-a-consultation-and-fit-in-one-visit.md).
     payment_owed: "Payment owed",
-    // A visit paid by UPI at the visit, to record once the money is in the account (ADR 0208).
+    // A visit paid by UPI at the visit, to record once the money is in the account (ADR 0209).
     upi_due: "UPI to record",
     // A group the board does not draw: money owed back that no refund has reached.
     payment_to_refund: "Payment to refund",

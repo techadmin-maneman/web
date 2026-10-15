@@ -9,11 +9,6 @@
   margin: var(--sp-16) var(--sp-20) var(--sp-8);
 }
 
-.table .acting > td {
-  padding: 0 0 var(--sp-16);
-  background: var(--paper-light);
-}
-
 .people {
   min-width: var(--ops-measure);
 }

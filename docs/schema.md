@@ -2537,7 +2537,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `reference_number` | INTEGER | yes |  |  |  |
 | `auto_refund_reason` | TEXT | yes |  |  |  |
 | `payment_checked_at` | TEXT | yes |  |  |  |
-| `pay_at_visit` | INTEGER | no | `0` |  | A paid visit ops booked while online payment is off: nothing is taken at booking, the client pays by UPI at the visit, and ops record the payment once it reaches the account (docs/decisions/0208-paid-at-the-visit-by-upi.md). |
+| `pay_at_visit` | INTEGER | no | `0` |  | A paid visit ops booked while online payment is off: nothing is taken at booking, the client pays by UPI at the visit, and ops record the payment once it reaches the account (docs/decisions/0209-paid-at-the-visit-by-upi.md). |
 
 Indexes:
 

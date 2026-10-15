@@ -3,16 +3,23 @@
 // it, its client moved to another Care person or a matter sent to their city, and the Care team's days off. Every name,
 // number and address is made up.
 
-import { act, createElement } from "react";
+import { act, createElement, Fragment } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Conversation } from "../../apps/ops/src/care/care-api.ts";
-import { CareSettingsScreen, MessagesScreen } from "../../apps/ops/src/care/MessagesScreen.tsx";
+import {
+  CareTeamScreen,
+  MessagesScreen,
+  QuickRepliesScreen,
+  RemediesScreen,
+} from "../../apps/ops/src/care/MessagesScreen.tsx";
 import { care as copy } from "../../apps/ops/src/content/care.ts";
 import { shortDate } from "../../packages/web-kit/dates.ts";
 import { answered } from "./render-hook.ts";
 import { contractChecked } from "./contract-fetch.ts";
 import { RECORD } from "../../e2e/ops/fixtures/clients.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
+import { Shell } from "../../apps/ops/src/components/Shell.tsx";
 
 const ARJUN: Conversation = {
   id: "8c1d9f4b-5e6a-4b7c-9d8e-3f4a5b6c7d8e",
@@ -61,6 +68,8 @@ let asked: string[];
 let posted: { path: string; body: unknown }[];
 
 beforeEach(() => {
+  // The drawers open beside the page, as modal dialogs (../../apps/ops/src/components/FormDrawer.tsx).
+  openDialogsAsJsdomCan();
   asked = [];
   posted = [];
   vi.stubGlobal(
@@ -207,10 +216,21 @@ async function show() {
   await settle();
 }
 
-/** Care settings, the tab beside the inbox: the team, the remedies and the quick replies. */
+/** Care's three Settings pages, drawn together in the console's frame: the team, the remedies and the quick replies. */
 async function showSettings() {
   act(() => {
-    root.render(createElement(CareSettingsScreen));
+    root.render(
+      createElement(Shell, {
+        route: { page: "settings", tab: "quick-replies" },
+        children: createElement(
+          Fragment,
+          null,
+          createElement(CareTeamScreen),
+          createElement(RemediesScreen),
+          createElement(QuickRepliesScreen),
+        ),
+      }),
+    );
   });
   await settle();
 }
@@ -219,26 +239,26 @@ describe("the Messages page", () => {
   it("lists the chats waiting on us, a number we don’t know by that", async () => {
     await show();
     expect(asked).toContain("/api/conversations?view=open");
-    expect(page.textContent).toContain("Arjun Mehta");
-    expect(page.textContent).toContain(ARJUN.last_line);
-    expect(page.textContent).toContain(copy.unknown);
-    expect(page.textContent).toContain(copy.overdue(""));
+    expect(document.body.textContent).toContain("Arjun Mehta");
+    expect(document.body.textContent).toContain(ARJUN.last_line);
+    expect(document.body.textContent).toContain(copy.unknown);
+    expect(document.body.textContent).toContain(copy.overdue(""));
   });
 
   it("opens a chat with our automatic messages in it, and how far each got", async () => {
     await show();
     await act(async () => {
-      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
       await answered();
     });
-    expect(page.textContent).toContain(copy.thread.title("Arjun Mehta"));
-    expect(page.textContent).toContain(copy.thread.auto("Visit reminder", [copy.thread.delivered]));
-    expect(page.textContent).toContain(copy.thread.client);
+    expect(document.body.textContent).toContain(copy.thread.title("Arjun Mehta"));
+    expect(document.body.textContent).toContain(copy.thread.auto("Visit reminder", [copy.thread.delivered]));
+    expect(document.body.textContent).toContain(copy.thread.client);
   });
 
   it("shows another view when one is chosen", async () => {
     await show();
-    const select = page.querySelector("select");
+    const select = document.body.querySelector("select");
     await act(async () => {
       if (select !== null) {
         select.value = "closed";
@@ -247,13 +267,13 @@ describe("the Messages page", () => {
       await answered();
     });
     expect(asked).toContain("/api/conversations?view=closed");
-    expect(page.textContent).toContain(copy.none);
+    expect(document.body.textContent).toContain(copy.none);
   });
 
   it("shows each chat’s Care person, and asks for my clients' chats as Mine", async () => {
     await show();
-    expect(page.textContent).toContain("asha@maneman.test");
-    const select = page.querySelector("select");
+    expect(document.body.textContent).toContain("asha@maneman.test");
+    const select = document.body.querySelector("select");
     await act(async () => {
       if (select !== null) {
         select.value = "mine";
@@ -267,11 +287,11 @@ describe("the Messages page", () => {
   it("moves the client to another of the Care team", async () => {
     await show();
     await act(async () => {
-      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
       await answered();
     });
-    expect(page.textContent).toContain(`${copy.carePerson.label}: asha@maneman.test`);
-    const choice = [...page.querySelectorAll("select")].find((each) =>
+    expect(document.body.textContent).toContain(`${copy.carePerson.label}: asha@maneman.test`);
+    const choice = [...document.body.querySelectorAll("select")].find((each) =>
       [...each.options].some((option) => option.value === "ravi@maneman.test"),
     );
     expect(choice?.textContent).toContain(copy.carePerson.member("ravi@maneman.test", 3));
@@ -283,23 +303,25 @@ describe("the Messages page", () => {
       await answered();
     });
     await act(async () => {
-      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.carePerson.move)?.click();
+      [...document.body.querySelectorAll("button")]
+        .find((each) => each.textContent.trim() === copy.carePerson.move)
+        ?.click();
       await answered();
     });
     expect(posted).toEqual([
       { path: "/api/clients/11111111-1111-4111-8111-111111111111/care-person", body: { email: "ravi@maneman.test" } },
     ]);
-    expect(page.textContent).toContain(copy.carePerson.moved("ravi@maneman.test"));
-    expect(page.textContent).toContain(`${copy.carePerson.label}: ravi@maneman.test`);
+    expect(document.body.textContent).toContain(copy.carePerson.moved("ravi@maneman.test"));
+    expect(document.body.textContent).toContain(`${copy.carePerson.label}: ravi@maneman.test`);
   });
 
   it("fills a quick reply in with the client’s first name and next visit", async () => {
     await show();
     await act(async () => {
-      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
       await answered();
     });
-    const pick = [...page.querySelectorAll("select")].find((each) =>
+    const pick = [...document.body.querySelectorAll("select")].find((each) =>
       [...each.options].some((option) => option.value === LATE.id),
     );
     await act(async () => {
@@ -309,16 +331,21 @@ describe("the Messages page", () => {
       }
       await answered();
     });
-    const box = [...page.querySelectorAll("textarea")].find((each) => each.maxLength === 4096);
+    const box = [...document.body.querySelectorAll("textarea")].find((each) => each.maxLength === 4096);
     expect(box?.value).toBe("Hi Arjun, see you Thu 24 Sep, 12 pm.");
   });
 
   it("keeps the quick replies, adding one", async () => {
     await showSettings();
-    const list = page.querySelector('[aria-labelledby="quick-replies"]') ?? page;
+    const list = document.body.querySelector('[aria-labelledby="quick-replies"]') ?? page;
     expect(list.textContent).toContain(LATE.title);
-    const title = page.querySelector<HTMLInputElement>('input[maxlength="60"]');
-    const text = [...page.querySelectorAll("textarea")].find((each) => each.maxLength === 1000);
+    act(() => {
+      [...document.body.querySelectorAll("button")]
+        .find((each) => each.textContent.trim() === copy.quick.addOne)
+        ?.click();
+    });
+    const title = document.body.querySelector<HTMLInputElement>('input[maxlength="60"]');
+    const text = [...document.body.querySelectorAll("textarea")].find((each) => each.maxLength === 1000);
     act(() => {
       for (const [field, value] of [
         [title, "Running late"],
@@ -331,7 +358,7 @@ describe("the Messages page", () => {
       }
     });
     await act(async () => {
-      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.quick.add)?.click();
+      [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.quick.add)?.click();
       await answered();
     });
     expect(posted.at(-1)).toEqual({
@@ -343,17 +370,17 @@ describe("the Messages page", () => {
   it("gives free visits from the chat, with why", async () => {
     await show();
     await act(async () => {
-      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
       await answered();
     });
     const press = async (label: string) => {
       await act(async () => {
-        [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
+        [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
         await answered();
       });
     };
     await press(copy.remedy.open);
-    const note = [...page.querySelectorAll("textarea")].find((each) => each.maxLength === 300);
+    const note = [...document.body.querySelectorAll("textarea")].find((each) => each.maxLength === 300);
     act(() => {
       if (note !== undefined) {
         Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(note, "Edge lifting.");
@@ -365,15 +392,17 @@ describe("the Messages page", () => {
       path: `/api/clients/${ARJUN.person?.id ?? ""}/remedies`,
       body: { visits: 1, reason: "fit_problem", note: "Edge lifting." },
     });
-    expect(page.textContent).toContain(copy.remedy.given(1));
+    expect(document.body.textContent).toContain(copy.remedy.given(1));
   });
 
   it("lets a manager approve a remedy awaiting them", async () => {
     await showSettings();
-    const panel = page.querySelector('[aria-labelledby="remedies"]') ?? page;
+    const panel = document.body.querySelector('[aria-labelledby="remedies"]') ?? page;
     expect(panel.textContent).toContain(copy.remedy.states.awaiting);
     await act(async () => {
-      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.remedy.approveLabel("Arjun Mehta")}"]`)?.click();
+      document.body
+        .querySelector<HTMLButtonElement>(`button[aria-label="${copy.remedy.approveLabel("Arjun Mehta")}"]`)
+        ?.click();
       await answered();
     });
     expect(asked).toContain(`/api/remedies/${AWAITING.id}/approve`);
@@ -382,10 +411,10 @@ describe("the Messages page", () => {
   it("shows the client beside the chat, with the ways into their page", async () => {
     await show();
     await act(async () => {
-      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
       await answered();
     });
-    const panel = page.querySelector(`[aria-label="${copy.panel.title}"]`);
+    const panel = document.body.querySelector(`[aria-label="${copy.panel.title}"]`);
     expect(panel?.textContent).toContain(copy.panel.visit("Thu 24 Sep, 12 pm", "Service visit"));
     expect(panel?.textContent).toContain("Gurgaon");
     expect(panel?.querySelector(`a[href$="/payments"]`)?.textContent).toBe(copy.panel.links.payments);
@@ -394,17 +423,17 @@ describe("the Messages page", () => {
   it("sends a matter from the chat to the client’s city", async () => {
     await show();
     await act(async () => {
-      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
       await answered();
     });
     const press = async (label: string) => {
       await act(async () => {
-        [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
+        [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
         await answered();
       });
     };
     await press(copy.cityMatter.open);
-    const box = [...page.querySelectorAll("textarea")].find((each) => each.maxLength === 300);
+    const box = [...document.body.querySelectorAll("textarea")].find((each) => each.maxLength === 300);
     act(() => {
       if (box !== undefined) {
         Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(box, "Needs a re-fit.");
@@ -416,7 +445,7 @@ describe("the Messages page", () => {
       path: `/api/conversations/${ARJUN.id}/city-matter`,
       body: { note: "Needs a re-fit." },
     });
-    expect(page.textContent).toContain(copy.cityMatter.sent("Gurgaon"));
+    expect(document.body.textContent).toContain(copy.cityMatter.sent("Gurgaon"));
   });
 
   it("links a stranger’s chat to the client it turns out to be, or saves them as someone new", async () => {
@@ -435,14 +464,14 @@ describe("the Messages page", () => {
       });
     };
     // The list's own search box sits above, so each box is looked for in the stranger's panel.
-    const panel = () => page.querySelector(`section[aria-label="${copy.stranger.title}"]`) ?? page;
+    const panel = () => document.body.querySelector(`section[aria-label="${copy.stranger.title}"]`) ?? page;
     const named = (text: string) =>
       [...panel().querySelectorAll("button")].find((each) => each.textContent.trim() === text);
-    await click(page.querySelector(`button[aria-label="${copy.openLabel(STRANGER.mobile)}"]`));
-    expect(page.textContent).toContain(copy.stranger.title);
+    await click(document.body.querySelector(`button[aria-label="${copy.openLabel(STRANGER.mobile)}"]`));
+    expect(document.body.textContent).toContain(copy.stranger.title);
     type(panel().querySelector<HTMLInputElement>('input[maxlength="60"]') ?? undefined, "Arjun");
     await click(named(copy.stranger.search));
-    await click(page.querySelector(`button[aria-label="${copy.stranger.linkLabel("Arjun Mehta")}"]`));
+    await click(document.body.querySelector(`button[aria-label="${copy.stranger.linkLabel("Arjun Mehta")}"]`));
     expect(posted.at(-1)).toEqual({
       path: `/api/conversations/${STRANGER.id}/link`,
       body: { person_id: ARJUN.person?.id },
@@ -465,7 +494,7 @@ describe("the Messages page", () => {
 
   it("lists the Care team with their days off and leave", async () => {
     await showSettings();
-    const team = page.querySelector('[aria-labelledby="care-team"]') ?? page;
+    const team = document.body.querySelector('[aria-labelledby="care-team"]') ?? page;
     expect(team.textContent).toContain("ravi@maneman.test");
     expect(team.textContent).toContain(copy.team.weekdays[0]);
     expect(team.textContent).toContain(copy.team.period(shortDate(LEAVE.from), shortDate(LEAVE.to)));
@@ -482,7 +511,7 @@ describe("the Messages page", () => {
       await answered();
     });
     await act(async () => {
-      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.move)?.click();
+      [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.move)?.click();
       await answered();
     });
     expect(posted.at(-1)).toEqual({
@@ -494,7 +523,9 @@ describe("the Messages page", () => {
   it("takes the signed-in member off shift", async () => {
     await showSettings();
     await act(async () => {
-      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.goOff)?.click();
+      [...document.body.querySelectorAll("button")]
+        .find((each) => each.textContent.trim() === copy.team.goOff)
+        ?.click();
       await answered();
     });
     expect(posted.at(-1)).toEqual({ path: "/api/care-team/shift", body: { on: false } });
@@ -508,7 +539,7 @@ describe("the Messages page", () => {
         ?.click();
       await answered();
     });
-    const box = page.querySelector<HTMLInputElement>('input[maxlength="40"]');
+    const box = document.body.querySelector<HTMLInputElement>('input[maxlength="40"]');
     act(() => {
       if (box !== null) {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(box, "Ravi");
@@ -516,11 +547,11 @@ describe("the Messages page", () => {
       }
     });
     await act(async () => {
-      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.save)?.click();
+      [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === copy.team.save)?.click();
       await answered();
     });
     expect(posted.at(-1)).toEqual({ path: "/api/care-team/name", body: { email: "ravi@maneman.test", name: "Ravi" } });
-    expect(page.textContent).toContain("Asha");
+    expect(document.body.textContent).toContain("Asha");
   });
 
   it("sets a member’s days off, adds leave and takes it back", async () => {
@@ -531,11 +562,11 @@ describe("the Messages page", () => {
         await answered();
       });
     };
-    const button = (label: string) => page.querySelector(`button[aria-label="${label}"]`);
+    const button = (label: string) => document.body.querySelector(`button[aria-label="${label}"]`);
     const named = (text: string) =>
-      [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
+      [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === text);
     await click(button(copy.team.editDaysLabel("ravi@maneman.test")));
-    const monday = [...page.querySelectorAll('input[type="checkbox"]')][1];
+    const monday = [...document.body.querySelectorAll('input[type="checkbox"]')][1];
     await click(monday);
     await click(named(copy.team.save));
     expect(posted.at(-1)).toEqual({
@@ -543,7 +574,7 @@ describe("the Messages page", () => {
       body: { email: "ravi@maneman.test", weekdays: [0, 1] },
     });
     await click(button(copy.team.addLeaveLabel("asha@maneman.test")));
-    const dates = [...page.querySelectorAll<HTMLInputElement>('input[type="date"]')];
+    const dates = [...document.body.querySelectorAll<HTMLInputElement>('input[type="date"]')];
     act(() => {
       for (const [input, value] of [
         [dates[0], "2026-11-02"],
@@ -566,10 +597,10 @@ describe("the Messages page", () => {
   it("replies from our number, adds a note, and closes the chat with what it was about", async () => {
     await show();
     await act(async () => {
-      page.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
+      document.body.querySelector<HTMLButtonElement>(`button[aria-label="${copy.openLabel("Arjun Mehta")}"]`)?.click();
       await answered();
     });
-    const box = page.querySelector("textarea");
+    const box = document.body.querySelector("textarea");
     act(() => {
       if (box !== null) {
         Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(box, "Yes, 6 pm works.");
@@ -578,15 +609,15 @@ describe("the Messages page", () => {
     });
     const press = async (label: string) => {
       await act(async () => {
-        [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
+        [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === label)?.click();
         await answered();
       });
     };
     await press(copy.compose.send);
     expect(posted).toEqual([{ path: `/api/conversations/${ARJUN.id}/replies`, body: { text: "Yes, 6 pm works." } }]);
-    expect(page.querySelector('[role="status"]')?.textContent).toBe(copy.compose.sent);
+    expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.compose.sent);
     await press(copy.compose.closeChat);
     expect(posted.at(-1)).toEqual({ path: `/api/conversations/${ARJUN.id}/close`, body: { reason: "other" } });
-    expect(page.querySelector('[role="status"]')?.textContent).toBe(copy.compose.closed);
+    expect(document.body.querySelector('[role="status"]')?.textContent).toBe(copy.compose.closed);
   });
 });

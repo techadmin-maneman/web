@@ -1,4 +1,4 @@
-// A payment made by UPI outside Razorpay, while online payment is off (docs/decisions/0208-paid-at-the-visit-by-upi.md):
+// A payment made by UPI outside Razorpay, while online payment is off (docs/decisions/0209-paid-at-the-visit-by-upi.md):
 // its Razorpay ID is the UPI transaction's reference under this mark, so Razorpay is never asked about it.
 
 export const UPI_MARK = "upi:";

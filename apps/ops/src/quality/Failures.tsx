@@ -77,7 +77,7 @@ export function FailuresPanel() {
   const [loaded, retry] = useLoad(loadRates);
   return (
     <Panel titleId="quality-failures" title={copy.failures}>
-      <Note>{copy.failuresNote}</Note>
+      <Note>{copy.failuresPeriod}</Note>
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Groups rates={loaded.value} />}

@@ -5,5 +5,5 @@
   margin: var(--sp-8) var(--sp-20) 0;
   font-size: var(--fs-14);
   line-height: var(--lh-160);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }

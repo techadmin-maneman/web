@@ -1,5 +1,6 @@
-// Go to anything from anywhere: Ctrl K (or ⌘K) opens a box that finds the pages the person may open by their names,
-// and clients by part of a name or four digits of a number; Enter, or a click, goes there. Escape closes it.
+// Go to anything from anywhere: Ctrl K (or ⌘K), or the frame's Search, opens a box that finds the pages the person
+// may open by their names, Settings' among them, and clients by part of a name or four digits of a number; Enter, or a
+// click, goes there. Escape closes it.
 
 import { Dialog } from "@maneman/ui/Dialog";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -10,7 +11,16 @@ import { useEffect, useRef, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { shell } from "../content.ts";
 import { useAccess, useMayCall } from "../lib/access.ts";
-import { clientPath, mayOpen, SECTION_NAMES, SECTIONS } from "../route.ts";
+import {
+  clientPath,
+  mayOpen,
+  mayOpenSetting,
+  SECTION_NAMES,
+  SECTIONS,
+  settingsPath,
+  SETTINGS_PAGE_NAMES,
+  SETTINGS_PAGES,
+} from "../route.ts";
 import styles from "./command-palette.module.css";
 
 const words = shell.palette;
@@ -56,9 +66,18 @@ function Palette({ onClose }: { onClose: () => void }) {
     box.current?.focus();
   }, []);
   const asked = text.trim().toLowerCase();
-  const pages: Place[] = SECTIONS.filter(
-    (each) => mayOpen(mayCall, each.page) && SECTION_NAMES[each.page].toLowerCase().includes(asked),
-  ).map((each) => ({ key: each.page, name: SECTION_NAMES[each.page], to: each.path }));
+  const pages: Place[] = [
+    ...SECTIONS.filter((each) => mayOpen(mayCall, each.page)).map((each) => ({
+      key: each.page,
+      name: SECTION_NAMES[each.page],
+      to: each.path,
+    })),
+    ...SETTINGS_PAGES.filter((each) => mayOpenSetting(mayCall, each.tab)).map((each) => ({
+      key: `settings ${each.tab}`,
+      name: words.setting(SETTINGS_PAGE_NAMES[each.tab]),
+      to: settingsPath(each.tab),
+    })),
+  ].filter((place) => place.name.toLowerCase().includes(asked));
   const clients: Place[] = useClients(text, mayFind).map((each) => ({
     key: each.id,
     name: words.client(each.name, each.mobile),
@@ -78,7 +97,7 @@ function Palette({ onClose }: { onClose: () => void }) {
           go(places[0].to);
         }}
       >
-        <Field label={words.label} hint={words.hint}>
+        <Field label={words.label}>
           {(control) => (
             <TextInput
               {...control}
@@ -109,32 +128,33 @@ function Palette({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** The palette, opened by Ctrl K or ⌘K anywhere in the console. */
-export function CommandPalette() {
-  const [open, setOpen] = useState(false);
+/** The palette, opened by Ctrl K or ⌘K anywhere in the console, or by the frame's Search. */
+export function CommandPalette({
+  open,
+  onOpen,
+  onClose,
+}: {
+  readonly open: boolean;
+  readonly onOpen: () => void;
+  readonly onClose: () => void;
+}) {
   // A place chosen opens its page, and the palette closes with the page it was opened over.
   const path = usePath();
   useEffect(() => {
-    setOpen(false);
-  }, [path]);
+    onClose();
+  }, [path, onClose]);
   useEffect(() => {
     const opens = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setOpen(true);
+        onOpen();
       }
     };
     window.addEventListener("keydown", opens);
     return () => {
       window.removeEventListener("keydown", opens);
     };
-  }, []);
+  }, [onOpen]);
   if (!open) return null;
-  return (
-    <Palette
-      onClose={() => {
-        setOpen(false);
-      }}
-    />
-  );
+  return <Palette onClose={onClose} />;
 }

@@ -177,7 +177,7 @@ export const ERROR_CODES = [
   // A custom order's refund asked for a reason that does not hold (docs/decisions/0176-custom-order-refunds.md).
   "refund_not_due",
   // A UPI payment recorded for a visit not paid at the visit, one already paid, or under a UTR already recorded
-  // (docs/decisions/0208-paid-at-the-visit-by-upi.md).
+  // (docs/decisions/0209-paid-at-the-visit-by-upi.md).
   "not_due",
   "already_paid",
   "reference_used",

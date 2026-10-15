@@ -1,5 +1,5 @@
 // What ops do with a "UPI to record" task on the board itself: once the client's UPI payment is in the account, record
-// it under its UTR, which closes the task and sends the client their receipt (docs/decisions/0208).
+// it under its UTR, which closes the task and sends the client their receipt (docs/decisions/0209).
 
 import { Button } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";

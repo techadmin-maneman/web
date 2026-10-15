@@ -10,8 +10,8 @@
     align-items: center;
     justify-content: space-between;
     padding: var(--sp-12) var(--sp-20);
-    border-bottom: var(--hairline) solid var(--paper-line);
-    background: var(--paper-light);
+    border-bottom: var(--hairline) solid var(--ui-line);
+    background: var(--ui-raised);
   }
 
   .onInk {
@@ -23,7 +23,7 @@
     margin: 0;
     font-size: var(--fs-15);
     line-height: var(--lh-145);
-    color: var(--text-soft);
+    color: var(--ui-text-soft);
   }
 
   .onInk .line {

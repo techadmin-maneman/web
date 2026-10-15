@@ -85,7 +85,7 @@ describe("what the console shows ops", () => {
 
   it("reads every line of it", () => {
     expect(strings.length).toBeGreaterThan(1500);
-    expect(strings).toContain("Signed in as x");
+    expect(strings).toContain("Settings · x");
   });
 
   it.each([

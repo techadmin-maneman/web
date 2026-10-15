@@ -27,6 +27,8 @@ import form from "../components/forms.module.css";
 import styles from "./staff.module.css";
 import { FormActions } from "../components/FormActions.tsx";
 import { staffApi } from "./staff-api.ts";
+import { FormDrawer } from "../components/FormDrawer.tsx";
+import { DrawerButton } from "../components/DrawerButton.tsx";
 
 const copy = settings.staff;
 
@@ -43,7 +45,6 @@ function Enforcement({ staff, onChanged }: PanelProps) {
     <Panel titleId="staff-enforcement" title={words.title} padded>
       <Note>{on ? words.on : words.off}</Note>
       {setBy !== null && setAt !== null && <Note>{words.setBy(whoWords(setBy), longDate(setAt))}</Note>}
-      {!staff.may_run_access && <Note>{words.onlyNational}</Note>}
       {staff.may_run_access && (
         <ActionCheck
           key={String(on)}
@@ -59,6 +60,43 @@ function Enforcement({ staff, onChanged }: PanelProps) {
         />
       )}
     </Panel>
+  );
+}
+
+/** A person's grants, and their removal, in a drawer beside the list; or the form for someone new. */
+function PersonDrawer(props: {
+  editing: string;
+  staff: StaffList;
+  person: StaffList["people"][number] | null;
+  mayRemove: boolean;
+  onDone: (staff: StaffList, said: string) => void;
+  onClose: () => void;
+}) {
+  const { person } = props;
+  return (
+    <FormDrawer title={props.editing === "new" ? copy.add : props.editing} onClose={props.onClose}>
+      <StaffForm
+        key={props.editing}
+        staff={props.staff}
+        person={person}
+        onSaved={(next) => {
+          props.onDone(next, copy.saved);
+        }}
+        onCancel={props.onClose}
+      />
+      {props.mayRemove && person !== null && (
+        <DeleteAction
+          key={person.email}
+          name={person.email}
+          words={copy.removing}
+          send={() => staffApi.deleteStaff(person.email)}
+          refusal={(code) => errorText(copy.errors, { code, fields: [] })}
+          onDeleted={(next) => {
+            props.onDone(next, copy.removed);
+          }}
+        />
+      )}
+    </FormDrawer>
   );
 }
 
@@ -143,35 +181,20 @@ function People({ staff, onChanged }: PanelProps) {
         </FormActions>
       )}
       {editing !== null && (
-        <StaffForm
-          key={editing}
+        <PersonDrawer
+          editing={editing}
           staff={staff}
           person={person}
-          onSaved={(next) => {
+          mayRemove={mayRemove}
+          onDone={(next, words) => {
             onChanged(next);
             setEditing(null);
-            setSaid(copy.saved);
+            setSaid(words);
           }}
-          onCancel={() => {
+          onClose={() => {
             setEditing(null);
           }}
         />
-      )}
-      {mayRemove && (
-        <div className={form.group}>
-          <DeleteAction
-            key={person.email}
-            name={person.email}
-            words={copy.removing}
-            send={() => staffApi.deleteStaff(person.email)}
-            refusal={(code) => errorText(copy.errors, { code, fields: [] })}
-            onDeleted={(next) => {
-              onChanged(next);
-              setEditing(null);
-              setSaid(copy.removed);
-            }}
-          />
-        </div>
       )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
@@ -278,7 +301,25 @@ function TokenForm({ onChanged }: { onChanged: (staff: StaffList) => void }) {
 function ServiceTokens({ staff, onChanged }: PanelProps) {
   const words = copy.tokens;
   return (
-    <Panel titleId="staff-tokens" title={words.title} padded>
+    <Panel
+      titleId="staff-tokens"
+      title={words.title}
+      padded
+      actions={
+        staff.may_run_access && (
+          <DrawerButton label={words.addTitle}>
+            {(close) => (
+              <TokenForm
+                onChanged={(next) => {
+                  onChanged(next);
+                  close();
+                }}
+              />
+            )}
+          </DrawerButton>
+        )
+      }
+    >
       {staff.service_tokens.length === 0 ? (
         <Note>{words.none}</Note>
       ) : (
@@ -288,7 +329,6 @@ function ServiceTokens({ staff, onChanged }: PanelProps) {
           ))}
         </ul>
       )}
-      {staff.may_run_access ? <TokenForm onChanged={onChanged} /> : <Note>{words.onlyNational}</Note>}
     </Panel>
   );
 }

@@ -3,17 +3,6 @@
   margin: var(--sp-16) var(--sp-20) 0;
 }
 
-/* A row's own boxes, as tall as the row allows. */
-.cellText {
-  width: 100%;
-  min-width: var(--ops-area);
-}
-
-.cellDate {
-  width: var(--ops-date);
-  font-variant-numeric: tabular-nums;
-}
-
 .uploaded {
   margin-top: var(--sp-12);
 }
@@ -29,4 +18,10 @@
   max-width: var(--measure-form);
   font-size: var(--fs-13);
   line-height: var(--lh-160);
+}
+
+/* A row's Edit, at the row's end. */
+.actions {
+  text-align: right;
+  white-space: nowrap;
 }

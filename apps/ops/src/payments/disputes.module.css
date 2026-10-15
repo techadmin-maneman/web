@@ -3,7 +3,7 @@
 .disputeLabel {
   margin: 0;
   font-size: var(--fs-14);
-  color: var(--text-muted);
+  color: var(--ui-text-muted);
 }
 
 .disputeTitle {

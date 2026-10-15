@@ -9,9 +9,9 @@
   }
 
   .onPaper {
-    border: var(--hairline) solid var(--paper-control);
-    background: var(--white);
-    color: var(--text);
+    border: var(--hairline) solid var(--ui-line-control);
+    background: var(--ui-box);
+    color: var(--ui-text);
   }
 
   .onInk {
@@ -20,7 +20,7 @@
   }
 
   .onPaper:has(.input[aria-invalid="true"]) {
-    border-color: var(--error-on-paper);
+    border-color: var(--ui-error);
   }
 
   .onInk:has(.input[aria-invalid="true"]) {
@@ -42,8 +42,8 @@
   }
 
   .onPaper .prefix {
-    border-right-color: var(--paper-line);
-    color: var(--text-muted);
+    border-right-color: var(--ui-line);
+    color: var(--ui-text-muted);
   }
 
   .onInk .prefix {
@@ -69,6 +69,6 @@
   }
 
   .onPaper .input::placeholder {
-    color: var(--paper-hint);
+    color: var(--ui-hint);
   }
 }

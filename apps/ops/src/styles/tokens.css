@@ -13,7 +13,7 @@
   /* A dispatch block is this tall for each slot it takes. The board draws 22, 34 and 46 px, under two lines of type
      that make one slot and a slot and a half read alike (ADR 0025, item 49). */
   --ops-slot: 42px;
-  --ops-table-min: 960px; /* the narrowest a wide table goes before it scrolls */
+  --ops-table-min: 860px; /* the narrowest a wide table goes before it scrolls: a Settings page beside its menu */
   /* A table's columns, by how much they hold: each screen names its own for what it holds, as one of these. */
   --ops-column-narrow: 72px; /* an owner, a source */
   --ops-cell: 88px; /* a day on the board, a figure with its unit */
@@ -23,6 +23,11 @@
   --ops-tray: 236px; /* the dispatch board's unassigned tray down the right */
   --ops-filter: 176px; /* a list's narrowest filter, and a date with its time */
   --ops-measure: 560px; /* the widest a line of words runs, and the narrowest a list of people goes */
+  --ops-nav: 224px; /* the navigation column */
+  --ops-nav-folded: var(--header-h); /* the navigation folded to its icons, as wide as the header is tall */
+  --ops-tile: 208px; /* the narrowest a figure's tile goes on Today */
+  --ops-settings-menu: 216px; /* Settings' own menu */
+  --ops-setting-label: 280px; /* a setting's label beside its box, and a list's search */
 
   /* The shared parts' room, as the console draws them. */
   --drawer-width: var(--ops-panel);

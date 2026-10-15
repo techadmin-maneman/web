@@ -12,7 +12,7 @@
   .label {
     display: block;
     font-size: var(--fs-14);
-    color: var(--text-muted);
+    color: var(--ui-text-muted);
   }
 
   .box {
@@ -20,11 +20,11 @@
     width: 100%;
     margin-top: var(--sp-8);
     padding: var(--sp-12) var(--sp-16);
-    border: var(--hairline) solid var(--paper-control);
-    background: var(--white);
+    border: var(--hairline) solid var(--ui-line-control);
+    background: var(--ui-box);
     font: inherit;
     font-size: var(--fs-15);
-    color: var(--text);
+    color: var(--ui-text);
     transition: border-color var(--duration-quick) var(--ease-house);
   }
 
@@ -119,8 +119,8 @@
     padding-right: var(--sp-32);
     appearance: none;
     background-image:
-      linear-gradient(45deg, transparent 50%, var(--text) 50%),
-      linear-gradient(135deg, var(--text) 50%, transparent 50%);
+      linear-gradient(45deg, transparent 50%, var(--ui-text) 50%),
+      linear-gradient(135deg, var(--ui-text) 50%, transparent 50%);
     background-position:
       calc(100% - var(--sp-16)) 50%,
       calc(100% - var(--sp-8)) 50%;
@@ -133,8 +133,8 @@
   }
 
   .box:disabled {
-    background: var(--paper-light);
-    color: var(--text-muted);
+    background: var(--ui-box-off);
+    color: var(--ui-text-muted);
   }
 
   .area {
@@ -148,15 +148,15 @@
   }
 
   .hint {
-    color: var(--text-muted);
+    color: var(--ui-text-muted);
   }
 
   .error {
-    color: var(--error-on-paper);
+    color: var(--ui-error);
   }
 
   .box[aria-invalid="true"] {
-    border-color: var(--error-on-paper);
+    border-color: var(--ui-error);
   }
 
   .onInk[aria-invalid="true"] {
@@ -179,8 +179,8 @@
     place-items: center;
     width: var(--sp-20);
     height: var(--sp-20);
-    border: var(--hairline) solid var(--paper-control);
-    background: var(--white);
+    border: var(--hairline) solid var(--ui-line-control);
+    background: var(--ui-box);
   }
 
   .tickInput {
@@ -199,9 +199,9 @@
   }
 
   .tick:has(.tickInput:checked) {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--paper);
+    border-color: var(--ui-strong);
+    background: var(--ui-strong);
+    color: var(--ui-on-strong);
   }
 
   .tick:has(.tickInput:checked) .tickMark {
@@ -214,8 +214,8 @@
   }
 
   .tick:has(.tickInput:disabled) {
-    border-color: var(--paper-shade);
-    background: var(--paper-light);
+    border-color: var(--ui-shade);
+    background: var(--ui-box-off);
   }
 
   .tickInput:disabled {
@@ -234,7 +234,7 @@
   }
 
   .tick:has(.tickInput[aria-invalid="true"]) {
-    border-color: var(--error-on-paper);
+    border-color: var(--ui-error);
   }
 
   .tickOnInk:has(.tickInput[aria-invalid="true"]) {
@@ -246,7 +246,7 @@
     width: var(--sp-16);
     height: var(--sp-16);
     margin: 0;
-    accent-color: var(--ink);
+    accent-color: var(--ui-strong);
   }
 
   .checkLabel {
@@ -271,7 +271,7 @@
     margin-bottom: var(--sp-8);
     padding: 0;
     font-size: var(--fs-14);
-    color: var(--text-muted);
+    color: var(--ui-text-muted);
   }
 
   .choices {
@@ -306,16 +306,16 @@
     border: 0;
     background: none;
     font-size: var(--fs-14);
-    color: var(--text-muted);
+    color: var(--ui-text-muted);
   }
 
   .file::file-selector-button {
     min-height: var(--tap);
     margin-right: var(--sp-12);
     padding: 0 var(--sp-16);
-    border: var(--hairline) solid var(--ink);
+    border: var(--hairline) solid var(--ui-strong);
     background: transparent;
-    color: var(--text);
+    color: var(--ui-text);
     font: inherit;
     font-size: var(--fs-15);
     font-weight: var(--weight-medium);
@@ -325,7 +325,7 @@
   .range {
     width: 100%;
     margin: 0;
-    accent-color: var(--ink);
+    accent-color: var(--ui-strong);
   }
 
   .rangeOver {

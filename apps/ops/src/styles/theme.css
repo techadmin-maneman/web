@@ -1,0 +1,79 @@
+/*
+ * The console's dark theme: the paper looks' roles (packages/brand/tokens.css) and the grounds' roles turned to the
+ * ink's. It follows the computer unless the person has chosen in the account menu, which sets data-theme on <html>
+ * (../lib/theme.ts). CSS has no way to write the block once for both, so it is written twice, alike.
+ */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ui-ground: var(--ink-deep);
+  --ui-raised: var(--ink);
+  --ui-shade: var(--ink-raised);
+  --ui-box: var(--ink-night);
+  --ui-box-off: var(--ink-frame);
+  --ui-text: var(--paper);
+  --ui-text-soft: var(--ink-tag);
+  --ui-text-muted: var(--ink-muted);
+  --ui-text-quiet: var(--ink-muted);
+  --ui-hint: var(--ink-muted);
+  --ui-line: var(--ink-line);
+  --ui-line-control: var(--ink-line-strong);
+  --ui-strong: var(--paper);
+  --ui-on-strong: var(--ink);
+  --ui-strong-pressed: var(--paper-shade);
+  --ui-error: var(--error-on-ink);
+  --ui-attention: var(--gilt);
+  --ui-accent: var(--gilt);
+  --surface: var(--ink);
+  --on-surface: var(--paper);
+  --on-surface-muted: var(--ink-muted);
+  --border-subtle: var(--ink-line);
+  --border-control: var(--ink-line-strong);
+  --status-error: var(--error-on-ink);
+  --status-warning: var(--error-on-ink);
+  --status-saved: var(--paper);
+  --status-done: var(--paper);
+  --status-note: var(--ink-muted);
+  --status-attention: var(--gilt);
+  --focus-colour: var(--paper);
+  --nav-ground: var(--ink-night);
+  --nav-current: var(--ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ui-ground: var(--ink-deep);
+    --ui-raised: var(--ink);
+    --ui-shade: var(--ink-raised);
+    --ui-box: var(--ink-night);
+    --ui-box-off: var(--ink-frame);
+    --ui-text: var(--paper);
+    --ui-text-soft: var(--ink-tag);
+    --ui-text-muted: var(--ink-muted);
+    --ui-text-quiet: var(--ink-muted);
+    --ui-hint: var(--ink-muted);
+    --ui-line: var(--ink-line);
+    --ui-line-control: var(--ink-line-strong);
+    --ui-strong: var(--paper);
+    --ui-on-strong: var(--ink);
+    --ui-strong-pressed: var(--paper-shade);
+    --ui-error: var(--error-on-ink);
+    --ui-attention: var(--gilt);
+    --ui-accent: var(--gilt);
+    --surface: var(--ink);
+    --on-surface: var(--paper);
+    --on-surface-muted: var(--ink-muted);
+    --border-subtle: var(--ink-line);
+    --border-control: var(--ink-line-strong);
+    --status-error: var(--error-on-ink);
+    --status-warning: var(--error-on-ink);
+    --status-saved: var(--paper);
+    --status-done: var(--paper);
+    --status-note: var(--ink-muted);
+    --status-attention: var(--gilt);
+    --focus-colour: var(--paper);
+    --nav-ground: var(--ink-night);
+    --nav-current: var(--ink);
+  }
+}

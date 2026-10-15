@@ -9,11 +9,12 @@ import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, JOB_SHEET, json, type Answers } from "./fixtures.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
+import { settingsPageNames } from "../../apps/ops/src/content/settings-shell.ts";
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/job-sheet": json(JOB_SHEET), ...extra });
   await page.goto("/settings/job-sheet");
-  await expect(page.getByRole("heading", { level: 2, name: settingsCopy.tabs["job-sheet"] })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: settingsPageNames["job-sheet"] })).toBeVisible();
 }
 
 const posted = (page: Page, path: string) =>

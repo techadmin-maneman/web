@@ -1,4 +1,4 @@
-// Areas' Waiting tab: who waits in each pincode, longest first. Choosing one shows what launching it would send, and
+// The Waitlist: who waits in each pincode, longest first. Choosing one shows what launching it would send, and
 // only the panel's press serves it and messages its waitlist (docs/decisions/0048-referrals.md). A pincode already live
 // can be chosen too, for a waitlist a launch from Settings left untold
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
@@ -17,7 +17,7 @@ import { type Area, type Launch, type ServedPincode } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { areas, waitlist } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
-import { areasPath } from "../route.ts";
+import { settingsPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { Narrowing, SortHeads, TableEnd } from "../components/TableTools.tsx";
 import { useTableView, type Column } from "../components/useTableView.ts";
@@ -103,7 +103,7 @@ function LaunchOne({ launching, today, launchOn, mayRename, onLaunchOn, onCancel
       </dl>
       {mayRename && (
         <p className={shared.named}>
-          <OpsLink to={areasPath("served")}>{waitlist.rename}</OpsLink>
+          <OpsLink to={settingsPath("areas")}>{waitlist.rename}</OpsLink>
         </p>
       )}
       {!area.served && step !== "done" && (

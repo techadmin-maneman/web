@@ -11,17 +11,51 @@
 @import "./tokens.css";
 @import "@maneman/brand/fonts.css";
 @import "@maneman/ui/base.css";
+@import "./theme.css";
 
-/* The console's filled buttons are edged as its outlined ones are, so the two stand side by side at one width; its
-   lines of what just happened are in its 14 px small size. */
+/* A desk's density: controls at 36 px and the words in them at 14, a small button at 32. The filled buttons are edged
+   as the outlined ones are, so the two stand side by side at one width. */
 :root {
+  --action-height: var(--sp-40);
+  --action-text: var(--fs-14);
+  --control-height: var(--sp-36);
+  --control-text: var(--fs-14);
+  --small-height: var(--sp-32);
+  --small-text: var(--fs-14);
+  --small-pad: var(--sp-12);
+  --field-height: var(--sp-36);
+  --field-text: var(--fs-14);
   --filled-edge: var(--hairline);
   --message-size: var(--fs-14);
+  --nav-width: var(--ops-nav);
+  --nav-folded-width: var(--ops-nav-folded);
+  --search-width: var(--ops-setting-label);
+  --setting-label-width: var(--ops-setting-label);
+  --columns-tile: var(--ops-tile);
+  --settings-menu-width: var(--ops-settings-menu);
 }
 
 body {
-  background: var(--paper);
-  color: var(--text);
+  background: var(--ui-ground);
+  color: var(--ui-text);
+  font-size: var(--fs-14);
+}
+
+/* A link with no look of its own: the words' colour over a quiet rule, which darkens under the pointer. In the base
+   layer, so every shared part's own look wins. */
+@layer base {
+  a {
+    color: inherit;
+    text-decoration-color: var(--ui-line-control);
+    text-decoration-thickness: var(--hairline);
+    text-underline-offset: var(--sp-4);
+  }
+
+  @media (hover: hover) {
+    a:hover {
+      text-decoration-color: currentcolor;
+    }
+  }
 }
 
 #root {

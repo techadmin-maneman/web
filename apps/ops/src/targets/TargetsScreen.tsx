@@ -20,6 +20,8 @@ import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import { targetsApi } from "./targets-api.ts";
+import { DrawerButton } from "../components/DrawerButton.tsx";
+import { PageActions } from "../components/PageHead.tsx";
 
 type Targets = Success<paths["/api/targets"]["get"]>;
 type Measure = Targets["measures"][number];
@@ -186,7 +188,21 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
         options={monthsBetween(list.first_month, list.last_month).map((each) => [each, fullMonth(each)])}
         onChange={onMonth}
       />
-      {mayChange && <TargetForm list={list} onSaved={setSaved} />}
+      {mayChange && (
+        <PageActions>
+          <DrawerButton primary label={copy.setOne}>
+            {(close) => (
+              <TargetForm
+                list={list}
+                onSaved={(next) => {
+                  setSaved(next);
+                  close();
+                }}
+              />
+            )}
+          </DrawerButton>
+        </PageActions>
+      )}
       <TargetTable list={list} onSaved={setSaved} />
     </>
   );
@@ -197,7 +213,6 @@ export function TargetsScreen() {
   return (
     <div className={form.screen}>
       <Panel titleId="targets" title={copy.title} padded>
-        <Note>{copy.intro}</Note>
         <MonthTargets key={month ?? "now"} month={month} onMonth={setMonth} />
       </Panel>
     </div>

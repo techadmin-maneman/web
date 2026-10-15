@@ -272,7 +272,7 @@ async function bookedWithNothingPaid(db: D1Database, appointmentId: string, para
   return { skip: "no captured payment for the visit" };
 }
 
-/** What a visit ops booked to be paid by UPI at the visit asks for (docs/decisions/0208); null for any other. */
+/** What a visit ops booked to be paid by UPI at the visit asks for (docs/decisions/0209); null for any other. */
 async function dueAtTheVisit(db: D1Database, appointmentId: string): Promise<number | null> {
   const hold = await db
     .prepare("SELECT amount FROM slot_holds WHERE appointment_id = ?1 AND pay_at_visit = 1 AND state = 'booked'")
