@@ -9,6 +9,7 @@ import { auditStatement, auditStatementWhen } from "../platform/audit.ts";
 import { MATCHED_FIELDS } from "../inventory/stock-match.ts";
 import type { Written } from "../platform/audit.ts";
 import { type Refusal, refusal } from "../../lib/refusal.ts";
+import { resolveAlertStatement } from "../platform/alerts.ts";
 
 /** Where an order stands, as ops and the client read it: its own state, and its purchase order's once paid. */
 type CustomOrderStatus = "awaiting_payment" | "paid" | "ordered" | "arrived" | "refunded" | "cancelled";
@@ -219,7 +220,10 @@ export async function cancelCustomOrder(db: D1Database, id: string, written: Wri
       },
     ),
   ]);
-  return cancelled?.meta.changes === 1;
+  if (cancelled?.meta.changes !== 1) return false;
+  // A link that could not be made is no longer owed.
+  await resolveAlertStatement(db, `custom_order_link:${id}`, written.now).run();
+  return true;
 }
 
 /**
