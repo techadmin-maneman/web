@@ -175,7 +175,7 @@ describe("a custom order's money, wherever it goes", () => {
     ).results.map((row) => row.key);
 
   it("whose link could not be made, stops asking ops to send it once it is cancelled", async () => {
-    const make = payments.createPaymentLink;
+    const make = payments.createPaymentLink.bind(payments);
     Object.assign(payments, { createPaymentLink: () => Promise.reject(new Error("amount exceeds maximum")) });
     const [order] = (await (await raise()).json<Orders>()).orders;
     const id = order?.id ?? "";
