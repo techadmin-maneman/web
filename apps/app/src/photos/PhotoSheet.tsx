@@ -104,7 +104,7 @@ export function PhotoSheet({ photo, onClose, relink }: { photo: OpenPhoto; onClo
           )}
         </div>
         <p className={styles.gallery}>{photos.downloaded}</p>
-        <Button variant="outline" size="control" className={styles.close} onClick={() => dialog.current?.close()}>
+        <Button variant="quiet" size="control" className={styles.close} onClick={() => dialog.current?.close()}>
           {photos.close}
         </Button>
       </SheetPanel>

@@ -139,6 +139,7 @@
 
   .outline,
   .outlineOnInk,
+  .quiet,
   .danger {
     border-width: var(--hairline);
     font-weight: var(--control-weight);
@@ -149,13 +150,21 @@
     color: var(--text);
   }
 
+  .quiet {
+    border-color: var(--paper-line);
+    color: var(--text);
+  }
+
   .outline:active:not(:disabled):not([aria-disabled="true"]),
+  .quiet:active:not(:disabled):not([aria-disabled="true"]),
   .danger:active:not(:disabled):not([aria-disabled="true"]) {
     background: var(--paper-shade);
   }
 
   .outline:disabled,
   .outline[aria-disabled="true"]:not([data-settling]),
+  .quiet:disabled,
+  .quiet[aria-disabled="true"]:not([data-settling]),
   .danger:disabled,
   .danger[aria-disabled="true"]:not([data-settling]) {
     border-color: var(--paper-line);
@@ -172,10 +181,22 @@
   }
 
   .outlineOnInk:disabled,
-  .outlineOnInk[aria-disabled="true"]:not([data-settling]) {
+  .outlineOnInk[aria-disabled="true"]:not([data-settling]),
+  .dangerOnInk:disabled,
+  .dangerOnInk[aria-disabled="true"]:not([data-settling]) {
     border-color: var(--ink-disabled);
     background: var(--ink-disabled);
     color: var(--ink-tag);
+  }
+
+  .dangerOnInk {
+    border: var(--rule-strong) solid var(--error-on-ink);
+    font-weight: var(--control-weight);
+    color: var(--paper);
+  }
+
+  .dangerOnInk:active:not(:disabled):not([aria-disabled="true"]) {
+    background: var(--ink-raised);
   }
 
   .danger {
@@ -203,11 +224,13 @@
     }
 
     .outline:hover:not(:disabled):not([aria-disabled="true"]),
+    .quiet:hover:not(:disabled):not([aria-disabled="true"]),
     .danger:hover:not(:disabled):not([aria-disabled="true"]) {
       background: var(--paper-shade);
     }
 
-    .outlineOnInk:hover:not(:disabled):not([aria-disabled="true"]) {
+    .outlineOnInk:hover:not(:disabled):not([aria-disabled="true"]),
+    .dangerOnInk:hover:not(:disabled):not([aria-disabled="true"]) {
       background: var(--ink-raised);
     }
   }

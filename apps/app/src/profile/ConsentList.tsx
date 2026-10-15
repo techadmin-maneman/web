@@ -123,7 +123,7 @@ export function ConsentList({
                         {copy.referralCards.confirm}
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="quiet"
                         size="control"
                         className={styles.secondary}
                         onClick={() => {

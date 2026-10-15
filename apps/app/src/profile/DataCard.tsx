@@ -85,7 +85,7 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
     if (!writing) {
       return (
         <Button
-          variant="outline"
+          variant="quiet"
           size="control"
           className={styles.secondary}
           onClick={() => {
@@ -122,7 +122,7 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
             {copy.send}
           </Button>
           <Button
-            variant="outline"
+            variant="quiet"
             size="control"
             className={styles.secondary}
             onClick={() => {
@@ -142,7 +142,7 @@ export function DataCard({ grievances, onRaised }: { grievances: Profile["grieva
         {copy.label}
       </h2>
       <p className={styles.cardBody}>{copy.body}</p>
-      <ButtonLink variant="outline" size="control" className={styles.secondary} href={EXPORT_URL} download>
+      <ButtonLink variant="quiet" size="control" className={styles.secondary} href={EXPORT_URL} download>
         {copy.download}
       </ButtonLink>
       {concern()}

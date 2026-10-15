@@ -22,6 +22,10 @@ export const BUTTON_VARIANTS = [
   "outline",
   /** Any other action on ink: a lighter ink edge, with paper words. */
   "outlineOnInk",
+  /** A quieter action on paper beside the others: edged in the paper's own line, as the profile's and a sheet's Close. */
+  "quiet",
+  /** An answer on ink that can cost the client: the error's line, with paper words, never the gold. */
+  "dangerOnInk",
   /** An action that takes something away that can be put back or made again, on paper: oxblood edge and words. */
   "danger",
   /** One that cannot be undone, as deleting, erasing or refunding: oxblood, with paper words. */

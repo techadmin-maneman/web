@@ -109,17 +109,11 @@ const HANDS_ITS_CLASS_TO_A_BUTTON = new Set(["Button", "ButtonLink", "BookButton
 /** What a class handed to a button may not set: each draws one of its looks. */
 const LOOK_PROPERTIES = new Set(["background", "background-color", "color", "border", "border-color"]);
 
-/** The classes that do, each for a look its board draws. */
-const DRAWN_BY_A_BOARD = new Set([
-  // Reschedule offline, in the visit card's own quiet words.
-  "apps/app/src/home/home.module.css .action",
-  // The profile's outlined buttons, and the photograph's Close, edged in the paper's own line.
-  "apps/app/src/profile/profile.module.css .secondary",
-  "apps/app/src/profile/profile.module.css .logout",
-  "apps/app/src/photos/photos.module.css .close",
-  // The technician's answer that can cost the client, edged in the error's colour.
-  "packages/ui/confirm-sheet.module.css .yes",
-]);
+/**
+ * The classes that do, each for a look its board draws. None: a look a board draws that Button had not is one of
+ * Button's variants now (quiet, dangerOnInk), and an unusable button on ink looks as every other does.
+ */
+const DRAWN_BY_A_BOARD = new Set<string>([]);
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {

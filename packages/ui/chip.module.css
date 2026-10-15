@@ -13,6 +13,8 @@
   }
 
   .remove {
+    display: inline-grid;
+    place-items: center;
     min-width: var(--sp-24);
     min-height: var(--sp-24);
     padding: 0;

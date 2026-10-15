@@ -172,7 +172,7 @@ export function AddressForm({
           {saveLabel}
         </Button>
         {onCancel !== undefined && (
-          <Button variant="outline" size="control" className={styles.secondary} onClick={onCancel}>
+          <Button variant="quiet" size="control" className={styles.secondary} onClick={onCancel}>
             {copy.form.cancel}
           </Button>
         )}
