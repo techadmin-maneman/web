@@ -91,11 +91,12 @@
   border-top-color: var(--error-on-paper);
 }
 
+/* Read at the door, often in sunlight: a size up from the board, and the light shade rather than the muted grey. */
 .stageLabel,
 .failedLabel {
   margin: 0 0 var(--sp-16);
-  font-size: var(--fs-14);
-  color: var(--ink-muted);
+  font-size: var(--fs-16);
+  color: var(--paper-shade);
 }
 
 .failedLabel {
