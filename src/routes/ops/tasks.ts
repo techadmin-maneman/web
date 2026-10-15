@@ -31,6 +31,7 @@ import { REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 import { DAY_MS } from "../../lib/durations.ts";
 import {
   CLOSABLE_TASK_GROUPS,
+  hasLapsed,
   isClosable,
   mayOwnTasks,
   STAFF_SEEN_WITHIN_DAYS,
@@ -122,6 +123,9 @@ const TasksSchema = z
       description:
         "How many places, the central store and each kit, hold something at or below its level: Stock's badge.",
     }),
+    lapsed: z.number().int().openapi({
+      description: "How many tasks the board leaves out for having waited past the days ops set; none when asked for.",
+    }),
     groups: z.array(
       z
         .object({
@@ -151,6 +155,10 @@ const tasksRoute = opsRoute({
     query: z.object({
       person: z.uuid().optional().openapi({
         description: "One client's tasks alone, for their page; every count is then theirs.",
+      }),
+      lapsed: z.enum(["include"]).optional().openapi({
+        description:
+          "The tasks past the days ops set for a task to lapse as well, which the board otherwise leaves out.",
       }),
     }),
   },
@@ -288,24 +296,35 @@ async function groupsSeenBy(c: Context<AppEnv>): Promise<TaskGroup[]> {
   return TASK_GROUPS.filter((group) => callerMeetsNeed(access.caller, taskNeed(group, "view"), access.zoneOf));
 }
 
+/** The tasks of the groups seen, less those past the lapse days unless they are asked for, and those apart. */
+function splitLapsed(
+  all: readonly Task[],
+  look: { seen: readonly TaskGroup[]; asked: "include" | undefined; now: Date; lapseDays: number },
+) {
+  const lapsedOf = (task: Task) => look.asked !== "include" && hasLapsed(task.since, look.now, look.lapseDays);
+  const seen = all.filter((task) => look.seen.includes(task.group));
+  return { tasks: seen.filter((task) => !lapsedOf(task)), lapsed: seen.filter(lapsedOf) };
+}
+
 export function registerOpsTasks(app: App): void {
   app.openapi(tasksRoute, async (c) => {
     const now = c.var.deps.now();
-    const { person } = c.req.valid("query");
-    const [board, staff, seen, lowStock] = await Promise.all([
+    const { person, lapsed: asked } = c.req.valid("query");
+    const [board, staff, seen, lowStock, inputs] = await Promise.all([
       readTheBoard(c, "view", person),
       staffNow(c),
       groupsSeenBy(c),
       lowStockPlaces(c.env.DB),
+      opsInputs(c),
     ]);
-    const tasks = board.tasks.filter((task) => seen.includes(task.group));
+    const { tasks, lapsed } = splitLapsed(board.tasks, { seen, asked, now, lapseDays: inputs.taskLapseDays });
     // In the policy's order, and a group with nothing in it is left out, as the board draws none.
     const groups = seen
       .map((group) => {
         const shown = tasks.filter((task) => task.group === group).slice(0, TASKS_SHOWN);
         return {
           group,
-          count: board.counts.get(group) ?? 0,
+          count: (board.counts.get(group) ?? 0) - lapsed.filter((task) => task.group === group).length,
           closable: isClosable(group),
           tasks: shown.map(taskBody),
         };
@@ -313,7 +332,8 @@ export function registerOpsTasks(app: App): void {
       .filter((each) => each.count > 0);
 
     const overdue = overdueCount(tasks, now);
-    return c.json({ overdue, truncated: board.truncated, staff, low_stock_places: lowStock, groups }, 200);
+    const answer = { overdue, truncated: board.truncated, staff, low_stock_places: lowStock, lapsed: lapsed.length };
+    return c.json({ ...answer, groups }, 200);
   });
 
   app.openapi(ownerRoute, async (c) => {

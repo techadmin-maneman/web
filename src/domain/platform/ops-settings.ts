@@ -73,6 +73,7 @@ export interface OpsInputs {
   readonly remedyLimit: RemedyLimit;
   /** Days lapsed before the retention figures count a client lost (src/policy/client-standing.ts). */
   readonly lostAfterDays: number;
+  readonly taskLapseDays: number;
   /** A rupee order worth more than this needs a second approver (src/policy/purchasing.ts). */
   readonly poSecondApprovalAboveRupees: number;
   /** Rupees to one unit of each other currency, for approvals (src/policy/purchasing.ts). */
@@ -160,6 +161,7 @@ function shape(values: OpsValues): OpsInputs {
     careHours: values.care_hours,
     remedyLimit: values.remedy_limit,
     lostAfterDays: values.lost_after_days,
+    taskLapseDays: values.task_lapse_days,
     poSecondApprovalAboveRupees: values.po_second_approval_above_rupees,
     poRupeesToOne: values.po_rupees_to_one,
     customOrderGraceDays: values.custom_order_grace_days,

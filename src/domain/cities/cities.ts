@@ -54,6 +54,22 @@ export const cityServedWith = (db: D1Database, pincode: string): D1PreparedState
     )
     .bind(pincode);
 
+/**
+ * The cities Clients may be narrowed to, within `reach` (a JSON list of names, or null for every city): those marked
+ * served, and any with a pincode served whatever it is marked.
+ */
+export async function clientCities(db: D1Database, reach: string | null): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT name FROM cities c
+       WHERE (served = 1 OR EXISTS (SELECT 1 FROM serviceable_pincodes p WHERE p.city = c.name AND p.served = 1))
+         AND (?1 IS NULL OR name IN (SELECT value FROM json_each(?1))) ORDER BY name`,
+    )
+    .bind(reach)
+    .all<{ name: string }>();
+  return results.map((row) => row.name);
+}
+
 /** Whether a name is one of our active cities, as a technician's city must be. */
 export async function isActiveCity(db: D1Database, name: string): Promise<boolean> {
   const found = await db.prepare("SELECT 1 FROM cities WHERE name = ?1 AND active = 1").bind(name).first();

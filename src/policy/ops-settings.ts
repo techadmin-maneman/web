@@ -31,7 +31,7 @@ import { DISPUTE_WINDOW_DAYS, NO_SHOW_CHARGES, NO_SHOW_WAIT_MIN, WAIVER_GIVES_BA
 import { PHONE_CLOCK, PHONE_CLOCK_KEYS } from "./phone-clock.ts";
 import { MAX_REWARD_VISITS, REFERRAL_REWARD, REFERRAL_REWARD_KEYS } from "./referral-reward.ts";
 import { TECHNICIAN_WORK, TECHNICIAN_WORK_KEYS } from "./technician-work.ts";
-import { TASK_GROUPS, TASK_SLA_HOURS } from "./tasks.ts";
+import { TASK_GROUPS, TASK_LAPSE_DAYS, TASK_SLA_HOURS } from "./tasks.ts";
 import { DEFAULT_PIECE_CYCLE_DAYS, PIECE_CYCLE_DAYS } from "../config/pieces.ts";
 import { HOUR_OF_DAY } from "../config/setting-units.ts";
 import { PAYMENT_HOLD, PAYMENT_HOLD_KEYS } from "../config/scheduling.ts";
@@ -206,6 +206,16 @@ export const OPS_SETTINGS = [
     max: 720,
     keys: TASK_GROUPS,
     fallback: TASK_SLA_HOURS,
+  },
+  {
+    name: "task_lapse_days",
+    title: "Tasks lapse after",
+    note: "Days a task may wait before it leaves the board for the lapsed list, which Tasks can still show.",
+    unit: "days",
+    min: 14,
+    max: 365,
+    keys: null,
+    fallback: TASK_LAPSE_DAYS,
   },
   {
     name: "piece_cycle_days",

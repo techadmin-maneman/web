@@ -122,6 +122,10 @@ export const tasks = {
   },
   /** More were waiting than one look reads. */
   truncated: "Counts may be incomplete.",
+  /** Tasks past the lapse days set in Settings, left off the board until asked for. */
+  lapsed: (count: number) => `${String(count)} lapsed ${count === 1 ? "task is" : "tasks are"} left out.`,
+  showLapsed: "Show them",
+  hideLapsed: "Leave them out",
   /** The second line, one per group: the one fact the group turns on. */
   subs: {
     /**

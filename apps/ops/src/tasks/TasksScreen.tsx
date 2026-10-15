@@ -8,7 +8,7 @@ import { TextButton } from "@maneman/ui/TextLink";
 import { capsLook } from "@maneman/ui/Caps";
 import { useLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { useRef, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import type { Task, TaskGroup, Tasks } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
@@ -18,6 +18,7 @@ import { taskNeed, useAccess, whoami } from "../lib/access.ts";
 import { daysUntil } from "../lib/due.ts";
 import { Left } from "../lib/Left.tsx";
 import { readTasks } from "../lib/waiting.ts";
+import { api } from "../api.ts";
 import { rowId } from "../lib/target.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import { BookFromTask } from "./BookFromTask.tsx";
@@ -208,8 +209,36 @@ function toggled(groups: ReadonlySet<Group>, group: Group): ReadonlySet<Group> {
   return next;
 }
 
+/** The board, read with the tasks lapsed off it or without, and the switch between the two. */
+function useBoard() {
+  const [withLapsed, setWithLapsed] = useState(false);
+  const read = useCallback(() => (withLapsed ? api.tasksWithLapsed() : readTasks()), [withLapsed]);
+  const [loaded, retry] = useLoad(read);
+  const toggle = () => {
+    setWithLapsed((was) => !was);
+  };
+  return { loaded, retry, lapsed: { shown: withLapsed, toggle } };
+}
+
+/** What the board leaves out: more than one look reads, and the tasks lapsed off it, with a way to show them. */
+function BoardNotes(props: { truncated: boolean; lapsed: number; shown: boolean; onToggle: () => void }) {
+  return (
+    <>
+      {props.truncated && <p className={styles.note}>{tasks.truncated}</p>}
+      {(props.lapsed > 0 || props.shown) && (
+        <p className={styles.note}>
+          {props.shown ? null : <>{tasks.lapsed(props.lapsed)} </>}
+          <TextButton tone="muted" compact onClick={props.onToggle}>
+            {props.shown ? tasks.hideLapsed : tasks.showLapsed}
+          </TextButton>
+        </p>
+      )}
+    </>
+  );
+}
+
 function TaskQueue() {
-  const [loaded, retry] = useLoad(readTasks);
+  const { loaded, retry, lapsed } = useBoard();
   const [signedIn] = useLoad(whoami);
   const access = useAccess();
   const [owners, setOwners] = useState<ReadonlyMap<string, string | null>>(new Map());
@@ -287,7 +316,7 @@ function TaskQueue() {
       <VisuallyHidden as="h2" id="tasks">
         {tasks.openCount(open)}
       </VisuallyHidden>
-      {truncated && <p className={styles.note}>{tasks.truncated}</p>}
+      <BoardNotes truncated={truncated} lapsed={loaded.value.lapsed} shown={lapsed.shown} onToggle={lapsed.toggle} />
       {sections.length === 0 ? (
         <EmptyState look="panel" line={tasks.empty} />
       ) : (

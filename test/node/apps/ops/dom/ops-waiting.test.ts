@@ -31,6 +31,7 @@ const board = (groups: TaskGroup[]): Tasks => ({
   overdue: 0,
   truncated: false,
   low_stock_places: 0,
+  lapsed: 0,
   staff: [],
   groups,
 });

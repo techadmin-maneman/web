@@ -299,6 +299,7 @@ describe("GET /api/tasks", () => {
       overdue: 0,
       truncated: false,
       low_stock_places: 0,
+      lapsed: 0,
       staff: ["ops@localhost"],
       groups: [],
     });

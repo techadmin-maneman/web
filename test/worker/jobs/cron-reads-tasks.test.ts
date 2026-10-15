@@ -116,7 +116,8 @@ describe("a look at the Tasks board or the Stock page", () => {
     await env.DB.batch(MOVEMENTS_SQL.map((sql) => over(sql, from, to)));
   }
 
-  const tasks = () => request(ops, "/api/tasks");
+  // Every task, those past the board's lapse days too: the reads are what is measured.
+  const tasks = () => request(ops, "/api/tasks?lapsed=include");
   const stock = () => request(ops, "/api/stock");
   const count = () =>
     request(ops, "/api/stock/counts", {
