@@ -229,6 +229,7 @@ test("an unserved pincode takes the number instead, and the launch alert is the 
 
   await fillPerson(page);
   await page.getByText(referralCopy.referral.waitlist.contactConsent).click();
+  await page.getByText(referralCopy.referral.waitlist.launchAlert).click();
   await expect(page.getByLabel(referralCopy.referral.waitlist.launchAlert)).toBeChecked();
   await page.getByRole("button", { name: referralCopy.referral.waitlist.submit }).click();
 
