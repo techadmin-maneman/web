@@ -113,6 +113,7 @@ const visit = (n: number, date: string, type: NonNullable<VisitSummary["type"]>,
     place: PLACE,
     client_note: null,
     one_visit: null,
+    pay_at_visit: null,
     proposed_move: null,
   }) satisfies VisitSummary;
 

@@ -4493,6 +4493,8 @@ export interface components {
             place: string;
             /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
             client_note: string | null;
+            /** @description What the client still pays by UPI at the visit, in paise; null where nothing is owed at the visit. */
+            pay_at_visit: number | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */
@@ -4809,6 +4811,8 @@ export interface components {
             place: string;
             /** @description The client's note to the technician on this visit, as they last wrote it; null for none. */
             client_note: string | null;
+            /** @description What the client still pays by UPI at the visit, in paise; null where nothing is owed at the visit. */
+            pay_at_visit: number | null;
             /** @description A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by a link Razorpay texts them. Null for any other visit. */
             one_visit: components["schemas"]["OneVisitPrice"] | null;
             /** @description A move to another day ops asked the client to confirm, still open: the visit stays where it is until they accept it (POST /api/visits/{id}/proposed-move/accept) or pick another time. Null for none. */

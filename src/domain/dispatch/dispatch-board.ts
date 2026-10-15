@@ -167,7 +167,7 @@ const BOARD_JOBS = `
        JOIN referral_codes code ON code.code = r.code
        JOIN people referrer ON referrer.id = code.person_id
      WHERE r.referred_person_id = a.person_id AND referrer.erased_at IS NULL) AS referred_by,
-    ${creditSpentOn("a.id")} AS on_credit,
+    ${creditSpentOn("a.id")} AS on_credit, EXISTS (SELECT 1 FROM slot_holds h WHERE h.appointment_id = a.id AND h.pay_at_visit = 1) AS pay_at_visit,
     (SELECT COALESCE(h.change_notice_hours, ?4) FROM slot_holds h
      WHERE h.appointment_id = a.id AND h.state = 'booked' ORDER BY h.updated_at DESC LIMIT 1) AS sold_notice_hours,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
@@ -316,6 +316,7 @@ interface BoardJobRow {
   whatsapp_visits: number | null;
   referred_by: string | null;
   on_credit: number;
+  pay_at_visit: number;
   free: number;
   /** Where a consultation and fit in one visit stands; null for any other visit. */
   one_visit: OneVisitState | null;
@@ -342,6 +343,7 @@ function visitOf(job: BoardJobRow): Visit {
       onCredit: job.on_credit === 1,
       free: job.free === 1,
       oneVisit: paidAtTheVisit(job.one_visit),
+      payAtVisit: job.pay_at_visit === 1,
     }),
     slots: slotsFor(unitsFor(bookedMinutes(job))),
     // An erased client's note went with them.

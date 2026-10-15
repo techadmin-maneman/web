@@ -96,6 +96,9 @@ export const VisitSummarySchema = z
     client_note: z.union([z.string(), z.null()]).openapi({
       description: "The client's note to the technician on this visit, as they last wrote it; null for none.",
     }),
+    pay_at_visit: z.union([z.number().int(), z.null()]).openapi({
+      description: "What the client still pays by UPI at the visit, in paise; null where nothing is owed at the visit.",
+    }),
     one_visit: z.union([OneVisitPriceSchema, z.null()]).openapi({
       description:
         "A consultation and fit in one visit not yet closed: the client pays only if they go ahead, once fitted, by " +

@@ -125,6 +125,8 @@ export interface JobRow {
   lat: number | null;
   lng: number | null;
   on_credit: number;
+  /** 1 for a paid visit ops booked while online payment was off: paid by UPI at the visit. */
+  pay_at_visit: number;
   free: number;
   /** The length of the visit's service, from the services table; null where no service is it. */
   service_minutes: number | null;
@@ -142,7 +144,7 @@ export const SELECT_JOB = `
     (SELECT cs.granted FROM consents cs WHERE cs.person_id = p.id AND cs.purpose = 'whatsapp_visits'
       ORDER BY cs.created_at DESC, cs.rowid DESC LIMIT 1) AS client_whatsapp,
     d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
-    d.access_notes, d.lat, d.lng, ${creditSpentOn("a.id")} AS on_credit,
+    d.access_notes, d.lat, d.lng, ${creditSpentOn("a.id")} AS on_credit, EXISTS (SELECT 1 FROM slot_holds h WHERE h.appointment_id = a.id AND h.pay_at_visit = 1) AS pay_at_visit,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
               WHERE b.item = a.type AND b.tier = ${tierOf("a.tier")}
                 AND b.valid_from <= ${indiaDateSql("a.window_start")}
@@ -274,7 +276,12 @@ function soldServiceOf(row: JobRow): JobService | null {
 }
 
 function badgeOf(row: JobRow): PaymentBadge {
-  return paymentBadge({ onCredit: row.on_credit === 1, free: row.free === 1, oneVisit: paidAtTheVisit(row.one_visit) });
+  return paymentBadge({
+    onCredit: row.on_credit === 1,
+    free: row.free === 1,
+    oneVisit: paidAtTheVisit(row.one_visit),
+    payAtVisit: row.pay_at_visit === 1,
+  });
 }
 
 const outcomeOf = (body: string): string | null => storedOutcomeOf(JSON.parse(body))?.outcome ?? null;

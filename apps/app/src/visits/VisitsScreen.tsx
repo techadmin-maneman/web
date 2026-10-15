@@ -34,7 +34,18 @@ import styles from "./visits.module.css";
 const copy = visits.record;
 
 /** An upcoming visit's card, as C1 draws it: the date and whether it is paid, then what, when and who. */
-function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly string[]; prepaid: boolean }) {
+function UpcomingCard({
+  date,
+  parts,
+  prepaid,
+  due = null,
+}: {
+  date: string;
+  parts: readonly string[];
+  prepaid: boolean;
+  /** What is still to pay by UPI at the visit, in paise. */
+  due?: number | null;
+}) {
   return (
     <>
       <span className={styles.cardHead}>
@@ -42,6 +53,7 @@ function UpcomingCard({ date, parts, prepaid }: { date: string; parts: readonly 
         {prepaid && <span className={capsLook(styles.prepaid)}>{visits.prepaid}</span>}
       </span>
       <span className={styles.cardWhat}>{parts.join(" · ")}</span>
+      {due !== null && <span className={styles.cardWhat}>{visits.payAtVisit(rupees(due))}</span>}
     </>
   );
 }
@@ -55,7 +67,7 @@ function Upcoming({ visit }: { visit: VisitSummary }) {
   return (
     <li>
       <AppLink className={styles.card} to={`/visits/${visit.id}`}>
-        <UpcomingCard date={visit.date} parts={parts} prepaid={visit.prepaid} />
+        <UpcomingCard date={visit.date} parts={parts} prepaid={visit.prepaid} due={visit.pay_at_visit} />
       </AppLink>
     </li>
   );

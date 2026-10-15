@@ -27870,6 +27870,17 @@ Request body:
       ],
       "description": "The client's note to the technician on this visit, as they last wrote it; null for none."
     },
+    "pay_at_visit": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client still pays by UPI at the visit, in paise; null where nothing is owed at the visit."
+    },
     "one_visit": {
       "anyOf": [
         {
@@ -28044,6 +28055,7 @@ Request body:
     "technician",
     "place",
     "client_note",
+    "pay_at_visit",
     "one_visit",
     "proposed_move",
     "lost_reason",
@@ -28327,6 +28339,17 @@ Request body:
       ],
       "description": "The client's note to the technician on this visit, as they last wrote it; null for none."
     },
+    "pay_at_visit": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client still pays by UPI at the visit, in paise; null where nothing is owed at the visit."
+    },
     "one_visit": {
       "anyOf": [
         {
@@ -28367,6 +28390,7 @@ Request body:
     "technician",
     "place",
     "client_note",
+    "pay_at_visit",
     "one_visit",
     "proposed_move"
   ],

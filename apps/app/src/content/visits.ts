@@ -8,6 +8,8 @@ export const visits = {
   none: "Nothing booked yet.",
   /** Visits: a visit paid for ahead, or covered by a credit. */
   prepaid: "Prepaid",
+  /** A visit paid by UPI at the visit while online payment is off (ADR 0208): "Pay Rs. 2,200 by UPI at the visit". */
+  payAtVisit: (amount: string) => `Pay ${amount} by UPI at the visit`,
   /** A consultation asked for on the site, which ops have yet to confirm. */
   requested: "Requested",
   // A visit that is not this client's, or no longer exists.

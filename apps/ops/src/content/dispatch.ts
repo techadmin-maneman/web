@@ -119,9 +119,9 @@ export const dispatch = {
     withdraw: "Withdraw",
     /** Beneath the name: "Fri 19 Sep · 12 to 4 pm · Imran Qureshi". */
     when: (date: string, hours: string, technician: string) => `${date} · ${hours} · ${technician}`,
-    // at_visit: a consultation and fit in one visit, paid for once the client is fitted (ADR 0105).
+    // at_visit: a consultation and fit in one visit, paid once fitted (ADR 0105), or a visit paid by UPI there.
     /** The badge at the drawer's head: never an amount (ADR 0025, item 33). */
-    badges: { prepaid: "Prepaid", credit: "Free visit", free: "No charge", at_visit: "Pays once fitted" },
+    badges: { prepaid: "Prepaid", credit: "Free visit", free: "No charge", at_visit: "Pays at the visit" },
     // The board draws no Service row; it names a first fit's hair system, say.
     rows: {
       type: "Type",
