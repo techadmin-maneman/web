@@ -2547,6 +2547,7 @@ Indexes:
 - `slot_holds_confirmed`: on (`queued_at`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_confirmed_by_person`: on (`person_id`), where `state = 'held' AND confirmed_at IS NOT NULL`
 - `slot_holds_held`: on (`expires_at`), where `state = 'held'`
+- `slot_holds_pay_at_visit`: on (`appointment_id`), where `pay_at_visit = 1 AND state = 'booked'`
 - `slot_holds_reference`: unique on (`reference`)
 - `slot_holds_reference_number`: unique on (`reference_year`, `reference_number`)
 - `slot_holds_unconfirmed`: on (`expires_at`), where `confirmed_at IS NULL`

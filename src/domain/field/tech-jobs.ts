@@ -144,7 +144,7 @@ export const SELECT_JOB = `
     (SELECT cs.granted FROM consents cs WHERE cs.person_id = p.id AND cs.purpose = 'whatsapp_visits'
       ORDER BY cs.created_at DESC, cs.rowid DESC LIMIT 1) AS client_whatsapp,
     d.line1, d.line2, d.building, d.tower, d.floor, d.flat, d.landmark, d.locality, d.city, d.pincode,
-    d.access_notes, d.lat, d.lng, ${creditSpentOn("a.id")} AS on_credit, EXISTS (SELECT 1 FROM slot_holds h WHERE h.appointment_id = a.id AND h.pay_at_visit = 1) AS pay_at_visit,
+    d.access_notes, d.lat, d.lng, ${creditSpentOn("a.id")} AS on_credit, EXISTS (SELECT 1 FROM slot_holds h WHERE h.appointment_id = a.id AND h.pay_at_visit = 1 AND h.state = 'booked') AS pay_at_visit,
     COALESCE((SELECT b.amount_ex_gst = 0 FROM price_book b
               WHERE b.item = a.type AND b.tier = ${tierOf("a.tier")}
                 AND b.valid_from <= ${indiaDateSql("a.window_start")}
