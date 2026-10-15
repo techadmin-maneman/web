@@ -73,7 +73,7 @@ npm run typecheck && npm run check:types   # every project, and the generated En
 npm run lint
 npm run format:check                       # npm run format fixes it
 npm test                                   # the Worker tests in workerd and the rest in Node, about five minutes
-npm run test:coverage                      # the same, held to 90% of lines and 80% of branches in src/
+npm run test:coverage                      # the same, held to the coverage floors in vitest.config.ts
 npm run check:config                       # environment isolation, and 64 vars and secrets at most
 npm run check:migrations                   # forward-only; a contract step names its ADR (docs/migrations.md)
 npm run check:open-points                  # one number a point, and every citation of one names a point that exists

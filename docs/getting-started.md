@@ -33,7 +33,7 @@ Locally nothing happens by itself that, on staging, another system does. Each ha
 
 | On staging                                  | Locally                                                                                        |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| The cron, every five minutes                | `npm run tick`: one run of every job (`wrangler dev --test-scheduled`)                         |
+| The cron, every minute, each job at its pace | `npm run tick`: one run of every job (`wrangler dev --test-scheduled`)                         |
 | Razorpay's webhook after a client pays      | `npm run pay:local`: pays the last booking held, by the same signed webhook                    |
 | A technician closing a visit on their phone | `npm run close:local`: lists open visits; `npm run close:local -- <id> [--partial]` closes one |
 | WhatsApp messages, login codes              | the stub: nothing is sent, and every code is `246810`                                          |

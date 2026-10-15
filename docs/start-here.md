@@ -103,9 +103,10 @@ this map, or when the map names something that no longer exists.
 - **Routes** (`src/routes/`): `ops/stock`, `ops/stock.places`, `ops/stock.transit`, `ops/stock.read`, `ops/stock.units`,
   `ops/stock.schemas`, `ops/stock-match`, `ops/count-tasks`, `ops/stock-usage`, `ops/recalls`, `ops/stock-quality`,
   `ops/consumables`, `ops/hair-systems`
-- **Screens:** `apps/ops/src/stock/`
-- **Tests:** `test/worker/ops/stock-places.test.ts`, `test/worker/ops/hair-systems.test.ts`, `e2e/ops/stock.e2e.ts`,
-  `e2e/ops/consumables.e2e.ts`
+- **Screens:** `apps/ops/src/stock/`, `apps/ops/src/items/`, `apps/ops/src/kit/`, `apps/ops/src/counts/`,
+  `apps/ops/src/quality/`, `apps/ops/src/usage/`, and the technician app's kit, `apps/tech/src/kit/`
+- **Tests:** `test/worker/ops/stock-*.test.ts`, `test/worker/ops/hair-systems.test.ts`, `e2e/ops/stock.e2e.ts`,
+  `e2e/ops/consumables.e2e.ts`, `e2e/ops/counts.e2e.ts`, `e2e/ops/quality.e2e.ts`, `e2e/ops/usage.e2e.ts`
 
 ### Purchasing: suppliers, orders and the supply plan
 
@@ -115,8 +116,8 @@ this map, or when the map names something that no longer exists.
 - **Routes** (`src/routes/`): `ops/suppliers`, `ops/purchasing`, `ops/purchasing.receipts`, `ops/purchasing.claims`,
   `ops/purchasing.photos`, `ops/purchasing.scorecard`, `ops/custom-orders`, `client/custom-orders`,
   `ops/stock-forecast`, `ops/supply-plan`, `ops/demand-events`
-- **Screens:** `apps/ops/src/stock/`
-- **Tests:** `test/worker/ops/`, `e2e/ops/stock.e2e.ts`
+- **Screens:** `apps/ops/src/purchasing/`, `apps/ops/src/suppliers/`, `apps/ops/src/supply-plan/`
+- **Tests:** `test/worker/ops/`, `e2e/ops/purchasing.e2e.ts`, `e2e/ops/supply-plan.e2e.ts`
 
 ### Cities, their GST and what a city sets apart
 
@@ -235,7 +236,8 @@ this map, or when the map names something that no longer exists.
 
 - **Database work** (`src/domain/care/`): `inbox`, `replies`, `care-people` (each client's named Care person), `chat-tasks` (a chat past its reply-by time, on Tasks), `after-hours` (the answer to a message sent while Care are off), `cover` (the team's days off and who covers them), `city-matters` (what Care send to a client's city), `strangers` (a chat from a number we don't know, linked or saved), `quick-replies` (saved answers), `remedies` (free visits Care give, and their approval), `care-numbers` (whether the same-day promise holds), `app-reports` (something wrong told from the app)
 - **Routes** (`src/routes/`): `ops/conversations`, `ops/care-people`, `ops/care-rota`, `ops/city-matters`, `ops/strangers`, `ops/quick-replies`, `ops/remedies`, `ops/care-numbers`, `hooks/evolution` (files what clients write), `client/problems`
-- **Tests:** `test/worker/care/`
+- **Screens:** `apps/ops/src/care/` (Messages, the thread, its client panel, City matters, remedies, quick replies, the Care team and its numbers)
+- **Tests:** `test/worker/care/`, `test/dom/ops-messages.test.ts`, `test/dom/ops-care-numbers.test.ts`, `e2e/ops/messages.e2e.ts`
 
 ### Reports
 

@@ -210,8 +210,8 @@ jobs:
           done
           exit 1
 
-  # One run of the whole suite, so coverage still measures all of src/ and scripts/lib/: 90% of lines and 80% of
-  # branches, with floors of their own for the vendor clients and the release script (vitest.config.ts).
+  # One run of the whole suite, so coverage still measures all of src/ and scripts/lib/, held to the floors in
+  # vitest.config.ts, with floors of their own for the vendor clients, the money modules and the release script.
   # It runs whatever changed: it covers src/ and the migrations, and a config
   # change can break it.
   # The suite in two halves on two runners, each keeping its coverage to merge: half the wait.
@@ -323,7 +323,7 @@ jobs:
       # project alone (playwright.config.ts). Everything else is Chromium.
       # On GitHub's runners the browsers are cached by Playwright's version; the
       # system libraries they need are not files a cache can keep, so they are
-      # installed either way. The machine's runners keep both on their own disk.
+      # installed either way.
       - name: Which Playwright
         id: playwright
         run: |

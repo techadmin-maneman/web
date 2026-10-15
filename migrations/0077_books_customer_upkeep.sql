@@ -2,7 +2,7 @@
 -- Without FSM, the client's customer in Zoho Books is ours to keep up to date: a new number or address written to
 -- it, and an erased client's customer blanked or deleted. Expand only: the Worker already deployed reads none of it.
 
--- The Books erasure pass (src/domain/books-erasure.ts), with the tries it took, as the CRM's and FSM's erasures keep
+-- The Books erasure pass (src/domain/books/books-erasure.ts), with the tries it took, as the CRM's and FSM's erasures keep
 -- theirs.
 ALTER TABLE people ADD COLUMN books_erased_at TEXT;
 ALTER TABLE people ADD COLUMN books_erasure_attempts INTEGER NOT NULL DEFAULT 0;

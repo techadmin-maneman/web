@@ -6,7 +6,7 @@
 -- 2026 the sync makes inactive every technician FSM's list leaves out (ADR 0065), and FSM
 -- lists none of these, so its next read of the list, nightly or on a sign-in with a number
 -- the mirror did not know, would switch each of them off, and no code would reach him. A row
--- marked here was written by hand, and the sync leaves it alone (src/domain/fsm-mirror.ts).
+-- marked here was written by hand, and the sync leaves it alone (the FSM mirror, since removed: docs/decisions/0110-field-work-without-fsm.md).
 --
 -- A column is added, and 0 is what every other row already is: a row the sync wrote. The
 -- rows the two scripts wrote are marked by the fsm_id prefix each gives its own; both write

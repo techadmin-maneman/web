@@ -131,9 +131,9 @@ export default defineConfig({
            * These tests run inside workerd and write to a real D1, so a slow one is
            * doing work, not hanging. Vitest's five seconds is enough on an idle
            * machine and not on a busy one, which failed CI repeatedly while proving
-           * nothing about the code. Their setup gets the same: with both of the
-           * owner's runners on tests at once, a file's first hook, which applies the
-           * migrations, outran vitest's ten seconds on every run.
+           * nothing about the code. Their setup gets the same: on a busy machine a
+           * file's first hook, which applies the migrations, outruns vitest's ten
+           * seconds.
            */
           testTimeout: 30_000,
           hookTimeout: 30_000,

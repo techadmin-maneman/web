@@ -3,7 +3,7 @@
 import { globSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-/** "src/domain/{a,b}.ts" → ["src/domain/a.ts", "src/domain/b.ts"]: one brace group, as the floors use. */
+/** "src/domain/{a,b}.ts" → a file for each name in the braces: one brace group, as the floors use. */
 function expand(pattern: string): string[] {
   const group = /\{([^}]+)\}/.exec(pattern);
   if (group === null) return [pattern];

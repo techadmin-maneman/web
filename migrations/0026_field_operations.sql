@@ -22,7 +22,7 @@
 
 -- The phones technicians work from: "His sessions are bound to a device and can
 -- be revoked by ops. Revoking also wipes the device's cached jobs on its next
--- contact" (src/policy/technician-login.ts). A device that has been revoked
+-- contact" (src/routes/tech/auth.ts). A device that has been revoked
 -- learns it the next time it calls, and says when it dropped its cached jobs.
 -- The session it binds to is the one ADR 0029 defines; revoking is an ops
 -- action, so it is audited like the rest of them (ADR 0031).

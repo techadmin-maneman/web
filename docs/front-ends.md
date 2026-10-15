@@ -14,7 +14,7 @@ Four front ends, each served by a Worker of its own, each calling mm-api on its 
 | Its API             | `docs/openapi.json`               | `docs/openapi-client.json`             | `docs/openapi-ops.json`             | `docs/openapi-tech.json`                                 |
 | Its design          | `design/Mane Man Site v2.dc.html` | `design/phase2/Client App.dc.html`     | `design/phase2/Ops Console.dc.html` | `design/phase2/Technician App.dc.html`                   |
 
-Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` serves a placeholder page and the three apps are not yet switched on; both wait for the owner's go-ahead (`docs/runbook.md`, "Where things stand").
+Staging's hosts are all behind Cloudflare Access. In production, `maneman.in` serves the coming-soon page until `PRODUCTION_LIVE` is switched (`site/src/lib/flags.ts`), and the three apps are not yet switched on (`ENABLED_SURFACES`, `src/config/environments.ts`); both wait for launch (`docs/go-live.md`).
 
 ## How a front end reaches the API
 

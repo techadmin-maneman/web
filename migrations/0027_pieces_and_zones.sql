@@ -43,7 +43,7 @@ CREATE INDEX pieces_by_code ON pieces (piece_code);
 ALTER TABLE technicians ADD COLUMN zone TEXT;
 
 -- "Mobile number plus a one-time code, the same flow as clients but a separate
--- role" (src/policy/technician-login.ts). The technician's own number, as ops
+-- role" (src/routes/tech/auth.ts). The technician's own number, as ops
 -- keep it on the Technicians page. NULL for a technician with no number, who
 -- then cannot log in (docs/open-points.md, item 12).
 ALTER TABLE technicians ADD COLUMN mobile_e164 TEXT;

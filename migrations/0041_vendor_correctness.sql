@@ -5,7 +5,7 @@
 
 -- When FSM last failed to say what a visit's client asked for. The pass asks
 -- about it again an hour later, rather than first on every run
--- (src/domain/asked-windows.ts).
+-- (src/domain/booking/asked-windows.ts).
 ALTER TABLE appointments ADD COLUMN asked_failed_at TEXT;
 
 -- One table for every Zoho client's access token, the CRM's and FSM's (which
@@ -28,6 +28,6 @@ INSERT INTO zoho_access_tokens (client, access_token, expires_at)
   SELECT 'fsm', access_token, expires_at FROM zoho_tokens WHERE client = 'fsm';
 
 -- The number a confirmed change replaced, so the referral fraud rule can
--- compare every number a person has held (src/domain/referral-grants.ts).
+-- compare every number a person has held (src/domain/referrals/referral-grants.ts).
 -- Null on changes confirmed before this migration, and on any not confirmed.
 ALTER TABLE number_change_requests ADD COLUMN replaced_mobile_e164 TEXT;

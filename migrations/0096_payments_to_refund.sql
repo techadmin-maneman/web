@@ -1,5 +1,5 @@
 -- Migration number: 0096
--- What the Tasks board's "Payment to refund" reads (src/domain/tasks.ts): a captured payment no visit took, whose hold
+-- What the Tasks board's "Payment to refund" reads (src/domain/ops/tasks.ts): a captured payment no visit took, whose hold
 -- was let go without its refund, and a refund Razorpay failed. Both sets stay small, so each look reads only them.
 --
 -- Expand only: two indexes. The Worker already deployed reads neither.

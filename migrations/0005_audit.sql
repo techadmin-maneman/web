@@ -15,7 +15,7 @@ CREATE TABLE audit_log (
   -- client, technician: by our own opaque ID. system: a scheduled job, by name.
   actor_kind TEXT NOT NULL CHECK (actor_kind IN ('staff', 'service', 'client', 'technician', 'system')),
   actor TEXT NOT NULL,
-  -- e.g. ops.call, photo.view. The list is in src/domain/audit.ts, so a new action needs no migration.
+  -- e.g. ops.call, photo.view. The list is in src/domain/platform/audit.ts, so a new action needs no migration.
   action TEXT NOT NULL,
   subject_kind TEXT,
   subject_id TEXT,

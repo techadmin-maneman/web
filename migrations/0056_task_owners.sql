@@ -8,7 +8,7 @@
 -- A task is still read from the queues at the moment ops look: nothing here is a
 -- copy of one. What is kept is about a task, keyed by its group and the id of
 -- the row it is read from, and, for an owner, the task's episode where that row
--- can be a new task again once its task has gone (src/domain/tasks.ts).
+-- can be a new task again once its task has gone (src/domain/ops/tasks.ts).
 --
 -- New tables, new nullable columns or columns with a default, triggers, indexes,
 -- each filled from what is there: the Worker already deployed reads none of it,

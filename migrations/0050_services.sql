@@ -11,7 +11,7 @@ CREATE TABLE services (
   -- The kind of visit, which decides the technician's steps, the booking rules and the fees.
   kind TEXT NOT NULL CHECK (kind IN ('consultation', 'first_fit', 'service', 'replacement')),
   -- The code the price book prices it under: small letters, digits and _, a letter first (PRICE_TIER,
-  -- src/config/ops-settings.ts). Made from its first name, and never changed after, so its prices stay its own.
+  -- src/policy/ops-settings.ts). Made from its first name, and never changed after, so its prices stay its own.
   tier TEXT NOT NULL CHECK (
     length(tier) BETWEEN 1 AND 32 AND tier GLOB '[a-z]*' AND tier NOT GLOB '*[^a-z0-9_]*'
   ),

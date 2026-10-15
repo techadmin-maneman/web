@@ -188,7 +188,6 @@ describe("POST /api/clients/:id/erasure", () => {
   });
 });
 
-/** A deletion request the client made in their app, six days ago, still waiting for ops. */
 /** A request a day past the point ops are alerted to it. */
 async function openRequest(personId: string): Promise<void> {
   const aged = new Date(NOW.getTime() - DELETION_ALERT_AFTER_MS - 86_400_000).toISOString();

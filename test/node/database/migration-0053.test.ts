@@ -212,7 +212,7 @@ describe("migration 0053: each client's last visits", () => {
     });
   });
 
-  // src/domain/fsm-mirror.ts writes each appointment FSM holds so, and src/domain/booking/bookings.ts the visit it booked.
+  // The FSM mirror, since removed, wrote each appointment FSM held so; src/domain/booking/bookings.ts writes the visit it books.
   it("follows a visit the mirror closes, or first writes already done, through its insert or update by FSM's ID", () => {
     const db = migrated();
     const mirror = db.prepare(

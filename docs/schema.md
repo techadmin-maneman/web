@@ -270,13 +270,13 @@ Made by `0011_fsm_mirror.sql`; changed by `0012_fsm_reconciliation.sql`, `0029_i
 | `invoice_issued_at` | TEXT | yes |  |  |  |
 | `asked_window` | TEXT | yes |  |  | The window the client asked for, as against the one the visit was given. FSM holds one time on an appointment and its own Preference subform is read-only there, so the asked window is read from the Request the visit's work order names, and matched to the lead we wrote that Request from (ADR 0063). NULL means nothing recorded one, and the board says so in words. |
 | `asked_checked_at` | TEXT | yes |  |  | When the pass last looked, so a visit with no Request behind it — everything our own booking creates — is not asked about again on every run. |
-| `asked_failed_at` | TEXT | yes |  |  | When FSM last failed to say what a visit's client asked for. The pass asks about it again an hour later, rather than first on every run (src/domain/asked-windows.ts). |
-| `client_note` | TEXT | yes |  |  | The client's note on a visit to come, from the app's "Add a note", which the technician reads on the client's card (src/domain/client-notes.ts). The latest replaces any before it. Blanked when the client is erased. |
+| `asked_failed_at` | TEXT | yes |  |  | When FSM last failed to say what a visit's client asked for. The pass asks about it again an hour later, rather than first on every run (src/domain/booking/asked-windows.ts). |
+| `client_note` | TEXT | yes |  |  | The client's note on a visit to come, from the app's "Add a note", which the technician reads on the client's card (src/domain/clients/client-notes.ts). The latest replaces any before it. Blanked when the client is erased. |
 | `client_note_at` | TEXT | yes |  |  |  |
-| `first_seen_at` | TEXT | yes |  |  | When a visit first reached our records, from a booking or from FSM, which the address it still needs waits from on the Tasks board (src/domain/tasks.ts). Written once, on insert. A visit the Worker already deployed writes has none, and waits from when it was last synced instead. |
+| `first_seen_at` | TEXT | yes |  |  | When a visit first reached our records, from a booking or from FSM, which the address it still needs waits from on the Tasks board (src/domain/ops/tasks.ts). Written once, on insert. A visit the Worker already deployed writes has none, and waits from when it was last synced instead. |
 | `tier` | TEXT | yes |  |  | The service an appointment is, beside its kind (type): from the hold that booked it, or from its FSM item. Null where neither says, as for every appointment mirrored before this; it is then read as the standard tier. |
 | `start_before_move` | TEXT | yes |  |  | When the visit started before ops moved it: the time the client last chose, kept through every move ops make after it and cleared by the client's own. A client's change counts its notice from it where it is later than the visit's time, so a move by ops never takes a free change away. NULL while the visit is where its booking, or the client's last move, put it. |
-| `one_visit` | TEXT | yes |  |  | Where a visit booked as one stands: booked until the technician closes it, then fitted, the client having chosen a product and been fitted, or declined, the client having decided against it, when the visit is a consultation. NULL for every other visit. The mirror keeps a fitted visit's product and a declined visit's kind, which FSM's item does not say (src/domain/fsm-mirror.ts). |
+| `one_visit` | TEXT | yes |  |  | Where a visit booked as one stands: booked until the technician closes it, then fitted, the client having chosen a product and been fitted, or declined, the client having decided against it, when the visit is a consultation. NULL for every other visit. The mirror keeps a fitted visit's product and a declined visit's kind, which FSM's item does not say (the FSM mirror, since removed: docs/decisions/0110-field-work-without-fsm.md). |
 | `nothing_owed_at` | TEXT | yes |  |  | When the close of a consultation and fit in one visit found its discount code left nothing to pay, so no payment link was made: the fit itself then settles the friend's referral, which otherwise waits for the link's payment. |
 | `fsm_note_written_at` | TEXT | yes |  |  | When the visit's note last reached FSM, so an erasure knows which appointments' notes to blank there, and blanks them once. Emptied again when the erasure has blanked it. |
 | `fsm_status` | TEXT | yes |  |  | A visit booked without FSM has no FSM status and no time FSM changed it, so both may be empty. Many tables point at appointments, so each column is swapped in place rather than the table rebuilt; no index, trigger or view names either. |
@@ -317,7 +317,7 @@ Made by `0005_audit.sql`; changed by `0172_retention_reaches_every_table.sql`.
 | `surface` | TEXT | no |  |  |  |
 | `actor_kind` | TEXT | no |  |  | staff: an Access login, by e-mail. service: an Access service token, by client ID. client, technician: by our own opaque ID. system: a scheduled job, by name. |
 | `actor` | TEXT | no |  |  |  |
-| `action` | TEXT | no |  |  | e.g. ops.call, photo.view. The list is in src/domain/audit.ts, so a new action needs no migration. |
+| `action` | TEXT | no |  |  | e.g. ops.call, photo.view. The list is in src/domain/platform/audit.ts, so a new action needs no migration. |
 | `subject_kind` | TEXT | yes |  |  |  |
 | `subject_id` | TEXT | yes |  |  |  |
 | `request_id` | TEXT | yes |  |  |  |
@@ -1582,7 +1582,7 @@ Made by `0008_profile.sql`; changed by `0041_vendor_correctness.sql`, `0102_numb
 | `decided_at` | TEXT | yes |  |  |  |
 | `decided_by` | TEXT | yes |  |  | The member of staff who decided, by their Access e-mail. |
 | `reason` | TEXT | yes |  |  |  |
-| `replaced_mobile_e164` | TEXT | yes |  |  | The number a confirmed change replaced, so the referral fraud rule can compare every number a person has held (src/domain/referral-grants.ts). Null on changes confirmed before this migration, and on any not confirmed. |
+| `replaced_mobile_e164` | TEXT | yes |  |  | The number a confirmed change replaced, so the referral fraud rule can compare every number a person has held (src/domain/referrals/referral-grants.ts). Null on changes confirmed before this migration, and on any not confirmed. |
 | `session_id` | TEXT | yes |  |  |  |
 
 Indexes:
@@ -1864,7 +1864,7 @@ Made by `0002_lead_path.sql`; changed by `0004_erasure.sql`, `0011_fsm_mirror.sq
 | `files_erased_at` | TEXT | yes |  |  |  |
 | `books_customer_id` | TEXT | yes |  |  | The person's customer in Zoho Books, once the Books pass has made it. |
 | `books_checked_at` | TEXT | yes |  |  | When the Books pass last tried to make the person's customer: one it could not make waits an hour before it is tried again. |
-| `books_erased_at` | TEXT | yes |  |  | The Books erasure pass (src/domain/books-erasure.ts), with the tries it took, as the CRM's and FSM's erasures keep theirs. |
+| `books_erased_at` | TEXT | yes |  |  | The Books erasure pass (src/domain/books/books-erasure.ts), with the tries it took, as the CRM's and FSM's erasures keep theirs. |
 | `books_erasure_attempts` | INTEGER | no | `0` |  |  |
 | `books_details_changed_at` | TEXT | yes |  |  | When the client's number or address last changed, until the Books pass has written it to their customer. |
 | `client_since` | TEXT | yes |  |  |  |
@@ -2257,7 +2257,7 @@ Made by `0021_referrals.sql`; changed by `0037_cron_indexes.sql`, `0044_hand_off
 | `reviewed_at` | TEXT | yes |  |  |  |
 | `created_at` | TEXT | no |  |  |  |
 | `updated_at` | TEXT | no |  |  |  |
-| `friend_first_name` | TEXT | yes |  |  | The friend's first name, kept with the referral when it is granted, so the referrer's tracker reads it without the friend's record, and an erasure, which blanks it, shows "A friend" rather than "Erased" (src/routes/client-refer.ts). Filled here for the grants already made to a friend not erased. |
+| `friend_first_name` | TEXT | yes |  |  | The friend's first name, kept with the referral when it is granted, so the referrer's tracker reads it without the friend's record, and an erasure, which blanks it, shows "A friend" rather than "Erased" (src/routes/client/refer.ts). Filled here for the grants already made to a friend not erased. |
 | `attached_by` | TEXT | yes |  |  |  |
 | `attach_reason` | TEXT | yes |  |  |  |
 | `referrer_visits` | INTEGER | yes |  |  |  |
@@ -2400,7 +2400,7 @@ Made by `0050_services.sql`; changed by `0070_field_record_ours.sql`, `0092_serv
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
 | `kind` | TEXT | no |  | primary key | The kind of visit, which decides the technician's steps, the booking rules and the fees. |
-| `tier` | TEXT | no |  | primary key | The code the price book prices it under: small letters, digits and _, a letter first (PRICE_TIER, src/config/ops-settings.ts). Made from its first name, and never changed after, so its prices stay its own. |
+| `tier` | TEXT | no |  | primary key | The code the price book prices it under: small letters, digits and _, a letter first (PRICE_TIER, src/policy/ops-settings.ts). Made from its first name, and never changed after, so its prices stay its own. |
 | `name` | TEXT | no |  |  | What clients, ops and FSM's catalogue call it. One name, one service, so FSM's item can be found by it. |
 | `minutes` | INTEGER | no |  |  | How long FSM books it for, which is the time the scheduler reserves (src/policy/visit-length.ts). |
 | `sort` | INTEGER | no | `0` |  | Its place among its kind's services, as the console and the app list them. |
@@ -3164,7 +3164,7 @@ Made by `0011_fsm_mirror.sql`; changed by `0027_pieces_and_zones.sql`, `0046_han
 | `active` | INTEGER | no |  |  |  |
 | `updated_at` | TEXT | no |  |  |  |
 | `zone` | TEXT | yes |  |  | The zone migration 0026 left for the code that reads it: the dispatch board groups technicians by it, and FSM calls it a territory. NULL until each technician has one there (docs/open-points.md, item 12). |
-| `mobile_e164` | TEXT | yes |  |  | "Mobile number plus a one-time code, the same flow as clients but a separate role" (src/policy/technician-login.ts). The technician's own number, as ops keep it on the Technicians page. NULL for a technician with no number, who then cannot log in (docs/open-points.md, item 12). |
+| `mobile_e164` | TEXT | yes |  |  | "Mobile number plus a one-time code, the same flow as clients but a separate role" (src/routes/tech/auth.ts). The technician's own number, as ops keep it on the Technicians page. NULL for a technician with no number, who then cannot log in (docs/open-points.md, item 12). |
 | `hand_written` | INTEGER | no | `0` |  |  |
 | `city` | TEXT | yes |  | → `cities.name` |  |
 | `sign_in_stopped_at` | TEXT | yes |  |  |  |
