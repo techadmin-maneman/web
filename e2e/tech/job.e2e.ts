@@ -117,6 +117,16 @@ test("marks a job they checked in at as at the door on Today", async ({ page }) 
   await expect(page.getByText(techCopy.job.states.atTheDoor)).toBeVisible();
 });
 
+// On a slow network the card said Loading… each time it opened, though the phone held it.
+test("opens a card the phone holds at once on a slow network", async ({ page }) => {
+  const fake = await fakeTech(page);
+  await page.goto(`/jobs/${JOB_ID}`);
+  await expect(page.getByRole("link", { name: "Call Rohit" })).toBeVisible();
+  fake.slowCardMs = 5000;
+  await page.reload();
+  await expect(page.getByRole("link", { name: "Call Rohit" })).toBeVisible({ timeout: 2000 });
+});
+
 test("gives a consultation’s card the hair profile and no piece", async ({ page }) => {
   const fake = await fakeTech(page);
   fake.type = "consultation";
