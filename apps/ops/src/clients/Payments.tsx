@@ -55,9 +55,12 @@ function codeOf(entry: ClientPayment): string | null {
   return copy.code(clients.visits.code.applied(code, off === null ? null : rupees(off)));
 }
 
-/** What a late change or a charged no-show kept of a payment; null where nothing was kept, or a dispute gave it back. */
+/**
+ * What a late change or a charged no-show kept of a payment; null where nothing was kept, a dispute gave it back, or
+ * ops refunded it all since.
+ */
 function keptOf(entry: ClientPayment): string | null {
-  if (entry.kind === "refund") return null;
+  if (entry.kind === "refund" || entry.status === "refunded") return null;
   if (entry.charge !== null) return copy.kept(rupees(entry.charge.amount), copy.keptFor[entry.charge.change]);
   const charged = entry.no_show?.charge ?? null;
   if (charged === null || charged.kept === 0 || entry.no_show?.dispute === "refunded") return null;
@@ -67,7 +70,8 @@ function keptOf(entry: ClientPayment): string | null {
 function stateOf(entry: ClientPayment): string {
   const state = entry.kind === "refund" ? copy.refundStates[entry.status] : copy.paymentStates[entry.status];
   const reference = entry.kind === "payment" && entry.reference !== null ? copy.reference(entry.reference) : null;
-  return [state, keptOf(entry), reference].filter((part) => part !== null).join(" · ");
+  const upi = entry.kind === "payment" && entry.utr !== null ? copy.byUpi(entry.utr) : null;
+  return [state, upi, keptOf(entry), reference].filter((part) => part !== null).join(" · ");
 }
 
 function CodeLine({ entry }: { entry: ClientPayment }) {

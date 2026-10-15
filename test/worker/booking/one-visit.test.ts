@@ -369,4 +369,14 @@ describe("closing a one visit the client decided against", () => {
     expect(payments.made.links).toEqual([]);
     expect(await linkRow()).toBeNull();
   });
+
+  it("closes with no after photographs, since nothing was fitted", async () => {
+    const job = await oneVisit({ payments: createStubPayments() });
+    await job.workTo("piece");
+    await job.post(path("piece"), { declined: true }, "event-piece-01");
+    await job.post(path("checklist"), { done: [] }, "event-checklist-01");
+    await job.post(path("consumables"), { items: [] }, "event-consumables-01");
+    expect((await closeAsDone(job)).status).toBe(202);
+    expect(await visitRow()).toMatchObject({ one_visit: "declined" });
+  });
 });

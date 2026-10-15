@@ -24,6 +24,7 @@ import { windowTimesOf } from "../../policy/slot-times.ts";
 import { tooEarlyToArrive } from "../../policy/phone-clock.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
 import type { AppointmentStatus } from "../visits/visit-status.ts";
+import { visitBegun } from "../visits/visit-begun.ts";
 import type { VisitMessageKind } from "./visit-messages.ts";
 
 /**
@@ -202,7 +203,9 @@ async function composeVisitText(
 async function cancelMessage(db: D1Database, appointmentId: string, params: string[]): Promise<Composed> {
   const cancelled = await db
     .prepare(
-      `SELECT c.refund_amount, c.notice, c.ops_terms, p.method FROM visit_changes c
+      `SELECT c.refund_amount, c.notice, c.ops_terms, p.method,
+         c.created_at > a.window_end AND NOT ${visitBegun("a")} AS missed
+       FROM visit_changes c JOIN appointments a ON a.id = c.appointment_id
        LEFT JOIN payments p ON p.id = c.payment_id
        WHERE c.appointment_id = ?1 AND c.kind = 'cancelled'`,
     )
@@ -212,8 +215,11 @@ async function cancelMessage(db: D1Database, appointmentId: string, params: stri
       notice: "free" | "late";
       ops_terms: "free" | "client" | null;
       method: string | null;
+      missed: number;
     }>();
   if (cancelled === null) return { skip: "the visit was not cancelled" };
+  // Nobody came, so it is ours to put right: the client hears so, rather than of an ordinary cancel.
+  if (cancelled.missed === 1 && cancelled.refund_amount === 0) return { template: "visit_missed_by_us_v1", params };
   const credit = await creditOfVisit(db, appointmentId);
   if (credit === "restored") return { template: "visit_cancelled_credit_v1", params };
   // Kept under the client's late terms, or drawn on a grant that has since expired or been clawed back.

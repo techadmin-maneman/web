@@ -147,9 +147,9 @@ export const declinedTheFit = (form: PieceForm, job: Pick<Job, "one_visit">): bo
 export type LabelChecked = "none" | "unknown" | "offline" | "found" | "another_client";
 
 /**
- * What still keeps Next dim, in the words it says instead; null once the step can go. A fit goes on with a hair system
- * from the kit, picked by its row or by a label in it, or a label checked as this client's piece; with no signal to
- * check it, as typed.
+ * What still keeps Next dim, in the words it says instead; null once the step can go. A fit goes on with a label of the
+ * kit's, a row picked whose pieces carry none in our records, or a label checked as this client's piece; with no signal
+ * to check it, as typed.
  */
 export function stillMissing(
   form: PieceForm,
@@ -161,7 +161,10 @@ export function stillMissing(
   if (declinedTheFit(form, job)) return null;
   if (!isLabel(form.code)) return copy.piece.checkFirst;
   if (checked === "another_client") return copy.piece.notThisClientAction;
-  const fromKit = form.stock !== null || kitPieceOf(job, form.code) !== null;
+  // A row picked whose pieces carry no labels in our records takes the label on the piece; one whose pieces do, only one
+  // of theirs.
+  const unlabelled = job.kit_hair_systems.some((each) => each.code === form.stock && each.units.length === 0);
+  const fromKit = unlabelled || kitPieceOf(job, form.code) !== null;
   if (!fromKit && checked === "none") return copy.piece.uncheckedAction;
   if (!fromKit && checked === "unknown") return copy.piece.notInKitAction;
   return given(form.oldCode) && !isLabel(form.oldCode) ? copy.piece.checkFirst : null;

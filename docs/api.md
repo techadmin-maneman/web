@@ -4011,6 +4011,7 @@ Razorpay's webhook: payments and refunds
             "return_settled",
             "out_of_warranty",
             "refund_not_due",
+            "paid_by_upi",
             "not_due",
             "already_paid",
             "reference_used"

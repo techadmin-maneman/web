@@ -89,7 +89,7 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
         `SELECT b.consumable_code, c.name, c.unit, b.quantity, c.reorder_kit,
            EXISTS (SELECT 1 FROM hair_systems h WHERE h.code = b.consumable_code) AS hair_system
          FROM stock_balances b JOIN consumables c ON c.code = b.consumable_code
-         WHERE b.place = ?1 AND b.quantity <> 0 ORDER BY c.name COLLATE NOCASE`,
+         WHERE b.place = ?1 AND (b.quantity <> 0 OR c.reorder_kit IS NOT NULL) ORDER BY c.name COLLATE NOCASE`,
       )
       .bind(kit)
       .all<HeldRow>(),
@@ -104,9 +104,10 @@ export async function kitView(db: D1Database, kit: Place): Promise<KitView> {
     kitUnits(db, kit),
     db
       .prepare(
-        `SELECT t.id, t.consumable_code, c.name, c.unit, t.quantity, t.from_place, t.sent_at, p.name AS from_name
+        `SELECT t.id, t.consumable_code, c.name, c.unit, t.quantity, t.from_place, t.sent_at,
+           COALESCE(p.name, f.name) AS from_name
          FROM stock_transfers t JOIN consumables c ON c.code = t.consumable_code
-         LEFT JOIN stock_places p ON p.id = t.from_place
+         LEFT JOIN stock_places p ON p.id = t.from_place LEFT JOIN technicians f ON f.id = t.from_place
          WHERE t.state = 'in_transit' AND t.to_place = ?1 ORDER BY t.sent_at`,
       )
       .bind(kit)

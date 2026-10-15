@@ -3,7 +3,8 @@
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
-import { addDays, clockWords, shortDate } from "@maneman/web-kit/dates";
+import { addDays, shortDate } from "@maneman/web-kit/dates";
+import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { type VisitAvailability } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
@@ -117,7 +118,7 @@ export function WhenAndWho({
             value={window?.window ?? ""}
             options={windows.map((each) => ({
               value: each.window,
-              label: copy.windowChoice(dispatch.windows[each.window], clockWords(each.start), clockWords(each.end)),
+              label: copy.windowChoice(dispatch.windows[each.window], timeRange(each.start, each.end, UNBROKEN)),
             }))}
             busy={busy}
             onChoose={(next) => {

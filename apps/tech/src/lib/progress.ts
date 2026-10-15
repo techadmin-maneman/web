@@ -29,6 +29,8 @@ export function done(job: Job, queued: readonly Queued[]): ReadonlySet<string> {
   for (const event of queued) {
     if (event.job_id === job.id && event.state === "waiting") sent.add(event.kind);
   }
+  // A client who decided against the fit is fitted nothing, so nothing is photographed after.
+  if (declinedTheFit(job, queued)) sent.add("after_photos");
   return sent;
 }
 

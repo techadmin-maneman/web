@@ -87,6 +87,9 @@ export const TEMPLATES = {
     "Hi {{1}}, time to book your next visit.\nYour {{2}} is due on {{3}}. Book it in the Mane Man app.",
   visit_cancelled_v1:
     "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. Book a new time whenever suits you, in the Mane Man app.",
+  // A visit ops cancelled after its time had passed with nobody arriving: ours to put right, with nothing to pay.
+  visit_missed_by_us_v1:
+    "Hi {{1}}, we're sorry we missed you.\nWe couldn't make your {{2}} on {{3}}, so it's cancelled with nothing to pay. We'll message you to book a new time.",
   visit_cancelled_credit_v1:
     "Hi {{1}}, your booking is cancelled.\nThat's your {{2}} on {{3}}. Your free service visit is back.",
   // Cancelled too late, so the credit is spent, as the cancel sheet warned.

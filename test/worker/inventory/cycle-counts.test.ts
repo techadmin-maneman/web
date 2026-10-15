@@ -205,6 +205,10 @@ describe("cycle counts", () => {
 
     await env.DB.prepare("UPDATE stock_balances SET quantity = 0 WHERE consumable_code = ?1").bind(code).run();
     expect((await start({ place_id: IMRAN, consumable_code: code })).status).toBe(400);
+    // Held below zero, it is counted to put it right.
+    await env.DB.prepare("UPDATE stock_balances SET quantity = -3 WHERE consumable_code = ?1").bind(code).run();
+    expect((await start({ place_id: IMRAN, consumable_code: code })).status).toBe(201);
+    await env.DB.prepare("UPDATE stock_balances SET quantity = 0 WHERE consumable_code = ?1").bind(code).run();
     expect((await start({ place_id: "nowhere", consumable_code: "solvent" })).status).toBe(404);
 
     // The quarterly task is raised as ever beside the one started.

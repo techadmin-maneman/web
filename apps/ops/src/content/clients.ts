@@ -244,9 +244,8 @@ export const clients = {
       notRecommended: (name: string) => `Their hair profile recommends ${name}.`,
       day: "Day",
       window: "Window",
-      /** "Morning, 9 am to 12 pm" */
-      windowChoice: (name: string, from: string, to: string) =>
-        `${name.charAt(0).toUpperCase()}${name.slice(1)}, ${from} to ${to}`,
+      /** "Morning, 9 am–12 noon", as the client's app and Settings write a window. */
+      windowChoice: (name: string, hours: string) => `${name.charAt(0).toUpperCase()}${name.slice(1)}, ${hours}`,
       technician: "Technician",
       anyone: "Anyone available",
       earlier: "Earlier days",
@@ -434,6 +433,8 @@ export const clients = {
     },
     refundStates: { created: "Processing", processed: "Refunded", failed: "Failed" },
     reference: (reference: string) => `Ref ${reference}`,
+    /** Paid by UPI at the visit, under the bank's reference ops recorded. */
+    byUpi: (utr: string) => `By UPI, UTR ${utr}`,
     /** What a late change or a no-show's charge kept of the payment: "Rs. 1,234 kept, cancelled late". */
     kept: (amount: string, why: string) => `${amount} kept, ${why}`,
     keptFor: { cancelled: "cancelled late", moved: "moved late", no_show: "not home" },
@@ -448,6 +449,7 @@ export const clients = {
     refundAsked: (amount: string) => `Refund of ${amount} on its way.`,
     refundErrors: {
       refund_not_due: "Already refunded, or a refund is on its way.",
+      paid_by_upi: "Paid by UPI at the visit: refund it by UPI from the bank.",
       unavailable: "Razorpay didn’t make the refund. Make it by hand in Razorpay, once.",
       invalid_request: "Say why.",
       not_found: "This payment can’t be refunded here.",

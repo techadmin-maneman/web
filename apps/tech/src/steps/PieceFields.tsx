@@ -121,7 +121,7 @@ export function PaidFor({ job }: { job: Job }) {
   return (
     <section className={shared.field} aria-labelledby="paid-for-title">
       <h2 className={capsLook(shared.fieldTitle)} id="paid-for-title">
-        {jobCopy.piece.rows.paidFor}
+        {job.badge === "at_visit" ? jobCopy.piece.rows.bookedAs : jobCopy.piece.rows.paidFor}
       </h2>
       <p className={shared.paidFor}>{paid}</p>
       {inProfile !== null && (

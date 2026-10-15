@@ -4,6 +4,7 @@
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { composeVisitMessage } from "../../../src/domain/messages/visit-message-text.ts";
 import { creditBalance, grantCredits } from "../../../src/domain/money/credits.ts";
 import { outstandingTasks } from "../../../src/domain/ops/tasks.ts";
 import { TASK_SLA_HOURS } from "../../../src/policy/tasks.ts";
@@ -19,7 +20,7 @@ import {
   request,
   savedAddress,
 } from "../helpers.ts";
-import { aCreditSpent } from "../fixtures/index.ts";
+import { aConsent, aCreditSpent } from "../fixtures/index.ts";
 
 const PERSON = "11111111-1111-4111-8111-111111111111";
 const VISIT = "22222222-2222-4222-8222-222222222222";
@@ -286,6 +287,15 @@ describe("POST /api/visits/:id/cancel: what it refuses", () => {
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "terms_changed" } });
     expect(await statusOf()).toBe("scheduled");
+  });
+
+  it("tells a client we missed, with nothing to pay, when ops cancel a visit nobody arrived at", async () => {
+    await visit("service", THIS_MORNING);
+    await aConsent(PERSON);
+    expect((await cancel({}, { confirm: true, notice: "late", reason: REASON })).status).toBe(200);
+    expect(await composeVisitMessage(env.DB, "visit_cancelled", VISIT, PERSON)).toMatchObject({
+      template: "visit_missed_by_us_v1",
+    });
   });
 
   it("cancels a visit whose time passed with nobody arriving, and refuses one the technician arrived at", async () => {

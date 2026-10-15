@@ -107,6 +107,7 @@ export const RECORD = {
       method: "upi",
       reference: "MM-2027-0841",
       refunded_amount: 0,
+      utr: null,
       purpose: "visit",
       charge: null,
       no_show: null,

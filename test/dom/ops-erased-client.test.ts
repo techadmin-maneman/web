@@ -75,6 +75,7 @@ const ERASED: ErasedClientRecord = {
       method: "upi",
       reference: "MM-2026-0841",
       refunded_amount: 0,
+      utr: null,
       purpose: "visit",
       charge: null,
       no_show: null,

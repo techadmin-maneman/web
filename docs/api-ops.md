@@ -15000,7 +15000,7 @@ Request body:
 }
 ```
 
-**409**: refund_not_due: the payment is refunded already, or its refund is on its way
+**409**: refund_not_due: the payment is refunded already, or its refund is on its way; paid_by_upi: it was paid by UPI to the bank, which is how ops refund it
 
 ```json
 {
@@ -15017,7 +15017,8 @@ Request body:
             "code": {
               "type": "string",
               "enum": [
-                "refund_not_due"
+                "refund_not_due",
+                "paid_by_upi"
               ]
             }
           },
@@ -27011,6 +27012,7 @@ Request body:
             "return_settled",
             "out_of_warranty",
             "refund_not_due",
+            "paid_by_upi",
             "not_due",
             "already_paid",
             "reference_used"
@@ -28566,6 +28568,17 @@ Request body:
       "type": "integer",
       "description": "In paise: refunds Razorpay has processed."
     },
+    "utr": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Paid by UPI at the visit: the bank's reference ops recorded it under. Null for any other payment."
+    },
     "purpose": {
       "type": "string",
       "enum": [
@@ -28672,6 +28685,7 @@ Request body:
     "method",
     "reference",
     "refunded_amount",
+    "utr",
     "purpose",
     "charge",
     "no_show",
@@ -30682,6 +30696,7 @@ Request body:
             "return_settled",
             "out_of_warranty",
             "refund_not_due",
+            "paid_by_upi",
             "not_due",
             "already_paid",
             "reference_used"

@@ -6,6 +6,7 @@ import { exGst } from "../../config/gst.ts";
 import type { VISIT_TYPES } from "../../config/visit-types.ts";
 import { indiaDate } from "../../lib/india-time.ts";
 import { noShowNotes, type NoShowNote } from "../visits/no-show-notes.ts";
+import { paidOutsideRazorpay, UPI_MARK } from "../../policy/upi.ts";
 
 export const CREDIT_EVENTS = ["added", "used", "lost", "returned", "expired", "withdrawn", "corrected"] as const;
 type CreditEvent = (typeof CREDIT_EVENTS)[number];
@@ -38,6 +39,7 @@ interface PaymentRow extends VisitColumns, RateColumns, HeldColumns {
   amount: number;
   amount_ex_gst: number | null;
   refunded_amount: number;
+  razorpay_payment_id: string;
   status: "authorized" | "captured" | "refunded" | "partially_refunded";
   method: string | null;
   invoice_issued_at: string | null;
@@ -66,7 +68,7 @@ const HELD_COLUMNS = "h.type AS held_type, h.date AS held_date, h.state AS held_
 
 // The change that kept a payment, if any: a late cancel or move keeps the visit's payment, or its late fee.
 const PAYMENT_QUERY = `SELECT p.id, p.reference, p.created_at, p.amount, p.amount_ex_gst, p.gst_percent,
-    p.refunded_amount, p.status, p.method,
+    p.refunded_amount, p.razorpay_payment_id, p.status, p.method,
     p.books_payment_id, p.kind, a.id AS appointment_id, a.window_start, a.type, a.invoice_issued_at,
     c.kind AS charged_change, c.created_at AS charged_at, c.was_start AS charged_visit_start,
     c.kept_amount AS charged_amount, ${HELD_COLUMNS}
@@ -162,6 +164,7 @@ const paymentOf = (row: PaymentRow, notes: PaymentNotes) => ({
   method: row.method,
   reference: row.reference,
   refunded_amount: row.refunded_amount,
+  utr: paidOutsideRazorpay(row.razorpay_payment_id) ? row.razorpay_payment_id.slice(UPI_MARK.length) : null,
   purpose: row.kind,
   charge:
     row.charged_change === null || row.charged_at === null || row.charged_visit_start === null
