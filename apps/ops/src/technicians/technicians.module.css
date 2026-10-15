@@ -167,24 +167,13 @@
   color: var(--ui-text-muted);
 }
 
-.facts {
-  margin: 0;
-}
-
-.fact {
+/* Edit, switch off and delete on one line beneath the facts, each opening its own question in place. */
+.recordActions {
   display: flex;
-  align-items: baseline;
-  gap: var(--sp-12);
-  padding: var(--sp-4) 0;
-}
-
-.fact .label {
-  min-width: var(--sp-64);
-}
-
-.factValue {
-  margin: 0;
-  font-size: var(--fs-14);
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 var(--sp-8);
+  margin-top: var(--sp-8);
 }
 
 .formField {
@@ -198,13 +187,7 @@
   margin-top: var(--sp-8);
 }
 
-/* ---- The panel over the roster: adding a technician --------------------- */
-
-.section {
-  margin-top: var(--sp-16);
-}
-
-/* Phones and Leave, in the small capitals the board letters its group names in. */
+/* The technicians switched off, in the small capitals the board letters its group names in. */
 .sectionTitle {
   margin: 0 0 var(--sp-8);
   letter-spacing: var(--tracking-12);
@@ -311,9 +294,4 @@
 
 .leaveForm {
   margin-top: var(--sp-8);
-}
-
-.label {
-  font-size: var(--fs-13);
-  color: var(--ui-text-muted);
 }

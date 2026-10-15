@@ -12,15 +12,7 @@ import { Link, usePath, wasRedirected } from "@maneman/ui/router";
 import { SkipLink } from "@maneman/ui/SkipLink";
 import { textLinkLook } from "@maneman/ui/TextLink";
 import { useLoad } from "@maneman/ui/useLoad";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ComponentProps,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from "react";
 import { shell } from "../content.ts";
 import { whoami } from "../lib/access.ts";
 import { useLapsed } from "../lib/session.ts";
