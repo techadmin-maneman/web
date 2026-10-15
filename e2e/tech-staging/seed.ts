@@ -1,10 +1,8 @@
 // The fixtures the technician app's real-wire proof runs on, written straight
 // into the **staging** database, the way e2e/app/fitted.ts writes the local one:
 //
-//   a technician   invented, with a random test mobile number, and marked as
-//                  written by hand, since FSM's list never names them: the
-//                  code request for a number FSM does not list reads that list
-//                  again, and the sync leaves such a row alone (migration 0046)
+//   a technician   invented, with a random test mobile number, marked as a
+//                  test record
 //   a client       invented, with a Gurgaon address that has coordinates
 //   three jobs     today, tomorrow and three days out, so the day-before unlock
 //                  can be seen from both sides
@@ -239,9 +237,7 @@ export function stagingFixture(): StagingFixture {
 
 /**
  * Takes every row and every photograph this run wrote back out of staging.
- * It runs promptly, because a job event whose FSM write keeps failing alerts
- * ops on its fifth attempt: with the event gone, the fsm-sync consumer
- * acknowledges the message and says nothing (src/queues/fsm-sync.ts).
+ * It runs promptly, so nothing else using staging sees the invented client or books their technician.
  *
  * The holds go too. An active technician in the mirror is a technician the
  * booking availability offers, so anything else using staging can take a slot
@@ -273,7 +269,7 @@ export async function clearStaging(fixture: StagingFixture): Promise<void> {
     `DELETE FROM addresses WHERE person_id = ${sqlLiteral(fixture.personId)};`,
     `DELETE FROM people WHERE id = ${sqlLiteral(fixture.personId)};`,
     `DELETE FROM otp_challenges WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,
-    // The challenge for a number FSM does not list holds no technician and no code hash.
+    // The challenge for a number no technician has holds no technician and no code hash.
     `DELETE FROM otp_challenges WHERE technician_login = 1 AND technician_id IS NULL
        AND created_at >= ${sqlLiteral(fixture.startedAt)};`,
     `DELETE FROM technician_devices WHERE technician_id = ${sqlLiteral(fixture.technicianId)};`,

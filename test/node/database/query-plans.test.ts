@@ -197,10 +197,6 @@ const UNPLANNED = [
     file: "src/domain/no-shows/ruling-claims.ts",
     source: "SELECT 1 FROM ${ruled.table} WHERE id = ?6 AND ruling_id = ?7",
   },
-  {
-    file: "src/domain/no-shows/ruling-claims.ts",
-    source: "SELECT 1 FROM ${ruled.table} WHERE id = ?4 AND ruling_id = ?5",
-  },
   // The person's latest consent for the purpose, by consents_by_person.
   { file: "src/domain/privacy/consents.ts", source: "${ruleCondition(answer.rule, person)}" },
   // A client's versions, by hair_profiles_by_person; a version written, by its key.
@@ -442,6 +438,24 @@ describe("the cron's path, followed from cron.ts", () => {
 
     const unseeded = [...named].filter((table) => real.has(table) && !SMALL_TABLES.has(table) && !seeded.has(table));
     expect(unseeded.sort()).toEqual([]);
+  });
+});
+
+describe("the statements let through", () => {
+  // An entry for a file or a statement since gone let through nothing, and hid that the list had gone stale.
+  it("each name a file that is there, and a statement still in it", () => {
+    const entries = [
+      ...ALLOWED.map((entry) => ({ file: entry.file, text: entry.sql })),
+      ...UNPLANNED.map((entry) => ({ file: entry.file, text: entry.source })),
+    ];
+    const gone = entries.filter(({ file, text }) => {
+      try {
+        return !collapsed(readFileSync(file, "utf8")).includes(collapsed(text));
+      } catch {
+        return true;
+      }
+    });
+    expect(gone).toEqual([]);
   });
 });
 

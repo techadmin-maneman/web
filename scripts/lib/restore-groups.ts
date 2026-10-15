@@ -74,8 +74,7 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
       "consultation_requests",
       "first_fit_requests",
     ],
-    leftAtT:
-      "A visit booked, moved or cancelled since is lost, and its time can be booked again. Where FSM still holds visits, the cron books them there a second time",
+    leftAtT: "A visit booked, moved or cancelled since is lost, and its time can be booked again",
     putBackBy: "The rows since `<T>`, before the switch is turned off",
   },
   {
@@ -227,10 +226,10 @@ export const RESTORE_GROUPS: readonly RestoreGroup[] = [
     putBackBy: "The rows since `<T>`",
   },
   {
-    what: "Technicians, and FSM's catalogue",
+    what: "Technicians, and the old catalogue table",
     tables: ["technicians", "fsm_items"],
     leftAtT: "A technician added or changed since goes back",
-    putBackBy: "Where FSM still holds them, the cron reads them again; otherwise the rows since `<T>`",
+    putBackBy: "The rows since `<T>`; ops can add one again on the Technicians page",
   },
   {
     what: "Recalls",
