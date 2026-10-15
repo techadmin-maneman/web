@@ -228,7 +228,7 @@ jobs:
       - name: Final smoke
         run: npm run smoke -- --base https://maneman.in --environment production --version-tag "$SHA"
 
-      # Nothing until a Phase 2 surface is switched on in production. Then mm-api on its host, and the app
+      # Nothing until the app, the console or the technician app is switched on in production. Then mm-api on its host, and the app
       # the host serves at /, built from this commit. ops.maneman.in is behind Access, so it needs the
       # mm-ci-production service token (provisioning, step 3).
       - name: Smoke the Phase 2 surfaces

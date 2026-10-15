@@ -1,7 +1,7 @@
 // The test run's watchdog. Vitest waits for every test file to say it has
 // finished, with no timeout of its own, so a file that stops reporting holds
-// the whole run: on 26 September 2026 one held a CI job until its 25 minutes ran
-// out, every one of its tests passed. If no test anywhere in the run reports for
+// the whole run until the CI job's 25 minutes run out, though every one of its
+// tests passed. If no test anywhere in the run reports for
 // the quiet period while files are still open, this names them and ends the run.
 //
 // The one cause found so far was a queue consumer the test runtime ran after its

@@ -61,7 +61,7 @@ export default defineConfig({
       reporter: ["text", "json-summary"],
       /*
        * Branches as well as lines: the integrations were where branches went untested behind a line figure
-       * that looked well (TCD-03). The files that speak to a vendor, or keep what it says was paid, have floors
+       * that looked well. The files that speak to a vendor, or keep what it says was paid, have floors
        * of their own, so a weak one cannot hide in the whole; each was below 70% on branches before its
        * recorded-reply tests.
        */

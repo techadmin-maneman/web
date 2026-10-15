@@ -4,7 +4,7 @@
 # build, the browser tests of every app and Lighthouse, the deployed code on new migrations and the local smoke.
 # Adding a label starts no run.
 #
-# No check runs twice on the same files (the owner's choice of 1 October 2026). The static checks, the unit and
+# No check runs twice on the same files. The static checks, the unit and
 # contract tests and the full suite each take as passed what an earlier run passed on exactly these files: in a pull
 # request, an earlier run on the same head, and on a staging deploy, the merged pull request's head when the merge has
 # its files (scripts/lib/already-checked.ts).
@@ -146,9 +146,8 @@ jobs:
         run: npm run typecheck
       - name: Lint
         # ESLint type-checks through eleven TypeScript projects. One run of them all
-        # outgrew Node's default heap (about 2 GB) on 25 September 2026 and this
-        # 4 GB on 13 October; scripts/ci/lint.ts runs them in four parts, the
-        # largest about 2.3 GB.
+        # outgrows Node's default heap (about 2 GB) and this 4 GB; scripts/ci/lint.ts
+        # runs them in four parts, the largest about 2.3 GB.
         env:
           NODE_OPTIONS: --max-old-space-size=4096
         run: npm run lint
@@ -215,7 +214,7 @@ jobs:
   # branches, with floors of their own for the vendor clients and the release script (vitest.config.ts).
   # It runs whatever changed: it covers src/ and the migrations, and a config
   # change can break it.
-  # The suite in two halves on two runners, each keeping its coverage to merge: half the wait (CI-02).
+  # The suite in two halves on two runners, each keeping its coverage to merge: half the wait.
   unit:
     name: unit tests (${{ matrix.shard }} of 2)
     needs: changes
@@ -303,7 +302,7 @@ jobs:
       - name: Bundle every Worker for every environment (dry run)
         run: npm run build
 
-  # In two halves on two runners (CI-02); Lighthouse runs in the first, after its tests.
+  # In two halves on two runners; Lighthouse runs in the first, after its tests.
   browser:
     name: browser tests (${{ matrix.shard }} of 2)
     needs: changes

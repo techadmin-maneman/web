@@ -32,7 +32,7 @@ import {
 
 const environment = siteEnvironment(process.env.MM_ENV);
 // Here, so a direct `astro build` is gated too: one refusal for the site's blocks and notices, and for any copy still
-// marked for the owner or counsel (scripts/lib/content-gate.ts).
+// marked for a person's decision or counsel's (scripts/lib/content-gate.ts).
 if (environment === "production") assertPublishable(contentProblems(CONTENT_FILES.site));
 
 /** Every page the build wrote, by its path under dist with forward slashes, a guide's under guides/ among them. */

@@ -52,7 +52,7 @@ export default defineConfig({
     serviceWorkers: "allow",
     reducedMotion: "reduce",
     permissions: ["camera", "geolocation"],
-    // Board B1's capture: Chromium's green test pattern instead of a camera, so no
+    // The capture screen's camera: Chromium's green test pattern instead of a camera, so no
     // photograph of anyone is ever taken or uploaded.
     launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
   },

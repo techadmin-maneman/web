@@ -1,8 +1,7 @@
 // What axe cannot see: whether a focused control is drawn as focused
 // (WCAG 2.4.7), whether it is hidden under the fixed header or the sticky bar
 // (2.4.11), and whether a page reflows into 320 px without scrolling sideways
-// (1.4.10). Each of these was broken on 24 September 2026 while every axe run
-// passed (08, 09).
+// (1.4.10). Each of these can break while every axe run passes.
 
 import type { Locator, Page } from "@playwright/test";
 import { expect, fakeTurnstile, test, visit } from "./support.ts";

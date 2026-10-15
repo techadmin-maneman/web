@@ -7,15 +7,22 @@ import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 /** The areas the audits filed findings under. */
-const AREAS = "FEO FEA OPS DS SEC VIS ARCH LIFE TCD INT REQ A11Y BIZ CLI CQ CQT UX FLD BK MON PS PLAT CP CA OIA".split(
-  " ",
-);
+const AREAS = [
+  ..."FEO FEA OPS DS SEC VIS ARCH LIFE TCD INT REQ A11Y BIZ CLI CQ CQT UX FLD BK MON PS PLAT CP CA OIA".split(" "),
+  ..."CI FE TOOL SITE REL QUALITY-ENG COPY-CLIENT COPY-STAFF DESIGN-SYSTEM BE-DOMAIN BE-EDGES FE-APPS FE-OPS".split(
+    " ",
+  ),
+  "SEC-REL",
+];
 const ID = new RegExp(`\\b(?:(?:${AREAS.join("|")})-\\d+|P\\d-[MF]\\d+|P\\d-\\d{2})\\b`);
 
-const FOLDERS = ["src", "apps", "packages", "site/src", "scripts", "test", "e2e"];
-const CODE = /\.(ts|tsx|astro|mjs|css)$/;
+const FOLDERS = ["src", "apps", "packages", "site/src", "scripts", "test", "e2e", ".github", "*.ts"];
+const CODE = /\.(ts|tsx|astro|mjs|css|ya?ml)$/;
 
-/** Every tracked file the rule covers: the code and its tests, and the API documents generated from the routes. */
+/**
+ * Every tracked file the rule covers: the code and its tests, the root configs and the workflows, and the API
+ * documents generated from the routes.
+ */
 function covered(): string[] {
   const tracked = execFileSync("git", ["ls-files", ...FOLDERS, "docs"], { encoding: "utf8" }).split("\n");
   return tracked.filter(
@@ -27,7 +34,7 @@ function covered(): string[] {
 describe("comments, test titles and the API documents", () => {
   it("know an ID when they see one", () => {
     // Written in parts, so this file holds none.
-    for (const id of ["BK" + "-37", "A11Y" + "-8", "P2" + "-M4", "P3" + "-45"])
+    for (const id of ["BK" + "-37", "A11Y" + "-8", "P2" + "-M4", "P3" + "-45", "CI" + "-02", "QUALITY-ENG" + "-14"])
       expect(ID.test(`a comment (${id}).`), id).toBe(true);
     expect(ID.test("ADR 0075, open point 14, migration 0052")).toBe(false);
   });
