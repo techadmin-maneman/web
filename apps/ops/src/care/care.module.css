@@ -1,12 +1,6 @@
 /* Messages: the chats as a table, a view at a time, each chat opened beneath its row: the client's messages on one
    side, ours on the other, our automatic messages as quiet lines between. */
 
-/* This page's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-care-line: 360px; /* the widest the last message runs before it is cut short */
-  --local-care-bubble: var(--ops-measure); /* the widest a message in a chat runs */
-}
-
 .tools {
   display: flex;
   flex-wrap: wrap;
@@ -50,6 +44,7 @@
 }
 
 .line {
+  --local-care-line: 360px; /* the widest the last message runs before it is cut short */
   max-width: var(--local-care-line);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -86,7 +81,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
-  max-width: var(--local-care-bubble);
+  max-width: var(--ops-measure);
   padding: var(--sp-8) var(--sp-12);
   border: var(--hairline) solid var(--paper-line);
   background: var(--paper);
@@ -190,7 +185,7 @@
 
 .reply {
   flex: 1;
-  max-width: var(--local-care-bubble);
+  max-width: var(--ops-measure);
 }
 
 .box {

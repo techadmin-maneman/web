@@ -1,10 +1,5 @@
 /* Words: the lines in a table found by page or by what they say, each line's form and history beneath its row. */
 
-/* This page's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-words-text: var(--ops-measure); /* the widest a line's wording runs before it wraps */
-}
-
 .narrow {
   margin: var(--sp-16) var(--sp-20) var(--sp-8);
 }
@@ -35,7 +30,7 @@
 }
 
 .text {
-  max-width: var(--local-words-text);
+  max-width: var(--ops-measure);
   white-space: pre-line;
 }
 
@@ -63,7 +58,7 @@
 /* The form's box, as wide as the line it holds. */
 .wording {
   flex: 1;
-  max-width: var(--local-words-text);
+  max-width: var(--ops-measure);
 }
 
 .box {

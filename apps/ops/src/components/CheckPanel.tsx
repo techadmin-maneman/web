@@ -5,7 +5,9 @@
 import { useFocusOnMount } from "@maneman/ui/useFocusOnMount";
 import { Button } from "@maneman/ui/Button";
 import { useId, type ReactNode } from "react";
+import { classes } from "@maneman/ui/classes";
 import { review } from "../content/common.ts";
+import look from "./check-panel.module.css";
 import form from "./forms.module.css";
 import { FormActions } from "./FormActions.tsx";
 
@@ -25,6 +27,16 @@ interface Props {
   readonly onBack: () => void;
 }
 
+/** One line of the check: what changes, the old beside the new. */
+export function CheckLine({ children }: { children: ReactNode }) {
+  return <p className={look.line}>{children}</p>;
+}
+
+/** A line of the check that ops may not mean, in the warning's colour. */
+export function CheckWarning({ children }: { children: ReactNode }) {
+  return <p className={look.warning}>{children}</p>;
+}
+
 export function CheckPanel({
   question,
   lines = [],
@@ -38,20 +50,16 @@ export function CheckPanel({
   const panel = useFocusOnMount<HTMLDivElement>();
   const nameId = useId();
   return (
-    <div className={form.check} ref={panel} tabIndex={-1} role="group" aria-labelledby={nameId}>
-      <p className={form.checkTitle} id={nameId}>
+    <div className={classes(look.check, form.check)} ref={panel} tabIndex={-1} role="group" aria-labelledby={nameId}>
+      <p className={look.title} id={nameId}>
         {question ?? review.title}
       </p>
       {lines.map((line) => (
-        <p className={form.checkLine} key={line}>
-          {line}
-        </p>
+        <CheckLine key={line}>{line}</CheckLine>
       ))}
       {children}
       {warnings.map((line) => (
-        <p className={form.checkWarning} key={line}>
-          {line}
-        </p>
+        <CheckWarning key={line}>{line}</CheckWarning>
       ))}
       <FormActions>
         <Button variant="primary" size="small" disabled={busy || !ready} onClick={onSend}>

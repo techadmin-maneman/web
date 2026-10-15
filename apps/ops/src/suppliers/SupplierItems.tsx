@@ -2,6 +2,7 @@
 // their currency, the pack it comes in, the least they take, and the lead time they promise. Setting an item shows the
 // old beside the new before it is sent (ADR 0071); removing one takes it off their list.
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -161,9 +162,7 @@ function ItemForm({
       errors={copy.errors}
       onCancel={null}
       checking={[before === null ? line : copy.form.confirm.line(name, before, line)].map((each) => (
-        <p className={form.checkLine} key={each}>
-          {each}
-        </p>
+        <CheckLine key={each}>{each}</CheckLine>
       ))}
     >
       <ItemBoxes

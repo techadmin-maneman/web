@@ -5,11 +5,6 @@
  */
 
 /* The framing guide's lines, in the drawing's own units (its viewBox is 320 by 420), as the camera draws them. */
-:root {
-  --local-guide-hairline: 2.5;
-  --local-guide-corners: 3;
-}
-
 .stage {
   position: relative;
   display: flex;
@@ -45,11 +40,13 @@
 }
 
 .hairline {
+  --local-guide-hairline: 2.5;
   stroke: var(--paper);
   stroke-width: var(--local-guide-hairline);
 }
 
 .corners {
+  --local-guide-corners: 3;
   stroke: var(--paper);
   stroke-width: var(--local-guide-corners);
 }

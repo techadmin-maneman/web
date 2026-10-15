@@ -3,6 +3,7 @@
 // A checklist's item also has the words the client's record shows, empty for a step only the technician needs. The
 // check shows what changes first (ADR 0071).
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { TextInput } from "@maneman/ui/Field";
 import { Button } from "@maneman/ui/Button";
 import { longDate } from "@maneman/web-kit/dates";
@@ -256,9 +257,7 @@ export function ListEditor(props: Props) {
         </>
       }
       checking={(changes.length === 0 ? [review.nothing] : changes).map((line) => (
-        <p className={form.checkLine} key={line}>
-          {line}
-        </p>
+        <CheckLine key={line}>{line}</CheckLine>
       ))}
     >
       <ol className={styles.items}>

@@ -2,6 +2,7 @@
 // (docs/decisions/0087-consumables-and-stock.md, 0157-lots-and-expiry.md). The check shows each changed field, old
 // beside new (ADR 0071). Every box holds text, so an empty level is no level, never a nought.
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -202,9 +203,7 @@ export function ConsumableForm({
       onCancel={onCancel}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [formWords.confirm.nothing] : lines).map((line) => (
-        <p className={form.checkLine} key={line}>
-          {line}
-        </p>
+        <CheckLine key={line}>{line}</CheckLine>
       ))}
     >
       <Particulars draft={draft} onEdit={edit} />

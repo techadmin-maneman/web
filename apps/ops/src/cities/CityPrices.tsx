@@ -1,6 +1,7 @@
 // The prices a city sets apart from the book's: each from its day, before the national price there. One still to come
 // may be withdrawn; the one in force and the spent ones stay, as an invoice may stand on them.
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
@@ -213,7 +214,7 @@ function PriceForm({ cities, onSaved }: { cities: Cities; onSaved: () => void })
       ready={ready}
       errors={copy.errors}
       onCancel={null}
-      checking={<p className={form.checkLine}>{line}</p>}
+      checking={<CheckLine>{line}</CheckLine>}
     >
       <PriceBoxes cities={cities} draft={draft} edit={edit} />
     </SettingForm>

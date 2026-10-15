@@ -3,6 +3,7 @@
 // before it was retired is still done. The list is sent whole, after a check of each changed figure (ADR 0071). An
 // empty box is none.
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, Fieldset, Select, TextInput } from "@maneman/ui/Field";
 import { Panel } from "@maneman/ui/Panel";
 import { longDate } from "@maneman/web-kit/dates";
@@ -181,9 +182,7 @@ export function ServiceUsage({ consumables, onSaved }: ServiceUsageProps) {
           onCancel={null}
           sendable={lines.length > 0}
           checking={(lines.length === 0 ? [review.nothing] : lines).map((line) => (
-            <p className={form.checkLine} key={line}>
-              {line}
-            </p>
+            <CheckLine key={line}>{line}</CheckLine>
           ))}
         >
           {fields}

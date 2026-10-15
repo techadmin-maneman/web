@@ -12,15 +12,8 @@
  * at 200% zoom, the grid scrolls sideways and the tray goes beneath it.
  */
 
-/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-tech: 104px; /* the column the technician and their zone stand in */
-  --local-tray: 236px; /* the unassigned tray down the right */
-  --local-cell: var(--ops-cell); /* one technician's day */
-  --local-day: var(--ops-column); /* the narrowest a day's column goes before the grid scrolls sideways */
-}
-
 .area {
+  --local-tray: 236px; /* the unassigned tray down the right */
   display: flex;
   flex: 1;
   min-width: 0;
@@ -78,8 +71,9 @@
 /* ---- The week: technicians down, seven days across ----------------------- */
 
 .grid {
+  --local-tech: 104px; /* the column the technician and their zone stand in */
   width: 100%;
-  min-width: calc(var(--local-tech) + 7 * var(--local-day));
+  min-width: calc(var(--local-tech) + 7 * var(--ops-column));
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
@@ -154,7 +148,7 @@
 }
 
 .cell {
-  height: var(--local-cell);
+  height: var(--ops-cell);
   padding: var(--sp-4);
   border-bottom: var(--hairline) solid var(--paper-line);
   border-left: var(--hairline) solid var(--paper-line);

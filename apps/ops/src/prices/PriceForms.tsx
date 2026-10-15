@@ -4,7 +4,7 @@
 
 import { errorText } from "@maneman/web-kit/refusal";
 import { DateInput, Field, NumberInput } from "@maneman/ui/Field";
-import { CheckPanel } from "../components/CheckPanel.tsx";
+import { CheckLine, CheckPanel, CheckWarning } from "../components/CheckPanel.tsx";
 import { addDays, longDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
@@ -46,7 +46,7 @@ function PriceCheck(props: {
   const { target, correcting, was, change } = props;
   return (
     <>
-      <p className={form.checkLine}>
+      <CheckLine>
         {correcting === undefined
           ? check.price(
               target.name,
@@ -61,11 +61,11 @@ function PriceCheck(props: {
               now: priceWords(change),
               from: longDate(change.valid_from),
             })}
-      </p>
+      </CheckLine>
       {was !== undefined && was.gst_percent !== change.gst_percent && (
-        <p className={form.checkWarning}>{check.gstChanges(was.gst_percent, change.gst_percent)}</p>
+        <CheckWarning>{check.gstChanges(was.gst_percent, change.gst_percent)}</CheckWarning>
       )}
-      {props.sameDay && <p className={form.checkLine}>{check.sameDay}</p>}
+      {props.sameDay && <CheckLine>{check.sameDay}</CheckLine>}
     </>
   );
 }

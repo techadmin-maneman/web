@@ -68,11 +68,11 @@ export function withoutCommentsAndConditions(css: string): string {
 }
 
 /**
- * A screen's own sizes, which nothing else draws: a :root block of --local-* properties at the top of its stylesheet,
- * where each value is written once, named and explained (ADR 0077, as amended), rather than in the shared brand
- * package. Nowhere else may a stylesheet write a value.
+ * A screen's own sizes, which nothing else draws: --local-* properties, each written once, named and explained, on
+ * the class that draws it, or the parent of the two that do (ADR 0077, as amended), rather than in the shared brand
+ * package; never on :root, where every page would carry them. Nowhere else may a stylesheet write a value.
  */
-const LOCAL_SIZES = /^\s*:root\s*\{(?:\s*--local-[\w-]+\s*:[^;{}]*;)+\s*\}/;
+const LOCAL_SIZES = /--local-[\w-]+\s*:[^;{}]*;/g;
 
 /** Every raw value in a stylesheet: a colour, a length, a duration, a curve, a weight or a leading. */
 export function rawValues(css: string): string[] {

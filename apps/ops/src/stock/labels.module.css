@@ -3,16 +3,6 @@
  * its lot. The sheet never shows on screen; while it prints, nothing else on the page does. A label is measured in
  * millimetres and its words in points, as the printer's stock is.
  */
-:root {
-  --local-label-width: 50mm;
-  --local-label-height: 25mm;
-  --local-label-pad: 1.5mm;
-  --local-label-qr: 22mm;
-  --local-label-line-gap: 0.5mm;
-  --local-label-text: 6.5pt;
-  --local-label-code: 7.5pt;
-}
-
 .sheet {
   display: none;
 }
@@ -33,6 +23,13 @@
 }
 
 .label {
+  --local-label-code: 7.5pt;
+  --local-label-text: 6.5pt;
+  --local-label-line-gap: 0.5mm;
+  --local-label-qr: 22mm;
+  --local-label-pad: 1.5mm;
+  --local-label-height: 25mm;
+  --local-label-width: 50mm;
   page: label;
   break-after: page;
   box-sizing: border-box;

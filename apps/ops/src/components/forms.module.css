@@ -3,12 +3,6 @@
  * what a form says once sent, and the tables' rows. A class one screen alone draws is in that screen's own sheet.
  */
 
-/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-control: var(--sp-28); /* a box or a button inside a table row, which keeps the row at --ops-row */
-  --local-amount: var(--ops-column-wide); /* a price in whole rupees, up to ten lakh, beside the box's own arrows */
-}
-
 .screen {
   display: flex;
   flex-direction: column;
@@ -155,24 +149,9 @@
   margin: var(--sp-12) var(--sp-20) 0;
 }
 
-/*
- * A change that cannot be quietly taken back, shown before it is sent: the old
- * figure beside the new, or who a launch will message. It takes focus as it
- * opens, so it is read at once and never opens out of sight.
- */
+/* Where the check before a change stands on a form (./CheckPanel.tsx draws it). */
 .check {
   margin: var(--sp-16) var(--sp-20) 0;
-  padding: var(--sp-16) var(--sp-20);
-  border: var(--hairline) solid var(--paper-line);
-  border-left: var(--rule-strong) solid var(--ink);
-  background: var(--paper-light);
-}
-
-.checkTitle {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: var(--fs-22);
-  line-height: var(--lh-115);
 }
 
 .rule .actions,
@@ -202,17 +181,6 @@
 .rule .check {
   margin-left: 0;
   margin-right: 0;
-}
-
-.checkLine,
-.checkWarning {
-  margin: var(--sp-8) 0 0;
-  font-size: var(--fs-15);
-  line-height: var(--lh-160);
-}
-
-.checkWarning {
-  color: var(--status-warning);
 }
 
 /* ---- The tables: 13 px heads over 14 px rows 34 px tall ------------------- */
@@ -293,7 +261,7 @@
 }
 
 .amountBox {
-  width: var(--local-amount);
+  width: var(--ops-column-wide);
 }
 
 .dateBox {

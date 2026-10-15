@@ -3,6 +3,7 @@
 // then what it is now beside what it will be, and only the second press sends it
 // (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Checkbox, DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
@@ -60,7 +61,7 @@ export function AddGradeForm({ onDone, onCancel }: FormProps) {
       ready={name.trim() !== ""}
       errors={errors}
       onCancel={onCancel}
-      checking={<p className={form.checkLine}>{check.add(name.trim())}</p>}
+      checking={<CheckLine>{check.add(name.trim())}</CheckLine>}
     >
       <NameField
         name={name}
@@ -88,7 +89,7 @@ export function RenameGradeForm({ grade, onDone, onCancel }: FormProps & { reado
       ready={name.trim() !== "" && name.trim() !== grade.name}
       errors={errors}
       onCancel={onCancel}
-      checking={<p className={form.checkLine}>{check.rename(grade.name, name.trim())}</p>}
+      checking={<CheckLine>{check.rename(grade.name, name.trim())}</CheckLine>}
     >
       <NameField
         name={name}
@@ -256,7 +257,7 @@ export function SetRateForm(props: FormProps & { readonly grade: Grade; readonly
       ready={amountOk && draft.from >= pay.today}
       errors={{ ...errors, amount: technicianPay.amountUpTo(rupees(pay.max_amount)) }}
       onCancel={props.onCancel}
-      checking={<p className={form.checkLine}>{check.rate(where, was, now, shortDate(draft.from))}</p>}
+      checking={<CheckLine>{check.rate(where, was, now, shortDate(draft.from))}</CheckLine>}
     >
       <RateFields pay={pay} draft={draft} edit={edit} />
     </SettingForm>
@@ -284,9 +285,7 @@ export function GradeOfForm(props: FormProps & { readonly technician: PayTechnic
       ready={grade !== (technician.grade_id ?? "")}
       errors={errors}
       onCancel={props.onCancel}
-      checking={
-        <p className={form.checkLine}>{check.grade(technician.name, nameOf(technician.grade_id), nameOf(grade))}</p>
-      }
+      checking={<CheckLine>{check.grade(technician.name, nameOf(technician.grade_id), nameOf(grade))}</CheckLine>}
     >
       <div className={form.fields}>
         <Field label={formWords.grade} className={form.field}>

@@ -3,6 +3,7 @@
 // offering it from that day; nothing already recorded moves, and neither does
 // its stock. The check says so before anything is sent (ADR 0071).
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Field, DateInput, Fieldset } from "@maneman/ui/Field";
 import { longDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
@@ -55,7 +56,7 @@ export function Retiring({ consumable, today, onSaved, onCancel }: Props & { rea
       ready={from !== ""}
       errors={copy.errors}
       onCancel={onCancel}
-      checking={<p className={form.checkLine}>{words.question(consumable.name, from === "" ? "" : longDate(from))}</p>}
+      checking={<CheckLine>{words.question(consumable.name, from === "" ? "" : longDate(from))}</CheckLine>}
     >
       <div className={form.fields}>
         <Field label={words.from} className={form.field}>

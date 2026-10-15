@@ -1,0 +1,29 @@
+/*
+ * The check before a change is sent (./CheckPanel.tsx): its ground and its ink rule, its question in the serif, and
+ * the lines it says, a warning in the warning's colour. Where it stands on a form is ./forms.module.css's.
+ */
+
+.check {
+  padding: var(--sp-16) var(--sp-20);
+  border: var(--hairline) solid var(--paper-line);
+  border-left: var(--rule-strong) solid var(--ink);
+  background: var(--paper-light);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-22);
+  line-height: var(--lh-115);
+}
+
+.line,
+.warning {
+  margin: var(--sp-8) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+}
+
+.warning {
+  color: var(--status-warning);
+}

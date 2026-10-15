@@ -5,17 +5,6 @@
  * the client page's design, narrowed to what the ops routes answer.
  */
 
-/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack */
-  --local-piece-base: 84px;
-  --local-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
-  --local-piece-due: var(--ops-column-wide);
-  --local-consent-state: 92px; /* a consent's state, date and source, beside the purpose */
-  --local-consent-date: var(--ops-column);
-  --local-consent-source: var(--ops-column-narrow);
-}
-
 /* ---- Finding a client ---------------------------------------------------- */
 
 .find {
@@ -44,6 +33,7 @@
 
 /* The design draws the head, the tabs and the pieces table across the page; photographs and consents are panels within it. */
 .client {
+  --local-piece-column: 116px; /* the fitted date, and the supplier lot beside it */
   flex: 1;
   min-width: 0;
 }
@@ -416,12 +406,14 @@
 
 /* The board's own column widths; the failure and its reason take the slack. */
 .code {
+  --local-piece-code: 148px; /* the pieces table's five fixed columns, the failure taking the slack */
   width: var(--local-piece-code);
   padding-inline: 0 var(--sp-8);
   font-variant-numeric: tabular-nums;
 }
 
 .base {
+  --local-piece-base: 84px;
   width: var(--local-piece-base);
 }
 
@@ -431,7 +423,7 @@
 }
 
 .due {
-  width: var(--local-piece-due);
+  width: var(--ops-column-wide);
 }
 
 .base,
@@ -569,15 +561,16 @@
 }
 
 .state {
+  --local-consent-state: 92px; /* a consent's state, date and source, beside the purpose */
   width: var(--local-consent-state);
 }
 
 .date {
-  width: var(--local-consent-date);
+  width: var(--ops-column);
 }
 
 .source {
-  width: var(--local-consent-source);
+  width: var(--ops-column-narrow);
 }
 
 .date,

@@ -4,18 +4,13 @@
  * the header stay where a focused control can always be reached (WCAG 2.4.11).
  */
 
-/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-nav: 196px; /* the navigation column down the left */
-  --local-finder: 240px; /* the header's client search */
-}
-
 .console {
   display: flex;
   height: 100dvh;
 }
 
 .nav {
+  --local-nav: 196px; /* the navigation column down the left */
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -188,6 +183,7 @@
 
 /* The box's share of the row, which Field's wrapper holds. */
 .finderBox {
+  --local-finder: 240px; /* the header's client search */
   flex: 1;
   max-width: var(--local-finder);
 }

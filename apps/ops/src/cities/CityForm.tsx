@@ -1,6 +1,7 @@
 // A city added, or changed: its name, its state for GST, its zone, and whether we serve it and offer it. The check
 // sets each change beside what it was, and a new name says what it moves (docs/decisions/0198-cities-as-data.md).
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Checkbox, Field, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { cities } from "../content.ts";
@@ -182,9 +183,7 @@ export function CityForm(props: {
       onCancel={props.onCancel}
       sendable={lines.length > 0}
       checking={(lines.length === 0 ? [formWords.nothing] : lines).map((line) => (
-        <p className={form.checkLine} key={line}>
-          {line}
-        </p>
+        <CheckLine key={line}>{line}</CheckLine>
       ))}
     >
       <CityBoxes draft={draft} zones={props.zones} edit={edit} />

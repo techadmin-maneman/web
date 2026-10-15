@@ -1,6 +1,7 @@
 // The GST registrations by state: a state with one here has its visits supplied from it, and invoiced under its Books
 // branch; any other is supplied from the registration Books is set up with (docs/decisions/0198-cities-as-data.md).
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { Field, TextInput } from "@maneman/ui/Field";
@@ -67,7 +68,7 @@ function RegistrationForm({ onSaved }: { onSaved: () => void }) {
       ready={/^[A-Za-z]{2}$/.test(body.state_code) && body.gstin.length === 15}
       errors={copy.errors}
       onCancel={null}
-      checking={<p className={form.checkLine}>{copy.adding(body.state_code, body.gstin)}</p>}
+      checking={<CheckLine>{copy.adding(body.state_code, body.gstin)}</CheckLine>}
     >
       <div className={form.fields}>
         <RegistrationEntry

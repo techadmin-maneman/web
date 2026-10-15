@@ -1,6 +1,7 @@
 // The rules a city sets for itself: the check-in radius and the reminder time, each the national rule's until the city
 // sets its own, which is checked as the national rule is (docs/decisions/0198-cities-as-data.md).
 
+import { CheckLine } from "../components/CheckPanel.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
@@ -29,7 +30,7 @@ function RuleForm(props: { city: string; rule: CityRuleName; now: number | null;
       ready={/^\d{1,4}$/.test(figure.trim())}
       errors={copy.errors}
       onCancel={null}
-      checking={<p className={form.checkLine}>{copy.line(name, was, figure.trim())}</p>}
+      checking={<CheckLine>{copy.line(name, was, figure.trim())}</CheckLine>}
     >
       <Field label={`${copy.figure} (${copy.units[props.rule]})`} className={form.field}>
         {(control) => (

@@ -6,13 +6,6 @@
  * its cached jobs.
  */
 
-/* This screen's own sizes, which nothing else draws (ADR 0077, as amended). */
-:root {
-  --local-city: var(--ops-column); /* and the city beside it */
-  --local-jobs: var(--sp-64); /* the jobs they have finished, right aligned as every column of figures is */
-  --local-service: var(--ops-cell); /* and how they ran against the length they were planned for */
-}
-
 .panel {
   padding: var(--sp-20);
   border: var(--hairline) solid var(--paper-line);
@@ -49,7 +42,7 @@
 
 /* The board's columns, at the widths it draws them; the name takes the slack, as its 1fr does. */
 .city {
-  width: var(--local-city);
+  width: var(--ops-column);
   color: var(--text-muted);
 }
 
@@ -68,13 +61,13 @@
 }
 
 .jobs {
-  width: var(--local-jobs);
+  width: var(--sp-64);
   padding: 0 var(--sp-4);
   font-variant-numeric: lining-nums tabular-nums;
 }
 
 .service {
-  width: var(--local-service);
+  width: var(--ops-cell);
   padding: 0 var(--sp-8);
   font-variant-numeric: lining-nums tabular-nums;
 }
