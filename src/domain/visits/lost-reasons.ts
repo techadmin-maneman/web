@@ -5,17 +5,30 @@
 import { jobSheet, knownCodes } from "../field/job-sheet-settings.ts";
 import { auditStatement, type AuditActor } from "../platform/audit.ts";
 
-/** The reason kept with each of these visits that has one, by visit. */
-export async function lostReasonsOf(db: D1Database, appointmentIds: readonly string[]): Promise<Map<string, string>> {
-  if (appointmentIds.length === 0) return new Map();
+/** What the client said at each of these consultations: the reason kept with a no, and whether they said yes. */
+export interface GoingAhead {
+  readonly lost: ReadonlyMap<string, string>;
+  /** The technician's answer, where they were asked: true for a yes. */
+  readonly said: ReadonlyMap<string, boolean>;
+}
+
+/** The reason kept with each of these visits that has one, and the client's yes or no where the technician asked. */
+export async function lostReasonsOf(db: D1Database, appointmentIds: readonly string[]): Promise<GoingAhead> {
+  if (appointmentIds.length === 0) return { lost: new Map(), said: new Map() };
   const { results } = await db
     .prepare(
-      `SELECT appointment_id, lost_reason FROM visit_outcomes
-       WHERE lost_reason IS NOT NULL AND appointment_id IN (SELECT value FROM json_each(?1))`,
+      `SELECT appointment_id, lost_reason, going_ahead FROM visit_outcomes
+       WHERE (lost_reason IS NOT NULL OR going_ahead IS NOT NULL)
+         AND appointment_id IN (SELECT value FROM json_each(?1))`,
     )
     .bind(JSON.stringify(appointmentIds))
-    .all<{ appointment_id: string; lost_reason: string }>();
-  return new Map(results.map((row) => [row.appointment_id, row.lost_reason]));
+    .all<{ appointment_id: string; lost_reason: string | null; going_ahead: number | null }>();
+  return {
+    lost: new Map(results.flatMap((row) => (row.lost_reason === null ? [] : [[row.appointment_id, row.lost_reason]]))),
+    said: new Map(
+      results.flatMap((row) => (row.going_ahead === null ? [] : [[row.appointment_id, row.going_ahead === 1]])),
+    ),
+  };
 }
 
 /**

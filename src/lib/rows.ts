@@ -1626,6 +1626,7 @@ export interface Rows {
     readonly closed_by: string | null;
     readonly close_reason: string | null;
     readonly lost_reason: string | null;
+    readonly going_ahead: number | null;
   };
   readonly visit_pay_rates: {
     readonly id: string;

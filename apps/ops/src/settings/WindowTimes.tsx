@@ -202,7 +202,9 @@ function Changes({ times, onWithdrawn }: { times: SlotTimes; onWithdrawn: () => 
           {copy.setBy(shortDate(change.applies_from), whoWords(change.set_by), longDate(change.set_at))}
           <br />
           {copy.sets(setsOf(change))}
-          {mayWithdraw && toCome && change === last && <Withdraw from={change.applies_from} onWithdrawn={onWithdrawn} />}
+          {mayWithdraw && toCome && change === last && (
+            <Withdraw from={change.applies_from} onWithdrawn={onWithdrawn} />
+          )}
         </li>
       ))}
     </ul>

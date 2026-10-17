@@ -3214,6 +3214,8 @@ export interface components {
             outcome: "done";
             /** @description On a consultation, why the client is not going ahead with a fit: one of the card's lost_reasons, by its id. Left out where they are going ahead, or the visit is no consultation (ADR 0149). */
             lost_reason?: string;
+            /** @description On a consultation, whether the client said they are going ahead with a fit; left out where not asked. */
+            going_ahead?: boolean;
         } | {
             /** @enum {string} */
             outcome: "partial";

@@ -88,7 +88,22 @@ test("a consultation’s outcome asks whether the client is going ahead, and why
   await page.getByRole("button", { name: "The price" }).click();
   await page.getByRole("button", { name: techCopy.steps.next }).click();
 
-  await expect.poll(() => writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", lost_reason: "price" });
+  await expect
+    .poll(() => writesTo(fake, "outcome").at(-1)?.body)
+    .toEqual({ outcome: "done", lost_reason: "price", going_ahead: false });
+});
+
+// A yes was sent as nothing at all, so the console could not tell it from a question never asked.
+test("a consultation’s outcome sends the client’s yes", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.type = "consultation";
+  startedThrough(fake, "before_photos", "checklist", "consumables", "profile");
+  await page.goto(`/jobs/${JOB_ID}/outcome`);
+
+  await page.getByRole("button", { name: techCopy.steps.outcome.done, exact: true }).click();
+  await page.getByRole("button", { name: techCopy.steps.outcome.yes }).click();
+  await page.getByRole("button", { name: techCopy.steps.next }).click();
+  await expect.poll(() => writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: true });
 });
 
 // ADR 0025, item 59: "gold marks only the one primary action". The boards also gild a ticked

@@ -20822,6 +20822,8 @@ export interface components {
                 code: string;
                 label: string;
             } | null;
+            /** @description On a closed consultation, whether the client told the technician they are going ahead; null where not asked. */
+            going_ahead: boolean | null;
             /** @description What the visit was closed as, a no-show being its own; null until it is closed. */
             outcome: ("done" | "partial" | "no_show") | null;
             /** @description For a visit left partly done, ops closing its task without a follow-up visit; null otherwise. */

@@ -6,12 +6,7 @@
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS, UNITS_PER_DAY } from "../../config/scheduling.ts";
-import {
-  earliestChange,
-  loadSlotSchedule,
-  setSlotTimes,
-  withdrawSlotTimes,
-} from "../../domain/booking/slot-times.ts";
+import { earliestChange, loadSlotSchedule, setSlotTimes, withdrawSlotTimes } from "../../domain/booking/slot-times.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -115,7 +110,9 @@ const withdrawSlotTimesRoute = opsRoute({
   responses: {
     204: { description: "Withdrawn" },
     404: errorResponse("not_found: no change from that day"),
-    409: errorResponse("slot_times_in_use: a later change follows it, or a visit is booked or held on its day or later"),
+    409: errorResponse(
+      "slot_times_in_use: a later change follows it, or a visit is booked or held on its day or later",
+    ),
   },
 });
 

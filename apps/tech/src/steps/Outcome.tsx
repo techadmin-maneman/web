@@ -4,7 +4,7 @@
 
 import { ToggleButton } from "@maneman/ui/ToggleButton";
 import { useState } from "react";
-import type { EventBody, Job, PartialReason } from "../api.ts";
+import type { EventBody, Job, OutcomeRequest, PartialReason } from "../api.ts";
 import { job as jobCopy, oneVisit, steps as copy } from "../content.ts";
 import { choiceOf, type ClientChoice } from "../lib/progress.ts";
 import { Failed, Loading } from "../states/States.tsx";
@@ -109,6 +109,18 @@ function ReasonList(props: { reasons: Job["partial_reasons"]; picked: string | n
   );
 }
 
+/**
+ * A done close, with what the client said where they were asked: a yes, or a no and the reason picked, which a fit
+ * the client declined may leave unpicked.
+ */
+function doneOf(asked: boolean, notGoingAhead: boolean, lost: string | null): OutcomeRequest {
+  if (!asked) return { outcome: "done" };
+  if (!notGoingAhead) return { outcome: "done", going_ahead: true };
+  return lost === null
+    ? { outcome: "done", going_ahead: false }
+    : { outcome: "done", lost_reason: lost, going_ahead: false };
+}
+
 /** After a consultation: whether the client is going ahead with a fit. */
 function GoingAhead(props: { answer: boolean | null; onAnswer: (value: boolean) => void }) {
   return (
@@ -170,7 +182,7 @@ function Choosing({
       onBack={onBack}
       onAction={() => {
         if (choice === "partial" && reason !== null) onFinish({ outcome: "partial", reason });
-        else onFinish(notGoingAhead && lost !== null ? { outcome: "done", lost_reason: lost } : { outcome: "done" });
+        else onFinish(doneOf(asksWhy, notGoingAhead, lost));
       }}
     >
       <Pair<"done" | "partial">

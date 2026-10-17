@@ -28117,6 +28117,17 @@ Request body:
       ],
       "description": "On a closed consultation, why the client is not going ahead, in ops' words; null where none is kept."
     },
+    "going_ahead": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "On a closed consultation, whether the client told the technician they are going ahead; null where not asked."
+    },
     "outcome": {
       "anyOf": [
         {
@@ -28249,6 +28260,7 @@ Request body:
     "one_visit",
     "proposed_move",
     "lost_reason",
+    "going_ahead",
     "outcome",
     "closed_without_follow_up",
     "discount_code",

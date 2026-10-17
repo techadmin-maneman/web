@@ -128,7 +128,9 @@ export const clients = {
     /** Why the client is not going ahead after a closed consultation (docs/decisions/0149-lost-reasons.md). */
     lostReason: {
       label: "Why not going ahead",
-      none: "Going ahead, or not said",
+      // The list's first choice, no reason kept: the client's yes where the technician heard it.
+      goingAhead: "Going ahead",
+      notSaid: "Not said",
       kept: (reason: string) => `Not going ahead: ${reason}`,
       errors: {
         invalid_request: changed("That reason is no longer listed."),

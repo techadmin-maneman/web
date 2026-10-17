@@ -40,6 +40,10 @@ const ClientVisitSchema = VisitSummarySchema.extend({
   lost_reason: z.union([LostReasonSchema, z.null()]).openapi({
     description: "On a closed consultation, why the client is not going ahead, in ops' words; null where none is kept.",
   }),
+  going_ahead: z.union([z.boolean(), z.null()]).openapi({
+    description:
+      "On a closed consultation, whether the client told the technician they are going ahead; null where not asked.",
+  }),
   outcome: z
     .union([z.enum(VISIT_OUTCOMES), z.null()])
     .openapi({ description: "What the visit was closed as, a no-show being its own; null until it is closed." }),
@@ -249,7 +253,7 @@ async function recordVisits(db: D1Database, personId: string, now: Date, sheet: 
   ]);
   const words = new Map([...lostReasons.retired, ...lostReasons.items].map((item) => [item.id, item.label]));
   const lostReasonOf = (id: string) => {
-    const code = lost.get(id);
+    const code = lost.lost.get(id);
     return code === undefined ? null : { code, label: words.get(code) ?? code };
   };
   const withOutcome = (list: typeof visits.upcoming) =>
@@ -258,6 +262,7 @@ async function recordVisits(db: D1Database, personId: string, now: Date, sheet: 
       outcome: outcomes.get(visit.id) ?? null,
       closed_without_follow_up: closings.get(visit.id) ?? null,
       lost_reason: lostReasonOf(visit.id),
+      going_ahead: lost.said.get(visit.id) ?? null,
       discount_code: codes.get(visit.id)?.code ?? null,
       price_open: codes.get(visit.id)?.open ?? false,
       requested_code: codes.get(visit.id)?.requested ?? null,

@@ -3330,7 +3330,7 @@ Indexes:
 
 What an appointment became once it closed, or ops closed it by hand: the outcome, its reason and its times (ADR 0032, ADR 0074).
 
-Made by `0169_visits_whole.sql`.
+Made by `0169_visits_whole.sql`; changed by `0186_going_ahead.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -3346,6 +3346,7 @@ Made by `0169_visits_whole.sql`.
 | `closed_by` | TEXT | yes |  |  | A visit ops closed by hand: who closed it, and why, as they typed it. |
 | `close_reason` | TEXT | yes |  |  |  |
 | `lost_reason` | TEXT | yes |  |  |  |
+| `going_ahead` | INTEGER | yes |  |  | After a consultation, the client's yes to a fit, kept beside the reason for a no (lost_reason): 1 for yes, 0 for no, NULL where the technician was not asked or the visit is no consultation. Only a new column, which the code deployed neither reads nor writes. |
 
 Indexes:
 
