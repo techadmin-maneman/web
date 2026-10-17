@@ -46,6 +46,9 @@ export const tasks = {
   // Not drawn: the list's heading, the tasks open, as the page's bar already says "Tasks".
   /** The head's count, in oxblood, as the board writes "4 overdue". */
   openCount: (count: number) => `${String(count)} open`,
+  /** The head's count: the tasks open, and the alerts above them, "90 open · 3 need a hand". */
+  openWithAlerts: (count: number, alerts: number) =>
+    alerts === 0 ? `${String(count)} open` : `${String(count)} open · ${String(alerts)} need a hand`,
   overdue: (count: number) => `${String(count)} overdue`,
   /** The head's count as a screen reader names it, with what it does. */
   overdueJump: (count: number) => `${String(count)} overdue, go to the first`,

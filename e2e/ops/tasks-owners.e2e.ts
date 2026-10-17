@@ -279,6 +279,9 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
 
   const needsAHand = page.getByRole("region", { name: opsCopy.needsAHand.title });
   await expect(needsAHand.getByRole("listitem")).toHaveCount(2);
+  // The head counts them beside the tasks, which it once left out.
+  const listed = TASKS.groups.reduce((sum, group) => sum + group.count, 0);
+  await expect(page.getByText(opsCopy.tasks.openWithAlerts(listed, 2), { exact: true })).toBeVisible();
   await expect(needsAHand.getByRole("listitem").first()).toContainText("WhatsApp message failed");
   await expect(needsAHand.getByRole("listitem").nth(1)).toContainText("3 times since Tue 21 Sep");
   await expect(needsAHand.getByRole("link", { name: "Open · Stock low" })).toHaveAttribute("href", "/stock");
@@ -286,6 +289,7 @@ test("heads the board with the alerts that need a hand, and sends a failed messa
 
   await needsAHand.getByRole("button", { name: "Send again · WhatsApp message failed" }).click();
   await expect(needsAHand.getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByText(opsCopy.tasks.openWithAlerts(listed, 1), { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: opsCopy.needsAHand.title })).toBeFocused();
   expect(sentAgain).toEqual(["/api/alerts/97000000-0000-4000-8000-000000000001/send-again"]);
 });

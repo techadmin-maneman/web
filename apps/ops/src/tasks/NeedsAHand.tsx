@@ -10,7 +10,7 @@ import { useLoad } from "@maneman/ui/useLoad";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { indiaDate, shortDate } from "@maneman/web-kit/dates";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type OpenAlert } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { needsAHand as copy } from "../content.ts";
@@ -96,10 +96,14 @@ function AlertRow({ alert, maySend, mayMarkDone, onClosed }: RowProps) {
   );
 }
 
-function AlertList({ access }: { access: Access }) {
+function AlertList({ access, onCount }: { access: Access; onCount: (count: number) => void }) {
   const [loaded, retry] = useLoad(tasksApi.alerts);
   const [closed, setClosed] = useState<readonly string[]>([]);
   const heading = useRef<HTMLHeadingElement>(null);
+  const open = loaded.state === "loaded" ? Math.max(0, loaded.value.count - closed.length) : 0;
+  useEffect(() => {
+    onCount(open);
+  }, [open, onCount]);
 
   // The task list below says it is loading; one spinner is enough.
   if (loaded.state === "loading") return null;
@@ -135,8 +139,8 @@ function AlertList({ access }: { access: Access }) {
 }
 
 /** Nothing for a person whose access does not reach any alert, and nothing while none is open. */
-export function NeedsAHand() {
+export function NeedsAHand({ onCount }: { onCount: (count: number) => void }) {
   const access = useAccess();
   if (!access.mayCall("GET /api/alerts")) return null;
-  return <AlertList access={access} />;
+  return <AlertList access={access} onCount={onCount} />;
 }

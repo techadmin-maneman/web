@@ -32,7 +32,8 @@ interface WaitlistArea {
 
 /**
  * The pincodes with someone waiting within reach, the longest wait first, `limit` of them at most. A pincode we do not
- * know is in no city, so only a national grant sees it.
+ * know is in no city, so only a national grant sees it. Once a pincode is live, only those still to be told of it wait:
+ * the rest were told, or asked not to be.
  */
 export async function waitlistByPincode(
   db: D1Database,
@@ -47,6 +48,7 @@ export async function waitlistByPincode(
          SUM(w.launch_alert) AS alerts
        FROM waitlist_entries w LEFT JOIN serviceable_pincodes p ON p.pincode = w.pincode
        WHERE ${withinReach("waitlist_entry", "w", "?2")}
+         AND (COALESCE(p.served, 0) = 0 OR (w.launch_alert = 1 AND w.alerted_at IS NULL))
        GROUP BY w.pincode ORDER BY oldest, w.pincode LIMIT ?1`,
     )
     .bind(limit, reachBinding(reached))
