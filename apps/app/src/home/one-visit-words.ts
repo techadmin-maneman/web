@@ -12,7 +12,7 @@ function priceLine(price: OneVisitPrice): string {
   return price.from ? copy.from(amount) : copy.price(amount);
 }
 
-/** The card's lines: "Rs. 12,345, only if you go ahead", "Code AUDTEST applied", "Paid once fitted, by a link …". */
+/** The card's lines: "Rs. 12,345, only if you go ahead", "Code AUDTEST applied", "By UPI at the visit, once fitted". */
 export function oneVisitLines(price: OneVisitPrice): string[] {
   const copy = home.oneVisit;
   const { code } = price;

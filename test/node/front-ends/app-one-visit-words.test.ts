@@ -12,14 +12,14 @@ const PRICE = { amount: 3_000_000, from: false, code: null };
 
 describe("a one visit’s card", () => {
   it("says what it costs once fitted, only if the client goes ahead, and that it is paid once fitted", () => {
-    expect(oneVisitLines(PRICE)).toEqual(["Rs. 30,000, only if you go ahead", "Paid once fitted"]);
+    expect(oneVisitLines(PRICE)).toEqual(["Rs. 30,000, only if you go ahead", "By UPI at the visit, once fitted"]);
   });
 
   it("says where the prices start when the hair systems differ, and names the code taken off", () => {
     expect(oneVisitLines({ amount: 2_700_000, from: true, code: "TENPC" })).toEqual([
       "From Rs. 27,000, only if you go ahead",
       "Code TENPC applied",
-      "Paid once fitted",
+      "By UPI at the visit, once fitted",
     ]);
   });
 
@@ -29,7 +29,7 @@ describe("a one visit’s card", () => {
     ]);
     expect(oneVisitLines({ amount: null, from: false, code: null })).toEqual([
       "You pay only if you go ahead",
-      "Paid once fitted",
+      "By UPI at the visit, once fitted",
     ]);
   });
 });
