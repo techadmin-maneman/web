@@ -1,4 +1,4 @@
-// The address form, with the building search (docs/decisions/0054-address-capture.md): Profile's "Where we come"
+// The address form, with the building search (docs/decisions/0054-address-capture.md): Profile's "Your address"
 // opens it, and the booking sheet asks for it before any slot when the client has given none
 // (docs/decisions/0079-an-address-before-a-slot.md). Its fields follow the account section's number
 // field. The fields an address cannot do without say they are required, and one left out is marked, named by the

@@ -40,7 +40,7 @@ export const booking = {
   },
   /**
    * A client who has given no address is asked for it before any slot (ADR 0079;
-   * ADR 0025, item 60), under Profile's heading, "Where we come".
+   * ADR 0025, item 60), under Profile's heading, "Your address".
    */
   address: {
     why: "First, your address. Then pick a date.",
