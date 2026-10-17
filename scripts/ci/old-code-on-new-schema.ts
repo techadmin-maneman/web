@@ -46,7 +46,8 @@ console.log(`${base}'s code, with this branch's migrations, in ${deployed}`);
 // a client a stranger's number by hand, which a newer trigger links the chat to, as it would a real change of number.
 // One upserts a visit's outcome by hand, which the view of the outcome table's old name cannot take; the code writes
 // it without one. The restore's whole-database tests write a row in every table the deployed code knew, some of which
-// a newer schema drops, though the code never reads them.
+// a newer schema drops, though the code never reads them. One deletes a change of the window times by hand, which a
+// newer trigger allows while nothing is booked from its day; the code deletes none.
 const NEWER_SCHEMA_TESTS = [
   "restoring the whole database",
   "starts from a row in every table",
@@ -54,6 +55,7 @@ const NEWER_SCHEMA_TESTS = [
   "moveVisit .+ from .+ ends ",
   "never saves a number one of our people has",
   "name a partial visit's task on the Tasks board in ops' words",
+  "is never changed or deleted once made",
 ];
 const skipNewerSchemaTests = `^(?!.*(${NEWER_SCHEMA_TESTS.join("|")})).*$`;
 
