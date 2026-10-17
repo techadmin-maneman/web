@@ -25,6 +25,7 @@ import { auditStatement, type AuditActor, type AuditEntry } from "../platform/au
 import { isActiveCity } from "../cities/cities.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import type { AlertOnce, ResolveAlert } from "../platform/alerts.ts";
+import { cityServedWith } from "../cities/cities.ts";
 import {
   launchPreview,
   launchStatements,
@@ -243,7 +244,7 @@ export async function setServiceArea(
       statements.push(
         setAudit({ db, entry: entry("pincode.set", change.pincode), was, change, launchOn: launch.launchOn, now }),
       );
-      statements.push(...launch.statements);
+      statements.push(...launch.statements, cityServedWith(db, change.pincode));
     } else if (servingChanged(was, change)) {
       statements.push(
         setAudit({ db, entry: entry("pincode.set", change.pincode), was, change, launchOn: change.launch_on, now }),

@@ -69,7 +69,7 @@
 // name by their Access e-mail; and, for a visit left partly done alone, that ops
 // closed it without a follow-up, with why. Neither is a copy of the task.
 
-import { HOUR_MS } from "../lib/durations.ts";
+import { DAY_MS, HOUR_MS } from "../lib/durations.ts";
 import { DELETION_DECIDED_WITHIN_DAYS } from "./account-deletion.ts";
 
 /** The queues a task is read from, in the order the console lists them. */
@@ -102,6 +102,16 @@ export const TASK_GROUPS = [
   "payment_to_refund",
 ] as const;
 export type TaskGroup = (typeof TASK_GROUPS)[number];
+
+/**
+ * How many days a task may wait before it leaves the board for the lapsed list, so the board shows what can still be
+ * done. A lapsed task is still there to open and close, and is counted beside the board. Ops set it in Settings.
+ */
+export const TASK_LAPSE_DAYS = 60;
+
+/** Whether a task that began waiting `since` has waited past the lapse days at `now`. */
+export const hasLapsed = (since: string, now: Date, lapseDays: number): boolean =>
+  Date.parse(since) < now.getTime() - lapseDays * DAY_MS;
 
 /**
  * How long a task may wait before it is overdue, and the one deadline its own

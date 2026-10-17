@@ -43,6 +43,33 @@ export async function boardCities(db: D1Database): Promise<string[]> {
   return results.map((row) => row.name);
 }
 
+/**
+ * The city of a pincode served now marked served too, so Cities, the filters and the pincodes say one thing: a city is
+ * served once any pincode of it is.
+ */
+export const cityServedWith = (db: D1Database, pincode: string): D1PreparedStatement =>
+  db
+    .prepare(
+      "UPDATE cities SET served = 1 WHERE served = 0 AND name = (SELECT city FROM serviceable_pincodes WHERE pincode = ?1)",
+    )
+    .bind(pincode);
+
+/**
+ * The cities Clients may be narrowed to, within `reach` (a JSON list of names, or null for every city): those marked
+ * served, and any with a pincode served whatever it is marked.
+ */
+export async function clientCities(db: D1Database, reach: string | null): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT name FROM cities c
+       WHERE (served = 1 OR EXISTS (SELECT 1 FROM serviceable_pincodes p WHERE p.city = c.name AND p.served = 1))
+         AND (?1 IS NULL OR name IN (SELECT value FROM json_each(?1))) ORDER BY name`,
+    )
+    .bind(reach)
+    .all<{ name: string }>();
+  return results.map((row) => row.name);
+}
+
 /** Whether a name is one of our active cities, as a technician's city must be. */
 export async function isActiveCity(db: D1Database, name: string): Promise<boolean> {
   const found = await db.prepare("SELECT 1 FROM cities WHERE name = ?1 AND active = 1").bind(name).first();

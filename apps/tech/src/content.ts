@@ -279,13 +279,21 @@ function opensAt(unlocksAt: string, now: Date = apiDate()): string {
   return `Open since ${timeAndDay(unlocksAt, now)}. Go back and open the job again.`;
 }
 
+/** A length as the board writes it, the visit's booked length and the time a job took alike: "45 m", "3 h", "1 h 30 m". */
+function lengthOf(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return minutes === 0 ? "Under 1 m" : `${String(minutes)} m`;
+  return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest)} m`;
+}
+
 export const job = {
   back: "Back",
-  /** "9:30 am · service · 90 min", and "Tomorrow · …" for a job on another day. */
+  /** "9:30 am · service · 1 h 30 m", and "Tomorrow · …" for a job on another day. */
   when: (parts: readonly string[]) => parts.join(" · "),
   tomorrow: "Tomorrow",
   // The board writes "1 slot"; the visit's length says more.
-  minutes: (count: number) => `${String(count)} min`,
+  minutes: lengthOf,
   navigate: "Navigate",
   // The design draws no landmark; the client types it as they like, so it shows as typed.
   landmark: "Landmark",
@@ -566,14 +574,14 @@ export const steps = {
 /** The close-out, once the outcome is taken. */
 export const closeOut = {
   label: "Closed out",
-  who: (name: string, outcome: string) => `${name} · ${outcome}`,
+  /** The name and the dot before how it closed, which is kept whole on one line: "no-show" never breaks. */
+  who: (name: string) => `${name} · `,
   outcomes: { done: "done", partial: "partly done", no_show: "no-show" },
   // No board draws a consultation and fit in one visit closed as done once the client declined.
   freeConsultation: "free consultation",
   duration: "Duration",
   // The board writes "1 h 22 m"; the phone times it from Start job (open point 60).
-  length: (hours: number, minutes: number) =>
-    hours === 0 ? `${String(minutes)} m` : `${String(hours)} h ${String(minutes)} m`,
+  length: (hours: number, minutes: number) => lengthOf(hours * 60 + minutes),
   photos: "Photos",
   queued: (count: number) => `${String(count)} queued`,
   sent: (count: number) => `${String(count)} sent`,

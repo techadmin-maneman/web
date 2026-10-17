@@ -4,7 +4,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { badges, changed, job, notHome, today, whatStopped } from "../../../apps/tech/src/content.ts";
+import { badges, changed, closeOut, job, notHome, today, whatStopped } from "../../../apps/tech/src/content.ts";
 import { jobLabel } from "../../../apps/tech/src/lib/kind.ts";
 import type { HeldJob } from "../../../apps/tech/src/store/jobs.ts";
 
@@ -188,5 +188,16 @@ describe("photographs never touch the phone’s gallery", () => {
     const encoder = readFileSync("packages/web-kit/small-jpeg.ts", "utf8");
     expect(encoder).toContain("SMALL_JPEG_BYTES = 250 * 1024");
     expect(readFileSync("docs/decisions/0039-phase-2-budget.md", "utf8")).toContain("about 250 KB each");
+  });
+});
+
+// Durations read "0 m", "1 m" and "180 min" on one phone.
+describe("a length", () => {
+  it("reads as the board writes it, the booked length and the time a job took alike", () => {
+    expect(job.minutes(45)).toBe("45 m");
+    expect(job.minutes(90)).toBe("1 h 30 m");
+    expect(job.minutes(180)).toBe("3 h");
+    expect(closeOut.length(1, 22)).toBe("1 h 22 m");
+    expect(closeOut.length(0, 0)).toBe("Under 1 m");
   });
 });

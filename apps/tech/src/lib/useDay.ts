@@ -2,7 +2,8 @@
 // is none. The list the API answers is kept, so the next basement opens on it,
 // and whatever the phone no longer needs is let go of at the same moment.
 //
-// The phone's copy stands in only when the API cannot be reached. Any other
+// The phone's copy stands in while the API's answer is on its way, so a slow
+// network opens on it at once, and when the API cannot be reached. Any other
 // answer is the API's: a 401 ends the session, and App wipes the phone
 // (apps/tech/src/App.tsx); a 404 says the job is not this technician's. Showing
 // what the phone kept after either would show what the API has just refused.
@@ -89,9 +90,26 @@ function useKept<T>(load: () => Promise<KeptLoad<T>>, watch: unknown = null): re
   return [loaded, retry];
 }
 
+/** What the phone kept, shown while the API's answer is on its way; the answer, refusal or not, then stands. */
+function useKeptFirst<T>(
+  readKept: () => Promise<T | null>,
+  load: () => Promise<KeptLoad<T>>,
+  watch: unknown,
+): readonly [KeptLoad<T>, () => void] {
+  const [loaded, retry] = useKept(load, watch);
+  const kept = valueOr(useAsync(readKept, watch)[0], null);
+  const shown = useMemo(
+    (): KeptLoad<T> =>
+      loaded.state === "loading" && kept !== null ? { state: "loaded", value: kept, fromPhone: true } : loaded,
+    [loaded, kept],
+  );
+  return [shown, retry];
+}
+
 export function useDay(date: string): readonly [KeptLoad<readonly JobSummary[]>, () => void] {
   const load = useCallback(() => loadDay(date), [date]);
-  return useKept(load);
+  const readKept = useCallback(() => keptDay(date).catch(() => null), [date]);
+  return useKeptFirst(readKept, load, null);
 }
 
 /**
@@ -123,7 +141,8 @@ async function keepCard(id: string): Promise<void> {
  */
 export function useJob(id: string, watch: unknown = null): readonly [KeptLoad<Job>, () => void] {
   const load = useCallback(() => loadJob(id), [id]);
-  return useKept(load, watch);
+  const readKept = useCallback(() => keptJob(id).catch(() => null), [id]);
+  return useKeptFirst(readKept, load, watch);
 }
 
 const NO_NAMES: ReadonlyMap<string, string> = new Map();

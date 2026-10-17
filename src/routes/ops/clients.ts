@@ -24,6 +24,7 @@ import { countOf, CursorQuery, cursorOf, NextCursor } from "../../http/paging.ts
 import { routeReach, withinRouteReach, type PersonRow } from "../../http/staff-access.ts";
 import { INDIAN_MOBILE_PATTERN, toE164 } from "../../lib/mobile.ts";
 import { unknownClient } from "../schemas/clients.ts";
+import { clientCities } from "../../domain/cities/cities.ts";
 
 const UnderWay = z.boolean().openapi({ description: "Whether a visit of theirs has begun and is not yet closed." });
 const searchRoute = opsRoute({
@@ -175,11 +176,7 @@ export function registerOpsClients(app: App): void {
     const reach = reachBinding(await routeReach(c));
     const [listed, served] = await Promise.all([
       listClients(c.env.DB, { state, city, page, reach }),
-      c.env.DB.prepare(
-        "SELECT name FROM cities WHERE served = 1 AND (?1 IS NULL OR name IN (SELECT value FROM json_each(?1))) ORDER BY name",
-      )
-        .bind(reach)
-        .all<{ name: string }>(),
+      clientCities(c.env.DB, reach),
     ]);
     return c.json(
       {
@@ -193,7 +190,7 @@ export function registerOpsClients(app: App): void {
           under_way: client.underWay,
         })),
         next_cursor: listed.more ? cursorOf(String(page + 1)) : null,
-        cities: served.results.map((row) => row.name),
+        cities: served,
       },
       200,
     );
