@@ -110,9 +110,10 @@ export const gstSplit = (exGst: string, gst: string) => `${exGst} + ${gst} GST`;
 export const messages = {
   reschedule: (what: string, date: string) => `I’d like to move my ${what.toLowerCase()} on ${date}.`,
   note: (what: string, date: string) => `A note about my ${what.toLowerCase()} on ${date}: `,
-  book: "I’d like to book my next visit.",
-  bookFirstFit: "I’d like to book my first fit.",
-  bookReplacement: "I’d like to book my replacement hair system.",
+  // A booking's opening words, which the day, the window, the client and the hair system follow (booking.asking).
+  book: "I’d like to book my next visit",
+  bookFirstFit: "I’d like to book my first fit",
+  bookReplacement: "I’d like to book my replacement",
   document: (what: string, reference: string) => `Please send me the ${what.toLowerCase()} for ${reference}.`,
   // A visit's invoice that has not come in the day it should have.
   lateInvoice: (what: string, date: string) => `Please send me the invoice for my ${what.toLowerCase()} on ${date}.`,

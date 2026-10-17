@@ -13,11 +13,11 @@
 
 import { TextButton, TextLink } from "@maneman/ui/TextLink";
 import { Button, ButtonLink } from "@maneman/ui/Button";
-import { weekdayDate } from "@maneman/web-kit/dates";
+import { shortDate } from "@maneman/web-kit/dates";
 import { rupees } from "@maneman/web-kit/money";
 import { useState } from "react";
 import type { BookableType, Me } from "../api.ts";
-import { booking } from "../content.ts";
+import { booking, VISIT_TYPES, WINDOW_NAMES } from "../content.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
 import { useSession } from "../session.ts";
 import type { Offered } from "./BookingSheet.tsx";
@@ -41,14 +41,25 @@ function WithOps(props: {
   label: string;
   className: string | undefined;
   message: string;
+  kind: BookableType | undefined;
   services: Me["booking"]["services"];
   tier: string | null | undefined;
   offer: Offered | undefined;
   quiet: boolean;
 }) {
+  const { me } = useSession();
+  const window = props.offer?.window ?? null;
   const service = props.services.find((each) => each.tier === props.tier) ?? props.services[0];
-  const day = props.offer === undefined ? null : weekdayDate(props.offer.date);
-  const href = whatsappWith(booking.asking(props.message, service?.name ?? null, day));
+  // The service by name where it names more than the kind: a replacement's hair system, not "Replacement" again.
+  const named = props.kind === undefined || service?.name !== VISIT_TYPES[props.kind];
+  const href = whatsappWith(
+    booking.asking(props.message, {
+      day: props.offer === undefined ? null : shortDate(props.offer.date),
+      window: window === null ? null : WINDOW_NAMES[window].toLowerCase(),
+      name: me.name,
+      what: named ? (service?.name ?? null) : null,
+    }),
+  );
   if (props.quiet) {
     return (
       <TextLink tone="brass" className={props.className} href={href}>
@@ -112,7 +123,7 @@ export function BookButton({
   }
   // A kind the client may not book themselves goes to ops on WhatsApp: every paid visit, while online payment is off.
   if (kind === undefined || !me.booking.self_serve_kinds.includes(kind)) {
-    return <WithOps {...{ label, className, message, services, tier, offer, quiet }} />;
+    return <WithOps {...{ label, className, message, kind, services, tier, offer, quiet }} />;
   }
   const onClick = () => {
     setOpen(true);

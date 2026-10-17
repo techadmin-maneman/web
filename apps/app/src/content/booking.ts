@@ -27,8 +27,15 @@ export const booking = {
   /** A paid visit, booked with ops on WhatsApp while online payment is off: what to expect. */
   withOps: (price: string) => `We book it with you on WhatsApp. You pay ${price} by UPI at the visit.`,
   /** What the WhatsApp message asks for: the hair system or service, and the day the app offered. */
-  asking: (message: string, what: string | null, day: string | null) =>
-    [message, [what, day].filter((part) => part !== null).join(", ")].filter((part) => part !== "").join(" "),
+  /** "I’d like to book my replacement: Fri 16 Oct, morning. Arjun Mehta, Mane Man Active." */
+  asking: (
+    message: string,
+    visit: { day: string | null; window: string | null; name: string; what: string | null },
+  ) => {
+    const when = [visit.day, visit.window].filter((part) => part !== null).join(", ");
+    const who = [visit.name, visit.what].filter((part) => part !== null && part !== "").join(", ");
+    return `${message}${when === "" ? "" : `: ${when}`}.${who === "" ? "" : ` ${who}.`}`;
+  },
   /**
    * A client who has given no address is asked for it before any slot (ADR 0079;
    * ADR 0025, item 60), under Profile's heading, "Where we come".

@@ -48,7 +48,8 @@ test("a fitted client reschedules and books through WhatsApp, and no booking she
   await page.getByRole("navigation").getByRole("link", { name: appCopy.titles.visits }).click();
   await expect(page.getByRole("link", { name: appCopy.home.next.book })).toHaveAttribute(
     "href",
-    new RegExp(`${WHATSAPP}${encodeURIComponent("I’d like to book my next visit.")}`),
+    // Who is asking, so ops need not ask back; the day and window follow where the app offers one.
+    new RegExp(`${WHATSAPP}${encodeURIComponent("I’d like to book my next visit. Rohit Malhotra.")}`),
   );
   await expect(page.getByRole("button", { name: appCopy.home.next.book })).toHaveCount(0);
   await expect(page.getByRole("dialog")).toHaveCount(0);
