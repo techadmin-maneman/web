@@ -70,6 +70,9 @@ export function appViteConfig(app: AppBuild): UserConfig {
       emptyOutDir: true,
       // No data: URLs: the content security policy allows none.
       assetsInlineLimit: 0,
+      // One stylesheet, read before the first screen paints. Split by chunk, six of them queued with the scripts and
+      // fonts on a phone's few connections, and the first screen often waited a round trip more for them.
+      cssCodeSplit: false,
       sourcemap: false,
       rolldownOptions: entriesOf(app),
     },
