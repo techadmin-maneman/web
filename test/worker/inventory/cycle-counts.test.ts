@@ -23,7 +23,7 @@ interface Task {
 }
 
 /** The name a hair system's stock code is given from its spec. */
-const NAME = "Mane Man Essential 8x10 1B, 20% grey, 100%";
+const NAME = "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density";
 
 let job: Working;
 let code: string;

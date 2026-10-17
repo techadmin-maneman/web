@@ -224,19 +224,22 @@ export function CustomOrders({ clientId }: { clientId: string }) {
       {current !== null && !current.profile_ready && access.mayCall("POST /api/clients/{id}/custom-orders") && (
         <Note>{copy.errors.profile}</Note>
       )}
-      {current !== null && current.profile_ready && !raising && access.mayCall("POST /api/clients/{id}/custom-orders") && (
-        <FormActions>
-          <Button
-            variant="outline"
-            size="small"
-            onClick={() => {
-              setRaising(true);
-            }}
-          >
-            {copy.raise.open}
-          </Button>
-        </FormActions>
-      )}
+      {current !== null &&
+        current.profile_ready &&
+        !raising &&
+        access.mayCall("POST /api/clients/{id}/custom-orders") && (
+          <FormActions>
+            <Button
+              variant="outline"
+              size="small"
+              onClick={() => {
+                setRaising(true);
+              }}
+            >
+              {copy.raise.open}
+            </Button>
+          </FormActions>
+        )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}

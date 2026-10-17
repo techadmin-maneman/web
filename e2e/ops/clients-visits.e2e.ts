@@ -249,7 +249,7 @@ test.describe("the client’s match to stock", () => {
       kind: "stocked" as const,
       missing: [],
       code: "hs_essential_8x10_1b_g20_d100",
-      name: "Mane Man Essential 8x10 1B, 20% grey, 100%",
+      name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density",
       city: "Gurgaon",
       held: [
         { place_id: "imran", name: "Imran Qureshi", kind: "kit", city: "Gurgaon", pieces: 1 },

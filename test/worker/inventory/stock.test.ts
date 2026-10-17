@@ -349,7 +349,9 @@ describe("low stock", () => {
 
   // The Gurgaon stockroom at -288 strips was marked neither low nor counted by the badge.
   it("counts a place below zero as low, whatever its level", async () => {
-    await env.DB.prepare("UPDATE consumables SET reorder_kit = NULL, reorder_central = NULL, reorder_store = NULL").run();
+    await env.DB.prepare(
+      "UPDATE consumables SET reorder_kit = NULL, reorder_central = NULL, reorder_store = NULL",
+    ).run();
     await job.opsPost("/api/stock/deliveries", { consumable_code: "solvent", quantity: 1 });
     expect(await lowPlaces()).toBe(0);
     await env.DB.prepare("UPDATE stock_balances SET quantity = -4 WHERE consumable_code = 'solvent'").run();

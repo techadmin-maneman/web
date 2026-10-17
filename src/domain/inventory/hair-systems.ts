@@ -86,10 +86,10 @@ export async function isHairSystem(db: D1Database, code: string): Promise<boolea
 
 const inches = (value: number) => String(Math.round(value * 10) / 10);
 
-/** "Mane Man Essential 8x10 1B, 20% grey, 100%": the product as it is sold, then the spec. */
+/** "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density": the product as it is sold, then the spec. */
 const hairSystemName = (productName: string, spec: HairSystemSpec): string =>
-  `${productName} ${inches(spec.baseWidthIn)}x${inches(spec.baseLengthIn)} ${spec.colour}, ` +
-  `${String(spec.greyPercent)}% grey, ${String(spec.densityPercent)}%`;
+  `${productName} · ${inches(spec.baseWidthIn)} × ${inches(spec.baseLengthIn)} in · #${spec.colour} · ` +
+  `${String(spec.greyPercent)}% grey · ${String(spec.densityPercent)}% density`;
 
 interface NewHairSystem extends HairSystemSpec {
   readonly unitCost: number;

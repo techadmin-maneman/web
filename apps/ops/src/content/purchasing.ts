@@ -201,10 +201,11 @@ export const purchasing = {
     ],
     none: "No suppliers yet.",
     percent: (value: number | null) => (value === null ? "" : `${String(value)}%`),
-    /** "13.5 of 14 days", or "12 days" where nothing was promised. */
+    /** "13.5 days (promised 14)", or "12 days" where nothing was promised. */
     days: (actual: number | null, promised: number | null) => {
       if (actual === null) return "";
-      return promised === null ? `${String(actual)} days` : `${String(actual)} of ${String(promised)} days`;
+      const days = `${String(actual)} ${actual === 1 ? "day" : "days"}`;
+      return promised === null ? days : `${days} (promised ${String(promised)})`;
     },
     claims: (accepted: number, settled: number) => (settled === 0 ? "" : `${String(accepted)} of ${String(settled)}`),
   },

@@ -182,7 +182,7 @@ export const tasks = {
     recall_call: (pieces: string) => `${pieces} · recalled, replacement free`,
     /** "Tue 22 Sep · nobody came", or "· not closed" for one begun: give the client a new time, or close it. */
     visit_left_open: (when: string, begun: boolean) => `${when} · ${begun ? "not closed" : "nobody came"}`,
-    /** "Mane Man Essential 8x10 1B, 20% grey, 100% · none in their city", or the profile that matches none yet. */
+    /** "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density · none in their city", or the profile that matches none yet. */
     stock_at_risk: (hairSystem: string) =>
       hairSystem === "" ? "No hair system matched to their profile" : `${hairSystem} · none in their city`,
     /**

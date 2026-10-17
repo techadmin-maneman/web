@@ -51,7 +51,7 @@ describe("the client’s match to stock", () => {
       kind: "stocked",
       missing: [],
       code: "hs_essential_8x10_1b_g20_d100",
-      name: "Mane Man Essential 8x10 1B, 20% grey, 100%",
+      name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density",
       city: "Gurgaon",
       held: [
         { place_id: "kit-1", name: "Imran Qureshi", kind: "kit", city: "Gurgaon", pieces: 1 },
@@ -59,7 +59,7 @@ describe("the client’s match to stock", () => {
       ],
       in_transit: 2,
     });
-    expect(page.textContent).toContain(copy.matched("Mane Man Essential 8x10 1B, 20% grey, 100%"));
+    expect(page.textContent).toContain(copy.matched("Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density"));
     expect(page.textContent).toContain("1 piece · Imran Qureshi, Gurgaon");
     expect(page.textContent).toContain("4 pieces · National warehouse");
     expect(page.textContent).toContain(copy.inTransit(2));

@@ -157,7 +157,7 @@ function Held({ kit }: { kit: Kit }) {
                   const gone = (lot.expires_on ?? kit.today) < kit.today;
                   return (
                     <p className={gone ? styles.expired : styles.note} key={lot.lot_code}>
-                      {lot.lot_code} · {lot.quantity} · {lotWhen(lot, on, gone)}
+                      {lot.lot_code} · {amountOf(lot.quantity, item.unit)} · {lotWhen(lot, on, gone)}
                     </p>
                   );
                 })}

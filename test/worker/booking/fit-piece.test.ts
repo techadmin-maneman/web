@@ -132,7 +132,7 @@ describe("a fit booked", () => {
     await supplied(14);
     await tellOfStockGap(env.DB, fit("2026-09-24"), { alertOnce, now: NOW });
     expect(told).toEqual([
-      "Move or order Mane Man Essential 8x10 1B, 20% grey, 100% for the fit on 2026-09-24: none is in Gurgaon or " +
+      "Move or order Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density for the fit on 2026-09-24: none is in Gurgaon or " +
         "on its way; the quickest supplier takes 14 days.",
     ]);
   });
