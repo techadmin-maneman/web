@@ -19,7 +19,7 @@ import {
   cookie,
   signIn,
 } from "./client-visits-fixtures.ts";
-import { aCreditSpent, aNoShow } from "../fixtures/index.ts";
+import { aCreditSpent, aNoShow, aPayment } from "../fixtures/index.ts";
 
 /** Our IDs for the visits written so far in this test, by name. */
 let ids: Record<string, string>;
@@ -330,6 +330,26 @@ describe("a visit not yet closed", () => {
 });
 
 describe("a visit paid for ahead (its Prepaid)", () => {
+  // A visit's page said nothing of what was paid for it.
+  it("says what was paid for a visit, and its receipt once Books has it", async () => {
+    const ids = await seed([done("ap-done", "2026-09-18")]);
+    await signIn();
+    const person = await env.DB.prepare("SELECT id FROM people WHERE mobile_e164 = ?1")
+      .bind(MOBILE)
+      .first<string>("id");
+    await aPayment({
+      id: "pay-visit",
+      person_id: person ?? "",
+      appointment_id: ids["ap-done"],
+      amount: 220_000,
+      kind: "visit",
+    });
+    const paid = async () => (await (await get(`/api/visits/${ids["ap-done"] ?? ""}`)).json<{ paid: unknown }>()).paid;
+    expect(await paid()).toEqual({ amount: 220_000, receipt: null });
+    await env.DB.prepare("UPDATE payments SET books_payment_id = 'bp-1'").run();
+    expect(await paid()).toEqual({ amount: 220_000, receipt: "pay-visit" });
+  });
+
   it("is prepaid once a payment for it is captured, or a credit covers it, and not otherwise", async () => {
     const ids = await seed([
       booked("ap-paid"),

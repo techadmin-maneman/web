@@ -327,7 +327,7 @@ test("lists each payment to refund, why, and what is owed back, and leads to the
 // A no-show once named its technician alone and led nowhere.
 test("names the client of a no-show, and leads to their visits and to the case", async ({ page }) => {
   await open(page);
-  const noShow = row(page, "Imran Qureshi attended");
+  const noShow = row(page, "Imran Qureshi came by");
   await expect(noShow.getByRole("link", { name: "Deepak Rao", exact: true })).toHaveAttribute(
     "href",
     "/clients/22000000-0000-4000-8000-000000000010/visits",

@@ -42,7 +42,7 @@ export const noShows = {
        * stand on the queue beneath, which is where a case is ruled on
        * (docs/fidelity-method.md).
        */
-      attended: (technician: string, was: string) => `${technician} attended · visit was ${was}`,
+      attended: (technician: string, was: string) => `${technician} came by · visit was ${was}`,
       /** A no-show whose case has lost the technician who attended. */
       unattended: (was: string) => `No one home · visit was ${was}`,
       /** A charge on a visit that carries no start time. */
@@ -72,7 +72,7 @@ export const noShows = {
     undated: "Visit, date unknown",
     /** The client of an erased record, who has no name left to show. */
     erased: "Client erased",
-    attended: (technician: string) => `${technician} attended`,
+    attended: (technician: string) => `${technician} came by`,
     /**
      * The board's four rows, in its own words, and two it does not letter: the
      * window the visit was booked for, and when the check-in reached us. A phone's
@@ -91,15 +91,15 @@ export const noShows = {
     },
     /** "Sat 19 Sep, 9 am to 12 pm". */
     booked: (date: string, from: string, to: string) => `${date}, ${from} to ${to}`,
-    /** "2:08 pm · 5 h 8 m after the booked start", or before it, or at it. */
+    /** "2:08 pm · 5 h 8 min after the booked start", or before it, or at it. */
     checkIn: (time: string, offset: string) => `${time} · ${offset}`,
     after: (span: string) => `${span} after the booked start`,
     before: (span: string) => `${span} before the booked start`,
     onTime: "at the booked start",
-    /** "5 h 8 m", "48 m", "1 h", as the Technicians page writes a length. */
+    /** "5 h 8 min", "48 min", "1 h": minutes in full, since the distance beneath it is in metres. */
     span: (hours: number, minutes: number) => {
-      if (hours === 0) return `${String(minutes)} m`;
-      return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} m`;
+      if (hours === 0) return `${String(minutes)} min`;
+      return minutes === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes)} min`;
     },
     /**
      * The board writes "240 m · over 200 m fence", against the radius in force

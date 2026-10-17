@@ -129,7 +129,8 @@ function Steps({
         )}
       </FormActions>
       {firstWasMine && <Note>{copy.order.yoursFirst}</Note>}
-      {cancelling && (
+      {/* Gone once the order is cancelled, or anything else leaves it past cancelling. */}
+      {cancelling && cancellable && (
         <CancelOrder
           orderId={order.id}
           onAnswer={onAnswer}

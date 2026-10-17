@@ -149,7 +149,7 @@ export async function openWaitlist(page: Page): Promise<void> {
 /** On from the visit to the address. */
 export async function toAddress(page: Page): Promise<void> {
   await page.getByRole("button", { name: siteCopy.booking.next }).click();
-  await expect(page.getByText("Step 4 of 4 · Your address")).toBeFocused();
+  await expect(page.getByText("Step 4 · Your address")).toBeFocused();
 }
 
 /** The address filled in and the booking sent. */

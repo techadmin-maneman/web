@@ -60,7 +60,7 @@ test("keeps the name and number first, then asks for the area, the visit and the
   const leads = await leadCalls(page);
   await visit(page, "/book");
 
-  await expect(page.getByText("Step 1 of 4 · You")).toBeVisible();
+  await expect(page.getByText("Step 1 · You")).toBeVisible();
   await expect(page.getByLabel(referralCopy.referral.pincode.label)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
   await leaveDetails(page);
@@ -70,10 +70,10 @@ test("keeps the name and number first, then asks for the area, the visit and the
   expect(lead).toMatchObject({ name: "Test Visitor", mobile: "9810000000", consent: true });
   expect(lead.turnstile_token).toBeTruthy();
   await expect(page.getByText("For Test Visitor, +91 98100 00000")).toBeVisible();
-  await expect(page.getByText("Step 2 of 4 · Your area")).toBeVisible();
+  await expect(page.getByText("Step 2 · Your area")).toBeVisible();
 
   await checkPincode(page, SERVED.pincode);
-  await expect(page.getByText("Step 3 of 4 · Your visit")).toBeVisible();
+  await expect(page.getByText("Step 3 · Your visit")).toBeVisible();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
   await toAddress(page);
   await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
@@ -91,7 +91,7 @@ test("Change returns to the name and number as typed, and the same again is not 
   await openForm(page);
 
   await page.getByRole("button", { name: siteCopy.booking.changeYouLabel }).click();
-  await expect(page.getByText("Step 1 of 4 · You")).toBeFocused();
+  await expect(page.getByText("Step 1 · You")).toBeFocused();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
   await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveValue("98100 00000");
   await page.getByRole("button", { name: siteCopy.booking.next }).click();
@@ -115,10 +115,10 @@ test("a reload resumes the step it was on, the name and number kept, and Back st
   await expect(page.getByText("For Test Visitor, +91 98100 00000")).toBeVisible();
   await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
   await checkPincode(page, SERVED.pincode);
-  await expect(page.getByText("Step 3 of 4 · Your visit")).toBeVisible();
+  await expect(page.getByText("Step 3 · Your visit")).toBeVisible();
 
   await page.reload();
-  await expect(page.getByText("Step 3 of 4 · Your visit")).toBeVisible();
+  await expect(page.getByText("Step 3 · Your visit")).toBeVisible();
   await expect(page.getByText("For Test Visitor, +91 98100 00000")).toBeVisible();
   await page.goBack();
   await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
@@ -131,7 +131,7 @@ test("a reload resumes the step it was on, the name and number kept, and Back st
   await continueAndBook(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Step 1 of 4 · You")).toBeVisible();
+  await expect(page.getByText("Step 1 · You")).toBeVisible();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("");
 });
 

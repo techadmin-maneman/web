@@ -12,6 +12,7 @@ import { axeViolations } from "../a11y.ts";
 import { firstFitDay, nextVisitClients } from "./next-visit.ts";
 import { logIn } from "./signed-in.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
+import { PORTS } from "../../scripts/lib/local-stack.ts";
 
 async function accessible(page: Page): Promise<void> {
   expect(await axeViolations(page)).toEqual([]);
@@ -167,6 +168,24 @@ test("Home offers the replacement where the piece falls due first, and a page sa
 
   await page.getByRole("link", { name: appCopy.replacement.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
+});
+
+// A client holding free service visits was offered only the paid replacement on Home.
+test("Home offers a free service visit beside a replacement due first, to a client holding some", async ({ page }) => {
+  const { replacement } = nextVisitClients();
+  await everyWindowOpen(page);
+  await page.route("**/api/me", async (route) => {
+    const answer = await route.fetch({
+      url: `http://127.0.0.1:${String(PORTS.app)}/api/me`,
+      headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
+    });
+    if (!answer.ok()) return route.fulfill({ response: answer });
+    const me = (await answer.json()) as Record<string, unknown>;
+    const credits = { visits: 2, earliest_expiry: null, expiring_visits: 2 };
+    await route.fulfill({ response: answer, json: { ...me, credits } });
+  });
+  await logIn(page, replacement.mobile);
+  await expect(page.getByRole("button", { name: appCopy.home.next.useCredit })).toBeVisible();
 });
 
 test("Home recaps the consultation, and offers the first fit as the hair system recommended, in its window", async ({

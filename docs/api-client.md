@@ -8158,6 +8158,40 @@ Request body:
         }
       ],
       "description": "The client was not home for this visit: how long we waited, and what ops ruled. Null otherwise."
+    },
+    "paid": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "integer",
+              "description": "In paise, GST included."
+            },
+            "receipt": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The payment, for GET /api/payments/{id}/receipt, once Books has recorded it."
+            }
+          },
+          "required": [
+            "amount",
+            "receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "What the client paid for the visit; null where nothing was."
     }
   },
   "required": [
@@ -8187,7 +8221,8 @@ Request body:
     "document_id",
     "invoice_expected",
     "invoice_held",
-    "no_show"
+    "no_show",
+    "paid"
   ],
   "additionalProperties": false
 }

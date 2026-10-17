@@ -45,6 +45,8 @@ export interface Fake {
   online: boolean;
   /** How long the job's card takes to come, as on a slow network. */
   slowCardMs: number;
+  /** How long who is signed in takes to come once a code is verified, as on a slow network. */
+  slowMeMs: number;
   /** False until a code is verified: the API has no session for this phone, and every call but the sign-in's is a 401. */
   signedIn: boolean;
   /** True once ops revoke the phone: every call is a 401 `device_revoked`. */
@@ -176,6 +178,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
   const fake: Fake = {
     online: true,
     slowCardMs: 0,
+    slowMeMs: 0,
     signedIn: true,
     revoked: false,
     switchedOff: false,
@@ -365,7 +368,10 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return refuse(route, 404, "not_found");
     }
 
-    if (path === "/api/tech/me") return reply(route, 200, ME);
+    if (path === "/api/tech/me") {
+      if (fake.slowMeMs > 0) await new Promise((resolve) => setTimeout(resolve, fake.slowMeMs));
+      return reply(route, 200, ME);
+    }
     if (path === "/api/tech/kit") return reply(route, 200, { ...fake.kit, today });
     if (path === "/api/tech/jobs") {
       const date = url.searchParams.get("date") ?? "";

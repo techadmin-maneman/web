@@ -78,9 +78,9 @@ test("shows each case’s client, the booked window, both clocks and the evidenc
 
   const first = caseOf(page, FIRST);
   await expect(first.getByRole("link", { name: "Vikram Sethi" })).toBeVisible();
-  await expect(first.getByText("Imran Qureshi attended")).toBeVisible();
+  await expect(first.getByText("Imran Qureshi came by")).toBeVisible();
   await expect(fact(page, FIRST, "Booked")).toHaveText("Sun 19 Sep, 11:30 am to 1 pm");
-  await expect(fact(page, FIRST, "Check-in")).toHaveText("11:31 am · 1 m after the booked start");
+  await expect(fact(page, FIRST, "Check-in")).toHaveText("11:31 am · 1 min after the booked start");
   await expect(fact(page, FIRST, "Reached us")).toHaveText("Sun 19 Sep, 11:31 am");
   // Against the radius in force when they checked in, as the board letters it.
   await expect(fact(page, FIRST, "Distance")).toHaveText("240 m · over 200 m fence");

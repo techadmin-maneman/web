@@ -117,6 +117,8 @@ export const home = {
     // The other kind of visit a fitted client may book, beside the one the app offers.
     orReplacement: "Or book a replacement",
     orService: "Or book a service visit",
+    /** Beside a replacement due first, for a client holding free service visits. */
+    useCredit: "Use a free service visit",
   },
   expect: {
     label: "What to expect",
@@ -138,11 +140,11 @@ export const home = {
     unpriced: "You pay only if you go ahead",
     covered: (code: string) => `Nothing to pay: code ${code} covers it`,
     code: (code: string) => `Code ${code} applied`,
-    paidBy: "Paid once fitted",
+    paidBy: "By UPI at the visit, once fitted",
     expect: [
       "Your scalp measured and your colour matched.",
       "Choose your hair system, fitted there and then.",
-      "Decide before it’s fitted: go ahead and pay once fitted, or decide against it and pay nothing.",
+      "Decide before it’s fitted: go ahead and pay by UPI once fitted, or decide against it and pay nothing.",
     ],
   },
   /** A visit nobody was home for, until ops decide what follows and the client is told. */

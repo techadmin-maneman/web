@@ -33,7 +33,8 @@ function ReceiptList({ orders, order }: { orders: Orders; order: Order }) {
                 received: line.received,
                 damaged: line.damaged,
                 failed: line.qc_failed,
-                landed: rupees(line.landed_unit_paise),
+                // Whole rupees, as every other amount is: what a unit landed at, freight shared, is never to the paisa.
+                landed: rupees(Math.round(line.landed_unit_paise / 100) * 100),
               })}
             </Note>
           ))}

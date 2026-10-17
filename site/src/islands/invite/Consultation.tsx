@@ -26,7 +26,6 @@ import { fill } from "../../lib/text.ts";
 import { NumberCodeField, type CodeFieldClasses } from "../NumberCodeField.tsx";
 import { useNumberCode } from "../useNumberCode.ts";
 import { AddressFieldset } from "./AddressFieldset.tsx";
-import { BOOK_STEPS } from "./AboutYou.tsx";
 import { DayStrip, DayWindows, DiscountCode, PlanChoice } from "./ConsultationFields.tsx";
 import type { Booking } from "./outcomes.ts";
 import {
@@ -101,7 +100,7 @@ function VisitPart(
   return (
     <>
       <div>
-        {stage === "visit" && <StepLine at={3} of={BOOK_STEPS} name={booking.steps.visit} focus={false} />}
+        {stage === "visit" && <StepLine at={3} name={booking.steps.visit} focus={false} />}
         {/* The site's own page is already headed and introduced; the invite's is not. */}
         {props.invited && (
           <>
@@ -162,7 +161,7 @@ function AddressPart(
   const { consultation } = referral;
   return (
     <>
-      {props.stage === "address" && <StepLine at={4} of={BOOK_STEPS} name={booking.steps.address} focus />}
+      {props.stage === "address" && <StepLine at={4} name={booking.steps.address} focus />}
       <AddressFieldset
         address={props.address}
         missing={props.addressBad}
