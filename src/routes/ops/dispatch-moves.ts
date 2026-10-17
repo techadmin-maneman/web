@@ -243,6 +243,13 @@ function inputOf(c: Context<AppEnv>, request: MoveRequest): MoveInput {
     expected: { technicianId: request.expected_technician_id, startsAt: request.expected_starts_at },
     clearCheckIn: checkInClearedBy(c, request),
     blackoutReason: request.blackout_reason ?? null,
+    audit: {
+      surface: "ops",
+      actor: actorOf(c),
+      action: "dispatch.move",
+      subject: { kind: "appointment", id: request.appointment_id },
+      requestId: c.var.requestId,
+    },
   };
 }
 

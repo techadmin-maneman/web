@@ -102,6 +102,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "credit.adjust": "Free service visits adjusted",
   "dispatch.client_told": "Client told of a move",
   "dispatch.check_in_cleared": "Check-in cleared by a move",
+  "dispatch.move": "Visit moved",
   "dispatch.move_proposed": "New day proposed to client",
   "dispatch.proposal_withdrawn": "New day withdrawn",
   "consumable.add": "Consumable added",

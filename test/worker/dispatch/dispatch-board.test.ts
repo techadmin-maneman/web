@@ -255,6 +255,20 @@ describe("what the board carries of each visit", () => {
     expect(block?.untold).toEqual({ move_id: moveId, starts_at: "2026-09-23T03:30:00.000Z", reason: "no_consent" });
   });
 
+  // Activity showed a move only as the call the console made.
+  it("records each move in Activity as its own entry, with its reason", async () => {
+    await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
+    const { move_id: moveId } = await (await move(askedForWednesdayMorning(A))).json<{ move_id: string }>();
+    const entry = await env.DB.prepare(
+      "SELECT subject_id, detail FROM audit_log WHERE action = 'dispatch.move'",
+    ).first<{
+      subject_id: string;
+      detail: string;
+    }>();
+    expect(entry?.subject_id).toBe(A);
+    expect(JSON.parse(entry?.detail ?? "{}")).toMatchObject({ move_id: moveId });
+  });
+
   it("carries no client for one who has been erased", async () => {
     await insertJob(A, { type: "service", start: TUESDAY["09:00"], technician: IMRAN });
     await env.DB.prepare("UPDATE people SET erased_at = ?1 WHERE id = ?2").bind(NOW.toISOString(), ROHIT).run();

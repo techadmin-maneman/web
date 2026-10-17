@@ -38,7 +38,16 @@ const EntrySchema = z
       })
       .strict(),
     action: z.enum(AUDIT_ACTIONS),
-    subject: z.object({ kind: z.string(), id: z.string() }).strict().nullable(),
+    subject: z
+      .object({
+        kind: z.string(),
+        id: z.string(),
+        label: z.union([z.string(), z.null()]).openapi({
+          description: "Its name or number, where it has one: an item's name, a purchase order's, a setting's title.",
+        }),
+      })
+      .strict()
+      .nullable(),
     detail: z
       .record(z.string(), z.unknown())
       .nullable()

@@ -84,7 +84,10 @@ function What({ action, detail }: Pick<ActivityEntry, "action" | "detail">) {
   );
 }
 
-/** The record the entry touched: a client's page, a visit on the board, or its kind and ID. */
+/** A record's ID as the log shows it: a random one's start, any other whole, as a code or a day is. */
+const shortId = (id: string) => (/^[0-9a-f]{8}-?[0-9a-f]{4}/i.test(id) ? id.slice(0, 8) : id);
+
+/** The record the entry touched: a client's page, a visit on the board, or its kind and its name or ID. */
 function Record({ subject }: Pick<ActivityEntry, "subject">) {
   if (subject === null) return null;
   if (subject.kind === "person") return <OpsLink to={clientPath(subject.id, "visits")}>{copy.records.person}</OpsLink>;
@@ -94,7 +97,7 @@ function Record({ subject }: Pick<ActivityEntry, "subject">) {
   const kind = copy.kinds[subject.kind] ?? subject.kind;
   return (
     <span className={styles.sub}>
-      {kind} {subject.id.slice(0, 8)}
+      {kind} {subject.label ?? shortId(subject.id)}
     </span>
   );
 }

@@ -142,6 +142,8 @@ export const AUDIT_ACTIONS = [
   "dispatch.client_told",
   // Ops moving a visit the technician had checked in at, which clears their check-in.
   "dispatch.check_in_cleared",
+  // Ops moving a visit on the board, to another technician, day or window, with why.
+  "dispatch.move",
   // A move to another day ops asked the client to confirm, and one they took back; the client's acceptance is
   // visit.move_accepted (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
   "dispatch.move_proposed",

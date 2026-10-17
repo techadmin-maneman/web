@@ -36549,6 +36549,7 @@ Request body:
         "credit.adjust",
         "dispatch.client_told",
         "dispatch.check_in_cleared",
+        "dispatch.move",
         "dispatch.move_proposed",
         "dispatch.proposal_withdrawn",
         "consumable.add",
@@ -36640,11 +36641,23 @@ Request body:
         },
         "id": {
           "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Its name or number, where it has one: an item's name, a purchase order's, a setting's title."
         }
       },
       "required": [
         "kind",
-        "id"
+        "id",
+        "label"
       ],
       "additionalProperties": false
     },

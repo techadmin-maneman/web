@@ -7,6 +7,7 @@ import { addDays, indiaInstant } from "../../lib/india-time.ts";
 import type { AuditAction, AuditActor } from "../platform/audit.ts";
 import { z } from "zod";
 import { storedJson } from "../../lib/stored-json.ts";
+import { OPS_SETTINGS } from "../../policy/ops-settings.ts";
 
 /** How many entries a page holds. */
 const ACTIVITY_PAGE = 50;
@@ -36,7 +37,8 @@ interface ActivityEntry {
   /** Named where the console knows a name: a client not erased, a technician, a service token's label. */
   readonly actor: { readonly kind: AuditActor["kind"]; readonly id: string; readonly name: string | null };
   readonly action: AuditAction;
-  readonly subject: { readonly kind: string; readonly id: string } | null;
+  /** The record touched, by its kind and ID, and its name or number where it has one: a setting by its title. */
+  readonly subject: { readonly kind: string; readonly id: string; readonly label: string | null } | null;
   readonly detail: Readonly<Record<string, unknown>> | null;
 }
 
@@ -76,7 +78,16 @@ const ACTIVITY_SQL = `
       WHEN 'client' THEN (SELECT name FROM people WHERE id = a.actor AND erased_at IS NULL)
       WHEN 'technician' THEN (SELECT name FROM technicians WHERE id = a.actor)
       WHEN 'service' THEN (SELECT label FROM staff_service_tokens WHERE client_id = a.actor)
-    END AS actor_name
+    END AS actor_name,
+    CASE a.subject_kind
+      WHEN 'consumable' THEN (SELECT name FROM consumables WHERE code = a.subject_id)
+      WHEN 'purchase_order' THEN (SELECT 'PO-' || printf('%04d', number) FROM purchase_orders WHERE id = a.subject_id)
+      WHEN 'count_task' THEN (SELECT p.name FROM count_tasks t JOIN stock_places p ON p.id = t.place_id
+                               WHERE t.id = a.subject_id)
+      WHEN 'supplier' THEN (SELECT name FROM suppliers WHERE id = a.subject_id)
+      WHEN 'technician' THEN (SELECT name FROM technicians WHERE id = a.subject_id)
+      WHEN 'stock_place' THEN (SELECT name FROM stock_places WHERE id = a.subject_id)
+    END AS subject_label
   FROM audit_log a
   WHERE (?1 IS NULL OR a.actor_kind = ?1)
     AND (?2 IS NULL OR a.actor = ?2)
@@ -125,6 +136,13 @@ interface Row {
   /** The refusal written under the same request, where the API refused the call. */
   refused: string | null;
   actor_name: string | null;
+  subject_label: string | null;
+}
+
+/** A record's name as Activity says it: a setting by its title, the rest as the log's read gave it. */
+function labelOf(kind: string, id: string, read: string | null): string | null {
+  if (kind === "setting") return OPS_SETTINGS.find((setting) => setting.name === id)?.title ?? null;
+  return read;
 }
 
 function entryOf(row: Row): ActivityEntry {
@@ -135,7 +153,13 @@ function entryOf(row: Row): ActivityEntry {
     actor: { kind: row.actor_kind, id: row.actor, name: row.actor_name },
     action: row.action,
     subject:
-      row.subject_kind === null || row.subject_id === null ? null : { kind: row.subject_kind, id: row.subject_id },
+      row.subject_kind === null || row.subject_id === null
+        ? null
+        : {
+            kind: row.subject_kind,
+            id: row.subject_id,
+            label: labelOf(row.subject_kind, row.subject_id, row.subject_label),
+          },
     detail: detailOf(row),
   };
 }
