@@ -68,7 +68,7 @@ test("lists a charged no-show with what its charge kept, and the evidence", asyn
   await open(page);
   const charge = page.getByRole("listitem").filter({ hasText: "Karan Bose · no-show" });
   await expect(charge.getByText("Rs. 2,360")).toBeVisible();
-  await expect(charge.getByText("Imran Qureshi attended · visit was 11:30 am")).toBeVisible();
+  await expect(charge.getByText("Imran Qureshi came by · visit was 11:30 am")).toBeVisible();
 });
 
 // A no-show charged before a charge recorded what it kept: words, never a nought.

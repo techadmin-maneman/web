@@ -180,8 +180,8 @@ export const tasks = {
     unassigned_visit: (visit: string, when: string) => `${visit} · ${when} · no technician`,
     /** "MM-ESS-0000041-R · recalled, replacement free": call them to book it. */
     recall_call: (pieces: string) => `${pieces} · recalled, replacement free`,
-    /** "Tue 22 Sep · nobody attended", or "· not closed" for one begun: give the client a new time, or close it. */
-    visit_left_open: (when: string, begun: boolean) => `${when} · ${begun ? "not closed" : "nobody attended"}`,
+    /** "Tue 22 Sep · nobody came", or "· not closed" for one begun: give the client a new time, or close it. */
+    visit_left_open: (when: string, begun: boolean) => `${when} · ${begun ? "not closed" : "nobody came"}`,
     /** "Mane Man Essential 8x10 1B, 20% grey, 100% · none in their city", or the profile that matches none yet. */
     stock_at_risk: (hairSystem: string) =>
       hairSystem === "" ? "No hair system matched to their profile" : `${hairSystem} · none in their city`,
@@ -206,7 +206,7 @@ export const tasks = {
     noReason: "No reason given",
     // "Can't fit today" in the technician app: no piece of the client's spec to fit.
     noPiece: "No piece to fit",
-    no_show_decision: (technician: string) => `${technician} attended`,
+    no_show_decision: (technician: string) => `${technician} came by`,
     /** "Disputes the charge that kept Rs. 1,234", or the free service visit it spent. */
     no_show_dispute: (took: string) => `Disputes a charge: ${took}`,
     disputedCredit: "a free service visit",
