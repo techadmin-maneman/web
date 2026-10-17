@@ -15,8 +15,7 @@ import { BookButton, BookNext, ProblemLink, type ChangingVisit } from "../bookin
 import { capsLook } from "@maneman/ui/Caps";
 import { ButtonLink } from "@maneman/ui/Button";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
-import { indiaDate, listDate, monthInIndia, shortDate } from "@maneman/web-kit/dates";
-import { rupees } from "@maneman/web-kit/money";
+import { monthInIndia, shortDate } from "@maneman/web-kit/dates";
 import { documentUrl, type Me, type OneVisitPrice, type VisitSummary } from "../api.ts";
 import { BOOKING_URL, home, messages, ONE_VISIT, VISIT_TYPES, visits, windowText } from "../content.ts";
 import { apiNow } from "@maneman/web-kit/clock";
@@ -37,6 +36,7 @@ import {
 import { ProposedMove } from "./ProposedMove.tsx";
 import { CustomOrderCard } from "./CustomOrderCard.tsx";
 import { RemakeCard } from "./RemakeCard.tsx";
+import { CreditTile, Missed, PaymentOwed } from "./HomeNotes.tsx";
 import styles from "./home.module.css";
 
 import { firstNameOf } from "@rules/lib/names.ts";
@@ -251,64 +251,6 @@ function BeingBooked({ booking }: { booking: NonNullable<Me["being_booked"]> }) 
   );
 }
 
-/** A visit nobody was home for, while ops decide what follows: said here, so the client is not left with silence. */
-function Missed({ missed }: { missed: NonNullable<Me["missed_visit"]> }) {
-  const copy = home.missed;
-  return (
-    <section className={styles.prompt} aria-labelledby="missed">
-      <h2 className={capsLook(styles.label)} id="missed">
-        {copy.label}
-      </h2>
-      <p className={styles.owedLine}>
-        {copy.line(shortDate(missed.date), missed.technician === null ? null : firstNameOf(missed.technician))}
-      </p>
-      <p className={styles.owedWait}>{copy.next}</p>
-    </section>
-  );
-}
-
-/** A one visit the client was fitted at and has not paid for: what for, how much, and the link to pay by. */
-function PaymentOwed({ owed }: { owed: NonNullable<Me["payment_owed"]> }) {
-  const copy = home.owed;
-  return (
-    <section className={styles.prompt} aria-labelledby="owed">
-      <h2 className={capsLook(styles.label)} id="owed">
-        {copy.label}
-      </h2>
-      <p className={styles.owedLine}>{copy.line(owed.product, rupees(owed.amount))}</p>
-      {owed.url === null ? (
-        <p className={styles.owedWait}>{copy.onItsWay}</p>
-      ) : (
-        <TextLink tone="brass" className={styles.promptLink} href={owed.url} newTab>
-          <span>{copy.pay}</span>
-          <VisuallyHidden>{`, ${copy.newTab}`}</VisuallyHidden>
-        </TextLink>
-      )}
-    </section>
-  );
-}
-
-/** Home's credit tile: how many free service visits, said once, and the day the soonest must be used by. */
-function CreditTile({ credits }: { credits: NonNullable<Me["credits"]> }) {
-  const expiry = credits.earliest_expiry;
-  return (
-    <div className={styles.credits}>
-      <p className={styles.creditsLabel}>{home.credits.count(credits.visits)}</p>
-      {expiry !== null && <p className={styles.creditsExpiry}>{expiryLine(credits, expiry)}</p>}
-    </div>
-  );
-}
-
-/** "Use by 2 Oct", "Use by tonight" on the day, or "1 to use by 2 Oct" where only some of them end first. */
-function expiryLine(credits: NonNullable<Me["credits"]>, expiry: string): string {
-  const today = indiaDate(new Date(apiNow()).toISOString());
-  const lastDay = indiaDate(expiry);
-  const when = lastDay === today ? home.credits.tonight : listDate(lastDay, Number(today.slice(0, 4)));
-  // False for a Home the phone kept from an earlier release, which does not say how many end first.
-  const someEndFirst = credits.expiring_visits < credits.visits;
-  return someEndFirst ? home.credits.someUseBy(credits.expiring_visits, when) : home.credits.useBy(when);
-}
-
 type PromptOf<Kind extends NonNullable<Me["prompt"]>["kind"]> = Extract<NonNullable<Me["prompt"]>, { kind: Kind }>;
 
 /** Home's one prompt: a line, and the way to act on it. */
@@ -332,7 +274,10 @@ function Prompt({ prompt }: { prompt: NonNullable<Me["prompt"]> }) {
 
 /** The next visit, booked on its day and window; beside a service, the replacement once that may be booked. */
 function NextVisitPrompt({ prompt }: { prompt: PromptOf<"next_visit"> }) {
+  const { me } = useSession();
   const words = nextVisitWords(prompt, monthInIndia(apiNow()));
+  // A replacement offered first still leaves the free service visits they hold to use.
+  const freeService = prompt.type === "replacement" && me.credits !== null && me.booking.types.includes("service");
   return (
     <div className={styles.prompt}>
       <p className={styles.promptLine}>{words.line}</p>
@@ -347,6 +292,15 @@ function NextVisitPrompt({ prompt }: { prompt: PromptOf<"next_visit"> }) {
           message={prompt.type === "replacement" ? messages.bookReplacement : messages.book}
         />
         {prompt.type === "replacement" && <Involves />}
+        {freeService && (
+          <BookButton
+            quiet
+            className={styles.promptLink}
+            type="service"
+            label={home.next.useCredit}
+            message={messages.book}
+          />
+        )}
         {prompt.replacement_bookable && (
           <BookButton
             quiet

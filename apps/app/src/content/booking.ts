@@ -26,8 +26,10 @@ export const booking = {
   firstFitNotYet: "First fits aren’t open to book yet.",
   /** A paid visit, booked with ops on WhatsApp while online payment is off: what to expect. */
   withOps: (price: string) => `We book it with you on WhatsApp. You pay ${price} by UPI at the visit.`,
-  /** What the WhatsApp message asks for: the hair system or service, and the day the app offered. */
-  /** "I’d like to book my replacement: Fri 16 Oct, morning. Arjun Mehta, Mane Man Active." */
+  /**
+   * What the WhatsApp message asks for: the visit, the day and window the app offered, who, and the hair system:
+   * "I’d like to book my replacement: Fri 16 Oct, morning. Arjun Mehta, Mane Man Active."
+   */
   asking: (
     message: string,
     visit: { day: string | null; window: string | null; name: string; what: string | null },

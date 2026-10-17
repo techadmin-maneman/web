@@ -117,6 +117,8 @@ export const home = {
     // The other kind of visit a fitted client may book, beside the one the app offers.
     orReplacement: "Or book a replacement",
     orService: "Or book a service visit",
+    /** Beside a replacement due first, for a client holding free service visits. */
+    useCredit: "Use a free service visit",
   },
   expect: {
     label: "What to expect",
