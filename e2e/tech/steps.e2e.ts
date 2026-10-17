@@ -393,3 +393,14 @@ test("a refused outcome opens as it was chosen", async ({ page }) => {
     .poll(() => writesTo(fake, "outcome").at(-1)?.body)
     .toEqual({ outcome: "partial", reason: "more_time_needed" });
 });
+
+// The kit went to -4 strips with no word on the step.
+test("the consumables step says what the kit holds, and when more is counted than that", async ({ page }) => {
+  const fake = await fakeTech(page);
+  startedThrough(fake, "before_photos", "checklist");
+  await page.goto(`/jobs/${JOB_ID}/consumables`);
+  await expect(page.getByText(techCopy.steps.consumables.inKit(5, "strip", false))).toBeVisible();
+  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips") }).click();
+  await page.getByRole("button", { name: techCopy.steps.consumables.more("Tape strips") }).click();
+  await expect(page.getByText(techCopy.steps.consumables.inKit(5, "strip", true))).toBeVisible();
+});

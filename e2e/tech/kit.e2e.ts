@@ -75,6 +75,17 @@ test("opens from today, shows each lot’s expiry, and receives a top-up by the 
   });
 });
 
+// The kit read "Contour tape strip · -4 strips".
+test("says an item is out, and how far short, rather than a count below nought", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  const [solvent] = fake.kit.held;
+  if (solvent !== undefined) fake.kit = { ...fake.kit, held: [{ ...solvent, quantity: -4, lots: [] }] };
+  await page.goto("/kit");
+  const held = page.getByRole("region", { name: copy.held.title });
+  await expect(held).toContainText(`Solvent · ${copy.held.out("4 ml")}`);
+});
+
 test("hands back the pieces that came off, and the expired stock", async ({ page }) => {
   const fake = await fakeTech(page);
   withAKit(fake);

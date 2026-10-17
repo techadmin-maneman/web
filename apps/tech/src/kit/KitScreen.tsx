@@ -146,7 +146,7 @@ function Held({ kit }: { kit: Kit }) {
           {kit.held.map((item) => (
             <li key={item.code}>
               <p className={styles.line}>
-                {item.name} · {amountOf(item.quantity, item.unit)}
+                {item.name} · {heldOf(item.quantity, item.unit)}
               </p>
               {item.low && <p className={styles.note}>{copy.held.low}</p>}
               {item.hair_system && <p className={styles.note}>{copy.held.pieces(item.units.length)}</p>}
@@ -167,6 +167,12 @@ function Held({ kit }: { kit: Kit }) {
       )}
     </section>
   );
+}
+
+/** What the kit holds of an item: its count, or that it is out, and how far short where more was used than it held. */
+function heldOf(quantity: number, unit: string): string {
+  if (quantity > 0) return amountOf(quantity, unit);
+  return copy.held.out(quantity === 0 ? null : amountOf(-quantity, unit));
 }
 
 /** A lot's expiry as the kit says it: gone, to use first, or when. */

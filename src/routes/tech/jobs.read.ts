@@ -94,7 +94,10 @@ export function registerTechJobReads(app: App): void {
         checklist_if_declined: job.one_visit ? forThePhone(declinedChecklistOf(sheet).items) : [],
         partial_reasons: [...sheet.partialReasons.items],
         lost_reasons: type === "consultation" || job.one_visit ? [...sheet.lostReasons.items] : [],
-        consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), job.date),
+        consumables: await offeredForJob(c.env.DB, await serviceOfJob(c.env.DB, { id: job.id, type }), {
+          today: job.date,
+          kit: technicianId,
+        }),
         kit_hair_systems: job.steps.includes("piece") ? await kitOf(c.env.DB, technicianId, job) : [],
       },
       200,

@@ -2967,6 +2967,8 @@ export interface components {
             unit: string;
             /** @description How many this job's service is expected to use; 0 for one it lists no use for. */
             expected: number;
+            /** @description What the technician's kit holds; below 0 where more was used. */
+            in_kit: number;
         };
         KitHairSystem: {
             /** @description What the piece step sends back as stock_code. */

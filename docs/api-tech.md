@@ -5175,13 +5175,18 @@ Request body:
     "expected": {
       "type": "integer",
       "description": "How many this job's service is expected to use; 0 for one it lists no use for."
+    },
+    "in_kit": {
+      "type": "number",
+      "description": "What the technician's kit holds; below 0 where more was used."
     }
   },
   "required": [
     "code",
     "name",
     "unit",
-    "expected"
+    "expected",
+    "in_kit"
   ],
   "additionalProperties": false
 }

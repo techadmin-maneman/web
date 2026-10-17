@@ -234,10 +234,10 @@ const PARTIAL_REASONS: Card["partial_reasons"] = [
  * at what it expects, then every other one (docs/decisions/0087-consumables-and-stock.md).
  */
 export const CONSUMABLES: Card["consumables"] = [
-  { code: "tape_strips", name: "Tape strips", unit: "strip", expected: 4 },
-  { code: "solvent", name: "Solvent", unit: "ml", expected: 10 },
-  { code: "bonding_glue", name: "Bonding glue", unit: "ml", expected: 0 },
-  { code: "shampoo_sachet", name: "Shampoo sachet", unit: "sachet", expected: 0 },
+  { code: "tape_strips", name: "Tape strips", unit: "strip", expected: 4, in_kit: 5 },
+  { code: "solvent", name: "Solvent", unit: "ml", expected: 10, in_kit: 120 },
+  { code: "bonding_glue", name: "Bonding glue", unit: "ml", expected: 0, in_kit: 30 },
+  { code: "shampoo_sachet", name: "Shampoo sachet", unit: "sachet", expected: 0, in_kit: 0 },
 ];
 
 /** The products a one visit's client may choose, by name and never by price: made up, as every name here is. */
