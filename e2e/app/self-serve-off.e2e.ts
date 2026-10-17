@@ -41,7 +41,7 @@ test("a fitted client reschedules and books through WhatsApp, and no booking she
 
   await expect(page.getByRole("link", { name: appCopy.home.reschedule })).toHaveAttribute(
     "href",
-    new RegExp(`${WHATSAPP}${encodeURIComponent("I’d like to move my service visit on")}`),
+    new RegExp(`${WHATSAPP}${encodeURIComponent("I’d like to change or cancel my service visit on")}`),
   );
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toHaveCount(0);
 
