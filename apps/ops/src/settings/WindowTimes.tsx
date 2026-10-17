@@ -4,8 +4,8 @@
 
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
-import { TextButton } from "@maneman/ui/TextLink";
-import type { Failure } from "@maneman/web-kit/refusal";
+import { errorText } from "@maneman/web-kit/refusal";
+import { DeleteAction } from "../components/DeleteAction.tsx";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate, shortDate } from "@maneman/web-kit/dates";
@@ -20,7 +20,7 @@ import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { Refused, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.windowTimes;
@@ -171,21 +171,14 @@ function setsOf(change: SlotTimes["changes"][number]): string[] {
 
 /** The last change, still to come, withdrawn: the API refuses once a visit is booked or held on its day or after. */
 function Withdraw({ from, onWithdrawn }: { from: string; onWithdrawn: () => void }) {
-  const [failed, setFailed] = useState<Failure | null>(null);
   return (
-    <>
-      <TextButton
-        onClick={() =>
-          void settingsApi.withdrawSlotTimes(from).then((answer) => {
-            if (answer.ok) onWithdrawn();
-            else setFailed({ code: answer.code, fields: answer.fields });
-          })
-        }
-      >
-        {copy.withdraw}
-      </TextButton>
-      <Refused failed={failed} errors={copy.errors} />
-    </>
+    <DeleteAction
+      name={shortDate(from)}
+      words={copy.withdrawing}
+      send={() => settingsApi.withdrawSlotTimes(from)}
+      refusal={(code) => errorText(copy.errors, { code })}
+      onDeleted={onWithdrawn}
+    />
   );
 }
 

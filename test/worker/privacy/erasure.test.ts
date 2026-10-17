@@ -8,6 +8,7 @@ import type { PlacesReached } from "../../../src/policy/access.ts";
 import { STUB_IDENTITY } from "../../../src/providers/cloudflare-access.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { insertJob, syntheticJpeg } from "../tryon-fixtures.ts";
+import { aVisit } from "../fixtures/visits.ts";
 import {
   book,
   bookedVisit,
@@ -428,21 +429,15 @@ describe("secretsMatch", () => {
 
 // A client who asked to be erased booked again, and nothing told ops before they erased.
 describe("a deletion request with a visit booked since", () => {
-  const visit = () =>
-    env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at, first_seen_at)
-       VALUES (?1, ?1, ?2, 'service', 'scheduled', ?3, ?3, ?4, ?4)`,
-    );
-
   it("names the first visit booked after the request, and none booked before it", async () => {
     const personId = await book();
     await openRequest(personId);
     const asked = await env.DB.prepare("SELECT created_at FROM deletion_requests").first<{ created_at: string }>();
     const before = new Date(Date.parse(asked?.created_at ?? "") - 60_000).toISOString();
-    await visit().bind("visit-before", personId, "2026-10-02T04:30:00.000Z", before).run();
+    await aVisit({ person_id: personId, window_start: "2026-10-02T04:30:00.000Z", first_seen_at: before });
     expect((await deletionsWaiting(env.DB, EVERYWHERE)).map((each) => each.bookedSince)).toEqual([null]);
 
-    await visit().bind("visit-after", personId, "2026-10-09T04:30:00.000Z", NOW.toISOString()).run();
+    await aVisit({ person_id: personId, window_start: "2026-10-09T04:30:00.000Z", first_seen_at: NOW.toISOString() });
     expect((await deletionsWaiting(env.DB, EVERYWHERE)).map((each) => each.bookedSince)).toEqual([
       "2026-10-09T04:30:00.000Z",
     ]);
@@ -455,12 +450,7 @@ describe("a deletion request's row", () => {
     const personId = await book();
     await openRequest(personId);
     const ops = appFor("local", fakeDependencies(), {}, "ops");
-    await env.DB.prepare(
-      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
-       VALUES ('visit-1', 'visit-1', ?1, 'service', 'scheduled', '2026-10-09T04:30:00.000Z', '2026-10-09T06:00:00.000Z', ?2)`,
-    )
-      .bind(personId, NOW.toISOString())
-      .run();
+    await aVisit({ person_id: personId, window_start: "2026-10-09T04:30:00.000Z" });
     const listed = async () =>
       (await (await request(ops, "/api/deletion-requests")).json<{ requests: { settle_first: string | null }[] }>())
         .requests;

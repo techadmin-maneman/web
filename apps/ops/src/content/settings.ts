@@ -343,8 +343,15 @@ export const settings = {
     /** What a change sets, beneath who set it: "Morning 9:30 am–12:30 pm · Afternoon …". */
     sets: (windows: readonly string[]) => windows.join(" · "),
     none: "No changes yet.",
-    /** The last change, still to come, taken back: a day on the times before it. */
-    withdraw: "Withdraw",
+    /** The last change, still to come, taken back: its days go back to the times before it. */
+    withdrawing: {
+      open: "Withdraw",
+      label: (from: string) => `Withdraw the change from ${from}`,
+      warning: (from: string) => `Withdraw the change from ${from}? Those days go back to the times before it.`,
+      confirm: "Withdraw",
+      sending: "Withdrawing…",
+      cancel: "Keep it",
+    },
     withdrawn: "Withdrawn.",
     errors: {
       not_permitted: NOT_PERMITTED,

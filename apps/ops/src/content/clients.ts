@@ -690,6 +690,8 @@ export const clients = {
   },
   consents: {
     title: "Consents",
+    /** The readable copy of everything held about them, which Care sends a client who asks for it. */
+    exportData: "Download their data",
     /** The board's four columns. */
     columns: { purpose: "Purpose", state: "Status", date: "Date", source: "Source" },
     purposes: {

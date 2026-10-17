@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
+import { aVisit } from "../fixtures/visits.ts";
 
 let ops: App;
 
@@ -116,16 +117,7 @@ describe("DELETE /api/slot-times/{applies_from}", () => {
     expect((await withdraw("2026-11-06")).status).toBe(409);
 
     expect((await withdraw("2026-11-07")).status).toBe(204);
-    const at = new Date().toISOString();
-    await env.DB.batch([
-      env.DB.prepare(
-        "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, '+919810000001', 'Rohit Malhotra')",
-      ).bind(at),
-      env.DB.prepare(
-        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
-         VALUES ('v1', 'v1', 'p1', 'service', 'scheduled', '2026-11-08T04:30:00.000Z', '2026-11-08T06:00:00.000Z', ?1)`,
-      ).bind(at),
-    ]);
+    await aVisit({ window_start: "2026-11-08T04:30:00.000Z" });
     expect((await withdraw("2026-11-06")).status).toBe(409);
     expect((await withdraw("2026-12-01")).status).toBe(404);
   });

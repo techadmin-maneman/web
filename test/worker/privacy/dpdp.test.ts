@@ -281,6 +281,27 @@ describe("GET /api/me/export", () => {
   });
 });
 
+// A client who asked Care on WhatsApp for their data could not be helped from the console.
+describe("GET /api/clients/{id}/export.html", () => {
+  const ops = () => appFor("local", fakeDependencies(), {}, "ops");
+
+  it("gives Care the page the client's app downloads, audited under the member of staff", async () => {
+    await appData();
+    const answer = await request(ops(), `/api/clients/${PERSON}/export.html`);
+    expect(answer.status).toBe(200);
+    expect(answer.headers.get("Content-Disposition")).toBe('attachment; filename="maneman-client-data.html"');
+    expect(await answer.text()).toContain("<dt>Name</dt><dd>Rohit Malhotra</dd>");
+    const audit = await env.DB.prepare(
+      "SELECT actor_kind, subject_id FROM audit_log WHERE action = 'data.export'",
+    ).first();
+    expect(audit).toEqual({ actor_kind: "staff", subject_id: PERSON });
+  });
+
+  it("finds no client by an ID nobody holds", async () => {
+    expect((await request(ops(), `/api/clients/${crypto.randomUUID()}/export.html`)).status).toBe(404);
+  });
+});
+
 describe("ops deciding a deletion request", () => {
   /** A request from the client, as their own app makes one. */
   async function requested(): Promise<string> {

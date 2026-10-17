@@ -137,7 +137,8 @@ describe("the window times", () => {
     };
     answer = () => new Response(null, { status: 204 });
     await show();
-    await press(copy.withdraw);
+    await press(copy.withdrawing.open);
+    await press(copy.withdrawing.confirm);
     expect(said()).toContain(copy.withdrawn);
   });
 
