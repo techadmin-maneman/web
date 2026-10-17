@@ -425,3 +425,28 @@ describe("secretsMatch", () => {
     expect(await secretsMatch("", "")).toBe(false);
   });
 });
+
+// A client who asked to be erased booked again, and nothing told ops before they erased.
+describe("a deletion request with a visit booked since", () => {
+  const visit = (id: string, seen: string) =>
+    env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at, first_seen_at)
+       VALUES (?1, ?1, ?2, 'service', 'scheduled', ?3, ?3, ?4, ?4)`,
+    );
+
+  it("names the first visit booked after the request, and none booked before it", async () => {
+    const personId = await book();
+    await openRequest(personId);
+    const asked = await env.DB.prepare("SELECT created_at FROM deletion_requests").first<{ created_at: string }>();
+    const before = new Date(Date.parse(asked?.created_at ?? "") - 60_000).toISOString();
+    await visit("visit-before", before).bind("visit-before", personId, "2026-10-02T04:30:00.000Z", before).run();
+    expect((await deletionsWaiting(env.DB, EVERYWHERE)).map((each) => each.bookedSince)).toEqual([null]);
+
+    await visit("visit-after", NOW.toISOString())
+      .bind("visit-after", personId, "2026-10-09T04:30:00.000Z", NOW.toISOString())
+      .run();
+    expect((await deletionsWaiting(env.DB, EVERYWHERE)).map((each) => each.bookedSince)).toEqual([
+      "2026-10-09T04:30:00.000Z",
+    ]);
+  });
+});

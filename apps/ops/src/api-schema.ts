@@ -4600,6 +4600,8 @@ export interface paths {
                                  * @description When ops should have decided: the Tasks board's allowance for this queue, which ops set.
                                  */
                                 due: string;
+                                /** @description The start of the first visit still to happen that the client booked after asking; null where none. */
+                                booked_since: string | null;
                             }[];
                         };
                     };

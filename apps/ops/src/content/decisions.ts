@@ -36,6 +36,8 @@ export const deletions = {
     /** The 30 days a request is processed within, which run from the day it was made (ADR 0049). */
     processDays: 30,
     requested: (mobile: string, date: string) => `${mobile} · requested ${date}`,
+    /** A visit the client booked after asking: they may want to keep their account. */
+    bookedSince: (visit: string) => `Booked a visit for ${visit} since asking. Ask whether they still want this.`,
     delete: "Erase client",
     reject: "Reject",
     /**

@@ -64,6 +64,10 @@ const numberChangesRoute = opsRoute({
                     }),
                   requested_at: z.iso.datetime(),
                   due: DueSchema,
+                  booked_since: z.union([z.iso.datetime(), z.null()]).openapi({
+                    description:
+                      "The start of the first visit still to happen that the client booked after asking; null where none.",
+                  }),
                 })
                 .strict(),
             ),
@@ -283,6 +287,7 @@ function registerDeletionRequests(app: App): void {
           mobile: request.mobileE164,
           requested_at: request.createdAt,
           due: dueAt(new Date(request.createdAt), "erasure_request", inputs.taskSlaHours).toISOString(),
+          booked_since: request.bookedSince,
         })),
       },
       200,

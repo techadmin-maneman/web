@@ -346,6 +346,7 @@ export const DELETION_REQUESTS = {
       mobile: CLIENT.mobile,
       requested_at: "2027-08-28T06:00:00.000Z",
       due: "2027-09-27T06:00:00.000Z",
+      booked_since: null,
     },
     {
       id: "a2000000-0000-4000-8000-000000000002",
@@ -354,6 +355,7 @@ export const DELETION_REQUESTS = {
       mobile: "+919810004419",
       requested_at: "2027-08-18T06:00:00.000Z",
       due: "2027-09-17T06:00:00.000Z",
+      booked_since: "2027-09-24T04:30:00.000Z",
     },
     {
       id: "a2000000-0000-4000-8000-000000000003",
@@ -362,6 +364,7 @@ export const DELETION_REQUESTS = {
       mobile: "+919810004420",
       requested_at: "2027-08-23T06:00:00.000Z",
       due: "2027-09-22T06:00:00.000Z",
+      booked_since: null,
     },
   ],
 } satisfies OpsReply<"/api/deletion-requests">;

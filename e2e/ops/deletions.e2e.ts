@@ -63,6 +63,12 @@ test("lists every request with the client’s number, the day, and the days left
   await expect(row(page, "Karan Bose")).toContainText(opsCopy.waiting.today);
 });
 
+test("says when a client booked a visit after asking, so ops ask before erasing", async ({ page }) => {
+  await open(page);
+  await expect(row(page, "Ashish Gill")).toContainText(opsCopy.deletions.queue.bookedSince("24 Sep 2027"));
+  await expect(row(page, "Rohit Malhotra")).not.toContainText(opsCopy.deletions.queue.bookedSince("24 Sep 2027"));
+});
+
 test("offers no one-tap delete: the first button only opens the confirmation", async ({ page }) => {
   await open(page);
   let sent = 0;

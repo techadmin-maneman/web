@@ -26161,6 +26161,18 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "When ops should have decided: the Tasks board's allowance for this queue, which ops set."
+                          },
+                          "booked_since": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "The start of the first visit still to happen that the client booked after asking; null where none."
                           }
                         },
                         "required": [
@@ -26171,7 +26183,8 @@
                           "new_mobile",
                           "new_number_held_by",
                           "requested_at",
-                          "due"
+                          "due",
+                          "booked_since"
                         ],
                         "additionalProperties": false
                       }

@@ -162,6 +162,9 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
         <Left due={request.due} now={now} />
       </div>
       <p className={shared.who}>{copy.requested(phoneWords(request.mobile), longDate(request.requested_at))}</p>
+      {request.booked_since !== null && (
+        <p className={shared.who}>{copy.bookedSince(longDate(request.booked_since))}</p>
+      )}
       <Reach name={request.name} mobile={request.mobile} />
       {asking?.choice === "delete" && (
         <ConfirmDelete
