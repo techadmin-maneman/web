@@ -35,7 +35,7 @@ export const noShows = {
       noShow: (name: string) => `${name} · no-show`,
       cancelled: (name: string) => `${name} · cancelled late`,
       moved: (name: string) => `${name} · moved late`,
-      /** The board's evidence beneath a late cancellation: "Cancelled 9:14 am · visit was 10 am". */
+      /** The board's evidence beneath a late cancellation: "Cancelled 9:14 am · visit was 10 am", with the days if apart. */
       changed: (at: string, was: string) => `Cancelled ${at} · visit was ${was}`,
       /**
        * A charged no-show's evidence. The board writes the three facts here; they

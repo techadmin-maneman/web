@@ -132,6 +132,12 @@ export interface NewCustomOrder {
   readonly note: string | null;
 }
 
+/** Whether the client's latest profile holds every part of the spec an order is made to. */
+export async function specReady(db: D1Database, personId: string): Promise<boolean> {
+  const spec = (await latestFits(db, [personId])).get(personId);
+  return spec !== undefined && MATCHED_FIELDS.every((field) => spec[field] !== null);
+}
+
 /**
  * A custom order raised to the client's latest profile, awaiting payment. Refused, naming the field, for a profile
  * missing any part of the spec, or a supplier retired or gone.

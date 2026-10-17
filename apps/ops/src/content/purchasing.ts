@@ -7,7 +7,8 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 export const purchasing = {
   title: "Purchasing",
   orders: "Orders",
-  columns: ["Order", "Supplier", "Status", "Total", "Expected"],
+  // Open orders first, each group newest first, with the day it was drafted: the numbers are random to suppliers.
+  columns: ["Order", "Drafted", "Supplier", "Status", "Total", "Expected"],
   none: "No orders yet.",
   /** "PO-0007" */
   number: (number: number) => `PO-${String(number).padStart(4, "0")}`,

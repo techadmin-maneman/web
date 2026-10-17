@@ -32045,11 +32045,16 @@ Request body:
           "currency"
         ]
       }
+    },
+    "profile_ready": {
+      "type": "boolean",
+      "description": "Whether the client's hair profile holds every part of the spec an order is made to."
     }
   },
   "required": [
     "orders",
-    "suppliers"
+    "suppliers",
+    "profile_ready"
   ]
 }
 ```

@@ -21639,6 +21639,8 @@ export interface components {
                 name: string;
                 currency: string;
             }[];
+            /** @description Whether the client's hair profile holds every part of the spec an order is made to. */
+            profile_ready: boolean;
         };
         CustomOrderRefund: {
             /** @enum {string} */
