@@ -117,6 +117,8 @@ export function pwa(app: PwaApp): Plugin {
   return {
     name: "mm-pwa",
     apply: "build",
+    // After Vite's own, so the one stylesheet it writes is in the bundle the service worker's list is taken from.
+    enforce: "post",
     async generateBundle(_options, bundle) {
       const ground = token(app.ground);
       const drawn = await Promise.all(
