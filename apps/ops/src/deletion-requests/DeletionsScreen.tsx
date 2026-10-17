@@ -128,13 +128,22 @@ function RejectReason(props: {
   );
 }
 
-/** When the client asked, on which number, and a visit they have booked since, which may mean they want to stay. */
+/**
+ * When the client asked, on which number, a visit they have booked since, which may mean they want to stay, and what
+ * must be settled before they can be erased.
+ */
 function Asked({ request }: { request: DeletionRequest }) {
   return (
     <>
       <p className={shared.who}>{copy.requested(phoneWords(request.mobile), longDate(request.requested_at))}</p>
       {request.booked_since !== null && (
         <p className={shared.who}>{copy.bookedSince(longDate(request.booked_since))}</p>
+      )}
+      {request.settle_first !== null && (
+        <p className={shared.who}>
+          {copy.errors[request.settle_first]}
+          <SettleOn personId={request.person_id} code={request.settle_first} />
+        </p>
       )}
     </>
   );

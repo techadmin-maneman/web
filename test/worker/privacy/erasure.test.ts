@@ -448,3 +448,22 @@ describe("a deletion request with a visit booked since", () => {
     ]);
   });
 });
+
+// A request's row said nothing of the visit booked or the refund owed until Erase was refused.
+describe("a deletion request's row", () => {
+  it("says what must be settled before the client can be erased", async () => {
+    const personId = await book();
+    await openRequest(personId);
+    const ops = appFor("local", fakeDependencies(), {}, "ops");
+    await env.DB.prepare(
+      `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+       VALUES ('visit-1', 'visit-1', ?1, 'service', 'scheduled', '2026-10-09T04:30:00.000Z', '2026-10-09T06:00:00.000Z', ?2)`,
+    )
+      .bind(personId, NOW.toISOString())
+      .run();
+    const listed = async () =>
+      (await (await request(ops, "/api/deletion-requests")).json<{ requests: { settle_first: string | null }[] }>())
+        .requests;
+    expect((await listed()).map((each) => each.settle_first)).toEqual(["visit_booked"]);
+  });
+});

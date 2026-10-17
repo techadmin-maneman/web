@@ -6300,6 +6300,22 @@ Deletion requests waiting for ops in the caller's cities
               }
             ],
             "description": "The start of the first visit still to happen that the client booked after asking; null where none."
+          },
+          "settle_first": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "visit_booked",
+                  "payment_held",
+                  "payment_owed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What erasing would be refused for now, as POST …/decision says it; null where nothing."
           }
         },
         "required": [
@@ -6309,7 +6325,8 @@ Deletion requests waiting for ops in the caller's cities
           "mobile",
           "requested_at",
           "due",
-          "booked_since"
+          "booked_since",
+          "settle_first"
         ],
         "additionalProperties": false
       }

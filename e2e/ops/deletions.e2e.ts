@@ -69,6 +69,15 @@ test("says when a client booked a visit after asking, so ops ask before erasing"
   await expect(row(page, "Rohit Malhotra")).not.toContainText(opsCopy.deletions.queue.bookedSince("24 Sep 2027"));
 });
 
+test("says what must be settled before a client can be erased, with the way to their tab", async ({ page }) => {
+  await open(page);
+  await expect(row(page, "Ashish Gill")).toContainText(opsCopy.deletions.queue.errors.visit_booked);
+  await expect(
+    row(page, "Ashish Gill").getByRole("link", { name: opsCopy.deletions.queue.settleOn.visits }),
+  ).toBeVisible();
+  await expect(row(page, "Karan Bose")).not.toContainText(opsCopy.deletions.queue.errors.visit_booked);
+});
+
 test("offers no one-tap delete: the first button only opens the confirmation", async ({ page }) => {
   await open(page);
   let sent = 0;

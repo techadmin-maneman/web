@@ -4789,6 +4789,8 @@ export interface paths {
                                 due: string;
                                 /** @description The start of the first visit still to happen that the client booked after asking; null where none. */
                                 booked_since: string | null;
+                                /** @description What erasing would be refused for now, as POST …/decision says it; null where nothing. */
+                                settle_first: ("visit_booked" | "payment_held" | "payment_owed") | null;
                             }[];
                         };
                     };

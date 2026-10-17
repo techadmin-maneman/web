@@ -29,6 +29,8 @@ import { dueAt } from "../../policy/tasks.ts";
 import { isMessageHeldBack } from "../../policy/staging-test-records.ts";
 import { scrubString } from "../../log.ts";
 import { ErasureRefusedSchema, erasureRefused } from "./erasure.ts";
+import { erasureBlockers } from "../../domain/privacy/erasure.ts";
+import { erasureRefusal } from "../../policy/account-deletion.ts";
 
 const Reason = z.string().trim().max(REASON_MAX_CHARS).nullable().openapi({
   description: "Required to reject; kept with the decision, and the client reads it (src/policy/decision-reasons.ts).",
@@ -120,6 +122,10 @@ const deletionRequestsRoute = opsRoute({
                   booked_since: z.union([z.iso.datetime(), z.null()]).openapi({
                     description:
                       "The start of the first visit still to happen that the client booked after asking; null where none.",
+                  }),
+                  settle_first: z.union([z.enum(["visit_booked", "payment_held", "payment_owed"]), z.null()]).openapi({
+                    description:
+                      "What erasing would be refused for now, as POST …/decision says it; null where nothing.",
                   }),
                 })
                 .strict(),
@@ -278,9 +284,13 @@ function registerDeletionRequests(app: App): void {
   app.openapi(deletionRequestsRoute, async (c) => {
     const reached = await routeReach(c);
     const [requests, inputs] = await Promise.all([deletionsWaiting(c.env.DB, reached), opsInputs(c)]);
+    const now = c.var.deps.now();
+    const blocked = await Promise.all(
+      requests.map(async (request) => erasureRefusal(await erasureBlockers(c.env.DB, request.personId, now))),
+    );
     return c.json(
       {
-        requests: requests.map((request) => ({
+        requests: requests.map((request, at) => ({
           id: request.id,
           person_id: request.personId,
           name: request.name,
@@ -288,6 +298,7 @@ function registerDeletionRequests(app: App): void {
           requested_at: request.createdAt,
           due: dueAt(new Date(request.createdAt), "erasure_request", inputs.taskSlaHours).toISOString(),
           booked_since: request.bookedSince,
+          settle_first: blocked[at] ?? null,
         })),
       },
       200,
