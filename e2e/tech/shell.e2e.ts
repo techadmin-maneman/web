@@ -266,3 +266,20 @@ test("a screen that fails to draw says so and offers a reload, and the reload lo
   await expect(page.getByRole("heading", { name: "3 jobs today" })).toBeVisible();
   expect(await heldOnPhone(page)).toMatchObject({ outbox: 1 });
 });
+
+// A tap on Sign in after the sixth digit had signed in sent the spent code again, and the API refused it.
+test("sends a code once: Sign in waits once the sixth digit has signed in", async ({ page }) => {
+  const fake = await fakeTech(page);
+  fake.signedIn = false;
+  await page.goto("/");
+  await page.getByRole("textbox", { name: techCopy.signIn.mobileLabel }).fill("9811000000");
+  await page.getByRole("button", { name: techCopy.signIn.sendCode }).click();
+  const verifies: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/tech/auth/verify")) verifies.push(request.method());
+  });
+  fake.slowMeMs = 3000;
+  await page.getByRole("textbox", { name: techCopy.signIn.codeLabel }).fill(LOCAL_LOGIN_CODE);
+  await expect(page.getByRole("button", { name: techCopy.signIn.submit })).toBeDisabled();
+  await expect.poll(() => verifies).toEqual(["POST"]);
+});

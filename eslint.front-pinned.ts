@@ -40,7 +40,7 @@ export const FRONT_PINNED: Readonly<Record<string, { readonly lines?: number; re
   "apps/ops/src/technicians/TechnicianLeave.tsx": { fn: 86 },
   "apps/tech/src/camera/CaptureScreen.tsx": { fn: 120 },
   "apps/tech/src/job/NotHome.tsx": { fn: 95 },
-  "apps/tech/src/login/SignIn.tsx": { fn: 133 },
+  "apps/tech/src/login/SignIn.tsx": { fn: 135 },
   "apps/tech/src/steps/Consumables.tsx": { fn: 82 },
   "apps/tech/src/steps/Piece.tsx": { fn: 91 },
   "apps/tech/src/steps/Profile.tsx": { fn: 106 },

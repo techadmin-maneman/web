@@ -102,6 +102,8 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Signed in, while App reads who: the code is spent, so a second tap on Sign in would only be refused.
+  const [through, setThrough] = useState(false);
   // The code sent, and when a new one may be asked for: time enough after the last for WhatsApp to deliver it.
   const otp = useOtpChallenge<Challenge>(apiNow);
   const { challenge, resendIn, busy: working, once } = otp;
@@ -150,6 +152,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
       .catch(() => null);
     const verdict = verdictOf(answer);
     if (verdict.signedIn) {
+      setThrough(true);
       // The session cookie is set; who is signed in comes from GET /tech/me, which App asks next
       // and records the enrolment again, so a phone too full to record it here still signs in.
       await enrolled().catch(() => undefined);
@@ -162,7 +165,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
   }
   const verify = (typed: string = code) => once(() => verifyOnce(typed));
 
-  const ready = challenge === null ? digits !== null : code.length === ONE_TIME_CODE.digits;
+  const ready = !through && (challenge === null ? digits !== null : code.length === ONE_TIME_CODE.digits);
   // Only worth saying before the code has been asked for, and only in the app
   // that caused it: a first sign-in in a browser needs no explanation.
   const quiet = challenge === null && error === null;
@@ -211,7 +214,7 @@ export function SignIn({ why, onSignedIn }: { why: Out; onSignedIn: () => void }
         open={challenge !== null}
         onCode={setCode}
         onComplete={(typed) => {
-          if (!working) void verify(typed);
+          if (!working && !through) void verify(typed);
         }}
       />
 
