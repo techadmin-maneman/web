@@ -190,6 +190,7 @@ const VISIT_DETAIL = {
   invoice_expected: true,
   invoice_held: null,
   no_show: null,
+  paid: { amount: 220_000, receipt: null },
 } satisfies Schemas["VisitDetail"];
 
 const timeline = (inks: readonly [string, string, string]) => ({

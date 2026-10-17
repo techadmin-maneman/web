@@ -57,7 +57,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
 
   // The visit coming opens too, as Home's card, with the ways to change it.
   await visits.nth(0).click();
-  await expect(page.getByRole("heading", { level: 1, name: fullDate(client.next.date) })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.service })).toBeVisible();
   await expect(page.getByText("Afternoon, 12–4 pm")).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();
 
@@ -90,7 +90,7 @@ test("an open note sheet keeps its words through a dropped signal, and Back clos
   await tab(page, "Visits").click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.titles.visits })).toBeVisible();
   await page.getByRole("main").getByRole("link").first().click();
-  const visitPage = page.getByRole("heading", { level: 1, name: fullDate(client.next.date) });
+  const visitPage = page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.service });
   await expect(visitPage).toBeVisible();
 
   await page.getByRole("button", { name: appCopy.home.note }).click();

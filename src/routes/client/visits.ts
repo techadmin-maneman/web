@@ -41,6 +41,19 @@ const VisitDetailSchema = VisitSummarySchema.extend({
   no_show: z.union([NoShowNoteSchema, z.null()]).openapi({
     description: "The client was not home for this visit: how long we waited, and what ops ruled. Null otherwise.",
   }),
+  paid: z
+    .union([
+      z
+        .object({
+          amount: z.number().int().openapi({ description: "In paise, GST included." }),
+          receipt: z.union([z.uuid(), z.null()]).openapi({
+            description: "The payment, for GET /api/payments/{id}/receipt, once Books has recorded it.",
+          }),
+        })
+        .strict(),
+      z.null(),
+    ])
+    .openapi({ description: "What the client paid for the visit; null where nothing was." }),
 }).openapi("VisitDetail");
 
 const ClientHistorySchema = z

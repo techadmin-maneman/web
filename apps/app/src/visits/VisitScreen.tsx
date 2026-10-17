@@ -16,9 +16,10 @@ import { Icon } from "@maneman/ui/Icon";
 import { useLiveLoad } from "@maneman/ui/useLoad";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { fullDate, indiaDate, shortDate } from "@maneman/web-kit/dates";
+import { TextLink } from "@maneman/ui/TextLink";
 import { rupees } from "@maneman/web-kit/money";
 import { useCallback, useEffect, useState } from "react";
-import { api, documentUrl, type VisitDetail } from "../api.ts";
+import { api, documentUrl, receiptUrl, type VisitDetail } from "../api.ts";
 import { messages, ONE_VISIT, payments, visitLength, visits } from "../content.ts";
 import { AddToCalendar } from "../components/AddToCalendar.tsx";
 import { OpenDocument } from "../components/OpenDocument.tsx";
@@ -160,6 +161,7 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
           <Fact name={copy.duration} value={visitLength(visit.duration_minutes)} numeric />
         )}
         <Fact name={copy.type} value={visitTitle(visit)} />
+        {visit.paid !== null && <Paid paid={visit.paid} />}
         {visit.what_was_done !== null && visit.what_was_done.length > 0 && (
           <div className={styles.done}>
             <dt>{copy.done}</dt>
@@ -180,6 +182,27 @@ function PastVisit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged
           }}
         />
       )}
+    </div>
+  );
+}
+
+/** What the client paid for the visit, and its receipt once there is one. */
+function Paid({ paid }: { paid: NonNullable<VisitDetail["paid"]> }) {
+  const copy = visits.detail;
+  return (
+    <div className={styles.done}>
+      <dt>{copy.paid}</dt>
+      <dd>
+        {rupees(paid.amount)}
+        {paid.receipt !== null && (
+          <>
+            {" · "}
+            <TextLink tone="brass" href={receiptUrl(paid.receipt)} newTab>
+              {copy.receipt}
+            </TextLink>
+          </>
+        )}
+      </dd>
     </div>
   );
 }
@@ -212,6 +235,9 @@ function Visit({ visit, onChanged, relink }: { visit: VisitDetail; onChanged: ()
   );
 }
 
+/** A visit to come says its day on its card, so its page is named by what it is; a past one by its day. */
+const titleOf = (visit: VisitDetail): string => (visit.stage === null ? fullDate(visit.date) : visitName(visit.type));
+
 export function VisitScreen({ id }: { id: string }) {
   const { loaded, refresh, retry } = useLiveLoad(
     useCallback(() => api.visit(id), [id]),
@@ -224,7 +250,7 @@ export function VisitScreen({ id }: { id: string }) {
   useEffect(() => {
     if (replaced) go("/visits");
   }, [replaced]);
-  const title = loaded.state === "loaded" ? fullDate(loaded.value.date) : visits.title;
+  const title = loaded.state === "loaded" ? titleOf(loaded.value) : visits.title;
   return (
     <Shell header={{ kind: "back", title, to: "/visits", label: visits.detail.back }} tab="/visits">
       {loaded.state === "loading" && <Loading />}

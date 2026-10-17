@@ -31,6 +31,7 @@ import {
   VISIT_LIVE,
 } from "../../config/statuses.ts";
 import { creditSpentOn } from "./visit-facts.ts";
+import { paidFor, type VisitPaid } from "./visit-paid.ts";
 
 /** The three windows the client app offers, by the hour a visit starts in India. */
 type VisitWindowLabel = "morning" | "afternoon" | "evening";
@@ -339,6 +340,8 @@ interface VisitDetail extends VisitSummary {
   readonly invoice_held: InvoiceHeld | null;
   /** The client was not home: how long we waited, and what ops ruled. Null for any other visit. */
   readonly no_show: NoShowNote | null;
+  /** What the client paid for the visit, in paise, and its receipt once Books has it; null where nothing was paid. */
+  readonly paid: VisitPaid | null;
 }
 
 type InvoiceHeld = "credit" | "checking";
@@ -446,6 +449,7 @@ export async function visitDetail({
     invoice_expected: await invoiceExpected(db, row),
     invoice_held: await invoiceHeld(db, row),
     no_show: noShows.get(row.id) ?? null,
+    paid: await paidFor(db, row.id),
   };
 }
 

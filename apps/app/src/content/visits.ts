@@ -47,6 +47,8 @@ export const visits = {
     photographs: "Photos from this visit",
     technician: "Technician",
     duration: "Duration",
+    paid: "Paid",
+    receipt: "Receipt",
     type: "Type",
     done: "What was done",
     /** The checklist the technician ticked, as one sentence: "Hair system removed, scalp cleaned, cut and styled." */

@@ -4838,6 +4838,13 @@ export interface components {
             invoice_held: ("credit" | "checking") | null;
             /** @description The client was not home for this visit: how long we waited, and what ops ruled. Null otherwise. */
             no_show: components["schemas"]["NoShowNote"] | null;
+            /** @description What the client paid for the visit; null where nothing was. */
+            paid: {
+                /** @description In paise, GST included. */
+                amount: number;
+                /** @description The payment, for GET /api/payments/{id}/receipt, once Books has recorded it. */
+                receipt: string | null;
+            } | null;
         };
         /** @description Each angle in the order front, top, left, right, hair; missing angles left out. */
         PhotoSet: {
