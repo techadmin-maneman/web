@@ -109,21 +109,32 @@ export async function suggestBuildings(
   };
 }
 
+/** A typed address as Google is asked to place it: its building, street and area, in that order. */
+const typedLine = (address: Address): string =>
+  [address.building, address.line1, address.locality, address.city]
+    .filter((part): part is string => typeof part === "string" && part.trim() !== "")
+    .join(", ");
+
 /** The building search's session, or a new one where none came with the address. */
 const sessionOrNew = (token: string | null | undefined): string =>
   token === null || token === undefined || token === "" ? crypto.randomUUID() : token;
 
 /**
- * The building's coordinate, geocoded once from its Place ID within the day's ceiling; none for an address typed, or
- * one Google could not place, which then saves without a pin.
+ * The address's coordinate, geocoded once within the day's ceiling: a building's from its Place ID, a typed one's from
+ * its words within its pincode where Google places it to the building. One Google could not place saves without a pin.
  */
 export async function pinFor(
   c: Context<AppEnv>,
-  placeId: string | null,
+  address: Address,
   sessionToken: string | null | undefined,
 ): Promise<AddressPin | null> {
-  if (placeId === null || !(await withinGeocodeCeiling(c, c.var.deps.now()))) return null;
-  const resolved = await c.var.deps.geocode.resolve(placeId, sessionOrNew(sessionToken));
+  if (!(await withinGeocodeCeiling(c, c.var.deps.now()))) return null;
+  const { placeId } = address;
+  const resolved =
+    placeId === null
+      ? await c.var.deps.geocode.locate(typedLine(address), address.pincode)
+      : await c.var.deps.geocode.resolve(placeId, sessionOrNew(sessionToken));
+  if (!resolved.ok && placeId === null && resolved.reason === "not_found") return null;
   if (!resolved.ok) {
     await lookupFailed(c, "address_resolve_failed", resolved);
     return null;
@@ -150,7 +161,7 @@ export async function saveClientAddress(
 ): Promise<void> {
   const { personId, address, sessionToken, givenToOps } = saving;
   const now = c.var.deps.now();
-  const pin = await pinFor(c, address.placeId, sessionToken);
+  const pin = await pinFor(c, address, sessionToken);
   await saveAddress(c.env.DB, { personId, address, pin, now, givenToOps });
   await queueContactSync(c, personId);
 }

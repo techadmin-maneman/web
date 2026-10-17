@@ -313,10 +313,20 @@ describe("the address pin", () => {
     });
   });
 
-  it("saves a typed address with no pin at all, rather than a wrong one", async () => {
-    const typed = { ...chosen, building: null, place_id: null };
+  it("saves a typed address Google places no closer than its area with no pin at all, rather than a wrong one", async () => {
+    const typed = { ...chosen, building: null, place_id: null, line1: "House 4417, Tower C" };
     expect((await send(client, "PATCH", "/api/profile/address", typed)).status).toBe(200);
     expect(await pinOf()).toMatchObject({ lat: null, lng: null, geocode_source: null, place_id: null });
+  });
+
+  // A typed address saved no pin, so every check-in there passed unmeasured.
+  it("pins a typed address Google places to the building, by its words within the pincode", async () => {
+    const typed = { ...chosen, building: null, place_id: null, line1: "Mayfield Towers, Sector 65" };
+    expect((await send(client, "PATCH", "/api/profile/address", typed)).status).toBe(200);
+    const row = await pinOf();
+    expect(row?.lat).toBeCloseTo(28.3968, 4);
+    expect(row?.lng).toBeCloseTo(77.0644, 4);
+    expect(row?.geocode_source).toBe("google_geocoding");
   });
 
   it("saves the address even when the geocode fails: the pin is the part that is optional", async () => {
@@ -365,7 +375,8 @@ describe("the address pin", () => {
     });
 
     it("leaves a typed address unmeasurable rather than measuring it at zero", async () => {
-      await send(client, "PATCH", "/api/profile/address", { ...chosen, building: null, place_id: null });
+      const typed = { ...chosen, building: null, place_id: null, line1: "House 4417, Tower C" };
+      await send(client, "PATCH", "/api/profile/address", typed);
 
       const found = await visitAddress(env.DB, "p1");
       // ADR 0036's honest degradation: no point, so no distance — never a pass at 0 m.

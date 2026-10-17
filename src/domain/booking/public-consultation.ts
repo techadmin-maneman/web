@@ -220,7 +220,7 @@ async function bookingPerson(
   });
   const address = typedAddress({ hasSavedAddress });
   // The building chosen is pinned only where the typed address is the one written, once the checks have passed.
-  const pin = address === "saved" ? await form.pinOf(request.address.placeId, request.addressSession) : null;
+  const pin = address === "saved" ? await form.pinOf(request.address, request.addressSession) : null;
   // The page says nothing of an address already on the account; its owner is told on WhatsApp.
   const addressNotice =
     address === "on_account" ? siteNotice(db, { personId: person.id, kind: "address_on_account", now }) : null;

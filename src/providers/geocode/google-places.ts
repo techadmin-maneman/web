@@ -52,9 +52,14 @@ const Autocomplete = z.object({
 /** The Geocoding API's answer: its status, and the results, of which only the first is read. */
 const Geocoded = z.object({ status: Text, results: z.array(z.unknown()).catch([]) });
 const GeocodedPlace = z.object({
+  place_id: Text,
   formatted_address: Text,
-  geometry: z.object({ location: z.object({ lat: z.number(), lng: z.number() }) }),
+  partial_match: z.boolean().catch(false),
+  geometry: z.object({ location: z.object({ lat: z.number(), lng: z.number() }), location_type: Text }),
 });
+
+/** A coordinate precise enough to measure a check-in against: the building, or between two numbered ones. */
+const PRECISE = new Set(["ROOFTOP", "RANGE_INTERPOLATED"]);
 
 /** Why Google refused, where it says: the Places API in `error`, the Geocoding API in `error_message`. */
 const Refusal = z.object({
@@ -101,6 +106,33 @@ const GEOCODING_STATUS: Readonly<Record<string, LookupFailure>> = {
   OVER_DAILY_LIMIT: "refused",
   OVER_QUERY_LIMIT: "refused",
 };
+
+/**
+ * A Geocoding API answer read: its first result, or why there is none. It refuses under a 200 and says so in
+ * `status`; OK with no coordinate, or ZERO_RESULTS, placed nothing, as a Place ID over a year old can.
+ */
+function readGeocode(
+  answer: { status: number; body: unknown } | null,
+  scrub: (detail: string) => string,
+):
+  | { readonly ok: true; readonly first: z.infer<typeof GeocodedPlace> }
+  | { readonly ok: false; readonly reason: LookupFailure; readonly detail: string } {
+  if (answer === null) return { ok: false, reason: "unavailable", detail: "geocoding did not answer" };
+  if (answer.status !== 200) {
+    return {
+      ok: false,
+      reason: classify(answer.status),
+      detail: scrub(`geocoding ${String(answer.status)}${why(answer.body)}`),
+    };
+  }
+  const geocoded = Geocoded.safeParse(answer.body).data;
+  const status = geocoded?.status ?? "";
+  const first = GeocodedPlace.safeParse(geocoded?.results[0]).data;
+  if (status === "OK" && first !== undefined) return { ok: true, first };
+  const reason: LookupFailure = status === "OK" ? "not_found" : (GEOCODING_STATUS[status] ?? "unavailable");
+  const said = status === "" ? "nothing" : status;
+  return { ok: false, reason, detail: scrub(`geocoding said ${said}${why(answer.body)}`) };
+}
 
 export function createGooglePlaces(apiKey: string, deps: VendorFetchDependencies): GeocodeProvider {
   // The Geocoding API takes the key in the query string, so it can reach a log
@@ -152,27 +184,28 @@ export function createGooglePlaces(apiKey: string, deps: VendorFetchDependencies
       });
 
       const query = new URLSearchParams({ place_id: placeId, key: apiKey, region: REGION });
-      const answer = await get("geocode", `${GEOCODE_URL}?${query.toString()}`, { method: "GET" });
-      if (answer === null) return { ok: false, reason: "unavailable", detail: "geocoding did not answer" };
-      if (answer.status !== 200) {
-        return {
-          ok: false,
-          reason: classify(answer.status),
-          detail: scrub(`geocoding ${String(answer.status)}${why(answer.body)}`),
-        };
-      }
-      const geocoded = Geocoded.safeParse(answer.body).data;
-      const status = geocoded?.status ?? "";
-      const first = GeocodedPlace.safeParse(geocoded?.results[0]).data;
-      if (status !== "OK" || first === undefined) {
-        // OK with no coordinate, or ZERO_RESULTS: this Place ID resolved to nothing,
-        // as one over a year old can (Google's own advice).
-        const reason: LookupFailure = status === "OK" ? "not_found" : (GEOCODING_STATUS[status] ?? "unavailable");
-        const said = status === "" ? "nothing" : status;
-        return { ok: false, reason, detail: scrub(`geocoding said ${said}${why(answer.body)}`) };
+      const read = readGeocode(await get("geocode", `${GEOCODE_URL}?${query.toString()}`, { method: "GET" }), scrub);
+      if (!read.ok) return read;
+      const { lat, lng } = read.first.geometry.location;
+      return { ok: true, place: { placeId, lat, lng, formattedAddress: read.first.formatted_address } };
+    },
+
+    async locate(address, pincode) {
+      const query = new URLSearchParams({
+        address,
+        components: `country:IN|postal_code:${pincode}`,
+        key: apiKey,
+        region: REGION,
+      });
+      const answer = await get("geocode_address", `${GEOCODE_URL}?${query.toString()}`, { method: "GET" });
+      const read = readGeocode(answer, scrub);
+      if (!read.ok) return read;
+      const { first } = read;
+      if (first.partial_match || !PRECISE.has(first.geometry.location_type)) {
+        return { ok: false, reason: "not_found", detail: "geocoding placed the address no closer than its area" };
       }
       const { lat, lng } = first.geometry.location;
-      return { ok: true, place: { placeId, lat, lng, formattedAddress: first.formatted_address } };
+      return { ok: true, place: { placeId: first.place_id, lat, lng, formattedAddress: first.formatted_address } };
     },
   };
 }

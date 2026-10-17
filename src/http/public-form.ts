@@ -49,7 +49,7 @@ export function formRequest(c: Context<AppEnv>): FormRequest {
     selfServeBooking: c.var.config.settings.selfServeConsultations,
     checkPerson: (mobile, token, name) => checkPerson(c, mobile, token, name),
     provedNumber: (codeId, mobileE164) => provedNumber(c, codeId, mobileE164),
-    pinOf: (placeId, session) => pinFor(c, placeId, session),
+    pinOf: (address, session) => pinFor(c, address, session),
     syncContact: (personId) => queueContactSync(c, personId),
     bookHold: (holdId) => bookHold(c, holdId),
   };

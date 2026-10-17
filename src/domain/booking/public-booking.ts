@@ -66,7 +66,7 @@ import { attributeToPartner, isPartnerInvite, type AnyInvite } from "../referral
 import { saveBookingLead, type LeadAttribution } from "../leads/leads.ts";
 import { type Pincode } from "../clients/service-area.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
-import type { AddressPin } from "../clients/profile.ts";
+import type { Address, AddressPin } from "../clients/profile.ts";
 import type { Refusal as DomainRefusal } from "../../lib/refusal.ts";
 
 /** The codes a submission is refused with; each carries its own status (src/http/errors.ts, ERROR_STATUS). */
@@ -109,8 +109,8 @@ export interface FormRequest {
   readonly checkPerson: (mobile: string, turnstileToken: string, name: string) => Promise<Checked>;
   /** Whether the WhatsApp code `codeId` proved this number (src/policy/number-proof.ts). */
   readonly provedNumber: (codeId: string | null, mobileE164: string) => Promise<boolean>;
-  /** The coordinate of a building chosen from the suggestions, or none (src/http/address-save.ts). */
-  readonly pinOf: (placeId: string | null, session: string | null) => Promise<AddressPin | null>;
+  /** The address's coordinate, where Google places it to the building, or none (src/http/address-save.ts). */
+  readonly pinOf: (address: Address, session: string | null) => Promise<AddressPin | null>;
   /** Sends a person's first address on to their Books customer and CRM lead, as saving it in the app does. */
   readonly syncContact: (personId: string) => Promise<void>;
   /** Books the free hold the form made (src/http/book-hold.ts). It never throws, so the lead is recorded whatever comes of it. */
