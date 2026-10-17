@@ -13,8 +13,7 @@ export const booking = {
   titleOneVisit: "Book a consultation and fit",
   titleWaitlist: "Not in your area yet",
   intro: `Your technician measures your scalp and matches your colour: ${visitLength.consultation}, free. Or add the fit and wear your hair system the same day.`,
-  /** Where we do not come yet: what the list is for. */
-  // The WhatsApp is the visitor's to ask for, below: the line promises it only as theirs to choose.
+  /** Where we do not come yet: what the list is for. The WhatsApp is the visitor's to tick, so it is promised as so. */
   introWaitlist: "Join the list. Tick the box and we’ll WhatsApp you the week we start coming to you.",
   extent: "Extent of hair loss (optional)",
   /**
