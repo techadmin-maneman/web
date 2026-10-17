@@ -76,7 +76,7 @@ test("says what the average is of when the phone timed fewer jobs than were fini
   await open(page);
   const sandeep = page.getByRole("row").filter({ hasText: "Sandeep Yadav" });
   await expect(sandeep).toContainText("1 h 31 m");
-  await expect(sandeep).toContainText("30 of 34");
+  await expect(sandeep).toContainText(opsCopy.technicians.work.base(30, 34));
 });
 
 // The board letters 1 h 48 m in oxblood, #8A3A2E, and leaves 1 h 31 m quiet, so a

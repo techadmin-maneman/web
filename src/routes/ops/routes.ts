@@ -57,6 +57,7 @@ import { registerOpsServiceArea } from "./service-area.ts";
 import { registerOpsServices } from "./services.ts";
 import { registerOpsSettings } from "./settings.ts";
 import { registerOpsSlotTimes } from "./slot-times.ts";
+import { registerOpsClientExport } from "./client-export.ts";
 import { registerOpsSpend } from "./spend.ts";
 import { registerOpsStaff } from "./staff.ts";
 import { registerOpsStandardCosts } from "./standard-costs.ts";
@@ -173,6 +174,7 @@ export const OPS_ROUTES: readonly ((app: App) => void)[] = [
   registerOpsCities,
   // The day's half-slot times, from a day nothing is booked or bookable on (docs/decisions/0102-window-times.md).
   registerOpsSlotTimes,
+  registerOpsClientExport,
   // The days no visit is offered (docs/decisions/0088-every-policy-in-the-console.md).
   registerOpsBlackouts,
   // The services clients book (docs/decisions/0085-services-ops-can-edit.md).

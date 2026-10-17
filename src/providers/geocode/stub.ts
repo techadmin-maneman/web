@@ -46,6 +46,37 @@ function scenario(query: string): "none" | "refused" | "down" | "ok" {
   return (found?.[1] as "none" | "refused" | "down" | undefined) ?? "ok";
 }
 
+/**
+ * A typed address as the Geocoding API places it: to the building where it names a synthetic one, else only to the
+ * locality's centre, as Google answers for an address it cannot find.
+ */
+function locatedAddress(typed: string) {
+  const known = PLACES.find((place) => typed.toLowerCase().includes(place.primary.toLowerCase()));
+  if (known !== undefined) {
+    return {
+      status: "OK",
+      results: [
+        {
+          place_id: known.placeId,
+          formatted_address: `${known.primary}, ${known.secondary}, Haryana 122018, India`,
+          geometry: { location: { lat: known.lat, lng: known.lng }, location_type: "ROOFTOP" },
+        },
+      ],
+    };
+  }
+  return {
+    status: "OK",
+    results: [
+      {
+        place_id: "stub-locality",
+        formatted_address: "Sector 65, Gurugram, Haryana 122018, India",
+        partial_match: true,
+        geometry: { location: { lat: 28.39, lng: 77.06 }, location_type: "APPROXIMATE" },
+      },
+    ],
+  };
+}
+
 export function createStubGeocodeFetch(): typeof fetch {
   return async (input, init) => {
     const request = new Request(input, init);
@@ -100,6 +131,8 @@ export function createStubGeocodeFetch(): typeof fetch {
       if (url.searchParams.get("key") !== STUB_API_KEY) {
         return json({ status: "REQUEST_DENIED", error_message: "stub: The provided API key is invalid.", results: [] });
       }
+      const typed = url.searchParams.get("address");
+      if (typed !== null) return json(locatedAddress(typed));
       const placeId = url.searchParams.get("place_id") ?? "";
       const known = PLACES.find((place) => place.placeId === placeId);
       if (known === undefined) return json({ status: "ZERO_RESULTS", results: [] });

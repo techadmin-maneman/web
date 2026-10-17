@@ -18,11 +18,20 @@ import styles from "./care.module.css";
 
 const { carePerson: words } = copy;
 
+/** A Care person by e-mail, and the first name clients know them by once a manager has set one. */
+interface Named {
+  readonly email: string;
+  readonly name: string | null;
+}
+
+/** By the first name clients know them by, where one is set; by e-mail until then. */
+const nameOf = (person: Named) => person.name ?? person.email;
+
 function MoveTo(props: {
   readonly personId: string;
   readonly team: readonly CareMember[];
   readonly now: string | null;
-  readonly onMoved: (email: string) => void;
+  readonly onMoved: (moved: Named) => void;
 }) {
   const [email, setEmail] = useState(props.now ?? props.team[0]?.email ?? "");
   const [busy, once] = useOneAtATime();
@@ -31,8 +40,12 @@ function MoveTo(props: {
     once(async () => {
       setFailure(null);
       const answer = await careApi.moveCarePerson(props.personId, email);
-      if (answer.ok) props.onMoved(answer.body.care_person);
-      else setFailure({ code: answer.code, fields: answer.fields });
+      if (!answer.ok) {
+        setFailure({ code: answer.code, fields: answer.fields });
+        return;
+      }
+      const moved = answer.body.care_person;
+      props.onMoved({ email: moved, name: props.team.find((member) => member.email === moved)?.name ?? null });
     });
   return (
     <div className={styles.closing}>
@@ -48,7 +61,7 @@ function MoveTo(props: {
           >
             {props.team.map((member) => (
               <option key={member.email} value={member.email}>
-                {words.member(member.email, member.clients)}
+                {words.member(member.name ?? member.email, member.clients)}
               </option>
             ))}
           </Select>
@@ -71,7 +84,7 @@ function MoveTo(props: {
 function Team(props: {
   readonly personId: string;
   readonly now: string | null;
-  readonly onMoved: (email: string) => void;
+  readonly onMoved: (moved: Named) => void;
 }) {
   const load = useCallback(() => careApi.careTeam(), []);
   const [loaded] = useLoad(load);
@@ -81,16 +94,17 @@ function Team(props: {
 }
 
 /** The Care person, and who covers them while they are off, until a manager moves the client. */
-const coveredOf = (now: string, was: string | null, cover: string | null): string =>
-  cover !== null && now === was ? copy.coveredBy(now, cover) : now;
+const coveredOf = (now: Named, was: string | null, cover: string | null): string =>
+  cover !== null && now.email === was ? copy.coveredBy(nameOf(now), cover) : nameOf(now);
 
 export function CarePerson(props: {
   readonly personId: string;
   readonly email: string | null;
+  readonly name: string | null;
   /** Who covers them today, while they are off. */
   readonly coveredBy: string | null;
 }) {
-  const [now, setNow] = useState(props.email);
+  const [now, setNow] = useState<Named | null>(props.email === null ? null : { email: props.email, name: props.name });
   const [said, setSaid] = useState<string | null>(null);
   const mayMove = useAccess().mayCall("POST /api/clients/{id}/care-person");
   return (
@@ -106,10 +120,10 @@ export function CarePerson(props: {
       {mayMove && (
         <Team
           personId={props.personId}
-          now={now}
-          onMoved={(email) => {
-            setNow(email);
-            setSaid(words.moved(email));
+          now={now?.email ?? null}
+          onMoved={(moved) => {
+            setNow(moved);
+            setSaid(words.moved(nameOf(moved)));
           }}
         />
       )}

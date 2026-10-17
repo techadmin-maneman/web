@@ -3,12 +3,14 @@
 // request made outside the app.
 
 import { classes } from "@maneman/ui/classes";
+import { TextLink } from "@maneman/ui/TextLink";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate } from "@maneman/web-kit/dates";
 import { useCallback } from "react";
 import { type Consent } from "../api.ts";
 import { clients } from "../content.ts";
+import { useAccess } from "../lib/access.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import shared from "./clients.module.css";
 import styles from "./consents.module.css";
@@ -47,6 +49,16 @@ function ConsentRow({ consent }: { consent: Consent }) {
   );
 }
 
+/** Everything held about the client, as their app downloads it, for Care to send them when they ask. */
+function ExportData({ clientId }: { clientId: string }) {
+  if (!useAccess().mayCall("GET /api/clients/{id}/export.html")) return null;
+  return (
+    <p className={styles.deletion}>
+      <TextLink href={`/api/clients/${clientId}/export.html`}>{copy.exportData}</TextLink>
+    </p>
+  );
+}
+
 export function Consents({ clientId, name, onErased }: { clientId: string; name: string; onErased: () => void }) {
   const load = useCallback(() => clientsApi.clientConsents(clientId), [clientId]);
   const [loaded, retry] = useLoad(load);
@@ -76,6 +88,7 @@ export function Consents({ clientId, name, onErased }: { clientId: string; name:
       {deletion !== null && (
         <p className={styles.deletion}>{copy.deletion[deletion.state](longDate(deletion.requested_at))}</p>
       )}
+      <ExportData clientId={clientId} />
       <Erase clientId={clientId} name={name} requested={deletion?.state === "requested"} onErased={onErased} />
     </section>
   );

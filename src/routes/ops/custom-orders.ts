@@ -11,6 +11,7 @@ import {
   customOrder,
   customOrdersOf,
   raiseCustomOrder,
+  specReady,
   type CustomOrder,
 } from "../../domain/purchasing/custom-orders.ts";
 import { sendCustomOrderLink } from "../../domain/money/custom-order-links.ts";
@@ -65,6 +66,9 @@ const ORDERS = {
       .object({
         orders: z.array(OrderSchema),
         suppliers: z.array(z.object({ id: z.string(), name: z.string(), currency: z.string() })),
+        profile_ready: z.boolean().openapi({
+          description: "Whether the client's hair profile holds every part of the spec an order is made to.",
+        }),
       })
       .openapi("ClientCustomOrders"),
   ),
@@ -169,13 +173,14 @@ const linkDepsOf = (c: Context<AppEnv>) => ({
 });
 
 async function ordersAnswer(c: Context<AppEnv>, personId: string) {
-  const [orders, suppliers] = await Promise.all([
+  const [orders, suppliers, profileReady] = await Promise.all([
     customOrdersOf(c.env.DB, personId),
     c.env.DB.prepare(
       "SELECT id, name, currency FROM suppliers WHERE retired_at IS NULL ORDER BY name COLLATE NOCASE",
     ).all<{ id: string; name: string; currency: string }>(),
+    specReady(c.env.DB, personId),
   ]);
-  return { orders: orders.map(orderOut), suppliers: suppliers.results };
+  return { orders: orders.map(orderOut), suppliers: suppliers.results, profile_ready: profileReady };
 }
 
 /** The order named, where its client is within the reader's places. */

@@ -135,10 +135,10 @@ const PARTIAL_REASONS = [
  * nought is behind "Add another", which the board does not draw (docs/decisions/0087-consumables-and-stock.md).
  */
 const CONSUMABLES = [
-  { code: "tape_strips", name: "Tape strips", unit: "strip", expected: 6 },
-  { code: "bonding_glue", name: "Bonding glue", unit: "ml", expected: 1 },
-  { code: "solvent", name: "Solvent", unit: "ml", expected: 1 },
-  { code: "shampoo_sachet", name: "Shampoo sachet", unit: "sachet", expected: 0 },
+  { code: "tape_strips", name: "Tape strips", unit: "strip", expected: 6, in_kit: 40 },
+  { code: "bonding_glue", name: "Bonding glue", unit: "ml", expected: 1, in_kit: 30 },
+  { code: "solvent", name: "Solvent", unit: "ml", expected: 1, in_kit: 120 },
+  { code: "shampoo_sachet", name: "Shampoo sachet", unit: "sachet", expected: 0, in_kit: 10 },
 ];
 
 type Progress = Schemas["TechnicianJobProgress"];

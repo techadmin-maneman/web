@@ -91,9 +91,33 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
           {copy.sendAgain}
         </Button>
       )}
-      {access.mayCall("POST /api/custom-orders/{id}/cancel") && (
+      {access.mayCall("POST /api/custom-orders/{id}/cancel") && <CancelOrder order={order} onAnswer={onAnswer} />}
+    </FormActions>
+  );
+}
+
+/** Cancel, asked once more: the order's payment link stops working. */
+function CancelOrder({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, said: string) => void }) {
+  const [asking, setAsking] = useState(false);
+  if (!asking) {
+    return (
+      <Button
+        variant="outline"
+        size="small"
+        onClick={() => {
+          setAsking(true);
+        }}
+      >
+        {copy.cancel}
+      </Button>
+    );
+  }
+  return (
+    <div role="group" aria-label={copy.cancelAsk}>
+      <p className={form.fieldLabel}>{copy.cancelAsk}</p>
+      <FormActions>
         <Button
-          variant="outline"
+          variant="destructive"
           size="small"
           onClick={() =>
             void clientsApi.cancelCustomOrder(order.id).then((answer) => {
@@ -101,10 +125,19 @@ function Steps({ order, onAnswer }: { order: Order; onAnswer: (answer: Answer, s
             })
           }
         >
-          {copy.cancel}
+          {copy.cancelYes}
         </Button>
-      )}
-    </FormActions>
+        <Button
+          variant="outline"
+          size="small"
+          onClick={() => {
+            setAsking(false);
+          }}
+        >
+          {copy.cancelKeep}
+        </Button>
+      </FormActions>
+    </div>
   );
 }
 
@@ -188,19 +221,25 @@ export function CustomOrders({ clientId }: { clientId: string }) {
           }}
         />
       )}
-      {current !== null && !raising && access.mayCall("POST /api/clients/{id}/custom-orders") && (
-        <FormActions>
-          <Button
-            variant="outline"
-            size="small"
-            onClick={() => {
-              setRaising(true);
-            }}
-          >
-            {copy.raise.open}
-          </Button>
-        </FormActions>
+      {current !== null && !current.profile_ready && access.mayCall("POST /api/clients/{id}/custom-orders") && (
+        <Note>{copy.errors.profile}</Note>
       )}
+      {current !== null &&
+        current.profile_ready &&
+        !raising &&
+        access.mayCall("POST /api/clients/{id}/custom-orders") && (
+          <FormActions>
+            <Button
+              variant="outline"
+              size="small"
+              onClick={() => {
+                setRaising(true);
+              }}
+            >
+              {copy.raise.open}
+            </Button>
+          </FormActions>
+        )}
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}

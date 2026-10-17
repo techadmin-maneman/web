@@ -56,7 +56,7 @@ export function LostReason({
             value={kept?.code ?? ""}
             onChange={(event) => void set(event.target.value)}
           >
-            <option value="">{copy.none}</option>
+            <option value="">{visit.going_ahead === true ? copy.goingAhead : copy.notSaid}</option>
             {choicesFor(reasons, kept).map((reason) => (
               <option key={reason.code} value={reason.code}>
                 {reason.label}

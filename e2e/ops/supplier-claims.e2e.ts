@@ -174,7 +174,7 @@ test("scores each supplier’s year: on time in full, lead time against promised
   await open(page);
   const scores = page.getByRole("region", { name: copy.scorecard.title });
   const row = scores.getByRole("row").filter({ hasText: "Lumina Hair Co" });
-  for (const figure of ["75%", "13.5 of 14 days", "6%", "2%", "2 of 3", "USD 12.50"]) {
+  for (const figure of ["75%", "13.5 days (promised 14)", "6%", "2%", "2 of 3", "USD 12.50"]) {
     await expect(row).toContainText(figure);
   }
   expect(await axeViolations(page)).toEqual([]);

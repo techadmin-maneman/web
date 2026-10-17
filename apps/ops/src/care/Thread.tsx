@@ -95,7 +95,12 @@ function About({ conversation }: { conversation: Conversation }) {
         </OpsLink>
       </Note>
       <ClientPanel personId={person.id} />
-      <CarePerson personId={person.id} email={conversation.care_person} coveredBy={conversation.covered_by} />
+      <CarePerson
+        personId={person.id}
+        email={conversation.care_person}
+        name={conversation.care_name}
+        coveredBy={conversation.covered_by}
+      />
     </>
   );
 }

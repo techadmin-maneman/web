@@ -124,6 +124,15 @@ describe("the waitlist and a launch", () => {
     const second = fakeQueue();
     expect(await (await launch({ confirm: true }, second)).json()).toMatchObject({ alerts: 0 });
     expect(second.sent).toEqual([]);
+    // Told, they wait no longer: the live pincode leaves the list.
+    expect((await (await request(ops(), "/api/waitlist")).json<{ areas: unknown[] }>()).areas).toEqual([]);
+  });
+
+  // Noida stayed listed live with its waiters, though nobody there had asked to be told.
+  it("lists a live pincode only while someone there is still to be told of it", async () => {
+    await waiting(false);
+    expect((await launch({ confirm: true, launch_on: "2026-09-15" }, fakeQueue())).status).toBe(200);
+    expect((await (await request(ops(), "/api/waitlist")).json<{ areas: unknown[] }>()).areas).toEqual([]);
   });
 
   // A launch named the area by its post office's name.

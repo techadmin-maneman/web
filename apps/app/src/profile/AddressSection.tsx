@@ -1,4 +1,4 @@
-// "Where we come": the address and its access notes, and the form to
+// "Your address": the address and its access notes, and the form to
 // change them (AddressForm.tsx), which the booking sheet asks with too. An
 // address the client gave ops on the phone says so, so the client can check what
 // was typed for them (docs/decisions/0092-task-owners.md).

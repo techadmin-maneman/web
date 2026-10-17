@@ -7,7 +7,8 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 export const purchasing = {
   title: "Purchasing",
   orders: "Orders",
-  columns: ["Order", "Supplier", "Status", "Total", "Expected"],
+  // Open orders first, each group newest first, with the day it was drafted: the numbers are random to suppliers.
+  columns: ["Order", "Drafted", "Supplier", "Status", "Total", "Expected"],
   none: "No orders yet.",
   /** "PO-0007" */
   number: (number: number) => `PO-${String(number).padStart(4, "0")}`,
@@ -200,10 +201,11 @@ export const purchasing = {
     ],
     none: "No suppliers yet.",
     percent: (value: number | null) => (value === null ? "" : `${String(value)}%`),
-    /** "13.5 of 14 days", or "12 days" where nothing was promised. */
+    /** "13.5 days (promised 14)", or "12 days" where nothing was promised. */
     days: (actual: number | null, promised: number | null) => {
       if (actual === null) return "";
-      return promised === null ? `${String(actual)} days` : `${String(actual)} of ${String(promised)} days`;
+      const days = `${String(actual)} ${actual === 1 ? "day" : "days"}`;
+      return promised === null ? days : `${days} (promised ${String(promised)})`;
     },
     claims: (accepted: number, settled: number) => (settled === 0 ? "" : `${String(accepted)} of ${String(settled)}`),
   },

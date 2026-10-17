@@ -92,6 +92,13 @@ test("says so when the client cannot be loaded, and loads them on Try again", as
   await expect(page.getByRole("heading", NAME)).toBeVisible();
 });
 
+test("says there is no client at a link that names nobody, with the way back to Clients", async ({ page }) => {
+  await openClient(page, `/clients/${CLIENT.id}`, { [READ_RECORD]: fails(404, "not_found") });
+  await expect(page.getByRole("heading", { name: opsCopy.clients.missing })).toBeVisible();
+  await expect(page.getByRole("button", { name: opsCopy.states.retry })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: opsCopy.clients.erasure.done.back })).toHaveAttribute("href", "/clients");
+});
+
 test("meets WCAG 2.2 AA finding a client, and on every tab, locked and open", async ({ page }) => {
   const clean = async (label: string) => {
     expect(await axeViolations(page), label).toEqual([]);

@@ -38,7 +38,11 @@ const ORDER = {
   raised_at: "2026-09-21T05:12:00.000Z",
 };
 
-const BOOK = { orders: [ORDER], suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD" }] };
+const BOOK = {
+  orders: [ORDER],
+  suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD" }],
+  profile_ready: true,
+};
 
 /** Who is signed in: unknown, so every action is shown and the API refuses what it must. */
 const UNKNOWN_CALLER = () => Response.json({ error: { code: "internal_error", request_id: "r" } }, { status: 500 });
@@ -143,12 +147,29 @@ describe("the client’s custom orders", () => {
     await show();
     await press(copy.sendAgain);
     expect(page.textContent).toContain(copy.sent);
+    // A cancel is asked once more, as the order's link stops working.
     await press(copy.cancel);
+    expect(posted.map((each) => each.path)).toEqual(["/api/custom-orders/co-1/send-link"]);
+    await press(copy.cancelYes);
     expect(posted.map((each) => each.path)).toEqual([
       "/api/custom-orders/co-1/send-link",
       "/api/custom-orders/co-1/cancel",
     ]);
     expect(page.textContent).toContain(copy.statuses.cancelled);
+  });
+
+  it("says a profile is needed before offering an order to a client whose profile is not complete", async () => {
+    vi.stubGlobal(
+      "fetch",
+      contractChecked("ops", (url: string) => {
+        const address = new URL(url, "https://ops.maneman.test");
+        if (address.pathname === "/api/whoami") return Promise.resolve(UNKNOWN_CALLER());
+        return Promise.resolve(Response.json({ ...BOOK, orders: [], profile_ready: false }));
+      }),
+    );
+    await show();
+    expect(page.textContent).toContain(copy.errors.profile);
+    expect(button(copy.raise.open)).toBeUndefined();
   });
 
   it("refunds a paid order in full for the reason chosen, and says when that reason does not hold", async () => {

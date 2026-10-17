@@ -3617,6 +3617,7 @@ Request body:
             "price_settled",
             "code_exists",
             "slot_times_too_soon",
+            "slot_times_in_use",
             "not_permitted",
             "last_admin",
             "in_use",
@@ -5174,13 +5175,18 @@ Request body:
     "expected": {
       "type": "integer",
       "description": "How many this job's service is expected to use; 0 for one it lists no use for."
+    },
+    "in_kit": {
+      "type": "number",
+      "description": "What the technician's kit holds; below 0 where more was used."
     }
   },
   "required": [
     "code",
     "name",
     "unit",
-    "expected"
+    "expected",
+    "in_kit"
   ],
   "additionalProperties": false
 }
@@ -6402,6 +6408,10 @@ Request body:
           "minLength": 1,
           "maxLength": 64,
           "description": "On a consultation, why the client is not going ahead with a fit: one of the card's lost_reasons, by its id. Left out where they are going ahead, or the visit is no consultation (ADR 0149)."
+        },
+        "going_ahead": {
+          "type": "boolean",
+          "description": "On a consultation, whether the client said they are going ahead with a fit; left out where not asked."
         }
       },
       "required": [

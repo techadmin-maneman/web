@@ -1,12 +1,13 @@
 // The readable copy's part for a client's custom orders (./my-data.ts; docs/decisions/0174-custom-orders.md).
 
-import { day, money, text, time, words, type Part } from "./my-data-fields.ts";
+import { code, day, money, text, time, words, type Part } from "./my-data-fields.ts";
 
 export const CUSTOM_ORDERS_PART: Part = {
   title: "Hair systems made for you",
   fields: {
     number: text("Order"),
-    product: words("Hair system"),
+    product: code("Hair system, as a code"),
+    product_name: text("Hair system"),
     base_width_in: text("Base width, inches"),
     base_length_in: text("Base length, inches"),
     colour: text("Colour"),

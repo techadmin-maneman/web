@@ -64,6 +64,16 @@ test("lists each charge with its client, its amount and the evidence for it", as
   await expect(charge.getByText("Cancelled 9:14 am · visit was 10 am")).toBeVisible();
 });
 
+// Cancelled the evening before, it read as an hour after the visit.
+test("gives a late change its day, and the visit's, when it came on a day before", async ({ page }) => {
+  const charges = DAY_MONEY.charges.map((each, at) => (at === 0 ? { ...each, at: "2027-09-21T11:30:00.000Z" } : each));
+  await open(page);
+  await answer(page, { "GET /api/payments": json({ ...DAY_MONEY, charges }) });
+  await page.reload();
+  const charge = page.getByRole("listitem").filter({ hasText: "Vikram Sethi · cancelled late" });
+  await expect(charge.getByText("Cancelled Tue 21 Sep, 5 pm · visit was Wed 22 Sep, 10 am")).toBeVisible();
+});
+
 test("lists a charged no-show with what its charge kept, and the evidence", async ({ page }) => {
   await open(page);
   const charge = page.getByRole("listitem").filter({ hasText: "Karan Bose · no-show" });

@@ -68,11 +68,11 @@ export const care = {
     label: "Care person",
     none: "Not given yet",
     moveTo: "Move to",
-    /** "care@maneman.in · 12 clients" */
-    member: (email: string, clients: number) => `${email} · ${String(clients)} ${clients === 1 ? "client" : "clients"}`,
+    /** "Asha · 12 clients", by e-mail until a manager sets the name clients know them by. */
+    member: (who: string, clients: number) => `${who} · ${String(clients)} ${clients === 1 ? "client" : "clients"}`,
     move: "Move",
     moving: "Moving…",
-    moved: (email: string) => `Moved to ${email}.`,
+    moved: (who: string) => `Moved to ${who}.`,
     noTeam: "Nobody has Customer Care Act or Manage for all cities yet.",
     errors: {
       email: changed("No longer on the Care team."),

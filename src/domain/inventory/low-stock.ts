@@ -151,10 +151,24 @@ export async function closeStaleLowStock(
   await tellOfLowStock(db, deps, { touched: results.map(({ key }) => ofKey(key).place), lowered: [] });
 }
 
-/** How many places hold something at or below its level, by their open low-stock alerts: the console's Stock badge. */
-export async function lowStockPlaces(db: D1Database): Promise<number> {
-  const { results } = await db
-    .prepare("SELECT key FROM alerts WHERE resolved_at IS NULL AND key >= 'low_stock:' AND key < 'low_stock;'")
-    .all<{ key: string }>();
-  return new Set(results.map(({ key }) => ofKey(key).place)).size;
+/**
+ * How many places hold something at or below its level, or below zero, by the rule the Stock screen marks them with
+ * (src/domain/inventory/stock-view.ts): the console's Stock badge. A place is counted while it is active or holds
+ * anything.
+ */
+export async function lowStockPlaces(db: D1Database, today: string): Promise<number> {
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) AS places FROM stock_places p
+       WHERE (p.active = 1 OR EXISTS (SELECT 1 FROM stock_balances b WHERE b.place = p.id AND b.quantity <> 0))
+         AND EXISTS (SELECT 1 FROM consumables c
+           LEFT JOIN stock_balances b ON b.consumable_code = c.code AND b.place = p.id
+           WHERE COALESCE(b.quantity, 0) < 0
+             OR ((c.retired_date IS NULL OR c.retired_date > ?1) AND COALESCE(b.quantity, 0) <=
+               CASE p.kind WHEN 'kit' THEN c.reorder_kit WHEN 'warehouse' THEN c.reorder_central
+                 ELSE c.reorder_store END))`,
+    )
+    .bind(today)
+    .first<{ places: number }>();
+  return row?.places ?? 0;
 }

@@ -132,6 +132,7 @@ const OfferedSchema = z
     expected: z.number().int().openapi({
       description: "How many this job's service is expected to use; 0 for one it lists no use for.",
     }),
+    in_kit: z.number().openapi({ description: "What the technician's kit holds; below 0 where more was used." }),
   })
   .strict()
   .openapi("TechnicianConsumable");

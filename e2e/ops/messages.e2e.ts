@@ -14,6 +14,7 @@ const ARJUN: Conversation = {
   mobile: "+919810000001",
   state: "open",
   care_person: "asha@maneman.test",
+  care_name: null,
   covered_by: null,
   technician: null,
   last_message_at: "2026-09-21T05:12:00.000Z",
@@ -76,4 +77,17 @@ test("lists the chats waiting on us, and opens one with our automatic messages i
     `/clients/${ARJUN.person?.id ?? ""}/visits`,
   );
   await expect(page.getByText(`${copy.carePerson.label}: asha@maneman.test`)).toBeVisible();
+});
+
+test("names a Care person by the name clients know them by, once a manager has set one", async ({ page }) => {
+  const named = { ...ARJUN, care_name: "Asha" };
+  await answer(page, {
+    "GET /api/conversations": json({ conversations: [named], next_cursor: null }),
+    "GET /api/conversations/{id}": json({ conversation: named, items: [] }),
+  });
+  await page.goto("/messages");
+  const row = page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Arjun Mehta" }) });
+  await expect(row.getByRole("cell").nth(1)).toHaveText("Asha");
+  await row.getByRole("button", { name: copy.openLabel("Arjun Mehta") }).click();
+  await expect(page.getByText(`${copy.carePerson.label}: Asha`)).toBeVisible();
 });

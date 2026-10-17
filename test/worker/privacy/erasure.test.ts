@@ -8,6 +8,7 @@ import type { PlacesReached } from "../../../src/policy/access.ts";
 import { STUB_IDENTITY } from "../../../src/providers/cloudflare-access.ts";
 import { appFor, captureLogs, fakeDependencies, fakeQueue, markDatabase, NOW, request } from "../helpers.ts";
 import { insertJob, syntheticJpeg } from "../tryon-fixtures.ts";
+import { aVisit } from "../fixtures/visits.ts";
 import {
   book,
   bookedVisit,
@@ -423,5 +424,36 @@ describe("secretsMatch", () => {
     expect(await secretsMatch("a-secret", "a-secreT")).toBe(false);
     expect(await secretsMatch("a-secret-but-longer", "a-secret")).toBe(false);
     expect(await secretsMatch("", "")).toBe(false);
+  });
+});
+
+// A client who asked to be erased booked again, and nothing told ops before they erased.
+describe("a deletion request with a visit booked since", () => {
+  it("names the first visit booked after the request, and none booked before it", async () => {
+    const personId = await book();
+    await openRequest(personId);
+    const asked = await env.DB.prepare("SELECT created_at FROM deletion_requests").first<{ created_at: string }>();
+    const before = new Date(Date.parse(asked?.created_at ?? "") - 60_000).toISOString();
+    await aVisit({ person_id: personId, window_start: "2026-10-02T04:30:00.000Z", first_seen_at: before });
+    expect((await deletionsWaiting(env.DB, EVERYWHERE)).map((each) => each.bookedSince)).toEqual([null]);
+
+    await aVisit({ person_id: personId, window_start: "2026-10-09T04:30:00.000Z", first_seen_at: NOW.toISOString() });
+    expect((await deletionsWaiting(env.DB, EVERYWHERE)).map((each) => each.bookedSince)).toEqual([
+      "2026-10-09T04:30:00.000Z",
+    ]);
+  });
+});
+
+// A request's row said nothing of the visit booked or the refund owed until Erase was refused.
+describe("a deletion request's row", () => {
+  it("says what must be settled before the client can be erased", async () => {
+    const personId = await book();
+    await openRequest(personId);
+    const ops = appFor("local", fakeDependencies(), {}, "ops");
+    await aVisit({ person_id: personId, window_start: "2026-10-09T04:30:00.000Z" });
+    const listed = async () =>
+      (await (await request(ops, "/api/deletion-requests")).json<{ requests: { settle_first: string | null }[] }>())
+        .requests;
+    expect((await listed()).map((each) => each.settle_first)).toEqual(["visit_booked"]);
   });
 });

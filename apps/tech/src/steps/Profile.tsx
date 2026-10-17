@@ -8,7 +8,7 @@
 // profile as it was then.
 //
 // Figures are typed, to one decimal, and checked against the API's ranges before Next takes them. Everything else is
-// one tap, and a second tap on what is chosen takes it off.
+// one tap, as a radio is; a remedy is one tap on or off. The Norwood stage is needed before Next.
 
 import { Field, TextInput } from "@maneman/ui/Field";
 import { capsLook } from "@maneman/ui/Caps";
@@ -63,6 +63,13 @@ function firstOutOfRange(form: FitForm): string | null {
   const measured = [...HEAD, ...BASE].find((key) => typed[key] === "invalid");
   if (measured !== undefined) return copy.measurements[measured];
   return typed.grey_percent === "invalid" ? copy.sections.grey : null;
+}
+
+/** What holds Next back on the fit page: a figure out of its range, then the Norwood stage, which every profile needs. */
+function fitUnfinished(form: FitForm): string {
+  const outOfRange = firstOutOfRange(form);
+  if (outOfRange !== null) return copy.checkFigure(outOfRange);
+  return form.choices.norwood_stage === null ? copy.chooseStage : copy.checkFigures;
 }
 
 /** A list's choices in the order its words are written, each code with its words. */
@@ -284,7 +291,7 @@ function ProfileForm({
 
   const spec = fitOf(fit);
   const said = historyOf(history, thisYear);
-  const outOfRange = firstOutOfRange(fit);
+  const staged = fit.choices.norwood_stage !== null;
   const notice = refused === null ? null : stepsCopy.corrected.other;
 
   if (page === "fit") {
@@ -293,8 +300,8 @@ function ProfileForm({
         key="fit"
         title={stepsCopy.titles.profile}
         action={stepsCopy.next}
-        ready={spec !== null}
-        unfinished={outOfRange === null ? copy.checkFigures : copy.checkFigure(outOfRange)}
+        ready={spec !== null && staged}
+        unfinished={fitUnfinished(fit)}
         notice={notice}
         onBack={onBack}
         onAction={() => {

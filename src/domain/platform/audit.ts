@@ -109,6 +109,7 @@ export const AUDIT_ACTIONS = [
   "target.remove",
   // The day's half-slot times from a date (docs/decisions/0102-window-times.md).
   "slot_times.set",
+  "slot_times.withdraw",
   "pincode.set",
   "pincode.rename",
   // A pincode ops add to the service area, unserved, in one of our cities.
@@ -142,6 +143,8 @@ export const AUDIT_ACTIONS = [
   "dispatch.client_told",
   // Ops moving a visit the technician had checked in at, which clears their check-in.
   "dispatch.check_in_cleared",
+  // Ops moving a visit on the board, to another technician, day or window, with why.
+  "dispatch.move",
   // A move to another day ops asked the client to confirm, and one they took back; the client's acceptance is
   // visit.move_accepted (docs/decisions/0115-a-move-to-another-day-waits-for-the-client.md).
   "dispatch.move_proposed",
@@ -359,7 +362,7 @@ export function auditStatementIfDeleted(
   now: Date,
   deleted:
     | {
-        readonly table: "technicians" | "discount_codes" | "partner_payouts";
+        readonly table: "technicians" | "discount_codes" | "partner_payouts" | "slot_times";
         readonly column: "id";
         readonly value: string;
       }

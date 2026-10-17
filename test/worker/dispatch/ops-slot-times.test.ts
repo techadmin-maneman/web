@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, request } from "../helpers.ts";
+import { aVisit } from "../fixtures/visits.ts";
 
 let ops: App;
 
@@ -90,5 +91,34 @@ describe("POST /api/slot-times", () => {
     expect(answer.status).toBe(400);
     expect(await answer.json()).toMatchObject({ error: { code: "invalid_request", fields: ["half_slot_too_short"] } });
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_times").first("n")).toBe(0);
+  });
+});
+
+// A change could not be taken back: the day before a correction ran on the wrong times.
+describe("DELETE /api/slot-times/{applies_from}", () => {
+  const withdraw = (from: string) =>
+    request(ops, `/api/slot-times/${from}`, { method: "DELETE", headers: { Origin: "https://maneman.test" } });
+
+  it("withdraws the last change, still to come, under who withdrew it", async () => {
+    await set({ applies_from: "2026-11-06", ...LATER });
+    expect((await withdraw("2026-11-06")).status).toBe(204);
+    expect((await read()).changes).toEqual([]);
+    const audited = await env.DB.prepare(
+      "SELECT actor, detail FROM audit_log WHERE action = 'slot_times.withdraw'",
+    ).all();
+    expect(audited.results).toEqual([
+      { actor: "ops@localhost", detail: JSON.stringify({ applies_from: "2026-11-06" }) },
+    ]);
+  });
+
+  it("keeps a change another follows, and one a visit is booked under", async () => {
+    await set({ applies_from: "2026-11-06", ...LATER });
+    await set({ applies_from: "2026-11-07", ...LATER });
+    expect((await withdraw("2026-11-06")).status).toBe(409);
+
+    expect((await withdraw("2026-11-07")).status).toBe(204);
+    await aVisit({ window_start: "2026-11-08T04:30:00.000Z" });
+    expect((await withdraw("2026-11-06")).status).toBe(409);
+    expect((await withdraw("2026-12-01")).status).toBe(404);
   });
 });

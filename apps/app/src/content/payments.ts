@@ -11,14 +11,14 @@ export const payments = {
   /** A refund's figure: money coming back, never another charge. */
   moneyBack: (amount: string) => `+ ${amount}`,
   backTo: (method: string) => `back to your ${method}`,
-  // A late fee's name, and a charge's row: its evidence, "cancelled 9:14 am, visit was 10 am", with the dates when
-  // the two fall on different days.
+  // A late fee's name, and a charge's row: what the client changed and when, "You cancelled at 9:14 am, for a visit
+  // at 10 am", with the dates when the two fall on different days.
   lateFeeOf: (what: string) => `${what} · late fee`,
   /** The visit a payment was for, on its own day: "for 30 Aug". */
   forVisit: (date: string) => `for ${date}`,
-  charge: "Charge",
+  charge: { cancelled: "Late cancellation", moved: "Late move" },
   charged: "Charged",
-  evidence: (change: "cancelled" | "moved", at: string, visit: string) => `${change} ${at}, visit was ${visit}`,
+  evidence: (change: "cancelled" | "moved", at: string, visit: string) => `You ${change} ${at}, for a visit ${visit}`,
   // A visit the client missed.
   noShow: {
     meta: (note: { waited_minutes: number }) => `missed visit, we waited ${String(note.waited_minutes)} min`,

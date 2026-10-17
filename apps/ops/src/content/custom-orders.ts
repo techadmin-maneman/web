@@ -31,6 +31,10 @@ export const customOrders = {
   link: "Payment link",
   sendAgain: "Send link again",
   cancel: "Cancel",
+  /** Asked before an order with its link out is cancelled: the link stops working. */
+  cancelAsk: "Cancel this order? Its payment link stops working.",
+  cancelYes: "Cancel the order",
+  cancelKeep: "Keep it",
   cancelled: "Cancelled.",
   refund: "Refund in full",
   refunded: "Refunded in full.",

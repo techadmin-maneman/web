@@ -23,7 +23,7 @@ interface Entry {
   at: string;
   actor: { kind: string; id: string; name: string | null };
   action: string;
-  subject: { kind: string; id: string } | null;
+  subject: { kind: string; id: string; label: string | null } | null;
   detail: Record<string, unknown> | null;
 }
 
@@ -94,7 +94,11 @@ describe("the activity log", () => {
     const { entries, next_cursor } = await read();
 
     expect(entries.map((entry) => [entry.actor, entry.action, entry.subject])).toEqual([
-      [{ kind: "staff", id: "care@maneman.in", name: null }, "visit.cancel", { kind: "appointment", id: VISIT }],
+      [
+        { kind: "staff", id: "care@maneman.in", name: null },
+        "visit.cancel",
+        { kind: "appointment", id: VISIT, label: null },
+      ],
       [{ kind: "technician", id: IMRAN, name: "Imran Qureshi" }, "tech.call", null],
       [{ kind: "client", id: CLIENT, name: "Rohit Malhotra" }, "client.call", null],
     ]);
@@ -236,6 +240,27 @@ describe("the activity log", () => {
       { surface: "ops", actor: care, action: "stock.count", subject: { kind: "consumable", id: "solvent" } },
     ]);
     expect((await read()).entries.map((entry) => entry.action)).toEqual(["count_task.count"]);
+  });
+
+  // Records read "Item hs_mane_", "Setting change_n": cut codes, where the item and the setting have names.
+  it("names an item by its name and a setting by its title", async () => {
+    const care = staff("care@maneman.in");
+    await env.DB.prepare(
+      "INSERT OR IGNORE INTO consumables (code, name, unit, unit_cost, created_at, updated_at) VALUES ('solvent', 'Solvent', 'ml', 5, ?1, ?1)",
+    )
+      .bind(NOW.toISOString())
+      .run();
+    await logged([
+      { surface: "ops", actor: care, action: "consumable.change", subject: { kind: "consumable", id: "solvent" } },
+      {
+        surface: "ops",
+        actor: care,
+        action: "setting.change",
+        subject: { kind: "setting", id: "change_notice_hours" },
+      },
+    ]);
+    const labels = (await read()).entries.map((entry) => entry.subject?.label);
+    expect(labels).toEqual(["Free to move or cancel until", "Solvent"]);
   });
 
   it("leaves out the links a technician's phone asks for to upload photographs to", async () => {

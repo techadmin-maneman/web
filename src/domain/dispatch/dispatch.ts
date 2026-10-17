@@ -75,6 +75,8 @@ export interface MoveInput {
   readonly clearCheckIn?: AuditEntry | null;
   /** Why ops move the visit onto a day they blacked out, as they typed it; absent for any other day. */
   readonly blackoutReason?: string | null;
+  /** The move's own entry, for Activity: who moved it; absent where nobody at the board did. */
+  readonly audit?: AuditEntry | null;
 }
 
 /**
@@ -122,6 +124,8 @@ interface PlannedMove {
   readonly clearCheckIn: AuditEntry | null;
   /** Why ops moved it onto a day they blacked out; null for any other day. */
   readonly blackoutReason: string | null;
+  /** The move's own entry for Activity; null where nobody at the board made it. */
+  readonly audit: AuditEntry | null;
 }
 
 /**
@@ -228,6 +232,7 @@ export async function planMove(db: D1Database, input: MoveInput, now: Date): Pro
     claims: claimsOf(landing.start, unitsFor(placing.minutes), window),
     clearCheckIn: isUnderWay(job) ? clearCheckIn : null,
     blackoutReason,
+    audit: input.audit ?? null,
   };
   return { kind: "planned", move };
 }
@@ -250,6 +255,9 @@ async function writeMove(db: D1Database, deps: MoveDeps, move: PlannedMove, now:
       movedVisit(db, move, at),
       releasingClaims(db, move.id),
       ...checkInCleared(db, move, now),
+      ...(move.audit === null
+        ? []
+        : [auditStatement(db, { ...move.audit, detail: { move_id: move.id, reason: move.reason } }, now)]),
       ...visitUpkeep(db, { visits: [move.job.id] }),
     ]);
   } catch (error) {

@@ -10,9 +10,9 @@ import { ADDRESS, pincode, VISITOR, post, site } from "./consultations-fixtures.
 
 /**
  * The most round trips to D1 a booking from the site may wait on in turn. It waited on 14 when each read waited for the
- * one before.
+ * one before. A typed address waits on one more, the day's geocode ceiling, before Google is asked to place it.
  */
-const CONSULTATION_TRIPS = 9;
+const CONSULTATION_TRIPS = 10;
 
 /** The round trips of the free booking written in the same request (src/http/book-hold.ts), which the form waits on. */
 const BOOKING_TRIPS = 8;

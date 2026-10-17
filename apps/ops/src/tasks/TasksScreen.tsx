@@ -237,7 +237,7 @@ function BoardNotes(props: { truncated: boolean; lapsed: number; shown: boolean;
   );
 }
 
-function TaskQueue() {
+function TaskQueue({ alerts }: { alerts: number }) {
   const { loaded, retry, lapsed } = useBoard();
   const [signedIn] = useLoad(whoami);
   const access = useAccess();
@@ -312,7 +312,7 @@ function TaskQueue() {
   const open = groups.reduce((sum, group) => sum + group.count, 0);
   return (
     <section className={shared.queue} aria-labelledby="tasks" ref={heading} tabIndex={-1}>
-      <QueueHead open={open} overdue={overdue} onJump={first === null ? null : goToFirstOverdue} />
+      <QueueHead open={open} alerts={alerts} overdue={overdue} onJump={first === null ? null : goToFirstOverdue} />
       <VisuallyHidden as="h2" id="tasks">
         {tasks.openCount(open)}
       </VisuallyHidden>
@@ -331,8 +331,19 @@ function TaskQueue() {
 }
 
 /** How many are open, beside the page's title, and how many have run over, among its actions. */
-function QueueHead({ open, overdue, onJump }: { open: number; overdue: number; onJump: (() => void) | null }) {
-  useHeaderSub(tasks.openCount(open));
+function QueueHead({
+  open,
+  alerts,
+  overdue,
+  onJump,
+}: {
+  open: number;
+  /** The alerts Needs a hand holds above the tasks, counted beside them. */
+  alerts: number;
+  overdue: number;
+  onJump: (() => void) | null;
+}) {
+  useHeaderSub(tasks.openWithAlerts(open, alerts));
   if (overdue === 0) return null;
   return (
     <PageActions>
@@ -342,10 +353,11 @@ function QueueHead({ open, overdue, onJump }: { open: number; overdue: number; o
 }
 
 export function TasksScreen() {
+  const [alerts, setAlerts] = useState(0);
   return (
     <div className={shared.board}>
-      <NeedsAHand />
-      <TaskQueue />
+      <NeedsAHand onCount={setAlerts} />
+      <TaskQueue alerts={alerts} />
     </div>
   );
 }

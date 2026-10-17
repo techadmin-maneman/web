@@ -20,7 +20,7 @@ import {
 } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
 import { PageActions, useHeaderSub } from "../components/PageHead.tsx";
-import { technicians } from "../content.ts";
+import { tables, technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { technicianPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -45,7 +45,8 @@ function Service({ figures }: { figures: TechnicianWork | undefined }) {
   const copy = technicians.work;
   const average = figures?.average_minutes ?? null;
   const planned = figures?.average_planned_minutes ?? null;
-  if (figures === undefined || average === null || planned === null) {
+  // Under a minute is a job closed as it was started, not a visit's length.
+  if (figures === undefined || average === null || planned === null || average < 1) {
     return <span className={shared.none}>{technicians.unknown}</span>;
   }
 
@@ -106,7 +107,7 @@ function RosterTable({
   const [name, cityLabel, jobs, service, leave] = technicians.columns;
   const columns: readonly Column<Technician>[] = [
     { label: name, sort: (row) => row.name },
-    { label: cityLabel, sort: city, choice: city },
+    { label: cityLabel, sort: city, choice: city, all: tables.allCities },
     { label: jobs, sort: (row) => figures.get(row.id)?.jobs ?? -1 },
     { label: service, sort: (row) => figures.get(row.id)?.average_minutes ?? -1 },
     { label: leave, sort: (row) => row.leave[0]?.from ?? "" },

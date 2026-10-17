@@ -18,7 +18,7 @@ const set = (lostReason: string | null, visit = VISIT) =>
   });
 
 interface Record {
-  visits: { past: { id: string; lost_reason: unknown }[] };
+  visits: { past: { id: string; lost_reason: unknown; going_ahead: boolean | null }[] };
   lost_reasons: { code: string; label: string }[];
 }
 
@@ -50,6 +50,13 @@ describe("a closed consultation's reason", () => {
       "SELECT detail FROM audit_log WHERE action = 'visit.lost_reason' ORDER BY id",
     ).all<{ detail: string }>();
     expect(results.map((row) => JSON.parse(row.detail) as unknown)).toEqual([{ reason: "price" }, { reason: null }]);
+  });
+
+  it("says the client's yes where the technician heard it, and nothing where not asked", async () => {
+    const visit = async () => (await recorded()).visits.past.find((each) => each.id === VISIT);
+    expect((await visit())?.going_ahead).toBeNull();
+    await env.DB.prepare("UPDATE visit_outcomes SET going_ahead = 1 WHERE appointment_id = ?1").bind(VISIT).run();
+    expect((await visit())?.going_ahead).toBe(true);
   });
 
   it("refuses a code the job sheet never listed, and a visit that is no consultation", async () => {

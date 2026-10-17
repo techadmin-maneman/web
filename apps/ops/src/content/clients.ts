@@ -4,6 +4,8 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN, UNCONFIRMED } f
 
 export const clients = {
   title: "Clients",
+  /** A client's page whose link names nobody. */
+  missing: "No client at this link.",
   /** A cell with nothing in it, written as the design's tables write a gap. */
   unknown: "—",
   /**
@@ -41,7 +43,6 @@ export const clients = {
     state: "Status",
     anyState: "Any status",
     city: "City",
-    anyCity: "Any city",
     noCity: "Not known",
     nextVisit: "Next visit",
     underWay: "Under way",
@@ -127,7 +128,9 @@ export const clients = {
     /** Why the client is not going ahead after a closed consultation (docs/decisions/0149-lost-reasons.md). */
     lostReason: {
       label: "Why not going ahead",
-      none: "Going ahead, or not said",
+      // The list's first choice, no reason kept: the client's yes where the technician heard it.
+      goingAhead: "Going ahead",
+      notSaid: "Not said",
       kept: (reason: string) => `Not going ahead: ${reason}`,
       errors: {
         invalid_request: changed("That reason is no longer listed."),
@@ -687,6 +690,8 @@ export const clients = {
   },
   consents: {
     title: "Consents",
+    /** The readable copy of everything held about them, which Care sends a client who asks for it. */
+    exportData: "Download their data",
     /** The board's four columns. */
     columns: { purpose: "Purpose", state: "Status", date: "Date", source: "Source" },
     purposes: {

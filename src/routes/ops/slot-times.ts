@@ -6,7 +6,7 @@
 import { opsRoute } from "../../http/session-routes.ts";
 import { z } from "@hono/zod-openapi";
 import { BOOKING_WINDOWS, UNITS_PER_DAY } from "../../config/scheduling.ts";
-import { earliestChange, loadSlotSchedule, setSlotTimes } from "../../domain/booking/slot-times.ts";
+import { earliestChange, loadSlotSchedule, setSlotTimes, withdrawSlotTimes } from "../../domain/booking/slot-times.ts";
 import { actorOf } from "../../http/audit.ts";
 import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
@@ -102,6 +102,20 @@ const setSlotTimesRoute = opsRoute({
   },
 });
 
+const withdrawSlotTimesRoute = opsRoute({
+  method: "delete",
+  path: "/api/slot-times/{applies_from}",
+  summary: "The last change of the times withdrawn, while nothing is booked or held on its day or later",
+  request: { params: z.object({ applies_from: z.iso.date() }) },
+  responses: {
+    204: { description: "Withdrawn" },
+    404: errorResponse("not_found: no change from that day"),
+    409: errorResponse(
+      "slot_times_in_use: a later change follows it, or a visit is booked or held on its day or later",
+    ),
+  },
+});
+
 const fieldsOf = (times: SlotTimes) => ({ unit_starts: [...times.unitStarts], day_end: times.dayEnd });
 
 export function registerOpsSlotTimes(app: App): void {
@@ -146,5 +160,23 @@ export function registerOpsSlotTimes(app: App): void {
     if (set.kind === "invalid") return refuse(c, "invalid_request", set.problems);
     if (set.kind === "too_soon") return refuse(c, "slot_times_too_soon");
     return c.json({ applies_from: set.appliesFrom }, 201);
+  });
+
+  app.openapi(withdrawSlotTimesRoute, async (c) => {
+    const { applies_from: appliesFrom } = c.req.valid("param");
+    const withdrawn = await withdrawSlotTimes(c.env.DB, {
+      appliesFrom,
+      now: c.var.deps.now(),
+      audit: {
+        surface: "ops",
+        actor: actorOf(c),
+        action: "slot_times.withdraw",
+        requestId: c.var.requestId,
+        detail: { applies_from: appliesFrom },
+      },
+    });
+    if (withdrawn === "not_found") return refuse(c, "not_found");
+    if (withdrawn === "in_use") return refuse(c, "slot_times_in_use");
+    return c.body(null, 204);
   });
 }

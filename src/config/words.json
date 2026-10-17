@@ -4148,8 +4148,8 @@
     "surface": "site",
     "group": "Areas",
     "where": "areasPage",
-    "text": "Where we come — Mane Man",
-    "reviewed": true
+    "text": "Areas we cover — Mane Man",
+    "reviewed": false
   },
   {
     "key": "site:guides/areasPage.description",
@@ -4164,8 +4164,8 @@
     "surface": "site",
     "group": "Areas",
     "where": "areasPage",
-    "text": "Where we come",
-    "reviewed": true
+    "text": "Areas we cover",
+    "reviewed": false
   },
   {
     "key": "site:guides/areasPage.lead",
@@ -4244,8 +4244,8 @@
     "surface": "site",
     "group": "Guides",
     "where": "cityPage",
-    "text": "Where we come in {city}",
-    "reviewed": true
+    "text": "Areas we cover in {city}",
+    "reviewed": false
   },
   {
     "key": "site:guides/cityPage.streets",

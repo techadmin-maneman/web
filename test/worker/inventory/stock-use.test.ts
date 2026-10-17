@@ -72,12 +72,14 @@ describe("a job's use", () => {
   it("gives the card every consumable offered, the service's own first with the count it expects", async () => {
     await job.opsPost("/api/consumables/shampoo_sachet/retire", { from: "2026-09-21" });
     await job.opsPost("/api/consumables", { name: "Bonding glue", unit: "ml", unit_cost: 90 });
+    await intoKit("tape_strips", 12);
 
     const card = await (await job.get(`/api/tech/jobs/${JOB}`)).json<{ consumables: unknown }>();
+    // Each with what the technician's kit holds of it, so the step can say when more is counted than that.
     expect(card.consumables).toEqual([
-      { code: "solvent", name: "Solvent", unit: "ml", expected: 10 },
-      { code: "tape_strips", name: "Tape strips", unit: "strip", expected: 4 },
-      { code: "bonding_glue", name: "Bonding glue", unit: "ml", expected: 0 },
+      { code: "solvent", name: "Solvent", unit: "ml", expected: 10, in_kit: 0 },
+      { code: "tape_strips", name: "Tape strips", unit: "strip", expected: 4, in_kit: 12 },
+      { code: "bonding_glue", name: "Bonding glue", unit: "ml", expected: 0, in_kit: 0 },
     ]);
     // Never what one costs: no response to a technician carries an amount.
     expect(JSON.stringify(card)).not.toMatch(/cost|amount|paise|rupee/i);

@@ -46,6 +46,9 @@ export const tasks = {
   // Not drawn: the list's heading, the tasks open, as the page's bar already says "Tasks".
   /** The head's count, in oxblood, as the board writes "4 overdue". */
   openCount: (count: number) => `${String(count)} open`,
+  /** The head's count: the tasks open, and the alerts above them, "90 open · 3 need a hand". */
+  openWithAlerts: (count: number, alerts: number) =>
+    alerts === 0 ? `${String(count)} open` : `${String(count)} open · ${String(alerts)} need a hand`,
   overdue: (count: number) => `${String(count)} overdue`,
   /** The head's count as a screen reader names it, with what it does. */
   overdueJump: (count: number) => `${String(count)} overdue, go to the first`,
@@ -182,7 +185,7 @@ export const tasks = {
     recall_call: (pieces: string) => `${pieces} · recalled, replacement free`,
     /** "Tue 22 Sep · nobody came", or "· not closed" for one begun: give the client a new time, or close it. */
     visit_left_open: (when: string, begun: boolean) => `${when} · ${begun ? "not closed" : "nobody came"}`,
-    /** "Mane Man Essential 8x10 1B, 20% grey, 100% · none in their city", or the profile that matches none yet. */
+    /** "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density · none in their city", or the profile that matches none yet. */
     stock_at_risk: (hairSystem: string) =>
       hairSystem === "" ? "No hair system matched to their profile" : `${hairSystem} · none in their city`,
     /**

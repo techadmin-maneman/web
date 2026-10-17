@@ -11,7 +11,7 @@ import {
   windowAt,
   type SlotTimes,
 } from "../../policy/slot-times.ts";
-import { auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
+import { auditStatementIfDeleted, auditStatementIfWritten, type AuditEntry } from "../platform/audit.ts";
 import { statusIn, VISIT_LIVE } from "../../config/statuses.ts";
 import { z } from "zod";
 import { storedJson } from "../../lib/stored-json.ts";
@@ -104,6 +104,37 @@ type SlotTimesSet =
   | { readonly kind: "invalid"; readonly problems: readonly string[] }
   /** Before the earliest day a change may apply from, which is said; or a visit was booked there meanwhile. */
   | { readonly kind: "too_soon"; readonly earliest: string };
+
+/**
+ * Withdraws the last change of times, audited in the same batch: only while no visit is booked or held on its day or
+ * later, so nobody was offered its times. Another change set after it is withdrawn first.
+ */
+export async function withdrawSlotTimes(
+  db: D1Database,
+  input: { readonly appliesFrom: string; readonly now: Date; readonly audit: AuditEntry },
+): Promise<"withdrawn" | "not_found" | "in_use"> {
+  const change = await db
+    .prepare("SELECT id FROM slot_times WHERE applies_from = ?1")
+    .bind(input.appliesFrom)
+    .first<{ id: string }>();
+  if (change === null) return "not_found";
+  const fromInstant = indiaInstant(input.appliesFrom, "00:00").toISOString();
+  await db.batch([
+    db
+      .prepare(
+        `DELETE FROM slot_times WHERE id = ?1
+           AND NOT EXISTS (SELECT 1 FROM slot_times WHERE applies_from > ?2)
+           AND NOT EXISTS (SELECT 1 FROM slot_holds WHERE state = 'held' AND date >= ?2)
+           AND NOT EXISTS (
+             SELECT 1 FROM appointments WHERE deleted_at IS NULL
+               AND ${statusIn("status", VISIT_LIVE)} AND window_start >= ?3)`,
+      )
+      .bind(change.id, input.appliesFrom, fromInstant),
+    auditStatementIfDeleted(db, input.audit, input.now, { table: "slot_times", column: "id", value: change.id }),
+  ]);
+  const left = await db.prepare("SELECT 1 FROM slot_times WHERE id = ?1").bind(change.id).first();
+  return left === null ? "withdrawn" : "in_use";
+}
 
 /**
  * Adds a change of times from a day, audited in the same batch. It is written only if, as it is written, no change

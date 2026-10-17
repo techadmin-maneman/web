@@ -440,6 +440,8 @@ interface Offered {
   readonly unit: string;
   /** How many the service is expected to use; nought for one it lists no use for. */
   readonly expected: number;
+  /** How many the technician's kit holds, by its ledger; below nought where more was used than it held. */
+  readonly in_kit: number;
 }
 
 /**
@@ -447,15 +449,21 @@ interface Offered {
  * expects first, each with the quantity its stepper starts at. Nothing
  * retired by the job's day is offered, and no hair system: the piece step takes the one fitted.
  */
-export async function offeredForJob(db: D1Database, service: Service, today: string): Promise<Offered[]> {
+export async function offeredForJob(
+  db: D1Database,
+  service: Service,
+  job: { readonly today: string; readonly kit: string },
+): Promise<Offered[]> {
   const { results } = await db
     .prepare(
-      `SELECT c.code, c.name, c.unit, COALESCE(u.quantity, 0) AS expected FROM consumables c
+      `SELECT c.code, c.name, c.unit, COALESCE(u.quantity, 0) AS expected,
+         COALESCE((SELECT b.quantity FROM stock_balances b WHERE b.consumable_code = c.code AND b.place = ?4), 0) AS in_kit
+       FROM consumables c
        LEFT JOIN consumable_usage u ON u.consumable_code = c.code AND u.visit_type = ?1 AND u.tier = ?2
        WHERE (c.retired_date IS NULL OR c.retired_date > ?3) AND c.code NOT IN (SELECT code FROM hair_systems)
        ORDER BY expected = 0, c.name COLLATE NOCASE`,
     )
-    .bind(service.visitType, service.tier, today)
+    .bind(service.visitType, service.tier, job.today, job.kit)
     .all<Offered>();
   return results;
 }

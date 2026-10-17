@@ -159,6 +159,7 @@ export const ERROR_CODES = [
   // A change of the day's times from a day a client can still book, or a visit is booked on or after
   // (docs/decisions/0102-window-times.md).
   "slot_times_too_soon",
+  "slot_times_in_use",
   // The Staff list: the caller's grants do not reach this, or a change would leave nobody with Admin MANAGE nationally.
   "not_permitted",
   "last_admin",
@@ -319,6 +320,7 @@ export const ERROR_STATUS = {
   price_settled: 409,
   code_exists: 409,
   slot_times_too_soon: 409,
+  slot_times_in_use: 409,
   not_permitted: 403,
   last_admin: 409,
   in_use: 409,

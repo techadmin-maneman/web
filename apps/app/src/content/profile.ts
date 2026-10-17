@@ -9,7 +9,7 @@ export const VISIT_PHOTOS =
 
 export const profile = {
   back: "Back",
-  where: "Where we come",
+  where: "Your address",
   editAddress: "Edit address and access notes",
   noAddress: "No address yet. Add it before you book.",
   addAddress: "Add your address and access notes",

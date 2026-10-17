@@ -71,6 +71,8 @@ interface ConversationRow {
   readonly state: "open" | "waiting" | "closed";
   /** The client's Care person, by e-mail; null for a number we don't know, or a client not given one. */
   readonly care_person: string | null;
+  /** The first name clients know the Care person by, once a manager has set it; null until then. */
+  readonly care_name: string | null;
   /** Who covers the Care person today, while they are off (src/domain/care/cover.ts); null while they are on. */
   readonly covered_by: string | null;
   /** One of our technicians, by their number on record; Operations answer them. Null for anyone else. */
@@ -91,6 +93,7 @@ interface ListRow {
   readonly mobile_e164: string;
   readonly state: ConversationRow["state"];
   readonly care_person: string | null;
+  readonly care_name: string | null;
   readonly technician_id: string | null;
   readonly technician_name: string | null;
   readonly last_message_at: string;
@@ -119,6 +122,7 @@ function rowOf(row: ListRow, { hours, cover }: InboxContext): ConversationRow {
     mobile: row.mobile_e164,
     state: row.state,
     care_person: row.care_person,
+    care_name: row.care_name,
     covered_by: row.care_person === null ? null : (cover.get(row.care_person) ?? null),
     technician: row.technician_id === null ? null : { id: row.technician_id, name: row.technician_name ?? "" },
     last_message_at: row.last_message_at,
@@ -160,7 +164,8 @@ export async function listConversations(
   const digits = search.replace(/\D/g, "");
   const { results } = await db
     .prepare(
-      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, t.id AS technician_id,
+      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person,
+         (SELECT n.name FROM care_names n WHERE n.email = o.email) AS care_name, t.id AS technician_id,
          t.name AS technician_name, c.last_message_at,
          c.last_inbound_at,
          (SELECT m.text FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction <> 'note'
@@ -234,7 +239,8 @@ export async function conversationThread(
 ): Promise<Thread | null> {
   const row = await db
     .prepare(
-      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person, t.id AS technician_id,
+      `SELECT c.id, c.person_id, p.name, c.mobile_e164, c.state, o.email AS care_person,
+         (SELECT n.name FROM care_names n WHERE n.email = o.email) AS care_name, t.id AS technician_id,
          t.name AS technician_name, c.last_message_at, c.archive_key,
          c.last_inbound_at, NULL AS last_line,
          (SELECT MAX(m.sent_at) FROM chat_messages m WHERE m.conversation_id = c.id AND m.direction = 'out'

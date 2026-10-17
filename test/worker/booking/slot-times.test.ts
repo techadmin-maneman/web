@@ -134,10 +134,13 @@ describe("a change of times", () => {
     expect(await set(EARLIEST, { ...LATER, dayEnd: "18:00" })).toEqual({ kind: "invalid", problems: ["not_in_order"] });
   });
 
-  it("is never changed or deleted once made", async () => {
+  it("is never changed once made, nor deleted once another follows it", async () => {
     await set(EARLIEST);
+    await set("2026-11-07");
     await expect(env.DB.prepare("UPDATE slot_times SET day_end = '22:00'").run()).rejects.toThrow(/append-only/);
-    await expect(env.DB.prepare("DELETE FROM slot_times").run()).rejects.toThrow(/append-only/);
+    await expect(env.DB.prepare("DELETE FROM slot_times WHERE applies_from = ?1").bind(EARLIEST).run()).rejects.toThrow(
+      /append-only/,
+    );
   });
 });
 

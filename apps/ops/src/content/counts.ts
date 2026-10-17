@@ -33,6 +33,10 @@ export const counts = {
   notScanned: (labels: readonly string[]) =>
     `Not scanned: ${labels.join(", ")}. Signing off marks ${labels.length === 1 ? "it" : "them"} missing; scan ${labels.length === 1 ? "it" : "them"} on a recount if ${labels.length === 1 ? "it is" : "they are"} there.`,
   saveCount: "Save count",
+  /** A task whose place has since run out of what it counts. */
+  nothingHere: "Nothing of this is held here now.",
+  closeEmpty: "Close as counted",
+  close: "Close",
   saveRecount: "Save recount",
   countSaid: (waiting: number) => (waiting === 0 ? "Counted." : `Counted. ${String(waiting)} to count again.`),
   recountSaid: (waiting: number) =>

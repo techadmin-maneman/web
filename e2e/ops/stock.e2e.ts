@@ -403,7 +403,7 @@ test("shows what the next four weeks will use beside what each city holds, and t
 
 const HAIR = {
   code: "hs_essential",
-  name: "Mane Man Essential 8x10 1B, 20% grey, 100%",
+  name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density",
   unit: "piece",
   retired: false,
   hair_system: true,

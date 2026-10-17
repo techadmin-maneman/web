@@ -63,7 +63,7 @@ describe("a hair system's stock code", () => {
       consumables: { code: string; name: string; unit: string; hair_system: unknown }[];
     }>();
     expect(consumables.find((each) => each.code === code)).toMatchObject({
-      name: "Mane Man Essential 8x10 1B, 20% grey, 100%",
+      name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density",
       unit: "piece",
       hair_system: SPEC,
     });
@@ -111,9 +111,9 @@ describe("a piece fitted", () => {
     expect(await heldInKit(second)).toBe(1);
     expect(job.deps.alerts).toEqual([
       expect.stringContaining(
-        `of Mane Man Essential 8x10 1B, 20% grey, 100% for technician ${IMRAN}'s kit on the Stock page: 1 piece left, at or below its level`,
+        `of Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density for technician ${IMRAN}'s kit on the Stock page: 1 piece left, at or below its level`,
       ),
-      expect.stringContaining("of Mane Man Essential 8x10 1B, 30% grey, 100% for technician"),
+      expect.stringContaining("of Mane Man Essential · 8 × 10 in · #1B · 30% grey · 100% density for technician"),
     ]);
   });
 

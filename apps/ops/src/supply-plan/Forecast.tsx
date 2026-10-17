@@ -89,25 +89,30 @@ export function ForecastPanel({ cities }: { cities: readonly string[] }) {
   const load = useCallback(() => supplyPlanApi.forecast({ city }), [city]);
   const [loaded, retry] = useLoad(load);
   return (
-    <Panel titleId="plan-forecast" title={copy.title}>
-      <Field label={copy.city} className={form.field}>
-        {(control) => (
-          <Select
-            {...control}
-            width="choice"
-            value={city}
-            onChange={(event) => {
-              setCity(event.target.value);
-            }}
-          >
-            {cities.map((each) => (
-              <option key={each} value={each}>
-                {each}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
+    <Panel
+      titleId="plan-forecast"
+      title={copy.title}
+      actions={
+        <Field label={copy.city} labelHidden>
+          {(control) => (
+            <Select
+              {...control}
+              width="choice"
+              value={city}
+              onChange={(event) => {
+                setCity(event.target.value);
+              }}
+            >
+              {cities.map((each) => (
+                <option key={each} value={each}>
+                  {each}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+      }
+    >
       {loaded.state === "loading" && <Loading />}
       {loaded.state === "failed" && <PanelFailed onRetry={retry} requestId={loaded.requestId} />}
       {loaded.state === "loaded" && <Periods forecast={loaded.value} city={city} />}

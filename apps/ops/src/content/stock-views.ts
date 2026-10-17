@@ -15,7 +15,7 @@ export const stockViews = {
     noProfile: "No hair profile to match",
     short: (by: number) => `${String(by)} short`,
     atRisk: "Fits at risk",
-    /** "Thu 24 Sep, Gurgaon: Mane Man Essential 8x10 1B, 20% grey, 100% not in the city" */
+    /** "Thu 24 Sep, Gurgaon: Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density not in the city" */
     fit: (date: string, city: string, what: string) => `${date}, ${city}: ${what}`,
   },
   expiring: {

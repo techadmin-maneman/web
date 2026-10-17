@@ -9,7 +9,7 @@ import { writesTo } from "./steps-fixtures.ts";
 import * as techCopy from "../../apps/tech/src/content.ts";
 
 const copy = techCopy.kit;
-const HAIR = "Mane Man Essential 8x10 1B, 20% grey, 120%";
+const HAIR = "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density";
 
 function withAKit(fake: Fake): void {
   fake.kit = {
@@ -53,9 +53,9 @@ test("opens from today, shows each lot’s expiry, and receives a top-up by the 
   await expect(page.getByRole("heading", { level: 1, name: copy.title })).toBeVisible();
 
   const held = page.getByRole("region", { name: copy.held.title });
-  await expect(held).toContainText("SV-1 · 20 · Expired 31 Jan");
-  await expect(held).toContainText("SV-2 · 60 · Expires 31 Jan");
-  await expect(held).toContainText("SV-3 · 40 · Use first · expires 20 Jul");
+  await expect(held).toContainText("SV-1 · 20 ml · Expired 31 Jan");
+  await expect(held).toContainText("SV-2 · 60 ml · Expires 31 Jan");
+  await expect(held).toContainText("SV-3 · 40 ml · Use first · expires 20 Jul");
 
   const coming = page.getByRole("region", { name: copy.coming.title });
   const scan = coming.getByLabel(copy.scan.label);
@@ -73,6 +73,17 @@ test("opens from today, shows each lot’s expiry, and receives a top-up by the 
     units: ["MM-ESS-0000007-H"],
     rest: "on_its_way",
   });
+});
+
+// The kit read "Contour tape strip · -4 strips".
+test("says an item is out, and how far short, rather than a count below nought", async ({ page }) => {
+  const fake = await fakeTech(page);
+  withAKit(fake);
+  const [solvent] = fake.kit.held;
+  if (solvent !== undefined) fake.kit = { ...fake.kit, held: [{ ...solvent, quantity: -4, lots: [] }] };
+  await page.goto("/kit");
+  const held = page.getByRole("region", { name: copy.held.title });
+  await expect(held).toContainText(`Solvent · ${copy.held.out("4 ml")}`);
 });
 
 test("hands back the pieces that came off, and the expired stock", async ({ page }) => {

@@ -89,7 +89,7 @@ test.describe("the piece (board B3, step 4)", () => {
       {
         ...spec,
         code: "hs_lighter",
-        name: "Mane Man Essential 8x10 1B, 20% grey, 100%",
+        name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density",
         held: 1,
         density_percent: 100,
         units: [],
@@ -97,7 +97,7 @@ test.describe("the piece (board B3, step 4)", () => {
       {
         ...spec,
         code: "hs_exact",
-        name: "Mane Man Essential 8x10 1B, 20% grey, 120%",
+        name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density",
         held: 2,
         density_percent: 120,
         units: [],
@@ -108,7 +108,7 @@ test.describe("the piece (board B3, step 4)", () => {
 
     const kit = page.getByRole("region", { name: techCopy.steps.piece.kit.title });
     const choices = kit.getByRole("button");
-    await expect(choices.first()).toContainText(`120% · 2 in kit · ${techCopy.steps.piece.kit.matches}`);
+    await expect(choices.first()).toContainText(`120% density · 2 in kit · ${techCopy.steps.piece.kit.matches}`);
     await choices.first().click();
     await expect(choices.first()).toHaveAttribute("aria-pressed", "true");
     expect(await axeViolations(page)).toEqual([]);
@@ -133,7 +133,7 @@ test.describe("the piece (board B3, step 4)", () => {
         grey_percent: 20,
         density_percent: 120,
         code: "hs_exact",
-        name: "Mane Man Essential 8x10 1B, 20% grey, 120%",
+        name: "Mane Man Essential · 8 × 10 in · #1B · 20% grey · 120% density",
         held: 2,
         units: [
           { code: "MM-ESS-0000007-H", lot_code: "HS-1", expires_on: "2031-03-31" },
@@ -341,7 +341,8 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
     await page.getByRole("button", { name: techCopy.steps.next }).click();
     await expect(page.getByText("Rohit M. · free consultation")).toBeVisible();
-    expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
+    // Declined, the client is not going ahead with the fit, and the close says so.
+    expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: false });
   });
 
   test("names the product the payment link is for, once the client chose it", async ({ page }) => {

@@ -11,7 +11,7 @@ import { indiaClock, indiaDate, shortDate } from "@maneman/web-kit/dates";
 import { useCallback, useState } from "react";
 import { type ClientList as Listed, type ClientListQuery } from "../api.ts";
 import { OpsLink } from "../components/Shell.tsx";
-import { clients } from "../content.ts";
+import { clients, tables } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
@@ -89,7 +89,7 @@ function Narrow({
               choose("city")(event.target.value);
             }}
           >
-            <option value="">{copy.anyCity}</option>
+            <option value="">{tables.allCities}</option>
             {cities.map((city) => (
               <option key={city} value={city}>
                 {city}

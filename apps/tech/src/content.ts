@@ -496,6 +496,11 @@ export const steps = {
     count: (name: string, count: number) => `${name}: ${String(count)}`,
     // The board draws the name alone; what one is counted in, and what the visit's service expects.
     unit: (unit: string, expected: number) => (expected === 0 ? unit : `${amountOf(expected, unit)} expected`),
+    /** What the kit holds beside it, "12 strips in your kit", and when more is counted than that, so ops send more. */
+    inKit: (held: number, unit: string, over: boolean) => {
+      const kit = held <= 0 ? "None in your kit" : `${amountOf(held, unit)} in your kit`;
+      return over ? `${kit}. Ops will send more.` : kit;
+    },
     // The board draws four steppers and no way to record a fifth consumable.
     add: "Add another",
     addOne: (name: string) => `Add ${name}`,
@@ -728,6 +733,8 @@ export const profile = {
   greyRange: (min: number, max: number) => `${String(min)}–${String(max)}.`,
   yearRange: (first: number, last: number) => `A year from ${String(first)} to ${String(last)}.`,
   checkFigures: "Check the figures to continue",
+  /** Next, held back until the Norwood stage is chosen. */
+  chooseStage: "Choose the Norwood stage to continue",
   /** Next, held back by a figure outside its range: which one. */
   checkFigure: (figure: string) => `${figure.split(",")[0] ?? figure} is out of range`,
   history: {
@@ -800,6 +807,8 @@ export const kit = {
   held: {
     title: "In your kit",
     none: "Your kit is empty.",
+    /** A count the kit's ledger has at nought or below: more was used than it held. */
+    out: (short: string | null) => (short === null ? "Out" : `Out, ${short} short`),
     expires: (date: string) => `Expires ${date}`,
     /** A lot inside the days ops are warned before it expires. */
     useFirst: (date: string) => `Use first · expires ${date}`,

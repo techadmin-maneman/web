@@ -299,6 +299,15 @@ describe("a closed job", () => {
     await work(CLOSED_AT, TODAY_JOB, [...UP_TO_THE_OUTCOME, ["outcome", { outcome: "done" }, 80]]);
   }
 
+  // A yes at the consultation was sent as nothing, so the console could not tell it from a question never asked.
+  it("keeps the client's yes to a fit with the close", async () => {
+    await work(CLOSED_AT, TODAY_JOB, [...UP_TO_THE_OUTCOME, ["outcome", { outcome: "done", going_ahead: true }, 80]]);
+    const kept = await env.DB.prepare("SELECT going_ahead FROM visit_outcomes WHERE appointment_id = ?1")
+      .bind(TODAY_JOB)
+      .first();
+    expect(kept).toEqual({ going_ahead: 1 });
+  });
+
   it("refuses a second outcome, and the visit stays closed as the first said", async () => {
     await closedAsDone();
 

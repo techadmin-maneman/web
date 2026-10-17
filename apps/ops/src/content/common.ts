@@ -68,6 +68,8 @@ export const states = {
 export const tables = {
   search: "Search",
   allOf: (column: string) => `${column}: All`,
+  /** Every page's city list, unnarrowed, in the one wording. */
+  allCities: "All cities",
   clear: "Clear",
   count: (matching: number, total: number) => `${String(matching)} of ${String(total)}`,
   none: "Nothing matches.",

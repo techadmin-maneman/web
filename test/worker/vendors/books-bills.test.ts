@@ -163,7 +163,7 @@ describe("a receipt in Books", () => {
     });
     expect(bill?.lines).toEqual([
       {
-        description: `Staging test: Mane Man Essential 8x10 1B, 20% grey, 100% (${po})`,
+        description: `Staging test: Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density (${po})`,
         accountId: "acc-cogs",
         unitPrice: 12_000,
         quantity: 2,
@@ -222,7 +222,7 @@ describe("a receipt in Books", () => {
         currency: "USD",
         lines: [
           {
-            description: `Staging test: Mane Man Essential 8x10 1B, 20% grey, 100% (CL-${String(number)}, ${await orderNumber()})`,
+            description: `Staging test: Mane Man Essential · 8 × 10 in · #1B · 20% grey · 100% density (CL-${String(number)}, ${await orderNumber()})`,
             accountId: "acc-cogs",
             unitPrice: 12_000,
             quantity: 1,

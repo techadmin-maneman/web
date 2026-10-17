@@ -51,6 +51,7 @@ export const READ_CUSTOM_ORDERS = `GET ${RECORD_PATH}/custom-orders` as const sa
 export const NO_CUSTOM_ORDERS = {
   orders: [],
   suppliers: [{ id: "sup-1", name: "Lumina Hair Co", currency: "USD" }],
+  profile_ready: true,
 } satisfies OpsReply<"/api/clients/{id}/custom-orders">;
 
 export const FIND = "POST /api/clients/find" as const satisfies Call;

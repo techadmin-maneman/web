@@ -137,6 +137,28 @@ describe("the log", () => {
   });
 });
 
+describe("locating a typed address", () => {
+  it("gives the building's coordinate where Google places the words to it", async () => {
+    const { provider } = watched();
+    const answer = await provider.locate("Mayfield Towers, Sector 65, Gurugram", "122018");
+    expect(answer.ok).toBe(true);
+    if (answer.ok) expect(answer.place.lat).toBeCloseTo(28.3968, 4);
+  });
+
+  // A locality's centre is a kilometre from the door: a check-in measured against it would be wrong.
+  it("gives none where Google places the words no closer than their area", async () => {
+    const { provider } = watched();
+    const answer = await provider.locate("House 12, somewhere in Sector 65", "122018");
+    expect(answer).toMatchObject({ ok: false, reason: "not_found" });
+  });
+
+  it("asks within the address's pincode, in India", async () => {
+    const { calls, provider } = watched();
+    await provider.locate("Mayfield Towers", "122018");
+    expect(calls.at(-1)?.url).toContain(encodeURIComponent("country:IN|postal_code:122018"));
+  });
+});
+
 describe("resolving a place", () => {
   it("gives a coordinate and the address Google writes for it", async () => {
     const { provider } = watched();

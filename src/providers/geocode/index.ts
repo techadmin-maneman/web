@@ -65,12 +65,18 @@ export interface GeocodeProvider {
    * may be kept.
    */
   resolve(placeId: string, sessionToken: string): Promise<ResolveResult>;
+  /**
+   * A typed address's coordinate, from the Geocoding API, within its pincode. Only a precise one, to the building or
+   * between two numbered ones on the street: a locality's centre is not_found, since a check-in measured against it
+   * would be wrong by a kilometre.
+   */
+  locate(address: string, pincode: string): Promise<ResolveResult>;
 }
 
 /** Answers nothing, for an environment with no address provider. */
 function createNoGeocode(): GeocodeProvider {
   const off = () => Promise.resolve({ ok: false, reason: "unavailable", detail: "no address provider here" } as const);
-  return { suggest: off, resolve: off };
+  return { suggest: off, resolve: off, locate: off };
 }
 
 /** Google when there is a key; otherwise the stub, which fakes Google's HTTP API. */

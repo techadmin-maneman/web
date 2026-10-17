@@ -3,7 +3,7 @@
 // printed order says of us (./Letterhead.tsx); the claims on suppliers, with the returned pieces to settle
 // (./Claims.tsx); and each supplier's scorecard.
 
-import { fullDate } from "@maneman/web-kit/dates";
+import { fullDate, longDate } from "@maneman/web-kit/dates";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { RowButton } from "@maneman/ui/Button";
@@ -52,6 +52,7 @@ function OrdersTable({ orders, opener }: { orders: Orders; opener: RowOpener }) 
                 {copy.number(order.number)}
               </RowButton>
             </RowHead>
+            <td>{longDate(order.drafted_at)}</td>
             <td>{supplierOf(order.supplier_id)}</td>
             <td>{copy.states[order.state]}</td>
             <td className={form.figure}>{inCurrency(order.total, order.currency)}</td>

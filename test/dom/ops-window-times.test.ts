@@ -121,6 +121,27 @@ describe("the window times", () => {
     expect(said()).toContain(`${copy.window.morning} 9:30 am–12:30 pm`);
   });
 
+  // A change set for the wrong day could not be taken back.
+  it("withdraw the last change still to come, and say so", async () => {
+    served = {
+      ...TIMES,
+      changes: [
+        {
+          applies_from: "2026-11-30",
+          unit_starts: STARTS,
+          day_end: "21:00",
+          set_by: "ops@maneman.in",
+          set_at: "2026-10-01T05:00:00.000Z",
+        },
+      ],
+    };
+    answer = () => new Response(null, { status: 204 });
+    await show();
+    await press(copy.withdrawing.open);
+    await press(copy.withdrawing.confirm);
+    expect(said()).toContain(copy.withdrawn);
+  });
+
   it("change from the earliest day, checked against the windows they move", async () => {
     await show();
     type(copy.start(copy.window.evening, 1), "18:30");

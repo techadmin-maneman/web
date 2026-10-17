@@ -101,6 +101,8 @@ function readable(field: Field, value: unknown): string | null {
       return noticeText(asText(value));
     case "text":
       return eachOf(value, (each) => each);
+    case "code":
+      return null;
   }
 }
 

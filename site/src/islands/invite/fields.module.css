@@ -11,3 +11,8 @@
   line-height: var(--lh-160);
   color: var(--text-muted);
 }
+
+/* Each link's tap reaches a thumb's height above and below its words, padding an inline box leaving the line as it is. */
+.legal a {
+  padding-block: var(--sp-12);
+}

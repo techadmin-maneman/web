@@ -61,6 +61,9 @@ function Stepper({
       <span className={shared.countLabel}>
         {name}
         <span className={shared.countUnit}>{copy.consumables.unit(consumable.unit, consumable.expected)}</span>
+        <span className={count > consumable.in_kit ? shared.countOver : shared.countUnit}>
+          {copy.consumables.inKit(consumable.in_kit, consumable.unit, count > consumable.in_kit)}
+        </span>
       </span>
       <span className={shared.stepper}>
         <IconButton

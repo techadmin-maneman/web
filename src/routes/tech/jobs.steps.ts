@@ -327,10 +327,14 @@ function registerProfileAndOutcome(app: App): void {
       "outcome",
       async (job) => {
         if (body.outcome === "done") {
-          if (body.lost_reason === undefined) return { outcome: "done" };
+          if (body.lost_reason === undefined) {
+            return body.going_ahead === undefined
+              ? { outcome: "done" }
+              : { outcome: "done", going_ahead: body.going_ahead };
+          }
           const lost = knownCodes((await jobSheet(c.env.DB)).lostReasons);
           return lost.has(body.lost_reason)
-            ? { outcome: "done", lost_reason: body.lost_reason }
+            ? { outcome: "done", lost_reason: body.lost_reason, going_ahead: false }
             : { invalid: ["lost_reason"] };
         }
         if (body.cannot_fit === true) {

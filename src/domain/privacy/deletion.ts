@@ -4,7 +4,12 @@
 // Either way the client is told on WhatsApp, as their app promises.
 
 import type { PlacesReached } from "../../policy/access.ts";
-import { DELETION_DECIDED_WITHIN_DAYS, erasureRefusal, type ErasureRefusal } from "../../policy/account-deletion.ts";
+import {
+  DELETION_DECIDED_WITHIN_DAYS,
+  erasureRefusal,
+  LIVE_VISIT_STATUSES,
+  type ErasureRefusal,
+} from "../../policy/account-deletion.ts";
 import { deletionWaitingKey } from "../../policy/alerts.ts";
 import { DECISION_SHOWN_DAYS } from "../../policy/decision-reasons.ts";
 import type { OutboundMessage } from "../../providers/messaging/index.ts";
@@ -68,29 +73,48 @@ export async function openDeletion(db: D1Database, personId: string): Promise<De
   return row === null ? null : { id: row.id, personId: row.person_id, state: row.state, createdAt: row.created_at };
 }
 
+/** A request waiting for ops, and the first visit still to happen that the client booked after asking. */
+export interface DeletionWaiting {
+  readonly id: string;
+  readonly personId: string;
+  readonly name: string;
+  readonly mobileE164: string;
+  readonly createdAt: string;
+  readonly bookedSince: string | null;
+}
+
 /**
  * The requests waiting for ops in the places reached, oldest first, with the number ops will reach the client on. A
  * client erased with a request still open, before an erasure closed it, waits for nothing.
  */
-export async function deletionsWaiting(
-  db: D1Database,
-  reached: PlacesReached,
-): Promise<{ id: string; personId: string; name: string; mobileE164: string; createdAt: string }[]> {
+export async function deletionsWaiting(db: D1Database, reached: PlacesReached): Promise<DeletionWaiting[]> {
   const rows = await db
     .prepare(
-      `SELECT d.id, d.person_id, p.name, p.mobile_e164, d.created_at
+      `SELECT d.id, d.person_id, p.name, p.mobile_e164, d.created_at,
+         (SELECT MIN(a.window_start) FROM appointments a
+           WHERE a.person_id = d.person_id AND a.deleted_at IS NULL
+             AND COALESCE(a.first_seen_at, a.synced_at) > d.created_at
+             AND a.status IN (SELECT value FROM json_each(?2))) AS booked_since
        FROM deletion_requests d JOIN people p ON p.id = d.person_id
        WHERE d.state = 'requested' AND p.erased_at IS NULL AND ${withinReach("deletion_request", "d", "?1")}
        ORDER BY d.created_at`,
     )
-    .bind(reachBinding(reached))
-    .all<{ id: string; person_id: string; name: string; mobile_e164: string; created_at: string }>();
+    .bind(reachBinding(reached), JSON.stringify(LIVE_VISIT_STATUSES))
+    .all<{
+      id: string;
+      person_id: string;
+      name: string;
+      mobile_e164: string;
+      created_at: string;
+      booked_since: string | null;
+    }>();
   return rows.results.map((row) => ({
     id: row.id,
     personId: row.person_id,
     name: row.name,
     mobileE164: row.mobile_e164,
     createdAt: row.created_at,
+    bookedSince: row.booked_since,
   }));
 }
 

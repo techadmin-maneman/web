@@ -139,7 +139,7 @@ function Detail({ entry }: { entry: EntryDetail }) {
         {method !== null && <Fact name={entry.kind === "refund" ? rows.destination : rows.method} value={method} />}
         <Fact name={rows.status} value={late ? payments.lateRefund : entryStatus(entry, true)} />
         {entry.kind === "payment" && entry.charge !== null && (
-          <Fact name={payments.charge} value={chargeEvidence(entry.charge)} />
+          <Fact name={payments.charge[entry.charge.change]} value={chargeEvidence(entry.charge)} />
         )}
         {entry.kind === "payment" && entry.no_show !== null && (
           <Fact

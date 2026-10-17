@@ -52,11 +52,15 @@ export const EXPORT_QUERIES = {
     WHERE c.person_id = ?1
       OR (c.person_id IS NULL AND c.mobile_e164 = (SELECT mobile_e164 FROM people WHERE id = ?1))
     ORDER BY m.sent_at`,
-  care_person: "SELECT email AS care_person, since FROM care_owners WHERE person_id = ?1",
+  // By the first name clients know them by, as the app says it; the team where they have none yet.
+  care_person: `SELECT COALESCE(n.name, 'care_team') AS care_person, o.since FROM care_owners o
+    LEFT JOIN care_names n ON n.email = o.email WHERE o.person_id = ?1`,
   // That Care sent something to their city, and when; never Care's note.
   city_matters: "SELECT city, raised_at FROM city_matters WHERE person_id = ?1 ORDER BY raised_at",
   // Each hair system made for them, its spec, price and payment; never what the supplier charges us.
-  custom_orders: `SELECT number, product, base_width_in, base_length_in, colour, grey_percent, density_percent, wave,
+  custom_orders: `SELECT number, product,
+      (SELECT s.name FROM services s WHERE s.kind = 'first_fit' AND s.tier = custom_orders.product) AS product_name,
+      base_width_in, base_length_in, colour, grey_percent, density_percent, wave,
     amount, promised_on, state, short_url, link_sent_at, paid_at, refund_reason, refunded_at, raised_at, updated_at
     FROM custom_orders
     WHERE person_id = ?1 ORDER BY raised_at, rowid`,

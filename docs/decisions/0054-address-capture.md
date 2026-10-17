@@ -165,3 +165,10 @@ And the premise ADR 0036 rested on does not hold: **a contact created with no co
 ### What this changes in the sections above
 
 "The map provider is not chosen here" is superseded: it is chosen. Its findings on Ola Maps, Mappls and OpenStreetMap stand as the comparison that was made, and are kept for the next time this is asked. The consequence "A map picker cannot be bundled" is moot, because nothing is bundled and nothing is drawn. The ranking of coordinate sources is unchanged, and Google joins it fourth: the technician's check-in and the client's own phone are still free, unlicensed and better, and `geocode_source` records which of them a row's coordinate came from.
+
+## Amendment: a typed address is placed where Google can place it to the building
+
+A typed address saved no pin, so every check-in at one passed unmeasured. It is now geocoded once as it is saved, by
+its words within its pincode, under the same daily ceiling. Only a result placed to the building or between two
+numbered ones on the street is kept (`ROOFTOP` or `RANGE_INTERPOLATED`, not a partial match): a locality's centre is
+a kilometre from the door, and a check-in measured against it would be wrong. Anything less saves no pin, as before.

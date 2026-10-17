@@ -239,9 +239,9 @@ export const guides: readonly Guide[] = [
 /** The cities we come to, as the home page's questions name them; the served pincodes decide the streets. */
 export const areasPage = {
   publish: true,
-  pageTitle: "Where we come — Mane Man",
+  pageTitle: "Areas we cover — Mane Man",
   description: "Hair systems fitted at home by a trained technician, in the cities we serve.",
-  title: "Where we come",
+  title: "Areas we cover",
   // As built, naming no city; the site's Worker writes in the cities ops serve (site/src/lib/cities.ts).
   lead: "Your technician comes to your home, wherever we serve.",
   cities: "Your technician comes to your home in {cities}.",
@@ -263,7 +263,7 @@ export const cityPage = {
   title: "Hair systems in {city}",
   description: "Hair systems in 100% real human hair, fitted at your home in {city}. The consultation is free.",
   lead: "Your technician comes to your home in {city}, matches a hair system to your own hair and fits it there.",
-  areas: "Where we come in {city}",
+  areas: "Areas we cover in {city}",
   streets: "Within the city, we serve by pincode. Check yours to see the days we can come.",
   check: "Check your pincode",
   others: "Other cities",

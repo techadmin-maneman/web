@@ -20,6 +20,7 @@ import { IMRAN, JOB, PERSON, working, type Working } from "../job-fixtures.ts";
 interface Orders {
   orders: { id: string; number: number; status: string; short_url: string | null; po_number: number | null }[];
   suppliers: { id: string; name: string }[];
+  profile_ready: boolean;
 }
 
 let job: Working;
@@ -100,6 +101,7 @@ beforeEach(async () => {
 
 describe("a custom order", () => {
   it("is raised to the client's profile, and its whole price asked by a link texted to them", async () => {
+    expect((await orders()).profile_ready).toBe(true);
     const raised = await raise();
     expect(raised.status).toBe(200);
     const [order] = (await raised.json<Orders>()).orders;
@@ -161,6 +163,8 @@ describe("a custom order", () => {
       .bind(PERSON, new Date(NOW.getTime() + 1000).toISOString())
       .run();
     expect((await codeOf(await raise())).fields).toEqual(["profile"]);
+    // Said before the form, so nobody fills it in to be refused.
+    expect((await orders()).profile_ready).toBe(false);
   });
 });
 
