@@ -148,7 +148,8 @@ export function CloseOut({ id }: { id: string }) {
         <p className={capsLook(shared.closeLabel)}>{copy.label}</p>
         <Icon className={shared.closeTick} d={ICONS.tick} size="xl" weight="heavy" />
         <h1 className={shared.closeWho} ref={heading} tabIndex={-1}>
-          {copy.who(who, closedAs(job, outcome, waiting.events))}
+          {copy.who(who)}
+          <span className={shared.closedAs}>{closedAs(job, outcome, waiting.events)}</span>
         </h1>
         {outcome === "no_show" ? (
           <Evidence job={job} />

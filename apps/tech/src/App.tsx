@@ -90,7 +90,12 @@ export function App() {
         </div>
       );
     case "out":
-      return <SignIn why={state.why} onSignedIn={() => void check()} />;
+      // The sign-in's one main landmark, so its heading and the code's status are inside one.
+      return (
+        <main>
+          <SignIn why={state.why} onSignedIn={() => void check()} />
+        </main>
+      );
     case "in": {
       const session: Session = {
         me: state.me,

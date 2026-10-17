@@ -24,9 +24,9 @@ test("lists the day’s jobs in order, with no amount anywhere (board A1)", asyn
   await expect(rows.nth(1)).toContainText(techCopy.badges.credit);
   // The clock the heading uses, never "2:00", and how long each visit is, never "2 slots".
   await expect(rows.first().getByText("9:30 am", { exact: true })).toBeVisible();
-  await expect(rows.first().getByText("90 min", { exact: true })).toBeVisible();
+  await expect(rows.first().getByText("1 h 30 m", { exact: true })).toBeVisible();
   await expect(rows.nth(2).getByText("2 pm", { exact: true })).toBeVisible();
-  await expect(rows.nth(2).getByText("180 min", { exact: true })).toBeVisible();
+  await expect(rows.nth(2).getByText("3 h", { exact: true })).toBeVisible();
 
   // "No money anywhere in the technician app": a badge only.
   await expect(page.locator("body")).not.toContainText("₹");

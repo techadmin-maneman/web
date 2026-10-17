@@ -140,6 +140,8 @@ test("gives a consultation’s card the hair profile and no piece", async ({ pag
 
 test("checks in at the door, and records the time and the distance (board B5)", async ({ page }) => {
   const fake = await fakeTech(page);
+  // Booked to start ten minutes ago, so the wait runs from the check-in, whatever time of day the test runs.
+  fake.startsAt = new Date(Date.now() - 10 * 60_000).toISOString();
   await atTheDoor(page);
   await page.goto(`/jobs/${JOB_ID}`);
 
@@ -157,7 +159,7 @@ test("checks in at the door, and records the time and the distance (board B5)", 
   const checkIn = fake.writes.find((write) => write.path.endsWith("/checkin"));
   expect(checkIn?.body).toMatchObject({ lat: 28.39, lng: 77.07 });
   // Every write carries the job's start as the phone holds it, so a job ops moved is refused.
-  expect(checkIn?.startsAt).toMatch(/T04:00:00\.000Z$/);
+  expect(checkIn?.startsAt).toBe(fake.startsAt);
 
   expect(await axeViolations(page)).toEqual([]);
 });
@@ -184,6 +186,8 @@ test("refuses a check-in from away, and says how far, with no way to close a no-
 
 test("keeps Close as no-show dim and outlined beside the gold Start job until the wait has run", async ({ page }) => {
   const fake = await fakeTech(page);
+  // Booked to start ten minutes ago, so the wait runs from the check-in, whatever time of day the test runs.
+  fake.startsAt = new Date(Date.now() - 10 * 60_000).toISOString();
   fake.waitLeftMs = 4_000;
   await arrive(page);
 
@@ -343,7 +347,7 @@ test("tomorrow’s job shows its day, and cannot be checked in to today", async 
   await atTheDoor(page);
   await page.goto(`/jobs/${TOMORROW_JOB_ID}`);
 
-  await expect(page.getByText(/^Tomorrow · 10 am · service visit · 90 min$/)).toBeVisible();
+  await expect(page.getByText(/^Tomorrow · 10 am · service visit · 1 h 30 m$/)).toBeVisible();
   await expect(page.getByText(techCopy.job.notToday.tomorrow)).toBeVisible();
   await expect(page.getByRole("button", { name: techCopy.notHome.arrived.action })).toHaveCount(0);
   await expect(page.getByRole("button", { name: techCopy.job.start })).toHaveCount(0);
