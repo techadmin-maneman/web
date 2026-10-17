@@ -139,6 +139,9 @@ test("cancels an order, with why", async ({ page }) => {
   await panel.getByRole("button", { name: copy.order.confirmCancel }).click();
   expect((await sent).postDataJSON()).toEqual({ reason: "Out of stock" });
   await expect(panel).toContainText(copy.order.cancelledWhy("Out of stock"));
+  // Cancelled, nothing is left to cancel or keep.
+  await expect(panel.getByRole("button", { name: copy.order.keep })).toHaveCount(0);
+  await expect(panel.getByLabel(copy.order.reason)).toHaveCount(0);
 });
 
 /** The form that drafts an order, opened from the page's head. */
