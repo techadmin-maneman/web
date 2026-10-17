@@ -10,7 +10,7 @@ import { capsLook } from "@maneman/ui/Caps";
 import { classes } from "@maneman/ui/classes";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useNearView } from "@maneman/ui/useNearView";
-import { inIndia, shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { memo, useMemo } from "react";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
@@ -35,11 +35,8 @@ const whatOf = (block: Block) =>
     .filter((part): part is string => typeof part === "string")
     .join(" · ");
 
-/** "10:30", "16:00": when a block starts, on India's 24-hour clock, short enough to sit beside the client's name. */
-function startOf(block: Block): string {
-  const india = inIndia(block.starts_at);
-  return `${String(india.getUTCHours())}:${String(india.getUTCMinutes()).padStart(2, "0")}`;
-}
+/** "10:30 am", "4 pm": when a block starts, as every surface writes a time. */
+const startOf = (block: Block): string => indiaClock(block.starts_at);
 
 /** The board's three inks: a first fit on ink, a replacement shaded, everything else on light paper. */
 function inkOf(block: Block): string | undefined {

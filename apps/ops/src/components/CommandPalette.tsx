@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { shell } from "../content.ts";
 import { useAccess, useMayCall } from "../lib/access.ts";
+import { phoneWords } from "../lib/phone.ts";
 import {
   clientPath,
   mayOpen,
@@ -80,7 +81,7 @@ function Palette({ onClose }: { onClose: () => void }) {
   ].filter((place) => place.name.toLowerCase().includes(asked));
   const clients: Place[] = useClients(text, mayFind).map((each) => ({
     key: each.id,
-    name: words.client(each.name, each.mobile),
+    name: words.client(each.name, phoneWords(each.mobile)),
     to: clientPath(each.id, "visits"),
   }));
   const places = [...pages, ...clients];

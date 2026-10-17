@@ -25,7 +25,7 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
   ]);
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("Sec 65 · service");
   // Each block says when it starts, not only its window.
-  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("9:00");
+  await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("9 am");
   await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, morning" })).toContainText(
     "Sec 43 · first fit",
   );

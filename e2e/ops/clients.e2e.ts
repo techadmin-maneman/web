@@ -33,6 +33,7 @@ import {
   invitedBy,
 } from "./clients-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
+import { phoneWords } from "../../apps/ops/src/lib/phone.ts";
 
 const MOBILE = "+91 98100 04417";
 
@@ -126,7 +127,7 @@ test("finds a client from any page through Search, and keeps the words out of th
   await page.keyboard.press("Control+k");
   const palette = page.getByRole("dialog", { name: opsCopy.shell.palette.title });
   await palette.getByLabel(opsCopy.shell.palette.label).fill("98100 0441");
-  await palette.getByRole("link", { name: opsCopy.shell.palette.client(FOUND.name, FOUND.mobile) }).click();
+  await palette.getByRole("link", { name: opsCopy.shell.palette.client(FOUND.name, phoneWords(FOUND.mobile)) }).click();
 
   await expect(page.getByRole("heading", NAME)).toBeVisible();
   expect(new URL(page.url()).pathname).toBe(`/clients/${CLIENT.id}/visits`);
