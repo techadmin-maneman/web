@@ -25,6 +25,12 @@ const stock = async (): Promise<Stock> => (await request(job.ops, "/api/stock"))
 const lowPlaces = async (): Promise<number> =>
   (await (await request(job.ops, "/api/tasks")).json<{ low_stock_places: number }>()).low_stock_places;
 
+/** The places the Stock screen marks low, or below zero, which the badge counts the same. */
+const markedLow = async (): Promise<number> => {
+  const { holdings } = await stock();
+  return new Set(holdings.filter((each) => each.low || each.quantity < 0).map((each) => each.place_id)).size;
+};
+
 /** What a place holds of a consumable, as the Stock screen reads it. */
 async function held(code: string, place: string): Promise<{ quantity: number; low: boolean }> {
   const holding = (await stock()).holdings.find((each) => each.consumable_code === code && each.place_id === place);
@@ -328,7 +334,9 @@ describe("low stock", () => {
       to: IMRAN,
     });
     expect(job.deps.alerts).toEqual([expect.stringContaining("of Tape strips for National warehouse")]);
-    expect(await lowPlaces()).toBe(1);
+    // The warehouse, and both kits at or below the kit's level, as the Stock screen marks them.
+    expect(await lowPlaces()).toBe(3);
+    expect(await lowPlaces()).toBe(await markedLow());
 
     const retired = await job.opsPost("/api/consumables/tape_strips/retire", { from: "2026-09-21" });
     expect(retired.status).toBe(200);
@@ -337,6 +345,16 @@ describe("low stock", () => {
       "SELECT key FROM alerts WHERE key >= 'low_stock:' AND key < 'low_stock;' AND resolved_at IS NULL",
     ).all();
     expect(open.results).toEqual([]);
+  });
+
+  // The Gurgaon stockroom at -288 strips was marked neither low nor counted by the badge.
+  it("counts a place below zero as low, whatever its level", async () => {
+    await env.DB.prepare("UPDATE consumables SET reorder_kit = NULL, reorder_central = NULL, reorder_store = NULL").run();
+    await job.opsPost("/api/stock/deliveries", { consumable_code: "solvent", quantity: 1 });
+    expect(await lowPlaces()).toBe(0);
+    await env.DB.prepare("UPDATE stock_balances SET quantity = -4 WHERE consumable_code = 'solvent'").run();
+    expect(await lowPlaces()).toBe(1);
+    expect(await markedLow()).toBe(1);
   });
 
   it("never marks a consumable with no level, nor one retired", async () => {
@@ -377,7 +395,9 @@ describe("low stock", () => {
       expect.stringContaining("of Adhesive for technician"),
     ]);
     expect(await openKeys()).toEqual([`low_stock:kit:${IMRAN}:adhesive`, `low_stock:kit:${IMRAN}:tape_strips`]);
-    expect(await lowPlaces()).toBe(1);
+    // Imran's kit, and Sameer's, which holds none of either.
+    expect(await lowPlaces()).toBe(2);
+    expect(await lowPlaces()).toBe(await markedLow());
 
     await job.opsPost("/api/stock/counts", { consumable_code: "tape_strips", place_id: IMRAN, counted: 12 });
     expect(await openKeys()).toEqual([`low_stock:kit:${IMRAN}:adhesive`]);

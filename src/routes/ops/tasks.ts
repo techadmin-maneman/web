@@ -29,6 +29,7 @@ import { errorResponse, refuse } from "../../http/errors.ts";
 import { json } from "../../http/openapi.ts";
 import { REASON_MAX_CHARS } from "../../policy/decision-reasons.ts";
 import { DAY_MS } from "../../lib/durations.ts";
+import { indiaDate } from "../../lib/india-time.ts";
 import {
   CLOSABLE_TASK_GROUPS,
   hasLapsed,
@@ -314,7 +315,7 @@ export function registerOpsTasks(app: App): void {
       readTheBoard(c, "view", person),
       staffNow(c),
       groupsSeenBy(c),
-      lowStockPlaces(c.env.DB),
+      lowStockPlaces(c.env.DB, indiaDate(now)),
       opsInputs(c),
     ]);
     const { tasks, lapsed } = splitLapsed(board.tasks, { seen, asked, now, lapseDays: inputs.taskLapseDays });

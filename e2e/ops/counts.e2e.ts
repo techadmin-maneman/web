@@ -61,6 +61,24 @@ test("opens a task and counts it blind", async ({ page }) => {
   expect(await axeViolations(page)).toEqual([]);
 });
 
+// A weekly count of a place that had since run out offered "Save count" over nothing, and the panel no way out.
+test("closes as counted a task whose place holds nothing of it now, and closes the panel", async ({ page }) => {
+  const task = { task: KIT, items: [] } satisfies OpsReply<"/api/count-tasks/{id}">;
+  const done = { task: { ...KIT, state: "done" as const }, items: [] };
+  await open(page, {
+    "GET /api/count-tasks/{id}": json(task),
+    "POST /api/count-tasks/{id}/counts": json(done),
+  });
+  await page.getByRole("button", { name: opener("Imran Qureshi") }).click();
+  const panel = page.getByRole("region", { name: copy.heading("Imran Qureshi", copy.classes.weekly) });
+  await expect(panel).toContainText(copy.nothingHere);
+  const request = posted(page, "/api/count-tasks/ct-1/counts");
+  await panel.getByRole("button", { name: copy.closeEmpty }).click();
+  expect((await request).postDataJSON()).toEqual({ lines: [] });
+  await panel.getByRole("button", { name: copy.close, exact: true }).click();
+  await expect(panel).toBeHidden();
+});
+
 test("signs off a difference with why", async ({ page }) => {
   const task = { task: ROOM, items: [{ ...PIECE, state: "sign_off" as const }] };
   const lines = {

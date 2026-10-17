@@ -95,7 +95,17 @@ export function CountsScreen() {
               }}
             />
           )}
-          {open !== null && <CountTaskPanel key={open} id={open} panelId={panelId} onChanged={reload} />}
+          {open !== null && (
+            <CountTaskPanel
+              key={open}
+              id={open}
+              panelId={panelId}
+              onChanged={reload}
+              onClose={() => {
+                setOpen(null);
+              }}
+            />
+          )}
           {access.mayCall("POST /api/consumables/{code}/count-class") && (
             <CountClasses countTasks={current} onChanged={setCountTasks} />
           )}

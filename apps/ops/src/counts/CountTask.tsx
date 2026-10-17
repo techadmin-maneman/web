@@ -5,6 +5,7 @@ import type { Success } from "@maneman/web-kit/api";
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Panel } from "@maneman/ui/Panel";
 import { Button } from "@maneman/ui/Button";
+import { TextButton } from "@maneman/ui/TextLink";
 import { Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Table } from "@maneman/ui/Table";
@@ -38,6 +39,13 @@ type Answer =
   | { readonly ok: true; readonly body: Task }
   | { readonly ok: false; readonly code: string; readonly fields: readonly string[] };
 
+/** The step's note and button: a recount, a count, or a place that has since run out, which closes as counted. */
+function stepWords(recount: boolean, items: number): { readonly note: string; readonly save: string } {
+  if (recount) return { note: copy.recountNote, save: copy.saveRecount };
+  if (items === 0) return { note: copy.nothingHere, save: copy.closeEmpty };
+  return { note: copy.countNote, save: copy.saveCount };
+}
+
 /** Each item's box, blind: the figure typed, never the ledger's. */
 function Counting({
   task,
@@ -61,9 +69,10 @@ function Counting({
       : await countsApi.recordCounts(task.task.id, body);
     onAnswer(answer, recount ? copy.recountSaid : copy.countSaid);
   };
+  const words = stepWords(recount, items.length);
   return (
     <div className={form.group}>
-      <Note>{recount ? copy.recountNote : copy.countNote}</Note>
+      <Note>{words.note}</Note>
       {items.map((item) => (
         <div key={item.consumable_code} className={form.group}>
           {item.labelled && (
@@ -93,7 +102,7 @@ function Counting({
       ))}
       <FormActions>
         <Button variant="primary" size="small" disabled={!ready} onClick={() => void save()}>
-          {recount ? copy.saveRecount : copy.saveCount}
+          {words.save}
         </Button>
       </FormActions>
     </div>
@@ -190,7 +199,17 @@ function Step({
 /** What a task counts: its one item, or its class. */
 export const whatOf = (task: Task["task"]): string => task.item?.name ?? copy.classes[task.count_class];
 
-export function CountTaskPanel({ id, panelId, onChanged }: { id: string; panelId: string; onChanged: () => void }) {
+export function CountTaskPanel({
+  id,
+  panelId,
+  onChanged,
+  onClose,
+}: {
+  id: string;
+  panelId: string;
+  onChanged: () => void;
+  onClose: () => void;
+}) {
   const load = useCallback(() => countsApi.countTask(id), [id]);
   const [loaded, retry] = useLoad(load);
   const [task, setTask] = useState<Task | null>(null);
@@ -211,7 +230,13 @@ export function CountTaskPanel({ id, panelId, onChanged }: { id: string; panelId
     return loaded.state === "failed" ? <PanelFailed onRetry={retry} requestId={loaded.requestId} /> : <Loading />;
   }
   return (
-    <Panel id={panelId} opened titleId="count-task" title={copy.heading(current.task.place, whatOf(current.task))}>
+    <Panel
+      id={panelId}
+      opened
+      titleId="count-task"
+      title={copy.heading(current.task.place, whatOf(current.task))}
+      actions={<TextButton onClick={onClose}>{copy.close}</TextButton>}
+    >
       <Step task={current} onAnswer={answered} />
       {current.items.map(
         (item) =>
