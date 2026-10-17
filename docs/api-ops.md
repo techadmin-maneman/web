@@ -6013,18 +6013,6 @@ Number changes waiting for ops in the caller's cities: both numbers proven by co
             "type": "string",
             "format": "date-time",
             "description": "When ops should have decided: the Tasks board's allowance for this queue, which ops set."
-          },
-          "booked_since": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The start of the first visit still to happen that the client booked after asking; null where none."
           }
         },
         "required": [
@@ -6035,8 +6023,7 @@ Number changes waiting for ops in the caller's cities: both numbers proven by co
           "new_mobile",
           "new_number_held_by",
           "requested_at",
-          "due",
-          "booked_since"
+          "due"
         ],
         "additionalProperties": false
       }
@@ -6301,6 +6288,18 @@ Deletion requests waiting for ops in the caller's cities
             "type": "string",
             "format": "date-time",
             "description": "When ops should have decided: the Tasks board's allowance for this queue, which ops set."
+          },
+          "booked_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The start of the first visit still to happen that the client booked after asking; null where none."
           }
         },
         "required": [
@@ -6309,7 +6308,8 @@ Deletion requests waiting for ops in the caller's cities
           "name",
           "mobile",
           "requested_at",
-          "due"
+          "due",
+          "booked_since"
         ],
         "additionalProperties": false
       }
@@ -34301,6 +34301,17 @@ Request body:
       ],
       "description": "The client's Care person, by e-mail; null for a number we do not know, or a client not given one."
     },
+    "care_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The first name clients know the Care person by, once a manager has set it; null until then."
+    },
     "technician": {
       "anyOf": [
         {
@@ -34381,6 +34392,7 @@ Request body:
     "mobile",
     "state",
     "care_person",
+    "care_name",
     "technician",
     "covered_by",
     "last_message_at",

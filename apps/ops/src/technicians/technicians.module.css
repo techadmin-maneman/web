@@ -97,8 +97,10 @@
 }
 
 /* What the average is of, when the phone timed fewer jobs than were finished. */
+/* What the average is of, on one line beneath it, so the row keeps the board's height. */
 .base {
   display: block;
+  white-space: nowrap;
   font-size: var(--fs-13);
   color: var(--ui-text-muted);
 }

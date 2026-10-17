@@ -27,6 +27,7 @@ const ARJUN: Conversation = {
   mobile: "+919810000001",
   state: "open",
   care_person: "asha@maneman.test",
+  care_name: null,
   covered_by: null,
   technician: null,
   last_message_at: "2026-09-21T05:12:00.000Z",

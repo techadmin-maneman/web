@@ -16,8 +16,10 @@
 }
 
 /* The place shown beside the warehouse, once there are too many for a column each. */
+/* In from the panel's edge, as its title and the table's first column are. */
 .kitPicker {
   max-width: var(--measure-form);
+  padding: var(--sp-16) var(--sp-20) 0;
   margin-bottom: var(--sp-16);
 }
 

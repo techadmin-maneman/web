@@ -88,9 +88,10 @@ function Search({ search, onSearch }: { search: string; onSearch: (search: strin
   );
 }
 
-/** The client's Care person, and who covers them while they are off. */
-const carePersonOf = ({ care_person: person, covered_by: cover }: Conversation): string => {
-  if (person === null) return "";
+/** The client's Care person, by the name clients know them by where one is set, and who covers them while off. */
+const carePersonOf = ({ care_person: email, care_name: name, covered_by: cover }: Conversation): string => {
+  if (email === null) return "";
+  const person = name ?? email;
   return cover === null ? person : copy.coveredBy(person, cover);
 };
 

@@ -23,7 +23,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import shared from "./clients.module.css";
 import styles from "./client-screen.module.css";
 import { Consents } from "./Consents.tsx";
-import { Erased, ErasedRecord } from "./Erase.tsx";
+import { Erased, ErasedRecord, NoClient } from "./Erase.tsx";
 import { History, replacementDueOf } from "./History.tsx";
 import { Invite, type InviteNews } from "./Invite.tsx";
 import { OpenTasks } from "./OpenTasks.tsx";
@@ -41,9 +41,10 @@ interface Attached {
   readonly news: InviteNews;
 }
 
+// Null when they hold none, which every page says the one way.
 const creditsOf = (credits: Credits) =>
   credits === null
-    ? clients.unknown
+    ? clients.credits.none
     : clients.creditLine(credits.visits, credits.earliest_expiry === null ? null : longDate(credits.earliest_expiry));
 
 /** Who invited the client, a way to their page, and the invite's code: "Vikram Sethi (VSAB23)". */
@@ -184,7 +185,12 @@ export function ClientScreen({ clientId, tab }: { clientId: string; tab: ClientT
     <>
       {whenLoaded(loaded, {
         loading: <Loading />,
-        failed: <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />,
+        failed:
+          loaded.state === "failed" && loaded.notFound ? (
+            <NoClient />
+          ) : (
+            <PanelFailed onRetry={retry} requestId={failedRequestId(loaded)} />
+          ),
         loaded: (record) =>
           isErased(record) ? (
             <ErasedRecord record={record} onChanged={retry} />

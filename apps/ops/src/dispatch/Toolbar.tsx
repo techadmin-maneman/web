@@ -7,7 +7,7 @@ import { Button } from "@maneman/ui/Button";
 import { SearchInput } from "@maneman/ui/SearchInput";
 import { Toolbar as SharedToolbar } from "@maneman/ui/Toolbar";
 import type { Board, BoardQuery } from "../api.ts";
-import { dispatch } from "../content.ts";
+import { dispatch, tables } from "../content.ts";
 import styles from "./toolbar.module.css";
 import { addDays } from "@maneman/web-kit/dates";
 
@@ -68,7 +68,7 @@ export function Toolbar({ board, query, onQuery, find, onFind }: Props) {
               onQuery({ ...query, city: event.currentTarget.value === "" ? null : event.currentTarget.value });
             }}
           >
-            <option value="">{copy.everyCity}</option>
+            <option value="">{tables.allCities}</option>
             {(board?.cities ?? []).map((city) => (
               <option key={city} value={city}>
                 {city}

@@ -17,10 +17,14 @@ type Loaded =
 
 type Technician = DispatchDay["technicians"][number];
 
-/** The day's picture, as an address the image can show; null until it comes, or when there is none. */
-function useDayMap(date: string, city: string | null): string | null {
+/**
+ * The day's picture, as an address the image can show; null until it comes, or when there is none. It is asked for
+ * only once the day says drive times are on and someone is on the road, as the map is off whenever they are.
+ */
+function useDayMap(date: string, city: string | null, wanted: boolean): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
+    if (!wanted) return;
     let current = true;
     let made: string | null = null;
     void dispatchApi.dayMap(date, city).then((answer) => {
@@ -32,7 +36,7 @@ function useDayMap(date: string, city: string | null): string | null {
       current = false;
       if (made !== null) URL.revokeObjectURL(made);
     };
-  }, [date, city]);
+  }, [date, city, wanted]);
   return url;
 }
 
@@ -75,7 +79,11 @@ function TechnicianRoute({ technician }: { technician: Technician }) {
 export function DayRoutes({ date, city, onClose }: { date: string; city: string | null; onClose: () => void }) {
   const copy = dispatch.routes;
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
-  const map = useDayMap(date, city);
+  const map = useDayMap(
+    date,
+    city,
+    loaded.state === "loaded" && loaded.day.drive_times !== "off" && loaded.day.technicians.length > 0,
+  );
   const day = shortDate(date);
 
   useEffect(() => {

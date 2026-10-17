@@ -4,6 +4,8 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, RAZORPAY_DOWN, UNCONFIRMED } f
 
 export const clients = {
   title: "Clients",
+  /** A client's page whose link names nobody. */
+  missing: "No client at this link.",
   /** A cell with nothing in it, written as the design's tables write a gap. */
   unknown: "—",
   /**
@@ -41,7 +43,6 @@ export const clients = {
     state: "Status",
     anyState: "Any status",
     city: "City",
-    anyCity: "Any city",
     noCity: "Not known",
     nextVisit: "Next visit",
     underWay: "Under way",

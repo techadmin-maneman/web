@@ -12,6 +12,8 @@ export interface Column<Row> {
   readonly sort?: (row: Row) => string | number;
   /** The word a row shows in a column of few values, which a list narrows to; without one it has no list. */
   readonly choice?: (row: Row) => string;
+  /** The list's word for every value, where the column has its own; "City: All" otherwise. */
+  readonly all?: string;
   /** A column of figures, set right. */
   readonly figure?: boolean;
   /** The head's own class, where the table styles its columns. */

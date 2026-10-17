@@ -128,6 +128,18 @@ function RejectReason(props: {
   );
 }
 
+/** When the client asked, on which number, and a visit they have booked since, which may mean they want to stay. */
+function Asked({ request }: { request: DeletionRequest }) {
+  return (
+    <>
+      <p className={shared.who}>{copy.requested(phoneWords(request.mobile), longDate(request.requested_at))}</p>
+      {request.booked_since !== null && (
+        <p className={shared.who}>{copy.bookedSince(longDate(request.booked_since))}</p>
+      )}
+    </>
+  );
+}
+
 function Request({ request, now, mayDecide, onDecided }: RequestProps) {
   const [deciding, setDeciding] = useState<Deciding>({ step: "listed" });
   const [reason, setReason] = useState("");
@@ -161,10 +173,7 @@ function Request({ request, now, mayDecide, onDecided }: RequestProps) {
         </OpsLink>
         <Left due={request.due} now={now} />
       </div>
-      <p className={shared.who}>{copy.requested(phoneWords(request.mobile), longDate(request.requested_at))}</p>
-      {request.booked_since !== null && (
-        <p className={shared.who}>{copy.bookedSince(longDate(request.booked_since))}</p>
-      )}
+      <Asked request={request} />
       <Reach name={request.name} mobile={request.mobile} />
       {asking?.choice === "delete" && (
         <ConfirmDelete

@@ -145,8 +145,7 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
   },
   care_owners: {
     leftOut: ["person_id", "email", "assigned_by"],
-    whyLeftOut:
-      "Our key; the Care person's work e-mail, as they are named by their first name instead; and whether we gave them their Care person or which manager moved them.",
+    whyLeftOut: "Our key; the Care person's work e-mail, as their first name names them; who gave or moved them.",
     erasure: { deletes: true, why: "Deleted: nobody looks after an erased record." },
   },
   channel_attributions: {

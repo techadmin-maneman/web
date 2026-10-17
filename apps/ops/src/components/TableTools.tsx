@@ -77,7 +77,7 @@ export function Narrowing<Row>({
                     view.choose(at, event.currentTarget.value);
                   }}
                 >
-                  <option value="">{copy.allOf(column.label)}</option>
+                  <option value="">{column.all ?? copy.allOf(column.label)}</option>
                   {view.options(at).map((option) => (
                     <option key={option} value={option}>
                       {option}

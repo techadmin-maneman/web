@@ -172,6 +172,18 @@ export function Erase({ clientId, name, requested, onErased }: EraseProps) {
 }
 
 /** What stands in place of the client's page the moment they are erased, with what to do next. */
+/** What stands in for the page of a link that names no client: one mistyped, or cut short. */
+export function NoClient() {
+  return (
+    <section className={styles.erased} aria-label={clients.missing}>
+      <h2 className={shared.name}>{clients.missing}</h2>
+      <OpsLink className={styles.erasedBack} to="/clients">
+        {copy.done.back}
+      </OpsLink>
+    </section>
+  );
+}
+
 export function Erased() {
   return (
     <section className={styles.erased} aria-label={copy.done.title}>

@@ -4600,8 +4600,6 @@ export interface paths {
                                  * @description When ops should have decided: the Tasks board's allowance for this queue, which ops set.
                                  */
                                 due: string;
-                                /** @description The start of the first visit still to happen that the client booked after asking; null where none. */
-                                booked_since: string | null;
                             }[];
                         };
                     };
@@ -4789,6 +4787,8 @@ export interface paths {
                                  * @description When ops should have decided: the Tasks board's allowance for this queue, which ops set.
                                  */
                                 due: string;
+                                /** @description The start of the first visit still to happen that the client booked after asking; null where none. */
+                                booked_since: string | null;
                             }[];
                         };
                     };
@@ -22136,6 +22136,8 @@ export interface components {
             state: "open" | "waiting" | "closed";
             /** @description The client's Care person, by e-mail; null for a number we do not know, or a client not given one. */
             care_person: string | null;
+            /** @description The first name clients know the Care person by, once a manager has set it; null until then. */
+            care_name: string | null;
             /** @description One of our technicians, by their number on record; Operations answer them. */
             technician: {
                 id: string;

@@ -16,6 +16,7 @@ import { type TechnicianPay } from "../api.ts";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { FormDrawer } from "../components/FormDrawer.tsx";
 import { technicianPay } from "../content/technician-pay.ts";
+import { tables } from "../content.ts";
 import { AddGradeForm, RenameGradeForm, SetRateForm } from "./PayForms.tsx";
 import { rateNow, ratesLater } from "./pay-rates.ts";
 import form from "../components/forms.module.css";
@@ -180,7 +181,7 @@ function CityChoice({ pay, city, onCity }: { pay: TechnicianPay; city: string; o
               onCity(event.target.value);
             }}
           >
-            <option value="">{copy.everyCity}</option>
+            <option value="">{tables.allCities}</option>
             {pay.cities.map((each) => (
               <option key={each} value={each}>
                 {each}

@@ -64,10 +64,6 @@ const numberChangesRoute = opsRoute({
                     }),
                   requested_at: z.iso.datetime(),
                   due: DueSchema,
-                  booked_since: z.union([z.iso.datetime(), z.null()]).openapi({
-                    description:
-                      "The start of the first visit still to happen that the client booked after asking; null where none.",
-                  }),
                 })
                 .strict(),
             ),
@@ -121,6 +117,10 @@ const deletionRequestsRoute = opsRoute({
                   mobile: z.string(),
                   requested_at: z.iso.datetime(),
                   due: DueSchema,
+                  booked_since: z.union([z.iso.datetime(), z.null()]).openapi({
+                    description:
+                      "The start of the first visit still to happen that the client booked after asking; null where none.",
+                  }),
                 })
                 .strict(),
             ),

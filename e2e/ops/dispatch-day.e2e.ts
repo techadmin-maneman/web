@@ -75,10 +75,14 @@ test("opens a day’s routes from its column’s head, and calls out a drive lon
   await expect(routes.getByRole("listitem").filter({ hasText: "DLF 2" })).toContainText(opsCopy.dispatch.routes.noPin);
 });
 
-test("says when drive times are off, and still lists the visits", async ({ page }) => {
+test("says when drive times are off, and still lists the visits, asking for no map", async ({ page }) => {
+  let asked = 0;
   await open(page, {
     "GET /api/dispatch/day": json({ ...DAY, drive_times: "off", technicians: [{ ...DAY.technicians[0], legs: [] }] }),
-    "GET /api/dispatch/day/map": fails(503, "unavailable"),
+    "GET /api/dispatch/day/map": (route) => {
+      asked += 1;
+      return fails(503, "unavailable")(route);
+    },
   });
 
   await press(page, "Routes for Fri 19");
@@ -86,6 +90,7 @@ test("says when drive times are off, and still lists the visits", async ({ page 
   await expect(routes).toContainText(opsCopy.dispatch.routes.driveTimes.off);
   await expect(routes.getByRole("listitem")).toHaveCount(3);
   await expect(routes.getByRole("img")).toHaveCount(0);
+  expect(asked).toBe(0);
 });
 
 test("offers a job in hand to the nearest technician’s day first, with how far", async ({ page }) => {

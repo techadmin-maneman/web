@@ -33,6 +33,9 @@ const ConversationSchema = z
     care_person: z.union([z.string(), z.null()]).openapi({
       description: "The client's Care person, by e-mail; null for a number we do not know, or a client not given one.",
     }),
+    care_name: z.union([z.string(), z.null()]).openapi({
+      description: "The first name clients know the Care person by, once a manager has set it; null until then.",
+    }),
     technician: z.union([z.object({ id: z.string(), name: z.string() }).strict(), z.null()]).openapi({
       description: "One of our technicians, by their number on record; Operations answer them.",
     }),

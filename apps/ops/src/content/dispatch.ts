@@ -47,7 +47,6 @@ export const dispatch = {
     next: "Next week",
     thisWeek: "This week",
     city: "City",
-    everyCity: "All cities",
     /** A technician's name or zone, or a visit's client, area or pincode. */
     find: "Find a technician, client or area",
     // The board draws no search, and so no search that finds nothing.

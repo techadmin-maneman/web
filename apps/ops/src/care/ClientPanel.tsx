@@ -43,7 +43,7 @@ export function ClientPanel({ personId }: { readonly personId: string }) {
         <dt>{copy.last}</dt>
         <dd>{last === undefined ? copy.none : visitLine(last)}</dd>
         <dt>{copy.credits}</dt>
-        <dd>{record.credits?.visits ?? 0}</dd>
+        <dd>{record.credits === null ? copy.none : record.credits.visits}</dd>
         <dt>{copy.city}</dt>
         <dd>{record.address?.city ?? copy.noAddress}</dd>
       </dl>

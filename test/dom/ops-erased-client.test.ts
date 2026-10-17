@@ -93,6 +93,7 @@ const REQUEST: DeletionRequest = {
   mobile: "+919810000001",
   requested_at: "2026-09-30T06:00:00.000Z",
   due: "2026-10-07T06:00:00.000Z",
+  booked_since: null,
 };
 
 let page: HTMLElement;
