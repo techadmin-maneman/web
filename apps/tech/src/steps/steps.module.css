@@ -86,7 +86,7 @@
   display: block;
   margin-top: var(--sp-4);
   font-size: var(--fs-16);
-  color: var(--status-warning);
+  color: var(--error-on-ink);
 }
 
 .stepper {

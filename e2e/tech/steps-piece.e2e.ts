@@ -341,7 +341,8 @@ test.describe("the piece of a consultation and fit in one visit", () => {
 
     await page.getByRole("button", { name: techCopy.steps.next }).click();
     await expect(page.getByText("Rohit M. · free consultation")).toBeVisible();
-    expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done" });
+    // Declined, the client is not going ahead with the fit, and the close says so.
+    expect(writesTo(fake, "outcome").at(-1)?.body).toEqual({ outcome: "done", going_ahead: false });
   });
 
   test("names the product the payment link is for, once the client chose it", async ({ page }) => {

@@ -115,8 +115,9 @@ describe("POST /api/clients/{id}/address", () => {
     ]);
   });
 
-  it("takes a typed address with no building, and saves no pin rather than a wrong one", async () => {
-    expect((await save({ ...GIVEN, building: null, place_id: null, session_token: null })).status).toBe(200);
+  it("takes a typed address Google places no closer than its area, and saves no pin rather than a wrong one", async () => {
+    const typed = { ...GIVEN, building: null, place_id: null, session_token: null, line1: "House 4417, Tower C" };
+    expect((await save(typed)).status).toBe(200);
     expect(await current()).toMatchObject({ place_id: null, pinned: 0, given_to_staff: "ops@localhost" });
   });
 
