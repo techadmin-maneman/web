@@ -127,8 +127,16 @@ test.describe("the client’s hair profile", () => {
     );
   });
 
+  test("keeps Next dim until the Norwood stage is chosen", async ({ page }) => {
+    await atTheProfile(page);
+    await expect(page.getByRole("button", { name: techCopy.profile.chooseStage })).toBeDisabled();
+    await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
+    await expect(next(page)).toBeEnabled();
+  });
+
   test("keeps Next dim on a figure out of its range, and says the range", async ({ page }) => {
     await atTheProfile(page);
+    await page.getByRole("radio", { name: techCopy.profile.stages.IV, exact: true }).click();
     const circumference = page.getByRole("textbox", { name: techCopy.profile.measurements.head_circumference_cm });
     await circumference.fill("90");
     await expect(circumference).toHaveAccessibleDescription("40–70, to one decimal.");

@@ -728,6 +728,8 @@ export const profile = {
   greyRange: (min: number, max: number) => `${String(min)}–${String(max)}.`,
   yearRange: (first: number, last: number) => `A year from ${String(first)} to ${String(last)}.`,
   checkFigures: "Check the figures to continue",
+  /** Next, held back until the Norwood stage is chosen. */
+  chooseStage: "Choose the Norwood stage to continue",
   /** Next, held back by a figure outside its range: which one. */
   checkFigure: (figure: string) => `${figure.split(",")[0] ?? figure} is out of range`,
   history: {
