@@ -113,7 +113,7 @@ test("a pincode we do not serve lists the number kept, with the launch alert off
   const requests = await mockApi(page);
   await openWaitlist(page);
   await expect(page.getByText("We’re not in Bandra yet")).toBeVisible();
-  await expect(page.getByText("Step 3 of 3 · The list")).toBeVisible();
+  await expect(page.getByText("Step 3 · The list")).toBeVisible();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name, { exact: true })).toHaveCount(0);
 
   await page.getByText(referralCopy.referral.waitlist.contactConsent).click();

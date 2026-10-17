@@ -10,9 +10,6 @@ import { PersonFieldset, Send, StepLine } from "./fields.tsx";
 import styles from "./Invite.module.css";
 import { mobileToSend, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
 
-/** /book's steps where we come: the name and number, the pincode, the visit and the address. */
-export const BOOK_STEPS = 4;
-
 /** Whether the fields hold the name and number kept already, so there is nothing new to keep. */
 const sameAs = (kept: PersonFields, fields: PersonFields): boolean =>
   kept.name.trim() === fields.name.trim() && mobileToSend(kept) === mobileToSend(fields) && fields.consent;
@@ -50,7 +47,7 @@ export function AboutYou(props: {
 
   return (
     <form ref={form.element} class={styles.form} onSubmit={submit} noValidate>
-      <StepLine at={1} of={BOOK_STEPS} name={booking.steps.you} focus={props.kept !== null} />
+      <StepLine at={1} name={booking.steps.you} focus={props.kept !== null} />
       <PersonFieldset
         fields={form.fields}
         bad={form.personBad}

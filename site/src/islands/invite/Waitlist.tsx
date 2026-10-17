@@ -23,9 +23,6 @@ import { codeInPath } from "./page.ts";
 import { byDoor, leadSent } from "./submit.ts";
 import { mobileToSend, useTurnstileForm, type PersonFields } from "./useTurnstileForm.ts";
 
-/** /book's steps where we do not come yet: the name and number, the pincode, and the list. */
-const LIST_STEPS = 3;
-
 /**
  * We do not come there yet, so the page takes a number instead. On /book the number is its first step's, so the list
  * asks only for its own agreement.
@@ -82,7 +79,7 @@ export function Waitlist(props: FormProps & { person: PersonFields | null; onLis
   return (
     <form ref={form.element} class={styles.form} onSubmit={submit} noValidate>
       <div>
-        {person !== null && <StepLine at={3} of={LIST_STEPS} name={booking.steps.list} focus={false} />}
+        {person !== null && <StepLine at={3} name={booking.steps.list} focus={false} />}
         <h2 class={styles.waitlistTitle}>{person === null ? waitlist.leave : booking.waitlistTitle}</h2>
         <ForPincode text={forPincode} onChange={props.onChangePincode} />
       </div>

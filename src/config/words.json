@@ -2068,8 +2068,8 @@
     "surface": "site",
     "group": "Book",
     "where": "booking",
-    "text": "Join the list and we’ll WhatsApp you the week we start coming to you.",
-    "reviewed": true
+    "text": "Join the list. Tick the box and we’ll WhatsApp you the week we start coming to you.",
+    "reviewed": false
   },
   {
     "key": "site:pages/booking.extent",
@@ -2084,8 +2084,8 @@
     "surface": "site",
     "group": "Book",
     "where": "booking",
-    "text": "Step {at} of {of} · {name}",
-    "reviewed": true
+    "text": "Step {at} · {name}",
+    "reviewed": false
   },
   {
     "key": "site:pages/booking.steps.you",

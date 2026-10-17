@@ -210,7 +210,7 @@ function LegalLinks() {
  * number, once the visitor comes back to them, bring the line to the top and give it focus, so a screen reader hears
  * where it is. Elsewhere the pincode's field or its answer takes focus instead.
  */
-export function StepLine(props: { at: number; of: number; name: string; focus: boolean }) {
+export function StepLine(props: { at: number; name: string; focus: boolean }) {
   const line = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
     if (!props.focus) return;
@@ -219,7 +219,7 @@ export function StepLine(props: { at: number; of: number; name: string; focus: b
   }, [props.focus]);
   return (
     <p ref={line} tabIndex={-1} data-says-where class={capsLook(shared.step)}>
-      {fill(booking.step, { at: String(props.at), of: String(props.of), name: props.name })}
+      {fill(booking.step, { at: String(props.at), name: props.name })}
     </p>
   );
 }

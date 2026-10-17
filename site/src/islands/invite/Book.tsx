@@ -8,7 +8,7 @@
 import { booking } from "../../content/site.ts";
 import type { PincodeAnswer } from "../../lib/api.ts";
 import { IslandBoundary } from "../IslandBoundary.tsx";
-import { AboutYou, BOOK_STEPS } from "./AboutYou.tsx";
+import { AboutYou } from "./AboutYou.tsx";
 import { BookingFor, StepLine } from "./fields.tsx";
 import type { Plan } from "./flow.ts";
 import styles from "./Invite.module.css";
@@ -51,7 +51,7 @@ function BookPage(props: Props) {
       ) : (
         <>
           <BookingFor person={kept} onChange={page.changePerson} />
-          {answer === null && <StepLine at={2} of={BOOK_STEPS} name={booking.steps.area} focus={false} />}
+          {answer === null && <StepLine at={2} name={booking.steps.area} focus={false} />}
           <PincodeAndForm page={page} form={form} stage={step === "address" ? "address" : "visit"} />
         </>
       )}

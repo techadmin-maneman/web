@@ -14,13 +14,14 @@ export const booking = {
   titleWaitlist: "Not in your area yet",
   intro: `Your technician measures your scalp and matches your colour: ${visitLength.consultation}, free. Or add the fit and wear your hair system the same day.`,
   /** Where we do not come yet: what the list is for. */
-  introWaitlist: "Join the list and we’ll WhatsApp you the week we start coming to you.",
+  // The WhatsApp is the visitor's to ask for, below: the line promises it only as theirs to choose.
+  introWaitlist: "Join the list. Tick the box and we’ll WhatsApp you the week we start coming to you.",
   extent: "Extent of hair loss (optional)",
   /**
    * The page's steps, the name and number first, kept before anything else
    * (docs/decisions/0116-book-asks-for-the-name-and-number-first.md).
    */
-  step: "Step {at} of {of} · {name}",
+  step: "Step {at} · {name}",
   steps: { you: "You", area: "Your area", visit: "Your visit", address: "Your address", list: "The list" },
   next: "Continue",
   saving: "One moment…",
