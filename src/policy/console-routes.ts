@@ -242,6 +242,7 @@ export const ROUTE_NEEDS: Readonly<Record<string, RouteNeed | typeof SIGNED_IN>>
   "POST /api/settings/{name}": need("admin", "manage"),
   "GET /api/slot-times": need("admin", "view"),
   "POST /api/slot-times": need("admin", "manage"),
+  "DELETE /api/slot-times/{applies_from}": need("admin", "manage"),
   "GET /api/blackouts": need("admin", "view"),
   "GET /api/blackouts/booked": need("admin", "manage"),
   "POST /api/blackouts": need("admin", "manage"),

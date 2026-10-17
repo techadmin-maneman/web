@@ -25,6 +25,8 @@ export const settingsApi = {
   blackouts: () => client.get("/api/blackouts"),
   slotTimes: () => client.get("/api/slot-times"),
   setSlotTimes: (change: SlotTimesChange) => client.post("/api/slot-times", { body: change }),
+  withdrawSlotTimes: (from: string) =>
+    client.delete("/api/slot-times/{applies_from}", { path: { applies_from: from } }),
   /** The visits still booked on the days from the first to the last, which closing them strands. */
   blackoutsBooked: (period: BlackoutRemove) => client.get("/api/blackouts/booked", { query: period }),
   /** Every day from the first to the last, both included. A day already blacked out takes this reason. */

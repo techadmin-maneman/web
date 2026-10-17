@@ -343,9 +343,14 @@ export const settings = {
     /** What a change sets, beneath who set it: "Morning 9:30 am–12:30 pm · Afternoon …". */
     sets: (windows: readonly string[]) => windows.join(" · "),
     none: "No changes yet.",
+    /** The last change, still to come, taken back: a day on the times before it. */
+    withdraw: "Withdraw",
+    withdrawn: "Withdrawn.",
     errors: {
       not_permitted: NOT_PERMITTED,
       slot_times_too_soon: "That day is too soon: pick one from the earliest.",
+      slot_times_in_use: "A visit is booked or held on that day or after, so its times stay.",
+      not_found: "Already withdrawn.",
       not_eight_starts: "Give all eight starts.",
       not_a_time: "Give each time as hh:mm.",
       not_in_order: "Each start must follow the one before.",

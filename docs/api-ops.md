@@ -18823,6 +18823,121 @@ Request body:
 }
 ```
 
+### DELETE /api/slot-times/{applies_from}
+
+The last change of the times withdrawn, while nothing is booked or held on its day or later
+
+**204**: Withdrawn
+
+**403**: access_required: no Access identity; not_permitted: the caller's grants do not reach this route, or it asks a member of staff and the caller is a service token
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "access_required",
+                "not_permitted"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**404**: not_found: no change from that day
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "not_found"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
+**409**: slot_times_in_use: a later change follows it, or a visit is booked or held on its day or later
+
+```json
+{
+  "allOf": [
+    {
+      "$ref": "#/components/schemas/ErrorResponse"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": [
+                "slot_times_in_use"
+              ]
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": {}
+    }
+  ]
+}
+```
+
 ### GET /api/blackouts
 
 Every day from today on that no visit is offered, with the visits still booked on each
@@ -27030,6 +27145,7 @@ Request body:
             "price_settled",
             "code_exists",
             "slot_times_too_soon",
+            "slot_times_in_use",
             "not_permitted",
             "last_admin",
             "in_use",
@@ -30757,6 +30873,7 @@ Request body:
             "price_settled",
             "code_exists",
             "slot_times_too_soon",
+            "slot_times_in_use",
             "not_permitted",
             "last_admin",
             "in_use",
@@ -36525,6 +36642,7 @@ Request body:
         "target.set",
         "target.remove",
         "slot_times.set",
+        "slot_times.withdraw",
         "pincode.set",
         "pincode.rename",
         "pincode.add",

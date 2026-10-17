@@ -4,6 +4,8 @@
 
 import { DateInput, Field, TextInput } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
+import { TextButton } from "@maneman/ui/TextLink";
+import type { Failure } from "@maneman/web-kit/refusal";
 import { Panel } from "@maneman/ui/Panel";
 import { useLoad } from "@maneman/ui/useLoad";
 import { longDate, shortDate } from "@maneman/web-kit/dates";
@@ -18,7 +20,7 @@ import { settings } from "../content/settings.ts";
 import { useAccess } from "../lib/access.ts";
 import { whoWords } from "../lib/who.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
-import { SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
+import { Refused, SettingForm, sentOf, useSteps } from "./SettingForm.tsx";
 import { settingsApi } from "./settings-api.ts";
 
 const copy = settings.windowTimes;
@@ -167,9 +169,32 @@ function setsOf(change: SlotTimes["changes"][number]): string[] {
   return WINDOWS.map((window) => `${copy.window[window]} ${hours(window)}`);
 }
 
-/** Every change set, each from its day, by whom, and what it sets. */
-function Changes({ times }: { times: SlotTimes }) {
+/** The last change, still to come, withdrawn: the API refuses once a visit is booked or held on its day or after. */
+function Withdraw({ from, onWithdrawn }: { from: string; onWithdrawn: () => void }) {
+  const [failed, setFailed] = useState<Failure | null>(null);
+  return (
+    <>
+      <TextButton
+        onClick={() =>
+          void settingsApi.withdrawSlotTimes(from).then((answer) => {
+            if (answer.ok) onWithdrawn();
+            else setFailed({ code: answer.code, fields: answer.fields });
+          })
+        }
+      >
+        {copy.withdraw}
+      </TextButton>
+      <Refused failed={failed} errors={copy.errors} />
+    </>
+  );
+}
+
+/** Every change set, each from its day, by whom, and what it sets; the last, while still to come, may be withdrawn. */
+function Changes({ times, onWithdrawn }: { times: SlotTimes; onWithdrawn: () => void }) {
+  const mayWithdraw = useAccess().mayCall("DELETE /api/slot-times/{applies_from}");
   if (times.changes.length === 0) return <Note>{copy.none}</Note>;
+  const last = times.changes.at(-1);
+  const toCome = last !== undefined && last.applies_from !== times.in_force.applies_from;
   return (
     <ul className={form.rules}>
       {times.changes.map((change) => (
@@ -177,6 +202,7 @@ function Changes({ times }: { times: SlotTimes }) {
           {copy.setBy(shortDate(change.applies_from), whoWords(change.set_by), longDate(change.set_at))}
           <br />
           {copy.sets(setsOf(change))}
+          {mayWithdraw && toCome && change === last && <Withdraw from={change.applies_from} onWithdrawn={onWithdrawn} />}
         </li>
       ))}
     </ul>
@@ -205,7 +231,13 @@ export function WindowTimes() {
         />
       )}
       <h3 className={form.ruleTitle}>{copy.history}</h3>
-      <Changes times={times} />
+      <Changes
+        times={times}
+        onWithdrawn={() => {
+          setSaid(copy.withdrawn);
+          retry();
+        }}
+      />
     </Panel>
   );
 }

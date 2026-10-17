@@ -3617,6 +3617,7 @@ Request body:
             "price_settled",
             "code_exists",
             "slot_times_too_soon",
+            "slot_times_in_use",
             "not_permitted",
             "last_admin",
             "in_use",

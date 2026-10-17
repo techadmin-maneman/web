@@ -92,3 +92,41 @@ describe("POST /api/slot-times", () => {
     expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM slot_times").first("n")).toBe(0);
   });
 });
+
+// A change could not be taken back: the day before a correction ran on the wrong times.
+describe("DELETE /api/slot-times/{applies_from}", () => {
+  const withdraw = (from: string) =>
+    request(ops, `/api/slot-times/${from}`, { method: "DELETE", headers: { Origin: "https://maneman.test" } });
+
+  it("withdraws the last change, still to come, under who withdrew it", async () => {
+    await set({ applies_from: "2026-11-06", ...LATER });
+    expect((await withdraw("2026-11-06")).status).toBe(204);
+    expect((await read()).changes).toEqual([]);
+    const audited = await env.DB.prepare(
+      "SELECT actor, detail FROM audit_log WHERE action = 'slot_times.withdraw'",
+    ).all();
+    expect(audited.results).toEqual([
+      { actor: "ops@localhost", detail: JSON.stringify({ applies_from: "2026-11-06" }) },
+    ]);
+  });
+
+  it("keeps a change another follows, and one a visit is booked under", async () => {
+    await set({ applies_from: "2026-11-06", ...LATER });
+    await set({ applies_from: "2026-11-07", ...LATER });
+    expect((await withdraw("2026-11-06")).status).toBe(409);
+
+    expect((await withdraw("2026-11-07")).status).toBe(204);
+    const at = new Date().toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO people (id, created_at, mobile_e164, name) VALUES ('p1', ?1, '+919810000001', 'Rohit Malhotra')",
+      ).bind(at),
+      env.DB.prepare(
+        `INSERT INTO appointments (id, fsm_id, person_id, type, status, window_start, window_end, synced_at)
+         VALUES ('v1', 'v1', 'p1', 'service', 'scheduled', '2026-11-08T04:30:00.000Z', '2026-11-08T06:00:00.000Z', ?1)`,
+      ).bind(at),
+    ]);
+    expect((await withdraw("2026-11-06")).status).toBe(409);
+    expect((await withdraw("2026-12-01")).status).toBe(404);
+  });
+});

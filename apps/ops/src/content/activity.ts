@@ -78,6 +78,7 @@ const ACTIONS: Readonly<Record<ActivityAction, string>> = {
   "target.set": "Target set",
   "target.remove": "Target taken off",
   "slot_times.set": "Window times set",
+  "slot_times.withdraw": "Window times change withdrawn",
   "pincode.set": "Pincode served or stopped",
   "pincode.rename": "Area renamed",
   "pincode.add": "Pincode added",

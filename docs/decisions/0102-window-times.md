@@ -39,3 +39,10 @@ A held booking keeps its half-slot's place in the day (`slot_holds.start_unit`),
 - Ops can change the day's times without a release, from a day well ahead. A client never sees a visit move under them.
 - Changes accumulate. The table is read whole, so a change or two a year costs nothing.
 - Tests: `test/node/policy/policy-slot-times.test.ts`, `test/worker/booking/slot-times.test.ts` and `test/worker/dispatch/ops-slot-times.test.ts`. The booking, dispatch, message and window tests now read the day's times.
+
+## Amendment: the last change may be withdrawn
+
+A change set for the wrong day could not be taken back, so the day before a correction ran on times nobody wanted.
+The last change may now be withdrawn, from the console's Window times, while no visit is booked or held from its day:
+nobody was offered its times. Migration 0185 narrows the trigger that kept every change to that rule; every other
+change stays for good, and the audit log keeps who withdrew one (`slot_times.withdraw`).

@@ -2558,7 +2558,7 @@ Indexes:
 
 Each change of the day's half-slot times ops set, from the day it applies; never changed (ADR 0102).
 
-Made by `0067_slot_times.sql`; changed by `0090_board_version.sql`.
+Made by `0067_slot_times.sql`; changed by `0090_board_version.sql`, `0185_slot_times_withdrawn.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |

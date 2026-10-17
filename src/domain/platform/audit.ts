@@ -109,6 +109,7 @@ export const AUDIT_ACTIONS = [
   "target.remove",
   // The day's half-slot times from a date (docs/decisions/0102-window-times.md).
   "slot_times.set",
+  "slot_times.withdraw",
   "pincode.set",
   "pincode.rename",
   // A pincode ops add to the service area, unserved, in one of our cities.
@@ -361,7 +362,7 @@ export function auditStatementIfDeleted(
   now: Date,
   deleted:
     | {
-        readonly table: "technicians" | "discount_codes" | "partner_payouts";
+        readonly table: "technicians" | "discount_codes" | "partner_payouts" | "slot_times";
         readonly column: "id";
         readonly value: string;
       }
