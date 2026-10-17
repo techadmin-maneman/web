@@ -144,8 +144,9 @@ export const PERSONAL_COLUMNS: Readonly<Record<string, PersonalTable>> = {
     erasure: { deletes: true, why: "Deleted: nothing is sent to the CRM for an erased record but its erasure." },
   },
   care_owners: {
-    leftOut: ["person_id", "assigned_by"],
-    whyLeftOut: "Our key, and whether we gave them their Care person or which manager moved them.",
+    leftOut: ["person_id", "email", "assigned_by"],
+    whyLeftOut:
+      "Our key; the Care person's work e-mail, as they are named by their first name instead; and whether we gave them their Care person or which manager moved them.",
     erasure: { deletes: true, why: "Deleted: nobody looks after an erased record." },
   },
   channel_attributions: {

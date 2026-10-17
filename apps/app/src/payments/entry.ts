@@ -68,11 +68,11 @@ export function entryBeneath(entry: Entry): string | null {
   return destination === null ? null : payments.backTo(destination);
 }
 
-/** A charge's evidence: "cancelled 9:14 am, visit was 10 am", with the dates on different days. */
+/** A charge's evidence: "You cancelled at 9:14 am, for a visit at 10 am", "on 16 Aug at 3:35 pm" on different days. */
 export function chargeEvidence(charge: NonNullable<Extract<Entry, { kind: "payment" }>["charge"]>): string {
   const sameDay = indiaDate(charge.at) === indiaDate(charge.visit_started_at);
   const when = (instant: string) =>
-    sameDay ? indiaClock(instant) : `${shortDate(indiaDate(instant))}, ${indiaClock(instant)}`;
+    sameDay ? `at ${indiaClock(instant)}` : `on ${shortDate(indiaDate(instant))} at ${indiaClock(instant)}`;
   return payments.evidence(charge.change, when(charge.at), when(charge.visit_started_at));
 }
 

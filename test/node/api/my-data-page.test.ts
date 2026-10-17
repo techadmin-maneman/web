@@ -45,6 +45,8 @@ describe("the readable copy of a client's data", () => {
     consultation_requests: [{ requested_date: "2026-10-02", requested_window: "morning" }],
     grievances: [{ text: "<script>alert('hi')</script> & more", state: "open" }],
     discount_codes: [{ code: "WELCOME", amount_off: 50_000, given_by: "ops", removed_by: "client" }],
+    care_person: [{ care_person: "care_team", since: "2026-09-21T06:30:00.000Z" }],
+    custom_orders: [{ number: "CO-1", product: "mane_man_active", product_name: "Mane Man Active" }],
   };
 
   it("heads the page with when it was downloaded, in India's time", () => {
@@ -77,6 +79,14 @@ describe("the readable copy of a client's data", () => {
     const page = read(myDataPage(held, EXPORTED));
     expect(page).toContain("Entered by\n Our team");
     expect(page).toContain("Taken off by\n You");
+    expect(page).toContain("Who\n Mane Man Care");
+  });
+
+  it("names a hair system by its name, leaving its code to the file", () => {
+    const page = read(myDataPage(held, EXPORTED));
+    expect(page).toContain("Hair system\n Mane Man Active");
+    expect(page).not.toContain("mane_man_active");
+    expect(page).not.toContain("Mane man active");
   });
 
   it("leaves an empty field out, and says when a part holds nothing", () => {

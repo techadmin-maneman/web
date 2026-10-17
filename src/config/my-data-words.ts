@@ -18,6 +18,7 @@ export const CODE_WORDS = {
   client: "You",
   ops: "Our team",
   system: "Automatically",
+  care_team: "Mane Man Care",
   whatsapp_stop: "A STOP reply on WhatsApp",
   message_link: "The link in a message",
   app_share_sheet: "Sharing from the app",

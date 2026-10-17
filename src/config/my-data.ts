@@ -1,7 +1,7 @@
 // The readable copy of a client's data export (GET /api/me/export.html; src/domain/privacy/my-data-page.ts): each part's
 // heading, in the order the page shows them, and each field's label and how its value reads.
 
-import { day, money, text, time, words, yesNo, type Part } from "./my-data-fields.ts";
+import { code, day, money, text, time, words, yesNo, type Part } from "./my-data-fields.ts";
 import { CUSTOM_ORDERS_PART } from "./my-data-orders.ts";
 import { CODE_WORDS, PURPOSE_WORDS } from "./my-data-words.ts";
 
@@ -129,8 +129,8 @@ export const MY_DATA = {
         density_percent: text("Density, %"),
         wave: words("Wave"),
         hairline: words("Hairline"),
-        product: words("Hair system"),
-        product_name: text("Hair system, by name"),
+        product: code("Hair system, as a code"),
+        product_name: text("Hair system"),
         attachment: words("Attachment"),
         remedies: words("Tried before"),
         transplant_year: text("Transplant year"),
@@ -243,7 +243,7 @@ export const MY_DATA = {
     },
     care_person: {
       title: "Your Care person",
-      fields: { care_person: text("Who"), since: time("Since") },
+      fields: { care_person: words("Who"), since: time("Since") },
     },
     city_matters: { title: "Passed to your city team", fields: { city: text("City"), raised_at: time("When") } },
     remedies: {

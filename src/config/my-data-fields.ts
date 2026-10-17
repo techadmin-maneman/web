@@ -3,9 +3,10 @@
 /**
  * How a value reads. `time`: an instant, as India's date and clock. `day`: a date. `money`: paise, as rupees.
  * `yesNo`: 1 or 0. `words`: a stored code, as words ("first_fit" reads "First fit"). `purpose`: a consent's purpose.
- * `purposes`: a JSON list of them. `notice`: a notice's version, as the words it showed.
+ * `purposes`: a JSON list of them. `notice`: a notice's version, as the words it showed. `code`: a stored code the
+ * readable copy leaves to the name beside it, in the file only.
  */
-type FieldKind = "text" | "time" | "day" | "money" | "yesNo" | "words" | "purpose" | "purposes" | "notice";
+type FieldKind = "text" | "time" | "day" | "money" | "yesNo" | "words" | "purpose" | "purposes" | "notice" | "code";
 
 export interface Field {
   readonly label: string;
@@ -23,3 +24,4 @@ export const day = (label: string): Field => ({ label, as: "day" });
 export const money = (label: string): Field => ({ label, as: "money" });
 export const yesNo = (label: string): Field => ({ label, as: "yesNo" });
 export const words = (label: string): Field => ({ label, as: "words" });
+export const code = (label: string): Field => ({ label, as: "code" });
