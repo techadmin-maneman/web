@@ -66,6 +66,14 @@ describe("the service area", () => {
     expect((await auditFor("pincode.set")).results).toHaveLength(1);
   });
 
+  // Cities said Mumbai was not served while every one of its pincodes was.
+  it("marks the city of a pincode it begins serving served too, so Cities and the pincodes agree", async () => {
+    await pincode("400050", "Mumbai", "Bandra West", 0, null);
+    await env.DB.prepare("UPDATE cities SET served = 0 WHERE name = 'Mumbai'").run();
+    await post("/api/service-area", { changes: [{ pincode: "400050", served: true, launch_on: "2026-09-15" }] });
+    expect(await env.DB.prepare("SELECT served FROM cities WHERE name = 'Mumbai'").first()).toEqual({ served: 1 });
+  });
+
   it("keeps a pincode's launch date however often it is switched off and on", async () => {
     // Another served pincode, since switching off the only one is refused.
     await post("/api/service-area", { changes: [{ pincode: "122018", served: true, launch_on: null }] });

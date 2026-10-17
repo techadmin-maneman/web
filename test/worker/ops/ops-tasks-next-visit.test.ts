@@ -100,7 +100,12 @@ describe("GET /api/tasks, the next visit", () => {
 
   // A client long gone stayed an overdue task for ever, and the overdue count only grew.
   it("leaves the board once the client counts as lost, after the days lapsed ops set", async () => {
-    // Done 17 May: due 16 June, lapsed from 24 June, lost after 90 days lapsed, on 22 September.
+    // Done 17 May: due 16 June, lapsed from 24 June, lost after 90 days lapsed, on 22 September. Read with the tasks
+    // past the board's own lapse days, which this is not about.
+    const tasks = async (): Promise<Body> => {
+      await keepUpVisits();
+      return (await request(ops, "/api/tasks?lapsed=include")).json<Body>();
+    };
     await visitOf(VISIT, "service", "2026-05-17T04:30:00.000Z", "completed");
     expect(groupNames(await tasks())).toEqual(["at_risk_client"]);
     await env.DB.prepare("UPDATE appointments SET window_start = '2026-05-16T04:30:00.000Z'").run();
@@ -177,6 +182,31 @@ describe("GET /api/tasks, the next visit", () => {
     await env.DB.prepare("UPDATE appointments SET status = 'completed'").run();
     expect(groupNames(await tasks())).toEqual(["first_fit_to_book"]);
     expect((await opsSet({ first_fit_to_book: 14 })).groups).toEqual([]);
+  });
+
+  // A client who said yes at the consultation waited a week for anyone to book their fit, though only ops could.
+  it("lists a client consulted today at once while only ops book first fits", async () => {
+    await visitOf(CONSULTATION, "consultation", "2026-09-21T04:30:00.000Z", "completed");
+    expect(groupNames(await tasks())).toEqual([]);
+    const opsBook = appFor(
+      "local",
+      fakeDependencies(),
+      { selfServeBooking: false, selfServeConsultations: true },
+      "ops",
+    );
+    const board = await (await request(opsBook, "/api/tasks")).json<Body>();
+    expect(groupNames(board)).toEqual(["first_fit_to_book"]);
+  });
+
+  // Five months on the board held 168 tasks, every one overdue, the oldest from months before.
+  it("leaves a task waiting past the lapse days off the board, counting it, and shows it when asked", async () => {
+    await visitOf(CONSULTATION, "consultation", "2026-06-01T04:30:00.000Z", "completed");
+    const board = await tasks();
+    expect(groupNames(board)).toEqual([]);
+    expect(board).toMatchObject({ lapsed: 1 });
+    const all = await (await request(ops, "/api/tasks?lapsed=include")).json<Body>();
+    expect(groupNames(all)).toEqual(["first_fit_to_book"]);
+    expect(all).toMatchObject({ lapsed: 0 });
   });
 
   it("names no window after a consultation in the evening, which a first fit cannot start in", async () => {

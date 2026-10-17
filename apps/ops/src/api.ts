@@ -276,6 +276,8 @@ export const api = {
   client: (id: string) => client.get("/api/clients/{id}", { path: { id } }),
   /** Every queue ops still have to work through, and whose each task is. A task leaves when its row is decided. */
   tasks: () => client.get("/api/tasks"),
+  /** The same, with the tasks past the lapse days ops set, which the board otherwise leaves out. */
+  tasksWithLapsed: () => client.get("/api/tasks", { query: { lapsed: "include" } }),
   /** What each place holds, what is low, and the latest movements. */
   stock: () => client.get("/api/stock"),
 };

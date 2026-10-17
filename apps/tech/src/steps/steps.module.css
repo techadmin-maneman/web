@@ -253,6 +253,11 @@
   color: var(--paper);
 }
 
+/* How the job closed, kept whole: "no-show" breaks at its hyphen otherwise. */
+.closedAs {
+  white-space: nowrap;
+}
+
 .closeWho {
   margin: var(--sp-16) 0 var(--sp-16);
   font-family: var(--font-serif);

@@ -39064,6 +39064,10 @@ Request body:
       "type": "integer",
       "description": "How many places, the central store and each kit, hold something at or below its level: Stock's badge."
     },
+    "lapsed": {
+      "type": "integer",
+      "description": "How many tasks the board leaves out for having waited past the days ops set; none when asked for."
+    },
     "groups": {
       "type": "array",
       "items": {
@@ -39131,6 +39135,7 @@ Request body:
     "truncated",
     "staff",
     "low_stock_places",
+    "lapsed",
     "groups"
   ],
   "additionalProperties": false,
@@ -41083,6 +41088,7 @@ Request body:
         "reminder_hour",
         "phone_clock",
         "task_sla_hours",
+        "task_lapse_days",
         "piece_cycle_days",
         "payment_hold",
         "dispute_window_days",
@@ -41273,6 +41279,7 @@ Request body:
         "reminder_hour",
         "phone_clock",
         "task_sla_hours",
+        "task_lapse_days",
         "piece_cycle_days",
         "payment_hold",
         "dispute_window_days",

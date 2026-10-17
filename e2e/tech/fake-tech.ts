@@ -43,6 +43,8 @@ export interface Write {
 export interface Fake {
   /** False stands for a basement: every call fails as it does with no signal. */
   online: boolean;
+  /** How long the job's card takes to come, as on a slow network. */
+  slowCardMs: number;
   /** False until a code is verified: the API has no session for this phone, and every call but the sign-in's is a 401. */
   signedIn: boolean;
   /** True once ops revoke the phone: every call is a 401 `device_revoked`. */
@@ -173,6 +175,7 @@ const LAST_VISIT_PHOTO = Buffer.from(
 export async function fakeTech(page: Page, empty = false, on: Page | BrowserContext = page): Promise<Fake> {
   const fake: Fake = {
     online: true,
+    slowCardMs: 0,
     signedIn: true,
     revoked: false,
     switchedOff: false,
@@ -390,6 +393,7 @@ export async function fakeTech(page: Page, empty = false, on: Page | BrowserCont
       return route.fulfill({ contentType: "image/png", body: LAST_VISIT_PHOTO });
     }
     if (path === `/api/tech/jobs/${JOB_ID}`) {
+      if (fake.slowCardMs > 0) await new Promise((resolve) => setTimeout(resolve, fake.slowCardMs));
       if (fake.moved) return refuse(route, 404, "not_found");
       const answered = jobCard(today);
       return reply(route, 200, fake.movedTo === null ? answered : { ...answered, starts_at: fake.movedTo });

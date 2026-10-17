@@ -39,7 +39,7 @@ export const RULE_GROUPS = [
   },
   { id: "supply_plan", rules: ["planning_period_days", "planning_horizon_periods", "forecast_assumptions"] },
   { id: "limits", rules: ["daily_ceilings"] },
-  { id: "console", rules: ["task_sla_hours", "technician_work"] },
+  { id: "console", rules: ["task_sla_hours", "task_lapse_days", "technician_work"] },
 ] as const satisfies readonly RuleGroup[];
 
 /** Where a rule no group names is shown, so a rule the API adds is never left off the page. */

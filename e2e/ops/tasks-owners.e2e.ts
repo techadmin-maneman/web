@@ -84,6 +84,7 @@ test("closes a visit left partly done with a reason, and it leaves the list", as
     overdue: 1,
     truncated: false,
     low_stock_places: 0,
+    lapsed: 0,
     staff: ["ops@localhost"],
     groups: [
       {
@@ -152,6 +153,7 @@ test("records a call about a move from its row, and opens each of the board’s 
     overdue: 0,
     truncated: false,
     low_stock_places: 0,
+    lapsed: 0,
     staff: [],
     groups: [
       {
@@ -223,7 +225,7 @@ test("records a call about a move from its row, and opens each of the board’s 
 });
 
 test("says so when no queue holds anything", async ({ page }) => {
-  await open(page, { overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] });
+  await open(page, { overdue: 0, truncated: false, low_stock_places: 0, lapsed: 0, staff: [], groups: [] });
   await expect(page.getByText(opsCopy.tasks.empty)).toBeVisible();
   await expect(page.getByRole("button", { name: /overdue, go to the first$/ })).toHaveCount(0);
 });
@@ -292,6 +294,16 @@ test("meets WCAG 2.2 AA with a list, and with none", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
 
-  await open(page, { overdue: 0, truncated: false, low_stock_places: 0, staff: [], groups: [] });
+  await open(page, { overdue: 0, truncated: false, low_stock_places: 0, lapsed: 0, staff: [], groups: [] });
   expect(await axeViolations(page)).toEqual([]);
+});
+
+// Five months on, the board held 168 tasks, every one overdue, the oldest from months before.
+test("says how many tasks lapsed off the board, and shows them when asked", async ({ page }) => {
+  await open(page, { overdue: 0, truncated: false, low_stock_places: 0, lapsed: 3, staff: [], groups: [] });
+  await expect(page.getByText(opsCopy.tasks.lapsed(3))).toBeVisible();
+  const asked = page.waitForRequest((request) => request.url().includes("/api/tasks?lapsed=include"));
+  await page.getByRole("button", { name: opsCopy.tasks.showLapsed }).click();
+  await asked;
+  await expect(page.getByRole("button", { name: opsCopy.tasks.hideLapsed })).toBeVisible();
 });

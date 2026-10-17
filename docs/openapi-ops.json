@@ -11357,6 +11357,10 @@
             "type": "integer",
             "description": "How many places, the central store and each kit, hold something at or below its level: Stock's badge."
           },
+          "lapsed": {
+            "type": "integer",
+            "description": "How many tasks the board leaves out for having waited past the days ops set; none when asked for."
+          },
           "groups": {
             "type": "array",
             "items": {
@@ -11424,6 +11428,7 @@
           "truncated",
           "staff",
           "low_stock_places",
+          "lapsed",
           "groups"
         ],
         "additionalProperties": false,
@@ -13246,6 +13251,7 @@
               "reminder_hour",
               "phone_clock",
               "task_sla_hours",
+              "task_lapse_days",
               "piece_cycle_days",
               "payment_hold",
               "dispute_window_days",
@@ -13431,6 +13437,7 @@
               "reminder_hour",
               "phone_clock",
               "task_sla_hours",
+              "task_lapse_days",
               "piece_cycle_days",
               "payment_hold",
               "dispute_window_days",
@@ -36064,6 +36071,19 @@
             "description": "One client's tasks alone, for their page; every count is then theirs.",
             "name": "person",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "include"
+              ],
+              "description": "The tasks past the days ops set for a task to lapse as well, which the board otherwise leaves out."
+            },
+            "required": false,
+            "description": "The tasks past the days ops set for a task to lapse as well, which the board otherwise leaves out.",
+            "name": "lapsed",
+            "in": "query"
           }
         ],
         "responses": {
@@ -38979,6 +38999,7 @@
                 "reminder_hour",
                 "phone_clock",
                 "task_sla_hours",
+                "task_lapse_days",
                 "piece_cycle_days",
                 "payment_hold",
                 "dispute_window_days",

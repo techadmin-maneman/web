@@ -9,7 +9,7 @@ export const ROUTE_SQL: Readonly<Record<string, number>> = {
   "src/routes/ops/cities.ts": 1,
   "src/routes/ops/client-consents.ts": 1,
   "src/routes/ops/client-photos.ts": 1,
-  "src/routes/ops/clients.ts": 3,
+  "src/routes/ops/clients.ts": 2,
   "src/routes/ops/custom-orders.ts": 2,
   "src/routes/ops/demand-events.ts": 1,
   "src/routes/ops/profile.ts": 2,

@@ -15,6 +15,7 @@ test("names the day and window a consultation was asked for", async ({ page }) =
     overdue: 0,
     truncated: false,
     low_stock_places: 0,
+    lapsed: 0,
     staff: [],
     groups: [
       {
@@ -55,6 +56,7 @@ test("names an At-risk client’s weeks since the last visit, a first fit to boo
     overdue: 1,
     truncated: false,
     low_stock_places: 0,
+    lapsed: 0,
     staff: [],
     groups: [
       {
@@ -138,6 +140,7 @@ test("names a draft invoice’s visit", async ({ page }) => {
     overdue: 0,
     truncated: false,
     low_stock_places: 0,
+    lapsed: 0,
     staff: [],
     groups: [
       {
@@ -180,6 +183,7 @@ test("names a one visit asked for, and a fitted client’s payment still owed, w
     overdue: 0,
     truncated: false,
     low_stock_places: 0,
+    lapsed: 0,
     staff: [],
     groups: [
       {
@@ -287,6 +291,7 @@ test("lists each payment to refund, why, and what is owed back, and leads to the
     overdue: 0,
     truncated: false,
     low_stock_places: 0,
+    lapsed: 0,
     staff: [],
     groups: [
       {
@@ -347,6 +352,7 @@ test("names a disputed charge and what it kept, and leads to the dispute in Char
     overdue: 0,
     truncated: false,
     low_stock_places: 0,
+    lapsed: 0,
     staff: [],
     groups: [
       {
@@ -419,6 +425,7 @@ test("counts an open grievance down, and leads to it in Grievances", async ({ pa
     overdue: 0,
     truncated: false,
     low_stock_places: 0,
+    lapsed: 0,
     staff: [],
     groups: [
       {
