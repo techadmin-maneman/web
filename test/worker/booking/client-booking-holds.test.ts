@@ -10,8 +10,11 @@ import { appFor, d1TripsOf, fakeDependencies, markDatabase, NOW, request, savedA
 import { IMRAN, SANDEEP, SANA, technician, essential, client, visit, later } from "./client-booking-fixtures.ts";
 import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 
-/** The most round trips to D1 a hold may wait on in turn. It waited on 17 when each read waited for the one before. */
-const HOLD_TRIPS = 9;
+/**
+ * The most round trips to D1 a hold may wait on in turn. It waited on 17 when each read waited for the one before; a
+ * hold by start time plans the technicians' days and answers with the arrival window, ten (ADR 0210).
+ */
+const HOLD_TRIPS = 10;
 
 let app: App;
 

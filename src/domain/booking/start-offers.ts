@@ -117,22 +117,24 @@ export async function startOffers(input: {
   const { db, placing, visit, from, days, now } = input;
   const to = addDays(from, days - 1);
   const place = { pincode: placing.pincode ?? null, personId: placing.personId };
-  const [technicians, closed, clientVisits, inputs, pin] = await Promise.all([
+  const reading = input.inputs === undefined ? readOpsInputs(db, now) : Promise.resolve(input.inputs);
+  // Every technician's days are read beside who may take the visit, so the plans wait on no trip of their own.
+  const [technicians, closed, clientVisits, pin, plans, inputs] = await Promise.all([
     techniciansFor(db, placing.moving ?? null, place, visit.fitting ?? null),
     loadBlackouts(db, from, to, place),
     visitsOfClient(db, placing.personId, placing.moving?.visitId ?? placing.replacing ?? null),
-    input.inputs ?? readOpsInputs(db, now),
     pinOfVisit(db, placing),
+    loadDayPlans({
+      db,
+      technicianIds: null,
+      from: tieRange(from).from,
+      to: tieRange(to).to,
+      now,
+      hours: reading.then((read) => read.workingHours),
+      leaving: { ...placing.leaving, visitId: placing.moving?.visitId ?? placing.leaving?.visitId ?? null },
+    }),
+    reading,
   ]);
-  const plans = await loadDayPlans({
-    db,
-    technicianIds: technicians.map((technician) => technician.id),
-    from: tieRange(from).from,
-    to: tieRange(to).to,
-    now,
-    hours: inputs.workingHours,
-    leaving: { ...placing.leaving, visitId: placing.moving?.visitId ?? placing.leaving?.visitId ?? null },
-  });
   const rules = planRulesOf(inputs);
   const toPlan = { minutes: visit.minutes, pin, fit: visit.fitting !== null && visit.fitting !== undefined };
   const retired = (date: string) => visit.until !== undefined && visit.until !== null && date >= visit.until;

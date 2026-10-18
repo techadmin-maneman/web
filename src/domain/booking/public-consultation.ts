@@ -1,6 +1,7 @@
 // Booking a free consultation, or a consultation and fit in one visit, from the site's form or an invite (./public-booking.ts).
 
 import { type ToldNotice, CONSULTATION_NOTICES } from "../../config/notices.ts";
+import { newNumbersState } from "./new-number-state.ts";
 import { oneVisitCode } from "./public-booking-code.ts";
 import type { LossExtent } from "../../config/booking.ts";
 import { HOLD_SECONDS, BOOKING_DAYS, type BookingWindow } from "../../config/scheduling.ts";
@@ -17,7 +18,7 @@ import { type OneVisitCode, useOnNewHold, codeOnHold } from "../money/discount-c
 import type { LeadAttribution } from "../leads/leads.ts";
 import type { InviteState } from "../referrals/referrals.ts";
 import { clientCodeOf, type AnyInvite } from "../referrals/channels.ts";
-import { liveVisitOf, bookableTypes, availability } from "./availability.ts";
+import { liveVisitOf, bookableTypes } from "./availability.ts";
 import { siteVisit, type SiteVisit } from "./site-visit.ts";
 import { offeredProducts } from "./services.ts";
 import {
@@ -30,7 +31,6 @@ import {
 } from "./public-booking.ts";
 import { holdSlot } from "./hold-slot.ts";
 import { personWithMobile, formPerson } from "./form-person.ts";
-import { ONE_VISIT_FIT } from "./occupancy.ts";
 
 /** Where a booking is, as the client reads it: the area once ops have named it, its city until then. */
 const placeOf = (pincode: Pincode): string => pincode.area ?? pincode.city;
@@ -438,7 +438,7 @@ async function answerAsForANewNumber(
   const oneVisit = request.plan === "one_visit";
   const code = await oneVisitCode(form, request, null, oneVisit);
   if (code?.ok === false) return code;
-  const state = await newNumbersState(form, request);
+  const { state, startsAt } = await newNumbersState(form, request);
   if (state === "taken") return { ok: false, code: "taken" };
 
   await tellPrivately(form, known.personId, known.notBooked);
@@ -448,8 +448,8 @@ async function answerAsForANewNumber(
     state,
     date: request.date,
     window: request.window,
-    // The start asked for, as a new number booking it is told; none for a window.
-    startsAt: state === "booked" ? request.startsAt : null,
+    // The start a new number booking it is told, so a number we know looks like any other.
+    startsAt,
     area: placeOf(pincode),
     ...inviteAsForANewNumber(request.invite, null, form.now),
     oneVisit,
@@ -457,29 +457,6 @@ async function answerAsForANewNumber(
   };
 }
 
-/**
- * What a new number's booking of this day and window would come to: a slot held, a request for ops, or taken when
- * nobody is free then. It is read for nobody in particular, as for a new number: a number we know hears the same answer,
- * so the form says nothing of whose it is.
- */
-async function newNumbersState(
-  form: FormRequest,
-  request: ConsultationRequest,
-): Promise<"booked" | "requested" | "taken"> {
-  const visit = form.selfServeBooking ? await siteVisit(form.db, request.plan, request.date, request.pincode) : null;
-  if (visit === null) return "requested";
-  const length = { minutes: visit.service.minutes, fitting: request.plan === "one_visit" ? ONE_VISIT_FIT : null };
-  const [day] = await availability({
-    db: form.db,
-    placing: { personId: null, pincode: request.pincode },
-    visit: length,
-    from: request.date,
-    days: 1,
-    now: form.now,
-  });
-  const open = day?.windows.find((window) => window.window === request.window)?.open ?? false;
-  return open ? "booked" : "taken";
-}
 
 /** A notice to a person we know, written and queued on its own. */
 async function tellPrivately(form: FormRequest, personId: string, kind: SiteNoticeKind): Promise<void> {

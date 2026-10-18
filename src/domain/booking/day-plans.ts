@@ -77,7 +77,7 @@ interface LeaveRow {
 
 function statements(
   db: D1Database,
-  ids: string,
+  ids: string | null,
   read: { readonly from: string; readonly to: string; readonly now: Date; readonly leaving: Leaving },
 ) {
   const { from, to, now, leaving } = read;
@@ -85,18 +85,18 @@ function statements(
   return [
     db
       .prepare(
-        `SELECT technician_id, weekday, starts, ends FROM technician_hours WHERE technician_id IN (SELECT value FROM json_each(?1))`,
+        `SELECT technician_id, weekday, starts, ends FROM technician_hours WHERE (?1 IS NULL OR technician_id IN (SELECT value FROM json_each(?1)))`,
       )
       .bind(ids),
     db
       .prepare(
-        `SELECT id, home_lat AS lat, home_lng AS lng FROM technicians WHERE id IN (SELECT value FROM json_each(?1))`,
+        `SELECT id, home_lat AS lat, home_lng AS lng FROM technicians WHERE ?1 IS NULL OR id IN (SELECT value FROM json_each(?1))`,
       )
       .bind(ids),
     db
       .prepare(
         `SELECT technician_id, from_date, to_date, from_time, to_time FROM technician_leave
-         WHERE cancelled_at IS NULL AND from_date <= ?3 AND to_date >= ?2 AND technician_id IN (SELECT value FROM json_each(?1))`,
+         WHERE cancelled_at IS NULL AND from_date <= ?3 AND to_date >= ?2 AND (?1 IS NULL OR technician_id IN (SELECT value FROM json_each(?1)))`,
       )
       .bind(ids, from, to),
     // A visit is the standard tier's where it names no other (migration 0050).
@@ -105,7 +105,7 @@ function statements(
         `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes, ${PIN}
          FROM appointments a
          LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")} ${VISIT_PLACE}
-         WHERE a.deleted_at IS NULL AND a.technician_id IN (SELECT value FROM json_each(?1))
+         WHERE a.deleted_at IS NULL AND (?1 IS NULL OR a.technician_id IN (SELECT value FROM json_each(?1)))
            AND ${statusIn("a.status", VISIT_LIVE)} AND a.window_start >= ?2 AND a.window_start < ?3 AND a.id IS NOT ?4`,
       )
       .bind(
@@ -118,7 +118,7 @@ function statements(
       .prepare(
         `SELECT h.technician_id, h.date, h.type, h.minutes, h.start_unit, h.starts_at, ${PIN}
          FROM slot_holds h ${HOLD_PLACE}
-         WHERE h.date BETWEEN ?2 AND ?3 AND h.technician_id IN (SELECT value FROM json_each(?1))
+         WHERE h.date BETWEEN ?2 AND ?3 AND (?1 IS NULL OR h.technician_id IN (SELECT value FROM json_each(?1)))
            AND ${keepingItsTime("h", "?4")} AND h.id IS NOT ?5 AND NOT (?6 IS NOT NULL AND ${ownUnpaid("h", "?6")})
            AND NOT (?7 IS NOT NULL AND ${ownAtCheckout("h", { person: "?7", type: "?8", tier: "?9", now: "?4" })})`,
       )
@@ -136,7 +136,7 @@ function statements(
     db
       .prepare(
         `SELECT technician_id, date, MAX(CAST(substr(claim, 5) AS INTEGER)) AS revision FROM slot_claims
-         WHERE claim LIKE 'rev:%' AND date BETWEEN ?2 AND ?3 AND technician_id IN (SELECT value FROM json_each(?1))
+         WHERE claim LIKE 'rev:%' AND date BETWEEN ?2 AND ?3 AND (?1 IS NULL OR technician_id IN (SELECT value FROM json_each(?1)))
          GROUP BY technician_id, date`,
       )
       .bind(ids, from, to),
@@ -146,18 +146,21 @@ function statements(
 /** Each technician's days from `from` to `to`, India's dates, with the city's working hours for those without their own. */
 export async function loadDayPlans(input: {
   readonly db: D1Database;
-  readonly technicianIds: readonly string[];
+  /** Whose days; null for every technician's, read alongside who may take the visit rather than after it. */
+  readonly technicianIds: readonly string[] | null;
   readonly from: string;
   readonly to: string;
   readonly now: Date;
-  readonly hours: WorkingHours;
+  /** The city's working hours, or the read of them still on its way. */
+  readonly hours: WorkingHours | Promise<WorkingHours>;
   readonly leaving?: Leaving;
 }): Promise<DayPlans> {
   const { db, from, to, now } = input;
-  const ids = JSON.stringify(input.technicianIds);
-  const [[weeks, homes, leave, visits, holds, revisions], schedule] = await Promise.all([
+  const ids = input.technicianIds === null ? null : JSON.stringify(input.technicianIds);
+  const [[weeks, homes, leave, visits, holds, revisions], schedule, hours] = await Promise.all([
     db.batch([...statements(db, ids, { from, to, now, leaving: input.leaving ?? {} })]),
     loadSlotSchedule(db),
+    input.hours,
   ]);
   const stops = new Map<string, Stop[]>();
   const add = (technicianId: string, date: string, stop: Stop) => {
@@ -193,7 +196,7 @@ export async function loadDayPlans(input: {
     leave: (leave?.results ?? []) as LeaveRow[],
     revisions: (revisions?.results ?? []) as { technician_id: string; date: string; revision: number }[],
     stops,
-    hours: input.hours,
+    hours,
   });
 }
 
