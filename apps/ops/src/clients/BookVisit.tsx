@@ -148,13 +148,8 @@ function BookingForm({
 }) {
   const [choice, setChoice] = useState<Choice>(prefill.choice);
   const [from, setFrom] = useState<string | undefined>(prefill.date);
-  const [picked, setPicked] = useState<Picked>({
-    tier: undefined,
-    date: prefill.date,
-    window: prefill.window,
-    start: undefined,
-    technician: "",
-  });
+  const asked = { date: prefill.date, window: prefill.window };
+  const [picked, setPicked] = useState<Picked>({ tier: undefined, ...asked, start: undefined, technician: "" });
   const [code, setCode] = useState(prefill.code ?? "");
   const [covers, setCovers] = useState(prefill.covers ?? "");
   const [failed, setFailed] = useState<string | null>(null);
