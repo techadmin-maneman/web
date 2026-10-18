@@ -58,20 +58,9 @@ test.describe("the booking form’s own controls show where the keyboard is", ()
   }
 });
 
-/**
- * Whether the focused element's middle is its own, not the header's or the sticky bar's drawn over it, once the page
- * has finished scrolling to it: the page scrolls smoothly, so a look at once sees it still on its way.
- */
+/** Whether the focused element's middle is its own, not the header's or the sticky bar's drawn over it. */
 function focusIsInSight(page: Page): Promise<{ what: string; inSight: boolean } | null> {
-  return page.evaluate(async () => {
-    const settled = 120;
-    await new Promise<void>((done) => {
-      let timer = setTimeout(done, settled);
-      addEventListener("scroll", () => {
-        clearTimeout(timer);
-        timer = setTimeout(done, settled);
-      });
-    });
+  return page.evaluate(() => {
     const focused = document.activeElement;
     if (!(focused instanceof HTMLElement) || focused === document.body) return null;
     const box = focused.getBoundingClientRect();
@@ -87,8 +76,8 @@ function focusIsInSight(page: Page): Promise<{ what: string; inSight: boolean } 
 test("no control the keyboard reaches on the home page is hidden under the header or the sticky bar", async ({
   page,
 }) => {
-  // Every stop waits for the page to settle, and the home page has over a hundred.
-  test.setTimeout(120_000);
+  // Where each control comes to rest is the question, so the page jumps to it rather than scrolling smoothly there.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const hidden: string[] = [];
   let previous = "";

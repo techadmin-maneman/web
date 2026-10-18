@@ -371,7 +371,8 @@ test.describe("a visitor saving data", () => {
     });
   });
 
-  // The film cost a phone on prepaid data 2.3 MB before the visitor chose anything.
+  // The film cost a phone on prepaid data 2.3 MB before the visitor chose anything. The words cost nothing, so they
+  // still turn, and Pause stops them.
   test("the hero footage waits for Play, and fetches nothing until then", async ({ page }) => {
     const films = filmsFetched(page);
     await page.goto("/");
@@ -380,6 +381,8 @@ test.describe("a visitor saving data", () => {
     expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
     expect(films).toEqual([]);
 
+    await page.getByRole("button", { name: siteCopy.hero.pause }).click();
+    expect(films).toEqual([]);
     await page.getByRole("button", { name: siteCopy.hero.play }).click();
     await expect(page.getByRole("button", { name: siteCopy.hero.pause })).toBeVisible();
     await expect(video).toHaveAttribute("src", /\.mp4$/);

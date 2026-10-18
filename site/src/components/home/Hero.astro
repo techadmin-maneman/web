@@ -72,12 +72,13 @@ const showFootage = isShown(heroFootage);
 </section>
 
 <script>
-  // Plays the footage and turns the opening line unless the visitor asked for
-  // reduced motion or less data, is on a slow connection, or pressed Pause
-  // (WCAG 2.2.2); Play starts both whatever the reason. The film's address is
-  // set only when it first plays, after the page has loaded, so until then
-  // nothing of it is fetched. Browsers pause media in a background tab, so it
-  // is resumed when the tab returns. Reduced motion shows the last phrase.
+  // Turns the opening line unless the visitor asked for reduced motion or
+  // pressed Pause (WCAG 2.2.2), and plays the footage too unless they asked for
+  // less data or are on a slow connection; Play starts both whatever the
+  // reason. The film's address is set only when it first plays, after the page
+  // has loaded, so until then nothing of it is fetched. Browsers pause media in
+  // a background tab, so it is resumed when the tab returns. Reduced motion
+  // shows the last phrase.
   import { type Connection, PHONE_SCREEN, playsByItself } from "../../lib/hero-film.ts";
 
   const video = document.querySelector<HTMLVideoElement>("[data-hero-video]");
@@ -87,7 +88,8 @@ const showFootage = isShown(heroFootage);
   const connection = (navigator as Navigator & { connection?: Connection }).connection;
   const line = document.querySelector<HTMLElement>(".sequence");
   const holdMs = line === null ? 0 : parseFloat(getComputedStyle(line).getPropertyValue("--hold"));
-  let stopped = !playsByItself(reduced.matches, connection);
+  let stopped = reduced.matches;
+  let filmByItself = playsByItself(reduced.matches, connection);
   let shown = 0;
   let turning: number | undefined;
 
@@ -113,7 +115,7 @@ const showFootage = isShown(heroFootage);
     film.src = (phone ? film.dataset.phoneFilm : film.dataset.film) ?? "";
   };
   const play = () => {
-    if (video === null || stopped || document.hidden) return;
+    if (video === null || stopped || !filmByItself || document.hidden) return;
     load(video);
     video.play().catch(() => undefined);
   };
@@ -133,9 +135,12 @@ const showFootage = isShown(heroFootage);
   else window.addEventListener("load", play, { once: true });
   document.addEventListener("visibilitychange", play);
   reduced.addEventListener("change", () => {
-    stopOrStart(!playsByItself(reduced.matches, connection));
+    filmByItself = playsByItself(reduced.matches, connection);
+    stopOrStart(reduced.matches);
   });
   toggle?.addEventListener("click", () => {
+    // Play asks for the film as well as the line.
+    if (stopped) filmByItself = true;
     stopOrStart(!stopped);
   });
 </script>
