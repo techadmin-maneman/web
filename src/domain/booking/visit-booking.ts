@@ -55,6 +55,8 @@ export interface VisitAsked {
   readonly technicianId: string | undefined;
   readonly date: string;
   readonly window: BookingWindow;
+  /** The start ops chose, in the window (docs/decisions/0210-booking-by-start-time.md); null for the best in it. */
+  readonly startsAt: Date | null;
   /** A consultation and fit in one visit: a first fit, with nothing paid until the client is fitted. */
   readonly oneVisit: boolean;
   readonly code: string | undefined;
@@ -374,6 +376,7 @@ export async function holdForSale({
       service: { type: asked.kind, tier: sale.service.tier, minutes: sale.service.minutes },
       date: asked.date,
       window: asked.window,
+      ...(asked.startsAt === null ? {} : { startsAt: asked.startsAt }),
       price: sale.price,
       lateFee: sale.lateFee,
       terms: sale.terms,

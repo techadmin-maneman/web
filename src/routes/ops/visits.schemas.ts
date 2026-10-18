@@ -19,6 +19,12 @@ export const PriceSchema = z
 
 export const TechnicianSchema = z.object({ id: z.string(), name: z.string() }).strict().openapi("FreeTechnician");
 
+/** A technician who can take a start, and the minutes of driving it adds to their day. */
+const StartTakerSchema = z
+  .object({ id: z.string(), name: z.string(), added_drive_minutes: z.number().int() })
+  .strict()
+  .openapi("StartTaker");
+
 const ServiceOfferSchema = z
   .object({ tier: z.string(), name: z.string(), minutes: z.number().int(), price: PriceSchema })
   .strict()
@@ -86,6 +92,22 @@ export const OpsAvailabilitySchema = z
               })
               .strict(),
           ),
+          starts: z
+            .array(
+              z
+                .object({
+                  time: z.string().openapi({ description: "India's clock, as 11:30." }),
+                  starts_at: z.iso.datetime(),
+                  technicians: z.array(StartTakerSchema).openapi({
+                    description: "Who in the caller's cities can take it, the least added driving first.",
+                  }),
+                })
+                .strict()
+                .openapi("OpsStart"),
+            )
+            .openapi({
+              description: "The day's starts someone can take (docs/decisions/0210-booking-by-start-time.md).",
+            }),
         })
         .strict(),
     ),

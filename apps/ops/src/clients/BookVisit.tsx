@@ -102,6 +102,7 @@ function visitOf(chosen: {
   tier: string;
   date: string;
   window: BookingWindow;
+  startsAt: string;
   technician: string;
   code: string;
   covers: string;
@@ -113,6 +114,7 @@ function visitOf(chosen: {
     tier: chosen.tier,
     date: chosen.date,
     window: chosen.window,
+    starts_at: chosen.startsAt,
     ...(chosen.technician === "" ? {} : { technician: chosen.technician }),
     ...(chosen.choice === "one_visit" ? { one_visit: true } : {}),
     ...(takesCode && chosen.code.trim() !== "" ? { code: chosen.code.trim() } : {}),
@@ -150,6 +152,7 @@ function BookingForm({
     tier: undefined,
     date: prefill.date,
     window: prefill.window,
+    start: undefined,
     technician: "",
   });
   const [code, setCode] = useState(prefill.code ?? "");
@@ -167,8 +170,8 @@ function BookingForm({
   if (loaded.state === "failed") return <Unreadable onRetry={retry} />;
 
   const offered = loaded.value;
-  const slot = slotOf(offered, choice, picked);
-  const { day, window, technician } = slot;
+  const slot = slotOf(offered, picked);
+  const { day, start, window, technician } = slot;
   const firstDay = offered.days[0]?.date;
   const cover = offered.owed.some((each) => each.id === covers) ? covers : "";
   const takesCode = kindOf(choice) !== "consultation" && cover === "";
@@ -176,7 +179,7 @@ function BookingForm({
 
   const book = () =>
     once(async () => {
-      if (day === undefined || window === undefined) return;
+      if (day === undefined || start === undefined || window === undefined) return;
       setFailed(null);
       const answer = await clientsApi.bookVisit(
         visitOf({
@@ -184,7 +187,8 @@ function BookingForm({
           choice,
           tier: offered.service.tier,
           date: day.date,
-          window: window.window,
+          window,
+          startsAt: start.starts_at,
           technician,
           code,
           covers: cover,
@@ -242,7 +246,7 @@ function BookingForm({
           className={shared.primary}
           type="submit"
           busy={busy}
-          disabled={day === undefined || window === undefined || refused === "no_profile"}
+          disabled={day === undefined || start === undefined || refused === "no_profile"}
         >
           {busy ? copy.booking : copy.book}
         </Button>

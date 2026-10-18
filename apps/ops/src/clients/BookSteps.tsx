@@ -3,8 +3,7 @@
 
 import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Button } from "@maneman/ui/Button";
-import { addDays, shortDate } from "@maneman/web-kit/dates";
-import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
+import { addDays, dayClock, shortDate } from "@maneman/web-kit/dates";
 import { type VisitAvailability } from "../api.ts";
 import { dispatch } from "../content.ts";
 import styles from "../components/visit-dialog.module.css";
@@ -87,7 +86,7 @@ export function WhatIsBooked(props: {
   );
 }
 
-/** When and with whom: the day, its window and the technician, each of what the day has open. */
+/** When and with whom: the day, its start and the technician, each of what the day has open. */
 export function WhenAndWho({
   slot,
   busy,
@@ -97,7 +96,7 @@ export function WhenAndWho({
   busy: boolean;
   onPick: (next: Partial<Picked>) => void;
 }) {
-  const { days, day, windows, window, technicians, technician } = slot;
+  const { days, day, starts, start, technicians, technician } = slot;
   return (
     <>
       {day === undefined ? (
@@ -114,15 +113,12 @@ export function WhenAndWho({
             }}
           />
           <Choose
-            label={copy.window}
-            value={window?.window ?? ""}
-            options={windows.map((each) => ({
-              value: each.window,
-              label: copy.windowChoice(dispatch.windows[each.window], timeRange(each.start, each.end, UNBROKEN)),
-            }))}
+            label={copy.start}
+            value={start?.starts_at ?? ""}
+            options={starts.map((each) => ({ value: each.starts_at, label: dayClock(each.time) }))}
             busy={busy}
             onChoose={(next) => {
-              onPick({ window: next });
+              onPick({ start: next });
             }}
           />
           <Choose
@@ -130,7 +126,7 @@ export function WhenAndWho({
             value={technician}
             options={[
               { value: "", label: copy.anyone },
-              ...technicians.map((each) => ({ value: each.id, label: each.name })),
+              ...technicians.map((each) => ({ value: each.id, label: copy.withDrive(each.name, each.added_drive_minutes) })),
             ]}
             busy={busy}
             onChoose={(next) => {

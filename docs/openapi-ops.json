@@ -2979,11 +2979,19 @@
                     ],
                     "additionalProperties": false
                   }
+                },
+                "starts": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OpsStart"
+                  },
+                  "description": "The day's starts someone can take (docs/decisions/0210-booking-by-start-time.md)."
                 }
               },
               "required": [
                 "date",
-                "windows"
+                "windows",
+                "starts"
               ],
               "additionalProperties": false
             }
@@ -3123,6 +3131,52 @@
         "required": [
           "id",
           "name"
+        ],
+        "additionalProperties": false
+      },
+      "OpsStart": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "string",
+            "description": "India's clock, as 11:30."
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "technicians": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StartTaker"
+            },
+            "description": "Who in the caller's cities can take it, the least added driving first."
+          }
+        },
+        "required": [
+          "time",
+          "starts_at",
+          "technicians"
+        ],
+        "additionalProperties": false
+      },
+      "StartTaker": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "added_drive_minutes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "added_drive_minutes"
         ],
         "additionalProperties": false
       },
@@ -3270,6 +3324,11 @@
               "afternoon",
               "evening"
             ]
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The start chosen, on `date`; left out, any start in the window, the best first."
           },
           "one_visit": {
             "type": "boolean",

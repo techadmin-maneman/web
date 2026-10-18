@@ -21724,6 +21724,8 @@ export interface components {
                     /** @description Who in the caller's cities is free for the visit: never the technician who took the client's visit just before or just after it. */
                     technicians: components["schemas"]["FreeTechnician"][];
                 }[];
+                /** @description The day's starts someone can take (docs/decisions/0210-booking-by-start-time.md). */
+                starts: components["schemas"]["OpsStart"][];
             }[];
         };
         ServiceOffer: {
@@ -21762,6 +21764,19 @@ export interface components {
         FreeTechnician: {
             id: string;
             name: string;
+        };
+        OpsStart: {
+            /** @description India's clock, as 11:30. */
+            time: string;
+            /** Format: date-time */
+            starts_at: string;
+            /** @description Who in the caller's cities can take it, the least added driving first. */
+            technicians: components["schemas"]["StartTaker"][];
+        };
+        StartTaker: {
+            id: string;
+            name: string;
+            added_drive_minutes: number;
         };
         OpsBooking: {
             /** Format: uuid */
@@ -21805,6 +21820,11 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            /**
+             * Format: date-time
+             * @description The start chosen, on `date`; left out, any start in the window, the best first.
+             */
+            starts_at?: string;
             /** @description A consultation and fit in one visit: a first fit, morning or afternoon. */
             one_visit?: boolean;
             /** @description A discount code the client gave. */
