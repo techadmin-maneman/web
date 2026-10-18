@@ -152,6 +152,10 @@ const BoardSchema = z
             technician_id: z.uuid(),
             from: z.iso.date(),
             to: z.iso.date(),
+            from_time: z.union([z.string(), z.null()]).openapi({
+              description: "Leave over part of one day, from and to these times on India's clock; null for whole days.",
+            }),
+            to_time: z.union([z.string(), z.null()]),
             note: z.union([z.string(), z.null()]),
           })
           .strict(),

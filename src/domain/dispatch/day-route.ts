@@ -4,21 +4,17 @@
 
 import type { BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
-import { sha256Hex } from "../../lib/hash.ts";
 import { MINUTES_PER_UNIT } from "../../policy/visit-length.ts";
 import type { Alert } from "../../providers/alerts.ts";
-import type { MapRoute, Point, RouteResult, RoutesProvider } from "../../providers/routes/index.ts";
+import type { MapRoute, Point, RoutesProvider } from "../../providers/routes/index.ts";
+import { driveThrough } from "../platform/road-drives.ts";
 import { MOST_STOPS } from "../../providers/routes/google.ts";
 import type { PlacesReached } from "../../policy/access.ts";
-import { withinCeiling } from "../platform/ceilings.ts";
 import type { CountedAt } from "../sign-in/rate-limit.ts";
 import { dispatchBoard } from "./dispatch-board.ts";
 
 /** A colour each, in board order, so the list and the map agree on whose day is whose. */
 const COLOURS = ["1f6feb", "cf222e", "1a7f37", "9a6700", "8250df", "bc4c00", "0e7490", "be185d"] as const;
-
-/** How long a drive Google answered is kept: the road between two pins changes rarely, and each answer costs a call. */
-const KEPT_SECONDS = 24 * 60 * 60;
 
 interface DayStop {
   readonly appointment_id: string;
@@ -95,26 +91,6 @@ function runsOf(stops: readonly Located[]): Located[][] {
     else runs[runs.length - 1]?.push(stop);
   }
   return runs.filter((run) => run.length > 1).map((run) => run.slice(0, MOST_STOPS));
-}
-
-/** Google's drive through these pins, kept a day; a miss counts against the day's ceiling. */
-async function driveThrough(
-  db: D1Database,
-  deps: DayRouteDeps & { routes: RoutesProvider },
-  { points, at }: { points: readonly Point[]; at: CountedAt },
-): Promise<RouteResult> {
-  const key = new Request(`https://routes.cache.maneman.in/${await sha256Hex(JSON.stringify(points))}`);
-  const kept = await caches.default.match(key).catch(() => undefined);
-  if (kept !== undefined) return kept.json<RouteResult>();
-  if (!(await withinCeiling(db, deps.alert, "route", at))) return { ok: false, detail: "the day's ceiling is spent" };
-  const answer = await deps.routes.route(points);
-  if (answer.ok) {
-    const keeping = new Response(JSON.stringify(answer), {
-      headers: { "Cache-Control": `max-age=${String(KEPT_SECONDS)}` },
-    });
-    await caches.default.put(key, keeping).catch(() => undefined);
-  }
-  return answer;
 }
 
 function legOf(from: Located, to: Located, leg: { seconds: number; meters: number }): DayLeg {

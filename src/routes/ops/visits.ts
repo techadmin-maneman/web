@@ -4,6 +4,7 @@
 // booking is audited in the batch that holds its slot (ADR 0031).
 
 import { opsRoute } from "../../http/session-routes.ts";
+import { FormStartSchema, startOnDate } from "../schemas/booking.ts";
 import { latestProfile, recommendedProduct } from "../../domain/clients/hair-profiles.ts";
 import { z } from "@hono/zod-openapi";
 import type { Context } from "hono";
@@ -48,6 +49,7 @@ import { ServiceSchema } from "../schemas/booking.ts";
 import { fittingOf } from "../../domain/booking/occupancy.ts";
 import { cityOfPerson } from "../../domain/cities/cities.ts";
 import { OpsAvailabilitySchema, PaysSchema, PriceSchema, TechnicianSchema } from "./visits.schemas.ts";
+import { driveCheckOf } from "../../http/drive-check.ts";
 
 const OUTCOMES = ["booked", "being_booked", "awaiting_payment"] as const;
 
@@ -65,6 +67,7 @@ const OpsBookingSchema = z
     price: PriceSchema.openapi({ description: "What the client pays: the service's price less any code." }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
+    starts_at: z.iso.datetime().openapi({ description: "The start the visit is booked at." }),
     technician: TechnicianSchema,
     link: z
       .union([z.object({ url: z.string(), open_until: z.iso.datetime() }).strict(), z.null()])
@@ -118,6 +121,7 @@ const VisitToBookSchema = z
       }),
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
+    starts_at: FormStartSchema,
     one_visit: z
       .boolean()
       .optional()
@@ -129,6 +133,7 @@ const VisitToBookSchema = z
     }),
   })
   .strict()
+  .refine(startOnDate, { message: "the start is on another day", path: ["starts_at"] })
   .openapi("VisitToBook");
 
 const bookRoute = opsRoute({
@@ -208,6 +213,7 @@ const bookingBody = ({ hold, sale, outcome, visitId, link }: Answer) => ({
   price: sale.price,
   date: hold.date,
   window: hold.window,
+  starts_at: hold.startsAt.toISOString(),
   technician: { id: hold.technician.id, name: hold.technician.name },
   link,
 });
@@ -241,7 +247,7 @@ async function windowsOffered({
     loadSlotSchedule(db),
   ]);
   const shut = (date: string) => date < days.range.opens || date > days.range.last;
-  return free.map(({ date, windows }) => {
+  return free.map(({ date, windows, starts }) => {
     const hours = windowTimesOf(schedule.on(date));
     const offered = windows.map((each) => ({
       window: each.window,
@@ -250,7 +256,20 @@ async function windowsOffered({
         ? []
         : each.technicians.filter((one) => isWithin(reached, one.id)).map((one) => ({ id: one.id, name: one.name })),
     }));
-    return { date, windows: offered };
+    const startsOffered = (shut(date) ? [] : starts)
+      .map((start) => ({
+        time: start.time,
+        starts_at: start.startsAt.toISOString(),
+        technicians: start.takers
+          .filter((taker) => isWithin(reached, taker.technician.id))
+          .map((taker) => ({
+            id: taker.technician.id,
+            name: taker.technician.name,
+            added_drive_minutes: taker.addedDrive,
+          })),
+      }))
+      .filter((start) => start.technicians.length > 0);
+    return { date, windows: offered, starts: startsOffered };
   });
 }
 
@@ -261,6 +280,7 @@ const askedOf = (body: z.infer<typeof VisitToBookSchema>): VisitAsked => ({
   technicianId: body.technician,
   date: body.date,
   window: body.window,
+  startsAt: body.starts_at === undefined ? null : new Date(body.starts_at),
   oneVisit: body.one_visit === true,
   code: body.code,
   covers: body.covers,
@@ -351,7 +371,13 @@ export function registerOpsVisits(app: App): void {
 
     const by = { actor: actorOf(c), requestId: c.var.requestId };
     const graceSeconds = inputs.paymentHold.grace * 60;
-    const hold = await holdForSale({ db, asked, sale, hold: { closesAt, graceSeconds, by }, now });
+    const hold = await holdForSale({
+      db,
+      asked,
+      sale,
+      hold: { closesAt, graceSeconds, by, drives: driveCheckOf(c) },
+      now,
+    });
     if (hold === null) return refuse(c, "taken");
     if (!(await codeStillApplies(db, asked, hold.id))) {
       await letGo(c, hold.id, "code_taken");

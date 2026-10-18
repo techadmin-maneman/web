@@ -11,6 +11,7 @@ import { classes } from "@maneman/ui/classes";
 import { VisuallyHidden } from "@maneman/ui/VisuallyHidden";
 import { useNearView } from "@maneman/ui/useNearView";
 import { indiaClock, shortDate } from "@maneman/web-kit/dates";
+import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { memo, useMemo } from "react";
 import type { Block, Board, BoardRow, BookingWindow } from "../api.ts";
 import { dispatch } from "../content.ts";
@@ -52,9 +53,9 @@ function sizeOf(block: Block): string | undefined {
   return styles.slots1;
 }
 
-/** Leave covers whole days, both ends included, and the route clips it to this week. */
-const isAway = (leave: Board["leave"], technicianId: string, date: string) =>
-  leave.some((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
+/** The technician's leave on a day: whole days, both ends included, clipped to this week; or part of one day. */
+const leaveOn = (leave: Board["leave"], technicianId: string, date: string) =>
+  leave.find((period) => period.technician_id === technicianId && period.from <= date && date <= period.to);
 
 /** A technician's day, as the board's days are looked up. */
 const dayKey = (technicianId: string, date: string) => `${technicianId} ${date}`;
@@ -65,18 +66,25 @@ const NO_BLOCKS: readonly Block[] = [];
 interface Days {
   readonly blocks: ReadonlyMap<string, readonly Block[]>;
   readonly away: ReadonlySet<string>;
+  /** The hours of leave over part of a day, "2–5 pm". */
+  readonly awayHours: ReadonlyMap<string, string>;
 }
 
 function daysOf(board: Board): Days {
   const blocks = new Map<string, readonly Block[]>();
   const away = new Set<string>();
+  const awayHours = new Map<string, string>();
   for (const row of board.technicians) {
     for (const day of row.days) blocks.set(dayKey(row.technician_id, day.date), day.blocks);
     for (const date of board.dates) {
-      if (isAway(board.leave, row.technician_id, date)) away.add(dayKey(row.technician_id, date));
+      const leave = leaveOn(board.leave, row.technician_id, date);
+      const key = dayKey(row.technician_id, date);
+      if (leave === undefined) continue;
+      if (leave.from_time === null || leave.to_time === null) away.add(key);
+      else awayHours.set(key, timeRange(leave.from_time, leave.to_time, UNBROKEN));
     }
   }
-  return { blocks, away };
+  return { blocks, away, awayHours };
 }
 
 /** Takes a job up to move it; null when the person's access does not let them move one. */
@@ -145,6 +153,8 @@ interface CellProps {
   readonly blocks: readonly Block[];
   /** Ops recorded leave for this technician on this day, so it takes no job. */
   readonly away: boolean;
+  /** Leave over part of the day, "2–5 pm": the day still takes jobs outside it. */
+  readonly awayHours: string | null;
   readonly inHand: InHand | null;
   readonly found: Found;
   readonly onOpen: (job: Job, from: HTMLElement) => void;
@@ -168,17 +178,40 @@ function AwayMark({ technician, date, blocks }: { technician: BoardRow; date: st
   );
 }
 
+/** Leave over part of the day, which the room the board offers already keeps clear of. */
+function AwayHoursMark({ technician, date, hours }: { technician: BoardRow; date: string; hours: string }) {
+  const copy = dispatch.board;
+  return (
+    <span className={classes(styles.awayMark, capsLook(label.caps))}>
+      <span aria-hidden="true">{copy.awayFor(hours)}</span>
+      <VisuallyHidden>{copy.awayForLabel(technician.name, shortDate(date), hours)}</VisuallyHidden>
+    </span>
+  );
+}
+
 /**
  * One technician's day: the blocks on it, and, while a job is in hand, the
  * windows it would land in. A day marked away still draws whatever it holds —
  * leave recorded after a job was assigned must not hide that job — and offers
  * no window to put another one in.
  */
-const Cell = memo(function Cell({ technician, date, blocks, away, inHand, found, onOpen, onTake, onLand }: CellProps) {
+const Cell = memo(function Cell({
+  technician,
+  date,
+  blocks,
+  away,
+  awayHours,
+  inHand,
+  found,
+  onOpen,
+  onTake,
+  onLand,
+}: CellProps) {
   const windows = inHand === null || away ? null : inHand.windowsAt(technician.technician_id, date);
   return (
     <td className={away ? `${styles.cell ?? ""} ${styles.away ?? ""}` : styles.cell}>
       {away && <AwayMark technician={technician} date={date} blocks={blocks} />}
+      {awayHours !== null && <AwayHoursMark technician={technician} date={date} hours={awayHours} />}
       {blocks.map((block) => (
         <BlockButton
           key={block.appointment_id}
@@ -226,7 +259,7 @@ const Cell = memo(function Cell({ technician, date, blocks, away, inHand, found,
   );
 });
 
-interface RowProps extends Omit<CellProps, "date" | "blocks" | "away"> {
+interface RowProps extends Omit<CellProps, "date" | "blocks" | "away" | "awayHours"> {
   readonly dates: readonly string[];
   readonly days: Days;
 }
@@ -242,6 +275,7 @@ const TechnicianRow = memo(function TechnicianRow({ technician, dates, days, ...
         <Cell
           {...cell}
           away={days.away.has(dayKey(technician.technician_id, date))}
+          awayHours={days.awayHours.get(dayKey(technician.technician_id, date)) ?? null}
           blocks={days.blocks.get(dayKey(technician.technician_id, date)) ?? NO_BLOCKS}
           date={date}
           key={date}

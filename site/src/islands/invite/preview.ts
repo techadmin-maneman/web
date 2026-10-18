@@ -33,6 +33,7 @@ function sampleBooking(state: "booked" | "requested" | "expired"): Booking {
     date: indiaTomorrow(),
     window: "morning",
     hours: WINDOW_TIMES.morning,
+    starts_at: null,
     area: SAMPLE.served.area,
     credits: state !== "expired",
     invite: state === "expired" ? "expired" : "valid",

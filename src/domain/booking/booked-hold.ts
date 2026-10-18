@@ -38,6 +38,8 @@ export interface HoldRow {
   date: string;
   window_label: BookingWindow;
   start_unit: number;
+  /** The start booking by time chose (docs/decisions/0210-booking-by-start-time.md); null on a hold made before. */
+  starts_at: string | null;
   technician_id: string;
   amount: number;
   state: HoldState;
@@ -70,7 +72,7 @@ export async function bookingHoldRow(db: D1Database, holdId: string): Promise<Ho
   return db
     .prepare(
       `SELECT h.id, h.person_id, p.erased_at AS person_erased_at, h.type, h.tier, h.minutes, h.date, h.window_label,
-              h.start_unit, h.technician_id, h.amount, h.state, h.expires_at, h.grace_seconds, h.confirmed_at,
+              h.start_unit, h.starts_at, h.technician_id, h.amount, h.state, h.expires_at, h.grace_seconds, h.confirmed_at,
               h.razorpay_order_id, h.appointment_id, h.moves_appointment_id, h.move_kind, h.created_at, h.use_credit,
               h.one_visit,
               h.pay_by_link, h.pay_at_visit, h.refunded_at, h.pincode, sp.city, COALESCE(t.active, 0) AS technician_active

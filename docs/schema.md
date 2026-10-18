@@ -1463,7 +1463,7 @@ Made by `0071_maintenance.sql`.
 
 A move to another day ops asked a client to confirm: where the visit would go, until when, and whether it was accepted, taken back or made moot (ADR 0115).
 
-Made by `0105_move_proposals.sql`.
+Made by `0105_move_proposals.sql`; changed by `0189_proposal_starts_at.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -1482,6 +1482,7 @@ Made by `0105_move_proposals.sql`.
 | `answer` | TEXT | yes |  |  |  |
 | `move_id` | TEXT | yes |  | → `dispatch_moves.id` |  |
 | `message_id` | TEXT | yes |  |  |  |
+| `starts_at` | TEXT | yes |  |  | The start a move proposal puts the visit at (docs/decisions/0210-booking-by-start-time.md), which the client's acceptance moves it to, in place of the window's earliest start with room. Only a new column; the code deployed neither reads nor writes it. |
 
 Indexes:
 
@@ -2475,7 +2476,7 @@ Indexes:
 
 What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 
-Made by `0016_booking.sql`; changed by `0040_dispatch_claims.sql`.
+Made by `0016_booking.sql`; changed by `0040_dispatch_claims.sql`, `0188_hold_starts_at.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2487,6 +2488,7 @@ Made by `0016_booking.sql`; changed by `0040_dispatch_claims.sql`.
 
 Indexes:
 
+- `slot_claims_by_date`: on (`date`)
 - `slot_claims_by_hold`: on (`hold_id`)
 - `slot_claims_by_move`: on (`move_id`), where `move_id IS NOT NULL`
 
@@ -2494,7 +2496,7 @@ Indexes:
 
 A slot held while a client pays, at Checkout or by a payment link ops sent, and what became of it (ADR 0045, ADR 0068).
 
-Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`, `0091_razorpay_catch_up.sql`, `0181_pay_at_visit.sql`.
+Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_changes.sql`, `0022_credit_bookings.sql`, `0037_cron_indexes.sql`, `0039_money_path.sql`, `0050_services.sql`, `0053_balances_and_last_visits.sql`, `0054_policies_in_the_console.sql`, `0058_held_bookings.sql`, `0061_one_visit.sql`, `0075_pay_by_link.sql`, `0078_consents_shown.sql`, `0080_payment_link_references.sql`, `0086_automatic_refunds.sql`, `0091_razorpay_catch_up.sql`, `0181_pay_at_visit.sql`, `0188_hold_starts_at.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2547,6 +2549,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `auto_refund_reason` | TEXT | yes |  |  |  |
 | `payment_checked_at` | TEXT | yes |  |  |  |
 | `pay_at_visit` | INTEGER | no | `0` |  | A paid visit ops booked while online payment is off: nothing is taken at booking, the client pays by UPI at the visit, and ops record the payment once it reaches the account (docs/decisions/0209-paid-at-the-visit-by-upi.md). |
+| `starts_at` | TEXT | yes |  |  | The start a hold keeps (docs/decisions/0210-booking-by-start-time.md), in place of the window's half-slot, and the claims by their day, which booking reads every technician's lock on. Only a new column and an index; the code deployed neither reads nor writes the column. |
 
 Indexes:
 

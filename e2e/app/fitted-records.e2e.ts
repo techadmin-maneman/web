@@ -1,6 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
 import { fullDate } from "../../packages/web-kit/dates.ts";
-import { WINDOW_TIMES, windowSpan } from "../../src/config/scheduling.ts";
 import { assertInContract } from "../contract.ts";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
@@ -52,18 +51,19 @@ test("a past visit carries its own invoice, or says why there is none", async ({
   await expect(page.getByText(appCopy.visits.detail.invoice.free)).toBeVisible();
 });
 
-test("a visit to come offers itself to the client’s calendar, at its window; one done does not", async ({ page }) => {
+test("a visit to come offers itself to the client’s calendar, at its time; one done does not", async ({ page }) => {
   const client = fittedClient();
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   await page.goto(`/visits/${client.next.id}`);
   const google = new URL((await page.getByRole("link", { name: appCopy.calendar.google }).getAttribute("href")) ?? "");
-  const { start, end } = windowSpan(client.next.date, WINDOW_TIMES.afternoon);
+  // Noon, for its ninety minutes.
+  const [start, end] = [new Date(`${client.next.date}T06:30:00.000Z`), new Date(`${client.next.date}T08:00:00.000Z`)];
   const stamp = (instant: Date) => instant.toISOString().replace(/[-:]|\.\d{3}/g, "");
   expect(Object.fromEntries(google.searchParams)).toMatchObject({
     text: "Mane Man: Service visit",
     dates: `${stamp(start)}/${stamp(end)}`,
-    details: "Arriving 12–4 pm, with Imran.",
+    details: "Arriving 12–12:30 pm, with Imran.",
   });
   const file = page.getByRole("link", { name: appCopy.calendar.file });
   const ics = decodeURIComponent((await file.getAttribute("href"))?.split(",")[1] ?? "");
@@ -241,7 +241,7 @@ test("each read surface meets WCAG 2.2 AA", async ({ page }) => {
   await expect(page.getByRole("heading", { name: appCopy.home.next.label })).toBeVisible();
   await scan();
   await tab(page, "Visits").click();
-  await expect(page.getByText("Service visit · 12–4 pm · Imran")).toBeVisible();
+  await expect(page.getByText("Service visit · 12–12:30 pm · Imran")).toBeVisible();
   await scan();
   await page.goto(`/visits/${client.service.id}`);
   await expect(page.getByRole("button", { name: "Tax invoice PDF, opens in a new tab", exact: true })).toBeVisible();

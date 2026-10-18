@@ -5,7 +5,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { heldVisitTimes } from "../../../src/domain/visits/visit-times.ts";
-import { occupancy } from "../../../src/domain/booking/occupancy.ts";
 import { loadSlotSchedule, setSlotTimes } from "../../../src/domain/booking/slot-times.ts";
 import { hoursOfWindow } from "../../../src/domain/messages/visit-message-text.ts";
 import { DEFAULT_SLOT_TIMES, type SlotTimes } from "../../../src/policy/slot-times.ts";
@@ -147,7 +146,7 @@ describe("a change of times", () => {
 describe("a day under a change of times", () => {
   it("starts a held visit at its half-slot's time on that day", async () => {
     await set(EARLIEST);
-    const before = { date: "2026-11-05", start_unit: 2, type: "service" as const, minutes: 90 };
+    const before = { date: "2026-11-05", start_unit: 2, starts_at: null, type: "service" as const, minutes: 90 };
     const after = { ...before, date: EARLIEST };
     expect((await heldVisitTimes(env.DB, before)).start.toISOString()).toBe("2026-11-05T06:30:00.000Z"); // 12:00
     expect((await heldVisitTimes(env.DB, after)).start.toISOString()).toBe(`${EARLIEST}T07:00:00.000Z`); // 12:30
@@ -160,15 +159,5 @@ describe("a day under a change of times", () => {
     expect(hoursOfWindow("2026-11-05", "afternoon", schedule)).toBe("12–4 pm");
     expect(hoursOfWindow(EARLIEST, "afternoon", schedule)).toBe("12:30–5 pm");
     expect(hoursOfWindow(EARLIEST, "morning", schedule)).toBe("10 am–12:30 pm");
-  });
-
-  it("puts a visit in the half-slot and window its time falls in that day", async () => {
-    await set(EARLIEST);
-    await visitOn(EARLIEST, "12:15");
-    const held = await occupancy({ db: env.DB, from: EARLIEST, to: EARLIEST, now: NOW });
-    const day = held(TECHNICIAN, EARLIEST);
-    // The morning's second half-slot, from 11:00, under the later times; the afternoon's first under the old ones.
-    expect([...day.windows]).toEqual(["morning"]);
-    expect([...day.units].sort()).toEqual([1, 2]);
   });
 });

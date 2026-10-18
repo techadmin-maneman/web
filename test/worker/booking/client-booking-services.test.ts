@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
 import { appFor, fakeDependencies, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, SANDEEP, SANA, technician, client, visit } from "./client-booking-fixtures.ts";
+import { startOffers } from "../../../src/domain/booking/start-offers.ts";
 
 let app: App;
 
@@ -127,17 +128,13 @@ describe("choosing a service", () => {
     });
     const kept = await env.DB.prepare("SELECT tier, minutes, amount_ex_gst FROM slot_holds").first();
     expect(kept).toEqual({ tier: "premium", minutes: 300, amount_ex_gst: 4_000_000 });
+    // Each quarter hour of its five hours and ten minutes' wrap-up, 9 am to 2:10 pm, and the lock on Imran's day.
     const claims = await env.DB.prepare("SELECT claim FROM slot_claims ORDER BY claim").all<{ claim: string }>();
-    expect(claims.results.map((claim) => claim.claim)).toEqual([
-      "unit:0",
-      "unit:1",
-      "unit:2",
-      "unit:3",
-      "unit:4",
-      "unit:5",
-      "unit:6",
-      "window:morning",
-    ]);
+    const quarters = Array.from({ length: 21 }, (_, index) => {
+      const minute = 9 * 60 + index * 15;
+      return `at:${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+    });
+    expect(claims.results.map((claim) => claim.claim)).toEqual([...quarters, "rev:1"]);
   });
 
   it("keeps a visit of a longer service from being overlapped, as long as its service is", async () => {
@@ -149,13 +146,23 @@ describe("choosing a service", () => {
     const booked = await visit(null, "first_fit", "scheduled", "2026-09-23T03:30:00.000Z", IMRAN);
     await env.DB.prepare("UPDATE appointments SET tier = 'premium' WHERE id = ?1").bind(booked).run();
 
-    const offered = await availabilityOf(rohit, "type=service&from=2026-09-23");
-    expect(offered.days[0]?.windows.map((window) => window.open)).toEqual([false, false, false]);
+    // A service visit fits after its five hours, its wrap-up, a drive and the break: from 3 pm.
+    const firstStart = async () => {
+      const [day] = await startOffers({
+        db: env.DB,
+        placing: { personId: rohit.id },
+        visit: { type: "service", minutes: 90 },
+        from: "2026-09-23",
+        days: 1,
+        now: NOW,
+      });
+      return day?.starts[0]?.time;
+    };
+    expect(await firstStart()).toBe("15:00");
 
-    // The same visit as the standard first fit, four half-slots, leaves Imran the afternoon and the evening.
+    // The same visit as the standard first fit, three hours, leaves Imran room from 12:30.
     await env.DB.prepare("UPDATE appointments SET tier = NULL WHERE id = ?1").bind(booked).run();
-    const standard = await availabilityOf(rohit, "type=service&from=2026-09-23");
-    expect(standard.days[0]?.windows.map((window) => window.open)).toEqual([false, true, true]);
+    expect(await firstStart()).toBe("12:30");
   });
 
   it("books the kind's standard service where the booking names none, as an app from before services does", async () => {

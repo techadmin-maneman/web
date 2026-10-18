@@ -52,3 +52,31 @@ export function thirdRelease(cards: readonly object[]): Promise<void> {
     };
   });
 }
+
+/** A database as the build before jobs carried their arrival window left it, at version 6, holding a day and cards. */
+export function sixthRelease(kept: {
+  readonly days: readonly object[];
+  readonly cards: readonly object[];
+}): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DATABASE, 6);
+    request.onupgradeneeded = (event) => {
+      const upgrade = request.transaction;
+      if (upgrade === null) return;
+      for (const step of UPGRADES.slice(event.oldVersion, 6)) step(request.result, upgrade);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(["days", "cards"], "readwrite");
+      for (const day of kept.days) transaction.objectStore("days").put(day);
+      for (const card of kept.cards) transaction.objectStore("cards").put(card);
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onabort = () => {
+        reject(new Error("could not seed the sixth release’s days and cards"));
+      };
+    };
+  });
+}

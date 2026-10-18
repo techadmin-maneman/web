@@ -26,7 +26,7 @@ import { NoticeLine } from "./NoticeLine.tsx";
 import { useOver, type Over } from "./over.ts";
 import { OpenedDrawer } from "./OpenedDrawer.tsx";
 import { DayRoutes } from "./DayRoutes.tsx";
-import { isBlackout, kmFrom, landsAtFrom, windowsFrom } from "./rooms.ts";
+import { isBlackout, kmFrom, startsFrom, windowsFrom } from "./rooms.ts";
 import { useAskedVisit, useClientCalls } from "./useBoardCalls.ts";
 import { useMove, type Move } from "./useMove.ts";
 
@@ -84,13 +84,13 @@ function BoardOverlays(props: {
         <MovePicker
           job={picking.job}
           onCancel={moving.unpick}
-          onSend={(reason, blackoutReason, asking) => {
-            moving.send({ reason, blackoutReason, asking });
+          onSend={(sent) => {
+            moving.send(sent);
           }}
           sending={picking.sending}
           clearingCheckIn={picking.clearingCheckIn}
           to={picking.to}
-          landsAt={landsAtFrom(moving.rooms, picking.to)}
+          starts={startsFrom(moving.rooms, picking.to)}
           blackout={isBlackout(moving.rooms, picking.to.date)}
         />
       )}

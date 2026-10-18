@@ -2,6 +2,7 @@
 // visit's windows, kinds and length, the messages it opens WhatsApp with, and the loading and failure lines.
 
 import type { EnvironmentName } from "@rules/config/environments.ts";
+import { indiaTimeOf } from "@maneman/web-kit/dates";
 import { WHATSAPP_NUMBER } from "@maneman/web-kit/whatsapp";
 import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 import { notYetFittedLines } from "./refer.ts";
@@ -50,6 +51,9 @@ export const TRY_ON_URL: Readonly<Record<EnvironmentName, string>> = {
 /** The three windows a visit is booked in (design/phase2/Client App, the windows data). */
 export const WINDOW_NAMES = { morning: "Morning", afternoon: "Afternoon", evening: "Evening" } as const;
 
+/** The day's parts in order, which the time step groups its starts under. */
+export const BOOKING_WINDOW_ORDER = ["morning", "afternoon", "evening"] as const;
+
 /** A window's hours on its day, as the API gives them: "12:00" to "16:00". */
 interface Hours {
   readonly start: string;
@@ -58,6 +62,13 @@ interface Hours {
 
 /** "12–4 pm", "9 am–12 noon": a window's hours as ops set them for its day. */
 export const windowHours = (hours: Hours) => timeRange(hours.start, hours.end, UNBROKEN);
+
+/**
+ * "11:30 am–12 pm": when the technician arrives, from the visit's start to the end of its arrival window
+ * (docs/decisions/0210-booking-by-start-time.md).
+ */
+export const arrivalHours = (visit: { readonly starts_at: string; readonly arrives_by: string }, spaces = UNBROKEN) =>
+  timeRange(indiaTimeOf(visit.starts_at), indiaTimeOf(visit.arrives_by), spaces);
 
 type WindowLabel = keyof typeof WINDOW_NAMES;
 

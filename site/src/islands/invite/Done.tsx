@@ -5,6 +5,7 @@
 // It also says whether the discount code sent with it stands (ADR 0108).
 
 import { capsLook } from "@maneman/ui/Caps";
+import { indiaClock } from "@maneman/web-kit/dates";
 import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
@@ -76,8 +77,12 @@ function codeNote(booking: Booking): string | null {
   return fill(words.applied, { code: standing.code, off: offOf(standing) });
 }
 
-/** The window's hours that day, as the booking answered: "12–4 pm". */
-const hoursOf = (result: Booking["result"]): string => timeRange(result.hours.start, result.hours.end, UNBROKEN);
+/**
+ * When the visit is: its start as booked, "11:30 am" (docs/decisions/0210-booking-by-start-time.md); or, for a booking
+ * made by window, the window's hours that day, "12–4 pm".
+ */
+const hoursOf = (result: Booking["result"], spaces = UNBROKEN): string =>
+  result.starts_at === null ? timeRange(result.hours.start, result.hours.end, spaces) : indiaClock(result.starts_at);
 
 /** Google's link, and the .ics file for every other calendar, holding the window booked. */
 function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
@@ -86,8 +91,9 @@ function AddToCalendar(props: { result: Booking["result"]; ready: string }) {
   const entry: CalendarEntry = {
     title: result.one_visit ? calendar.title.oneVisit : calendar.title.consultation,
     ...windowSpan(result.date, result.hours),
+    ...(result.starts_at === null ? {} : { start: new Date(result.starts_at) }),
     // A calendar wraps as it likes, so its hours keep plain spaces.
-    details: fill(calendar.details, { hours: timeRange(result.hours.start, result.hours.end), ready: props.ready }),
+    details: fill(calendar.details, { hours: hoursOf(result, " "), ready: props.ready }),
     uid: `${result.date}-${result.window}@maneman.in`,
   };
   return (

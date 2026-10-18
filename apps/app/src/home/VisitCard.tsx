@@ -14,7 +14,7 @@ import { Button, ButtonLink } from "@maneman/ui/Button";
 import { shortDate } from "@maneman/web-kit/dates";
 import { useState } from "react";
 import type { OneVisitPrice, VisitSummary } from "../api.ts";
-import { home, messages, note, visits, windowText } from "../content.ts";
+import { arrivalHours, home, messages, note, visits } from "../content.ts";
 import { rupees } from "@maneman/web-kit/money";
 import { oneVisitOf, summaryName, visitTitle } from "../lib/visit.ts";
 import { whatsappWith } from "../lib/whatsapp.ts";
@@ -51,9 +51,8 @@ export function stageText(visit: VisitSummary): string | null {
   return home.stages[visit.stage];
 }
 
-/** The window, or where a visit that has begun stands. */
-export const whenText = (visit: VisitSummary): string =>
-  stageText(visit) ?? windowText(visit.window_label, visit.window_hours);
+/** When the technician arrives, or where a visit that has begun stands. */
+export const whenText = (visit: VisitSummary): string => stageText(visit) ?? arrivalHours(visit);
 
 function Reschedule(props: {
   what: string;

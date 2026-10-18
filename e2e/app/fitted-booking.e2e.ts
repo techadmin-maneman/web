@@ -110,7 +110,7 @@ test("Home and Visits name a consultation and fit, what it costs once fitted, an
   expect(await axeViolations(page)).toEqual([]);
 
   await tab(page, "Visits").click();
-  await expect(page.getByRole("main").getByRole("link").first()).toContainText("Consultation and fit · 12–4 pm");
+  await expect(page.getByRole("main").getByRole("link").first()).toContainText("Consultation and fit · 12–12:30 pm");
 });
 
 // Once fitted, the link to pay by lived only in Razorpay's SMS.

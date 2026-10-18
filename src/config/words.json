@@ -4744,6 +4744,22 @@
     "reviewed": true
   },
   {
+    "key": "site:referral/referral.consultation.fullyBooked",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "Fully booked",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.consultation.taken",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "taken",
+    "reviewed": false
+  },
+  {
     "key": "site:referral/referral.consultation.noneOpen",
     "surface": "site",
     "group": "Invite page",

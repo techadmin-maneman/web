@@ -11,7 +11,7 @@ import type { Job } from "../api.ts";
 import { badges, job as copy } from "../content.ts";
 import { kindName, kindNameLower } from "../lib/kind.ts";
 import { useScreen } from "../lib/useScreen.ts";
-import { clock, dayAfter, todayInIndia } from "../lib/when.ts";
+import { arrival, dayAfter, todayInIndia } from "../lib/when.ts";
 import { go } from "../route.ts";
 import frame from "../components/frame.module.css";
 import styles from "./card-frame.module.css";
@@ -24,11 +24,11 @@ function dayOf(date: string): string | null {
   return shortDate(date);
 }
 
-/** "Tomorrow · 10 am · service · 90 min", the line beneath the name. */
+/** "Tomorrow · 10–10:30 am · service · 90 min", the line beneath the name: the client's arrival window first. */
 function whenOf(job: Job): string {
   const kind = kindNameLower(job);
   const length = job.minutes === null ? null : copy.minutes(job.minutes);
-  const parts = [dayOf(job.date), clock(job.starts_at), kind, length];
+  const parts = [dayOf(job.date), arrival(job), kind, length];
   return copy.when(parts.filter((part): part is string => part !== null));
 }
 

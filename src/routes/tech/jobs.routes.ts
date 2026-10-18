@@ -13,7 +13,6 @@ import { json } from "../../http/openapi.ts";
 import {
   jobId,
   EventIdSchema,
-  JobsSchema,
   JobDetailSchema,
   AcceptedSchema,
   CheckInRequestSchema,
@@ -25,6 +24,7 @@ import {
   ProfileRequestSchema,
   ProfileRecordedSchema,
 } from "./jobs.schemas.ts";
+import { JobsSchema } from "../schemas/tech-jobs.ts";
 
 const RECORDED = { description: "Recorded", ...json(AcceptedSchema) };
 

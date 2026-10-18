@@ -81,6 +81,7 @@ describe("a consultation and fit in one visit", () => {
       date: "2026-09-23",
       window: "morning",
       hours: { start: "09:00", end: "12:00" },
+      starts_at: "2026-09-23T03:30:00.000Z",
       area: "Gurgaon South City II",
       credits: false,
       invite: "unknown",
@@ -182,7 +183,12 @@ describe("a consultation and fit in one visit", () => {
     for (const oneVisit of [false, true]) {
       const answer = await book({ date: "2026-09-24", one_visit: oneVisit });
       expect(answer.status).toBe(201);
-      expect(await answer.json()).toEqual({ ...BOOKED_MORNING, date: "2026-09-24", one_visit: oneVisit });
+      expect(await answer.json()).toEqual({
+        ...BOOKED_MORNING,
+        date: "2026-09-24",
+        starts_at: "2026-09-24T03:30:00.000Z",
+        one_visit: oneVisit,
+      });
     }
     expect(await count("SELECT COUNT(*) AS n FROM slot_holds")).toBe(1);
     const told = await env.DB.prepare("SELECT kind FROM outbound_messages ORDER BY created_at, rowid").all();

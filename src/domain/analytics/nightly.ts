@@ -11,6 +11,7 @@ import { NEXT_VISIT_DAYS } from "../../policy/next-visit.ts";
 import type { RunLog, TableMeta, TableRows, WarehouseProvider } from "../../providers/warehouse/index.ts";
 import { capacityRows, CAPACITY_DAYS_AHEAD } from "./capacity.ts";
 import { careCaseRows } from "./care-cases.ts";
+import { BOOKING_RULES } from "../../policy/start-times.ts";
 import { accessRows } from "./access.ts";
 import { clientKeys } from "./client-key.ts";
 import { clientMonthRows } from "./client-months.ts";
@@ -43,6 +44,8 @@ export interface NightGiven {
   readonly now: () => Date;
   /** The service cadence, its grace and the days to lost, as ops set them. */
   readonly standing?: StandingDays;
+  /** The arrival window after a start, in minutes, which a visit on time is checked in by; left out, booking's own. */
+  readonly arrivalMinutes?: number;
 }
 
 /** What a night's parts read of D1, each the first time one asks, so a part reads only what its tables need. */
@@ -61,7 +64,7 @@ function nightOf(db: D1Database, warehouse: WarehouseProvider, given: NightGiven
       people.map((person) => person.id),
     );
   });
-  const visits = once(async () => visitRows(db, await keys()));
+  const visits = once(async () => visitRows(db, await keys(), given.arrivalMinutes ?? BOOKING_RULES.arrival));
   const payments = once(async () => paymentRows(db, await keys()));
   // The first day with a visit or a payment, which the calendar and the first night's capacity start from.
   const first = once(async () => {

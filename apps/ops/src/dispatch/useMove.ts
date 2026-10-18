@@ -1,5 +1,5 @@
-// The job in hand on the dispatch board (./DispatchScreen.tsx): taken up, landed on a window, and sent with a reason.
-// The board first asks where the job would land, and offers only those windows; the server checks again before
+// The job in hand on the dispatch board (./DispatchScreen.tsx): taken up, landed on a window, sent with a start and a
+// reason. The board first asks where the job would land, and offers only those windows; the server checks again before
 // anything is written (docs/decisions/0034-clash-check.md), and a move from a board gone stale is refused
 // (docs/decisions/0069-dispatch-under-concurrency.md).
 
@@ -36,11 +36,13 @@ interface OnTheBoard {
   readonly restore: () => void;
 }
 
-/** Why ops move it, and whether a client's visit to another day is asked of them instead. */
-interface Sent {
+/** Why ops move it, the start chosen, and whether a client's visit to another day is asked of them instead. */
+export interface Sent {
   readonly reason: MoveReason;
   readonly blackoutReason: string | null;
   readonly asking: boolean;
+  /** Null takes the window's earliest start with room. */
+  readonly startsAt: string | null;
 }
 
 /** After the board is read again, the keyboard goes to the block that moved, wherever it now is. */
@@ -62,6 +64,7 @@ async function sendMove(
     technicianId: to.technician.technician_id,
     date: to.date,
     window: to.window,
+    startsAt: sent.startsAt,
     reason: sent.reason,
     blackoutReason: sent.blackoutReason,
   };

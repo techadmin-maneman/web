@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createStubPayments } from "../../../src/providers/payments/stub.ts";
 import { captureLogs, leaseRefused, markDatabase, NOW } from "../helpers.ts";
 import { technician } from "../clients.ts";
+import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 import {
   PERSON,
   OTHER,
@@ -187,7 +188,13 @@ describe("a paid hold whose webhook could not book it", () => {
     await webhook("payment.captured", "evt_w2", paid, at(300), { db: leaseRefused(env.DB) });
     expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });
 
-    // Another client holds after the tenth minute: a different day, and then the same window.
+    // Another client holds after the tenth minute: a different day, and then the same day, which a visit a technician
+    // a day leaves full.
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('booking_rules', ?1, 'ops', ?2)",
+    )
+      .bind(JSON.stringify({ ...BOOKING_RULES, visits: 1 }), NOW.toISOString())
+      .run();
     const elsewhere = { type: "service", date: "2026-09-30", window: "morning" };
     expect((await call(OTHER, "/api/holds", { method: "POST", body: elsewhere }, at(660))).status).toBe(201);
     expect(await holdRow(ordered.holdId)).toEqual({ state: "held", refunded_at: null });

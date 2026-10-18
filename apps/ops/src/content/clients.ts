@@ -246,10 +246,10 @@ export const clients = {
       /** A first fit booked as other than the client's profile recommends. */
       notRecommended: (name: string) => `Their hair profile recommends ${name}.`,
       day: "Day",
-      window: "Window",
-      /** "Morning, 9 am–12 noon", as the client's app and Settings write a window. */
-      windowChoice: (name: string, hours: string) => `${name.charAt(0).toUpperCase()}${name.slice(1)}, ${hours}`,
+      start: "Start",
       technician: "Technician",
+      /** "Imran Qureshi · 12 min drive", the drive the visit adds to their day. */
+      withDrive: (name: string, minutes: number) => (minutes <= 0 ? name : `${name} · ${String(minutes)} min drive`),
       anyone: "Anyone available",
       earlier: "Earlier days",
       later: "Later days",
@@ -277,8 +277,8 @@ export const clients = {
       book: "Book",
       booking: "Booking…",
       /** "Service visit, Wed 23 Sep, morning, with Sandeep Rawat." */
-      summary: (visit: string, day: string, window: string, technician: string) =>
-        `${visit}, ${day}, ${window}, with ${technician}.`,
+      summary: (visit: string, day: string, time: string, technician: string) =>
+        `${visit}, ${day}, ${time}, with ${technician}.`,
       outcomes: {
         booked: "Booked.",
         being_booked: "Booked.",

@@ -69,12 +69,20 @@ export const booking = {
   window: {
     title: "Pick a time",
     full: "Full",
+    /** Under a part of the day with no time left. */
+    fullyBooked: "Fully booked",
+    /** Read after a time struck through. */
+    taken: "taken",
+    /** "Takes about 1½ hours" */
+    takes: (length: string) => `Takes about ${length}`,
+    /** The promise of the time chosen: "Arrives between 11:30 am and 12 pm". */
+    arrives: (from: string, to: string) => `Arrives between ${from} and ${to}`,
     // A window already inside the notice.
     within: (hours: number) => `Within ${String(hours)} hours: changes are charged`,
     continue: "Continue to payment",
     // A visit that costs nothing has no payment to continue to.
     continueFree: "Continue",
-    taken: "That time has just gone. Pick another.",
+    gone: "That time has just gone. Pick another.",
   },
   pay: {
     title: "Pay and confirm",

@@ -24,6 +24,7 @@ const job = (over: Partial<Job> = {}, progress: Partial<Job["progress"]> = {}): 
   day: "today",
   date: TODAY,
   starts_at: "2030-09-19T04:00:00.000Z",
+  arrives_by: "2030-09-19T04:30:00.000Z",
   ends_at: null,
   window_label: "morning",
   type: "service",

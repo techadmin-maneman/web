@@ -1,6 +1,16 @@
 import { expect, test } from "../support.ts";
-import { fails, json, ROHIT, VIKRAM } from "./fixtures.ts";
-import { MOVE_IT, ROHIT_BLOCK, TO_SANDEEP, ROHIT_JOB, open, press, reason, sentTo } from "./dispatch-fixtures.ts";
+import { BOARD, fails, json, ROHIT, VIKRAM } from "./fixtures.ts";
+import {
+  MOVE_IT,
+  READ_BOARD,
+  ROHIT_BLOCK,
+  TO_SANDEEP,
+  ROHIT_JOB,
+  open,
+  press,
+  reason,
+  sentTo,
+} from "./dispatch-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 
 test("draws the week, every technician and the jobs on their days", async ({ page }) => {
@@ -54,6 +64,14 @@ test("marks the days a technician is away, and still shows the jobs already on t
   await expect(page.getByText("Faizan Ali is away on Tue 23 Sep")).toHaveCount(0);
   // The mark was named by an aria-label on a plain span, which ARIA forbids.
   await expect(page.locator("main span[aria-label]")).toHaveCount(0);
+});
+
+test("marks leave over part of a day with its hours, and not as a day away", async ({ page }) => {
+  const sandeep = BOARD.technicians[1]?.technician_id ?? "";
+  const part = { technician_id: sandeep, from: "2025-09-23", to: "2025-09-23", from_time: "14:00", to_time: "17:00" };
+  await open(page, { [READ_BOARD]: json({ ...BOARD, leave: [...BOARD.leave, { ...part, note: null }] }) });
+  await expect(page.getByText("Sandeep Yadav is away 2–5 pm on Tue 23 Sep")).toBeAttached();
+  await expect(page.getByText("Sandeep Yadav is away on Tue 23 Sep")).toHaveCount(0);
 });
 
 // The brief: "Drop it on a cell with room", with "a hint that shows its slot size".

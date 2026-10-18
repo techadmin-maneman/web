@@ -551,6 +551,11 @@ Request body:
         "evening"
       ]
     },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start chosen, on `date`; left out, any start in the window, the best first."
+    },
     "address": {
       "$ref": "#/components/schemas/TypedAddress"
     },
@@ -1708,6 +1713,11 @@ Request body:
         "afternoon",
         "evening"
       ]
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start chosen, on `date`; left out, any start in the window, the best first."
     },
     "address": {
       "$ref": "#/components/schemas/TypedAddress"
@@ -4560,12 +4570,20 @@ Razorpay's webhook: payments and refunds
             ],
             "additionalProperties": false,
             "description": "Each window's hours that day, as ops set them."
+          },
+          "starts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormStart"
+            },
+            "description": "The day's starts a step apart, each open or taken (docs/decisions/0210-booking-by-start-time.md)."
           }
         },
         "required": [
           "date",
           "windows",
-          "hours"
+          "hours",
+          "starts"
         ],
         "additionalProperties": false
       },
@@ -4606,6 +4624,32 @@ Razorpay's webhook: payments and refunds
 }
 ```
 
+### FormStart
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "time": {
+      "type": "string"
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "open": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "time",
+    "starts_at",
+    "open"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### Consultation
 
 ```json
@@ -4634,6 +4678,18 @@ Razorpay's webhook: payments and refunds
     },
     "hours": {
       "$ref": "#/components/schemas/WindowHours"
+    },
+    "starts_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of."
     },
     "area": {
       "type": "string",
@@ -4673,6 +4729,7 @@ Razorpay's webhook: payments and refunds
     "date",
     "window",
     "hours",
+    "starts_at",
     "area",
     "credits",
     "invite",
@@ -5147,6 +5204,18 @@ Razorpay's webhook: payments and refunds
     "hours": {
       "$ref": "#/components/schemas/WindowHours"
     },
+    "starts_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of."
+    },
     "area": {
       "type": "string",
       "description": "The area once ops have named it, its city until then."
@@ -5174,6 +5243,7 @@ Razorpay's webhook: payments and refunds
     "date",
     "window",
     "hours",
+    "starts_at",
     "area",
     "credits",
     "invite",

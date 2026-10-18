@@ -33,6 +33,7 @@
 
 /* Round, not the house square: only one reason is kept. */
 
+.start,
 .blackoutReason {
   margin-top: var(--sp-16);
 }

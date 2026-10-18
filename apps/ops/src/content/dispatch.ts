@@ -68,6 +68,9 @@ export const dispatch = {
     /** A day ops recorded leave on: no job can be dropped there, and none is offered (ADR 0062). */
     away: "Away",
     awayLabel: (technician: string, date: string) => `${technician} is away on ${date}`,
+    /** Leave over part of a day: "Away 2–5 pm". */
+    awayFor: (hours: string) => `Away ${hours}`,
+    awayForLabel: (technician: string, date: string, hours: string) => `${technician} is away ${hours} on ${date}`,
     /** Leave recorded over jobs already booked moves none of them; ops do. */
     stranded: (visits: number) => `Away · ${String(visits)} ${visits === 1 ? "visit" : "visits"} to move`,
     strandedLabel: (technician: string, date: string, visits: number) =>
@@ -186,6 +189,7 @@ export const dispatch = {
     to: (to: string) => `To ${to}`,
     /** Another technician, at the time it stood. */
     stays: (at: string) => `Same time, ${at}`,
+    start: "Start",
     legend: "Reason",
     /**
      * The design's five, in its order (src/policy/dispatch.ts), less "Skill needed · first fit certified": no

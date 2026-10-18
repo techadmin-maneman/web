@@ -82,6 +82,22 @@ const MINUTES: Readonly<Record<VisitType, number>> = {
   first_fit: 180,
 };
 
+/** An address on the day's list, as the client saved it, pinned where they chose it. */
+const placed = (line1: string, locality: string, pin: { lat: number; lng: number } | null) => ({
+  line1,
+  line2: null,
+  building: null,
+  tower: null,
+  floor: null,
+  flat: null,
+  landmark: null,
+  locality,
+  city: "Gurgaon",
+  pincode: "122018",
+  lat: pin?.lat ?? null,
+  lng: pin?.lng ?? null,
+});
+
 /** A job nothing of which has reached us, as the day's list says it. */
 const NOT_BEGUN: Job["progress"] = { started_at: null, outcome: null };
 
@@ -94,6 +110,7 @@ const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NO
   day: "today",
   date,
   starts_at: at(date, "04:00"),
+  arrives_by: at(date, "04:30"),
   ends_at: at(date, "05:30"),
   window_label: "morning",
   type,
@@ -108,6 +125,9 @@ const firstJob = (date: string, type: VisitType, oneVisit = false, progress = NO
   unlocks_at: unlocksAt(date),
   client_name: "Rohit M.",
   progress,
+  address: placed("Tower C, 14th floor", "Sector 65", { lat: 28.39, lng: 77.07 }),
+  // Vikram's at 11:30, 20 minutes away: done by 11 for the wrap-up and the drive.
+  next: { drive_minutes: 20, finish_by: at(date, "05:30") },
 });
 
 const secondJob = (date: string): Job => ({
@@ -115,6 +135,7 @@ const secondJob = (date: string): Job => ({
   day: "today",
   date,
   starts_at: at(date, "06:00"),
+  arrives_by: at(date, "06:30"),
   ends_at: at(date, "07:30"),
   window_label: "morning",
   type: "service",
@@ -129,6 +150,8 @@ const secondJob = (date: string): Job => ({
   unlocks_at: unlocksAt(date),
   client_name: "Vikram S.",
   progress: NOT_BEGUN,
+  address: placed("House 12", "DLF Phase 4", null),
+  next: { drive_minutes: 25, finish_by: at(date, "07:55") },
 });
 
 /** This afternoon's first fit, its card still locked as the list shows it, until 6 pm tomorrow. */
@@ -137,6 +160,7 @@ const lockedJob = (date: string): Job => ({
   day: "later",
   date,
   starts_at: at(date, "08:30"),
+  arrives_by: at(date, "09:00"),
   ends_at: at(date, "11:30"),
   window_label: "afternoon",
   type: "first_fit",
@@ -151,6 +175,8 @@ const lockedJob = (date: string): Job => ({
   unlocks_at: at(dayAfter(date), "12:30"),
   client_name: null,
   progress: NOT_BEGUN,
+  address: null,
+  next: null,
 });
 
 /** Tomorrow's one job, unlocked since 6 pm today: its card is open, and its door is not. */
@@ -161,6 +187,7 @@ const tomorrowsJob = (today: string): Job => {
     day: "tomorrow",
     date,
     starts_at: at(date, "04:30"),
+    arrives_by: at(date, "05:00"),
     ends_at: at(date, "06:00"),
     window_label: "morning",
     type: "service",
@@ -175,6 +202,8 @@ const tomorrowsJob = (today: string): Job => {
     unlocks_at: unlocksAt(date),
     client_name: "Rohit M.",
     progress: NOT_BEGUN,
+    address: placed("Tower C, 14th floor", "Sector 50", null),
+    next: null,
   };
 };
 
@@ -323,7 +352,8 @@ export interface CardOptions {
 export function card(date: string, progress: Progress, options: CardOptions = {}): Card {
   const type = options.type ?? "service";
   const oneVisit = options.oneVisit === true;
-  const job = firstJob(date, type, oneVisit);
+  // A card carries no next job: the day's list does.
+  const { next: _next, ...job } = firstJob(date, type, oneVisit);
   return {
     ...job,
     starts_at: options.startsAt ?? job.starts_at,
@@ -377,8 +407,9 @@ export function card(date: string, progress: Progress, options: CardOptions = {}
 
 /** A job further out: time, type and sector only, as the day-before unlock leaves it. */
 export function lockedCard(date: string): Card {
+  const { next: _next, ...job } = lockedJob(date);
   return {
-    ...lockedJob(date),
+    ...job,
     address: null,
     access_notes: null,
     client: null,
@@ -406,5 +437,7 @@ export function lockedCard(date: string): Card {
 
 /** Tomorrow's card: unlocked, so the address is there, and on a day that is not today. */
 export function tomorrowCard(today: string): Card {
-  return { ...card(today, NOTHING_DONE), ...tomorrowsJob(today), progress: NOTHING_DONE };
+  // The card's own address, and no next job, which only the day's list carries.
+  const { address: _address, next: _next, ...job } = tomorrowsJob(today);
+  return { ...card(today, NOTHING_DONE), ...job, progress: NOTHING_DONE };
 }

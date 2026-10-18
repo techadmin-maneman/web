@@ -151,18 +151,23 @@ export async function holdAs(page: Page, terms: Hold): Promise<() => Hold> {
   let last: Hold = {};
   await page.route("**/api/holds", (route) => {
     if (route.request().method() !== "POST") return route.fallback();
-    const asked = route.request().postDataJSON() as { type: string; date: string; window: string };
+    const asked = route.request().postDataJSON() as { type: string; date: string; starts_at: string };
     const now = Date.now();
+    const startsAt = new Date(asked.starts_at);
+    // The window the start falls in, by the day's times in code: before noon the morning, before 4 the afternoon.
+    const indiaHour = (startsAt.getUTCHours() * 60 + startsAt.getUTCMinutes() + 330) / 60;
+    const window = indiaHour < 12 ? "morning" : indiaHour < 16 ? "afternoon" : "evening";
     last = {
       id: crypto.randomUUID(),
       type: asked.type,
       one_visit: false,
       service: { tier: "standard", name: "Service visit", minutes: 90 },
       date: asked.date,
-      window: asked.window,
-      hours: WINDOW_TIMES[asked.window as keyof typeof WINDOW_TIMES],
-      starts_at: `${asked.date}T06:30:00.000Z`,
-      ends_at: `${asked.date}T10:30:00.000Z`,
+      window,
+      hours: WINDOW_TIMES[window],
+      starts_at: startsAt.toISOString(),
+      ends_at: new Date(startsAt.getTime() + 90 * 60_000).toISOString(),
+      arrives_by: new Date(startsAt.getTime() + 30 * 60_000).toISOString(),
       technician: { name: "Imran Qureshi", initials: "IQ" },
       price: { amount_ex_gst: LOCAL_PRICES.service, amount: LOCAL_PRICES.service, gst_percent: 0 },
       late_fee: null,

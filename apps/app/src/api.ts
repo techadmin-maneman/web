@@ -158,8 +158,9 @@ export const api = {
     client.get("/api/availability", {
       query: { ...serviceOf(wanted, moving), ...(from === undefined ? {} : { from }) },
     }),
-  hold: (wanted: Wanted, date: string, window: BookingWindow, moving?: string) =>
-    client.post("/api/holds", { body: { ...serviceOf(wanted, moving), date, window } }),
+  /** The start the client chose, on `date` (docs/decisions/0210-booking-by-start-time.md). */
+  hold: (wanted: Wanted, date: string, startsAt: string, moving?: string) =>
+    client.post("/api/holds", { body: { ...serviceOf(wanted, moving), date, starts_at: startsAt } }),
   holdById: (id: string) => client.get("/api/holds/{id}", { path: { id } }),
   releaseHold: (id: string) => client.delete("/api/holds/{id}", { path: { id } }),
   /** A discount code off the hold's price, before Checkout has its order; the hold, priced again. */

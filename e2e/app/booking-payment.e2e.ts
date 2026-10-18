@@ -18,7 +18,6 @@ import {
   refundedAfterPaying,
 } from "./checkout-fakes.ts";
 import { PORTS } from "../../scripts/lib/local-stack.ts";
-import { windowSpan } from "../../src/config/scheduling.ts";
 import { continueToPayment, TAKEN, windowsAskedAgain } from "./picking.ts";
 import { toPayment, toWindows, holdAs } from "./booking-fixtures.ts";
 import * as appCopy from "../../apps/app/src/content.ts";
@@ -173,7 +172,7 @@ test("starts one payment, and one order, when the failed step is tapped twice", 
 /** "20261013T063000Z", as a calendar link writes an instant. */
 const stamp = (instant: Date): string => instant.toISOString().replace(/[-:]|\.\d{3}/g, "");
 
-test("offers the visit just booked to the client’s calendar, at the window held", async ({ page }) => {
+test("offers the visit just booked to the client’s calendar, at the time held", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   const held = page.waitForResponse(
@@ -181,12 +180,12 @@ test("offers the visit just booked to the client’s calendar, at the window hel
       response.request().method() === "POST" && new URL(response.url()).pathname === "/api/holds" && response.ok(),
   );
   await toPayment(page);
-  const hold = (await (await held).json()) as { date: string; hours: { start: string; end: string } };
+  const hold = (await (await held).json()) as { starts_at: string; ends_at: string };
   await page.getByRole("button", { name: PAY_SERVICE }).click();
   const confirmed = page.getByRole("dialog", { name: appCopy.booking.confirmed.label });
   await expect(confirmed).toBeVisible({ timeout: 15_000 });
 
-  const { start, end } = windowSpan(hold.date, hold.hours);
+  const [start, end] = [new Date(hold.starts_at), new Date(hold.ends_at)];
   const google = new URL(
     (await confirmed.getByRole("link", { name: appCopy.calendar.google }).getAttribute("href")) ?? "",
   );
@@ -220,7 +219,7 @@ test("picks another window when one has just gone, and pays for that one", async
   await expect(page.getByRole("dialog").getByRole("status").getByText(appCopy.booking.confirmed.label)).toBeVisible();
 });
 
-test("keeps the window picked while the day’s windows are still being asked for again", async ({ page }) => {
+test("keeps the time picked while the day’s times are still being asked for again", async ({ page }) => {
   await fakeCheckout(page, "paid");
   await confirmedByRazorpay(page);
   let taken = false;
@@ -247,26 +246,23 @@ test("keeps the window picked while the day’s windows are still being asked fo
       url: `http://127.0.0.1:${String(PORTS.app)}${asked.pathname}${asked.search}`,
       headers: { ...route.request().headers(), host: `app.localhost:${String(PORTS.app)}` },
     });
-    const body = (await answer.json()) as { days: { windows: { window: string; open: boolean }[] }[] };
+    const body = (await answer.json()) as { days: { starts: { starts_at: string; open: boolean }[] }[] };
     for (const day of body.days)
-      for (const each of day.windows) each.open = each.window === gone ? false : each.window === kept || each.open;
+      for (const each of day.starts) each.open = each.starts_at === gone ? false : each.starts_at === kept || each.open;
     return route.fulfill({ response: answer, json: body });
   });
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
   const open = windows.getByRole("radio").and(page.locator(":enabled"));
-  /** A window's name, "Morning", from its radio's accessible name. */
-  const nameOf = async (radio: Locator) => /radio "(\w+)/.exec(await radio.ariaSnapshot())?.[1] ?? "";
-  const goneName = await nameOf(open.first());
-  const pickedName = await nameOf(open.last());
-  gone = goneName.toLowerCase();
-  kept = pickedName.toLowerCase();
+  // Each time's radio is sent as its start.
+  gone = (await open.first().getAttribute("value")) ?? "";
+  kept = (await open.last().getAttribute("value")) ?? "";
   await open.first().click();
   await windows.getByRole("button", { name: appCopy.booking.window.continue }).click();
   await expect(windows.getByRole("alert")).toHaveText(TAKEN);
-  const picked = windows.getByRole("radio", { name: new RegExp(`^${pickedName}`) });
+  const picked = windows.locator(`input[value="${kept}"]`);
   await picked.click();
   release();
-  await expect(windows.getByRole("radio", { name: new RegExp(`^${goneName}`) })).toBeDisabled();
+  await expect(windows.locator(`input[value="${gone}"]`)).toBeDisabled();
   await expect(picked).toBeChecked();
   await expect(windows.getByRole("button", { name: appCopy.booking.window.continue })).toBeEnabled();
 });

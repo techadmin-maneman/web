@@ -92,3 +92,26 @@ export function weekProblems(days: readonly WorkingDay[]): string[] {
   else if (days.some((day) => day.ends <= day.starts)) problems.push("ends_before_it_starts");
   return problems;
 }
+
+/** A start on the day's grid, India's clock, and whether anyone can take it. */
+export interface GridStart {
+  readonly time: string;
+  readonly open: boolean;
+}
+
+/**
+ * The day's grid of starts a client picks from: every step from the city's opening hour to the last start a visit this
+ * long, its wrap-up included, ends by its close, and any start a technician working longer hours can take, each open
+ * or taken.
+ */
+export function startGrid(
+  grid: { readonly hours: WorkingHours; readonly step: number; readonly minutes: number },
+  open: readonly string[],
+): GridStart[] {
+  const times = new Set<string>(open);
+  for (let minute = grid.hours.opens * 60; minute + grid.minutes <= grid.hours.closes * 60; minute += grid.step) {
+    times.add(`${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`);
+  }
+  const taken = new Set(open);
+  return [...times].sort().map((time) => ({ time, open: taken.has(time) }));
+}

@@ -2,7 +2,9 @@
 // bookConsultation (src/domain/booking/public-booking.ts) would take a booking in it: a slot someone is free for, a request
 // ops fix the hour of, or not at all. The answer names nobody.
 
-import { BOOKING_DAYS, type BookingWindow } from "../../config/scheduling.ts";
+import { BOOKING_DAYS, BOOKING_WINDOWS, type BookingWindow } from "../../config/scheduling.ts";
+import { startGrid, type GridStart } from "../../policy/start-times.ts";
+import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
 import { addDays, indiaDate } from "../../lib/india-time.ts";
 import { planStartsIn, type Plan } from "../../policy/one-visit.ts";
 import { siteVisit } from "./site-visit.ts";
@@ -13,12 +15,14 @@ import { windowTimesOf, type WindowTimes } from "../../policy/slot-times.ts";
 import { ALERT_WORDS } from "../../config/alert-words.ts";
 import type { AlertOnce } from "../platform/alerts.ts";
 
-/** A day the form offers, and whether booking each of its windows would be taken. */
+/** A day the form offers, and whether booking each of its windows, and each of its starts, would be taken. */
 interface OpenDay {
   readonly date: string;
   readonly windows: Readonly<Record<BookingWindow, boolean>>;
   /** Each window's hours that day. */
   readonly hours: Readonly<Record<BookingWindow, WindowTimes>>;
+  /** The day's starts a step apart (docs/decisions/0210-booking-by-start-time.md), each open or taken. */
+  readonly starts: readonly GridStart[];
 }
 
 /** How a booking on a day is taken: not at all, as a request ops fix the hour of, or as a slot of this length. */
@@ -33,16 +37,17 @@ async function dayBooking(db: D1Database, plan: Plan, date: string, selfServeBoo
   return { by: "slot", minutes: visit.service.minutes };
 }
 
-/** The windows someone is free in, for each length a slot is held for, keyed "minutes/date". */
+/** The windows and starts someone is free in, for each length a slot is held for, keyed "minutes/date". */
 async function freeWindows(
   db: D1Database,
   asked: { readonly bookings: readonly DayBooking[]; readonly pincode: string; readonly fitting: Fitting | null },
   first: string,
   now: Date,
-): Promise<Map<string, Set<BookingWindow>>> {
+): Promise<{ windows: Map<string, Set<BookingWindow>>; starts: Map<string, string[]> }> {
   const { bookings, pincode, fitting } = asked;
   const lengths = new Set(bookings.flatMap((booking) => (booking.by === "slot" ? [booking.minutes] : [])));
   const free = new Map<string, Set<BookingWindow>>();
+  const starts = new Map<string, string[]>();
   for (const minutes of lengths) {
     for (const day of await availability({
       db,
@@ -55,9 +60,44 @@ async function freeWindows(
     })) {
       const open = day.windows.filter((offer) => offer.open).map((offer) => offer.window);
       free.set(`${String(minutes)}/${day.date}`, new Set(open));
+      starts.set(
+        `${String(minutes)}/${day.date}`,
+        day.starts.map((start) => start.time),
+      );
     }
   }
-  return free;
+  return { windows: free, starts };
+}
+
+const minutesOf = (booking: DayBooking): number => (booking.by === "slot" ? booking.minutes : 60);
+
+/**
+ * A day's grid of starts on the form: open where a slot is free at it, or, for a day the form asks ops to fix the hour
+ * of, every start in a window the plan may start in; none on a day nothing is booked.
+ */
+function startsOfDay(day: {
+  readonly booking: DayBooking;
+  readonly plan: Plan;
+  readonly hours: Readonly<Record<BookingWindow, WindowTimes>>;
+  readonly inputs: OpsInputs;
+  readonly free: readonly string[] | undefined;
+}): GridStart[] {
+  const { booking, inputs } = day;
+  if (booking.by === "nothing") return [];
+  const grid = startGrid(
+    {
+      hours: inputs.workingHours,
+      step: inputs.bookingRules.step,
+      minutes: minutesOf(booking) + inputs.bookingRules.wrap_up,
+    },
+    day.free ?? [],
+  );
+  if (booking.by === "slot") return grid;
+  const startable = (time: string) =>
+    BOOKING_WINDOWS.some(
+      (window) => planStartsIn(day.plan, window) && time >= day.hours[window].start && time < day.hours[window].end,
+    );
+  return grid.map(({ time }) => ({ time, open: startable(time) }));
 }
 
 /** The days the form offers at a pincode, from tomorrow in India, each window open where booking it would be taken. */
@@ -79,18 +119,30 @@ export async function openDays(
     pincode,
     fitting: plan === "one_visit" ? ONE_VISIT_FIT : null,
   };
-  const [free, schedule] = await Promise.all([freeWindows(db, asking, first, now), loadSlotSchedule(db)]);
+  const [free, schedule, inputs] = await Promise.all([
+    freeWindows(db, asking, first, now),
+    loadSlotSchedule(db),
+    readOpsInputs(db, now),
+  ]);
 
   return days.map(({ date, booking }) => {
     const isOpen = (window: BookingWindow): boolean => {
       if (!planStartsIn(plan, window) || booking.by === "nothing") return false;
       if (booking.by === "request") return true;
-      return free.get(`${String(booking.minutes)}/${date}`)?.has(window) ?? false;
+      return free.windows.get(`${String(booking.minutes)}/${date}`)?.has(window) ?? false;
     };
+    const hours = windowTimesOf(schedule.on(date));
     return {
       date,
       windows: { morning: isOpen("morning"), afternoon: isOpen("afternoon"), evening: isOpen("evening") },
-      hours: windowTimesOf(schedule.on(date)),
+      hours,
+      starts: startsOfDay({
+        booking,
+        plan,
+        hours,
+        inputs,
+        free: free.starts.get(`${String(minutesOf(booking))}/${date}`),
+      }),
     };
   });
 }

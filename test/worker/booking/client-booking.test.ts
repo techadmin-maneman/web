@@ -1,15 +1,10 @@
-// Booking in the app: availability and holds (docs/decisions/0045-self-serve-booking.md),
-// over the window-to-slot map (0035) and the clash check (0034). NOW is Monday
+// Booking in the app: availability and holds (docs/decisions/0045-self-serve-booking.md). NOW is Monday
 // 21 September 2026, 12 noon in India, so the first bookable day is Tuesday the
 // 22nd. Every name and number here is made up.
 
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { App } from "../../../src/http/context.ts";
-import { VISIT_BLOCKS } from "../../../src/config/scheduling.ts";
-import type { VisitType } from "../../../src/config/visit-types.ts";
-import { placement } from "../../../src/domain/booking/occupancy.ts";
-import { unitsFor } from "../../../src/policy/visit-length.ts";
 import { DEFAULT_SLOT_TIMES, unitAt, windowAt } from "../../../src/policy/slot-times.ts";
 import { appFor, fakeDependencies, LOCAL_SETTINGS, markDatabase, NOW, request } from "../helpers.ts";
 import { IMRAN, SANDEEP, SANA, technician, essential, client, visit, later } from "./client-booking-fixtures.ts";
@@ -32,29 +27,7 @@ beforeEach(async () => {
   await env.DB.prepare("UPDATE technicians SET active = 0 WHERE id = ?1").bind(SANA).run();
 });
 
-/** The half-slots a kind's own length holds (src/policy/visit-length.ts). */
-const unitsOf = (type: VisitType) => unitsFor(VISIT_BLOCKS[type].minutes);
-
 describe("the working day", () => {
-  it("places a visit at the first free half-slot of its window, one job per window", () => {
-    const empty = { units: new Set<number>(), windows: new Set<"morning" | "afternoon" | "evening">(), onLeave: false };
-    expect(placement(empty, "afternoon", unitsOf("service"))).toBe(2);
-    expect(placement({ ...empty, units: new Set([2, 3]) }, "afternoon", unitsOf("service"))).toBe(4);
-    expect(
-      placement({ ...empty, windows: new Set(["afternoon"] as const) }, "afternoon", unitsOf("service")),
-    ).toBeNull();
-    // A first fit is two slots: it cannot start in the evening's last half-slots.
-    expect(placement(empty, "evening", unitsOf("first_fit"))).toBeNull();
-    expect(placement(empty, "morning", unitsOf("first_fit"))).toBe(0);
-  });
-
-  it("offers a technician on leave no window at all, whatever else their day holds", () => {
-    const away = { units: new Set<number>(), windows: new Set<"morning" | "afternoon" | "evening">(), onLeave: true };
-    expect(placement(away, "morning", unitsOf("service"))).toBeNull();
-    expect(placement(away, "afternoon", unitsOf("consultation"))).toBeNull();
-    expect(placement(away, "evening", unitsOf("service"))).toBeNull();
-  });
-
   it("reads a time of day as its half-slot and window", () => {
     const unit = (time: string) => unitAt(time, DEFAULT_SLOT_TIMES);
     const window = (time: string) => windowAt(time, DEFAULT_SLOT_TIMES);
@@ -76,7 +49,7 @@ describe("GET /api/availability", () => {
     // Who would come is never promised.
     expect(body).not.toHaveProperty("regular");
     expect(body.days).toHaveLength(14);
-    expect(body.days[0]).toEqual({
+    expect(body.days[0]).toMatchObject({
       date: "2026-09-22",
       price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
       // Each window with its hours that day (docs/decisions/0102-window-times.md). At noon on Monday, Tuesday's

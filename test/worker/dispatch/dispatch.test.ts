@@ -114,6 +114,9 @@ async function holdOnWednesday(options: { paid: boolean; expiresAt: string }): P
   return id;
 }
 
+/** Wednesday 23 September, 9:00 in India, where the hold starts. */
+const WEDNESDAY_NINE = "2026-09-23T03:30:00.000Z";
+
 const minutesBeforeNow = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000).toISOString();
 
 const holdState = async (id: string) =>
@@ -121,8 +124,7 @@ const holdState = async (id: string) =>
 
 describe("a change of technician alone", () => {
   // A first fit at 12:00 given to a technician whose replacement runs from 10:30 to 12:45.
-  // Their afternoon window is free, but the first fit's own half-slots are not.
-  it("keeps the visit's own time, and refuses it where that time is taken, as not fitting", async () => {
+  it("keeps the visit's own time, and refuses it where a visit already takes that time", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
     await insertJob(REPLACEMENT, { type: "replacement", start: TUESDAY["10:30"], technician: SAMEER, person: VIKRAM });
 
@@ -141,7 +143,7 @@ describe("a change of technician alone", () => {
 
     for (const answer of [sameWindow, noTime]) {
       expect(answer.status).toBe(409);
-      expect(await answer.json()).toMatchObject({ error: { code: "does_not_fit" } });
+      expect(await answer.json()).toMatchObject({ error: { code: "clash" } });
     }
     expect(await shown(FIT)).toEqual({ technician_id: IMRAN, window_start: TUESDAY["12:00"] });
   });
@@ -169,8 +171,10 @@ describe("a change of technician alone", () => {
 
 describe("a visit with no room", () => {
   // A first fit takes four half-slots, and the evening has two.
-  it("refuses a first fit in an empty evening as not fitting, not as a clash", async () => {
+  it("refuses a first fit where the evening has no room for it as not fitting, not as a clash", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+    // Sameer's Wednesday service at 5:30 leaves no three hours before it or after it.
+    await insertJob(A, { type: "service", start: "2026-09-23T12:00:00.000Z", technician: SAMEER, person: VIKRAM });
 
     const answer = await move({
       appointment_id: FIT,
@@ -219,7 +223,7 @@ describe("a move and the time it goes to", () => {
   it("never lets go of a paid hold's time, nor writes over it", async () => {
     const hold = await holdOnWednesday({ paid: true, expiresAt: minutesBeforeNow(60) });
 
-    const answer = await move(toSameerWednesdayMorning(A));
+    const answer = await move({ ...toSameerWednesdayMorning(A), starts_at: WEDNESDAY_NINE });
 
     expect(answer.status).toBe(409);
     expect(await answer.json()).toMatchObject({ error: { code: "clash" } });
@@ -230,10 +234,11 @@ describe("a move and the time it goes to", () => {
   it("lets go of a hold nobody paid for, whose time ran out, to make the move", async () => {
     const hold = await holdOnWednesday({ paid: false, expiresAt: minutesBeforeNow(10) });
 
-    const answer = await move(askedForWednesdayMorning(A));
+    const answer = await move({ ...askedForWednesdayMorning(A), starts_at: WEDNESDAY_NINE });
 
     expect(answer.status).toBe(200);
     expect(await holdState(hold)).toBe("released");
+    expect(await shown(A)).toEqual({ technician_id: SAMEER, window_start: WEDNESDAY_NINE });
   });
 });
 

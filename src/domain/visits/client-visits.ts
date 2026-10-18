@@ -32,6 +32,7 @@ import {
 } from "../../config/statuses.ts";
 import { creditSpentOn } from "./visit-facts.ts";
 import { paidFor, type VisitPaid } from "./visit-paid.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 
 /** The three windows the client app offers, by the hour a visit starts in India. */
 type VisitWindowLabel = "morning" | "afternoon" | "evening";
@@ -56,6 +57,8 @@ interface VisitSummary {
   readonly window_hours: { readonly start: string; readonly end: string };
   readonly starts_at: string;
   readonly ends_at: string;
+  /** The latest the technician arrives: the start and its arrival window (docs/decisions/0210-booking-by-start-time.md). */
+  readonly arrives_by: string;
   readonly length_minutes: number;
   readonly type: VisitType | null;
   /** Its service's name in the console, where it names more than the kind: a first fit's hair system, say. */
@@ -136,15 +139,21 @@ interface SummaryContext {
   /** The client's saved address, else the visit's city and pincode. */
   readonly place: (row: AppointmentRow) => string;
   readonly schedule: SlotSchedule;
+  /** The arrival window, in minutes after a visit's start. */
+  readonly arrivalMinutes: number;
 }
 
-async function contextOf(db: D1Database, personId: string): Promise<SummaryContext> {
-  const [address, schedule] = await Promise.all([currentAddress(db, personId), loadSlotSchedule(db)]);
+async function contextOf(db: D1Database, personId: string, now: Date): Promise<SummaryContext> {
+  const [address, schedule, inputs] = await Promise.all([
+    currentAddress(db, personId),
+    loadSlotSchedule(db),
+    readOpsInputs(db, now),
+  ]);
   const place = (row: AppointmentRow) =>
     address !== null
       ? `${address.locality}, ${address.city} ${address.pincode}`
       : [row.service_city, row.service_pincode].filter((part) => part !== null).join(" ");
-  return { place, schedule };
+  return { place, schedule, arrivalMinutes: inputs.bookingRules.arrival };
 }
 
 /**
@@ -182,6 +191,7 @@ async function visitSummaryOf(
     window_hours: windowTimesOf(context.schedule.on(date))[window],
     starts_at: row.window_start,
     ends_at: row.window_end,
+    arrives_by: new Date(Date.parse(row.window_start) + context.arrivalMinutes * MINUTE_MS).toISOString(),
     length_minutes: minutesBetween(row.window_start, row.window_end),
     type: row.type,
     service: namesMoreThanItsKind(row.tier, row.one_visit) ? row.service_name : null,
@@ -216,7 +226,7 @@ export async function nextVisit(db: D1Database, personId: string, now: Date): Pr
       )
       .bind(personId, now.toISOString(), todayStartsOf(now))
       .first<AppointmentRow>(),
-    contextOf(db, personId),
+    contextOf(db, personId, now),
   ]);
   return row === null ? null : visitSummaryOf(db, row, context, now);
 }
@@ -280,7 +290,7 @@ export async function listVisits(
   const missed = clientsOwn ? `(${statusIn("a.status", VISIT_LIVE)} AND ${missedDayOver("a", "?2")})` : "0";
   const binds = clientsOwn ? [personId, todayStartsOf(now)] : [personId];
   const [context, upcoming, past] = await Promise.all([
-    contextOf(db, personId),
+    contextOf(db, personId, now),
     db
       .prepare(
         `SELECT ${APPOINTMENT_COLUMNS} FROM appointments a LEFT JOIN technicians t ON t.id = a.technician_id
@@ -439,7 +449,7 @@ export async function visitDetail({
   const photos = await photoSets(db, [row.id], signingKey, now);
   const noShows = await noShowNotes(db, [row.id], now);
   return {
-    ...(await visitSummaryOf(db, row, await contextOf(db, personId), now)),
+    ...(await visitSummaryOf(db, row, await contextOf(db, personId, now), now)),
     duration_minutes: row.duration_minutes,
     outcome: row.outcome,
     what_was_done: await whatWasDone(db, row.id, row.type),
@@ -509,22 +519,4 @@ export async function photoSets(
     sets.set(row.appointment_id, set);
   }
   return sets;
-}
-
-/** The R2 keys of one of the client's own photographs and its small copy; null for anyone else's. */
-export async function ownPhotoKey(
-  db: D1Database,
-  personId: string,
-  photoId: string,
-): Promise<{ key: string; contentType: string; thumbnailKey: string | null } | null> {
-  const row = await db
-    .prepare(
-      `SELECT p.r2_key, p.content_type, p.thumbnail_key FROM photos p
-       JOIN photo_sets s ON s.id = p.photo_set_id JOIN appointments a ON a.id = s.appointment_id
-       WHERE p.id = ?1 AND a.person_id = ?2 AND a.deleted_at IS NULL`,
-    )
-    .bind(photoId, personId)
-    .first<{ r2_key: string; content_type: string; thumbnail_key: string | null }>();
-  if (row === null) return null;
-  return { key: row.r2_key, contentType: row.content_type, thumbnailKey: row.thumbnail_key };
 }

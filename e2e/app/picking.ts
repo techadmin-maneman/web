@@ -11,8 +11,8 @@ import type { Page, Response } from "@playwright/test";
 import { expect } from "../support.ts";
 import { booking } from "../../apps/app/src/content.ts";
 
-/** The window picker's words when the window went while the client was choosing. */
-export const TAKEN = booking.window.taken;
+/** The time picker's words when the time went while the client was choosing. */
+export const TAKEN = booking.window.gone;
 
 /** The pay step: "Pay and confirm", or "Confirm" for a visit that costs nothing. */
 const PAY_STEP = /^(Pay and confirm|Confirm)$/;
@@ -36,7 +36,7 @@ export function windowsAskedAgain(page: Page): () => Promise<void> {
 export async function continueToPayment(page: Page): Promise<void> {
   const windows = page.getByRole("dialog", { name: booking.window.title });
   const pay = page.getByRole("dialog", { name: PAY_STEP });
-  // Three tries: the day has three windows, and a client would give up on the day too.
+  // Three tries: a client would give up on the day too.
   for (let tries = 0; tries < 3; tries += 1) {
     await windows.getByRole("radio").and(page.locator(":enabled")).first().click();
     // The API's answer decides, however long a busy machine takes to give it: a hold can answer after seven seconds,

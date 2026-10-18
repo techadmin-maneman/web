@@ -12,7 +12,7 @@ test("Home shows a fitted client’s next visit, with the technician, and Resche
   await logIn(page, client.mobile);
   await expect(page.getByRole("heading", { level: 1, name: appCopy.home.next.label })).toBeVisible();
   await expect(page.getByText(shortDate(client.next.date))).toBeVisible();
-  await expect(page.getByText("Afternoon, 12–4 pm")).toBeVisible();
+  await expect(page.getByText("12–12:30 pm", { exact: true })).toBeVisible();
   await expect(page.getByText("Imran", { exact: true })).toBeVisible();
   await expect(page.getByText("Service visit · 1 hour 30 minutes")).toBeVisible();
   await expect(page.getByText("Gurgaon 122018")).toBeVisible();
@@ -29,14 +29,14 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   await logIn(page, client.mobile);
   await tab(page, "Visits").click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.titles.visits })).toBeVisible();
-  await expect(page.getByText("Service visit · 12–4 pm · Imran")).toBeVisible();
+  await expect(page.getByText("Service visit · 12–12:30 pm · Imran")).toBeVisible();
   // Self-serve booking is on locally: the footer opens the booking sheet (e2e/app/booking.e2e.ts).
   await expect(page.getByRole("button", { name: appCopy.home.next.book })).toBeVisible();
 
   // Every visit opens its own page: the one coming, then the three done.
   const visits = page.getByRole("main").getByRole("link");
   await expect(visits).toHaveCount(4);
-  await expect(visits.nth(0)).toContainText("Service visit · 12–4 pm · Imran");
+  await expect(visits.nth(0)).toContainText("Service visit · 12–12:30 pm · Imran");
   await expect(visits.nth(1)).toContainText(`${fullDate(client.service.date)}Service visit · Imran`);
   await expect(visits.nth(2)).toContainText(`${fullDate(client.firstFit.date)}First fit · Imran`);
   await expect(visits.nth(3)).toContainText(`${fullDate(client.consultation.date)}Consultation · Imran`);
@@ -58,7 +58,7 @@ test("Visits lists what is coming and what is done, and a past visit opens with 
   // The visit coming opens too, as Home's card, with the ways to change it.
   await visits.nth(0).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.VISIT_TYPES.service })).toBeVisible();
-  await expect(page.getByText("Afternoon, 12–4 pm")).toBeVisible();
+  await expect(page.getByText("12–12:30 pm", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: appCopy.home.reschedule })).toBeVisible();
 
   // With self-serve booking on, the note is kept on the visit for the technician, not sent to WhatsApp.

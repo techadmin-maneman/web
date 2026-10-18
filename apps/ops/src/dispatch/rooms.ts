@@ -1,5 +1,5 @@
 // Where the job in hand would land in the week on screen (./DispatchScreen.tsx), so the board offers only those
-// windows, and the days ops blacked out.
+// windows and the starts in each, and the days ops blacked out.
 
 import { useEffect, useReducer, useState } from "react";
 import { type Room } from "../api.ts";
@@ -56,11 +56,11 @@ export function kmFrom(rooms: Rooms): InHand["kmAt"] {
     rooms.rooms.find((room) => room.technician_id === technicianId && room.date === date)?.km ?? null;
 }
 
-/** The start a move to this target takes, as the server answered; null where it could not say. */
-export function landsAtFrom(rooms: Rooms, to: Target): string | null {
-  if (rooms.state !== "known") return null;
+/** The starts a move to this target can take, earliest first, as the server answered; none where it could not say. */
+export function startsFrom(rooms: Rooms, to: Target): readonly string[] {
+  if (rooms.state !== "known") return [];
   const room = rooms.rooms.find((each) => each.technician_id === to.technician.technician_id && each.date === to.date);
-  return room?.starts.find((each) => each.window === to.window)?.starts_at ?? null;
+  return (room?.starts ?? []).filter((each) => each.window === to.window).map((each) => each.starts_at);
 }
 
 export const isBlackout = (rooms: Rooms, date: string): boolean =>

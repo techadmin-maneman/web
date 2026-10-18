@@ -25,15 +25,23 @@ export function visitTimes(
 export const heldMinutes = (hold: { readonly type: VisitType; readonly minutes: number | null }): number =>
   hold.minutes ?? VISIT_BLOCKS[hold.type].minutes;
 
-/** When a hold's visit starts and ends, from its half-slot by the times in force on its day. */
+/**
+ * When a hold's visit starts and ends: from the start it keeps (docs/decisions/0210-booking-by-start-time.md), or for
+ * a hold made before starts were kept, from its half-slot by the times in force on its day.
+ */
 export async function heldVisitTimes(
   db: D1Database,
   hold: {
     readonly date: string;
     readonly start_unit: number;
+    readonly starts_at: string | null;
     readonly type: VisitType;
     readonly minutes: number | null;
   },
 ): Promise<{ start: Date; end: Date }> {
+  if (hold.starts_at !== null) {
+    const start = new Date(hold.starts_at);
+    return { start, end: new Date(start.getTime() + heldMinutes(hold) * MINUTE_MS) };
+  }
   return visitTimes(hold.date, hold.start_unit, heldMinutes(hold), await loadSlotSchedule(db));
 }

@@ -70,6 +70,28 @@ test("a job closed out on another phone reads as closed on Today, as its card sa
   await expect(page.getByText("Closed out · partly done")).toBeVisible();
 });
 
+test("puts Navigate and the drive on beneath a job, and says when one under way runs into the next", async ({
+  page,
+}) => {
+  const fake = await fakeTech(page);
+  await page.goto("/");
+
+  const first = page.getByRole("listitem").first();
+  await expect(first.getByRole("link", { name: techCopy.job.navigate })).toHaveAttribute(
+    "href",
+    "https://www.google.com/maps/dir/?api=1&destination=28.39%2C77.07",
+  );
+  await expect(first).toContainText(techCopy.today.drive(20));
+  await expect(first).not.toContainText(techCopy.today.runsOver("11 am", "11:30 am"));
+  expect(await axeViolations(page)).toEqual([]);
+
+  // Begun at 10 am, the 90-minute visit runs to 11:30, past the 11 o'clock it must be done by for Vikram's.
+  const begun = `${todayInIndia()}T04:30:00.000Z`;
+  fake.progress = { ...NOTHING_DONE, checked_in_at: begun, started_at: begun, steps_done: ["before_photos"] };
+  await page.reload();
+  await expect(page.getByRole("listitem").first()).toContainText(techCopy.today.runsOver("11 am", "11:30 am"));
+});
+
 test("says nothing is booked when the day is empty (board A2)", async ({ page }) => {
   await fakeTech(page, true);
   await page.goto("/");
@@ -156,7 +178,7 @@ test("opens a job’s card with its address, access notes and the way in (board 
   await page.getByText("Rohit M.").first().click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Rohit M." })).toBeVisible();
-  await expect(page.getByText("9:30 am · service")).toBeVisible();
+  await expect(page.getByText("9:30–10 am · service")).toBeVisible();
   await expect(page.getByText("Tower C, 14th floor, Sector 65, Gurgaon 122018")).toBeVisible();
   await expect(page.getByText("Gate code 4417 · visitor bay B")).toBeVisible();
   // A Maps URL now, not `geo:`, which an iPhone ignores (ADR 0054; e2e/tech/job.e2e.ts).

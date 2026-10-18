@@ -63,6 +63,7 @@ describe("an invite the browser remembered", () => {
       date: "2026-09-23",
       window: "morning",
       hours: { start: "09:00", end: "12:00" },
+      starts_at: "2026-09-23T03:30:00.000Z",
       area: "Gurgaon South City II",
       credits: true,
       invite: "valid",
@@ -270,7 +271,7 @@ describe("a number the site already knows", () => {
       { date: "2026-09-23", window: "morning" },
       { selfServeBooking: false, selfServeConsultations: false },
     );
-    expect(await answer.json()).toEqual({ ...BOOKED_MORNING, state: "requested" });
+    expect(await answer.json()).toEqual({ ...BOOKED_MORNING, state: "requested", starts_at: null });
     expect(await count("SELECT COUNT(*) AS n FROM consultation_requests")).toBe(0);
     expect(await told()).toEqual(["book_in_app"]);
   });

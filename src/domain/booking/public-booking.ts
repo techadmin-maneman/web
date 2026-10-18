@@ -68,6 +68,7 @@ import { type Pincode } from "../clients/service-area.ts";
 import { inviteLapsed } from "../../policy/invites.ts";
 import type { Address, AddressPin } from "../clients/profile.ts";
 import type { Refusal as DomainRefusal } from "../../lib/refusal.ts";
+import type { DriveCheck } from "./drive-check.ts";
 
 /** The codes a submission is refused with; each carries its own status (src/http/errors.ts, ERROR_STATUS). */
 type RefusalCode =
@@ -115,6 +116,8 @@ export interface FormRequest {
   readonly syncContact: (personId: string) => Promise<void>;
   /** Books the free hold the form made (src/http/book-hold.ts). It never throws, so the lead is recorded whatever comes of it. */
   readonly bookHold: (holdId: string) => Promise<void>;
+  /** Google, to check the drives either side of the start before it is held; null where the routes provider is off. */
+  readonly drives: DriveCheck | null;
 }
 
 /** Attributes the person to the invite they came with, a client's or a partner's, after what the form booked stands. */

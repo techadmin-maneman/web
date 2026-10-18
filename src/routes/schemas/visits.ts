@@ -74,6 +74,9 @@ export const VisitSummarySchema = z
     window_hours: WindowHoursSchema,
     starts_at: z.iso.datetime(),
     ends_at: z.iso.datetime(),
+    arrives_by: z.iso
+      .datetime()
+      .openapi({ description: "The latest the technician arrives: the start and its arrival window." }),
     length_minutes: z.number().int(),
     type: z.union([z.enum(VISIT_TYPES), z.null()]),
     service: z.union([z.string(), z.null()]).openapi({

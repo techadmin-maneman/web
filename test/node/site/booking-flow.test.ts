@@ -12,6 +12,7 @@ const BOOKING: Booking = {
     date: "2026-10-16",
     window: "morning",
     hours: { start: "09:00", end: "12:00" },
+    starts_at: "2026-10-16T03:30:00.000Z",
     area: "Sector 65",
     credits: false,
     invite: "valid",

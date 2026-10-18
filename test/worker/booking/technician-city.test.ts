@@ -7,6 +7,7 @@ import { availability } from "../../../src/domain/booking/availability.ts";
 import { holdSlot } from "../../../src/domain/booking/hold-slot.ts";
 import { markDatabase, NOW } from "../helpers.ts";
 import { pincode } from "../site/consultations-fixtures.ts";
+import { BOOKING_RULES } from "../../../src/policy/start-times.ts";
 
 const CONSULTATION = { type: "consultation", tier: "standard", minutes: 60 } as const;
 const FREE = { amount_ex_gst: 0, amount: 0, gst_percent: 0 };
@@ -67,6 +68,12 @@ beforeEach(async () => {
 
 describe("a visit and the technicians who may take it", () => {
   it("offers and holds a Gurgaon visit with Gurgaon's technician, and no one else once they are taken", async () => {
+    // A visit a technician a day, so one hold fills Imran's day.
+    await env.DB.prepare(
+      "INSERT INTO ops_settings (name, value, set_by, set_at) VALUES ('booking_rules', ?1, 'ops', ?2)",
+    )
+      .bind(JSON.stringify({ ...BOOKING_RULES, visits: 1 }), NOW.toISOString())
+      .run();
     expect(await morningOpenAt(GURGAON)).toBe(true);
     expect(await holdAt(GURGAON)).toBe("Imran Qureshi");
     // Delhi's technician and the one with no city are free, and are offered nothing in Gurgaon.

@@ -665,6 +665,7 @@ export interface Rows {
     readonly answer: string | null;
     readonly move_id: string | null;
     readonly message_id: string | null;
+    readonly starts_at: string | null;
   };
   readonly no_show_cases: {
     readonly id: string;
@@ -1227,6 +1228,7 @@ export interface Rows {
     readonly auto_refund_reason: string | null;
     readonly payment_checked_at: string | null;
     readonly pay_at_visit: number;
+    readonly starts_at: string | null;
   };
   readonly slot_times: {
     readonly id: string;

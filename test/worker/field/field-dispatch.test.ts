@@ -4,7 +4,8 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
 import { uuidv7 } from "../../../apps/tech/src/store/uuidv7.ts";
-import { occupancy, placement } from "../../../src/domain/booking/occupancy.ts";
+import { loadDayPlans } from "../../../src/domain/booking/day-plans.ts";
+import { WORKING_HOURS } from "../../../src/policy/start-times.ts";
 import { NOW, request } from "../helpers.ts";
 import {
   AS_THE_BOARD_SHOWS_IT,
@@ -31,8 +32,8 @@ import { aPerson } from "../fixtures/index.ts";
 useFieldDay();
 
 describe("dispatch", () => {
-  it("refuses a move that would give one technician two jobs in one window", async () => {
-    // Sameer already has another client's job in Monday's afternoon window.
+  it("refuses a move that would give one technician two jobs at once", async () => {
+    // Sameer already has another client's job at 1 on Monday.
     await aPerson({ id: "p-other", name: "Kabir Sood" });
     await insertJob(OTHER_JOB, { start: "2026-09-21T07:30:00.000Z", technician: SAMEER, person: "p-other" });
 
@@ -40,8 +41,7 @@ describe("dispatch", () => {
       appointment_id: TODAY_JOB,
       ...AS_THE_BOARD_SHOWS_IT,
       technician_id: SAMEER,
-      date: "2026-09-21",
-      window: "afternoon",
+      starts_at: "2026-09-21T07:30:00.000Z",
       reason: "zone_rebalance",
     });
 
@@ -225,6 +225,9 @@ describe("dispatch, once the technician has begun", () => {
 // Leave goes through the same clash check as a visit, so nothing has to
 // remember to ask: the board refuses it, and so does the client's own booking.
 describe("leave", () => {
+  const boardFrom = async (from: string) =>
+    (await request(ops, `/api/dispatch?from=${from}`, {}, bindings())).json<{ leave: Record<string, unknown>[] }>();
+
   const recordLeave = (technicianId: string, from: string, to: string, note?: string) =>
     opsPost(`/api/technicians/${technicianId}/leave`, { from, to, ...(note === undefined ? {} : { note }) });
 
@@ -254,10 +257,18 @@ describe("leave", () => {
     // A fortnight from the 20th: the board's week ends on the 27th.
     expect((await recordLeave(IMRAN, "2026-09-20", "2026-10-03")).status).toBe(200);
 
-    const board = await (
-      await request(ops, "/api/dispatch?from=2026-09-21", {}, bindings())
-    ).json<{ leave: { technician_id: string; from: string; to: string; note: string | null }[] }>();
-    expect(board.leave).toEqual([{ technician_id: IMRAN, from: "2026-09-21", to: "2026-09-27", note: null }]);
+    const board = await boardFrom("2026-09-21");
+    expect(board.leave).toEqual([
+      { technician_id: IMRAN, from: "2026-09-21", to: "2026-09-27", from_time: null, to_time: null, note: null },
+    ]);
+  });
+
+  it("draws leave over part of a day with its hours", async () => {
+    const part = { from: "2026-09-23", to: "2026-09-23", from_time: "14:00", to_time: "17:00" };
+    expect((await opsPost(`/api/technicians/${SAMEER}/leave`, part)).status).toBe(200);
+
+    const board = await boardFrom("2026-09-21");
+    expect(board.leave).toEqual([{ technician_id: SAMEER, ...part, note: null }]);
   });
 
   it("takes leave back, and the day can be worked again", async () => {
@@ -312,10 +323,15 @@ describe("leave", () => {
     ).json<{ leave: { technician_id: string }[] }>();
     expect(board.leave.map((period) => period.technician_id).sort()).toEqual([IMRAN, SAMEER].sort());
 
-    const held = await occupancy({ db: env.DB, from: "2026-09-24", to: "2026-09-24", now: NOW });
-    expect(held(IMRAN, "2026-09-24").onLeave).toBe(true);
-    // A service visit's two half-slots (src/policy/visit-length.ts).
-    expect(placement(held(IMRAN, "2026-09-24"), "morning", 2)).toBeNull();
-    expect(placement(held(IMRAN, "2026-09-25"), "morning", 2)).not.toBeNull();
+    const plans = await loadDayPlans({
+      db: env.DB,
+      technicianIds: [IMRAN],
+      from: "2026-09-24",
+      to: "2026-09-25",
+      now: NOW,
+      hours: WORKING_HOURS,
+    });
+    expect(plans.day(IMRAN, "2026-09-24")).toBeNull();
+    expect(plans.day(IMRAN, "2026-09-25")).not.toBeNull();
   });
 });

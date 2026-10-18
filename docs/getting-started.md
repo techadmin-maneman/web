@@ -70,6 +70,7 @@ The variables are `MM_API_PORT` (8787), `MM_INSPECTOR_PORT` (9230), `MM_SITE_POR
 ```sh
 npm test                 # the Worker tests in workerd and the script tests in Node, about five minutes
 npm run test:e2e         # the browser tests; build each surface first: npm run build:<site|app|ops|tech> -- --env local
+npm run e2e:videos       # the same, every test recorded: videos/ by client, technician and staff role
 ```
 
 The browser tests start their own servers on the same ports, and reuse ones already running, so stop `dev:all` first unless you mean them to share it. The ops and technician tests answer the API in the browser; every answer they fake is checked against `docs/openapi-ops.json` or `docs/openapi-tech.json` as it is sent (`e2e/contract.ts`), so after changing a route run `npm run openapi` and fix any fake the tests then name.

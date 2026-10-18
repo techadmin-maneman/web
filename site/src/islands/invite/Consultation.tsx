@@ -123,7 +123,7 @@ function VisitPart(
         windowIds={windowIds}
         nothingOpen={props.nothingOpen}
         onDay={(date) => {
-          props.onPick({ date, window: slot.window });
+          props.onPick({ date, window: slot.window, start: null });
         }}
       />
 
@@ -132,7 +132,10 @@ function VisitPart(
         slot={slot}
         open={props.open}
         onWindow={(window) => {
-          props.onPick({ date: slot.date, window });
+          props.onPick({ date: slot.date, window, start: null });
+        }}
+        onStart={(window, start) => {
+          props.onPick({ date: slot.date, window, start });
         }}
       />
     </>
@@ -218,15 +221,14 @@ function AddressPart(
  * the number has been entered.
  */
 export function Consultation(props: ConsultationProps) {
-  const { person, stage } = props;
+  const { person, stage, plan } = props;
   const form = useTurnstileForm(
     props.turnstileSiteKey,
     person === null ? MARKED_WITH_PERSON : MARKED_HERE,
     person === null ? undefined : { ...person, consent: true },
   );
   const numberCode = useNumberCode();
-  const { plan } = props;
-  const [picked, setPicked] = useState<Slot>(() => ({ date: indiaTomorrow(), window: "morning" }));
+  const [picked, setPicked] = useState<Slot>(() => ({ date: indiaTomorrow(), window: "morning", start: null }));
   const [address, setAddress] = useState<AddressFields>(() => emptyAddress(props.answer.city));
   const [extent, setExtent] = useState<LossExtent | null>(null);
   const [code, setCode] = useState("");
@@ -298,6 +300,7 @@ export function Consultation(props: ConsultationProps) {
       pincode,
       date: slot.date,
       window: slot.window,
+      ...(slot.start === null ? {} : { starts_at: slot.start }),
       address: addressToSend(address, pincode),
       ...(plan === "one_visit" ? { one_visit: true } : {}),
       ...(numberCodeId === null ? {} : { number_code_id: numberCodeId }),

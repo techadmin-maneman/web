@@ -95,6 +95,7 @@ export const MY_DATA = {
         minutes: text("Minutes"),
         date: day("Day"),
         window_label: words("Window"),
+        starts_at: time("Starts at"),
         pincode: text("Pincode"),
         move_kind: words("Moving a visit"),
         one_visit: yesNo("Consultation and fit in one visit"),

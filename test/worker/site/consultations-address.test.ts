@@ -241,7 +241,11 @@ describe("the address the consultation is at", () => {
     const elsewhere = { ...ADDRESS, flat: "House 9", line1: "Rose Lane", locality: "Sector 45" };
     const second = await book({ date: "2026-09-24", address: elsewhere });
     expect(second.status).toBe(201);
-    expect(await second.json()).toEqual({ ...BOOKED_MORNING, date: "2026-09-24" });
+    expect(await second.json()).toEqual({
+      ...BOOKED_MORNING,
+      date: "2026-09-24",
+      starts_at: "2026-09-24T03:30:00.000Z",
+    });
     const addresses = await env.DB.prepare(
       `SELECT a.flat, a.line1, a.locality, a.replaced_at FROM addresses a JOIN people p ON p.id = a.person_id
        WHERE p.mobile_e164 = '+919810000002'`,

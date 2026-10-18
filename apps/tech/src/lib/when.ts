@@ -4,7 +4,12 @@
 
 import { distance } from "@maneman/web-kit/figures";
 import { apiNow } from "@maneman/web-kit/clock";
-import { addDays, indiaClock, todayInIndia as indiaToday } from "@maneman/web-kit/dates";
+import { addDays, indiaClock, indiaTimeOf, todayInIndia as indiaToday } from "@maneman/web-kit/dates";
+import { timeRange } from "@rules/lib/time-range.ts";
+// The schema rather than ../api.ts, so these can be read and tested in Node without the fetch client.
+import type { components } from "../api-schema.ts";
+
+type JobSummary = components["schemas"]["TechnicianDayJob"];
 
 /** Now by the API's clock: the phone's own can be hours out. */
 export const apiDate = (): Date => new Date(apiNow());
@@ -20,6 +25,21 @@ export { dayMonth } from "@maneman/web-kit/dates";
 
 /** "9:30 am", "4 pm": every time the app writes, the head of Today, a job's row and its card alike. */
 export const clock = indiaClock;
+
+/** "11:30 am–12 pm": when the technician is to arrive, from the start to the end of the client's arrival window. */
+export const arrival = (job: { readonly starts_at: string; readonly arrives_by: string }): string =>
+  timeRange(indiaTimeOf(job.starts_at), indiaTimeOf(job.arrives_by));
+
+/**
+ * Whether a job under way runs into the next one: done, at its booked length or now if that is later, after the time
+ * it must finish by to reach the next on time.
+ */
+export function runsOver(job: JobSummary, now: Date): boolean {
+  if (job.next === null || job.minutes === null) return false;
+  const started = Date.parse(job.progress.started_at ?? job.starts_at);
+  const done = Math.max(now.getTime(), started + job.minutes * 60_000);
+  return done > Date.parse(job.next.finish_by);
+}
 
 /** The sector beside a job, which is all the place a locked job carries. */
 export const where = (sector: string | null): string => sector ?? "";

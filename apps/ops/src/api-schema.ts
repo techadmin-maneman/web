@@ -9589,7 +9589,7 @@ export interface paths {
                         });
                     };
                 };
-                /** @description past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
+                /** @description past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -9647,7 +9647,7 @@ export interface paths {
                         "application/json": components["schemas"]["DispatchMoved"];
                     };
                 };
-                /** @description invalid_request, including a move to the technician, day and window the job already has, or to a technician not in the caller's cities */
+                /** @description invalid_request, including a move to the technician and start the job already has, or to a technician not in the caller's cities */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -21193,6 +21193,11 @@ export interface components {
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
+            /**
+             * Format: date-time
+             * @description The latest the technician arrives: the start and its arrival window.
+             */
+            arrives_by: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
@@ -21303,6 +21308,11 @@ export interface components {
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
+            /**
+             * Format: date-time
+             * @description The latest the technician arrives: the start and its arrival window.
+             */
+            arrives_by: string;
             length_minutes: number;
             type: ("consultation" | "first_fit" | "service" | "replacement") | null;
             /** @description The service's name in the console, where it names more than the visit's kind: a first fit's hair system, say. Null for a kind's standard service, and on a consultation and fit in one visit until the client chooses. */
@@ -21714,6 +21724,8 @@ export interface components {
                     /** @description Who in the caller's cities is free for the visit: never the technician who took the client's visit just before or just after it. */
                     technicians: components["schemas"]["FreeTechnician"][];
                 }[];
+                /** @description The day's starts someone can take (docs/decisions/0210-booking-by-start-time.md). */
+                starts: components["schemas"]["OpsStart"][];
             }[];
         };
         ServiceOffer: {
@@ -21753,6 +21765,19 @@ export interface components {
             id: string;
             name: string;
         };
+        OpsStart: {
+            /** @description India's clock, as 11:30. */
+            time: string;
+            /** Format: date-time */
+            starts_at: string;
+            /** @description Who in the caller's cities can take it, the least added driving first. */
+            technicians: components["schemas"]["StartTaker"][];
+        };
+        StartTaker: {
+            id: string;
+            name: string;
+            added_drive_minutes: number;
+        };
         OpsBooking: {
             /** Format: uuid */
             hold_id: string;
@@ -21774,6 +21799,11 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            /**
+             * Format: date-time
+             * @description The start the visit is booked at.
+             */
+            starts_at: string;
             technician: components["schemas"]["FreeTechnician"];
             /** @description The payment link Razorpay texted the client, and when it closes and the slot goes. */
             link: {
@@ -21795,6 +21825,11 @@ export interface components {
             date: string;
             /** @enum {string} */
             window: "morning" | "afternoon" | "evening";
+            /**
+             * Format: date-time
+             * @description The start chosen, on `date`; left out, any start in the window, the best first.
+             */
+            starts_at?: string;
             /** @description A consultation and fit in one visit: a first fit, morning or afternoon. */
             one_visit?: boolean;
             /** @description A discount code the client gave. */
@@ -23152,6 +23187,9 @@ export interface components {
                 from: string;
                 /** Format: date */
                 to: string;
+                /** @description Leave over part of one day, from and to these times on India's clock; null for whole days. */
+                from_time: string | null;
+                to_time: string | null;
                 note: string | null;
             }[];
         };
@@ -23312,6 +23350,11 @@ export interface components {
             date?: string;
             /** @enum {string} */
             window?: "morning" | "afternoon" | "evening";
+            /**
+             * Format: date-time
+             * @description The start it goes to, in place of a date and window. With a date and window instead, it goes to the window's earliest start the technician's day has room for; with neither, it keeps its start.
+             */
+            starts_at?: string;
             /** @enum {string} */
             reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
             /** @description The technician the board showed the job with; null for a job in the tray. */
@@ -23347,6 +23390,11 @@ export interface components {
             date?: string;
             /** @enum {string} */
             window?: "morning" | "afternoon" | "evening";
+            /**
+             * Format: date-time
+             * @description The start it goes to, in place of a date and window. With a date and window instead, it goes to the window's earliest start the technician's day has room for; with neither, it keeps its start.
+             */
+            starts_at?: string;
             /** @enum {string} */
             reason: "technician_unavailable" | "client_asked" | "zone_rebalance" | "skill_needed" | "running_over";
             /** @description The technician the board showed the job with; null for a job in the tray. */

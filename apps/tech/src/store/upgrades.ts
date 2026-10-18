@@ -32,6 +32,9 @@ type OldRow = Omit<JobSummary, "progress" | "minutes"> & {
 
 const NOTHING_LANDED: JobState = { started_at: null, outcome: null };
 
+/** The arrival window booking first promised, for a job kept before jobs carried their own. */
+const KEPT_ARRIVAL_MINUTES = 30;
+
 const rowNow = (row: OldRow): JobSummary => ({
   ...row,
   progress: row.progress ?? NOTHING_LANDED,
@@ -110,6 +113,24 @@ function moved(record: JobsRecord): [string, KeptDay | Job | KeptArrival | KeptC
   }
 }
 
+/**
+ * Each record of a store in turn, read again by its key once the cursor reaches it, so the read comes after whatever an
+ * earlier step queued for it; written back as `change` gives it, or left where `change` gives null.
+ */
+function eachAgain(store: IDBObjectStore, change: (value: unknown) => object | null): void {
+  const cursor = store.openCursor();
+  cursor.onsuccess = () => {
+    const at = cursor.result;
+    if (at === null) return;
+    const again = store.get(at.primaryKey);
+    again.onsuccess = () => {
+      const changed = change(again.result);
+      if (changed !== null) store.put(changed);
+    };
+    at.continue();
+  };
+}
+
 export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => void)[] = [
   // Version 1: the four stores. The outbox's key counts up, so reading it in key order is the order the phone queued them in.
   (db) => {
@@ -186,5 +207,29 @@ export const UPGRADES: readonly ((db: IDBDatabase, upgrade: IDBTransaction) => v
       });
       at.continue();
     };
+  },
+  // Version 7: a job carries the end of the client's arrival window, and a day's row its address and the next job
+  // (docs/decisions/0210-booking-by-start-time.md). One kept before arrives within the half hour after its start, as
+  // booking promised, and its row holds no address and no next job until the day is read again. Each record is read
+  // again before it is written, so what an earlier step in this upgrade wrote to it stays.
+  (_db, upgrade) => {
+    const arrivesBy = (job: { readonly starts_at: string }) =>
+      new Date(Date.parse(job.starts_at) + KEPT_ARRIVAL_MINUTES * 60_000).toISOString();
+    eachAgain(upgrade.objectStore("days"), (value) => {
+      // What an earlier build wrote, which may lack the fields this step adds.
+      const day = value as Omit<KeptDay, "jobs"> & { readonly jobs: readonly Partial<JobSummary>[] };
+      const jobs = day.jobs.map((job) => ({
+        ...job,
+        arrives_by: job.arrives_by ?? arrivesBy({ starts_at: job.starts_at ?? "" }),
+        address: job.address ?? null,
+        next: job.next ?? null,
+      }));
+      return { ...day, jobs };
+    });
+    eachAgain(upgrade.objectStore("cards"), (value) => {
+      // What an earlier build wrote, which may lack the field this step adds.
+      const card = value as Omit<Job, "arrives_by"> & Partial<Pick<Job, "arrives_by">>;
+      return card.arrives_by === undefined ? { ...card, arrives_by: arrivesBy(card) } : null;
+    });
   },
 ];

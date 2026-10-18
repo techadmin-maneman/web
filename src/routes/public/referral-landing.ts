@@ -12,6 +12,7 @@
 // again under its Idempotency-Key gets its first answer.
 
 import { indiaDate } from "../../lib/india-time.ts";
+import { FormStartSchema, startOnDate } from "../schemas/booking.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import type { App, AppEnv } from "../../http/context.ts";
@@ -127,12 +128,14 @@ const ConsultationRequestSchema = z
     pincode: PincodeSchema,
     date: z.iso.date(),
     window: z.enum(BOOKING_WINDOWS),
+    starts_at: FormStartSchema,
     address: TypedAddressSchema,
     one_visit: OneVisitRequestSchema,
     number_code_id: OneVisitNumberCodeSchema,
     consent: z.literal(true).openapi({ description: '"You may contact me on WhatsApp about this consultation."' }),
   })
-  .strict();
+  .strict()
+  .refine(startOnDate, { message: "the start is on another day", path: ["starts_at"] });
 
 const WaitlistRequestSchema = z
   .object({
@@ -212,6 +215,10 @@ const consultationRoute = createRoute({
               date: z.iso.date(),
               window: z.enum(BOOKING_WINDOWS),
               hours: WindowHoursSchema,
+              starts_at: z.union([z.iso.datetime(), z.null()]).openapi({
+                description:
+                  "When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of.",
+              }),
               area: z.string().openapi({ description: "The area once ops have named it, its city until then." }),
               credits: CreditsSchema,
               invite: InviteStateSchema,
@@ -373,6 +380,7 @@ function registerReferralForms(app: App): void {
         addressSession: body.address.session_token ?? null,
         date: body.date,
         window: body.window,
+        startsAt: body.starts_at === undefined ? null : new Date(body.starts_at),
         lossExtent: null, // an invited friend is not asked where the hair loss is
         turnstileToken: body.turnstile_token,
         attribution: {},

@@ -67,7 +67,7 @@ describe("booking with a credit", () => {
     expect(redeemed).toEqual({ visits: -1 });
     const composed = await composeVisitMessage(env.DB, "payment_receipt", visitId, PERSON);
     expect("skip" in composed ? composed : renderMessage(composed.template, composed.params)).toBe(
-      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12–4 pm, with Imran, covered by one of your free service visits.",
+      "Hi Rohit, you're booked.\nYour service visit is Thu 24 Sep, 12–12:30 pm, with Imran, covered by one of your free service visits.",
     );
   });
 

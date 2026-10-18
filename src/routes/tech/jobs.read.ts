@@ -59,11 +59,10 @@ export function registerTechJobReads(app: App): void {
     const date = c.req.valid("query").date ?? indiaDate(now);
     // Nothing before yesterday: paging back through every date read every past client's card.
     if (!listableDate(date, now)) return refuse(c, "invalid_request", ["date"]);
-    const { addressUnlockHour } = await opsInputs(c);
-    return c.json(
-      { date, jobs: await jobsOn({ db: c.env.DB, technicianId, date, now, unlockHour: addressUnlockHour }) },
-      200,
-    );
+    const inputs = await opsInputs(c);
+    const rules = { booking: inputs.bookingRules, drive: inputs.driveEstimate };
+    const unlockHour = inputs.addressUnlockHour;
+    return c.json({ date, jobs: await jobsOn({ db: c.env.DB, technicianId, date, now, unlockHour, rules }) }, 200);
   });
 
   app.openapi(jobRoute, async (c) => {
@@ -78,6 +77,7 @@ export function registerTechJobReads(app: App): void {
         jobId,
         now: c.var.deps.now(),
         unlockHour: inputs.addressUnlockHour,
+        arrivalMinutes: inputs.bookingRules.arrival,
         waits: inputs.noShowWaitMin,
         phoneClock: inputs.phoneClock,
       }),

@@ -67,13 +67,14 @@ test("says a free service visit is not returned for a visit it covers that is so
   await expect(confirm.getByText(/the free service visit is gone/)).toHaveCount(0);
 });
 
-// The windows inside the notice are still sold, and marked on the date and window steps.
-test("marks the days and windows inside the notice, which are still sold", async ({ page }) => {
-  await passedThrough(page, /\/api\/availability\?/, (days: { days: { windows: object[] }[] }) => ({
+// The times inside the notice are still sold, and marked on the date step and once a time is chosen.
+test("marks the days and times inside the notice, which are still sold", async ({ page }) => {
+  await passedThrough(page, /\/api\/availability\?/, (days: { days: { windows: object[]; starts: object[] }[] }) => ({
     ...days,
     days: days.days.map((day, index) => ({
       ...day,
       windows: day.windows.map((each) => ({ ...each, open: true, change_charged: index === 0 })),
+      starts: day.starts.map((each) => ({ ...each, open: true, change_charged: index === 0 })),
     })),
   }));
   await openSheet(page);
@@ -84,9 +85,8 @@ test("marks the days and windows inside the notice, which are still sold", async
   await marked.click();
   await dates.getByRole("button", { name: appCopy.booking.window.continueFree }).click();
   const windows = page.getByRole("dialog", { name: appCopy.booking.window.title });
-  await expect(windows.getByRole("radio").first()).toBeVisible();
-  const open = await windows.getByRole("radio").count();
-  await expect(windows.getByText("Within 24 hours: changes are charged")).toHaveCount(open);
+  await windows.getByRole("radio").first().click();
+  await expect(windows.getByText("Within 24 hours: changes are charged")).toBeVisible();
   await scanOf(page);
 });
 

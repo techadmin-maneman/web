@@ -2,16 +2,9 @@
 // docs/decisions/0085-services-ops-can-edit.md).
 
 import { describe, expect, it } from "vitest";
-import { UNITS_PER_DAY, VISIT_BLOCKS, WINDOW_SLOT_MAP } from "../../../src/config/scheduling.ts";
+import { UNITS_PER_DAY, VISIT_BLOCKS } from "../../../src/config/scheduling.ts";
 import { VISIT_TYPES } from "../../../src/config/visit-types.ts";
-import { placement } from "../../../src/domain/booking/occupancy.ts";
 import { bookedLength, isServiceLength, SERVICE_MINUTES, unitsFor } from "../../../src/policy/visit-length.ts";
-
-const emptyDay = () => ({
-  units: new Set<number>(),
-  windows: new Set<"morning" | "afternoon" | "evening">(),
-  onLeave: false,
-});
 
 describe("a visit's length", () => {
   it("gives each kind's own length the half-slots its block has always had", () => {
@@ -33,22 +26,10 @@ describe("a visit's length", () => {
     expect(unitsFor(360)).toBe(UNITS_PER_DAY);
   });
 
-  it("still starts a first fit in no evening, and a service visit in any window", () => {
-    const firstFit = unitsFor(VISIT_BLOCKS.first_fit.minutes);
-    expect(placement(emptyDay(), "evening", firstFit)).toBeNull();
-    expect(placement(emptyDay(), "morning", firstFit)).toBe(0);
-    expect(placement(emptyDay(), "afternoon", firstFit)).toBe(2);
-    for (const window of ["morning", "afternoon", "evening"] as const) {
-      expect(placement(emptyDay(), window, unitsFor(VISIT_BLOCKS.service.minutes))).toBe(WINDOW_SLOT_MAP[window][0]);
-    }
-  });
-
   it("lets a service run from half an hour to what the day holds, in whole minutes", () => {
     expect(SERVICE_MINUTES).toEqual({ min: 30, max: 360 });
     expect([30, 90, 360].map(isServiceLength)).toEqual([true, true, true]);
     expect([29, 361, 90.5].map(isServiceLength)).toEqual([false, false, false]);
-    // The longest a service may be still has somewhere to start: the morning's first half-slot.
-    expect(placement(emptyDay(), "morning", unitsFor(SERVICE_MINUTES.max))).toBe(0);
   });
 
   it("holds a visit already booked for the longer of its service's length and FSM's", () => {

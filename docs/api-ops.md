@@ -12614,7 +12614,7 @@ Request body:
 }
 ```
 
-**409**: past_day: the day has gone; window_passed: every start in today's window has passed; clash: the technician already holds a job in that window on that date; on_leave: they are away that day; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the window is free but the visit has no room in it at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
+**409**: past_day: the day has gone; window_passed: the start, or every start in today's window, has passed; clash: the technician already has a visit at that time, or a hold or another move took it after it was checked; on_leave: they are away that day, or do not work it; back_to_back: they took the client's visit just before or just after this one, and a technician never takes two in a row; does_not_fit: the technician's day has no room for the visit there, with its drives, at a start still ahead; blackout: ops blacked the day out, and no blackout_reason came; other_city: the technician works in another city than the visit, or in none; not_trained: a first fit or a replacement, to a technician not trained to fit; superseded: the job is not as the board showed it, and fields names what changed (technician, time, or moving: another move of it is being written); in_progress: a technician has begun the visit
 
 ```json
 {
@@ -12680,7 +12680,7 @@ Request body:
 }
 ```
 
-**400**: invalid_request, including a move to the technician, day and window the job already has, or to a technician not in the caller's cities
+**400**: invalid_request, including a move to the technician and start the job already has, or to a technician not in the caller's cities
 
 ```json
 {
@@ -28526,6 +28526,11 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "arrives_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The latest the technician arrives: the start and its arrival window."
+    },
     "length_minutes": {
       "type": "integer"
     },
@@ -28806,6 +28811,7 @@ Request body:
     "window_hours",
     "starts_at",
     "ends_at",
+    "arrives_by",
     "length_minutes",
     "type",
     "service",
@@ -29009,6 +29015,11 @@ Request body:
       "type": "string",
       "format": "date-time"
     },
+    "arrives_by": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The latest the technician arrives: the start and its arrival window."
+    },
     "length_minutes": {
       "type": "integer"
     },
@@ -29144,6 +29155,7 @@ Request body:
     "window_hours",
     "starts_at",
     "ends_at",
+    "arrives_by",
     "length_minutes",
     "type",
     "service",
@@ -30709,11 +30721,19 @@ Request body:
               ],
               "additionalProperties": false
             }
+          },
+          "starts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpsStart"
+            },
+            "description": "The day's starts someone can take (docs/decisions/0210-booking-by-start-time.md)."
           }
         },
         "required": [
           "date",
-          "windows"
+          "windows",
+          "starts"
         ],
         "additionalProperties": false
       }
@@ -30883,6 +30903,62 @@ Request body:
 }
 ```
 
+### OpsStart
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "time": {
+      "type": "string",
+      "description": "India's clock, as 11:30."
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "technicians": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/StartTaker"
+      },
+      "description": "Who in the caller's cities can take it, the least added driving first."
+    }
+  },
+  "required": [
+    "time",
+    "starts_at",
+    "technicians"
+  ],
+  "additionalProperties": false
+}
+```
+
+### StartTaker
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "added_drive_minutes": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "added_drive_minutes"
+  ],
+  "additionalProperties": false
+}
+```
+
 ### OpsBooking
 
 ```json
@@ -30949,6 +31025,11 @@ Request body:
         "evening"
       ]
     },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start the visit is booked at."
+    },
     "technician": {
       "$ref": "#/components/schemas/FreeTechnician"
     },
@@ -30987,6 +31068,7 @@ Request body:
     "price",
     "date",
     "window",
+    "starts_at",
     "technician",
     "link"
   ],
@@ -31035,6 +31117,11 @@ Request body:
         "afternoon",
         "evening"
       ]
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start chosen, on `date`; left out, any start in the window, the best first."
     },
     "one_visit": {
       "type": "boolean",
@@ -37730,6 +37817,27 @@ Request body:
             "type": "string",
             "format": "date"
           },
+          "from_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Leave over part of one day, from and to these times on India's clock; null for whole days."
+          },
+          "to_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "note": {
             "anyOf": [
               {
@@ -37745,6 +37853,8 @@ Request body:
           "technician_id",
           "from",
           "to",
+          "from_time",
+          "to_time",
           "note"
         ],
         "additionalProperties": false
@@ -38401,6 +38511,11 @@ Request body:
         "evening"
       ]
     },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start it goes to, in place of a date and window. With a date and window instead, it goes to the window's earliest start the technician's day has room for; with neither, it keeps its start."
+    },
     "reason": {
       "type": "string",
       "enum": [
@@ -38505,6 +38620,11 @@ Request body:
         "afternoon",
         "evening"
       ]
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The start it goes to, in place of a date and window. With a date and window instead, it goes to the window's earliest start the technician's day has room for; with neither, it keeps its start."
     },
     "reason": {
       "type": "string",

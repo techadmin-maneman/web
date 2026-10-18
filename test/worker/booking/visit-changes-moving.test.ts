@@ -123,11 +123,11 @@ describe("moving a visit", () => {
   // A client's free move may go to anyone in their city, their own technician first (ADR 0117).
   it("moves a visit to another technician in the city where its own is busy at the time chosen", async () => {
     await booked("service", THURSDAY_NOON, 200000);
-    // Another client's visit fills Imran's Friday evening.
+    // Another client's visit fills Imran's Friday evening, 4 to 8 pm.
     await aVisit({
       id: "other",
       window_start: "2026-09-25T10:30:00.000Z",
-      window_end: "2026-09-25T12:00:00.000Z",
+      window_end: "2026-09-25T14:30:00.000Z",
       technician_id: "t1",
       service_city: null,
       service_pincode: null,

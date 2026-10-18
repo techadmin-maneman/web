@@ -13,11 +13,16 @@
 //
 // The ports are scripts/lib/local-stack.ts's, which npm run dev:all shares; one
 // another program holds can be moved, e.g. MM_API_PORT=8797 npm run test:e2e.
+//
+// A failed test keeps its video beside its trace. npm run e2e:videos records every test, and files each video for an
+// audit under videos/, by who uses the surface (e2e/video-reporter.ts).
 
 import { defineConfig, devices } from "@playwright/test";
 import { API_ORIGIN, apiDevArgs, PORTS } from "./scripts/lib/local-stack.ts";
 
 const local = process.env.CI === undefined;
+/** Every test recorded and filed, for an audit's walkthroughs (scripts/dev/e2e-videos.ts). */
+const everyVideo = process.env.E2E_VIDEO === "on";
 
 export default defineConfig({
   testDir: "e2e",
@@ -33,8 +38,16 @@ export default defineConfig({
   workers: local ? undefined : 3,
   timeout: local ? 30_000 : 60_000,
   expect: { timeout: local ? 5_000 : 15_000 },
-  reporter: local ? "list" : [["list"], ["github"], ["./e2e/flaky-reporter.ts"]],
-  use: { baseURL: `http://127.0.0.1:${String(PORTS.site)}`, trace: "retain-on-failure" },
+  reporter: everyVideo
+    ? [["list"], ["./e2e/video-reporter.ts"]]
+    : local
+      ? "list"
+      : [["list"], ["github"], ["./e2e/flaky-reporter.ts"]],
+  use: {
+    baseURL: `http://127.0.0.1:${String(PORTS.site)}`,
+    trace: "retain-on-failure",
+    video: everyVideo ? "on" : "retain-on-failure",
+  },
   webServer: [
     {
       // mm-api with the local login code, and the limits raised: the tests book, render and log in
