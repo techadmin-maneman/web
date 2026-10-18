@@ -5,7 +5,7 @@ import { windowsFitting, type BookingWindow } from "../../config/scheduling.ts";
 import type { VisitType } from "../../config/visit-types.ts";
 import { unitsFor } from "../../policy/visit-length.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
-import { startOffers } from "./start-offers.ts";
+import { startOffers, type StartOffer } from "./start-offers.ts";
 import { FITTED } from "../clients/fitted.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { type Moving, type Technician } from "./occupancy.ts";
@@ -153,7 +153,7 @@ async function windowsOf({
   visit: VisitToPlace;
   range: { readonly from: string; readonly days: number };
   now: Date;
-}): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
+}): Promise<{ date: string; windows: WindowTechnicians[]; starts: readonly StartOffer[] }[]> {
   const { personId, moving = null, replacing = null, ownUnpaid = false, atCheckout = null, pincode = null } = placing;
   const [offers, schedule] = await Promise.all([
     startOffers({
@@ -185,7 +185,7 @@ async function windowsOf({
         for (const taker of start.takers) technicians.set(taker.technician.id, taker.technician);
       return { window, technicians: [...technicians.values()] };
     });
-    return { date, windows };
+    return { date, windows, starts };
   });
 }
 
@@ -208,12 +208,19 @@ export async function availability({
   from: string;
   days: number;
   now: Date;
-}): Promise<{ date: string; windows: WindowOffer[] }[]> {
+}): Promise<{ date: string; windows: WindowOffer[]; starts: readonly OpenStart[] }[]> {
   const offered = await windowsOf({ db, placing, visit, range: { from, days }, now });
-  return offered.map(({ date, windows }) => ({
+  return offered.map(({ date, windows, starts }) => ({
     date,
     windows: windows.map(({ window, technicians }) => ({ window, open: technicians.length > 0 })),
+    starts: starts.map(({ time, startsAt }) => ({ time, startsAt })),
   }));
+}
+
+/** A start someone can take, on India's clock and as an instant (docs/decisions/0210-booking-by-start-time.md). */
+interface OpenStart {
+  readonly time: string;
+  readonly startsAt: Date;
 }
 
 /**
@@ -234,6 +241,6 @@ export async function freeTechnicians({
   from: string;
   days: number;
   now: Date;
-}): Promise<{ date: string; windows: WindowTechnicians[] }[]> {
+}): Promise<{ date: string; windows: WindowTechnicians[]; starts: readonly StartOffer[] }[]> {
   return windowsOf({ db, placing: { personId }, visit, range: { from, days }, now });
 }

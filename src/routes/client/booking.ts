@@ -28,6 +28,9 @@ import { GIVEN_BY_BOOKING, isFullAddress } from "../../policy/booking.ts";
 import { takesCredit } from "../../policy/referral-reward.ts";
 import { BookingSchema, HoldSchema, Tier } from "../schemas/booking.ts";
 import { driveCheckOf } from "../../http/drive-check.ts";
+import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
+import { indiaDate, indiaTime } from "../../lib/india-time.ts";
+import { windowAt } from "../../policy/slot-times.ts";
 
 const holdRoute = selfServeRoute({
   method: "post",
@@ -43,16 +46,28 @@ const holdRoute = selfServeRoute({
               type: z.enum(VISIT_TYPES),
               tier: Tier,
               date: z.iso.date(),
-              window: z.enum(BOOKING_WINDOWS),
+              window: z
+                .enum(BOOKING_WINDOWS)
+                .optional()
+                .openapi({ description: "Any start inside it, the best first; or name the start." }),
+              starts_at: z.iso.datetime().optional().openapi({
+                description:
+                  "The start the client chose, on `date` (docs/decisions/0210-booking-by-start-time.md); or name a window.",
+              }),
               moving: z.uuid().optional().openapi({ description: "One of the client's visits, to move instead." }),
             })
-            .strict(),
+            .strict()
+            .refine((asked) => (asked.window === undefined) !== (asked.starts_at === undefined), {
+              message: "name a window or a start, not both",
+              path: ["starts_at"],
+            }),
         },
       },
     },
   },
   responses: {
     201: { description: "Held", content: { "application/json": { schema: HoldSchema } } },
+    400: errorResponse("invalid_request: a window and a start both, or neither, or a start on another day"),
     401: errorResponse("session_required"),
     409: errorResponse(
       "address_required: the client has not given the address the visit goes to; taken: nobody is free in that " +
@@ -137,9 +152,12 @@ async function creditPays(
 export function registerClientBooking(app: App): void {
   app.openapi(holdRoute, async (c) => {
     const personId = clientOf(c).subjectId;
-    const { type, tier, date, window, moving: movingId } = c.req.valid("json");
+    const { type, tier, date, window: asked, starts_at: startText, moving: movingId } = c.req.valid("json");
     if (!servesItself(c, type)) return refuse(c, "ops_assisted");
     const now = c.var.deps.now();
+    const startsAt = startText === undefined ? undefined : new Date(startText);
+    if (startsAt !== undefined && indiaDate(startsAt) !== date) return refuse(c, "invalid_request", ["starts_at"]);
+    const window = asked ?? windowAt(indiaTime(startsAt ?? now), (await loadSlotSchedule(c.env.DB)).on(date));
     // Each read is a trip to D1 and back, so the reads that need nothing from each other go together.
     const [move, offered, range, address, inputs] = await Promise.all([
       movingId === undefined ? null : moveTermsFor({ c, personId, visitId: movingId, type, on: date }),
@@ -189,6 +207,7 @@ export function registerClientBooking(app: App): void {
         service: { type, tier: service.tier, minutes: service.minutes },
         date,
         window,
+        ...(startsAt === undefined ? {} : { startsAt }),
         price: carried?.price ?? price,
         lateFee: sold.lateFee,
         terms: sold.terms,

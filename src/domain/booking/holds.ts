@@ -24,6 +24,8 @@ import { heldMinutes, visitTimes } from "../visits/visit-times.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { paidNotBooked } from "./hold-stages.ts";
 import { cityOfPincode } from "../cities/cities.ts";
+import { MINUTE_MS } from "../../lib/durations.ts";
+import { readOpsInputs } from "../platform/ops-settings.ts";
 
 interface HoldRow {
   id: string;
@@ -36,6 +38,8 @@ interface HoldRow {
   date: string;
   window_label: BookingWindow;
   start_unit: number;
+  /** The start booking by time chose (docs/decisions/0210-booking-by-start-time.md); null on a hold made before. */
+  starts_at: string | null;
   amount: number;
   amount_ex_gst: number;
   gst_percent: number;
@@ -60,7 +64,7 @@ interface HoldRow {
   paid: number;
 }
 
-const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit,
+const HOLD_QUERY = `SELECT h.id, h.type, h.tier, h.minutes, s.name AS service_name, h.date, h.window_label, h.start_unit, h.starts_at,
     h.amount, h.amount_ex_gst, h.gst_percent, h.state, h.expires_at, h.grace_seconds, h.confirmed_at, h.late_fee_ex_gst,
     h.late_fee_gst_percent, h.change_notice_hours, h.late_change_charge, t.name AS technician_name, t.initials AS technician_initials, h.appointment_id,
     h.moves_appointment_id, h.use_credit, h.person_id, h.pincode, h.one_visit,
@@ -95,13 +99,17 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
   const minutes = heldMinutes(row);
   const lateCharge = row.late_change_charge ?? LATE_CHANGE_CHARGES[row.type];
   const price = { amount_ex_gst: row.amount_ex_gst, amount: row.amount, gst_percent: row.gst_percent };
-  const [schedule, lateFee, credit, discount] = await Promise.all([
+  const [schedule, lateFee, credit, discount, inputs] = await Promise.all([
     loadSlotSchedule(db),
     lateFeeOf(db, row, lateCharge),
     creditOn(db, row, now),
     holdDiscount(db, { id: row.id, price }),
+    readOpsInputs(db, now),
   ]);
-  const { start, end } = visitTimes(row.date, row.start_unit, minutes, schedule);
+  const { start, end } =
+    row.starts_at === null
+      ? visitTimes(row.date, row.start_unit, minutes, schedule)
+      : { start: new Date(row.starts_at), end: new Date(Date.parse(row.starts_at) + minutes * MINUTE_MS) };
   const hours = windowTimesOf(schedule.on(row.date))[row.window_label];
   const windowStarts = indiaInstant(row.date, hours.start);
   const noticeHours = row.change_notice_hours ?? FREE_CHANGE_NOTICE_HOURS;
@@ -115,6 +123,7 @@ async function asTheAppShows(db: D1Database, row: HoldRow, now: Date) {
     hours,
     starts_at: start.toISOString(),
     ends_at: end.toISOString(),
+    arrives_by: new Date(start.getTime() + inputs.bookingRules.arrival * MINUTE_MS).toISOString(),
     technician: { name: row.technician_name, initials: row.technician_initials },
     price,
     late_fee: lateFee,

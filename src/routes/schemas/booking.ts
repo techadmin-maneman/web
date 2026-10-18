@@ -59,6 +59,9 @@ export const HoldSchema = z
     hours: WindowHoursSchema,
     starts_at: z.iso.datetime(),
     ends_at: z.iso.datetime(),
+    arrives_by: z.iso
+      .datetime()
+      .openapi({ description: "The latest the technician arrives: the start and its arrival window." }),
     technician: TechnicianSchema,
     price: PriceSchema,
     late_fee: z.union([PriceSchema, z.null()]).openapi({
@@ -206,3 +209,21 @@ export const BookingOfferSchema = z
       }),
   })
   .strict();
+
+/** A start on a day's grid (docs/decisions/0210-booking-by-start-time.md), as the client picks one. */
+export const StartSchema = z
+  .object({
+    time: z.string().openapi({ description: "India's clock, as 11:30." }),
+    starts_at: z.iso.datetime().openapi({ description: "When the visit starts." }),
+    arrives_by: z.iso
+      .datetime()
+      .openapi({ description: "The latest the technician arrives: the start and its arrival window." }),
+    open: z.boolean().openapi({
+      description: "Whether a technician can take it, with room for the drives either side. False when taken.",
+    }),
+    change_charged: z.boolean().openapi({
+      description: "Booked now, moving or cancelling it would already cost the client: it starts inside the notice.",
+    }),
+  })
+  .strict()
+  .openapi("Start");
