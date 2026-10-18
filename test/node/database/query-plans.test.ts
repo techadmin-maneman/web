@@ -77,6 +77,8 @@ const SMALL_TABLES = new Set([
   "technicians",
   "technician_devices",
   "technician_leave",
+  // A row a day of a technician's own week, seven at most each.
+  "technician_hours",
   "cities",
   "zones",
   "serviceable_pincodes",

@@ -16,7 +16,6 @@ import { dispatchBoard } from "./dispatch-board.ts";
 /** A colour each, in board order, so the list and the map agree on whose day is whose. */
 const COLOURS = ["1f6feb", "cf222e", "1a7f37", "9a6700", "8250df", "bc4c00", "0e7490", "be185d"] as const;
 
-
 interface DayStop {
   readonly appointment_id: string;
   readonly starts_at: string;
@@ -93,7 +92,6 @@ function runsOf(stops: readonly Located[]): Located[][] {
   }
   return runs.filter((run) => run.length > 1).map((run) => run.slice(0, MOST_STOPS));
 }
-
 
 function legOf(from: Located, to: Located, leg: { seconds: number; meters: number }): DayLeg {
   const gap = Math.round((Date.parse(to.starts_at) - Date.parse(from.ends_at)) / 60_000);

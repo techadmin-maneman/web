@@ -2475,7 +2475,7 @@ Indexes:
 
 What a hold or a visit takes of a technician's day, a row per half-slot and window, so no time is taken twice (ADR 0034, ADR 0069).
 
-Made by `0016_booking.sql`; changed by `0040_dispatch_claims.sql`.
+Made by `0016_booking.sql`; changed by `0040_dispatch_claims.sql`, `0188_hold_starts_at.sql`.
 
 | Column | Type | May be empty | Default | Key | What it holds |
 | --- | --- | --- | --- | --- | --- |
@@ -2487,6 +2487,7 @@ Made by `0016_booking.sql`; changed by `0040_dispatch_claims.sql`.
 
 Indexes:
 
+- `slot_claims_by_date`: on (`date`)
 - `slot_claims_by_hold`: on (`hold_id`)
 - `slot_claims_by_move`: on (`move_id`), where `move_id IS NOT NULL`
 
@@ -2547,7 +2548,7 @@ Made by `0016_booking.sql`; changed by `0017_hold_refunds.sql`, `0020_visit_chan
 | `auto_refund_reason` | TEXT | yes |  |  |  |
 | `payment_checked_at` | TEXT | yes |  |  |  |
 | `pay_at_visit` | INTEGER | no | `0` |  | A paid visit ops booked while online payment is off: nothing is taken at booking, the client pays by UPI at the visit, and ops record the payment once it reaches the account (docs/decisions/0209-paid-at-the-visit-by-upi.md). |
-| `starts_at` | TEXT | yes |  |  | The start a hold keeps (docs/decisions/0210-booking-by-start-time.md): the instant its visit starts, which booking by start time chose, in place of the window's half-slot. Only a new column; the code deployed neither reads nor writes it, and keeps the window and half-slot it reads beside it. |
+| `starts_at` | TEXT | yes |  |  | The start a hold keeps (docs/decisions/0210-booking-by-start-time.md), in place of the window's half-slot, and the claims by their day, which booking reads every technician's lock on. Only a new column and an index; the code deployed neither reads nor writes the column. |
 
 Indexes:
 

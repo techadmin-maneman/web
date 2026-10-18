@@ -457,7 +457,6 @@ async function answerAsForANewNumber(
   };
 }
 
-
 /** A notice to a person we know, written and queued on its own. */
 async function tellPrivately(form: FormRequest, personId: string, kind: SiteNoticeKind): Promise<void> {
   const notice = siteNotice(form.db, { personId, kind, now: form.now });
