@@ -13,6 +13,7 @@ import { readOpsInputs, type OpsInputs } from "../platform/ops-settings.ts";
 import { loadDayPlans } from "./day-plans.ts";
 import { loadSlotSchedule } from "./slot-times.ts";
 import { pinOfVisit, planRulesOf, startOffers } from "./start-offers.ts";
+import { drivesFit, type DriveCheck } from "./drive-check.ts";
 import type { Price } from "../money/price-book.ts";
 import { fittingOf, type Moving, type Technician } from "./occupancy.ts";
 import { heldMinutes } from "../visits/visit-times.ts";
@@ -172,6 +173,45 @@ async function candidatesFor({
     .sort((a, b) => ownFirst(b) - ownFirst(a) || a.addedDrive - b.addedDrive || a.time.localeCompare(b.time));
 }
 
+/**
+ * Whether Google's drives leave room for a candidate's start (./drive-check.ts): read once for every candidate's day,
+ * and always true where there is no Google to ask.
+ */
+async function roadCheck(
+  db: D1Database,
+  asked: {
+    input: HoldInput;
+    now: Date;
+    inputs: OpsInputs;
+    drives: DriveCheck | null;
+    candidates: readonly Candidate[];
+  },
+): Promise<(technicianId: string, time: string) => Promise<boolean>> {
+  const { input, now, inputs, drives, candidates } = asked;
+  if (drives === null || candidates.length === 0) return () => Promise.resolve(true);
+  const [plans, pin] = await Promise.all([
+    loadDayPlans({
+      db,
+      technicianIds: [...new Set(candidates.map((candidate) => candidate.technician.id))],
+      from: input.date,
+      to: input.date,
+      now,
+      hours: inputs.workingHours,
+      leaving: {
+        visitId: input.moves?.kind === "move" ? input.moves.visit.visitId : null,
+        ownUnpaidOf: (input.from ?? "app") === "app" ? input.personId : null,
+      },
+    }),
+    pinOfVisit(db, { personId: input.personId, pincode: input.pincode ?? null }),
+  ]);
+  const rules = planRulesOf(inputs);
+  return async (technicianId, time) => {
+    const day = plans.day(technicianId, input.date);
+    if (day === null) return true;
+    return drivesFit(db, drives, { day, rules, now }, { time, minutes: input.service.minutes, pin });
+  };
+}
+
 /** The hold's row: the service, the day, the technician and its start, the price, and the terms it is sold under. */
 function holdRow(
   input: HoldInput,
@@ -235,12 +275,15 @@ export async function holdSlot({
   now,
   holdSeconds,
   graceSeconds = PAYMENT_GRACE_SECONDS,
+  drives,
 }: {
   db: D1Database;
   input: HoldInput;
   now: Date;
   holdSeconds: number;
   graceSeconds?: number;
+  /** Google, to check the drives either side of the start before it is held, where the routes provider is on. */
+  drives?: DriveCheck | null;
 }): Promise<Hold | null> {
   const { personId, service, date, window, price, from = "app" } = input;
   const [candidates, schedule, inputs] = await Promise.all([
@@ -251,7 +294,9 @@ export async function holdSlot({
 
   const at = now.toISOString();
   const expiresAt = new Date(now.getTime() + holdSeconds * 1000).toISOString();
+  const roadFits = await roadCheck(db, { input, now, inputs, drives: drives ?? null, candidates });
   for (const { technician, time, startsAt, revision } of candidates) {
+    if (!(await roadFits(technician.id, time))) continue;
     const id = crypto.randomUUID();
     const start = unitAt(time, schedule.on(date));
     const claims = claimsAt(time, service.minutes + inputs.bookingRules.wrap_up, revision);

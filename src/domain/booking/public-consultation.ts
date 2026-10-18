@@ -280,6 +280,7 @@ async function holdOrRequest(
     },
     now,
     holdSeconds: HOLD_SECONDS,
+    drives: form.drives,
   });
   if (hold === null) return { ok: false, code: "taken" };
   return { ok: true, holdId: hold.id };

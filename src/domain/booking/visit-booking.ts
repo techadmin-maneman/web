@@ -43,6 +43,7 @@ import { REMAKE_TERMS, remakeBookedStatement, remakesOwed, type Remake } from ".
 import { replacementWears } from "../inventory/stock-gap.ts";
 import type { LinkHold } from "./booked-hold.ts";
 import { cityOfPerson } from "../cities/cities.ts";
+import type { DriveCheck } from "./drive-check.ts";
 
 /** What ops ask for. */
 export interface VisitAsked {
@@ -354,7 +355,13 @@ export async function holdForSale({
   db: D1Database;
   asked: VisitAsked;
   sale: Sale;
-  hold: { readonly closesAt: Date | null; readonly graceSeconds: number; readonly by: BookedBy };
+  hold: {
+    readonly closesAt: Date | null;
+    readonly graceSeconds: number;
+    readonly by: BookedBy;
+    /** Google, to check the drives either side of the start; null where the routes provider is off. */
+    readonly drives?: DriveCheck | null;
+  };
   now: Date;
 }): Promise<Hold | null> {
   const address = await currentAddress(db, asked.personId);
@@ -385,6 +392,7 @@ export async function holdForSale({
     },
     now,
     holdSeconds,
+    drives: hold.drives ?? null,
     graceSeconds: hold.graceSeconds,
   });
 }

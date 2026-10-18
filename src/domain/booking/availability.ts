@@ -181,7 +181,8 @@ async function windowsOf({
     const windows = startable.map((window): WindowTechnicians => {
       const inside = starts.filter((start) => start.time >= hours[window].start && start.time < hours[window].end);
       const technicians = new Map<string, Technician>();
-      for (const start of inside) for (const taker of start.takers) technicians.set(taker.technician.id, taker.technician);
+      for (const start of inside)
+        for (const taker of start.takers) technicians.set(taker.technician.id, taker.technician);
       return { window, technicians: [...technicians.values()] };
     });
     return { date, windows };

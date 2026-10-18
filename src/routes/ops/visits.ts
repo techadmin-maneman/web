@@ -48,6 +48,7 @@ import { ServiceSchema } from "../schemas/booking.ts";
 import { fittingOf } from "../../domain/booking/occupancy.ts";
 import { cityOfPerson } from "../../domain/cities/cities.ts";
 import { OpsAvailabilitySchema, PaysSchema, PriceSchema, TechnicianSchema } from "./visits.schemas.ts";
+import { driveCheckOf } from "../../http/drive-check.ts";
 
 const OUTCOMES = ["booked", "being_booked", "awaiting_payment"] as const;
 
@@ -351,7 +352,13 @@ export function registerOpsVisits(app: App): void {
 
     const by = { actor: actorOf(c), requestId: c.var.requestId };
     const graceSeconds = inputs.paymentHold.grace * 60;
-    const hold = await holdForSale({ db, asked, sale, hold: { closesAt, graceSeconds, by }, now });
+    const hold = await holdForSale({
+      db,
+      asked,
+      sale,
+      hold: { closesAt, graceSeconds, by, drives: driveCheckOf(c) },
+      now,
+    });
     if (hold === null) return refuse(c, "taken");
     if (!(await codeStillApplies(db, asked, hold.id))) {
       await letGo(c, hold.id, "code_taken");

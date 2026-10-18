@@ -58,7 +58,10 @@ export interface DayStarts {
 const PINCODE = `COALESCE(?2, (SELECT d.pincode FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL))`;
 
 /** Where the visit is: its client's current pin, else the centre of the pincode it is booked at or the client's. */
-export async function pinOfVisit(db: D1Database, placing: Pick<StartPlacing, "personId" | "pincode">): Promise<Pin | null> {
+export async function pinOfVisit(
+  db: D1Database,
+  placing: Pick<StartPlacing, "personId" | "pincode">,
+): Promise<Pin | null> {
   const row = await db
     .prepare(
       `SELECT COALESCE(

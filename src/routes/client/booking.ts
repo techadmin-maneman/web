@@ -27,6 +27,7 @@ import { visitorOf } from "../../http/visitor.ts";
 import { GIVEN_BY_BOOKING, isFullAddress } from "../../policy/booking.ts";
 import { takesCredit } from "../../policy/referral-reward.ts";
 import { BookingSchema, HoldSchema, Tier } from "../schemas/booking.ts";
+import { driveCheckOf } from "../../http/drive-check.ts";
 
 const holdRoute = selfServeRoute({
   method: "post",
@@ -200,6 +201,7 @@ export function registerClientBooking(app: App): void {
       now,
       holdSeconds: inputs.paymentHold.countdown * 60,
       graceSeconds: inputs.paymentHold.grace * 60,
+      drives: driveCheckOf(c),
     });
     if (hold === null) return refuse(c, "taken");
     c.var.log.info("slot_held", { hold_id: hold.id, type, tier: service.tier, date, window });

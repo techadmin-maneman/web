@@ -98,9 +98,9 @@ function runsOf(stops: readonly Located[]): Located[][] {
 }
 
 /** Google's drive through these pins, kept a day; a miss counts against the day's ceiling. */
-async function driveThrough(
+export async function driveThrough(
   db: D1Database,
-  deps: DayRouteDeps & { routes: RoutesProvider },
+  deps: { readonly routes: RoutesProvider; readonly alert: Alert },
   { points, at }: { points: readonly Point[]; at: CountedAt },
 ): Promise<RouteResult> {
   const key = new Request(`https://routes.cache.maneman.in/${await sha256Hex(JSON.stringify(points))}`);
