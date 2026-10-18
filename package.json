@@ -67,6 +67,7 @@
     "fidelity:app": "node scripts/fidelity/fidelity-app.ts",
     "fidelity:ops": "node scripts/fidelity/fidelity-kit.ts",
     "fidelity:tech": "node scripts/fidelity/fidelity-tech.ts",
+    "e2e:videos": "node scripts/dev/e2e-videos.ts",
     "test:e2e": "playwright test --project=390 --project=1440 --project=app --project=ops --project=tech --project=tech-live --project=tech-ios",
     "test:tech-ios": "playwright test --project=tech-ios",
     "test:tech-staging": "playwright test --config playwright.staging.config.ts",

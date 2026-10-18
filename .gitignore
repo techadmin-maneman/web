@@ -13,6 +13,7 @@ coverage/
 .DS_Store
 site/.astro/
 test-results/
+videos/
 playwright-report/
 lighthouse/
 
