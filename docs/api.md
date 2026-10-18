@@ -4691,6 +4691,18 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of."
     },
+    "arrives_by": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The end of the arrival window after the start, as ops set it; null where there is no start."
+    },
     "area": {
       "type": "string",
       "description": "The area once ops have named it, its city until then."
@@ -4730,6 +4742,7 @@ Razorpay's webhook: payments and refunds
     "window",
     "hours",
     "starts_at",
+    "arrives_by",
     "area",
     "credits",
     "invite",
@@ -5216,6 +5229,18 @@ Razorpay's webhook: payments and refunds
       ],
       "description": "When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of."
     },
+    "arrives_by": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The end of the arrival window after the start, as ops set it; null where there is no start."
+    },
     "area": {
       "type": "string",
       "description": "The area once ops have named it, its city until then."
@@ -5244,6 +5269,7 @@ Razorpay's webhook: payments and refunds
     "window",
     "hours",
     "starts_at",
+    "arrives_by",
     "area",
     "credits",
     "invite",

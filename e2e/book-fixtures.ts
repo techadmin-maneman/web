@@ -16,6 +16,7 @@ export const BOOKED = {
   window: "morning",
   hours: { start: "09:00", end: "12:00" },
   starts_at: null,
+  arrives_by: null,
   area: SERVED.area,
   credits: false,
   invite: "unknown",

@@ -245,6 +245,7 @@ describe("the address the consultation is at", () => {
       ...BOOKED_MORNING,
       date: "2026-09-24",
       starts_at: "2026-09-24T03:30:00.000Z",
+      arrives_by: "2026-09-24T04:00:00.000Z",
     });
     const addresses = await env.DB.prepare(
       `SELECT a.flat, a.line1, a.locality, a.replaced_at FROM addresses a JOIN people p ON p.id = a.person_id

@@ -172,6 +172,18 @@ describe("where a job in hand can go", () => {
     ]);
   });
 
+  // A real technician's record beside the test ones takes no test client's visit, nor a test one a client's.
+  it("offers a test client's visit to test technicians only, as booking does", async () => {
+    await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN });
+    await env.DB.batch([
+      env.DB.prepare("UPDATE people SET test_record = 1 WHERE id = ?1").bind(ROHIT),
+      env.DB.prepare("UPDATE technicians SET test_record = 1 WHERE id = ?1").bind(IMRAN),
+    ]);
+
+    const { rooms } = await (await roomFor(FIT, "2026-09-22")).json<RoomBody>();
+    expect(new Set(rooms.map((room) => room.technician_id))).toEqual(new Set([IMRAN]));
+  });
+
   it("answers not found for a job no longer live", async () => {
     await insertJob(FIT, { type: "first_fit", start: TUESDAY["12:00"], technician: IMRAN, status: "completed" });
     expect((await roomFor(FIT, "2026-09-22")).status).toBe(404);

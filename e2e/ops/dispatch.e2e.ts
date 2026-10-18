@@ -36,9 +36,7 @@ test("draws the week, every technician and the jobs on their days", async ({ pag
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("Sec 65 · service");
   // Each block says when it starts, not only its window.
   await expect(page.getByRole("button", { name: ROHIT_BLOCK })).toContainText("9 am");
-  await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, morning" })).toContainText(
-    "Sec 43 · first fit",
-  );
+  await expect(page.getByRole("button", { name: "Sanjay B., Sat 20 Sep, 9 am" })).toContainText("Sec 43 · first fit");
 });
 
 // "Block heights follow their slots, about 42, 63 and 84 px".
@@ -47,8 +45,8 @@ test("draws each job as tall as the slots it takes, so its size reads from its h
   const heightOf = async (name: string) => (await page.getByRole("button", { name }).boundingBox())?.height ?? 0;
 
   const oneSlot = await heightOf(ROHIT_BLOCK);
-  const slotAndAHalf = await heightOf("Kunal M., Tue 23 Sep, afternoon");
-  const twoSlots = await heightOf("Sanjay B., Sat 20 Sep, morning");
+  const slotAndAHalf = await heightOf("Kunal M., Tue 23 Sep, 12 pm");
+  const twoSlots = await heightOf("Sanjay B., Sat 20 Sep, 9 am");
 
   expect(Math.abs(oneSlot - 42)).toBeLessThanOrEqual(1);
   expect(Math.abs(slotAndAHalf - 63)).toBeLessThanOrEqual(1);
@@ -60,7 +58,7 @@ test("marks the days a technician is away, and still shows the jobs already on t
   // Faizan is away on the Sunday and the Monday, and holds a job on each.
   await expect(page.getByText("Faizan Ali is away on Sun 21 Sep")).toBeAttached();
   await expect(page.getByText("Faizan Ali is away on Mon 22 Sep")).toBeAttached();
-  await expect(page.getByRole("button", { name: "Nitin R., Sun 21 Sep, afternoon" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Nitin R., Sun 21 Sep, 12 pm" })).toBeVisible();
   await expect(page.getByText("Faizan Ali is away on Tue 23 Sep")).toHaveCount(0);
   // The mark was named by an aria-label on a plain span, which ARIA forbids.
   await expect(page.locator("main span[aria-label]")).toHaveCount(0);
@@ -158,7 +156,7 @@ test("opens a block’s drawer with the client, the badge, and both ways to reac
   await press(page, ROHIT_BLOCK);
 
   const drawer = page.getByRole("dialog", { name: "Rohit Malhotra" });
-  await expect(drawer).toContainText("Fri 19 Sep · 9 am–12 noon · Imran Qureshi");
+  await expect(drawer).toContainText("Fri 19 Sep · 9 am · Imran Qureshi");
   await expect(drawer).toContainText(opsCopy.dispatch.drawer.badges.prepaid);
   await expect(drawer).toContainText("Service visit · 1 slot");
   await expect(drawer).toContainText("Sec 65 · 122018");

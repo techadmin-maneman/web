@@ -19,6 +19,20 @@ export const MOST_STOPS = 12;
 
 const waypoint = (point: Point) => ({ location: { latLng: { latitude: point.lat, longitude: point.lng } } });
 
+/** Why Google refused, as its error body says: "PERMISSION_DENIED, Requests to this API … are blocked." */
+const Refusal = z.object({ error: z.object({ status: z.string().catch(""), message: z.string().catch("") }) });
+
+/**
+ * Google's own words for a refusal, after its status: a 403 is a disabled API, a key restricted to others and a spent
+ * quota alike, and only the body tells them apart.
+ */
+function why(body: unknown): string {
+  const said = Refusal.safeParse(body).data?.error;
+  if (said === undefined) return "";
+  const words = [said.status, said.message.slice(0, 200)].filter((part) => part !== "").join(", ");
+  return words === "" ? "" : `: ${words}`;
+}
+
 /** Google writes a duration as seconds with an "s"; a leg of no distance leaves its distance out. */
 const Reply = z.looseObject({
   routes: z
@@ -79,7 +93,8 @@ export function createGoogleRoutes(apiKey: string, deps: VendorFetchDependencies
         },
       );
       if (response instanceof VendorUnreachable) return { ok: false, detail: response.message };
-      if (!response.ok) return { ok: false, detail: `HTTP ${String(response.status)}` };
+      if (!response.ok)
+        return { ok: false, detail: `HTTP ${String(response.status)}${why(await response.json().catch(() => null))}` };
       const reply = Reply.safeParse(await response.json().catch(() => null));
       const route = reply.data?.routes[0];
       if (route === undefined) return { ok: false, detail: "no route in the answer" };

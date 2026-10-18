@@ -181,6 +181,14 @@ test("restates the day and window booked, says what the visit asks, and offers i
   expect(ics).toContain("DTSTART:20260925T033000Z\r\nDTEND:20260925T063000Z");
 });
 
+test("restates a start booked as the window the technician arrives in", async ({ page }) => {
+  const atHalfPast = { ...BOOKED, starts_at: "2026-09-25T04:00:00.000Z", arrives_by: "2026-09-25T04:30:00.000Z" };
+  await mockApi(page, { consultation: { status: 201, body: atHalfPast } });
+  await bookHere(page);
+
+  await expect(page.getByRole("heading", { level: 1, name: "Friday 25 September, 9:30–10 am" })).toBeVisible();
+});
+
 test("a request waiting for ops to fix the hour offers no calendar", async ({ page }) => {
   await mockApi(page, { consultation: { status: 201, body: { ...BOOKED, state: "requested" } } });
   await bookHere(page);

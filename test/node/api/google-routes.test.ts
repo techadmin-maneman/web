@@ -64,10 +64,15 @@ describe("a day's route", () => {
     });
   });
 
-  it("fails on a refusal or an answer with no route", async () => {
+  it("fails on a refusal, in Google's own words where it gives them, or an answer with no route", async () => {
     expect(await answering(() => new Response("", { status: 403 })).routes.route([HOME, NEXT])).toEqual({
       ok: false,
       detail: "HTTP 403",
+    });
+    const blocked = { error: { code: 403, status: "PERMISSION_DENIED", message: "Requests to this API are blocked." } };
+    expect(await answering(() => Response.json(blocked, { status: 403 })).routes.route([HOME, NEXT])).toEqual({
+      ok: false,
+      detail: "HTTP 403: PERMISSION_DENIED, Requests to this API are blocked.",
     });
     expect(await answering(() => Response.json({})).routes.route([HOME, NEXT])).toMatchObject({ ok: false });
   });

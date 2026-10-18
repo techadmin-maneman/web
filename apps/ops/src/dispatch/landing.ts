@@ -2,7 +2,7 @@
 // own answer, or why it was refused, naming the technician and the window the board asked for, since the API answers
 // with the code alone.
 
-import { shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import type { Board, Moved, Proposed } from "../api.ts";
 import { dispatch } from "../content.ts";
 import { phoneWords } from "../lib/phone.ts";
@@ -76,7 +76,7 @@ function placeOn(board: Board, job: Job): { readonly words: string; readonly unc
       const block = day.blocks.find((each) => each.appointment_id === idOf(job));
       if (block === undefined) continue;
       return {
-        words: dispatch.landing.supersededWhere(row.name, shortDate(day.date), windowWord(block.window)),
+        words: dispatch.landing.supersededWhere(row.name, shortDate(day.date), indiaClock(block.starts_at)),
         unchanged: row.technician_id === shown.technicianId && block.starts_at === shown.startsAt,
       };
     }

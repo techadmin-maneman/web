@@ -82,6 +82,7 @@ describe("a consultation and fit in one visit", () => {
       window: "morning",
       hours: { start: "09:00", end: "12:00" },
       starts_at: "2026-09-23T03:30:00.000Z",
+      arrives_by: "2026-09-23T04:00:00.000Z",
       area: "Gurgaon South City II",
       credits: false,
       invite: "unknown",
@@ -187,6 +188,7 @@ describe("a consultation and fit in one visit", () => {
         ...BOOKED_MORNING,
         date: "2026-09-24",
         starts_at: "2026-09-24T03:30:00.000Z",
+        arrives_by: "2026-09-24T04:00:00.000Z",
         one_visit: oneVisit,
       });
     }

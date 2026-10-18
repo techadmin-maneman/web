@@ -31,14 +31,16 @@ export async function whyNotThem(
 
 /**
  * Who the board offers a job to: its own technician, and the others who work in its city, or all where it is unknown;
- * for a first fit, only those trained to fit.
+ * for a first fit, only those trained to fit. A test client's visit goes only to a test technician, and a client's to
+ * none, as booking keeps them (src/domain/booking/occupancy.ts).
  */
 export function roomTechnicians(db: D1Database, job: LiveJob): Promise<Technician[]> {
   return db
     .prepare(
       `SELECT t.id, t.name, t.initials FROM technicians t
        WHERE t.active = 1 AND (t.id = ?1 OR ((${bookingCity("?2", "?3")} IS NULL OR t.city = ${bookingCity("?2", "?3")})
-         AND (?4 = 0 OR t.fits_trained = 1)))
+         AND (?4 = 0 OR t.fits_trained = 1)
+         AND t.test_record = (SELECT COALESCE(MAX(p.test_record), 0) FROM people p WHERE p.id = ?3)))
        ORDER BY t.name`,
     )
     .bind(job.technician_id, job.service_pincode, job.person_id, isAFitting(job.type) ? 1 : 0)

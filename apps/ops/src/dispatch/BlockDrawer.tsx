@@ -7,7 +7,7 @@ import { Icon } from "@maneman/ui/Icon";
 import { ICONS } from "@maneman/brand/icons";
 import { Button, ButtonLink, buttonLook } from "@maneman/ui/Button";
 import { Drawer } from "@maneman/ui/Drawer";
-import { shortDate } from "@maneman/web-kit/dates";
+import { indiaClock, shortDate } from "@maneman/web-kit/dates";
 import { whatsappChat } from "@maneman/web-kit/whatsapp";
 import { OpsLink } from "../components/Shell.tsx";
 import { dispatch } from "../content.ts";
@@ -16,7 +16,6 @@ import { phoneWords } from "../lib/phone.ts";
 import { clientPath } from "../route.ts";
 import { isMovable, movesIfCheckInCleared, nameOf, type BlockJob, type VisitChange, windowWord } from "./job.ts";
 import { firstNameOf } from "@rules/lib/names.ts";
-import { timeRange, UNBROKEN } from "@rules/lib/time-range.ts";
 
 /** Each action is null when the person's access does not let them take it. */
 interface Props {
@@ -49,8 +48,8 @@ function warningOf(job: BlockJob): string | null {
   return dispatch.drawer.stays;
 }
 
-/** The window's hours on the visit's day, as ops set them: "12–4 pm". */
-const hoursOf = ({ block }: BlockJob) => timeRange(block.window_hours.start, block.window_hours.end, UNBROKEN);
+/** When the visit starts: "10:30 am". */
+const timeOf = ({ block }: BlockJob) => indiaClock(block.starts_at);
 
 export function BlockDrawer(props: Props) {
   const { job, onMove, onMoveAnyway, onTold, onWithdraw, change, onChange, onLetIn, onClose } = props;
@@ -59,7 +58,7 @@ export function BlockDrawer(props: Props) {
   const person = block.person;
 
   // A move the client has not heard of still stands, so the block is where it put the visit.
-  const movedTo = `${shortDate(job.date)}, ${windowWord(block.window)}`;
+  const movedTo = `${shortDate(job.date)}, ${indiaClock(block.starts_at)}`;
   const referredBy = person === null ? null : person.referred_by;
   const typeName = block.type === null ? dispatch.unknown : dispatch.typeNames[block.type];
   const rows = [
@@ -76,7 +75,7 @@ export function BlockDrawer(props: Props) {
     <Drawer
       titleId="drawer-title"
       title={person?.name ?? nameOf(job)}
-      sub={copy.when(shortDate(job.date), hoursOf(job), job.technician.name)}
+      sub={copy.when(shortDate(job.date), timeOf(job), job.technician.name)}
       aside={<span className={badgeLook("brass", styles.badge)}>{copy.badges[block.badge]}</span>}
       canClose
       onDismiss={onClose}

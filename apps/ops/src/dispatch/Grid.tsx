@@ -103,10 +103,10 @@ interface BlockButtonProps {
   readonly onTake: Take;
 }
 
-/** The block as a screen reader names it: the visit, its day and window, and done or how far it has got. */
+/** The block as a screen reader names it: the visit, its day and start, and done or how far it has got. */
 function blockLabel(job: Job & { readonly kind: "block" }): string {
   const { block } = job;
-  const where = [nameOf(job), shortDate(job.date), windowWord(block.window)] as const;
+  const where = [nameOf(job), shortDate(job.date), indiaClock(block.starts_at)] as const;
   if (block.status === "completed") return dispatch.board.doneBlock(...where);
   const begun = begunWord(block);
   return begun === null ? dispatch.board.block(...where) : dispatch.board.begunBlock(...where, begun);

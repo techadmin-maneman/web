@@ -33,6 +33,7 @@ export const BOOKED_MORNING = {
   hours: { start: "09:00", end: "12:00" },
   // The morning's first start, the one a new number booking the window is given.
   starts_at: "2026-09-23T03:30:00.000Z",
+  arrives_by: "2026-09-23T04:00:00.000Z",
   area: "Gurgaon South City II",
   credits: false,
   invite: "unknown",

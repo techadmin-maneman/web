@@ -16,6 +16,8 @@ import { loadSlotSchedule } from "../../domain/booking/slot-times.ts";
 import { windowTimesOf, type WindowTimes } from "../../policy/slot-times.ts";
 import { answerKeyed, onceForKey } from "../../http/idempotency.ts";
 import { formRequest } from "../../http/public-form.ts";
+import { opsInputs } from "../../http/ops-inputs.ts";
+import { MINUTE_MS } from "../../lib/durations.ts";
 
 /** The request as its Idempotency-Key is kept: the route it came to, the key, and what was sent. */
 interface Keyed {
@@ -31,16 +33,23 @@ function standingCodeBody(standing: StandingCode | null) {
   return { code: standing.code, kind, value, cap };
 }
 
-/** What a booking answers: the day, the window and its hours that day, the area, the credits and the invite. */
-export function bookedBody(booked: Booked, hours: WindowTimes) {
+/** When the booking is: the window and its hours that day, and its start with the end of the arrival window after it. */
+interface BookedTimes {
+  readonly hours: WindowTimes;
+  readonly arrivalMinutes: number;
+}
+
+/** What a booking answers: the day, the window and its hours, the start and the arrival, the area, credits and invite. */
+export function bookedBody(booked: Booked, { hours, arrivalMinutes }: BookedTimes) {
   const { state, date, window, area, credits, invite, oneVisit, startsAt } = booked;
   const starts_at = startsAt === null ? null : startsAt.toISOString();
-  return { state, date, window, hours, starts_at, area, credits, invite, one_visit: oneVisit };
+  const arrives_by = startsAt === null ? null : new Date(startsAt.getTime() + arrivalMinutes * MINUTE_MS).toISOString();
+  return { state, date, window, hours, starts_at, arrives_by, area, credits, invite, one_visit: oneVisit };
 }
 
 /** What a booking on the site's own page answers: the same, with its discount code as it stands. */
-export const bookedWithCode = (booked: Booked, hours: WindowTimes) => ({
-  ...bookedBody(booked, hours),
+export const bookedWithCode = (booked: Booked, times: BookedTimes) => ({
+  ...bookedBody(booked, times),
   discount_code: standingCodeBody(booked.discountCode),
 });
 
@@ -49,17 +58,18 @@ export async function bookFromForm<Body>(
   c: Context<AppEnv>,
   keyed: Keyed,
   request: () => Promise<ConsultationRequest>,
-  answerOf: (booked: Booked, hours: WindowTimes) => Body,
+  answerOf: (booked: Booked, times: BookedTimes) => Body,
 ) {
   const run = await onceForKey(c, keyed, async () => {
     // The day's times are read beside the booking, so the answer waits on no further trip.
-    const [booked, schedule] = await Promise.all([
+    const [booked, schedule, inputs] = await Promise.all([
       request().then((asked) => bookConsultation(formRequest(c), asked)),
       loadSlotSchedule(c.env.DB),
+      opsInputs(c),
     ]);
     if (!booked.ok) return booked;
     const hours = windowTimesOf(schedule.on(booked.date))[booked.window];
-    return { ok: true as const, body: answerOf(booked, hours) };
+    return { ok: true as const, body: answerOf(booked, { hours, arrivalMinutes: inputs.bookingRules.arrival }) };
   });
   return answerKeyed(c, run);
 }

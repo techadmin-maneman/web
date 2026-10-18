@@ -5,7 +5,7 @@
 // It also says whether the discount code sent with it stands (ADR 0108).
 
 import { capsLook } from "@maneman/ui/Caps";
-import { indiaClock } from "@maneman/web-kit/dates";
+import { indiaClock, indiaTimeOf } from "@maneman/web-kit/dates";
 import { ButtonLink } from "@maneman/ui/Button";
 import { ICONS } from "@maneman/brand/icons";
 import { rupees } from "@maneman/web-kit/money";
@@ -78,11 +78,14 @@ function codeNote(booking: Booking): string | null {
 }
 
 /**
- * When the visit is: its start as booked, "11:30 am" (docs/decisions/0210-booking-by-start-time.md); or, for a booking
- * made by window, the window's hours that day, "12–4 pm".
+ * When the visit is: from its start to the end of its arrival window, "11:30 am–12 pm"
+ * (docs/decisions/0210-booking-by-start-time.md); or, for a booking made by window, the window's hours that day, "12–4 pm".
  */
-const hoursOf = (result: Booking["result"], spaces = UNBROKEN): string =>
-  result.starts_at === null ? timeRange(result.hours.start, result.hours.end, spaces) : indiaClock(result.starts_at);
+function hoursOf(result: Booking["result"], spaces = UNBROKEN): string {
+  if (result.starts_at === null) return timeRange(result.hours.start, result.hours.end, spaces);
+  if (result.arrives_by === null) return indiaClock(result.starts_at);
+  return timeRange(indiaTimeOf(result.starts_at), indiaTimeOf(result.arrives_by), spaces);
+}
 
 /** Google's link, and the .ics file for every other calendar, holding the window booked. */
 function AddToCalendar(props: { result: Booking["result"]; ready: string }) {

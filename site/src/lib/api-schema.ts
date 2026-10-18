@@ -3132,6 +3132,8 @@ export interface components {
             hours: components["schemas"]["WindowHours"];
             /** @description When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of. */
             starts_at: string | null;
+            /** @description The end of the arrival window after the start, as ops set it; null where there is no start. */
+            arrives_by: string | null;
             /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */
@@ -3246,6 +3248,8 @@ export interface components {
             hours: components["schemas"]["WindowHours"];
             /** @description When the visit starts, as booked (docs/decisions/0210-booking-by-start-time.md); null for a request ops fix the hour of. */
             starts_at: string | null;
+            /** @description The end of the arrival window after the start, as ops set it; null where there is no start. */
+            arrives_by: string | null;
             /** @description The area once ops have named it, its city until then. */
             area: string;
             /** @description Whether the invite's service visits apply. */
