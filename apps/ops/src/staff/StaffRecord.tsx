@@ -12,7 +12,16 @@ import { DeleteAction } from "../components/DeleteAction.tsx";
 import { ChoiceRow, ReadRow } from "../components/RecordRows.tsx";
 import form from "../components/forms.module.css";
 import { settings } from "../content/settings.ts";
-import { departmentOf, DEPARTMENTS, levelOf, LEVELS, placeWords, sameGrant, whereOf, whereValue } from "../lib/grants.ts";
+import {
+  departmentOf,
+  DEPARTMENTS,
+  levelOf,
+  LEVELS,
+  placeWords,
+  sameGrant,
+  whereOf,
+  whereValue,
+} from "../lib/grants.ts";
 import { staffApi } from "./staff-api.ts";
 import styles from "./staff.module.css";
 
@@ -142,6 +151,41 @@ function AddGrant(props: {
   );
 }
 
+/** Another department for someone listed: its button, then its boxes in place. */
+function MoreGrants(props: {
+  readonly staff: StaffList;
+  readonly grants: readonly StaffGrant[];
+  readonly save: (grants: readonly StaffGrant[]) => ReturnType<typeof staffApi.saveStaff>;
+}) {
+  const [adding, setAdding] = useState(false);
+  if (adding) {
+    return (
+      <AddGrant
+        staff={props.staff}
+        grants={props.grants}
+        save={props.save}
+        onDone={() => {
+          setAdding(false);
+        }}
+      />
+    );
+  }
+  return (
+    <div className={styles.addGrant}>
+      <Button
+        variant="outline"
+        size="small"
+        narrow
+        onClick={() => {
+          setAdding(true);
+        }}
+      >
+        {copy.form.addGrant}
+      </Button>
+    </div>
+  );
+}
+
 export function StaffRecord(props: {
   readonly staff: StaffList;
   readonly person: StaffPerson;
@@ -151,7 +195,6 @@ export function StaffRecord(props: {
   readonly onRemoved: (staff: StaffList) => void;
 }) {
   const { staff, person, mayChange, onSaved } = props;
-  const [adding, setAdding] = useState(false);
   const send = async (grants: readonly StaffGrant[], active = person.active) => {
     const answer = await staffApi.saveStaff({ email: person.email, active, grants: [...grants] });
     if (answer.ok) onSaved(answer.body);
@@ -187,35 +230,14 @@ export function StaffRecord(props: {
             save={(chosen) => {
               const kept = person.grants.filter((each) => !sameGrant(each, grant));
               const level = LEVELS.find((each) => each === chosen);
-              return said(level === undefined ? kept : person.grants.map((each) => (each === grant ? { ...grant, level } : each)));
+              return said(
+                level === undefined ? kept : person.grants.map((each) => (each === grant ? { ...grant, level } : each)),
+              );
             }}
           />
         ))}
       </div>
-      {mayChange &&
-        (adding ? (
-          <AddGrant
-            staff={staff}
-            grants={person.grants}
-            save={send}
-            onDone={() => {
-              setAdding(false);
-            }}
-          />
-        ) : (
-          <div className={styles.addGrant}>
-            <Button
-              variant="outline"
-              size="small"
-              narrow
-              onClick={() => {
-                setAdding(true);
-              }}
-            >
-              {copy.form.addGrant}
-            </Button>
-          </div>
-        ))}
+      {mayChange && <MoreGrants staff={staff} grants={person.grants} save={send} />}
       {props.mayRemove && (
         <div className={form.recordFoot}>
           <DeleteAction

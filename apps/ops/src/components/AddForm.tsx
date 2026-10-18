@@ -52,7 +52,9 @@ export function AddForm<Body>(props: {
         legend={props.title}
         legendLook={inDrawer ? "hidden" : "title"}
       >
-        <RefusedBoxes.Provider value={(box) => boxError(props.errors, failed, box)}>{props.children}</RefusedBoxes.Provider>
+        <RefusedBoxes.Provider value={(box) => boxError(props.errors, failed, box)}>
+          {props.children}
+        </RefusedBoxes.Provider>
         <FormActions>
           <Button variant="primary" size="small" type="submit" busy={busy}>
             {props.words.add}

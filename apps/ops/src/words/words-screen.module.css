@@ -30,10 +30,4 @@
   font-size: var(--fs-13);
   color: var(--ui-text-muted);
 }
-.actions {
-  white-space: nowrap;
-  text-align: right;
-}
-.actions button:first-child {
-  margin-left: 0;
-}
+

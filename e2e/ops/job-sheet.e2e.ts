@@ -39,9 +39,7 @@ test("shows a kind’s checklist in its order, who set it, and what was taken of
   const first = list.getByRole("button", { name: `${EDITING.change} ${copy.item(1)}` });
   await expect(first).toContainText("Piece removed");
   await expect(first).toContainText("Hair system removed");
-  await expect(list.getByRole("button", { name: `${EDITING.change} ${copy.item(3)}` })).toContainText(
-    "Piece refitted",
-  );
+  await expect(list.getByRole("button", { name: `${EDITING.change} ${copy.item(3)}` })).toContainText("Piece refitted");
   await expect(list).toContainText("Set by ops@maneman.in on 20 Sep 2027");
   await expect(list).toContainText("Adhesive renewed");
   await expect(list.getByRole("button", { name: copy.putBack("Adhesive renewed") })).toBeVisible();
@@ -96,7 +94,9 @@ test("adds an item, a step with no client's words being the technician's alone",
 test("puts an item taken off back on the list, under its own code", async ({ page }) => {
   await open(page, { "POST /api/job-sheet/checklists/{visit_type}": json(JOB_SHEET) });
   const sent = posted(page, "/api/job-sheet/checklists/service");
-  await checklist(page).getByRole("button", { name: copy.putBack("Adhesive renewed") }).click();
+  await checklist(page)
+    .getByRole("button", { name: copy.putBack("Adhesive renewed") })
+    .click();
   expect((await sent).postDataJSON()).toEqual({
     items: [...SERVICE, { code: "adhesive_renewed", label: "Adhesive renewed", client: "Adhesive renewed" }],
   });

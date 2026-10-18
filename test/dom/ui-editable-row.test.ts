@@ -51,8 +51,7 @@ function type(text: string) {
   const input = box();
   if (input === null) throw new Error("no box");
   act(() => {
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-    setter?.call(input, text);
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, text);
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }

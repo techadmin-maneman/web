@@ -28,34 +28,11 @@ const TEXTS = [
   ["state", "state", 60],
 ] as const;
 
-export function AddCity(props: {
-  readonly zones: readonly string[];
-  readonly onAdded: () => Promise<void>;
-  readonly onCancel: () => void;
-}) {
-  const [draft, setDraft] = useState<Draft>(BLANK);
-  const edit = (change: Partial<Draft>) => {
-    setDraft({ ...draft, ...change });
-  };
+/** The city's boxes: its name and state, its zone, and whether we serve it and offer it. */
+function CityBoxes(props: { draft: Draft; zones: readonly string[]; edit: (change: Partial<Draft>) => void }) {
+  const { draft, edit } = props;
   return (
-    <AddForm
-      title={formWords.addTitle}
-      words={formWords}
-      errors={formWords.errors}
-      boxes={["name", "state_code", "state", "zone"]}
-      send={() =>
-        citiesApi.addCity({
-          name: draft.name.trim(),
-          state_code: draft.stateCode.trim().toUpperCase(),
-          state: draft.state.trim(),
-          zone: draft.zone === "" ? null : draft.zone,
-          served: draft.served,
-          active: draft.active,
-        })
-      }
-      onAdded={props.onAdded}
-      onCancel={props.onCancel}
-    >
+    <>
       <div className={form.fields}>
         {TEXTS.map(([field, box, most]) => (
           <Field
@@ -113,6 +90,42 @@ export function AddCity(props: {
           }}
         />
       </div>
+    </>
+  );
+}
+
+export function AddCity(props: {
+  readonly zones: readonly string[];
+  readonly onAdded: () => Promise<void>;
+  readonly onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<Draft>(BLANK);
+  return (
+    <AddForm
+      title={formWords.addTitle}
+      words={formWords}
+      errors={formWords.errors}
+      boxes={["name", "state_code", "state", "zone"]}
+      send={() =>
+        citiesApi.addCity({
+          name: draft.name.trim(),
+          state_code: draft.stateCode.trim().toUpperCase(),
+          state: draft.state.trim(),
+          zone: draft.zone === "" ? null : draft.zone,
+          served: draft.served,
+          active: draft.active,
+        })
+      }
+      onAdded={props.onAdded}
+      onCancel={props.onCancel}
+    >
+      <CityBoxes
+        draft={draft}
+        zones={props.zones}
+        edit={(change) => {
+          setDraft({ ...draft, ...change });
+        }}
+      />
     </AddForm>
   );
 }

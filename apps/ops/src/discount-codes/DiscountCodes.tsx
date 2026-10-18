@@ -201,6 +201,42 @@ function SwitchedOff({ codes, onOpen }: { codes: readonly DiscountCode[]; onOpen
   );
 }
 
+/** A code's record, beside the list, its values read as its row reads them. */
+function OpenCode(props: {
+  code: DiscountCode;
+  today: string;
+  onClose: () => void;
+  onDone: (said: string) => Promise<void>;
+}) {
+  const { code } = props;
+  return (
+    <FormDrawer title={code.code} onClose={props.onClose}>
+      <CodeRecord
+        code={code}
+        reads={{
+          discount: discountOf(code),
+          covers: coversOf(code),
+          ends: endsOf(code, props.today),
+          uses: usesOf(code),
+          lastUsed: dayOf(code.last_used),
+          offOn: dayOf(code.switched_off?.at ?? null),
+        }}
+        onDone={props.onDone}
+      />
+    </FormDrawer>
+  );
+}
+
+/** Making codes, from the list's head, for a person who may. */
+function MakeCodes({ codes, onMade }: { codes: DiscountCodeList; onMade: () => void }) {
+  if (!useAccess().mayCall("POST /api/discount-codes")) return null;
+  return (
+    <DrawerButton primary label={copy.make}>
+      {(close) => <DiscountCodeForm today={codes.today} most={codes.batch_most} onMade={onMade} onClose={close} />}
+    </DrawerButton>
+  );
+}
+
 export function DiscountCodes() {
   const [finding, setFinding] = useState<string | null>(null);
   const load = useCallback(() => discountCodesApi.discountCodes(finding), [finding]);
@@ -209,12 +245,7 @@ export function DiscountCodes() {
   const [refreshed, setRefreshed] = useState<DiscountCodeList | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
-  const mayMake = useAccess().mayCall("POST /api/discount-codes");
 
-  const find = (code: string | null) => {
-    setRefreshed(null);
-    setFinding(code);
-  };
   const refresh = async () => {
     const answer = await discountCodesApi.discountCodes(finding);
     if (answer.ok) setRefreshed(answer.body);
@@ -228,7 +259,15 @@ export function DiscountCodes() {
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const codes = refreshed ?? loaded.value;
   const on = codes.codes.filter((code) => code.switched_off === null);
-  const findForm = <FindForm finding={finding} onFind={find} />;
+  const findForm = (
+    <FindForm
+      finding={finding}
+      onFind={(code) => {
+        setRefreshed(null);
+        setFinding(code);
+      }}
+    />
+  );
   const off = codes.codes.filter((code) => code.switched_off !== null);
   const opened = codes.codes.find((code) => code.id === open);
 
@@ -237,20 +276,7 @@ export function DiscountCodes() {
       titleId="discount-codes"
       title={copy.title}
       padded
-      actions={
-        mayMake && (
-          <DrawerButton primary label={copy.make}>
-            {(close) => (
-              <DiscountCodeForm
-                today={codes.today}
-                most={codes.batch_most}
-                onMade={() => void refresh()}
-                onClose={close}
-              />
-            )}
-          </DrawerButton>
-        )
-      }
+      actions={<MakeCodes codes={codes} onMade={() => void refresh()} />}
     >
       <Figures totals={codes.totals} />
       {said !== null && (
@@ -270,29 +296,18 @@ export function DiscountCodes() {
         </>
       )}
       {opened !== undefined && (
-        <FormDrawer
-          title={opened.code}
+        <OpenCode
+          code={opened}
+          today={codes.today}
           onClose={() => {
             setOpen(null);
           }}
-        >
-          <CodeRecord
-            code={opened}
-            reads={{
-              discount: discountOf(opened),
-              covers: coversOf(opened),
-              ends: endsOf(opened, codes.today),
-              uses: usesOf(opened),
-              lastUsed: dayOf(opened.last_used),
-              offOn: dayOf(opened.switched_off?.at ?? null),
-            }}
-            onDone={async (words) => {
-              setOpen(null);
-              setSaid(words);
-              await refresh();
-            }}
-          />
-        </FormDrawer>
+          onDone={async (words) => {
+            setOpen(null);
+            setSaid(words);
+            await refresh();
+          }}
+        />
       )}
     </Panel>
   );

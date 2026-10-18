@@ -69,7 +69,9 @@ function ItemRecord(props: Props & { readonly item: Item; readonly name: string;
         unit={supplier.currency}
         mayChange={mayChange}
         save={(typed) =>
-          AMOUNT.test(typed.trim()) ? save({ unit_price: paiseFromRupees(typed) }) : Promise.resolve(copy.errors.unit_price)
+          AMOUNT.test(typed.trim())
+            ? save({ unit_price: paiseFromRupees(typed) })
+            : Promise.resolve(copy.errors.unit_price)
         }
       />
       <FigureRow

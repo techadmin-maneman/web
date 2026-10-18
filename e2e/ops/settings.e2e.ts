@@ -137,7 +137,9 @@ test.describe("the rules", () => {
     await box.press("Enter");
     expect((await request).postDataJSON()).toEqual({ value: 150 });
     await expect(radius.getByRole("status")).toHaveText(EDITING.saved);
-    await expect(change(radius, cities.rules.names.checkin_radius_m)).toContainText("150 metres");
+    await expect(change(radius, cities.rules.names.checkin_radius_m)).toContainText(
+      `150 ${cities.rules.units.checkin_radius_m}`,
+    );
     await expect(change(radius, cities.rules.names.checkin_radius_m)).toBeFocused();
   });
 

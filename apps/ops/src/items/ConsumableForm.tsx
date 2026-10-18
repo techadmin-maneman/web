@@ -28,7 +28,7 @@ interface Draft {
 const BLANK: Draft = { name: "", unit: "", cost: "", kit: "", store: "", central: "", shelf: "" };
 
 /** A box of the form, by the field it fills and the name the API refuses it by. */
-function Box(props: {
+function ConsumableEntry(props: {
   readonly label: string;
   readonly box: string;
   readonly value: string;
@@ -83,22 +83,29 @@ export function AddConsumable(props: {
         unwhole !== undefined
           ? Promise.resolve({ ok: false as const, code: "invalid_request", fields: [unwhole[1]] })
           : itemsApi.addConsumable({
-          name: draft.name.trim(),
-          unit: draft.unit.trim(),
-          unit_cost: paiseFromRupees(draft.cost),
-          reorder_kit: figure(draft.kit),
-          reorder_store: figure(draft.store),
-          reorder_central: figure(draft.central),
-          shelf_life_days: figure(draft.shelf),
-        })
+              name: draft.name.trim(),
+              unit: draft.unit.trim(),
+              unit_cost: paiseFromRupees(draft.cost),
+              reorder_kit: figure(draft.kit),
+              reorder_store: figure(draft.store),
+              reorder_central: figure(draft.central),
+              shelf_life_days: figure(draft.shelf),
+            })
       }
       onAdded={props.onAdded}
       onCancel={props.onCancel}
     >
       <div className={form.fields}>
-        <Box label={formWords.name} box="name" width="area" maxLength={60} value={draft.name} onChange={edit("name")} />
-        <Box label={formWords.unit} box="unit" width="figure" maxLength={20} value={draft.unit} onChange={edit("unit")} />
-        <Box
+        <ConsumableEntry label={formWords.name} box="name" width="area" maxLength={60} value={draft.name} onChange={edit("name")} />
+        <ConsumableEntry
+          label={formWords.unit}
+          box="unit"
+          width="figure"
+          maxLength={20}
+          value={draft.unit}
+          onChange={edit("unit")}
+        />
+        <ConsumableEntry
           label={formWords.cost}
           box="unit_cost"
           width="amount"
@@ -110,7 +117,7 @@ export function AddConsumable(props: {
       </div>
       <div className={form.fields}>
         {LEVELS.map(([field, box]) => (
-          <Box
+          <ConsumableEntry
             key={field}
             label={formWords[field]}
             box={box}

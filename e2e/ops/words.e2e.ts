@@ -109,9 +109,7 @@ test("says why words are refused", async ({ page }) => {
   await expect(record.getByRole("alert")).toHaveText(copy.errors.first_line);
 });
 
-test("puts a line back to the code’s wording from its history, read in its box before it is kept", async ({
-  page,
-}) => {
+test("puts a line back to the code’s wording from its history, read in its box before it is kept", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "GET /api/words/history": json({

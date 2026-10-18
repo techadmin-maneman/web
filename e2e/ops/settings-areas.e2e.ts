@@ -13,7 +13,6 @@ import { BLACKOUTS, fails, json } from "./fixtures.ts";
 import { open, posted } from "./settings-fixtures.ts";
 import * as opsCopy from "../../apps/ops/src/content.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
-import { review } from "../../apps/ops/src/content/common.ts";
 import { pressTwice } from "./twice.ts";
 
 test.describe("the service area", () => {

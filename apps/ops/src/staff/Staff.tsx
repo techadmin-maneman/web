@@ -61,6 +61,48 @@ function Enforcement({ staff, onChanged }: PanelProps) {
   );
 }
 
+/** Each person by their sign-in email, the way their record opens, with their access and whether they are let in. */
+function PeopleTable({ staff, onOpen }: { staff: StaffList; onOpen: (email: string) => void }) {
+  return (
+    <Table>
+      <thead>
+        <tr>
+          <th scope="col">{copy.columns.person}</th>
+          <th scope="col">{copy.columns.access}</th>
+          <th scope="col">{copy.columns.state}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {staff.people.map((each) => (
+          <tr key={each.email}>
+            <th scope="row">
+              <TextButton
+                compact
+                aria-label={copy.open(each.email)}
+                onClick={() => {
+                  onOpen(each.email);
+                }}
+              >
+                {each.email}
+              </TextButton>
+            </th>
+            <td>
+              {each.grants.length === 0
+                ? copy.noAccess
+                : each.grants.map((grant) => (
+                    <span className={styles.grantLine} key={grantWords(grant)}>
+                      {grantWords(grant)}
+                    </span>
+                  ))}
+            </td>
+            <td>{each.active ? copy.active : copy.inactive}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
+
 function People({ staff, onChanged }: PanelProps) {
   /** The e-mail of the person open, or null. */
   const [open, setOpen] = useState<string | null>(null);
@@ -99,43 +141,13 @@ function People({ staff, onChanged }: PanelProps) {
         )
       }
     >
-      <Table>
-        <thead>
-          <tr>
-            <th scope="col">{copy.columns.person}</th>
-            <th scope="col">{copy.columns.access}</th>
-            <th scope="col">{copy.columns.state}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {staff.people.map((each) => (
-            <tr key={each.email}>
-              <th scope="row">
-                <TextButton
-                  compact
-                  aria-label={copy.open(each.email)}
-                  onClick={() => {
-                    setSaid(null);
-                    setOpen(each.email);
-                  }}
-                >
-                  {each.email}
-                </TextButton>
-              </th>
-              <td>
-                {each.grants.length === 0
-                  ? copy.noAccess
-                  : each.grants.map((grant) => (
-                      <span className={styles.grantLine} key={grantWords(grant)}>
-                        {grantWords(grant)}
-                      </span>
-                    ))}
-              </td>
-              <td>{each.active ? copy.active : copy.inactive}</td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      <PeopleTable
+        staff={staff}
+        onOpen={(email) => {
+          setSaid(null);
+          setOpen(email);
+        }}
+      />
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}

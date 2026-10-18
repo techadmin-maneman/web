@@ -46,8 +46,7 @@ async function open(page: Page, extra: Parameters<typeof answer>[1] = {}) {
 
 const NAME = "Looks Salon, Sector 29";
 
-const row = (page: Page) =>
-  page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open(NAME) }) });
+const row = (page: Page) => page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open(NAME) }) });
 
 async function recordOf(page: Page) {
   await page.getByRole("button", { name: copy.open(NAME) }).click();

@@ -36,6 +36,11 @@
   text-align: right;
 }
 
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
 /* The Care team: a member's leave as a short list, their days off as boxes in place, and adding leave. */
 .leave {
   display: flex;

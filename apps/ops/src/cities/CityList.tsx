@@ -23,14 +23,49 @@ const statusOf = (city: City): string => {
   return city.served ? copy.served : copy.notServed;
 };
 
+function CityTable({ cities, onOpen }: { cities: Cities; onOpen: (name: string) => void }) {
+  return (
+    <Table>
+      <thead>
+        <tr>
+          {copy.columns.map((column) => (
+            <th key={column} scope="col">
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {cities.cities.map((city) => (
+          <tr key={city.name}>
+            <RowHead>
+              <TextButton
+                compact
+                aria-label={copy.open(city.name)}
+                onClick={() => {
+                  onOpen(city.name);
+                }}
+              >
+                {city.name}
+              </TextButton>
+            </RowHead>
+            <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
+            <td>{city.zone ?? copy.noZone}</td>
+            <td>{statusOf(city)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
+
 export function CityList({ cities, reread }: { cities: Cities; reread: () => Promise<void> }) {
   const mayAdd = useAccess().mayCall("POST /api/cities");
   const [open, setOpen] = useState<string | null>(null);
   /** The name a city open had before it was renamed, until the list is read again under the new one. */
   const [was, setWas] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
-  const opened =
-    cities.cities.find((city) => city.name === open) ?? cities.cities.find((city) => city.name === was);
+  const opened = cities.cities.find((city) => city.name === open) ?? cities.cities.find((city) => city.name === was);
   return (
     <Panel
       titleId="cities"
@@ -54,39 +89,14 @@ export function CityList({ cities, reread }: { cities: Cities; reread: () => Pro
         )
       }
     >
-      <Table>
-        <thead>
-          <tr>
-            {copy.columns.map((column) => (
-              <th key={column} scope="col">
-                {column}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {cities.cities.map((city) => (
-            <tr key={city.name}>
-              <RowHead>
-                <TextButton
-                  compact
-                  aria-label={copy.open(city.name)}
-                  onClick={() => {
-                    setSaid(null);
-                    setWas(null);
-                    setOpen(city.name);
-                  }}
-                >
-                  {city.name}
-                </TextButton>
-              </RowHead>
-              <td>{city.state === null ? "" : `${city.state} (${city.state_code ?? ""})`}</td>
-              <td>{city.zone ?? copy.noZone}</td>
-              <td>{statusOf(city)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      <CityTable
+        cities={cities}
+        onOpen={(name) => {
+          setSaid(null);
+          setWas(null);
+          setOpen(name);
+        }}
+      />
       {said !== null && (
         <InlineMessage tone="saved" className={form.saved}>
           {said}

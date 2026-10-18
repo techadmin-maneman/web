@@ -101,6 +101,9 @@ function Words() {
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const opened = rows.find((word) => word.key === open);
+  const keep = (word: Word) => {
+    setChanged(new Map([...changed, [word.key, word]]));
+  };
   const mayPublish = access.mayCall("POST /api/words/publish");
   return (
     <Panel
@@ -158,13 +161,7 @@ function Words() {
             setOpen(null);
           }}
         >
-          <WordRecord
-            word={opened}
-            messages={loaded.value.messages}
-            onSaved={(word) => {
-              setChanged(new Map([...changed, [word.key, word]]));
-            }}
-          />
+          <WordRecord word={opened} messages={loaded.value.messages} onSaved={keep} />
         </FormDrawer>
       )}
     </Panel>

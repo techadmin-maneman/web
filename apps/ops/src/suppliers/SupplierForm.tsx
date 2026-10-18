@@ -50,7 +50,10 @@ const BOXES: readonly (readonly [keyof Draft, string, BoxWidth, number])[] = [
   ["warranty", "warranty_days", "figure", 4],
 ];
 
-export function AddSupplier(props: { readonly onAdded: (suppliers: Suppliers) => void; readonly onCancel: () => void }) {
+export function AddSupplier(props: {
+  readonly onAdded: (suppliers: Suppliers) => void;
+  readonly onCancel: () => void;
+}) {
   const [draft, setDraft] = useState<Draft>(BLANK);
   return (
     <AddForm

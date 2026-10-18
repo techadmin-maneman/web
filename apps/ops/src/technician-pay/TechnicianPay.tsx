@@ -28,7 +28,15 @@ const copy = technicianPay.technicians;
 type PayTechnician = Pay["technicians"][number];
 
 /** A technician's grade, changed where it reads; with no grade, their visits are not paid. */
-function GradeOf({ pay, technician, onChanged }: { pay: Pay; technician: PayTechnician; onChanged: (pay: Pay) => void }) {
+function GradeOf({
+  pay,
+  technician,
+  onChanged,
+}: {
+  pay: Pay;
+  technician: PayTechnician;
+  onChanged: (pay: Pay) => void;
+}) {
   return (
     <div className={form.record}>
       <ChoiceRow

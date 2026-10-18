@@ -1,8 +1,7 @@
-// One list of the job sheet as ops edit it: a checklist or a list of reasons (ADR 0087). Each item's words change
-// where they read, and it is moved, taken off or put back by its own buttons, each change saved at once
-// (docs/decisions/0212-editing-in-place.md). Every item keeps its code, so a phone holding the old list still sends
-// what the API understands. A checklist's item also has the words the client's record shows, empty for a step only the
-// technician needs.
+// One list of the job sheet (ADR 0087): its items' words change where they read, and its own buttons move, take off or
+// put back an item, each change saved at once (ADR 0212). Every item keeps its code, so a phone holding the old list
+// still sends what the API understands. A checklist's item also has the words the client's record shows, empty for a
+// step only the technician needs.
 
 import { Button } from "@maneman/ui/Button";
 import { EditableRow } from "@maneman/ui/EditableRow";
@@ -147,7 +146,11 @@ function ItemRow(props: {
 }
 
 /** A new item, at the list's foot. */
-function AddItem(props: { readonly editor: Props; readonly add: (words: Words) => ReturnType<Props["send"]>; readonly onDone: () => void }) {
+function AddItem(props: {
+  readonly editor: Props;
+  readonly add: (words: Words) => ReturnType<Props["send"]>;
+  readonly onDone: () => void;
+}) {
   const { editor } = props;
   const [words, setWords] = useState<Words>({ label: "", client: "" });
   return (
@@ -195,26 +198,83 @@ function AddItem(props: { readonly editor: Props; readonly add: (words: Words) =
   );
 }
 
-export function ListEditor(props: Props) {
-  const { title, list, most, longest } = props;
-  const withClient = props.clientLabel !== undefined;
-  const [adding, setAdding] = useState(false);
+/** An item's own buttons: up, down, and off the list. */
+function Moves(props: {
+  name: string;
+  first: boolean;
+  last: boolean;
+  busy: boolean;
+  onUp: () => void;
+  onDown: () => void;
+  onRemove: () => void;
+}) {
+  const buttons = [
+    [copy.up(props.name), copy.upButton, props.first, props.onUp],
+    [copy.down(props.name), copy.downButton, props.last, props.onDown],
+    [copy.remove(props.name), copy.removeButton, false, props.onRemove],
+  ] as const;
+  return (
+    <span className={styles.moves}>
+      {buttons.map(([label, words, shut, onPress]) => (
+        <Button
+          key={words}
+          variant="quiet"
+          size="small"
+          narrow
+          aria-label={label}
+          disabled={shut || props.busy}
+          onClick={onPress}
+        >
+          {words}
+        </Button>
+      ))}
+    </span>
+  );
+}
+
+/** What is off the list, each able to go back on while there is room. */
+function Removed(props: { off: readonly ListItem[]; shut: boolean; onPutBack: (item: ListItem) => void }) {
+  return (
+    <div className={styles.retired}>
+      <p className={styles.retiredTitle}>{copy.retired}</p>
+      <ul className={styles.retiredList}>
+        {props.off.map((item) => (
+          <li className={styles.retiredItem} key={item.code}>
+            <span>{item.label}</span>
+            <Button
+              variant="outline"
+              size="small"
+              aria-label={copy.putBack(item.label)}
+              disabled={props.shut}
+              onClick={() => {
+                props.onPutBack(item);
+              }}
+            >
+              {copy.putBackButton}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** The list's writes: each sends it whole; a move, a removal or a putting back says what it came to beneath it. */
+function useListSaves(props: Props) {
   const [said, setSaid] = useState<string | null>(null);
   const [refused, setRefused] = useState<string | null>(null);
   const [busy, once] = useOneAtATime();
   const errors = {
     ...copy.errors,
-    items: copy.limits.items(most),
-    label: copy.limits.label(longest),
-    client: copy.limits.client(longest),
+    items: copy.limits.items(props.most),
+    label: copy.limits.label(props.longest),
+    client: copy.limits.client(props.longest),
   };
-  const lines: readonly Line[] = list.items;
   const send = async (next: readonly Line[]) => {
-    const answer = await props.send(itemsSent(next, withClient));
+    const answer = await props.send(itemsSent(next, props.clientLabel !== undefined));
     if (answer.ok) props.onSaved(answer.body);
     return answer;
   };
-  /** A move, a removal or a putting back: sent at once, said beneath the list. */
   const press = (next: readonly Line[]) =>
     once(async () => {
       setSaid(null);
@@ -223,13 +283,53 @@ export function ListEditor(props: Props) {
       if (answer.ok) setSaid(copy.saved);
       else setRefused(errorText(errors, answer));
     });
-  const moved = (from: number, to: number) => {
-    const next = [...lines];
-    const [line] = next.splice(from, 1);
-    if (line !== undefined) next.splice(to, 0, line);
-    return next;
-  };
-  // What is off the list: retired, each able to go back on while there is room.
+  return { said, refused, busy, errors, send, press };
+}
+
+/** Another item: its button, then its boxes in place, while the list has room. */
+function MoreItems(props: { editor: Props; add: (words: Words) => ReturnType<Props["send"]> }) {
+  const [adding, setAdding] = useState(false);
+  if (adding) {
+    return (
+      <AddItem
+        editor={props.editor}
+        add={props.add}
+        onDone={() => {
+          setAdding(false);
+        }}
+      />
+    );
+  }
+  return (
+    <div className={styles.add}>
+      <Button
+        variant="outline"
+        size="small"
+        narrow
+        disabled={props.editor.list.items.length >= props.editor.most}
+        onClick={() => {
+          setAdding(true);
+        }}
+      >
+        {props.editor.addLabel}
+      </Button>
+    </div>
+  );
+}
+
+/** The list with one line moved from one place to another. */
+function moved(lines: readonly Line[], from: number, to: number): Line[] {
+  const next = [...lines];
+  const [line] = next.splice(from, 1);
+  if (line !== undefined) next.splice(to, 0, line);
+  return next;
+}
+
+export function ListEditor(props: Props) {
+  const { title, list, most } = props;
+  const withClient = props.clientLabel !== undefined;
+  const { said, refused, busy, errors, send, press } = useListSaves(props);
+  const lines: readonly Line[] = list.items;
   const off = list.retired;
   return (
     <section className={form.group} aria-labelledby={`${props.id}-title`}>
@@ -249,43 +349,22 @@ export function ListEditor(props: Props) {
                 editor={props}
                 save={async (words) => {
                   const answer = await send(
-                    lines.map((line, at) => (at === index ? { ...line, label: words.label, client: words.client } : line)),
+                    lines.map((line, at) =>
+                      at === index ? { ...line, label: words.label, client: words.client } : line,
+                    ),
                   );
                   return answer.ok ? null : errorText(errors, answer);
                 }}
               />
-              <span className={styles.moves}>
-                <Button
-                  variant="quiet"
-                  size="small"
-                  narrow
-                  aria-label={copy.up(name)}
-                  disabled={index === 0 || busy}
-                  onClick={() => void press(moved(index, index - 1))}
-                >
-                  {copy.upButton}
-                </Button>
-                <Button
-                  variant="quiet"
-                  size="small"
-                  narrow
-                  aria-label={copy.down(name)}
-                  disabled={index === lines.length - 1 || busy}
-                  onClick={() => void press(moved(index, index + 1))}
-                >
-                  {copy.downButton}
-                </Button>
-                <Button
-                  variant="quiet"
-                  size="small"
-                  narrow
-                  aria-label={copy.remove(name)}
-                  disabled={busy}
-                  onClick={() => void press(lines.filter((_, at) => at !== index))}
-                >
-                  {copy.removeButton}
-                </Button>
-              </span>
+              <Moves
+                name={name}
+                first={index === 0}
+                last={index === lines.length - 1}
+                busy={busy}
+                onUp={() => void press(moved(lines, index, index - 1))}
+                onDown={() => void press(moved(lines, index, index + 1))}
+                onRemove={() => void press(lines.filter((_, at) => at !== index))}
+              />
             </li>
           );
         })}
@@ -296,49 +375,12 @@ export function ListEditor(props: Props) {
         </InlineMessage>
       )}
       {refused !== null && <Refusal className={form.error} said={refused} />}
-      {adding ? (
-        <AddItem
-          editor={props}
-          add={(words) => send([...lines, { code: null, label: words.label, client: words.client }])}
-          onDone={() => {
-            setAdding(false);
-          }}
-        />
-      ) : (
-        <div className={styles.add}>
-          <Button
-            variant="outline"
-            size="small"
-            narrow
-            disabled={lines.length >= most}
-            onClick={() => {
-              setAdding(true);
-            }}
-          >
-            {props.addLabel}
-          </Button>
-        </div>
-      )}
+      <MoreItems
+        editor={props}
+        add={(words) => send([...lines, { code: null, label: words.label, client: words.client }])}
+      />
       {off.length > 0 && (
-        <div className={styles.retired}>
-          <p className={styles.retiredTitle}>{copy.retired}</p>
-          <ul className={styles.retiredList}>
-            {off.map((item) => (
-              <li className={styles.retiredItem} key={item.code}>
-                <span>{item.label}</span>
-                <Button
-                  variant="outline"
-                  size="small"
-                  aria-label={copy.putBack(item.label)}
-                  disabled={lines.length >= most || busy}
-                  onClick={() => void press([...lines, item])}
-                >
-                  {copy.putBackButton}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Removed off={off} shut={lines.length >= most || busy} onPutBack={(item) => void press([...lines, item])} />
       )}
     </section>
   );

@@ -454,6 +454,8 @@ export const settings = {
       description: "Keep it to one line.",
       minutes: "Between 30 minutes and the length of a day.",
       service_exists: "That name is already in use.",
+      last_of_kind: "Clients would have nothing of this kind to book. Keep it offered.",
+      in_use: "It belongs to a package. Change it in Packages.",
       not_found: changed("No longer exists."),
       offline: OFFLINE,
       unconfirmed: UNCONFIRMED,

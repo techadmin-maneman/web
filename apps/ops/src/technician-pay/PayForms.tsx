@@ -73,7 +73,8 @@ function RateRow(props: {
   const { pay, grade, kind, city } = props;
   const cell = { grade: grade.id, kind, city };
   const own = pay.rates.find(
-    (rate) => rate.grade_id === grade.id && rate.kind === kind && rate.city === city && rate.effective_from <= pay.today,
+    (rate) =>
+      rate.grade_id === grade.id && rate.kind === kind && rate.city === city && rate.effective_from <= pay.today,
   );
   return (
     <EditableRow<RateDraft>
@@ -81,7 +82,10 @@ function RateRow(props: {
       words={EDITING}
       mayChange={useAccess().mayCall("POST /api/technician-pay/rates")}
       value={[rateNow(pay, cell), ...ratesLater(pay, cell)].join(" · ")}
-      start={() => ({ amount: own?.amount === undefined || own.amount === null ? "" : String(own.amount / 100), from: pay.today })}
+      start={() => ({
+        amount: own?.amount === undefined || own.amount === null ? "" : String(own.amount / 100),
+        from: pay.today,
+      })}
       save={async (draft) => {
         const typed = draft.amount.trim();
         const amount = typed === "" ? null : paiseFromRupees(typed);

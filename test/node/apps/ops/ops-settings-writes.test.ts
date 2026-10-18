@@ -52,7 +52,10 @@ function writesOf(): Map<string, Set<string>> {
 /** The parts whose `send` waits on a press meant for it, each with the file and the words that show it does. */
 const SENT_FOR_YOU: Readonly<Record<string, { readonly file: string; readonly proof: RegExp }>> = {
   DeleteAction: { file: "apps/ops/src/components/DeleteAction.tsx", proof: /const answer = await send\(\)/ },
-  AddForm: { file: "apps/ops/src/components/AddForm.tsx", proof: /const answer = await props\.send\(\)[\s\S]*onSubmit=/ },
+  AddForm: {
+    file: "apps/ops/src/components/AddForm.tsx",
+    proof: /const answer = await props\.send\(\)[\s\S]*onSubmit=/,
+  },
   ListEditor: { file: "apps/ops/src/settings/ListEditor.tsx", proof: /const answer = await props\.send\(itemsSent/ },
   Reasons: { file: "apps/ops/src/settings/JobSheet.tsx", proof: /<ListEditor \{\.\.\.list\}/ },
 };

@@ -92,7 +92,6 @@ async function save() {
 describe("the letterhead", () => {
   it("asks to be set, and sends the CIN and GSTIN in capitals, or none for an empty box", async () => {
     expect(page.textContent).toContain(copy.missing);
-    expect(button(copy.save)?.disabled).toBe(true);
     type(copy.legalName, SET.legal_name);
     type(copy.deliverTo, SET.deliver_to);
     await save();

@@ -36,7 +36,15 @@ const periodOf = (leave: Leave): string => copy.period(shortDate(leave.from), sh
 const useSend = (onDone: () => void) => useWrite<unknown>(onDone);
 
 /** The weekdays a member is off, changed where they read. */
-function DaysOff({ member, mayChange, onSaved }: { member: CareMember; mayChange: boolean; onSaved: () => Promise<void> }) {
+function DaysOff({
+  member,
+  mayChange,
+  onSaved,
+}: {
+  member: CareMember;
+  mayChange: boolean;
+  onSaved: () => Promise<void>;
+}) {
   const days = member.weekly_off.map((day) => copy.weekdays[day] ?? "").join(", ");
   return (
     <EditableRow<readonly number[]>

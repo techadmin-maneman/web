@@ -53,7 +53,14 @@ export function TextRow(
 }
 
 /** Words of a few lines, as an address prints: its line breaks kept as it reads. */
-export function LinesRow(props: RowProps & { readonly value: string; readonly shown?: ReactNode; readonly maxLength: number; readonly lines: number }) {
+export function LinesRow(
+  props: RowProps & {
+    readonly value: string;
+    readonly shown?: ReactNode;
+    readonly maxLength: number;
+    readonly lines: number;
+  },
+) {
   return (
     <EditableRow<string>
       id={props.id}

@@ -131,13 +131,18 @@ function SetLetterhead({ onSaved }: { onSaved: (next: Orders, said: string) => v
 /** The letterhead as set: each line changed where it reads. */
 function LetterheadRows({ letter, onSaved }: { letter: Letter; onSaved: (next: Orders, said: string) => void }) {
   const mayChange = useAccess().mayCall("POST /api/purchase-orders/letterhead");
-  const save = (field: keyof Draft, capitals = false) => async (typed: string) => {
-    const text = capitals ? typed.toUpperCase() : typed;
-    const answer = await purchasingApi.setLetterhead({ ...letter, [field]: field === "legal_name" || field === "deliver_to" ? text : given(text) });
-    if (!answer.ok) return errorText(copy.errors, answer);
-    onSaved(answer.body, copy.saved);
-    return null;
-  };
+  const save =
+    (field: keyof Draft, capitals = false) =>
+    async (typed: string) => {
+      const text = capitals ? typed.toUpperCase() : typed;
+      const answer = await purchasingApi.setLetterhead({
+        ...letter,
+        [field]: field === "legal_name" || field === "deliver_to" ? text : given(text),
+      });
+      if (!answer.ok) return errorText(copy.errors, answer);
+      onSaved(answer.body, copy.saved);
+      return null;
+    };
   return (
     <div className={form.record}>
       {ENTRIES.map(({ field, label, maxLength, lines, capitals }) =>

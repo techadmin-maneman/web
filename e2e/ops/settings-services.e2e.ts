@@ -23,7 +23,8 @@ test.describe("the consultation and the late fees", () => {
   test("lists the consultation's name, length and price, and each late fee, and no other kind", async ({ page }) => {
     await open(page, "/settings/services");
     const consultation = panel(page, settingsCopy.services.consultation);
-    await expect(change(consultation, settingsCopy.services.rows.name)).toContainText("Consultation");
+    const named = SERVICES.services.find((service) => service.kind === "consultation")?.name ?? "";
+    await expect(change(consultation, settingsCopy.services.rows.name)).toContainText(named);
     await expect(change(consultation, settingsCopy.services.rows.length)).toContainText("60 min");
     await expect(change(consultation, settingsCopy.services.rows.price)).toContainText("Rs. 0");
     const fees = panel(page, settingsCopy.services.lateFees);

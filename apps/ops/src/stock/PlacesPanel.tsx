@@ -1,8 +1,7 @@
-// Stock · Places (docs/decisions/0155-the-stock-place-tree.md): where stock is kept, as a tree under the warehouse,
-// for national managers. A hub is added for a zone and a stockroom for a city. A place's row opens its record beside
-// the tree, where its name and the place above it change where they read (docs/decisions/0212-editing-in-place.md),
-// and it is closed once it is empty and nothing open is under it. A technician's kit comes with them, and is only
-// moved.
+// Stock · Places (docs/decisions/0155-the-stock-place-tree.md): where stock is kept, a tree under the warehouse, for
+// national managers. A hub is added for a zone and a stockroom for a city. A place's row opens its record, where its
+// name and the place above change where they read (ADR 0212), and it is closed once it is empty and nothing open is
+// under it. A technician's kit comes with them, and is only moved.
 
 import { Button } from "@maneman/ui/Button";
 import { Field, Select, TextInput } from "@maneman/ui/Field";
@@ -82,7 +81,15 @@ function PlaceChoice(props: {
   );
 }
 
-function AddPlace({ stock, onAdded, onCancel }: { stock: Stock; onAdded: (stock: Stock) => void; onCancel: () => void }) {
+function AddPlace({
+  stock,
+  onAdded,
+  onCancel,
+}: {
+  stock: Stock;
+  onAdded: (stock: Stock) => void;
+  onCancel: () => void;
+}) {
   const [kind, setKind] = useState<"hub" | "stockroom">("stockroom");
   const [name, setName] = useState("");
   const [under, setUnder] = useState("");

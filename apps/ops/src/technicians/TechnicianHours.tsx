@@ -88,7 +88,9 @@ function WeekBoxes({ week, onWeek }: { week: Week; onWeek: (week: Week) => void 
   const toggle = (weekday: number) => {
     onWeek({
       ...week,
-      worked: week.worked.includes(weekday) ? week.worked.filter((each) => each !== weekday) : [...week.worked, weekday],
+      worked: week.worked.includes(weekday)
+        ? week.worked.filter((each) => each !== weekday)
+        : [...week.worked, weekday],
     });
   };
   return (
@@ -115,8 +117,20 @@ function WeekBoxes({ week, onWeek }: { week: Week; onWeek: (week: Week) => void 
             ))}
           </span>
           <span className={form.fields}>
-            <TimeField label={copy.starts} value={week.starts} onChange={(starts) => { onWeek({ ...week, starts }); }} />
-            <TimeField label={copy.ends} value={week.ends} onChange={(ends) => { onWeek({ ...week, ends }); }} />
+            <TimeField
+              label={copy.starts}
+              value={week.starts}
+              onChange={(starts) => {
+                onWeek({ ...week, starts });
+              }}
+            />
+            <TimeField
+              label={copy.ends}
+              value={week.ends}
+              onChange={(ends) => {
+                onWeek({ ...week, ends });
+              }}
+            />
           </span>
         </>
       )}
