@@ -3,9 +3,9 @@
 // wa.me's, which open the app on a phone and WhatsApp Web at a desk.
 
 /** The business's WhatsApp number: digits with the country code, no "+". */
-export const WHATSAPP_NUMBER = "919007973247";
+export const WHATSAPP_NUMBER = "919034572990";
 
-/** The business's number as it is written for people: "+91 90079 73247". */
+/** The business's number as it is written for people: "+91 90345 72990". */
 export const WHATSAPP_DISPLAY = `+${WHATSAPP_NUMBER.slice(0, 2)} ${WHATSAPP_NUMBER.slice(2, 7)} ${WHATSAPP_NUMBER.slice(7)}`;
 
 /** A chat with `number`, written any way ("+91 98100 04417"), with `text` ready to send if there is any. */

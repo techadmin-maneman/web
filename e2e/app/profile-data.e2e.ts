@@ -8,7 +8,7 @@ test("offers support on WhatsApp, with the design’s line", async ({ page }) =>
   await loggedIn(page);
   await expect(page.getByRole("link", { name: appCopy.profile.support.message })).toHaveAttribute(
     "href",
-    "https://wa.me/919007973247",
+    "https://wa.me/919034572990",
   );
   await expect(page.getByText("We reply within an hour, 9 am–9 pm daily.")).toBeVisible();
 });

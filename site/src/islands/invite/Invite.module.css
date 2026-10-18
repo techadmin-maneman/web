@@ -55,6 +55,10 @@
   margin: 0;
 }
 
+.offer p + p {
+  margin-top: var(--sp-12);
+}
+
 .unknownTitle,
 .unknownBody {
   display: block;
@@ -111,6 +115,14 @@
   font-size: var(--fs-16);
   font-weight: var(--weight-regular);
   line-height: var(--lh-130);
+}
+
+/* The step's length and promise, above what happens in it. */
+.stepLead {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-15);
+  line-height: var(--lh-160);
+  color: var(--text);
 }
 
 .stepBody {

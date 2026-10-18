@@ -60,8 +60,16 @@
     "surface": "site",
     "group": "Home",
     "where": "header",
-    "text": "Book a consultation",
-    "reviewed": true
+    "text": "Book a free consultation",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/header.bookShort",
+    "surface": "site",
+    "group": "Home",
+    "where": "header",
+    "text": "Free consultation",
+    "reviewed": false
   },
   {
     "key": "site:home/stickyBar.label",
@@ -84,8 +92,8 @@
     "surface": "site",
     "group": "Home",
     "where": "stickyBar",
-    "text": "Book a consultation",
-    "reviewed": true
+    "text": "Book a free consultation",
+    "reviewed": false
   },
   {
     "key": "site:home/footer.columns.service.title",
@@ -132,8 +140,8 @@
     "surface": "site",
     "group": "Home",
     "where": "footer",
-    "text": "Book a consultation",
-    "reviewed": true
+    "text": "Book a free consultation",
+    "reviewed": false
   },
   {
     "key": "site:home/footer.columns.reach.title",
@@ -236,8 +244,16 @@
     "surface": "site",
     "group": "Home",
     "where": "hero",
+    "text": "Get your confident self back.",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/hero.sequence.4",
+    "surface": "site",
+    "group": "Home",
+    "where": "hero",
     "text": "Be the Main Man again.",
-    "reviewed": true
+    "reviewed": false
   },
   {
     "key": "site:home/hero.title",
@@ -276,16 +292,48 @@
     "surface": "site",
     "group": "Home",
     "where": "hero",
-    "text": "Pause the film",
-    "reviewed": true
+    "text": "Pause",
+    "reviewed": false
   },
   {
     "key": "site:home/hero.play",
     "surface": "site",
     "group": "Home",
     "where": "hero",
-    "text": "Play the film",
-    "reviewed": true
+    "text": "Play",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.title",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "10,000+ transformations by our specialists. Quietly.",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.label",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "Before and after",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.before",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "Before",
+    "reviewed": false
+  },
+  {
+    "key": "site:home/results.after",
+    "surface": "site",
+    "group": "Home",
+    "where": "results",
+    "text": "After",
+    "reviewed": false
   },
   {
     "key": "site:home/whatItIs.title",
@@ -328,252 +376,140 @@
     "reviewed": true
   },
   {
-    "key": "site:home/norwood.early.label",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "Stages one and two · nothing to fit yet",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.early.note",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "A hair system here would cover hair you still have.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.early.stages.0.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "No recession",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.early.stages.0.tag",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "No loss",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.early.stages.0.description",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "The hairline sits where it always has.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.early.stages.0.bald",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "M0 0 Z",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.early.stages.1.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "Temple recession",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.early.stages.1.tag",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "Early",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.early.stages.1.description",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "The corners have moved back a little. Most men reach this and go no further.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.early.stages.1.bald",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "M96 0 L96 26 C90 20 80 15 68 13 L63 0 Z",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.late.label",
+    "key": "site:home/norwood.label",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "Stages three to seven · we can fit all of these",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.0.name",
+    "key": "site:home/norwood.stages.0.name",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "A clear M",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.0.tag",
+    "key": "site:home/norwood.stages.0.tag",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "We fit",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.0.description",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "Deep recession at both temples. The first stage other people notice.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.late.stages.0.bald",
+    "key": "site:home/norwood.stages.0.bald",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "M96 0 L96 30 C88 21 76 15 60 13 L53 0 Z",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.1.name",
+    "key": "site:home/norwood.stages.1.name",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "Front and crown",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.1.tag",
+    "key": "site:home/norwood.stages.1.tag",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "We fit",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.1.description",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "The front has gone back further and the crown has opened separately.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.late.stages.1.bald",
+    "key": "site:home/norwood.stages.1.bald",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "M96 0 L96 32 C87 21 73 15 55 13 L47 0 Z M45 27 C51 27 54 23 54 18 C54 13 50 10 45 10 C40 10 36 13 36 18 C36 23 39 27 45 27 Z",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.2.name",
+    "key": "site:home/norwood.stages.2.name",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "The bridge narrows",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.2.tag",
+    "key": "site:home/norwood.stages.2.tag",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "We fit",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.2.description",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "Front and crown are both bare, divided by a thinning band of hair.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.late.stages.2.bald",
+    "key": "site:home/norwood.stages.2.bald",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "M96 0 L96 35 C85 22 69 15 49 14 L40 0 Z M42 31 C50 31 56 25 56 19 C56 12 50 8 42 8 C34 8 28 12 28 19 C28 25 34 31 42 31 Z",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.3.name",
+    "key": "site:home/norwood.stages.3.name",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "The bridge is gone",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.3.tag",
+    "key": "site:home/norwood.stages.3.tag",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "We fit",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.3.description",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "Front and crown have joined into one continuous bare area.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.late.stages.3.bald",
+    "key": "site:home/norwood.stages.3.bald",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "M0 0 L96 0 L96 37 C80 20 46 12 26 27 C16 35 10 47 8 61 L0 61 Z",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.4.name",
+    "key": "site:home/norwood.stages.4.name",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "A rim only",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.4.tag",
+    "key": "site:home/norwood.stages.4.tag",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "We fit",
-    "reviewed": true
+    "reviewed": false
   },
   {
-    "key": "site:home/norwood.late.stages.4.description",
-    "surface": "site",
-    "group": "Home",
-    "where": "norwood",
-    "text": "Hair remains as a band around the sides and back of the head.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/norwood.late.stages.4.bald",
+    "key": "site:home/norwood.stages.4.bald",
     "surface": "site",
     "group": "Home",
     "where": "norwood",
     "text": "M0 0 L96 0 L96 45 C80 27 44 18 22 35 C12 45 6 59 5 74 L0 74 Z",
-    "reviewed": true
+    "reviewed": false
+  },
+  {
+    "key": "site:home/norwood.restored",
+    "surface": "site",
+    "group": "Home",
+    "where": "norwood",
+    "text": "From these to this in 3 hours.",
+    "reviewed": false
   },
   {
     "key": "site:home/norwood.book",
@@ -652,16 +588,16 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "A large one-off cost, often repeated",
-    "reviewed": true
+    "text": "Rs. 1.2–3 lakh, very often repeated",
+    "reviewed": false
   },
   {
     "key": "site:home/comparison.rows.0.cells.1",
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Every month, for life",
-    "reviewed": true
+    "text": "Rs. 20,000–50,000 a year, for life",
+    "reviewed": false
   },
   {
     "key": "site:home/comparison.rows.0.cells.2",
@@ -692,8 +628,8 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "4–6 months",
-    "reviewed": true
+    "text": "6–9 months",
+    "reviewed": false
   },
   {
     "key": "site:home/comparison.rows.1.cells.2",
@@ -740,8 +676,8 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Possible side effects",
-    "reviewed": true
+    "text": "Long-term side effects",
+    "reviewed": false
   },
   {
     "key": "site:home/comparison.rows.4.cells.2",
@@ -772,8 +708,8 @@
     "surface": "site",
     "group": "Home",
     "where": "comparison",
-    "text": "Loss carries on; often a second transplant in a few years",
-    "reviewed": true
+    "text": "Loss carries on; repeats are common",
+    "reviewed": false
   },
   {
     "key": "site:home/comparison.rows.6.cells.1",
@@ -804,16 +740,16 @@
     "surface": "site",
     "group": "Home",
     "where": "tryOnTeaser",
-    "text": "See yourself with hair before anyone comes to your home.",
-    "reviewed": true
+    "text": "See yourself with hair.",
+    "reviewed": false
   },
   {
     "key": "site:home/tryOnTeaser.body",
     "surface": "site",
     "group": "Home",
     "where": "tryOnTeaser",
-    "text": "One photo, one look from six, sent privately to your WhatsApp. An illustration, not a photo of a result. Your photo is deleted within the hour; a small copy stays with your look for up to 14 days.",
-    "reviewed": true
+    "text": "One photo, one look from six, sent privately to your WhatsApp.",
+    "reviewed": false
   },
   {
     "key": "site:home/tryOnTeaser.start",
@@ -884,16 +820,16 @@
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "Your scalp measured, your colour matched in daylight, and your hair system chosen with you.",
-    "reviewed": true
+    "text": "Your scalp measured, your colour matched in daylight, and your hair system chosen with you. Then see how one looks on you, for real.",
+    "reviewed": false
   },
   {
     "key": "site:home/howItWorks.steps.0.meta",
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "1 hour · free",
-    "reviewed": true
+    "text": "60 minutes · free",
+    "reviewed": false
   },
   {
     "key": "site:home/howItWorks.steps.1.title",
@@ -908,8 +844,8 @@
     "surface": "site",
     "group": "Home",
     "where": "howItWorks",
-    "text": "The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Your new look, on the spot.",
-    "reviewed": true
+    "text": "The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Confidence, delivered.",
+    "reviewed": false
   },
   {
     "key": "site:home/howItWorks.steps.1.meta",
@@ -1004,8 +940,8 @@
     "surface": "site",
     "group": "Home",
     "where": "range",
-    "text": "A French lace top, the most breathable base there is, and a bleached lace hairline. For the gym, the field and a Delhi summer.",
-    "reviewed": true
+    "text": "A French lace top, the most breathable base there is, and a bleached lace hairline. For the gym, the field and an Indian summer.",
+    "reviewed": false
   },
   {
     "key": "site:home/range.products.2.name",
@@ -1036,16 +972,16 @@
     "surface": "site",
     "group": "Home",
     "where": "range",
-    "text": "Mane Man NatMax",
-    "reviewed": true
+    "text": "Mane Man Celebrity",
+    "reviewed": false
   },
   {
     "key": "site:home/range.products.3.tagline",
     "surface": "site",
     "group": "Home",
     "where": "range",
-    "text": "Natural, even at the parting.",
-    "reviewed": true
+    "text": "Flawless, even at the parting.",
+    "reviewed": false
   },
   {
     "key": "site:home/range.products.3.body",
@@ -1053,766 +989,6 @@
     "group": "Home",
     "where": "range",
     "text": "A silk top over lace hides every knot, so a parting shows scalp, not mesh.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.title",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Materials and construction",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.intro",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "What each hair system is made of, and what that means for how it looks, breathes and lasts.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.title",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "The base: lace, mono, skin and silk",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.lead",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "The base decides everything: how natural it looks, how cool it feels, how long it lasts. The thinner the base, the better it looks and the sooner it wears.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.rated.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Natural look",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.rated.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Breathes",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.rated.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Strength",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.photos.images.0.alt",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Macro of a monofilament mesh base with hairs hand-tied into it as visible knots",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.photos.images.1.alt",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Macro of a thin polyurethane base held between finger and thumb, hair passing through it",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.0.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Lace",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.0.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "The finest, softest mesh. Its knots can be bleached until they vanish, which is why every hairline we fit is lace.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.0.ratings.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Best",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.0.ratings.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Most",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.0.ratings.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Delicate",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.1.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Mono",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.1.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Monofilament: a fine, tough mesh. It breathes, takes the most hair, and outlasts every other base.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.1.ratings.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Good",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.1.ratings.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Well",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.1.ratings.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Strongest",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.2.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Skin",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.2.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "A clear polyurethane film, 0.08 to 0.10 mm thin. No mesh to see, so the hair seems to grow straight from the scalp.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.2.ratings.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Very good",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.2.ratings.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Little",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.2.ratings.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Moderate",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.3.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Silk, multi-layer",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.3.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Hair knotted onto a lace layer and drawn up through silk, so every knot sits hidden between the two. A parting shows scalp.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.3.ratings.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Best at the parting",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.3.ratings.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Least",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.0.items.3.ratings.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Protected",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.title",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "How the hair is tied in: knots and loops",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.lead",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Every hair is tied or looped into the base by hand. How it is tied decides how natural the root looks and how well it holds.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.rated.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Natural look",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.rated.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Shedding",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.rated.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Durability",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.0.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Single knot",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.0.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "One small knot for each hair. Fine and flat, on lace and skin.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.0.ratings.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "High",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.0.ratings.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Low to medium",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.0.ratings.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Medium",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.1.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Double knot",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.1.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Each hair knotted twice, for the sides and back of a mono base.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.1.ratings.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Medium",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.1.ratings.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Low",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.1.ratings.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "High",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.2.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Bleached knot",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.2.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Knots lightened until they disappear. Only lace takes it, so it is kept for the hairline.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.2.ratings.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Highest at the hairline",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.2.ratings.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Higher",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.2.ratings.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Low",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.3.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "V-looped",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.3.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "No knot at all: each hair is looped through the skin, so it seems to grow from it.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.3.ratings.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Very high",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.3.ratings.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Very low",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.3.ratings.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Low",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.4.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Injected",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.4.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Hair set into the skin so that it stands up from the root. Made for a parting or a brushed-back style.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.4.ratings.0",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Very high",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.4.ratings.1",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Very low",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.1.items.4.ratings.2",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "High",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.2.title",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "The rim and the hairline",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.2.lead",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "The edges are where a hair system is held, and where it is seen.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.2.items.0.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Clear PU rim",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.2.items.0.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "A thin, transparent polyurethane edge. The tape grips it, never the mesh, and it disappears at the temples.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.2.items.1.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "NPU rim",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.2.items.1.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Polyurethane reinforced with mesh: stronger and slightly thicker, so it is kept to the sides and back, where nobody looks.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.2.items.2.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Lace front",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.2.items.2.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Up to an inch of lace along the hairline, its knots bleached until they disappear. It is what lets a hairline pass a close look, and every hair system we fit has one.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.title",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "How much hair: density",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.lead",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Density is how much hair is tied in, against a full natural head. More is not better: too much hair is what gives a hair system away. We match yours to the hair you still have at the sides, not the hair you had at twenty.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.items.0.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "80% · Light",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.items.0.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "The scalp shows at a parting. For men over sixty.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.items.1.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "100% · Medium light",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.items.1.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Natural, without much volume. Most men’s choice, and ours over forty.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.items.2.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "120% · Medium",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.items.2.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Visibly fuller, and holds a style. For younger men, and men whose own hair is thick.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.items.3.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "140% · Medium heavy",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.3.items.3.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Heavy for daily wear. On request only.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.4.title",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "The hair",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.4.items.0.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "100% real human hair",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.4.items.0.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Cut, washed and styled like your own. It does not grow, so the hair system is renewed when it wears.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.4.items.1.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Indian remy hair, on Mane Man Natural",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.4.items.1.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.4.items.2.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Matched to you",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.4.items.2.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Colour, grey and wave matched to your own hair in daylight, at the consultation.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.title",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "What we do not fit, and why",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.0.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Ultra-thin skin, 0.03 mm",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.0.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "The most invisible base made, and it lasts about a month.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.1.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Full Swiss lace",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.1.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "The most fragile base there is: one to two months.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.2.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Lace with no rim",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.2.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "It must be glued along its whole edge every few weeks: a salon job, not a home service.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.3.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "140% and denser, as standard",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.3.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Too much hair is what makes a hair system obvious.",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.4.name",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "European hair",
-    "reviewed": true
-  },
-  {
-    "key": "site:home/materials.groups.5.items.4.text",
-    "surface": "site",
-    "group": "Home",
-    "where": "materials",
-    "text": "Finer, dearer, and a poor match for Indian hair.",
     "reviewed": true
   },
   {
@@ -2020,8 +1196,8 @@
     "surface": "site",
     "group": "Home",
     "where": "closing",
-    "text": "The consultation takes 1 hour and costs nothing.",
-    "reviewed": true
+    "text": "The consultation takes 60 minutes and costs nothing.",
+    "reviewed": false
   },
   {
     "key": "site:home/closing.book",
@@ -2036,8 +1212,8 @@
     "surface": "site",
     "group": "Book",
     "where": "booking",
-    "text": "Book a free consultation",
-    "reviewed": true
+    "text": "Meet your hair again. Completely private, right at home.",
+    "reviewed": false
   },
   {
     "key": "site:pages/booking.titleOneVisit",
@@ -2056,12 +1232,20 @@
     "reviewed": true
   },
   {
-    "key": "site:pages/booking.intro",
+    "key": "site:pages/booking.intro.0",
     "surface": "site",
     "group": "Book",
     "where": "booking",
-    "text": "Your technician measures your scalp and matches your colour: 1 hour, free. Or add the fit and wear your hair system the same day.",
-    "reviewed": true
+    "text": "In just 60 minutes, a specialist measures, colour-matches and custom-maps your hairline at your home, completely free. And you get to see a demo of how your hairline would look with the right system in place.",
+    "reviewed": false
+  },
+  {
+    "key": "site:pages/booking.intro.1",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Love what you see? You can even get it fitted and walk out with a full head of hair the very same day.",
+    "reviewed": false
   },
   {
     "key": "site:pages/booking.introWaitlist",
@@ -2092,8 +1276,8 @@
     "surface": "site",
     "group": "Book",
     "where": "booking",
-    "text": "You",
-    "reviewed": true
+    "text": "About you",
+    "reviewed": false
   },
   {
     "key": "site:pages/booking.steps.area",
@@ -2126,6 +1310,14 @@
     "where": "booking",
     "text": "The list",
     "reviewed": true
+  },
+  {
+    "key": "site:pages/booking.start",
+    "surface": "site",
+    "group": "Book",
+    "where": "booking",
+    "text": "Book your free at-home consultation →",
+    "reviewed": false
   },
   {
     "key": "site:pages/booking.next",
@@ -2348,16 +1540,16 @@
     "surface": "site",
     "group": "Page titles",
     "where": "pageDescriptions",
-    "text": "One photo, one look from six, sent privately to your WhatsApp. An illustration, not a photo of a result. Your photo is deleted within the hour; a small copy stays with your look for up to 14 days.",
-    "reviewed": true
+    "text": "One photo, one look from six, sent privately to your WhatsApp.",
+    "reviewed": false
   },
   {
     "key": "site:pages/pageDescriptions.book",
     "surface": "site",
     "group": "Page titles",
     "where": "pageDescriptions",
-    "text": "Your technician measures your scalp and matches your colour: 1 hour, free. Or add the fit and wear your hair system the same day.",
-    "reviewed": true
+    "text": "In just 60 minutes, a specialist measures, colour-matches and custom-maps your hairline at your home, completely free. And you get to see a demo of how your hairline would look with the right system in place. Love what you see? You can even get it fitted and walk out with a full head of hair the very same day.",
+    "reviewed": false
   },
   {
     "key": "site:pages/pageDescriptions.privacy",
@@ -2758,6 +1950,30 @@
     "where": "tryOn",
     "text": "Use the camera",
     "reviewed": true
+  },
+  {
+    "key": "site:tryon/tryOn.upload.snap",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Take the photo",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.closeCamera",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "Cancel",
+    "reviewed": false
+  },
+  {
+    "key": "site:tryon/tryOn.upload.cameraLabel",
+    "surface": "site",
+    "group": "Try-on",
+    "where": "tryOn",
+    "text": "The camera’s view of you",
+    "reviewed": false
   },
   {
     "key": "site:tryon/tryOn.upload.previewCaption",
@@ -3516,16 +2732,16 @@
     "surface": "site",
     "group": "Contact",
     "where": "whatsapp",
-    "text": "+91 90079 73247",
-    "reviewed": true
+    "text": "+91 90345 72990",
+    "reviewed": false
   },
   {
     "key": "site:contact/whatsapp.label",
     "surface": "site",
     "group": "Contact",
     "where": "whatsapp",
-    "text": "WhatsApp · +91 90079 73247",
-    "reviewed": true
+    "text": "WhatsApp · +91 90345 72990",
+    "reviewed": false
   },
   {
     "key": "site:contact/consentBar.text",
@@ -3852,296 +3068,592 @@
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "How a hair system is fitted at home",
-    "reviewed": true
+    "text": "Materials and construction",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.2.description",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "What happens when a technician fits a hair system at your home: the consultation, the colour match, the fit and the cut.",
-    "reviewed": true
+    "text": "Lace, mono, skin and silk; knots, loops and density. What each hair system is made of, and why.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.2.lead",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Your technician comes to you. No one sees you walk in anywhere.",
-    "reviewed": true
+    "text": "What each hair system is made of, and what that means for how it looks, breathes and lasts.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.2.sections.0.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The free consultation",
-    "reviewed": true
+    "text": "The base: lace, mono, skin and silk",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.2.sections.0.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Your technician measures your scalp, matches your colour to samples in daylight, grey included, and draws the hairline on your forehead in pencil for you to agree. You choose the base together, and you hear the price before anything is fitted.",
-    "reviewed": true
+    "text": "The base decides everything: how natural it looks, how cool it feels, how long it lasts. The thinner the base, the better it looks and the sooner it wears.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.0.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Lace: the finest, softest mesh. Its knots can be bleached until they vanish, which is why every hairline we fit is lace.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.0.paragraphs.2",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Mono: monofilament, a fine, tough mesh. It breathes, takes the most hair, and outlasts every other base.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.0.paragraphs.3",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Skin: a clear polyurethane film, 0.08 to 0.10 mm thin. No mesh to see, so the hair seems to grow straight from the scalp.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.0.paragraphs.4",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Silk, multi-layer: hair knotted onto a lace layer and drawn up through silk, so every knot sits hidden between the two. A parting shows scalp.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.2.sections.1.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The fit",
-    "reviewed": true
+    "text": "How the hair is tied in: knots and loops",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.2.sections.1.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "At the same visit or a later one, as you prefer, the hair under the base is trimmed short, not shaved. The hair system is bonded to the skin, then cut into your own hair and styled. You see the result in the mirror before your technician leaves.",
-    "reviewed": true
+    "text": "Every hair is tied or looped into the base by hand. How it is tied decides how natural the root looks and how well it holds.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.1.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Single knot: one small knot for each hair. Fine and flat, on lace and skin.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.1.paragraphs.2",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Double knot: each hair knotted twice, for the sides and back of a mono base.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.1.paragraphs.3",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Bleached knot: knots lightened until they disappear. Only lace takes it, so it is kept for the hairline.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.1.paragraphs.4",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "V-looped: no knot at all. Each hair is looped through the skin, so it seems to grow from it.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.1.paragraphs.5",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Injected: hair set into the skin so that it stands up from the root. Made for a parting or a brushed-back style.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.2.sections.2.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Where it happens",
-    "reviewed": true
+    "text": "The rim and the hairline",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.2.sections.2.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "At home, at a time that suits you. All you need is a chair in good light and somewhere to wash hair.",
-    "reviewed": true
+    "text": "The edges are where a hair system is held, and where it is seen.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.2.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Clear PU rim: a thin, transparent polyurethane edge. The tape grips it, never the mesh, and it disappears at the temples.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.2.paragraphs.2",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "NPU rim: polyurethane reinforced with mesh. Stronger and slightly thicker, so it is kept to the sides and back, where nobody looks.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.2.paragraphs.3",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Lace front: up to an inch of lace along the hairline, its knots bleached until they disappear. It is what lets a hairline pass a close look, and every hair system we fit has one.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.3.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "How much hair: density",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.3.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Density is how much hair is tied in, against a full natural head. More is not better: too much hair is what gives a hair system away. We match yours to the hair you still have at the sides, not the hair you had at twenty.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.3.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "80%, light: the scalp shows at a parting. For men over sixty.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.3.paragraphs.2",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "100%, medium light: natural, without much volume. Most men’s choice, and ours over forty.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.3.paragraphs.3",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "120%, medium: visibly fuller, and holds a style. For younger men, and men whose own hair is thick.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.3.paragraphs.4",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "140%, medium heavy: heavy for daily wear. On request only.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.4.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The hair",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.4.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "100% real human hair: cut, washed and styled like your own. It does not grow, so the hair system is renewed when it wears.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.4.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Indian remy hair, on Mane Man Natural: every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.4.paragraphs.2",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Matched to you: colour, grey and wave matched to your own hair in daylight, at the consultation.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.5.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What we do not fit, and why",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.5.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Ultra-thin skin, 0.03 mm: the most invisible base made, and it lasts about a month.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.5.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Full Swiss lace: the most fragile base there is, lasting one to two months.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.5.paragraphs.2",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Lace with no rim: it must be glued along its whole edge every few weeks. A salon job, not a home service.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.5.paragraphs.3",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "140% and denser, as standard: too much hair is what makes a hair system obvious.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.2.sections.5.paragraphs.4",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "European hair: finer, dearer, and a poor match for Indian hair.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.3.title",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Looking after a hair system",
-    "reviewed": true
+    "text": "How a hair system is fitted at home",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.3.description",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Daily care for a hair system, what to do after a swim, and what happens at a service visit.",
-    "reviewed": true
+    "text": "What happens when a technician fits a hair system at your home: the consultation, the colour match, the fit and the cut.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.3.lead",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "A few habits at home, and a visit about once a month.",
-    "reviewed": true
+    "text": "Your technician comes to you. No one sees you walk in anywhere.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.3.sections.0.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Every day",
-    "reviewed": true
+    "text": "The free consultation",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.3.sections.0.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Wash and style it like your own hair, gently. It doesn’t grow, so the cut stays as it was left.",
-    "reviewed": true
-  },
-  {
-    "key": "site:guides/guides.3.sections.0.paragraphs.1",
-    "surface": "site",
-    "group": "Guides",
-    "where": "guides",
-    "text": "Heavy sweating is fine. After a swim in chlorine or the sea, rinse it in fresh water: both shorten the life of the base.",
-    "reviewed": true
+    "text": "Your technician measures your scalp, matches your colour to samples in daylight, grey included, and draws the hairline on your forehead in pencil for you to agree. You choose the base together, and you hear the price before anything is fitted.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.3.sections.1.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The service visit",
-    "reviewed": true
+    "text": "The fit",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.3.sections.1.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "About once a month, your technician comes back to lift the hair system, clean the base and your scalp, bond it again and refresh the cut. It takes 90 minutes, and keeps it looking like the day it was fitted.",
-    "reviewed": true
+    "text": "At the same visit or a later one, as you prefer, the hair under the base is trimmed short, not shaved. The hair system is bonded to the skin, then cut into your own hair and styled. You see the result in the mirror before your technician leaves.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.3.sections.2.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "When it’s time for a new one",
-    "reviewed": true
+    "text": "Where it happens",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.3.sections.2.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The base wears before the hair does. When it does, your technician tells you, and your new hair system is matched to the last, so no one notices the change.",
-    "reviewed": true
+    "text": "At home, at a time that suits you. All you need is a chair in good light and somewhere to wash hair.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.4.title",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "How long a hair system lasts",
-    "reviewed": true
+    "text": "Looking after a hair system",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.4.description",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "A hair system lasts months, not years. What decides how long yours lasts, and how to make it last longer.",
-    "reviewed": true
+    "text": "Daily care for a hair system, what to do after a swim, and what happens at a service visit.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.4.lead",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Months, not years: the base wears before the hair does.",
-    "reviewed": true
+    "text": "A few habits at home, and a visit about once a month.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.4.sections.0.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "What decides it",
-    "reviewed": true
+    "text": "Every day",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.4.sections.0.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The base. A clear skin film looks the most natural and wears the soonest; monofilament mesh outlasts every other base. Heat, sea water and chlorine all shorten its life, and so does skipping service visits.",
-    "reviewed": true
+    "text": "Wash and style it like your own hair, gently. It doesn’t grow, so the cut stays as it was left.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.4.sections.0.paragraphs.1",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "Heavy sweating is fine. After a swim in chlorine or the sea, rinse it in fresh water: both shorten the life of the base.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.4.sections.1.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "How to make it last",
-    "reviewed": true
+    "text": "The service visit",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.4.sections.1.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "Rinse it in fresh water after a swim, keep your service visits, and choose a base that suits how you live: a lace top for the gym and a Delhi summer, a skin base where nothing must show.",
-    "reviewed": true
+    "text": "About once a month, your technician comes back to lift the hair system, clean the base and your scalp, bond it again and refresh the cut. It takes 90 minutes, and keeps it looking like the day it was fitted.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.4.sections.2.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "What we tell you",
-    "reviewed": true
+    "text": "When it’s time for a new one",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.4.sections.2.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "At the consultation, before anything is fitted, your technician tells you what to expect from the base you choose.",
-    "reviewed": true
+    "text": "The base wears before the hair does. When it does, your technician tells you, and your new hair system is matched to the last, so no one notices the change.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.5.title",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "What decides the cost of a hair system",
-    "reviewed": true
+    "text": "How long a hair system lasts",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.5.description",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "What decides the price of a hair system, what you pay for and when, and why you hear the price before anything is fitted.",
-    "reviewed": true
+    "text": "A hair system lasts months, not years. What decides how long yours lasts, and how to make it last longer.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.5.lead",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "You hear the price at a free consultation, before anything is fitted or paid.",
-    "reviewed": true
+    "text": "Months, not years: the base wears before the hair does.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.5.sections.0.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "What you pay for",
-    "reviewed": true
+    "text": "What decides it",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.5.sections.0.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The hair system itself, and the visits: the first fit, then a service visit about once a month. No consultation fee, no deposit, no package.",
-    "reviewed": true
+    "text": "The base. A clear skin film looks the most natural and wears the soonest; monofilament mesh outlasts every other base. Heat, sea water and chlorine all shorten its life, and so does skipping service visits.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.5.sections.1.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "What decides the price",
-    "reviewed": true
+    "text": "How to make it last",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.5.sections.1.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "The base most of all: lace, monofilament and skin are made differently and last differently. The size of the area to cover, and the density matched to your own hair, matter too.",
-    "reviewed": true
+    "text": "Rinse it in fresh water after a swim, keep your service visits, and choose a base that suits how you live: a lace top for the gym and a Delhi summer, a skin base where nothing must show.",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.5.sections.2.heading",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
-    "text": "When you hear it",
-    "reviewed": true
+    "text": "What we tell you",
+    "reviewed": false
   },
   {
     "key": "site:guides/guides.5.sections.2.paragraphs.0",
     "surface": "site",
     "group": "Guides",
     "where": "guides",
+    "text": "At the consultation, before anything is fitted, your technician tells you what to expect from the base you choose.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.6.title",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What decides the cost of a hair system",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.6.description",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What decides the price of a hair system, what you pay for and when, and why you hear the price before anything is fitted.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.6.lead",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "You hear the price at a free consultation, before anything is fitted or paid.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.6.sections.0.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What you pay for",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.6.sections.0.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The hair system itself, and the visits: the first fit, then a service visit about once a month. No consultation fee, no deposit, no package.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.6.sections.1.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "What decides the price",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.6.sections.1.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "The base most of all: lace, monofilament and skin are made differently and last differently. The size of the area to cover, and the density matched to your own hair, matter too.",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.6.sections.2.heading",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
+    "text": "When you hear it",
+    "reviewed": false
+  },
+  {
+    "key": "site:guides/guides.6.sections.2.paragraphs.0",
+    "surface": "site",
+    "group": "Guides",
+    "where": "guides",
     "text": "At the free consultation, from your technician, before anything is fitted. If it isn’t for you, you owe nothing.",
-    "reviewed": true
+    "reviewed": false
   },
   {
     "key": "site:guides/areasPage.pageTitle",
@@ -4516,8 +4028,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Book a free consultation",
-    "reviewed": true
+    "text": "Meet your hair again. Completely private, right at home.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.arrival.unknown.notice",
@@ -4544,44 +4056,68 @@
     "reviewed": true
   },
   {
+    "key": "site:referral/referral.howItWorks.steps.0.lead",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "60 minutes. Completely confidential.",
+    "reviewed": false
+  },
+  {
     "key": "site:referral/referral.howItWorks.steps.0.body",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "1 hour. A scalp template and a colour match.",
-    "reviewed": true
+    "text": "We map your scalp, match your exact hair texture and tone, and let you feel the hair in person. Zero obligation, zero cost.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.howItWorks.steps.1.title",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "The first fit, also at home",
-    "reviewed": true
+    "text": "Your first fit, same day or later",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.howItWorks.steps.1.lead",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "3 hours. Real-time transformation. Be the Main Man again.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.howItWorks.steps.1.body",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "3 hours. You’re wearing it by the end.",
-    "reviewed": true
+    "text": "Crafted, cut, blended and styled right in your living room. Look in the mirror and walk out with seamless, natural-looking hair.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.howItWorks.steps.2.title",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "A service visit every month",
-    "reviewed": true
+    "text": "Effortless monthly care",
+    "reviewed": false
+  },
+  {
+    "key": "site:referral/referral.howItWorks.steps.2.lead",
+    "surface": "site",
+    "group": "Invite page",
+    "where": "referral",
+    "text": "No trips to the salon. We come to you.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.howItWorks.steps.2.body",
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Lifted, cleaned, re-bonded, trimmed. 90 minutes.",
-    "reviewed": true
+    "text": "A regular tune-up to keep you looking sharp.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.pincode.title",
@@ -4684,8 +4220,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "1 hour, and free. Or have your fit in the same visit.",
-    "reviewed": true
+    "text": "60 minutes, and free. Or have your fit in the same visit.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.consultation.forPincode",
@@ -4788,8 +4324,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "Consultation · 1 hour",
-    "reviewed": true
+    "text": "Consultation · 60 minutes",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.consultation.plan.options.1.label",
@@ -4828,8 +4364,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "You may contact me on WhatsApp about this consultation.",
-    "reviewed": true
+    "text": "Send my booking confirmation and updates via WhatsApp.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.consultation.submit",
@@ -5236,8 +4772,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "terms",
-    "reviewed": true
+    "text": "Terms",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.form.legal.between",
@@ -5252,8 +4788,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "privacy notice",
-    "reviewed": true
+    "text": "Privacy Notice",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.form.legal.after",
@@ -5300,8 +4836,8 @@
     "surface": "site",
     "group": "Invite page",
     "where": "referral",
-    "text": "1 hour at home, and free. Nothing is fitted.",
-    "reviewed": true
+    "text": "60 minutes at home, and free. Nothing is fitted.",
+    "reviewed": false
   },
   {
     "key": "site:referral/referral.booked.ready.oneVisit",
@@ -5652,8 +5188,8 @@
     "surface": "site",
     "group": "Every page",
     "where": "visitLength",
-    "text": "1 hour",
-    "reviewed": true
+    "text": "60 minutes",
+    "reviewed": false
   },
   {
     "key": "site:service/visitLength.service",

@@ -60,7 +60,7 @@ test("keeps the name and number first, then asks for the area, the visit and the
   const leads = await leadCalls(page);
   await visit(page, "/book");
 
-  await expect(page.getByText("Step 1 · You")).toBeVisible();
+  await expect(page.getByText("Step 1 · About you")).toBeVisible();
   await expect(page.getByLabel(referralCopy.referral.pincode.label)).toHaveCount(0);
   expect(await axeViolations(page)).toEqual([]);
   await leaveDetails(page);
@@ -91,16 +91,16 @@ test("Change returns to the name and number as typed, and the same again is not 
   await openForm(page);
 
   await page.getByRole("button", { name: siteCopy.booking.changeYouLabel }).click();
-  await expect(page.getByText("Step 1 · You")).toBeFocused();
+  await expect(page.getByText("Step 1 · About you")).toBeFocused();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("Test Visitor");
   await expect(page.getByLabel(siteCopy.tryOn.gate.mobile)).toHaveValue("98100 00000");
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
   expect(leads).toHaveLength(1);
 
   await page.getByRole("button", { name: siteCopy.booking.changeYouLabel }).click();
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill("9810000001");
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await expect(page.getByText("For Test Visitor, +91 98100 00001")).toBeVisible();
   expect(leads).toHaveLength(2);
 });
@@ -131,7 +131,7 @@ test("a reload resumes the step it was on, the name and number kept, and Back st
   await continueAndBook(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Step 1 · You")).toBeVisible();
+  await expect(page.getByText("Step 1 · About you")).toBeVisible();
   await expect(page.getByLabel(siteCopy.tryOn.gate.name)).toHaveValue("");
 });
 
@@ -150,8 +150,8 @@ test("a number with +91, 91, 0 or 0091 in front books its own ten digits, pasted
     await mobile.pressSequentially(typed);
     await expect(mobile).toHaveValue("98765 43210");
   }
-  await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await checkPincode(page, SERVED.pincode);
   await continueAndBook(page);
 
@@ -374,9 +374,9 @@ test("offers the one visit the morning and the afternoon, never the evening, and
   await expect(windows.getByText("Evening")).toHaveCount(0);
   await expect(windows.getByRole("radio", { name: /Morning/ })).toBeChecked();
 
-  await plan.getByRole("radio", { name: "Consultation · 1 hour", exact: true }).check();
+  await plan.getByRole("radio", { name: "Consultation · 60 minutes", exact: true }).check();
   await expect(windows.getByRole("radio")).toHaveCount(3);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(referralCopy.referral.consultation.title);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.booking.title);
 
   await continueAndBook(page);
   await expect(page.getByText(referralCopy.referral.booked.label, { exact: true })).toBeVisible();

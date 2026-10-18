@@ -193,17 +193,20 @@ export const referral = {
       {
         n: "1",
         title: "A free consultation at home",
-        body: `${capitalised(visitLength.consultation)}. A scalp template and a colour match.`,
+        lead: `${capitalised(visitLength.consultation)}. Completely confidential.`,
+        body: "We map your scalp, match your exact hair texture and tone, and let you feel the hair in person. Zero obligation, zero cost.",
       },
       {
         n: "2",
-        title: "The first fit, also at home",
-        body: `${capitalised(visitLength.firstFit)}. You’re wearing it by the end.`,
+        title: "Your first fit, same day or later",
+        lead: `${capitalised(visitLength.firstFit)}. Real-time transformation. Be the Main Man again.`,
+        body: "Crafted, cut, blended and styled right in your living room. Look in the mirror and walk out with seamless, natural-looking hair.",
       },
       {
         n: "3",
-        title: "A service visit every month",
-        body: `Lifted, cleaned, re-bonded, trimmed. ${capitalised(visitLength.service)}.`,
+        title: "Effortless monthly care",
+        lead: "No trips to the salon. We come to you.",
+        body: "A regular tune-up to keep you looking sharp.",
       },
     ],
   },
@@ -346,7 +349,7 @@ export const referral = {
     mobileError: "Enter a valid 10-digit mobile number.",
     consentError: "We need this to contact you.",
     /** Beneath the agreement on every form that takes a name and number: what binds the visitor, and to read it. */
-    legal: { before: "Our ", terms: "terms", between: " and ", privacy: "privacy notice", after: " apply." },
+    legal: { before: "Our ", terms: "Terms", between: " and ", privacy: "Privacy Notice", after: " apply." },
     // By the button once three or more fields are marked.
     marked: "Check the {count} fields marked above.",
   },

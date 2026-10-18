@@ -1,27 +1,21 @@
 ---
-// The Norwood scale: stages I–II (nothing to fit) and III–VII (we fit). The
-// photographs are placeholders; content can switch to the design's line drawings.
+// The Norwood scale: stages III–VII, the ones we fit, then a hairline restored. The stage photographs are
+// placeholders; where they are not shown, or content asks for them, the design's line drawings stand in.
 import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
-import { norwood, norwoodPhotos, placeholderTag, type NorwoodStage } from "../../content/site.ts";
-import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import { norwood, norwoodPhotos, norwoodRestored, placeholderTag } from "../../content/site.ts";
+import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
 import DesignPicture from "../DesignPicture.astro";
 
 const showPhotos = isShown(norwoodPhotos) && norwoodPhotos.use === "photos";
-const showDrawings = norwoodPhotos.use === "drawings";
-const groups = [
-  { ...norwood.early, fits: false, offset: 0 },
-  { ...norwood.late, fits: true, offset: norwood.early.stages.length },
-];
+const sizes = "(min-width: 761px) 210px, 104px";
+const widths = [240, 480];
 
-function photoFor(index: number) {
+const cards = norwood.stages.map((stage, index) => {
   const photo = norwoodPhotos.images[index];
-  if (photo === undefined) throw new Error(`no Norwood photograph for stage ${String(index + 1)}`);
-  return photo;
-}
-function cards(stages: readonly NorwoodStage[], offset: number) {
-  return stages.map((stage, index) => ({ stage, photo: photoFor(offset + index) }));
-}
+  if (photo === undefined) throw new Error(`no Norwood photograph for stage ${stage.numeral}`);
+  return { stage, photo };
+});
 ---
 
 <section class="norwood" data-section="norwood">
@@ -29,44 +23,46 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     <h2 class="section-title">{norwood.title}</h2>
     <p class="lead intro">{norwood.intro}</p>
 
-    {groups.map((group) => (
-      <div class:list={["group", { late: group.fits }]}>
-        <div class={capsLook("group-label")}>{group.label}</div>
-        <ul class:list={["cards", group.fits ? "flow" : "early"]}>
-          {cards(group.stages, group.offset).map(({ stage, photo }) => (
-            <li class="card">
-              {(showPhotos || showDrawings) && (
-                <div class="frame picture">
-                  {showPhotos ? (
-                    <DesignPicture
-                      file={photo.file}
-                      alt={photo.alt}
-                      sizes="(min-width: 761px) 210px, 104px"
-                      widths={[240, 480]}
-                      class="focus-norwood"
-                    />
-                  ) : (
-                    <svg class="drawing" viewBox="0 0 96 74" role="img" aria-label={`Norwood ${stage.numeral}`}>
-                      <path d={stage.bald} />
-                    </svg>
-                  )}
-                  <div class={capsLook("label numeral")}>{stage.numeral}</div>
-                  {SHOW_PLACEHOLDER_TAGS && showPhotos && (
-                    <div class={capsLook("label placeholder")}>{placeholderTag}</div>
-                  )}
-                </div>
-              )}
-              <div class="head">
-                <span class="name">{stage.name}</span>
-                <span class={capsLook("tag")}>{stage.tag}</span>
-              </div>
-              <div class="description">{stage.description}</div>
-            </li>
-          ))}
-        </ul>
-        {"note" in group && <p class="note">{group.note}</p>}
-      </div>
-    ))}
+    <div class={capsLook("group-label")}>{norwood.label}</div>
+    <ul class="cards">
+      {cards.map(({ stage, photo }) => (
+        <li class="card">
+          <div class="frame picture">
+            {showPhotos ? (
+              <DesignPicture file={photo.file} alt={photo.alt} sizes={sizes} widths={widths} class="focus-norwood" />
+            ) : (
+              <svg class="drawing" viewBox="0 0 96 74" role="img" aria-label={`Norwood ${stage.numeral}`}>
+                <path d={stage.bald} />
+              </svg>
+            )}
+            <div class={capsLook("label numeral")}>{stage.numeral}</div>
+            {isTaggedPlaceholder(norwoodPhotos) && showPhotos && (
+              <div class={capsLook("label placeholder")}>{placeholderTag}</div>
+            )}
+          </div>
+          <div class="head">
+            <span class="name">{stage.name}</span>
+            <span class={capsLook("tag")}>{stage.tag}</span>
+          </div>
+        </li>
+      ))}
+      {isShown(norwoodRestored) && (
+        <li class="card restored">
+          <div class="frame picture">
+            <DesignPicture
+              file={norwoodRestored.image.file}
+              alt={norwoodRestored.image.alt}
+              sizes={sizes}
+              widths={widths}
+              class="focus-norwood"
+            />
+          </div>
+          <div class="head">
+            <span class="name">{norwood.restored}</span>
+          </div>
+        </li>
+      )}
+    </ul>
 
     <div class="actions">
       <a class={buttonLook({ variant: "primary", size: "control" })} href="/book">
@@ -95,46 +91,32 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
   .group-label {
     margin-bottom: var(--sp-16);
     font-size: var(--fs-16);
-    color: var(--text-muted);
-  }
-  .late .group-label {
-    margin: var(--norwood-late-gap) 0 var(--sp-16);
-    padding-top: var(--space-l);
-    border-top: var(--hairline) solid var(--paper-line);
     color: var(--ink);
   }
+  /* One grid of equal columns, from the left edge: the five stages, then the hairline restored. */
   .cards {
     list-style: none;
     margin: 0;
     padding: 0;
-  }
-  /*
-   * Both groups on one grid of equal columns, so the two stages we do not fit are drawn no larger than the five we
-   * do. Both rows start at the left edge.
-   */
-  .early,
-  .flow {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--norwood-flow-basis), 1fr));
     gap: var(--space-2xs);
     max-width: var(--norwood-flow-row-max);
   }
   @media (min-width: 1024px) {
-    .early,
-    .flow {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+    .cards {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
   /*
-   * Each card is three rows of its group's grid (subgrid): picture, name,
-   * description. Cards side by side share the name row's height, so their
-   * descriptions start level however their names wrap.
+   * Each card is two rows of the grid (subgrid): picture, then name. Cards side by side share the name row's
+   * height, however their names wrap.
    */
   .card {
     background: var(--paper);
     border: var(--hairline) solid var(--paper-line);
     display: grid;
-    grid-row: span 3;
+    grid-row: span 2;
     grid-template-rows: subgrid;
     row-gap: 0;
   }
@@ -166,8 +148,8 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
   }
   .head {
     grid-row: 2;
-    padding: var(--space-2xs) var(--space-2xs) 0;
-    border-top: var(--hairline) solid var(--paper-line);
+    padding: var(--space-2xs);
+    border-top: var(--rule-strong) solid var(--ink);
     display: flex;
     align-items: baseline;
     justify-content: space-between;
@@ -177,67 +159,50 @@ function cards(stages: readonly NorwoodStage[], offset: number) {
     font-family: var(--font-serif);
     font-size: var(--fs-lead);
     line-height: var(--lh-115);
+    text-wrap: pretty;
   }
   .tag {
     letter-spacing: var(--tracking-12);
     font-size: var(--fs-13);
     white-space: nowrap;
-    color: var(--text-muted);
-  }
-  .late .head {
-    border-top: var(--rule-strong) solid var(--ink);
-  }
-  .late .tag {
     color: var(--ink);
   }
-  .description {
-    grid-row: 3;
-    padding: var(--sp-8) var(--space-2xs) var(--space-2xs);
-    font-size: var(--fs-14);
-    line-height: var(--lh-160);
-    color: var(--text-soft);
-    text-wrap: pretty;
+  /* The hairline restored: the card the five lead to, on ink. */
+  .restored {
+    background: var(--ink);
+    border-color: var(--ink);
   }
-  .note {
-    margin: var(--sp-20) 0 0;
-    font-size: var(--fs-16);
-    line-height: var(--lh-160);
-    color: var(--text-muted);
-    max-width: var(--measure-note);
-    text-wrap: pretty;
+  .restored .head {
+    border-top-color: var(--paper);
+  }
+  .restored .name {
+    color: var(--paper);
   }
   /*
-   * A phone: one card a row, its picture beside its words, so names and tags keep to a line and no stage stands
-   * alone.
+   * A phone: one card a row, its picture beside its words, so names and tags keep to a line.
    */
   @media (max-width: 760px) {
-    .early,
-    .flow {
+    .cards {
       grid-template-columns: minmax(0, 1fr);
     }
     .card {
       grid-row: auto;
       grid-template-columns: var(--norwood-thumb) minmax(0, 1fr);
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto;
     }
     .picture {
-      grid-row: 1 / span 2;
-      border-right: var(--hairline) solid var(--paper-line);
+      grid-row: 1;
+      border-right: var(--rule-strong) solid var(--ink);
+    }
+    .restored .picture {
+      border-right-color: var(--paper);
     }
     .head {
       grid-row: 1;
       border-top: 0;
       flex-wrap: wrap;
+      align-self: center;
       row-gap: var(--sp-4);
-    }
-    .late .head {
-      border-top: 0;
-    }
-    .late .picture {
-      border-right: var(--rule-strong) solid var(--ink);
-    }
-    .description {
-      grid-row: 2;
     }
   }
   .actions {

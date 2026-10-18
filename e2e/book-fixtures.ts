@@ -120,8 +120,8 @@ export const CONSULTATION_CONSENT = referralCopy.referral.consultation.consent;
 export async function leaveDetails(page: Page, mobile = "9810000000"): Promise<void> {
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill(mobile);
-  await page.getByText(CONSULTATION_CONSENT).click();
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await expect(page.getByRole("checkbox", { name: CONSULTATION_CONSENT })).toBeChecked();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
   await expect(page.getByLabel(referralCopy.referral.pincode.label)).toBeFocused();
 }
 

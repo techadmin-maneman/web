@@ -7,3 +7,6 @@ export interface PersonFields {
   mobile: string;
   consent: boolean;
 }
+
+/** A consultation form's fields before anything is typed: its WhatsApp line starts ticked (ADR 0213). */
+export const CONSULTATION_START: PersonFields = { name: "", mobile: "", consent: true };

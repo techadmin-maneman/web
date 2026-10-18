@@ -44,7 +44,6 @@
   --section-gap-lg: clamp(64px, 10vw, 160px);
   --section-gap-xl: clamp(72px, 12vw, 180px);
   --band-pad: clamp(48px, 7vw, 96px);
-  --three-up-gap: var(--sp-20);
   --split-min: 300px;
   --split-min-mid: 340px;
   --split-min-wide: 360px;
@@ -64,15 +63,15 @@
   --hero-min-h: clamp(520px, 82vh, 780px);
   --hero-tag-top: clamp(16px, 2.4vw, 26px);
 
-  --what-plate-h: clamp(320px, 52vw, 620px);
+  /* A before-and-after card: its two photographs side by side. */
+  --result-card-w: clamp(280px, 40vw, 500px);
   --what-pad-top: clamp(48px, 7vw, 104px);
   --norwood-flow-basis: 150px;
   --norwood-flow-max: 210px;
-  /* Five late cards at their widest: the late row's width, from the left edge. */
-  --norwood-flow-row-max: calc(5 * var(--norwood-flow-max) + 4 * var(--space-2xs));
+  /* Six cards at their widest, the five stages and the restored hairline: the row's width, from the left edge. */
+  --norwood-flow-row-max: calc(6 * var(--norwood-flow-max) + 5 * var(--space-2xs));
   /* A phone's Norwood card: the picture's width beside its words. */
   --norwood-thumb: 104px;
-  --norwood-late-gap: clamp(40px, 5vw, 64px);
 
   --comparison-label-w: 260px;
 
@@ -85,8 +84,6 @@
   --how-photo-h: clamp(200px, 26vw, 320px);
 
   --range-card-min: var(--comparison-label-w);
-
-  --materials-photo-h: clamp(200px, 24vw, 300px);
 
   --faq-pad-top: clamp(64px, 10vw, 144px);
   --faq-intro-max: 380px;

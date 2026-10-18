@@ -16,11 +16,16 @@ function filmsFetched(page: Page): string[] {
 }
 
 test.describe("header", () => {
-  test("shows the mark and wordmark, and Book a consultation, at every width", async ({ page }) => {
+  // On a phone the button's full words ran into the wordmark.
+  test("shows the mark and wordmark, and the free consultation, at every width", async ({ page }) => {
     await page.goto("/");
     const header = page.locator("header");
     await expect(header.getByRole("link", { name: siteCopy.header.homeLabel })).toHaveAttribute("href", "/");
-    await expect(header.getByRole("link", { name: siteCopy.header.book })).toHaveAttribute("href", "/book");
+    const book = narrow(page.viewportSize()?.width) ? siteCopy.header.bookShort : siteCopy.header.book;
+    await expect(header.getByRole("link", { name: book, exact: true })).toHaveAttribute("href", "/book");
+    const brand = await header.getByRole("link", { name: siteCopy.header.homeLabel }).boundingBox();
+    const button = await header.getByRole("link", { name: book, exact: true }).boundingBox();
+    expect((brand?.x ?? 0) + (brand?.width ?? 0)).toBeLessThan(button?.x ?? 0);
   });
 
   // The built pages are book.html and r.html, whose addresses the rule never matched, so both offered themselves.
@@ -28,7 +33,7 @@ test.describe("header", () => {
     for (const path of ["/book", "/r/RM4K7P"]) {
       await page.goto(path);
       await expect(page.locator("header").getByRole("link", { name: siteCopy.header.homeLabel })).toBeVisible();
-      await expect(page.locator("header").getByRole("link", { name: siteCopy.header.book }), path).toHaveCount(0);
+      await expect(page.locator('header a[href="/book"]'), path).toHaveCount(0);
     }
   });
 
@@ -141,7 +146,7 @@ test.describe("WhatsApp", () => {
     const links = page.locator('a[href^="https://wa.me/"]');
     await expect(links).toHaveCount(3); // the sticky bar, the footer, the FAQ intro
     for (const href of await links.evaluateAll((all) => all.map((link) => link.getAttribute("href")))) {
-      expect(href).toBe("https://wa.me/919007973247");
+      expect(href).toBe("https://wa.me/919034572990");
     }
   });
 });
@@ -159,22 +164,20 @@ test.describe("hash routes from v2", () => {
 });
 
 test.describe("home sections", () => {
-  // v2's order, with its bases and prices given way to the range and its materials (ADR 0103).
-  test("are all there, in v2's order", async ({ page }) => {
+  // v2's order, the results beneath the hero, the technicians, materials and quotes gone (ADR 0213).
+  test("are all there, in order", async ({ page }) => {
     await page.goto("/");
     const order = await page.locator("main > [data-section]").evaluateAll((all) => all.map((el) => el.dataset.section));
     expect(order).toEqual([
       "hero",
+      "results",
       "what",
       "norwood",
       "comparison",
       "teaser",
       "discretion",
       "how",
-      "technicians",
       "range",
-      "materials",
-      "testimonials",
       "guarantee",
       "faq",
       "closing",
@@ -188,11 +191,20 @@ test.describe("home sections", () => {
     await expect(hero.getByRole("link", { name: siteCopy.hero.book })).toHaveAttribute("href", "/book");
   });
 
-  test("the hero’s opening line is read whole, once, over the footage", async ({ page }) => {
+  test("the hero’s opening line is read whole, once, and turns one phrase at a time until paused", async ({ page }) => {
     await page.goto("/");
     const line = page.locator('[data-section="hero"] .sequence');
-    await expect(line).toHaveText("Natural up close. 100% real human hair. Fitted at home. Be the Main Man again.");
+    await expect(line).toHaveText(
+      "Natural up close. 100% real human hair. Fitted at home. Get your confident self back. Be the Main Man again.",
+    );
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(siteCopy.hero.title);
+    const phrases = line.locator(".phrase");
+    await expect(phrases.nth(0)).toHaveClass(/\bon\b/);
+    await expect(phrases.nth(1)).toHaveClass(/\bon\b/, { timeout: 5_000 });
+    await page.getByRole("button", { name: siteCopy.hero.pause }).click();
+    const shown = await line.locator(".phrase.on").textContent();
+    await page.waitForTimeout(3_500);
+    await expect(line.locator(".phrase.on")).toHaveText(shown ?? "");
   });
 
   // Every phone downloaded the 2.3 MB film.
@@ -204,21 +216,37 @@ test.describe("home sections", () => {
     await expect(video).toHaveAttribute("loop", "");
     expect(await video.evaluate((element: HTMLVideoElement) => element.muted)).toBe(true);
     const phone = (page.viewportSize()?.width ?? 0) <= 600;
-    await expect(video).toHaveAttribute("src", phone ? /\/hero-phone\.[^/]+\.mp4$/ : /\/hero\.[^/]+\.mp4$/);
+    await expect(video).toHaveAttribute("src", phone ? /\/fit-film-phone\.[^/]+\.mp4$/ : /\/fit-film\.[^/]+\.mp4$/);
   });
 
-  test("shows the design’s Placeholder tags outside production", async ({ page }) => {
+  // The film, the results and the steps are real; only the Norwood stages are still the design's.
+  test("tags only the design’s material as Placeholder outside production", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText(siteCopy.heroFootage.tag)).toBeVisible();
-    expect(await page.locator(".label", { hasText: /^Placeholder$/ }).count()).toBeGreaterThan(10);
+    await expect(page.getByText(siteCopy.heroFootage.tag)).toHaveCount(0);
+    await expect(page.locator(".label", { hasText: /^Placeholder$/ })).toHaveCount(5);
+    await expect(page.locator('[data-section="norwood"] .label', { hasText: /^Placeholder$/ })).toHaveCount(5);
   });
 
-  test("Norwood: two early stages, five we fit, then Book a free consultation", async ({ page }) => {
+  test("results: four pairs in a strip that scrolls sideways, the one made by AI tagged so", async ({ page }) => {
+    await page.goto("/");
+    const results = page.locator('[data-section="results"]');
+    await expect(results.getByRole("heading", { level: 2 })).toHaveText(siteCopy.results.title);
+    await expect(results.locator(".card")).toHaveCount(4);
+    await expect(results.locator(".caption")).toHaveText(siteCopy.resultPairs.pairs.map((pair) => pair.caption));
+    await expect(results.getByText(siteCopy.illustrationTag)).toHaveCount(1);
+    const strip = results.getByRole("list", { name: siteCopy.results.label });
+    await expect(strip).toHaveAttribute("tabindex", "0");
+    expect(await strip.evaluate((list) => list.scrollWidth > list.clientWidth)).toBe(true);
+  });
+
+  test("Norwood: the five stages we fit, a hairline restored, then Book a free consultation", async ({ page }) => {
     await page.goto("/");
     const norwood = page.locator('[data-section="norwood"]');
-    await expect(norwood.locator(".early > li")).toHaveCount(2);
-    await expect(norwood.locator(".flow > li")).toHaveCount(5);
-    await expect(norwood.getByText(siteCopy.norwood.early.note)).toBeVisible();
+    await expect(norwood.locator(".cards > li")).toHaveCount(6);
+    await expect(norwood.locator(".cards > li .name")).toHaveText([
+      ...siteCopy.norwood.stages.map((stage) => stage.name),
+      siteCopy.norwood.restored,
+    ]);
     await expect(norwood.getByRole("link", { name: siteCopy.hero.book })).toHaveAttribute("href", "/book");
   });
 
@@ -236,7 +264,7 @@ test.describe("home sections", () => {
     const effects = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Side effects" }) });
     await expect(effects.getByRole("cell")).toHaveText([
       "Surgical risks",
-      "Possible side effects",
+      "Long-term side effects",
       "Nothing implanted or swallowed",
     ]);
   });
@@ -271,31 +299,14 @@ test.describe("home sections", () => {
     ]);
   });
 
-  test("technicians, the range and testimonials: three, four and three cards", async ({ page }) => {
+  test("the range: four cards", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator('[data-section="technicians"] li')).toHaveCount(3);
-    await expect(page.locator('[data-section="technicians"] li p')).toHaveCount(0);
     await expect(page.locator('[data-section="range"] h3')).toHaveText([
       "Mane Man Essential",
       "Mane Man Active",
       "Mane Man Natural",
-      "Mane Man NatMax",
+      "Mane Man Celebrity",
     ]);
-    await expect(page.locator('[data-section="testimonials"] li')).toHaveCount(3);
-  });
-
-  test("materials and construction: six groups, each closed until it is opened, and opened on its own", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    const groups = page.locator('[data-section="materials"] details');
-    await expect(groups).toHaveCount(6);
-    for (const group of await groups.all()) await expect(group).not.toHaveAttribute("open", "");
-    await groups.nth(0).locator("summary").click();
-    await groups.nth(1).locator("summary").click();
-    await expect(groups.nth(0)).toHaveAttribute("open", "");
-    await expect(groups.nth(1)).toHaveAttribute("open", "");
-    await expect(groups.nth(0).locator("li")).toHaveCount(4);
   });
 
   // The site gives no prices (ADR 0103).
@@ -330,10 +341,11 @@ test.describe("reduced motion", () => {
   test("the hero’s opening line shows its last phrase alone, still", async ({ page }) => {
     await page.goto("/");
     const phrases = page.locator('[data-section="hero"] .phrase');
-    await expect(phrases).toHaveCount(4);
+    await expect(phrases).toHaveCount(5);
     await expect(phrases.first()).toHaveCSS("opacity", "0");
     await expect(phrases.last()).toHaveCSS("opacity", "1");
-    await expect(phrases.last()).toHaveCSS("animation-name", "none");
+    await page.waitForTimeout(3_500);
+    await expect(phrases.last()).toHaveCSS("opacity", "1");
   });
 
   // A phone that never played the film still downloaded 1.4 MB of it.
@@ -409,13 +421,10 @@ test.describe("WCAG on the home page", () => {
     }
   });
 
-  // The page keeps its width on a 320 px phone, its densest section open.
-  test("the page fits a 320 px screen with every materials group open", async ({ page }) => {
+  // The page keeps its width on a 320 px phone, the results' strip scrolling within it.
+  test("the page fits a 320 px screen", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto("/");
-    await page.locator('[data-section="materials"] details').evaluateAll((groups) => {
-      for (const group of groups) group.setAttribute("open", "");
-    });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   });
 });
@@ -439,7 +448,7 @@ test.describe("other pages", () => {
     const privacyLinks = page.locator("article a", { hasText: siteCopy.whatsapp.display });
     await expect(privacyLinks).toHaveCount(2);
     for (const link of await privacyLinks.all()) {
-      await expect(link).toHaveAttribute("href", "https://wa.me/919007973247");
+      await expect(link).toHaveAttribute("href", "https://wa.me/919034572990");
     }
     await expect(page.locator(".label", { hasText: siteCopy.placeholderTag })).toHaveCount(0);
     await page.goto("/terms");
@@ -447,7 +456,7 @@ test.describe("other pages", () => {
     await expect(page.getByText("the courts at New Delhi have jurisdiction", { exact: false })).toBeVisible();
     await expect(page.locator("article a", { hasText: siteCopy.whatsapp.display })).toHaveAttribute(
       "href",
-      "https://wa.me/919007973247",
+      "https://wa.me/919034572990",
     );
     await expect(page.locator(".label", { hasText: siteCopy.placeholderTag })).toHaveCount(0);
   });
@@ -457,7 +466,7 @@ test.describe("other pages", () => {
     await page.goto("/");
     await expect(page.getByRole("link", { name: siteCopy.whatsapp.label })).toHaveAttribute(
       "href",
-      "https://wa.me/919007973247",
+      "https://wa.me/919034572990",
     );
     await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
   });
@@ -490,7 +499,7 @@ test.describe("other pages", () => {
     await expect(page.getByRole("heading", { name: siteCopy.stopMessages.expired.title })).toBeVisible();
     await expect(page.getByRole("link", { name: siteCopy.whatsapp.display })).toHaveAttribute(
       "href",
-      "https://wa.me/919007973247",
+      "https://wa.me/919034572990",
     );
   });
 

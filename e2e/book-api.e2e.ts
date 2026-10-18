@@ -25,15 +25,15 @@ test.beforeEach(async ({ page }) => {
 async function leaveDetails(page: Page, consent: string): Promise<void> {
   await page.getByLabel(siteCopy.tryOn.gate.name).fill("Test Visitor");
   await page.getByLabel(siteCopy.tryOn.gate.mobile).fill(randomMobile());
-  await page.getByText(consent).click();
+  await expect(page.getByRole("checkbox", { name: consent })).toBeChecked();
   const kept = page.waitForResponse("**/api/lead");
-  await page.getByRole("button", { name: siteCopy.booking.next }).click();
+  await page.getByRole("button", { name: siteCopy.booking.start }).click();
   expect((await kept).status()).toBe(201);
 }
 
 test("a served pincode books a real date and window, at the address given", async ({ page }) => {
   await visit(page, "/book");
-  await leaveDetails(page, "You may contact me on WhatsApp about this consultation.");
+  await leaveDetails(page, referralCopy.referral.consultation.consent);
   await page.getByLabel(referralCopy.referral.pincode.label).fill(SERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText(`We come to ${SERVED.area}`)).toBeVisible();
@@ -50,7 +50,7 @@ test("a served pincode books a real date and window, at the address given", asyn
 
 test("a pincode we do not serve takes the number instead", async ({ page }) => {
   await visit(page, "/book");
-  await leaveDetails(page, "You may contact me on WhatsApp about this consultation.");
+  await leaveDetails(page, referralCopy.referral.consultation.consent);
   await page.getByLabel(referralCopy.referral.pincode.label).fill(UNSERVED.pincode);
   await page.getByRole("button", { name: referralCopy.referral.pincode.check }).click();
   await expect(page.getByText(`We’re not in ${UNSERVED.area} yet`)).toBeVisible();

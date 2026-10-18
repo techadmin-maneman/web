@@ -72,8 +72,11 @@ const BOOKING_OWN_RECORD_V2 = [
   "You can switch it off in Profile.",
 ];
 
-/** The booking form's line on /book and on an invite's page. */
+/** The booking form's line on /book and on an invite's page, as it was. */
 const CONSULTATION_LINE = "You may contact me on WhatsApp about this consultation.";
+
+/** The same line since it starts ticked (ADR 0213). */
+const CONFIRMATION_LINE = "Send my booking confirmation and updates via WhatsApp.";
 
 export const NOTICES = [
   {
@@ -308,6 +311,16 @@ export const NOTICES = [
     text: [CONSULTATION_LINE],
   },
   {
+    version: "referral-consultation-v2",
+    purpose: "whatsapp_visits",
+    text: [CONFIRMATION_LINE],
+  },
+  {
+    version: "site-consultation-v2",
+    purpose: "whatsapp_visits",
+    text: [CONFIRMATION_LINE],
+  },
+  {
     version: "waitlist-v1",
     purpose: "contact",
     text: ["You may contact me about this request."],
@@ -319,13 +332,13 @@ type NoticeVersion = (typeof NOTICES)[number]["version"];
 
 /** The lines the referral landing shows, by what they are given for. */
 export const LANDING_NOTICES = {
-  consultation: "referral-consultation-v1",
+  consultation: "referral-consultation-v2",
   waitlist: "waitlist-v1",
 } as const satisfies Readonly<Record<string, NoticeVersion>>;
 
 /** The booking form's agreement, by the page it is given on: the same line, named for where it was given. */
 export const CONSULTATION_NOTICES = {
-  site_booking: "site-consultation-v1",
+  site_booking: "site-consultation-v2",
   referral_landing: LANDING_NOTICES.consultation,
 } as const satisfies Readonly<Record<string, NoticeVersion>>;
 

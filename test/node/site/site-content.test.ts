@@ -6,6 +6,7 @@ import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { describe, expect, it } from "vitest";
 import { booking as appBooking, change as appChange } from "../../../apps/app/src/content.ts";
 import { DESIGN_PLACEHOLDERS, type PlaceholderBlockName } from "../../../site/src/content/design-placeholders.ts";
+import { guides } from "../../../site/src/content/guides.ts";
 import { referral } from "../../../site/src/content/referral.ts";
 import * as site from "../../../site/src/content/site.ts";
 import { siteEnvironment } from "../../../site/src/lib/environment.ts";
@@ -21,13 +22,9 @@ import { DELETION_DECIDED_WITHIN_DAYS } from "../../../src/policy/account-deleti
 const BLOCKS: Record<PlaceholderBlockName, { publish: boolean }> = {
   whatsapp: site.whatsapp,
   heroFootage: site.heroFootage,
-  whatPlate: site.whatPlate,
   norwoodPhotos: site.norwoodPhotos,
   teaserPair: site.teaserPair,
   stepPhotos: site.stepPhotos,
-  basePhotos: site.basePhotos,
-  technicians: site.technicians,
-  testimonials: site.testimonials,
   founderNote: site.founderNote,
   privacy: site.legalPages.privacy,
   terms: site.legalPages.terms,
@@ -134,22 +131,23 @@ describe("content", () => {
     expect(VISIT_BLOCKS.consultation.minutes).toBe(60);
     expect(VISIT_BLOCKS.service.minutes).toBe(90);
     expect(VISIT_BLOCKS.first_fit.minutes).toBe(180);
-    const published = JSON.stringify({ ...site, ...BLOCKS, testimonials: null }) + JSON.stringify(referral);
+    const published = JSON.stringify({ ...site, ...BLOCKS }) + JSON.stringify(referral);
     expect(published).not.toMatch(/forty minutes|about an hour|one hour|ninety minutes · at your table/i);
     expect(site.discretionBand.text).toMatch(/^3 hours at your own table/);
     expect(site.howItWorks.steps.map((step) => step.meta)).toEqual([
-      "1 hour · free",
+      "60 minutes · free",
       "3 hours · at your home",
       "Every month · 90 minutes",
     ]);
     expect(site.faq.items[2]?.a).toMatch(/About 90 minutes, at your home\.$/);
-    expect(site.closing.title).toBe("The consultation takes 1 hour and costs nothing.");
-    expect(referral.consultation.body).toBe("1 hour, and free. Or have your fit in the same visit.");
-    expect(referral.howItWorks.steps.map((step) => step.body)).toEqual([
-      "1 hour. A scalp template and a colour match.",
-      "3 hours. You’re wearing it by the end.",
-      "Lifted, cleaned, re-bonded, trimmed. 90 minutes.",
+    expect(site.closing.title).toBe("The consultation takes 60 minutes and costs nothing.");
+    expect(referral.consultation.body).toBe("60 minutes, and free. Or have your fit in the same visit.");
+    expect(referral.howItWorks.steps.map((step) => step.lead)).toEqual([
+      "60 minutes. Completely confidential.",
+      "3 hours. Real-time transformation. Be the Main Man again.",
+      "No trips to the salon. We come to you.",
     ]);
+    expect(site.norwood.restored).toBe("From these to this in 3 hours.");
   });
 
   // The home page's copy (ADR 0103): "hair system, not hair patch", and "100% real human hair".
@@ -166,7 +164,7 @@ describe("content", () => {
       "Mane Man Essential",
       "Mane Man Active",
       "Mane Man Natural",
-      "Mane Man NatMax",
+      "Mane Man Celebrity",
     ]);
     for (const product of site.range.products) expect(product.tagline, product.name).not.toBe("");
   });
@@ -174,17 +172,11 @@ describe("content", () => {
   // The product guide marks the multi-layer base "Test before promising" and measures no life of its own: the site
   // promises no life in months for any base we fit.
   it("promises no life in months for a base we fit", () => {
-    const fitted = site.materials.groups.filter((group) => group.title !== "What we do not fit, and why");
+    const materials = guides.find((guide) => guide.slug === "hair-system-materials");
+    const fitted = materials?.sections.filter((section) => section.heading !== "What we do not fit, and why");
+    expect(fitted).toHaveLength(5);
     const said = JSON.stringify({ fitted, faq: site.faq, range: site.range });
     expect(said).not.toMatch(/\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|twelve)\b[^.]*\bmonths?\b/i);
-  });
-
-  it("gives every rated material one rating for each quality its group rates", () => {
-    for (const group of site.materials.groups) {
-      for (const item of group.items) {
-        expect(item.ratings?.length, item.name).toBe(group.rated?.length);
-      }
-    }
   });
 
   // The site serves Delhi NCR, and the landing said Gurgaon. The wording is still open
@@ -210,13 +202,20 @@ describe("content", () => {
     const published = Object.entries(BLOCKS)
       .filter(([, block]) => block.publish)
       .map(([name]) => name);
-    expect(published).toEqual(["whatsapp", "privacy", "terms"]);
+    expect(published).toEqual([
+      "whatsapp",
+      "heroFootage",
+      "teaserPair",
+      "stepPhotos",
+      "founderNote",
+      "privacy",
+      "terms",
+    ]);
   });
 });
 
 describe("the second copy round", () => {
-  // The placeholder quotes and founder's note are the design's, kept until real ones are supplied.
-  const pages = JSON.stringify({ ...site, testimonials: null, founderNote: null }) + JSON.stringify(referral);
+  const pages = JSON.stringify(site) + JSON.stringify(referral);
 
   // The FAQ concedes a hand through the hair can tell, so nothing may claim it cannot.
   it("calls the hair 100% real human hair in the hero, and claims nowhere that it is undetectable", () => {
@@ -227,9 +226,9 @@ describe("the second copy round", () => {
   });
 
   // /book and its search snippet opened "He measures your scalp", with nobody for "He" to be.
-  it("names the technician on /book and in the try-on before anything is said of them", () => {
-    expect(site.booking.intro).toMatch(/^Your technician measures your scalp/);
-    expect(site.pageDescriptions.book).toBe(site.booking.intro);
+  it("names who comes on /book and in the try-on before anything is said of them", () => {
+    expect(site.booking.intro[0]).toMatch(/^In just 60 minutes, a specialist measures/);
+    expect(site.pageDescriptions.book).toBe(site.booking.intro.join(" "));
     expect(site.tryOn.stage.body).not.toMatch(/\bHe\b/);
   });
 
@@ -253,7 +252,7 @@ describe("the second copy round", () => {
 
   it("says how long each choice on the booking form takes", () => {
     expect(referral.consultation.plan.options.map((option) => option.label)).toEqual([
-      "Consultation · 1 hour",
+      "Consultation · 60 minutes",
       "Consultation and fit · 3 hours",
     ]);
   });
@@ -275,10 +274,16 @@ describe("the second copy round", () => {
     expect(site.stepPhotos.images).toHaveLength(site.howItWorks.steps.length);
   });
 
-  // "for just" sneered; then the table gave others' rupee figures, unsourced, on a site that gives none of its own.
-  it("compares without a sneer, and without anyone's price", () => {
+  // "for just" sneered. The table gives a transplant's and medication's typical costs, never ours (ADR 0213).
+  it("compares without a sneer, and gives no price of ours", () => {
     expect(site.comparison.intro).toBe("How a hair system compares.");
-    expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b|Rs\.|₹/);
+    expect(JSON.stringify(site.comparison)).not.toMatch(/\bjust\b/);
+    expect(site.comparison.rows[0]?.cells).toEqual([
+      "Rs. 1.2–3 lakh, very often repeated",
+      "Rs. 20,000–50,000 a year, for life",
+      "Quoted free, before anything is fitted",
+    ]);
+    expect(JSON.stringify(site.comparison.rows.map((row) => row.cells[2]))).not.toMatch(/Rs\.|₹/);
   });
 });
 
@@ -291,7 +296,7 @@ describe("the legal pages", () => {
       expect(page.sections.length, page.title).toBeGreaterThan(3);
       for (const section of page.sections) expect(section.heading, page.title).not.toBe("");
       expect(textOf(page), page.title).toContain("{whatsapp}");
-      expect(textOf(page), page.title).not.toContain("90079 73247");
+      expect(textOf(page), page.title).not.toContain("90345 72990");
     }
     expect(site.whatsapp.label).toBe(`WhatsApp · ${site.whatsapp.display}`);
   });
@@ -328,6 +333,7 @@ describe("the publish gate", () => {
     expect(publishProblems()).toEqual([
       "the photo notice (photo-v5) is not approved",
       "the gate notice (gate-v5) is not approved",
+      "the consultation notice (referral-consultation-v2) is not approved",
       "the privacy page’s wording is not approved",
       "the terms page’s wording is not approved",
     ]);
@@ -345,27 +351,27 @@ describe("the publish gate", () => {
   it("stops a notice that is not approved", () => {
     const notices = { ...APPROVED, consultation: { ...site.notices.consultation, approved: false } };
     expect(publishProblems(undefined, notices, undefined, LEGAL_APPROVED)).toEqual([
-      "the consultation notice (referral-consultation-v1) is not approved",
+      "the consultation notice (referral-consultation-v2) is not approved",
     ]);
   });
 
   it("stops a published block that still holds the design’s placeholder material", () => {
     const blocks = {
       ...BLOCKS,
-      technicians: { ...site.technicians, publish: true },
+      norwoodPhotos: { ...site.norwoodPhotos, publish: true },
       privacy: realPage(site.legalPages.privacy),
       terms: realPage(site.legalPages.terms),
     };
     const problems = publishProblems(blocks, APPROVED, undefined, LEGAL_APPROVED);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatch(/^technicians is published but still holds the design’s placeholder material: /);
-    expect(problems[0]).toContain("Imran Qureshi");
+    expect(problems[0]).toMatch(/^norwoodPhotos is published but still holds the design’s placeholder material: /);
+    expect(problems[0]).toContain("nw-3.jpg");
   });
 
   it("lets a published block through once its material is replaced", () => {
     const blocks = {
       ...BLOCKS,
-      founderNote: { ...site.founderNote, publish: true, paragraphs: ["A real note."] },
+      norwoodPhotos: { ...site.norwoodPhotos, publish: true, images: [{ file: "stage-3.jpg", alt: "A real stage" }] },
       privacy: realPage(site.legalPages.privacy),
       terms: realPage(site.legalPages.terms),
     };

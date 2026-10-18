@@ -3,13 +3,13 @@
 // largest thing painted first, so it is an image of its own, fetched first, and
 // a phone's is the upright centre its own cut of the film opens on; the video,
 // over it, fetches nothing until it plays, once the page has loaded.
-// Over it the opening line shows one phrase at a time, once,
-// and settles on the last; a screen reader hears the whole line once, and
-// reduced motion shows the last phrase alone.
+// Over it the opening line shows one phrase at a time, round and round,
+// until Pause stops it with the film; a screen reader hears the whole line
+// once, and reduced motion shows the last phrase alone.
 import { capsLook } from "@maneman/ui/Caps";
 import { buttonLook } from "@maneman/ui/Button";
 import { hero, heroFootage } from "../../content/site.ts";
-import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
+import { isShown, isTaggedPlaceholder } from "../../lib/build.ts";
 import { PHONE_SCREEN } from "../../lib/hero-film.ts";
 import { heroPosters, PHONE_POSTER } from "../../lib/hero.ts";
 import { designMedia } from "../../lib/images.ts";
@@ -40,22 +40,22 @@ const showFootage = isShown(heroFootage);
   <div class="scrim"></div>
   <div class="scrim scrim--up"></div>
   <div class="scrim scrim--side"></div>
-  {SHOW_PLACEHOLDER_TAGS && showFootage && <div class={capsLook("label tag")}>{heroFootage.tag}</div>}
-  {showFootage && posters !== undefined && (
-    <button
-      type="button"
-      class={buttonLook({ variant: "outlineOnInk", size: "small", className: "strong pause" })}
-      data-hero-toggle
-      data-pause={hero.pause}
-      data-play={hero.play}
-    >
-      {hero.pause}
-    </button>
-  )}
+  {isTaggedPlaceholder(heroFootage) && showFootage && <div class={capsLook("label tag")}>{heroFootage.tag}</div>}
+  <button
+    type="button"
+    class={buttonLook({ variant: "outlineOnInk", size: "small", className: "strong pause" })}
+    data-hero-toggle
+    data-pause={hero.pause}
+    data-play={hero.play}
+  >
+    {hero.pause}
+  </button>
   <div class="content">
     <p class="sequence">
-      {hero.sequence.map((phrase) => (
-        <span class="phrase">{phrase} </span>
+      {hero.sequence.map((phrase, index) => (
+        <span class:list={["phrase", { on: index === 0 }]} data-phrase>
+          {phrase}{" "}
+        </span>
       ))}
     </p>
     <h1>{hero.title}</h1>
@@ -72,20 +72,37 @@ const showFootage = isShown(heroFootage);
 </section>
 
 <script>
-  // Plays the footage unless the visitor asked for reduced motion or less
-  // data, is on a slow connection, or pressed Pause (WCAG 2.2.2); Play starts
-  // it whatever the reason. The film's address is set only when it first
-  // plays, after the page has loaded, so until then nothing of it is fetched.
-  // Browsers pause media in a background tab, so it is resumed when the tab
-  // returns.
+  // Plays the footage and turns the opening line unless the visitor asked for
+  // reduced motion or less data, is on a slow connection, or pressed Pause
+  // (WCAG 2.2.2); Play starts both whatever the reason. The film's address is
+  // set only when it first plays, after the page has loaded, so until then
+  // nothing of it is fetched. Browsers pause media in a background tab, so it
+  // is resumed when the tab returns. Reduced motion shows the last phrase.
   import { type Connection, PHONE_SCREEN, playsByItself } from "../../lib/hero-film.ts";
 
   const video = document.querySelector<HTMLVideoElement>("[data-hero-video]");
   const toggle = document.querySelector<HTMLButtonElement>("[data-hero-toggle]");
+  const phrases = [...document.querySelectorAll<HTMLElement>("[data-phrase]")];
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   const connection = (navigator as Navigator & { connection?: Connection }).connection;
+  const line = document.querySelector<HTMLElement>(".sequence");
+  const holdMs = line === null ? 0 : parseFloat(getComputedStyle(line).getPropertyValue("--hold"));
   let stopped = !playsByItself(reduced.matches, connection);
+  let shown = 0;
+  let turning: number | undefined;
 
+  const show = (index: number) => {
+    shown = index;
+    phrases.forEach((phrase, at) => phrase.classList.toggle("on", at === index));
+  };
+  const turn = () => {
+    window.clearInterval(turning);
+    turning = undefined;
+    if (stopped || holdMs <= 0) return;
+    turning = window.setInterval(() => {
+      show((shown + 1) % phrases.length);
+    }, holdMs);
+  };
   const label = () => {
     if (toggle === null) return;
     toggle.textContent = (stopped ? toggle.dataset.play : toggle.dataset.pause) ?? "";
@@ -103,9 +120,13 @@ const showFootage = isShown(heroFootage);
   const stopOrStart = (stop: boolean) => {
     stopped = stop;
     label();
+    turn();
     if (stop) video?.pause();
     else play();
   };
+
+  if (reduced.matches) show(phrases.length - 1);
+  turn();
 
   label();
   if (document.readyState === "complete") play();
@@ -178,6 +199,8 @@ const showFootage = isShown(heroFootage);
   }
   /* The phrases share one cell, so the line keeps the height of its longest and nothing below it moves. */
   .sequence {
+    /* How long each phrase shows, which the script reads. */
+    --hold: var(--duration-phrase);
     display: grid;
     margin: 0;
     font-family: var(--font-serif);
@@ -191,38 +214,14 @@ const showFootage = isShown(heroFootage);
     grid-area: 1 / 1;
     opacity: 0;
     text-wrap: balance;
-    animation: phrase var(--duration-phrase) var(--ease-house) both;
+    transition: opacity var(--duration-travel) var(--ease-house);
   }
-  .phrase:nth-child(2) {
-    animation-delay: var(--duration-phrase);
-  }
-  .phrase:nth-child(3) {
-    animation-delay: calc(2 * var(--duration-phrase));
-  }
-  .phrase:last-child {
+  .phrase.on {
     opacity: 1;
-    animation: settle var(--duration-quick) var(--ease-house) both;
-    animation-delay: calc(3 * var(--duration-phrase));
-  }
-  @keyframes phrase {
-    0%,
-    100% {
-      opacity: 0;
-    }
-    25%,
-    75% {
-      opacity: 1;
-    }
-  }
-  @keyframes settle {
-    from {
-      opacity: 0;
-    }
   }
   @media (prefers-reduced-motion: reduce) {
-    .phrase,
-    .phrase:last-child {
-      animation: none;
+    .phrase {
+      transition: none;
     }
   }
   h1 {

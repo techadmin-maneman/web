@@ -126,7 +126,7 @@ describe("security.txt", () => {
   it("names the security mailbox, then the business’s WhatsApp, and lapses a year after the build", () => {
     const built = new Date("2026-10-05T00:00:00.000Z");
     expect(securityTxt(built)).toBe(
-      "Contact: mailto:security@maneman.in\nContact: https://wa.me/919007973247\nExpires: 2027-10-05T00:00:00.000Z\n" +
+      "Contact: mailto:security@maneman.in\nContact: https://wa.me/919034572990\nExpires: 2027-10-05T00:00:00.000Z\n" +
         "Preferred-Languages: en\n",
     );
   });

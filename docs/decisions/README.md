@@ -2,7 +2,7 @@
 
 Every decision this repository was built on, oldest first. A record says what was decided and why, and is not rewritten to say something else: a later record changes it, and says so in its own header (ADR 0001). **Changed by** gathers those later records, from either side, so an old record's reader knows to read on. How each part of the business works today, with the few records that still govern it, is on its page in [how it works](../how-it-works/README.md).
 
-This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0213. 0090 and 0091 were taken for records never written, and stay unused.
+This file is written by `npm run adr-index` from the records' own headers, and `test/node/tooling/adr-index.test.ts` fails until it is run after a record is added or its status changes. A record names its topic in its header, `- Topic:` and one of the headings below, and the test fails on one that does not. The next free number is 0214. 0090 and 0091 were taken for records never written, and stay unused.
 
 ## By topic
 
@@ -350,7 +350,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0100](0100-a-refund-is-made-once.md) | A refund is made once, however often it is asked for | 2026-10-01 | accepted |  |
 | [0101](0101-phase-1s-path-into-fsm-removed.md) | Phase 1's path into FSM is removed, and no booking carries a Request | 2026-10-01 | superseded by 0110 on 4 October 2026: with FSM gone there is no path into it to remove | [0110](0110-field-work-without-fsm.md) |
 | [0102](0102-window-times.md) | The window times in the console | 2026-10-01 | accepted, on the owner's rulings of 30 September and 1 October 2026 | [0210](0210-booking-by-start-time.md) |
-| [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted |  |
+| [0103](0103-the-home-pages-first-copy-round.md) | The home page's first copy round | 2026-10-01 | accepted | [0213](0213-the-sites-second-copy-round.md) |
 | [0104](0104-the-try-ons-look-on-whatsapp-only.md) | The try-on's look on WhatsApp only | 2026-10-01 | accepted, on the owner's ruling D3 of 1 October 2026 |  |
 | [0105](0105-a-consultation-and-fit-in-one-visit.md) | A consultation and fit in one visit | 2026-10-01 | accepted, on the owner's ruling D2 of 1 October 2026 and the rulings of the same day on the piece, the payment and the length |  |
 | [0106](0106-a-clients-hair-profile.md) | A client's hair profile: the fit spec and their history | 2026-10-01 | accepted, on the owner's rulings of 1 October 2026 |  |
@@ -451,7 +451,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0201](0201-the-try-on-on-youcam.md) | The try-on on YouCam | 2026-10-14 | accepted |  |
 | [0202](0202-razorpay-events-queued.md) | Razorpay's events are queued, and every queue has its dead letters | 2026-10-14 | accepted |  |
 | [0203](0203-a-vendor-down-is-held-off.md) | A vendor that is down is held off, and a contact change waits in D1 | 2026-10-14 | accepted |  |
-| [0204](0204-the-sites-price-pipeline-removed.md) | The site's price pipeline is removed | 2026-10-15 | accepted |  |
+| [0204](0204-the-sites-price-pipeline-removed.md) | The site's price pipeline is removed | 2026-10-15 | accepted | [0213](0213-the-sites-second-copy-round.md) |
 | [0205](0205-the-pipeline-as-it-runs.md) | The pipeline as it runs | 2026-10-15 | accepted |  |
 | [0206](0206-trusted-types-and-a-nonce-per-page.md) | Trusted Types enforced, and a nonce on every page | 2026-10-15 | accepted |  |
 | [0207](0207-closed-chats-archived.md) | Closed Care threads are archived out of D1 | 2026-10-15 | accepted |  |
@@ -460,3 +460,4 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0210](0210-booking-by-start-time.md) | Booking by start time | 2026-10-18 | accepted |  |
 | [0211](0211-packages.md) | Packages | 2026-10-18 | accepted |  |
 | [0212](0212-editing-in-place.md) | Editing in place | 2026-10-18 | accepted |  |
+| [0213](0213-the-sites-second-copy-round.md) | The site's second copy round | 2026-10-19 | accepted |  |

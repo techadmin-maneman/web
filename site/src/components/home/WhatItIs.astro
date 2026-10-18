@@ -1,23 +1,9 @@
 ---
-// "What it is": the full-bleed plate of the membrane, then a narrow column.
-import { capsLook } from "@maneman/ui/Caps";
-import { placeholderTag, whatItIs, whatPlate } from "../../content/site.ts";
-import { SHOW_PLACEHOLDER_TAGS, isShown } from "../../lib/build.ts";
-import DesignPicture from "../DesignPicture.astro";
+// "What it is": a narrow column, beneath the results.
+import { whatItIs } from "../../content/site.ts";
 ---
 
 <section id="what" class="what" data-section="what">
-  {isShown(whatPlate) && (
-    <div class="frame plate" data-section="plate">
-      <DesignPicture
-        file={whatPlate.image.file}
-        alt={whatPlate.image.alt}
-        sizes="100vw"
-        widths={[640, 1024, 1440, 1920]}
-      />
-      {SHOW_PLACEHOLDER_TAGS && <div class={capsLook("label tag")}>{placeholderTag}</div>}
-    </div>
-  )}
   <div class="column">
     <h2 class="section-title">{whatItIs.title}</h2>
     <p class="body">{whatItIs.body}</p>
@@ -26,17 +12,6 @@ import DesignPicture from "../DesignPicture.astro";
 </section>
 
 <style>
-  .what {
-    margin-top: var(--section-gap-lg);
-  }
-  .plate {
-    height: var(--what-plate-h);
-  }
-  .tag {
-    position: absolute;
-    top: var(--sp-16);
-    left: var(--sp-16);
-  }
   .column {
     max-width: var(--measure-column);
     margin: 0 auto;

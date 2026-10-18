@@ -112,23 +112,6 @@
   padding-inline: var(--gutter);
 }
 
-.three-up {
-  display: grid;
-  gap: var(--three-up-gap);
-  grid-template-columns: 1fr;
-}
-@media (min-width: 761px) {
-  .three-up {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--sp-16);
-  }
-}
-@media (min-width: 1024px) {
-  .three-up {
-    gap: var(--sp-28);
-  }
-}
-
 /* ---- Type ----------------------------------------------------------------- */
 
 .serif {
@@ -184,9 +167,6 @@
 /* The design's framings of people. */
 .focus-norwood {
   object-position: 50% 22%;
-}
-.focus-technician {
-  object-position: 50% 18%;
 }
 .focus-client {
   object-position: 50% 28%;

@@ -43,7 +43,7 @@ test("a booked number logs in with its code and lands on its consultation", asyn
   await expect(page.getByRole("link", { name: appCopy.titles.profile })).toHaveText("RM");
   await expect(page.getByRole("link", { name: appCopy.home.reschedule })).toHaveAttribute(
     "href",
-    /^https:\/\/wa\.me\/919007973247\?text=/,
+    /^https:\/\/wa\.me\/919034572990\?text=/,
   );
 });
 
@@ -193,7 +193,7 @@ test("says to use the last code when no other can be sent just now", async ({ pa
   await expect(page.getByRole("alert")).toHaveText(appCopy.login.code.limited);
   await expect(page.getByRole("link", { name: appCopy.login.messageUs })).toHaveAttribute(
     "href",
-    "https://wa.me/919007973247",
+    "https://wa.me/919034572990",
   );
 });
 
@@ -207,7 +207,7 @@ test("a number out of codes for the day is told so, with WhatsApp under the line
   await expect(page.getByRole("alert")).toHaveText(appCopy.login.mobile.errors.rate_limited);
   await expect(page.getByRole("link", { name: appCopy.login.messageUs })).toHaveAttribute(
     "href",
-    "https://wa.me/919007973247",
+    "https://wa.me/919034572990",
   );
 });
 
@@ -239,7 +239,7 @@ test("A3 is reached by choice, and points to booking and WhatsApp", async ({ pag
   );
   await expect(page.getByRole("link", { name: appCopy.login.help.message })).toHaveAttribute(
     "href",
-    "https://wa.me/919007973247",
+    "https://wa.me/919034572990",
   );
   await page.getByRole("button", { name: appCopy.login.code.back }).click();
   await expect(page.getByRole("heading", { level: 1, name: appCopy.login.code.title })).toBeVisible();

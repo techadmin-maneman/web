@@ -232,7 +232,7 @@ describe("a mobile field on the site and in the technician app", () => {
 describe("web-kit WhatsApp links", () => {
   it("opens a chat with a number, however it is written, with words ready to send if there are any", () => {
     expect(whatsappChat("+91 98100 04417")).toBe("https://wa.me/919810004417");
-    expect(whatsappChat(WHATSAPP_NUMBER, "Hello & bye")).toBe("https://wa.me/919007973247?text=Hello%20%26%20bye");
+    expect(whatsappChat(WHATSAPP_NUMBER, "Hello & bye")).toBe("https://wa.me/919034572990?text=Hello%20%26%20bye");
   });
 
   it("shares words with whoever the sender picks", () => {
@@ -243,7 +243,7 @@ describe("web-kit WhatsApp links", () => {
   it("is the one place the front ends write the number or build a link", () => {
     const own = ["apps", "site/src", "packages/ui"]
       .flatMap((root) => sourcesUnder(root))
-      .filter((path) => /https:\/\/wa\.me|9007973247/.test(readFileSync(path, "utf8")));
+      .filter((path) => /https:\/\/wa\.me|9034572990/.test(readFileSync(path, "utf8")));
     expect(own).toEqual([]);
   });
 });

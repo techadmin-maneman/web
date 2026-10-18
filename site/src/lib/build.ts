@@ -15,3 +15,8 @@ export const SHOW_PLACEHOLDER_TAGS = !IS_PRODUCTION;
 export function isShown(block: { readonly publish: boolean }): boolean {
   return shownIn(ENVIRONMENT, block);
 }
+
+/** Whether a block shown here wears the "Placeholder" tag: it is still the design's material, not published. */
+export function isTaggedPlaceholder(block: { readonly publish: boolean }): boolean {
+  return SHOW_PLACEHOLDER_TAGS && !block.publish;
+}

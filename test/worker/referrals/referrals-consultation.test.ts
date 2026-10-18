@@ -50,7 +50,7 @@ describe("POST /api/r/:code/consultation", () => {
     expect(friend).toEqual({
       name: "Karan Bhatia",
       purpose: "whatsapp_visits",
-      notice_version: "referral-consultation-v1",
+      notice_version: "referral-consultation-v2",
       source: "referral_landing",
       code,
       via: "consultation",

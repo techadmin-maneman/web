@@ -9,10 +9,13 @@ import { tryOnTeaser } from "./home.ts";
  */
 export const booking = {
   /** The page's heading follows what the form books, and where we do not come yet, the waitlist. */
-  title: "Book a free consultation",
+  title: "Meet your hair again. Completely private, right at home.",
   titleOneVisit: "Book a consultation and fit",
   titleWaitlist: "Not in your area yet",
-  intro: `Your technician measures your scalp and matches your colour: ${visitLength.consultation}, free. Or add the fit and wear your hair system the same day.`,
+  intro: [
+    `In just ${visitLength.consultation}, a specialist measures, colour-matches and custom-maps your hairline at your home, completely free. And you get to see a demo of how your hairline would look with the right system in place.`,
+    "Love what you see? You can even get it fitted and walk out with a full head of hair the very same day.",
+  ],
   /** Where we do not come yet: what the list is for. The WhatsApp is the visitor's to tick, so it is promised as so. */
   introWaitlist: "Join the list. Tick the box and we’ll WhatsApp you the week we start coming to you.",
   extent: "Extent of hair loss (optional)",
@@ -21,7 +24,9 @@ export const booking = {
    * (docs/decisions/0116-book-asks-for-the-name-and-number-first.md).
    */
   step: "Step {at} · {name}",
-  steps: { you: "You", area: "Your area", visit: "Your visit", address: "Your address", list: "The list" },
+  steps: { you: "About you", area: "Your area", visit: "Your visit", address: "Your address", list: "The list" },
+  /** The first step's button, which keeps the name and number before the pincode is asked. Its arrow keeps to the last word. */
+  start: "Book your free at-home consultation\u00a0→",
   next: "Continue",
   saving: "One moment…",
   /** Beneath the first step, the name and number it kept, and the way back to them. */
@@ -79,7 +84,7 @@ export const pageTitles = {
 export const pageDescriptions = {
   home: `Hair systems in 100% real human hair, fitted at your home across ${serviceArea}. The consultation is free.`,
   tryOn: tryOnTeaser.body,
-  book: booking.intro,
+  book: booking.intro.join(" "),
   privacy: "What Mane Man keeps about you, who processes it, how long it is kept, and how to have it erased.",
   terms: "The terms of Mane Man’s hair system service.",
 };

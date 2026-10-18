@@ -74,14 +74,57 @@ test.describe("chrome", () => {
   }
 });
 
+/** A front camera that films a plain frame, for a browser that has none: the test machine's. */
+async function fakeCamera(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 800;
+    const devices = {
+      enumerateDevices: () => Promise.resolve([{ kind: "videoinput", deviceId: "front", groupId: "", label: "" }]),
+      getUserMedia: () => {
+        const context = canvas.getContext("2d");
+        if (context !== null) {
+          context.fillStyle = "rgb(200, 162, 122)";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        return Promise.resolve(canvas.captureStream(30));
+      },
+    };
+    Object.defineProperty(navigator, "mediaDevices", { value: devices, configurable: true });
+  });
+}
+
 test.describe("upload", () => {
   test("three guidelines, two ways in, and no demo link to the error screen", async ({ page }) => {
+    await fakeCamera(page);
     await open(page, "upload");
     await expect(page.locator("[data-screen] ol > li")).toHaveCount(3);
     await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.choose })).toBeVisible();
     await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.camera })).toBeVisible();
     await expect(page.getByText("See what happens if the photo will not work")).toHaveCount(0);
     await expect(page.locator('input[type="file"][capture="user"]')).toHaveCount(1);
+  });
+
+  // The camera's button opened the file picker at a desk, where a file input's capture means nothing.
+  test("Use the camera opens the camera in the page, and its photo goes on to the consent screen", async ({ page }) => {
+    await fakeCamera(page);
+    await open(page, "upload");
+    await page.getByRole("button", { name: siteCopy.tryOn.upload.camera }).click();
+    await expect(page.locator("video").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.choose })).toHaveCount(0);
+    await page.getByRole("button", { name: siteCopy.tryOn.upload.snap }).click();
+    await expect(page.locator("[data-screen]")).toHaveAttribute("data-screen", "consent");
+  });
+
+  test("a device with no camera is offered only the photo it has", async ({ page }) => {
+    await page.addInitScript(() => {
+      const devices = { enumerateDevices: () => Promise.resolve([]) };
+      Object.defineProperty(navigator, "mediaDevices", { value: devices, configurable: true });
+    });
+    await open(page, "upload");
+    await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.choose })).toBeVisible();
+    await expect(page.getByRole("button", { name: siteCopy.tryOn.upload.camera })).toHaveCount(0);
   });
 
   // On a phone the caption sat across the oval's lower corner brackets.
@@ -237,8 +280,9 @@ test.describe("sent", () => {
       page.getByText("It’ll reach WhatsApp on +91 98100 00000 within minutes. We delete it after 14 days."),
     ).toBeVisible();
     await expect(page.getByText("never shown on this site", { exact: false })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: siteCopy.tryOn.sent.book })).toHaveAttribute("href", "/book");
-    await expect(page.getByRole("link", { name: siteCopy.tryOn.sent.home })).toHaveAttribute("href", "/");
+    const screen = page.locator("[data-screen]");
+    await expect(screen.getByRole("link", { name: siteCopy.tryOn.sent.book })).toHaveAttribute("href", "/book");
+    await expect(screen.getByRole("link", { name: siteCopy.tryOn.sent.home })).toHaveAttribute("href", "/");
     await expect(page.locator("[data-screen] img")).toHaveCount(0);
     await expect(page.getByRole("slider")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Download" })).toHaveCount(0);

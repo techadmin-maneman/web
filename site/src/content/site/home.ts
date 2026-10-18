@@ -2,7 +2,6 @@
 
 import { GUARANTEE } from "@maneman/web-kit/guarantee";
 import { capitalised, serviceArea, visitLength } from "../service.ts";
-import { basePhotos, type Picture } from "./media.ts";
 
 export const header = {
   /** The first thing a keyboard reaches, past the header to the page. */
@@ -16,14 +15,16 @@ export const header = {
     { label: "Questions", href: "/#faq" },
   ],
   area: serviceArea,
-  book: "Book a consultation",
+  book: "Book a free consultation",
+  /** The same button on a phone, where the full words would run into the wordmark. */
+  bookShort: "Free consultation",
 };
 
 export const stickyBar = {
   /** What a screen reader calls the bar's landmark. */
   label: "Book or message us",
   whatsappLabel: "Message us on WhatsApp",
-  book: "Book a consultation",
+  book: "Book a free consultation",
 };
 
 export const footer = {
@@ -59,20 +60,38 @@ export const footer = {
 
 export const placeholderTag = "Placeholder";
 
+/** On a picture made by AI rather than taken of a client. */
+export const illustrationTag = "Illustration";
+
 // ---------------------------------------------------------------------------
 // Home, in order
 // ---------------------------------------------------------------------------
 
 export const hero = {
-  /** Shown one at a time over the footage, once, settling on the last. */
-  sequence: ["Natural up close.", "100% real human hair.", "Fitted at home.", "Be the Main Man again."],
+  /** Shown one at a time over the footage, round and round. */
+  sequence: [
+    "Natural up close.",
+    "100% real human hair.",
+    "Fitted at home.",
+    "Get your confident self back.",
+    "Be the Main Man again.",
+  ],
   title: "A full head of hair, matched to your own.",
   body: "Your technician comes when it suits you, matches a hair system to your own hair and fits it.",
   tryOn: "Try a new look",
   book: "Book a free consultation",
-  // The footage loops, so it can be stopped (WCAG 2.2.2).
-  pause: "Pause the film",
-  play: "Play the film",
+  // The footage and the opening line loop, so both can be stopped (WCAG 2.2.2).
+  pause: "Pause",
+  play: "Play",
+};
+
+/** The before-and-after strip beneath the hero. Its pairs are in media.ts (resultPairs). */
+export const results = {
+  title: "10,000+ transformations by our specialists. Quietly.",
+  /** What a screen reader calls the strip, which scrolls sideways. */
+  label: "Before and after",
+  before: "Before",
+  after: "After",
 };
 
 export const whatItIs = {
@@ -85,13 +104,11 @@ export interface NorwoodStage {
   readonly numeral: string;
   readonly name: string;
   readonly tag: string;
-  readonly description: string;
   /** The line drawing's bald region (the design's _nwOld), used when norwoodPhotos.use is "drawings". */
   readonly bald: string;
 }
 
 const NORWOOD_FRONT = {
-  ii: "M96 0 L96 26 C90 20 80 15 68 13 L63 0 Z",
   iii: "M96 0 L96 30 C88 21 76 15 60 13 L53 0 Z",
   iv: "M96 0 L96 32 C87 21 73 15 55 13 L47 0 Z",
   v: "M96 0 L96 35 C85 22 69 15 49 14 L40 0 Z",
@@ -106,66 +123,16 @@ const NORWOOD_VERTEX = {
 export const norwood = {
   title: "Where you are on the scale",
   intro: "Hair loss in men is graded in seven stages.",
-  early: {
-    label: "Stages one and two · nothing to fit yet",
-    note: "A hair system here would cover hair you still have.",
-    stages: [
-      {
-        numeral: "I",
-        name: "No recession",
-        tag: "No loss",
-        description: "The hairline sits where it always has.",
-        bald: "M0 0 Z",
-      },
-      {
-        numeral: "II",
-        name: "Temple recession",
-        tag: "Early",
-        description: "The corners have moved back a little. Most men reach this and go no further.",
-        bald: NORWOOD_FRONT.ii,
-      },
-    ] satisfies NorwoodStage[],
-  },
-  late: {
-    label: "Stages three to seven · we can fit all of these",
-    stages: [
-      {
-        numeral: "III",
-        name: "A clear M",
-        tag: "We fit",
-        description: "Deep recession at both temples. The first stage other people notice.",
-        bald: NORWOOD_FRONT.iii,
-      },
-      {
-        numeral: "IV",
-        name: "Front and crown",
-        tag: "We fit",
-        description: "The front has gone back further and the crown has opened separately.",
-        bald: NORWOOD_FRONT.iv + NORWOOD_VERTEX.sm,
-      },
-      {
-        numeral: "V",
-        name: "The bridge narrows",
-        tag: "We fit",
-        description: "Front and crown are both bare, divided by a thinning band of hair.",
-        bald: NORWOOD_FRONT.v + NORWOOD_VERTEX.md,
-      },
-      {
-        numeral: "VI",
-        name: "The bridge is gone",
-        tag: "We fit",
-        description: "Front and crown have joined into one continuous bare area.",
-        bald: NORWOOD_FRONT.vi,
-      },
-      {
-        numeral: "VII",
-        name: "A rim only",
-        tag: "We fit",
-        description: "Hair remains as a band around the sides and back of the head.",
-        bald: NORWOOD_FRONT.vii,
-      },
-    ] satisfies NorwoodStage[],
-  },
+  label: "Stages three to seven · we can fit all of these",
+  stages: [
+    { numeral: "III", name: "A clear M", tag: "We fit", bald: NORWOOD_FRONT.iii },
+    { numeral: "IV", name: "Front and crown", tag: "We fit", bald: NORWOOD_FRONT.iv + NORWOOD_VERTEX.sm },
+    { numeral: "V", name: "The bridge narrows", tag: "We fit", bald: NORWOOD_FRONT.v + NORWOOD_VERTEX.md },
+    { numeral: "VI", name: "The bridge is gone", tag: "We fit", bald: NORWOOD_FRONT.vi },
+    { numeral: "VII", name: "A rim only", tag: "We fit", bald: NORWOOD_FRONT.vii },
+  ] satisfies NorwoodStage[],
+  /** The last card: a hairline restored, after the five stages. Its picture is media.ts's norwoodRestored. */
+  restored: `From these to this in ${visitLength.firstFit}.`,
   book: "Book a free consultation",
 };
 
@@ -181,37 +148,33 @@ export const comparison = {
   rows: [
     {
       label: "Cost",
-      // No figure of anyone else's: the site gives no price, ours or theirs.
+      // The other treatments' typical costs; ours is never given (THEIRS, src/lib/publish-gate.ts).
       cells: [
-        "A large one-off cost, often repeated",
-        "Every month, for life",
+        "Rs. 1.2–3 lakh, very often repeated",
+        "Rs. 20,000–50,000 a year, for life",
         "Quoted free, before anything is fitted",
       ],
     },
-    { label: "Visible result", cells: ["9–12 months", "4–6 months", "The same day"] },
+    { label: "Visible result", cells: ["9–12 months", "6–9 months", "The same day"] },
     { label: "Covers advanced loss", cells: [false, false, true] },
     { label: "No surgery", cells: [false, true, true] },
     {
       label: "Side effects",
-      cells: ["Surgical risks", "Possible side effects", "Nothing implanted or swallowed"],
+      cells: ["Surgical risks", "Long-term side effects", "Nothing implanted or swallowed"],
     },
     { label: "Reversible", cells: [false, true, true] },
     {
       label: "Upkeep",
-      cells: [
-        "Loss carries on; often a second transplant in a few years",
-        "Daily, for life",
-        "One service visit a month",
-      ],
+      cells: ["Loss carries on; repeats are common", "Daily, for life", "One service visit a month"],
     },
   ] satisfies { label: string; cells: [ComparisonCell, ComparisonCell, ComparisonCell] }[],
 };
 
 export const tryOnTeaser = {
   eyebrow: "Try-on",
-  title: "See yourself with hair before anyone comes to your home.",
+  title: "See yourself with hair.",
   // The look on WhatsApp only is ADR 0104's.
-  body: "One photo, one look from six, sent privately to your WhatsApp. An illustration, not a photo of a result. Your photo is deleted within the hour; a small copy stays with your look for up to 14 days.",
+  body: "One photo, one look from six, sent privately to your WhatsApp.",
   start: "Start the try-on",
   before: "Before",
   after: "After",
@@ -232,13 +195,13 @@ export const howItWorks = {
     {
       number: "01",
       title: "Consultation at home",
-      body: "Your scalp measured, your colour matched in daylight, and your hair system chosen with you.",
+      body: "Your scalp measured, your colour matched in daylight, and your hair system chosen with you. Then see how one looks on you, for real.",
       meta: `${capitalised(visitLength.consultation)} · free`,
     },
     {
       number: "02",
       title: "The first fit",
-      body: "The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Your new look, on the spot.",
+      body: "The same visit or a later one: your choice. Bonded, cut into your own hair and styled. Confidence, delivered.",
       meta: `${capitalised(visitLength.firstFit)} · at your home`,
     },
     {
@@ -263,7 +226,7 @@ export const range = {
     {
       name: "Mane Man Active",
       tagline: "Made for men who sweat.",
-      body: "A French lace top, the most breathable base there is, and a bleached lace hairline. For the gym, the field and a Delhi summer.",
+      body: "A French lace top, the most breathable base there is, and a bleached lace hairline. For the gym, the field and an Indian summer.",
     },
     {
       name: "Mane Man Natural",
@@ -271,160 +234,12 @@ export const range = {
       body: "A fine skin base with a bleached lace front. No mesh to see, so the hair seems to grow from your scalp.",
     },
     {
-      name: "Mane Man NatMax",
-      tagline: "Natural, even at the parting.",
+      name: "Mane Man Celebrity",
+      tagline: "Flawless, even at the parting.",
       body: "A silk top over lace hides every knot, so a parting shows scalp, not mesh.",
     },
   ],
 };
-
-interface MaterialItem {
-  readonly name: string;
-  readonly text: string;
-  /** One word for each of its group's `rated` labels, in their order. */
-  readonly ratings?: readonly string[];
-}
-
-interface MaterialGroup {
-  readonly title: string;
-  readonly lead?: string;
-  readonly rated?: readonly string[];
-  readonly photos?: { readonly publish: boolean; readonly images: readonly Picture[] };
-  readonly items: readonly MaterialItem[];
-}
-
-/** What a hair system is made of, from the product guide's exhibits, each group closed until it is opened. */
-export const materials: { readonly title: string; readonly intro: string; readonly groups: readonly MaterialGroup[] } =
-  {
-    title: "Materials and construction",
-    intro: "What each hair system is made of, and what that means for how it looks, breathes and lasts.",
-    groups: [
-      {
-        title: "The base: lace, mono, skin and silk",
-        lead: "The base decides everything: how natural it looks, how cool it feels, how long it lasts. The thinner the base, the better it looks and the sooner it wears.",
-        rated: ["Natural look", "Breathes", "Strength"],
-        photos: basePhotos,
-        items: [
-          {
-            name: "Lace",
-            text: "The finest, softest mesh. Its knots can be bleached until they vanish, which is why every hairline we fit is lace.",
-            ratings: ["Best", "Most", "Delicate"],
-          },
-          {
-            name: "Mono",
-            text: "Monofilament: a fine, tough mesh. It breathes, takes the most hair, and outlasts every other base.",
-            ratings: ["Good", "Well", "Strongest"],
-          },
-          {
-            name: "Skin",
-            text: "A clear polyurethane film, 0.08 to 0.10 mm thin. No mesh to see, so the hair seems to grow straight from the scalp.",
-            ratings: ["Very good", "Little", "Moderate"],
-          },
-          {
-            name: "Silk, multi-layer",
-            text: "Hair knotted onto a lace layer and drawn up through silk, so every knot sits hidden between the two. A parting shows scalp.",
-            ratings: ["Best at the parting", "Least", "Protected"],
-          },
-        ],
-      },
-      {
-        title: "How the hair is tied in: knots and loops",
-        lead: "Every hair is tied or looped into the base by hand. How it is tied decides how natural the root looks and how well it holds.",
-        rated: ["Natural look", "Shedding", "Durability"],
-        items: [
-          {
-            name: "Single knot",
-            text: "One small knot for each hair. Fine and flat, on lace and skin.",
-            ratings: ["High", "Low to medium", "Medium"],
-          },
-          {
-            name: "Double knot",
-            text: "Each hair knotted twice, for the sides and back of a mono base.",
-            ratings: ["Medium", "Low", "High"],
-          },
-          {
-            name: "Bleached knot",
-            text: "Knots lightened until they disappear. Only lace takes it, so it is kept for the hairline.",
-            ratings: ["Highest at the hairline", "Higher", "Low"],
-          },
-          {
-            name: "V-looped",
-            text: "No knot at all: each hair is looped through the skin, so it seems to grow from it.",
-            ratings: ["Very high", "Very low", "Low"],
-          },
-          {
-            name: "Injected",
-            text: "Hair set into the skin so that it stands up from the root. Made for a parting or a brushed-back style.",
-            ratings: ["Very high", "Very low", "High"],
-          },
-        ],
-      },
-      {
-        title: "The rim and the hairline",
-        lead: "The edges are where a hair system is held, and where it is seen.",
-        items: [
-          {
-            name: "Clear PU rim",
-            text: "A thin, transparent polyurethane edge. The tape grips it, never the mesh, and it disappears at the temples.",
-          },
-          {
-            name: "NPU rim",
-            text: "Polyurethane reinforced with mesh: stronger and slightly thicker, so it is kept to the sides and back, where nobody looks.",
-          },
-          {
-            name: "Lace front",
-            text: "Up to an inch of lace along the hairline, its knots bleached until they disappear. It is what lets a hairline pass a close look, and every hair system we fit has one.",
-          },
-        ],
-      },
-      {
-        title: "How much hair: density",
-        lead: "Density is how much hair is tied in, against a full natural head. More is not better: too much hair is what gives a hair system away. We match yours to the hair you still have at the sides, not the hair you had at twenty.",
-        items: [
-          { name: "80% · Light", text: "The scalp shows at a parting. For men over sixty." },
-          {
-            name: "100% · Medium light",
-            text: "Natural, without much volume. Most men’s choice, and ours over forty.",
-          },
-          {
-            name: "120% · Medium",
-            text: "Visibly fuller, and holds a style. For younger men, and men whose own hair is thick.",
-          },
-          { name: "140% · Medium heavy", text: "Heavy for daily wear. On request only." },
-        ],
-      },
-      {
-        title: "The hair",
-        items: [
-          {
-            name: "100% real human hair",
-            text: "Cut, washed and styled like your own. It does not grow, so the hair system is renewed when it wears.",
-          },
-          {
-            name: "Indian remy hair, on Mane Man Natural",
-            text: "Every hair runs the same way, root to tip, so it tangles less and holds its shine longer.",
-          },
-          {
-            name: "Matched to you",
-            text: "Colour, grey and wave matched to your own hair in daylight, at the consultation.",
-          },
-        ],
-      },
-      {
-        title: "What we do not fit, and why",
-        items: [
-          { name: "Ultra-thin skin, 0.03 mm", text: "The most invisible base made, and it lasts about a month." },
-          { name: "Full Swiss lace", text: "The most fragile base there is: one to two months." },
-          {
-            name: "Lace with no rim",
-            text: "It must be glued along its whole edge every few weeks: a salon job, not a home service.",
-          },
-          { name: "140% and denser, as standard", text: "Too much hair is what makes a hair system obvious." },
-          { name: "European hair", text: "Finer, dearer, and a poor match for Indian hair." },
-        ],
-      },
-    ],
-  };
 
 export const guarantee = {
   label: "The guarantee",
