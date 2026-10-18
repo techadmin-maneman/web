@@ -16,7 +16,7 @@ import { EDITING } from "../content/common.ts";
 import { technicians } from "../content.ts";
 import { useAccess } from "../lib/access.ts";
 import { useWrite } from "../lib/write.ts";
-import { Refused } from "../settings/index.ts";
+import { Refused } from "../components/Refusal.tsx";
 import form from "../components/forms.module.css";
 import shared from "./technicians.module.css";
 import styles from "./technician-hours.module.css";

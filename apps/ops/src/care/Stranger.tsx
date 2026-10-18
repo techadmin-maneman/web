@@ -8,7 +8,7 @@ import { boxError, type Failure } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { api, type ClientsFound } from "../api.ts";
 import { care } from "../content/care.ts";
-import { Refused } from "../settings/index.ts";
+import { Refused } from "../components/Refusal.tsx";
 import { careApi, type FoundUs } from "./care-api.ts";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";

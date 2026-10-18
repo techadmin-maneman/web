@@ -229,7 +229,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 
 - [0031](0031-access-and-audit.md) Access on the ops surface, and the audit log
 - [0061](0061-ops-editable-inputs.md) The business inputs ops change without a developer
-- [0071](0071-what-ops-see-before-a-setting-changes.md) What ops see before a setting changes, and who the console says they are
+- [0071](0071-what-ops-see-before-a-setting-changes.md) What ops see before a setting changes, and who the console says they are (superseded)
 - [0072](0072-ops-clients-and-queues.md) The ops console's clients and queues
 - [0078](0078-the-queues-no-board-draws.md) The console's queues that no board draws
 - [0088](0088-every-policy-in-the-console.md) Every policy in the console
@@ -320,7 +320,7 @@ This file is written by `npm run adr-index` from the records' own headers, and `
 | [0068](0068-a-paid-hold-is-kept.md) | A paid hold is kept | 2026-09-25 | accepted | [0095](0095-a-booking-fsm-refuses-is-held.md) |
 | [0069](0069-dispatch-under-concurrency.md) | Dispatch under concurrency | 2026-09-25 | accepted |  |
 | [0070](0070-vendor-correctness.md) | What we write to Zoho is right, written once, and asked for sparingly | 2026-09-25 | accepted | [0104](0104-the-try-ons-look-on-whatsapp-only.md) |
-| [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | accepted | [0086](0086-the-next-visit-is-offered.md), [0212](0212-editing-in-place.md) |
+| [0071](0071-what-ops-see-before-a-setting-changes.md) | What ops see before a setting changes, and who the console says they are | 2026-09-26 | superseded in part by 0212 on 18 October 2026: a setting or a record now changes where it reads | [0086](0086-the-next-visit-is-offered.md), [0212](0212-editing-in-place.md) |
 | [0072](0072-ops-clients-and-queues.md) | The ops console's clients and queues | 2026-09-26 | accepted | [0092](0092-task-owners.md) |
 | [0073](0073-prices-from-the-price-book.md) | Prices from the price book, on the site and in FSM's catalogue | 2026-09-26 | accepted | [0085](0085-services-ops-can-edit.md), [0087](0087-consumables-and-stock.md), [0103](0103-the-home-pages-first-copy-round.md), [0204](0204-the-sites-price-pipeline-removed.md) |
 | [0074](0074-hand-offs-and-messages.md) | What each person learns when something changes for them | 2026-09-26 | accepted | [0092](0092-task-owners.md), [0096](0096-a-no-shows-charge-and-its-dispute.md), [0099](0099-the-clients-note-in-fsm.md) |

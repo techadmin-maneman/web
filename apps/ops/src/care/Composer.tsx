@@ -9,7 +9,7 @@ import { useState } from "react";
 import type { Answer } from "../api.ts";
 import { careApi, type ChatThread, type CloseReason } from "./care-api.ts";
 import { care as copy } from "../content/care.ts";
-import { Refused } from "../settings/index.ts";
+import { Refused } from "../components/Refusal.tsx";
 import { QuickReplyPick } from "./QuickReplies.tsx";
 import form from "../components/forms.module.css";
 import styles from "./care.module.css";

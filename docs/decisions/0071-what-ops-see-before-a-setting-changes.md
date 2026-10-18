@@ -1,6 +1,6 @@
 # 0071. What ops see before a setting changes, and who the console says they are
 
-- Status: accepted
+- Status: superseded in part by [0212](0212-editing-in-place.md) on 18 October 2026: a setting or a record now changes where it reads. Was: accepted
 - Date: 2026-09-26
 - Topic: The ops console
 - Amends [0061](0061-ops-editable-inputs.md) for the price form, the service-area file and serving a pincode, and [0048](0048-referrals.md) for an area's name; follows [0031](0031-access-and-audit.md)
