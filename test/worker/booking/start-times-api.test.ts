@@ -40,10 +40,10 @@ beforeEach(async () => {
 });
 
 describe("a day's starts", () => {
-  it("run every half hour from 9 to the last a service visit ends by 8, each with its arrival window", async () => {
+  it("run every half hour from 9 to the last a service visit and its wrap-up end by 8, each with its arrival window", async () => {
     const starts = await startsOn(await client(), "2026-09-22");
     expect(starts.map((start) => start.time)).toEqual(
-      Array.from({ length: 20 }, (_, index) => {
+      Array.from({ length: 19 }, (_, index) => {
         const minute = 9 * 60 + index * 30;
         return `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
       }),

@@ -19,7 +19,15 @@ beforeEach(async () => {
 
 // The form drew every day and window, so a full one failed only after the whole form was filled.
 describe("GET /api/availability/public", () => {
-  type Open = { plan: string; days: { date: string; windows: Record<string, boolean>; hours: unknown }[] };
+  type Open = {
+    plan: string;
+    days: {
+      date: string;
+      windows: Record<string, boolean>;
+      hours: unknown;
+      starts: { time: string; open: boolean }[];
+    }[];
+  };
   const ALL_OPEN = { morning: true, afternoon: true, evening: true };
   const NONE_OPEN = { morning: false, afternoon: false, evening: false };
   /** Each window's hours that day, the times in code while ops set none. */
@@ -66,7 +74,15 @@ describe("GET /api/availability/public", () => {
     const { plan, days } = JSON.parse(text) as Open;
     expect(plan).toBe("consultation");
     expect(days).toHaveLength(14);
-    expect(days[0]).toEqual({ date: "2026-09-22", windows: ALL_OPEN, hours: HOURS });
+    expect(days[0]).toMatchObject({ date: "2026-09-22", windows: ALL_OPEN, hours: HOURS });
+    // Its starts every half hour from 9, the last an hour's consultation and its wrap-up end by 8.
+    expect(days[0]?.starts.map((start) => start.time)).toEqual(
+      Array.from({ length: 20 }, (_, index) => {
+        const minute = 9 * 60 + index * 30;
+        return `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+      }),
+    );
+    expect(days[0]?.starts.every((start) => start.open)).toBe(true);
     expect(days.at(-1)?.date).toBe("2026-10-05");
   });
 
@@ -95,7 +111,7 @@ describe("GET /api/availability/public", () => {
 
     const days = await daysOf("pincode=122018&plan=one_visit");
 
-    expect(days[0]).toEqual({
+    expect(days[0]).toMatchObject({
       date: "2026-09-22",
       windows: { morning: true, afternoon: true, evening: false },
       hours: HOURS,

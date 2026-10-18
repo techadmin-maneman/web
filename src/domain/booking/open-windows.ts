@@ -85,7 +85,11 @@ function startsOfDay(day: {
   const { booking, inputs } = day;
   if (booking.by === "nothing") return [];
   const grid = startGrid(
-    { hours: inputs.workingHours, step: inputs.bookingRules.step, minutes: minutesOf(booking) },
+    {
+      hours: inputs.workingHours,
+      step: inputs.bookingRules.step,
+      minutes: minutesOf(booking) + inputs.bookingRules.wrap_up,
+    },
     day.free ?? [],
   );
   if (booking.by === "slot") return grid;

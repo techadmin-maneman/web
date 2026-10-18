@@ -101,7 +101,8 @@ export interface GridStart {
 
 /**
  * The day's grid of starts a client picks from: every step from the city's opening hour to the last start a visit this
- * long ends by its close, and any start a technician working longer hours can take, each open or taken.
+ * long, its wrap-up included, ends by its close, and any start a technician working longer hours can take, each open
+ * or taken.
  */
 export function startGrid(
   grid: { readonly hours: WorkingHours; readonly step: number; readonly minutes: number },

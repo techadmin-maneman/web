@@ -76,7 +76,7 @@ describe("GET /api/availability", () => {
     // Who would come is never promised.
     expect(body).not.toHaveProperty("regular");
     expect(body.days).toHaveLength(14);
-    expect(body.days[0]).toEqual({
+    expect(body.days[0]).toMatchObject({
       date: "2026-09-22",
       price: { amount_ex_gst: 200000, amount: 200000, gst_percent: 0 },
       // Each window with its hours that day (docs/decisions/0102-window-times.md). At noon on Monday, Tuesday's

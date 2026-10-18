@@ -93,7 +93,11 @@ function startsOfDay(asked: {
 }) {
   const { day, inputs } = asked;
   const grid = startGrid(
-    { hours: inputs.workingHours, step: inputs.bookingRules.step, minutes: asked.minutes },
+    {
+      hours: inputs.workingHours,
+      step: inputs.bookingRules.step,
+      minutes: asked.minutes + inputs.bookingRules.wrap_up,
+    },
     day.starts.map((start) => start.time),
   );
   return grid.map(({ time, open }) => {
