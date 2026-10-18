@@ -1,6 +1,6 @@
 // The settings of booking by start time (docs/decisions/0210-booking-by-start-time.md), in the Rules table of
 // ./ops-settings.ts: the starts, the arrival window and the day's limits; which visits may be booked for today; a
-// city's working hours; and the drive estimate. A city may set its own hours and drive estimate (./city-settings.ts).
+// city's working hours; and the drive estimate.
 
 import { HOUR_OF_DAY } from "../config/setting-units.ts";
 import { DRIVE_ESTIMATE, DRIVE_ESTIMATE_KEYS, driveEstimateConflicts, type DriveEstimate } from "./drive-estimate.ts";

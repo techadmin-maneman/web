@@ -130,6 +130,11 @@ export function indiaClock(isoInstant: string): string {
   return `${String(hour)}${minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`} ${hours < 12 ? "am" : "pm"}`;
 }
 
+/** A time of day on India's clock, as every surface writes one: "09:30" → "9:30 am"; "17:00" → "5 pm". */
+export function dayClock(time: string): string {
+  return indiaClock(indiaInstant("2026-01-01", time).toISOString());
+}
+
 /** An instant as India's calendar date, with the year: "2026-11-14T08:00:00Z" → "14 Nov 2026". */
 export function longDate(isoInstant: string): string {
   const india = inIndia(isoInstant);

@@ -24,6 +24,7 @@ import { Loading, PanelFailed } from "../states/States.tsx";
 import { Details } from "./TechnicianForms.tsx";
 import { Returned } from "./TechnicianSwitch.tsx";
 import { Kit } from "./TechnicianKit.tsx";
+import { Hours } from "./TechnicianHours.tsx";
 import { Leave } from "./TechnicianLeave.tsx";
 import { Phones } from "./TechnicianPhones.tsx";
 import styles from "./technicians.module.css";
@@ -59,14 +60,31 @@ function Week({ technician }: { technician: TechnicianSummary }) {
   );
 }
 
-function TabPanel({ tab, technician }: { tab: TechnicianTab; technician: Technician }) {
+function TabPanel({
+  tab,
+  technician,
+  onChange,
+}: {
+  tab: TechnicianTab;
+  technician: Technician;
+  onChange: () => Promise<void>;
+}) {
+  if (tab === "hours") return <Hours technician={technician} onChange={onChange} />;
   if (tab === "leave") return <Leave technician={technician} />;
   if (tab === "phones") return <Phones technician={technician} />;
   if (tab === "kit") return <Kit technician={technician} />;
   return <Week technician={technician} />;
 }
 
-function TechnicianTabs({ technician, tab }: { technician: Technician; tab: TechnicianTab }) {
+function TechnicianTabs({
+  technician,
+  tab,
+  onChange,
+}: {
+  technician: Technician;
+  tab: TechnicianTab;
+  onChange: () => Promise<void>;
+}) {
   return (
     <>
       <Tabs className={styles.tabs} label={technicians.page.tabsLabel(technician.name)}>
@@ -77,7 +95,7 @@ function TechnicianTabs({ technician, tab }: { technician: Technician; tab: Tech
         ))}
       </Tabs>
       <section className={styles.tabPanel} aria-label={TECHNICIAN_TAB_NAMES[tab]}>
-        <TabPanel tab={tab} technician={technician} />
+        <TabPanel tab={tab} technician={technician} onChange={onChange} />
       </section>
     </>
   );
@@ -122,7 +140,7 @@ function TechnicianPage({
           {technicians.switchOn.done(summary.name)}
         </p>
       )}
-      {active !== null && <TechnicianTabs technician={active} tab={tab} />}
+      {active !== null && <TechnicianTabs technician={active} tab={tab} onChange={onChange} />}
     </div>
   );
 }

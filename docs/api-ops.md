@@ -18463,9 +18463,7 @@ Request body:
       "type": "string",
       "enum": [
         "checkin_radius_m",
-        "reminder_hour",
-        "working_hours",
-        "drive_estimate"
+        "reminder_hour"
       ]
     },
     "value": {
@@ -39567,12 +39565,12 @@ Request body:
     },
     "from_time": {
       "type": "string",
-      "pattern": "^([01]d|2[0-3]):(00|15|30|45)$",
+      "pattern": "^([01]\\d|2[0-3]):(00|15|30|45)$",
       "description": "For leave over part of one day: when it starts."
     },
     "to_time": {
       "type": "string",
-      "pattern": "^([01]d|2[0-3]):(00|15|30|45)$",
+      "pattern": "^([01]\\d|2[0-3]):(00|15|30|45)$",
       "description": "For leave over part of one day: when it ends."
     }
   },
@@ -42746,9 +42744,7 @@ Request body:
             "type": "string",
             "enum": [
               "checkin_radius_m",
-              "reminder_hour",
-              "working_hours",
-              "drive_estimate"
+              "reminder_hour"
             ]
           },
           "value": {
@@ -42780,9 +42776,7 @@ Request body:
         "type": "string",
         "enum": [
           "checkin_radius_m",
-          "reminder_hour",
-          "working_hours",
-          "drive_estimate"
+          "reminder_hour"
         ]
       },
       "description": "The rules a city may set."

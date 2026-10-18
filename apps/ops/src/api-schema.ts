@@ -13974,7 +13974,7 @@ export interface paths {
                 header?: never;
                 path: {
                     name: string;
-                    rule: "checkin_radius_m" | "reminder_hour" | "working_hours" | "drive_estimate";
+                    rule: "checkin_radius_m" | "reminder_hour";
                 };
                 cookie?: never;
             };
@@ -14034,7 +14034,7 @@ export interface paths {
                 header?: never;
                 path: {
                     name: string;
-                    rule: "checkin_radius_m" | "reminder_hour" | "working_hours" | "drive_estimate";
+                    rule: "checkin_radius_m" | "reminder_hour";
                 };
                 cookie?: never;
             };
@@ -14053,7 +14053,7 @@ export interface paths {
                         "application/json": {
                             city: string;
                             /** @enum {string} */
-                            rule: "checkin_radius_m" | "reminder_hour" | "working_hours" | "drive_estimate";
+                            rule: "checkin_radius_m" | "reminder_hour";
                             /** @description As the national rule takes it: one figure, or one per key. */
                             value: number | {
                                 [key: string]: number;
@@ -24322,14 +24322,14 @@ export interface components {
             rules: {
                 city: string;
                 /** @enum {string} */
-                rule: "checkin_radius_m" | "reminder_hour" | "working_hours" | "drive_estimate";
+                rule: "checkin_radius_m" | "reminder_hour";
                 /** @description As the national rule takes it: one figure, or one per key. */
                 value: number | {
                     [key: string]: number;
                 };
             }[];
             /** @description The rules a city may set. */
-            rule_names: ("checkin_radius_m" | "reminder_hour" | "working_hours" | "drive_estimate")[];
+            rule_names: ("checkin_radius_m" | "reminder_hour")[];
             prices: components["schemas"]["CityPrice"][];
             /** Format: date */
             today: string;

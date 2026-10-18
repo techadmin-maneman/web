@@ -1,0 +1,38 @@
+/* What ./TechnicianHours.tsx alone draws; what it shares is in ./technicians.module.css. */
+
+.hours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-24);
+}
+
+.part {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+}
+
+.home {
+  margin: 0;
+  font-size: var(--fs-14);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  max-width: 32rem;
+}
+
+.days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}

@@ -19,8 +19,8 @@ describe("the place of supply", () => {
 });
 
 describe("a city's own rules", () => {
-  it("are the check-in radius, the reminder hour, the working hours and the drive estimate, and no other", () => {
-    expect(CITY_SETTING_NAMES).toEqual(["checkin_radius_m", "reminder_hour", "working_hours", "drive_estimate"]);
+  it("are the check-in radius and the reminder hour, and no other", () => {
+    expect(CITY_SETTING_NAMES).toEqual(["checkin_radius_m", "reminder_hour"]);
     expect(isCitySetting("care_hours")).toBe(false);
   });
 
