@@ -1,6 +1,7 @@
 // A Delete button for something added by mistake: pressed, it asks once, and only the second press deletes. A refusal
 // is said in the caller's words, as why it stays and what to do instead (an in_use is the usual one). In the danger
-// tone, the same asks before something that can be put back, as retiring a package is.
+// tone, the same asks before something that can be put back, as retiring a package is; in the primary tone, before a
+// page's main switch, as turning on access control is.
 
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
 import { Button } from "@maneman/ui/Button";
@@ -32,8 +33,8 @@ export function DeleteAction<Body>({
 }: {
   /** What is deleted, as the page names it. */
   readonly name: string;
-  /** Destructive for what cannot be undone; danger for what can be put back. */
-  readonly tone?: "destructive" | "danger";
+  /** Destructive for what cannot be undone; danger for what can be put back; primary for a page's main switch. */
+  readonly tone?: "destructive" | "danger" | "primary";
   /** Its own words, where what goes is not gone for good, as a member of staff taken off the list. */
   readonly words?: DeleteWords;
   readonly send: () => Promise<Answer<Body>>;

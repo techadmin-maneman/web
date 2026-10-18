@@ -18,7 +18,8 @@ export const levelOf = (value: string, was: Level): Level => LEVELS.find((level)
 
 type Where = Pick<StaffGrant, "geography" | "place">;
 
-function placeWords(where: Where): string {
+/** "National", "NCR zone" or "Delhi". */
+export function placeWords(where: Where): string {
   if (where.geography === "national" || where.place === null) return copy.national;
   return where.geography === "zone" ? copy.zone(where.place) : where.place;
 }
