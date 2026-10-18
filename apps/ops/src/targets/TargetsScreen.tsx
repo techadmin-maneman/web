@@ -1,31 +1,29 @@
 // Admin · Targets (docs/decisions/0154-targets-and-reporting-access.md): each month's plan, city by city, by measure,
-// which the nightly reporting copy carries for every scorecard to set beside the actual.
+// which the nightly reporting copy carries for every scorecard to set beside the actual. A city's measures are each
+// changed where they read (docs/decisions/0212-editing-in-place.md); an emptied one is taken off. Beneath, every target
+// the month holds, to compare.
 
 import { whoWords } from "../lib/who.ts";
-import { Button, RowButton } from "@maneman/ui/Button";
-import { Field, Select, TextInput } from "@maneman/ui/Field";
+import { Field, Select } from "@maneman/ui/Field";
 import { Note } from "@maneman/ui/Note";
 import { Panel } from "@maneman/ui/Panel";
 import { Table } from "@maneman/ui/Table";
 import { useLoad } from "@maneman/ui/useLoad";
-import type { Sent, Success } from "@maneman/web-kit/api";
+import type { Success } from "@maneman/web-kit/api";
 import { fullMonth } from "@maneman/web-kit/dates";
 import { quantity } from "@maneman/web-kit/figures";
-import { boxError, type Failure } from "@maneman/web-kit/refusal";
+import { errorText } from "@maneman/web-kit/refusal";
 import { useCallback, useState } from "react";
 import type { paths } from "../api-schema.ts";
+import { FigureRow } from "../components/RecordRows.tsx";
 import { targets as copy } from "../content/targets.ts";
 import { useAccess } from "../lib/access.ts";
-import { Refused } from "../settings/index.ts";
 import { Loading, PanelFailed } from "../states/States.tsx";
 import form from "../components/forms.module.css";
 import { targetsApi } from "./targets-api.ts";
-import { DrawerButton } from "../components/DrawerButton.tsx";
-import { PageActions } from "../components/PageHead.tsx";
 
 type Targets = Success<paths["/api/targets"]["get"]>;
 type Measure = Targets["measures"][number];
-type TargetChange = Sent<paths["/api/targets"]["post"]>;
 
 /** Each month from the first a target may be set in to the last, in order. */
 function monthsBetween(first: string, last: string): string[] {
@@ -43,10 +41,9 @@ function TargetChoice(props: {
   value: string;
   options: readonly (readonly [string, string])[];
   onChange: (value: string) => void;
-  error?: string | null;
 }) {
   return (
-    <Field label={props.label} error={props.error ?? null}>
+    <Field label={props.label} className={form.field}>
       {(control) => (
         <Select
           {...control}
@@ -67,108 +64,69 @@ function TargetChoice(props: {
   );
 }
 
-function TargetForm({ list, onSaved }: { list: Targets; onSaved: (list: Targets) => void }) {
-  const [city, setCity] = useState(list.cities[0] ?? "");
-  const [measure, setMeasure] = useState<Measure>(list.measures[0] ?? "new_clients");
-  const [typed, setTyped] = useState("");
-  const [failure, setFailure] = useState<Failure | null>(null);
-  const set = async () => {
-    setFailure(null);
-    const change: TargetChange = { month: list.month, city, measure, target: Number(typed) };
-    const answer = await targetsApi.setTarget(change);
-    if (!answer.ok) {
-      setFailure({ code: answer.code, fields: answer.fields });
-      return;
-    }
-    setTyped("");
+/** A city's target for each measure this month, each changed where it reads. */
+function CityTargets({ list, city, onSaved }: { list: Targets; city: string; onSaved: (list: Targets) => void }) {
+  const mayChange = useAccess().mayCall("POST /api/targets");
+  const mayRemove = useAccess().mayCall("POST /api/targets/remove");
+  const save = (measure: Measure, set: number | null) => async (typed: string) => {
+    // A target runs to crores, as Indian figures are written: "1,00,00,000".
+    const text = typed.replaceAll(",", "").trim();
+    const figure = text === "" ? null : /^d{1,9}$/.test(text) ? Number(text) : undefined;
+    if (figure === undefined) return copy.errors.invalid_request;
+    if (figure === null && set === null) return null;
+    if (figure === null && !mayRemove) return copy.errors.not_permitted;
+    const answer =
+      figure === null
+        ? await targetsApi.removeTarget({ month: list.month, city, measure })
+        : await targetsApi.setTarget({ month: list.month, city, measure, target: figure });
+    if (!answer.ok) return errorText(copy.errors, answer);
     onSaved(answer.body);
+    return null;
   };
   return (
-    <div className={form.group}>
-      <TargetChoice
-        label={copy.city}
-        error={boxError(copy.errors, failure, "city")}
-        value={city}
-        options={list.cities.map((each) => [each, each])}
-        onChange={setCity}
-      />
-      <TargetChoice
-        label={copy.measure}
-        error={boxError(copy.errors, failure, "measure")}
-        value={measure}
-        options={list.measures.map((each) => [each, copy.measures[each]])}
-        onChange={(value) => {
-          setMeasure(list.measures.find((each) => each === value) ?? measure);
-        }}
-      />
-      <Field label={copy.target} error={boxError(copy.errors, failure, "target")}>
-        {(control) => (
-          <TextInput
-            {...control}
-            inputMode="numeric"
-            maxLength={8}
-            value={typed}
-            onChange={(event) => {
-              setTyped(event.target.value);
-            }}
+    <div className={form.record}>
+      {list.measures.map((measure) => {
+        const set = list.targets.find((each) => each.city === city && each.measure === measure)?.target ?? null;
+        return (
+          <FigureRow
+            key={`${city}/${measure}`}
+            label={copy.measures[measure]}
+            value={set}
+            shown={set === null ? copy.notSet : quantity(set)}
+            mayChange={mayChange}
+            save={save(measure, set)}
           />
-        )}
-      </Field>
-      <Button variant="outline" size="small" disabled={!/^\d+$/.test(typed.trim())} onClick={() => void set()}>
-        {copy.set}
-      </Button>
-      <Refused failed={failure} errors={copy.errors} boxes={["city", "measure", "target"]} />
+        );
+      })}
     </div>
   );
 }
 
-function TargetTable({ list, onSaved }: { list: Targets; onSaved: (list: Targets) => void }) {
-  const mayRemove = useAccess().mayCall("POST /api/targets/remove");
-  const [failure, setFailure] = useState<Failure | null>(null);
+/** Every target the month holds, to compare. */
+function TargetTable({ list }: { list: Targets }) {
   if (list.targets.length === 0) return <Note>{copy.none}</Note>;
-  const remove = async (city: string, measure: Measure) => {
-    setFailure(null);
-    const answer = await targetsApi.removeTarget({ month: list.month, city, measure });
-    if (answer.ok) onSaved(answer.body);
-    else setFailure({ code: answer.code, fields: answer.fields });
-  };
   return (
-    <>
-      <Refused failed={failure} errors={copy.errors} />
-      <Table controls>
-        <thead>
-          <tr>
-            {Object.values(copy.columns).map((column) => (
-              <th key={column} scope="col">
-                {column}
-              </th>
-            ))}
-            {mayRemove && <th scope="col" />}
-          </tr>
-        </thead>
-        <tbody>
-          {list.targets.map((target) => (
-            <tr key={`${target.city}/${target.measure}`}>
-              <td>{target.city}</td>
-              <td>{copy.measures[target.measure]}</td>
-              <td>{quantity(target.target)}</td>
-              <td>{whoWords(target.set_by)}</td>
-              {mayRemove && (
-                <td>
-                  <RowButton
-                    beside
-                    aria-label={copy.removeLabel(target.city, copy.measures[target.measure])}
-                    onClick={() => void remove(target.city, target.measure)}
-                  >
-                    {copy.remove}
-                  </RowButton>
-                </td>
-              )}
-            </tr>
+    <Table>
+      <thead>
+        <tr>
+          {Object.values(copy.columns).map((column) => (
+            <th key={column} scope="col">
+              {column}
+            </th>
           ))}
-        </tbody>
-      </Table>
-    </>
+        </tr>
+      </thead>
+      <tbody>
+        {list.targets.map((target) => (
+          <tr key={`${target.city}/${target.measure}`}>
+            <td>{target.city}</td>
+            <td>{copy.measures[target.measure]}</td>
+            <td>{quantity(target.target)}</td>
+            <td>{whoWords(target.set_by)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
   );
 }
 
@@ -176,7 +134,7 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
   const load = useCallback(() => targetsApi.targets(month === null ? {} : { month }), [month]);
   const [loaded, retry] = useLoad(load);
   const [saved, setSaved] = useState<Targets | null>(null);
-  const mayChange = useAccess().mayCall("POST /api/targets");
+  const [city, setCity] = useState<string | null>(null);
   if (loaded.state === "loading") return <Loading />;
   if (loaded.state === "failed") return <PanelFailed onRetry={retry} requestId={loaded.requestId} />;
   const list = saved ?? loaded.value;
@@ -188,22 +146,15 @@ function MonthTargets({ month, onMonth }: { month: string | null; onMonth: (mont
         options={monthsBetween(list.first_month, list.last_month).map((each) => [each, fullMonth(each)])}
         onChange={onMonth}
       />
-      {mayChange && (
-        <PageActions>
-          <DrawerButton primary label={copy.setOne}>
-            {(close) => (
-              <TargetForm
-                list={list}
-                onSaved={(next) => {
-                  setSaved(next);
-                  close();
-                }}
-              />
-            )}
-          </DrawerButton>
-        </PageActions>
-      )}
-      <TargetTable list={list} onSaved={setSaved} />
+      <TargetChoice
+        label={copy.city}
+        value={city ?? list.cities[0] ?? ""}
+        options={list.cities.map((each) => [each, each])}
+        onChange={setCity}
+      />
+      <CityTargets list={list} city={city ?? list.cities[0] ?? ""} onSaved={setSaved} />
+      <h3 className={form.ruleTitle}>{copy.all}</h3>
+      <TargetTable list={list} />
     </>
   );
 }

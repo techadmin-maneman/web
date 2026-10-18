@@ -5,7 +5,6 @@ import { changed, FAILED, NOT_PERMITTED, OFFLINE, UNCONFIRMED } from "./common.t
 
 export const targets = {
   title: "Targets",
-  setOne: "Set a target",
   month: "Month",
   city: "City",
   measure: "Measure",
@@ -19,13 +18,11 @@ export const targets = {
     utilisation: "Utilisation, %",
     on_time: "On time, %",
   },
-  target: "Target",
-  set: "Set",
+  notSet: "Not set",
+  /** The month's every target, beneath the city's own. */
+  all: "Every target this month",
   none: "No targets for this month.",
   columns: { city: "City", measure: "Measure", target: "Target", by: "Set by" },
-  remove: "Remove",
-  /** "Remove: Gurgaon · New clients" */
-  removeLabel: (city: string, measure: string) => `Remove: ${city} · ${measure}`,
   errors: {
     month: "Choose a month from the list.",
     city: "Choose a city from the list.",

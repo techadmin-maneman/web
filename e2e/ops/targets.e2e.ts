@@ -1,10 +1,12 @@
 // Targets, under Admin (docs/decisions/0154-targets-and-reporting-access.md), which no board draws: a month's target for
-// a city set, and one taken off. Every figure is made up.
+// a city set where it reads, and one taken off by emptying it (docs/decisions/0212-editing-in-place.md). Every figure is
+// made up.
 
 import type { Page, Route } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { answer, json, type OpsReply } from "./answer.ts";
 import { targets as copy } from "../../apps/ops/src/content/targets.ts";
+import { EDITING } from "../../apps/ops/src/content/common.ts";
 
 type Month = OpsReply<"/api/targets">;
 
@@ -42,17 +44,21 @@ test("sets a month’s target for a city, by measure", async ({ page }) => {
     },
   });
   await expect(page.getByRole("cell", { name: "40", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: copy.setOne }).click();
-  const form = page.getByRole("dialog", { name: copy.setOne });
-  await form.getByLabel(copy.city).selectOption("Bengaluru");
-  await form.getByLabel(copy.measure).selectOption("revenue");
-  await form.getByRole("textbox", { name: copy.target }).fill("500000");
-  await form.getByRole("button", { name: copy.set }).click();
+  await page.getByLabel(copy.city).selectOption("Bengaluru");
+  await page.getByRole("button", { name: `${EDITING.change} ${copy.measures.revenue}` }).click();
+  const revenue = page.getByRole("textbox", { name: copy.measures.revenue });
+  await revenue.fill("500000");
+  await revenue.press("Enter");
   await expect.poll(() => sent).toEqual({ month: "2026-09", city: "Bengaluru", measure: "revenue", target: 500000 });
 });
 
-test("takes a target off", async ({ page }) => {
+test("takes a target off once its figure is emptied", async ({ page }) => {
   await open(page, { "POST /api/targets/remove": json({ ...SEPTEMBER, targets: [] }) });
-  await page.getByRole("button", { name: copy.removeLabel("Gurgaon", copy.measures.new_clients) }).click();
+  const change = page.getByRole("button", { name: `${EDITING.change} ${copy.measures.new_clients}` });
+  await expect(change).toContainText("40");
+  await change.click();
+  const box = page.getByRole("textbox", { name: copy.measures.new_clients });
+  await box.fill("");
+  await box.press("Enter");
   await expect(page.getByText(copy.none)).toBeVisible();
 });
