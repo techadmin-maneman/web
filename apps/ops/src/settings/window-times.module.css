@@ -1,0 +1,7 @@
+/* A change of the window times (./WindowTimes.tsx): each window's hours, read beneath the boxes as they are typed. */
+
+.summary {
+  margin: var(--sp-12) 0 0;
+  padding-left: var(--sp-20);
+  color: var(--ui-text-muted);
+}

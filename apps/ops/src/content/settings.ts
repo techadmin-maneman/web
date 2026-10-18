@@ -344,7 +344,11 @@ export const settings = {
     start: (window: string, position: number) =>
       position === 1 ? `${window} starts` : `${window}, half-slot ${String(position)} starts`,
     dayEnd: "The day ends",
-    /** The check's line for a window: "Morning: 9 am–12 noon → 9:30 am–12:30 pm". */
+    /** What a change will set, read beneath its boxes. */
+    summary: "What changes",
+    add: "Set",
+    cancel: "Cancel",
+    /** A window's line: "Morning: 9 am–12 noon → 9:30 am–12:30 pm". */
     change: (window: string, was: string, now: string) =>
       was === now ? `${window}: ${now}` : `${window}: ${was} → ${now}`,
     from: (date: string) => `From ${date}.`,

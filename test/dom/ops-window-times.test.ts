@@ -1,15 +1,15 @@
 // Settings › Window times (apps/ops/src/settings/WindowTimes.tsx; docs/decisions/0102-window-times.md): the windows in
-// force, a change of the day's times from a day the API allows, checked against the windows it moves, and a day too
-// soon refused. Every time and name is made up.
+// force, a change of the day's times from a day the API allows, made beside the page with the windows it moves read
+// beneath its boxes, and a day too soon refused. Every time and name is made up.
 
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SlotTimes } from "../../apps/ops/src/api.ts";
-import { review } from "../../apps/ops/src/content/common.ts";
 import { settings } from "../../apps/ops/src/content/settings.ts";
 import { WindowTimes } from "../../apps/ops/src/settings/WindowTimes.tsx";
 import { contractChecked } from "./contract-fetch.ts";
+import { openDialogsAsJsdomCan } from "./dialogs.ts";
 import { answered } from "./render-hook.ts";
 
 const copy = settings.windowTimes;
@@ -54,6 +54,7 @@ beforeEach(() => {
     }),
   );
   Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
+  openDialogsAsJsdomCan();
   page = document.createElement("div");
   document.body.append(page);
   root = createRoot(page);
@@ -74,16 +75,17 @@ async function show() {
   await answered();
 }
 
+/** A button on the page or in the drawer beside it, which is drawn in the document's body. */
 async function press(text: string) {
   await act(async () => {
-    [...page.querySelectorAll("button")].find((each) => each.textContent.trim() === text)?.click();
+    [...document.body.querySelectorAll("button")].find((each) => each.textContent.trim() === text)?.click();
     await answered();
   });
 }
 
 function type(label: string, value: string) {
-  const field = [...page.querySelectorAll("label")].find((each) => each.textContent.trim() === label);
-  const box = page.querySelector<HTMLInputElement>(`#${CSS.escape(field?.htmlFor ?? "")}`);
+  const field = [...document.body.querySelectorAll("label")].find((each) => each.textContent.trim() === label);
+  const box = document.body.querySelector<HTMLInputElement>(`#${CSS.escape(field?.htmlFor ?? "")}`);
   if (box === null) throw new Error(`no box ${label}`);
   act(() => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(box, value);
@@ -92,7 +94,7 @@ function type(label: string, value: string) {
 }
 
 /** The page's words, its hours' unbroken spaces read as spaces. */
-const said = () => page.textContent.replaceAll("\u00a0", " ");
+const said = () => document.body.textContent.replaceAll("\u00a0", " ");
 
 describe("the window times", () => {
   it("say each window's hours as the times in force read them", async () => {
@@ -142,14 +144,14 @@ describe("the window times", () => {
     expect(said()).toContain(copy.withdrawn);
   });
 
-  it("change from the earliest day, checked against the windows they move", async () => {
+  it("change from the earliest day, saying beneath the boxes the windows they move", async () => {
     await show();
+    await press(copy.formTitle);
     type(copy.start(copy.window.evening, 1), "18:30");
-    await press(review.next);
     expect(said()).toContain(`${copy.window.afternoon}: 12–6 pm → 12–6:30 pm`);
     expect(said()).toContain(`${copy.window.evening}: 6–9 pm → 6:30–9 pm`);
     expect(said()).toContain(`${copy.window.morning}: 9 am–12 noon`);
-    await press(review.send);
+    await press(copy.add);
     expect(sent).toEqual([
       {
         applies_from: "2026-12-01",
@@ -167,8 +169,8 @@ describe("the window times", () => {
         { status: 409 },
       );
     await show();
-    await press(review.next);
-    await press(review.send);
-    expect(page.querySelector('[role="alert"]')?.textContent).toBe(copy.errors.slot_times_too_soon);
+    await press(copy.formTitle);
+    await press(copy.add);
+    expect(document.body.querySelector('[role="alert"]')?.textContent).toBe(copy.errors.slot_times_too_soon);
   });
 });
