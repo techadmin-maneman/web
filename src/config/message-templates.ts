@@ -11,7 +11,7 @@ export const TEMPLATES = {
     "Hi {{1}}, your new look is ready.\nIt's an illustration: your hair system is matched to your own hair. See it for real at a free consultation: {{2}}",
   // The login code, {{1}}.
   login_code_v1: "{{1}} is your Mane Man code. It expires in 10 minutes. Don't share it with anyone.",
-  // A visit's params: {{1}} first name, {{2}} visit, {{3}} day ("Thu 24 Sep"), {{4}} window ("12 to 4 pm"),
+  // A visit's params: {{1}} first name, {{2}} visit, {{3}} day ("Thu 24 Sep"), {{4}} arrival ("11:30 am–12 pm"),
   // {{5}} technician, {{6}} amount ("Rs. 2,000"), {{7}} reference, {{8}} refund to, {{9}} minutes waited, {{10}} back.
   consultation_booked_v1:
     "Hi {{1}}, you're booked.\nYour free consultation is {{3}}, {{4}}, at home. To change it, open the Mane Man app.",

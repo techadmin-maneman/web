@@ -2,12 +2,13 @@
 // reminder, a move, a cancel, the technician's arrival, and ops' ruling on a no-show or on its dispute.
 
 import { rupees } from "@maneman/web-kit/money";
+import { MINUTE_MS } from "../../lib/durations.ts";
 import { shortDate } from "@maneman/web-kit/dates";
 import type { TemplateName } from "../../config/message-templates.ts";
 import type { Charge } from "../../policy/moving-a-visit.ts";
 import { isTransactional } from "../../policy/consents.ts";
 import { firstNameOf } from "../../lib/names.ts";
-import { indiaDate } from "../../lib/india-time.ts";
+import { indiaDate, indiaTime } from "../../lib/india-time.ts";
 import { minutesBetween } from "../../lib/durations.ts";
 import { timeRange } from "../../lib/time-range.ts";
 import { ONE_VISIT_NAME, type VisitType, VISIT_TYPE_NAMES } from "../../config/visit-types.ts";
@@ -19,7 +20,7 @@ import { latestArrival } from "../visits/check-ins.ts";
 import { consentGiven } from "../privacy/consents.ts";
 import { readOpsInputs } from "../platform/ops-settings.ts";
 import { codeOnVisit } from "../money/discount-code-uses.ts";
-import { type SlotSchedule, loadSlotSchedule } from "../booking/slot-times.ts";
+import type { SlotSchedule } from "../booking/slot-times.ts";
 import { windowTimesOf } from "../../policy/slot-times.ts";
 import { tooEarlyToArrive } from "../../policy/phone-clock.ts";
 import type { OneVisitState } from "../../policy/one-visit.ts";
@@ -69,10 +70,12 @@ function waivedTemplate(paid: PaidAhead["kind"], waiver: Waiver, credit: VisitCr
 
 const stillTrue = (kind: VisitMessageKind, status: AppointmentStatus): boolean =>
   STILL_TRUE_WHILE[kind] === "any" || STILL_TRUE_WHILE[kind].includes(status);
-/** "12–4 pm", as the app writes a window, by the times in force on the visit's day. */
-function windowHours(start: Date, schedule: SlotSchedule): string {
-  const { date, window } = schedule.at(start);
-  return hoursOfWindow(date, window, schedule);
+/**
+ * "11:30 am–12 pm": when the technician arrives, from the visit's start to the end of its arrival window, as the app
+ * writes it (docs/decisions/0210-booking-by-start-time.md).
+ */
+function arrivalHours(start: Date, arrivalMinutes: number): string {
+  return timeRange(indiaTime(start), indiaTime(new Date(start.getTime() + arrivalMinutes * MINUTE_MS)));
 }
 
 /** "12–4 pm" for a day's window, by the times in force that day. */
@@ -164,7 +167,7 @@ async function composeVisitText(
     firstNameOf(visit.name),
     visit.one_visit === "booked" ? ONE_VISIT_WORDS : VISIT_TYPE_NAMES[visit.type].toLowerCase(),
     shortDate(indiaDate(start)),
-    windowHours(start, await loadSlotSchedule(db)),
+    arrivalHours(start, (await readOpsInputs(db, start)).bookingRules.arrival),
     visit.technician === null ? "our technician" : firstNameOf(visit.technician),
     "",
     "",
