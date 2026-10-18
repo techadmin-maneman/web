@@ -1,8 +1,8 @@
 // Making discount codes (docs/decisions/0108-discount-codes.md): one code typed, or a batch generated; what each takes
-// off before GST, what it covers, and its limits. The draft and the check's lines are ./discount-draft.ts; nothing is
-// made until the check has been read and the second press made (ADR 0071).
+// off before GST, what it covers, and its limits. The draft and its summary are ./discount-draft.ts: once the boxes
+// hold a code, what will be made reads beneath them, so it is read before Make is pressed.
 
-import { CheckLine } from "../components/CheckPanel.tsx";
+import { InlineMessage } from "@maneman/ui/InlineMessage";
 import { Checkbox, ChoiceGroup, DateInput, Field, NumberInput, Select, TextInput } from "@maneman/ui/Field";
 import { useState } from "react";
 import { CODE_LENGTH } from "@rules/policy/discount-codes.ts";
@@ -18,9 +18,10 @@ import {
   type Covered,
   type Draft,
 } from "./discount-draft.ts";
-import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
+import { AddForm } from "../components/AddForm.tsx";
 import form from "../components/forms.module.css";
 import { discountCodesApi } from "./discount-codes-api.ts";
+import styles from "./discount-codes.module.css";
 
 const copy = settings.discountCodes;
 
@@ -221,40 +222,43 @@ export function DiscountCodeForm({
 }) {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [made, setMade] = useState<readonly string[] | null>(null);
-  const steps = useSteps(
-    async () => sentOf(await discountCodesApi.makeDiscountCodes(requestOf(draft)), (body) => ({ codes: body.codes })),
-    (sent) => {
-      setDraft(EMPTY);
-      setMade(sent.codes);
-      steps.edit();
-      onMade();
-    },
-  );
   const edit: Edit = (change) => {
     setDraft({ ...draft, ...change });
     setMade(null);
-    steps.edit();
   };
 
   return (
-    <SettingForm
-      said={made === null ? null : copy.made(made)}
-      title={copy.make}
-      steps={steps}
-      ready={isReady(draft)}
-      errors={copy.errors}
-      onCancel={onClose}
-      boxes={["code", "count", "kind", "value", "cap", "expires_on", "max_uses"]}
-      checking={
-        steps.step === "editing"
-          ? null
-          : checkLines(draft, requestOf(draft)).map((line) => <CheckLine key={line}>{line}</CheckLine>)
-      }
-    >
-      <WhatIsMade draft={draft} most={most} edit={edit} />
-      <WhatItTakesOff draft={draft} edit={edit} />
-      <Covers draft={draft} edit={edit} />
-      <Limits draft={draft} today={today} edit={edit} />
-    </SettingForm>
+    <>
+      {made !== null && (
+        <InlineMessage tone="saved" className={form.saved}>
+          {copy.made(made)}
+        </InlineMessage>
+      )}
+      <AddForm
+        title={copy.make}
+        words={{ add: copy.makeButton, cancel: copy.close }}
+        errors={copy.errors}
+        boxes={["code", "count", "kind", "value", "cap", "expires_on", "max_uses"]}
+        send={() => discountCodesApi.makeDiscountCodes(requestOf(draft))}
+        onAdded={(body) => {
+          setDraft(EMPTY);
+          setMade(body.codes);
+          onMade();
+        }}
+        onCancel={onClose}
+      >
+        <WhatIsMade draft={draft} most={most} edit={edit} />
+        <WhatItTakesOff draft={draft} edit={edit} />
+        <Covers draft={draft} edit={edit} />
+        <Limits draft={draft} today={today} edit={edit} />
+        {isReady(draft) && (
+          <ul className={styles.summary} aria-label={copy.summary}>
+            {checkLines(draft, requestOf(draft)).map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        )}
+      </AddForm>
+    </>
   );
 }

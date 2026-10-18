@@ -44,12 +44,10 @@ export const settings = {
     expires: "Last valid day (optional)",
     maxUses: "Total uses (optional)",
     oncePerClient: "Once per client",
-    check: "Review",
-    checkTitle: "Make these codes?",
-    send: "Confirm",
-    sending: "Making…",
-    back: "Back",
-    /** One line of the check: what each code takes off. */
+    makeButton: "Make",
+    /** What will be made, read beneath the boxes once they hold a code. */
+    summary: "What will be made",
+    /** One line of the summary: what each code takes off. */
     off: (what: string) => `${what} off before GST`,
     percentOff: (percent: number, cap: string | null) =>
       cap === null ? `${String(percent)}%` : `${String(percent)}% (max ${cap})`,
@@ -81,7 +79,6 @@ export const settings = {
       paid: "Revenue",
       lastUsed: "Last used",
       offOn: "Switched off",
-      actions: "Actions",
     },
     coverShort: {
       first_fit: "First fit",
@@ -95,8 +92,6 @@ export const settings = {
     narrow: "Filter codes",
     switchedOffTitle: (count: number) => `Switched off (${String(count)})`,
     switchedOff: "Switched off.",
-    delete: "Delete",
-    deleteLabel: (code: string) => `Delete ${code}`,
     inUse: "A booking has used it. Switch it off instead.",
     deleted: "Deleted.",
     /** Codes are found by how they begin, so "SPR" finds SPRTEST. */
@@ -107,12 +102,17 @@ export const settings = {
     noneFound: "No matching codes.",
     /** How far a code with a limit is used: "3 of 10". */
     usesOf: (uses: number, most: number) => `${String(uses)} of ${String(most)}`,
-    switchOff: "Switch off",
-    switchOffLabel: (code: string) => `Switch off ${code}`,
-    switchTitle: (code: string) => `Switch off ${code}?`,
-    switchLine: (uses: number) =>
-      `It can’t be used again. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it.`,
-    switching: "Switching off",
+    /** A row's name, read as what pressing it does. */
+    open: (code: string) => `Open ${code}`,
+    switching: {
+      open: "Switch off",
+      label: (code: string) => `Switch off ${code}`,
+      warning: (code: string, uses: number) =>
+        `Switch off ${code}? It can’t be used again. ${String(uses)} ${uses === 1 ? "booking keeps" : "bookings keep"} it.`,
+      confirm: "Switch off",
+      sending: "Switching off…",
+      cancel: "Cancel",
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       code: "4–16 letters or digits, no spaces.",
