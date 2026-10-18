@@ -152,7 +152,7 @@ export function createStubGeocodeFetch(): typeof fetch {
       }
       const typed = url.searchParams.get("address");
       if (typed !== null) return json(locatedAddress(typed));
-      const pincode = /postal_code:(d{6})/.exec(url.searchParams.get("components") ?? "")?.[1];
+      const pincode = /postal_code:(\d{6})/.exec(url.searchParams.get("components") ?? "")?.[1];
       if (pincode !== undefined) return json(pincodeCentre(pincode));
       const placeId = url.searchParams.get("place_id") ?? "";
       const known = PLACES.find((place) => place.placeId === placeId);

@@ -2,7 +2,7 @@
 
 import { z } from "@hono/zod-openapi";
 
-const DayTime = z
+export const DayTime = z
   .string()
   .regex(/^([01]\d|2[0-3]):(00|15|30|45)$/)
   .openapi({ description: "India's clock, on the quarter hour: 09:00, 17:30." });

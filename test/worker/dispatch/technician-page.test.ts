@@ -30,7 +30,15 @@ interface JobOnLeave {
 }
 
 interface StandingLeave {
-  readonly leave: { id: string; from: string; to: string; note: string | null; jobs: JobOnLeave[] }[];
+  readonly leave: {
+    id: string;
+    from: string;
+    to: string;
+    from_time: string | null;
+    to_time: string | null;
+    note: string | null;
+    jobs: JobOnLeave[];
+  }[];
 }
 
 interface Roster {
@@ -101,6 +109,8 @@ describe("a technician's leave, as their page reads it", () => {
         id,
         from: "2026-09-22",
         to: "2026-09-24",
+        from_time: null,
+        to_time: null,
         note: "Family wedding",
         jobs: [
           expect.objectContaining({ appointment_id: TUESDAY_JOB, client: "Rohit Malhotra" }),

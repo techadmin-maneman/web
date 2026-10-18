@@ -12,8 +12,8 @@ import type { App } from "../../http/context.ts";
 import { errorResponse, refuse } from "../../http/errors.ts";
 import { withinRouteReach } from "../../http/staff-access.ts";
 import { indiaDate } from "../../lib/india-time.ts";
+import { DayTime } from "../schemas/technician-days.ts";
 
-const DayTime = z.string().regex(/^([01]d|2[0-3]):(00|15|30|45)$/);
 /** Part of one day, India's clock; both null for whole days. */
 const LEAVE_TIMES = {
   from_time: z.union([z.string(), z.null()]),
