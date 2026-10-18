@@ -1,15 +1,14 @@
 // A month's payment to a partner, as Finance made it from the payout tool (docs/decisions/0124-partner-statements.md):
-// its boxes, then the payment as it will be recorded, and only the second press records it
-// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md).
+// its amount, the day it was paid and the payout's reference. A payment short of what is due says so beneath the
+// boxes before it is recorded.
 
-import { CheckLine, CheckWarning } from "../components/CheckPanel.tsx";
+import { CheckWarning } from "../components/CheckPanel.tsx";
 import { DateInput, Field, NumberInput, TextInput } from "@maneman/ui/Field";
-import { shortDate } from "@maneman/web-kit/dates";
 import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
 import { useState } from "react";
 import { type PartnerStatement, type PartnerStatements } from "../api.ts";
+import { AddForm } from "../components/AddForm.tsx";
 import { partnerCommission } from "../content/partner-commission.ts";
-import { SettingForm, sentOf, useSteps } from "../settings/index.ts";
 import form from "../components/forms.module.css";
 import { partnerCommissionApi } from "./partner-commission-api.ts";
 
@@ -86,43 +85,22 @@ export function PayoutForm(props: {
     reference: "",
   });
   const amount = paiseFromRupees(draft.amount);
-  const reference = draft.reference.trim();
-  const steps = useSteps(
-    async () =>
-      sentOf(
-        await partnerCommissionApi.recordPartnerPayout(statement.channel_id, {
+  return (
+    <AddForm
+      title={formWords.title(statement.name, props.monthName)}
+      words={formWords}
+      errors={{ ...errors, amount: partnerCommission.amountUpTo(rupees(props.maxAmount)) }}
+      boxes={["amount", "paid_on", "reference"]}
+      send={() =>
+        partnerCommissionApi.recordPartnerPayout(statement.channel_id, {
           month,
           amount,
           paid_on: draft.paidOn,
-          reference,
-        }),
-        (body) => ({ statements: body }),
-      ),
-    (sent) => {
-      props.onDone(sent.statements);
-    },
-  );
-  const ready =
-    draft.amount.trim() !== "" &&
-    amount >= 0 &&
-    amount <= props.maxAmount &&
-    draft.paidOn >= `${month}-01` &&
-    draft.paidOn <= props.today &&
-    reference !== "";
-  return (
-    <SettingForm
-      title={formWords.title(statement.name, props.monthName)}
-      steps={steps}
-      ready={ready}
-      errors={{ ...errors, amount: partnerCommission.amountUpTo(rupees(props.maxAmount)) }}
-      onCancel={props.onCancel}
-      boxes={["amount", "paid_on", "reference"]}
-      checking={
-        <>
-          <CheckLine>{check.line(rupees(amount), shortDate(draft.paidOn), reference)}</CheckLine>
-          {amount < statement.due && <CheckWarning>{check.short(rupees(statement.due))}</CheckWarning>}
-        </>
+          reference: draft.reference.trim(),
+        })
       }
+      onAdded={props.onDone}
+      onCancel={props.onCancel}
     >
       <PayoutFields
         draft={draft}
@@ -130,9 +108,11 @@ export function PayoutForm(props: {
         today={props.today}
         edit={(change) => {
           setDraft({ ...draft, ...change });
-          steps.edit();
         }}
       />
-    </SettingForm>
+      {draft.amount.trim() !== "" && amount < statement.due && (
+        <CheckWarning>{check.short(rupees(statement.due))}</CheckWarning>
+      )}
+    </AddForm>
   );
 }

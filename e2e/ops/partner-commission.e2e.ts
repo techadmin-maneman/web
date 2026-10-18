@@ -72,7 +72,7 @@ test("shows last month’s fits, what refunds took back, what is due and what is
   ]);
 });
 
-test("records the month’s payment once it is reviewed", async ({ page }) => {
+test("records the month’s payment, saying beneath the boxes when it falls short", async ({ page }) => {
   let sent: unknown = null;
   await open(page, {
     "POST /api/partner-statements/{id}/payouts": (route: Route) => {
@@ -86,10 +86,12 @@ test("records the month’s payment once it is reviewed", async ({ page }) => {
   await expect(page.getByLabel(copy.form.amount)).toHaveValue("1000");
   await page.getByLabel(copy.form.paidOn).fill("2026-09-05");
   await page.getByRole("textbox", { name: copy.form.reference }).fill("UTR0905");
-  await page.getByRole("button", { name: copy.form.next }).click();
-  await expect(page.getByText(copy.check.line("Rs. 1,000", "Sat 5 Sep", "UTR0905"))).toBeVisible();
+  await page.getByLabel(copy.form.amount).fill("900");
+  await expect(page.getByText(copy.check.short("Rs. 1,000"))).toBeVisible();
+  await page.getByLabel(copy.form.amount).fill("1000");
+  await expect(page.getByText(copy.check.short("Rs. 1,000"))).toHaveCount(0);
   expect(sent).toBeNull();
-  await page.getByRole("button", { name: copy.check.send }).click();
+  await page.getByRole("button", { name: copy.form.add, exact: true }).click();
   await expect(page.getByRole("status")).toHaveText(copy.done.recorded);
   expect(sent).toEqual({ month: "2026-08", amount: 100000, paid_on: "2026-09-05", reference: "UTR0905" });
   await expect(row(page).getByRole("cell").nth(4)).toHaveText("Rs. 1,000 · Sat 5 SepUTR0905");
