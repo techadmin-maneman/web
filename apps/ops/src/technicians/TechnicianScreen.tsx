@@ -1,4 +1,4 @@
-// One technician's page: their details, then their week, leave, phones and kit, a tab at a time, so covering a sick
+// One technician's page: their details, then their week, hours, leave, phones and kit, a tab at a time, so covering a sick
 // technician or a lost phone happens in one place. The roster is read once for the page; the Leave and Kit tabs read
 // what they show as they open. A technician switched off has no phone signed in and no leave to record, so their page
 // is their details alone.
