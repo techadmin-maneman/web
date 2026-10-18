@@ -47,7 +47,7 @@ describe("staging's allowlist", () => {
   const messaging = { enabled: true, allowlist: [], everyone: true, evolution: null, msg91: null };
   const sent = { automatic: true, testRecord: false, mobileE164: "+919810000001" };
 
-  // The owner, to try the whole flow from any number, reminders included.
+  // Anyone signing in on staging sees the whole flow, reminders included.
   it("lets a reminder go to any real person's number when it is everyone", () => {
     expect(isMessageHeldBack(messaging, sent)).toBe(false);
   });

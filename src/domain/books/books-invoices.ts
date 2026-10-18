@@ -2,10 +2,10 @@
 //
 // One line on the visit's Books item: the price book's GST-inclusive price on the day, less any discount code before
 // tax, under the appointment's ID as its reference, by which a later pass finds it. The line names the hair system and
-// the visit, as the owner words them: "Mane Man Active, First Fit"; "Service Visit, Mane Man Active". Books works out the total. The
-// invoice is sent, and the client may open it, only when it totals what the visit was sold for; otherwise it stays a
-// draft and ops are told. A visit a free-visit credit paid for is a zero-priced line, complimentary, as the CA advised. A draft under any other reference was made by
-// hand, and is never sent from here. A consultation is free, and is not invoiced.
+// the visit: "Mane Man Active, First Fit"; "Service Visit, Mane Man Active". Books works out the total. The invoice is
+// sent, and the client may open it, only when it totals what the visit was sold for; otherwise it stays a draft and ops
+// are told. A visit a free-visit credit paid for is a zero-priced line, complimentary. A draft under any other
+// reference was made by hand, and is never sent from here. A consultation is free, and is not invoiced.
 //
 // Each visit is claimed before Books is asked, so overlapping runs never raise it twice. One that fails waits an hour;
 // ops hear of a refusal at once and of any other failure on its third time.
@@ -265,7 +265,7 @@ function lineName(named: {
 
 /**
  * The hair system the visit is for, by the name it is sold under: the visit's own where its service names one, else
- * the one the client was last fitted with, else the one their profile recommends. Null where none is known.
+ * the one the client was last fitted with. Null where none is known.
  */
 async function productOf(db: D1Database, visit: Visit): Promise<string | null> {
   const row = await db
@@ -275,8 +275,7 @@ async function productOf(db: D1Database, visit: Visit): Promise<string | null> {
          (SELECT a.tier FROM appointments a
            WHERE a.person_id = ?1 AND a.type IN ('first_fit', 'replacement') AND a.status = 'completed'
              AND a.deleted_at IS NULL AND a.tier IS NOT NULL AND a.tier <> ?3
-           ORDER BY a.window_start DESC LIMIT 1),
-         (SELECT h.product FROM hair_profiles h WHERE h.person_id = ?1 ORDER BY h.created_at DESC, h.rowid DESC LIMIT 1))`,
+           ORDER BY a.window_start DESC LIMIT 1))`,
     )
     .bind(visit.person_id, visit.tier ?? STANDARD_TIER, STANDARD_TIER)
     .first<{ name: string }>();

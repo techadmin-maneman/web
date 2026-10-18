@@ -266,12 +266,14 @@ describe("validateStaticConfig: try-on and messaging", () => {
     ]);
   });
 
-  // The owner, to try the whole flow from any number: staging may message everyone, never in production.
-  it("takes \"*\" on staging as every number, and refuses it in production", () => {
+  // Staging may message every number, so anyone signing in sees the whole flow; production never.
+  it('takes "*" on staging as every number, and refuses it in production', () => {
     const staging = { ...stagingBase, MESSAGING_ENABLED: "true", MESSAGING_ALLOWLIST: "*" };
     expect(problemsOf(staging)).toEqual([]);
     expect(validateStaticConfig(staging).settings.messaging).toMatchObject({ allowlist: [], everyone: true });
-    expect(problemsOf({ ...production, MESSAGING_ALLOWLIST: "*" })).toContain('MESSAGING_ALLOWLIST is never "*" in production');
+    expect(problemsOf({ ...production, MESSAGING_ALLOWLIST: "*" })).toContain(
+      'MESSAGING_ALLOWLIST is never "*" in production',
+    );
   });
 });
 

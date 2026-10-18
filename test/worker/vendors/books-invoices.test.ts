@@ -184,7 +184,7 @@ describe("the invoice a finished visit gets", () => {
         branchId: null,
         line: {
           itemId: "item-first-fit",
-          // No hair system known for the client: the visit by its name alone, and no date (the owner, 18 October).
+          // No hair system known for the client: the visit by its name alone, and no date.
           name: "First Fit",
           description: "Staging test",
           rate: 3_000_000,
@@ -288,7 +288,7 @@ describe("the invoice a finished visit gets", () => {
     });
   });
 
-  // The owner, 18 October: a service visit names the visit, then the hair system the client was fitted with.
+  // A service visit names the visit, then the hair system the client was fitted with.
   it("names a service visit's line by the visit, then the client's hair system", async () => {
     await env.DB.prepare(
       `INSERT INTO services (kind, tier, name, minutes, sort, books_item_id, updated_by, updated_at)
