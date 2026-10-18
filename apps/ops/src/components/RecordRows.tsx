@@ -1,9 +1,10 @@
 // A record's values, each on a line of its own and changed where it reads (@maneman/ui/EditableRow;
-// docs/decisions/0212-editing-in-place.md): a line of words, a figure, or one of a few choices. Each saves its own
-// value; `save` answers null once kept, else the words of why not.
+// docs/decisions/0212-editing-in-place.md): a line of words, a figure, an amount, or one of a few choices. Each saves
+// its own value; `save` answers null once kept, else the words of why not.
 
 import { EditableRow } from "@maneman/ui/EditableRow";
 import { NumberInput, Select, TextInput } from "@maneman/ui/Field";
+import { rupees, rupeesTyped } from "@maneman/web-kit/money";
 import type { ReactNode } from "react";
 import { EDITING } from "../content/common.ts";
 
@@ -79,6 +80,57 @@ export function FigureRow(
       )}
     </EditableRow>
   );
+}
+
+/** A value that only reads: what follows from others, as whether one is still offered. */
+export function ReadRow(props: { readonly label: string; readonly value: ReactNode }) {
+  return (
+    <EditableRow<null>
+      label={props.label}
+      words={EDITING}
+      mayChange={false}
+      value={props.value}
+      start={() => null}
+      save={() => Promise.resolve(null)}
+    >
+      {() => null}
+    </EditableRow>
+  );
+}
+
+/** An amount in rupees to the paisa, kept in paise. */
+export function MoneyRow(props: RowProps & { readonly paise: number }) {
+  return (
+    <EditableRow<string>
+      id={props.id}
+      label={props.label}
+      words={EDITING}
+      mayChange={props.mayChange}
+      value={rupees(props.paise)}
+      start={() => rupeesTyped(props.paise)}
+      save={props.save}
+    >
+      {(control, typed, type) => (
+        <NumberInput
+          {...control}
+          type="text"
+          width="amount"
+          inputMode="decimal"
+          value={typed}
+          onChange={(event) => {
+            type(event.target.value);
+          }}
+        />
+      )}
+    </EditableRow>
+  );
+}
+
+/** A whole figure as typed, or null for an empty box; undefined for anything else, which the row refuses. */
+export function figureOrNone(typed: string): number | null | undefined {
+  const text = typed.trim();
+  if (text === "") return null;
+  return /^\d{1,6}$/.test(text) ? Number(text) : undefined;
 }
 
 /** One of a few choices, each by its value and the words it reads as. */

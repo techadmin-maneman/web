@@ -1,65 +1,70 @@
-// Items: what a technician may record using on a job, what one
-// costs us, and what each service is
-// expected to use (docs/decisions/0087-consumables-and-stock.md). As every panel
-// of Settings does, it shows a change old beside new before it is sent
-// (docs/decisions/0071-what-ops-see-before-a-setting-changes.md), and says of a
-// refusal which box it came from.
+// Items: what a technician may record using on a job, what one costs us, and what each service is expected to use
+// (docs/decisions/0087-consumables-and-stock.md). A row opens its record beside the list, where each value changes
+// where it reads and is sent alone (docs/decisions/0212-editing-in-place.md); a refusal says which box it came from.
 
 import type { Page } from "@playwright/test";
 import { expect, test } from "../support.ts";
 import { axeViolations } from "../a11y.ts";
 import { answer, CONSUMABLES, fails, json, type Answers } from "./fixtures.ts";
-import { expectOneBoxALine } from "./one-box-a-line.ts";
 import { settings as settingsCopy } from "../../apps/ops/src/content/settings.ts";
-import { review } from "../../apps/ops/src/content/common.ts";
-import { dispatch } from "../../apps/ops/src/content.ts";
+import { deleting, EDITING } from "../../apps/ops/src/content/common.ts";
+
+const copy = settingsCopy.consumables;
 
 async function open(page: Page, extra: Answers = {}): Promise<void> {
   await answer(page, { "GET /api/consumables": json(CONSUMABLES), ...extra });
   await page.goto("/items");
-  await expect(page.getByRole("heading", { level: 2, name: settingsCopy.consumables.title })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: copy.title })).toBeVisible();
 }
 
 const posted = (page: Page, path: string) =>
   page.waitForRequest((request) => request.url().endsWith(path) && request.method() === "POST");
 
-const row = (page: Page, name: string) => page.getByRole("row").filter({ has: page.getByRole("rowheader", { name }) });
+const row = (page: Page, name: string) =>
+  page.getByRole("row").filter({ has: page.getByRole("button", { name: copy.open(name), exact: true }) });
+
+async function recordOf(page: Page, name: string) {
+  await page.getByRole("button", { name: copy.open(name), exact: true }).click();
+  const record = page.getByRole("dialog", { name });
+  await expect(record).toBeVisible();
+  return record;
+}
+
+const change = (record: ReturnType<Page["getByRole"]>, label: string) =>
+  record.getByRole("button", { name: `${EDITING.change} ${label}` });
 
 test.describe("the list", () => {
   test("gives each its cost, the levels it is low at, and whether it is offered", async ({ page }) => {
     await open(page);
     await expect(page).toHaveTitle("Items · Mane Man operations");
 
-    const tape = row(page, "Tape strips strip");
+    const tape = row(page, "Tape strips");
+    await expect(tape).toContainText("strip");
     await expect(tape).toContainText("Rs. 12.50");
     await expect(tape).toContainText("Kit 5 · warehouse 50");
-    await expect(tape).toContainText(settingsCopy.consumables.states.offered);
-    await expect(row(page, "Solvent ml")).toContainText("Offered until 1 Oct 2027");
-    await expect(row(page, "Shampoo sachet sachet")).toContainText("Retired from 1 Sep 2027");
-    await expect(
-      row(page, "Shampoo sachet sachet").getByRole("button", { name: "Restore Shampoo sachet" }),
-    ).toBeVisible();
+    await expect(tape).toContainText(copy.states.offered);
+    await expect(row(page, "Solvent")).toContainText("Offered until 1 Oct 2027");
+    await expect(row(page, "Shampoo sachet")).toContainText("Retired from 1 Sep 2027");
+    // Tables are for finding: nothing in a row but the way to its record.
+    await expect(tape.getByRole("button")).toHaveCount(1);
+
+    const shampoo = await recordOf(page, "Shampoo sachet");
+    await expect(shampoo.getByRole("button", { name: copy.restoreLabel("Shampoo sachet") })).toBeVisible();
   });
 });
 
-test.describe("a consumable added or changed", () => {
-  test("is shown before it is sent, and sent in paise with its levels", async ({ page }) => {
+test.describe("a consumable added", () => {
+  test("is sent in paise with its levels, an empty level as none", async ({ page }) => {
     await open(page, { "POST /api/consumables": json(CONSUMABLES) });
-    await page.getByRole("button", { name: settingsCopy.consumables.add }).click();
-    const add = page.getByRole("group", { name: settingsCopy.consumables.form.addTitle });
-    await add.getByLabel(settingsCopy.consumables.form.name).fill("Scalp wipes");
-    await add.getByLabel(settingsCopy.consumables.form.unit).fill("wipe");
-    await add.getByLabel(settingsCopy.consumables.form.cost).fill("7.5");
-    await add.getByLabel(settingsCopy.consumables.form.confirm.fields.kit).fill("10");
-    await add.getByRole("button", { name: review.next, exact: true }).click();
-
-    const check = page.getByRole("group", { name: review.title });
-    await expect(check).toBeFocused();
-    await expect(check).toContainText("Scalp wipes, by the wipe, at Rs. 7.50 each.");
-    await expect(check).toContainText("Kit 10");
+    await page.getByRole("button", { name: copy.add }).click();
+    const add = page.getByRole("group", { name: copy.form.addTitle });
+    await add.getByLabel(copy.form.name).fill("Scalp wipes");
+    await add.getByLabel(copy.form.unit).fill("wipe");
+    await add.getByLabel(copy.form.cost).fill("7.5");
+    await add.getByLabel(copy.form.kit).fill("10");
 
     const sent = posted(page, "/api/consumables");
-    await check.getByRole("button", { name: review.send }).click();
+    await add.getByLabel(copy.form.kit).press("Enter");
     expect((await sent).postDataJSON()).toEqual({
       name: "Scalp wipes",
       unit: "wipe",
@@ -69,147 +74,144 @@ test.describe("a consumable added or changed", () => {
       reorder_store: null,
       shelf_life_days: null,
     });
-    await expect(page.getByRole("status").filter({ hasText: settingsCopy.consumables.form.added })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: copy.form.added })).toBeVisible();
   });
 
-  test("changed, shows each field old beside new", async ({ page }) => {
-    await open(page, { "POST /api/consumables/{code}": json(CONSUMABLES) });
-    await page.getByRole("button", { name: "Change Tape strips" }).click();
-
-    const form = page.getByRole("group", { name: "Change Tape strips" });
-    await expect(form.getByLabel(settingsCopy.consumables.form.cost)).toHaveValue("12.5");
-    await form.getByLabel(settingsCopy.consumables.form.name).fill("Contour tape");
-    await form.getByLabel(settingsCopy.consumables.form.cost).fill("15");
-    await page.getByRole("group", { name: "Change Tape strips" }).getByRole("button", { name: review.next }).click();
-
-    const check = page.getByRole("group", { name: review.title });
-    await expect(check).toContainText("Name: Tape strips → Contour tape");
-    await expect(check).toContainText("Cost each: Rs. 12.50 → Rs. 15");
-    const sent = posted(page, "/api/consumables/tape_strips");
-    await check.getByRole("button", { name: review.send }).click();
-    expect((await sent).postDataJSON()).toMatchObject({ name: "Contour tape", unit_cost: 1500 });
-  });
-
-  test("sends nothing when nothing has changed", async ({ page }) => {
-    await open(page);
-    await page.getByRole("button", { name: "Change Solvent" }).click();
-    await page.getByRole("group", { name: "Change Solvent" }).getByRole("button", { name: review.next }).click();
-
-    const check = page.getByRole("group", { name: review.title });
-    await expect(check).toContainText(review.nothing);
-    await expect(check.getByRole("button", { name: review.send })).toBeDisabled();
-  });
-
-  test("names the box the API refused", async ({ page }) => {
+  test("names the box the API refused, and the box a level is not whole in, before sending", async ({ page }) => {
     await open(page, { "POST /api/consumables": fails(400, "invalid_request", ["name"]) });
-    await page.getByRole("button", { name: settingsCopy.consumables.add }).click();
-    const add = page.getByRole("group", { name: settingsCopy.consumables.form.addTitle });
-    await add.getByLabel(settingsCopy.consumables.form.name).fill("tape strips");
-    await add.getByLabel(settingsCopy.consumables.form.unit).fill("strip");
-    await add.getByLabel(settingsCopy.consumables.form.cost).fill("12");
-    await add.getByRole("button", { name: review.next, exact: true }).click();
-    await page.getByRole("button", { name: review.send }).click();
+    await page.getByRole("button", { name: copy.add }).click();
+    const add = page.getByRole("group", { name: copy.form.addTitle });
+    await add.getByLabel(copy.form.name).fill("tape strips");
+    await add.getByLabel(copy.form.unit).fill("strip");
+    await add.getByLabel(copy.form.cost).fill("12");
+    await add.getByLabel(copy.form.store).fill("2.5");
+    await add.getByRole("button", { name: copy.form.add, exact: true }).click();
+    await expect(add.getByLabel(copy.form.store)).toHaveAttribute("aria-invalid", "true");
 
-    await expect(page.getByRole("alert")).toHaveText(settingsCopy.consumables.errors.name);
+    await add.getByLabel(copy.form.store).fill("");
+    await add.getByRole("button", { name: copy.form.add, exact: true }).click();
+    await expect(page.getByRole("alert")).toHaveText(copy.errors.name);
+    await expect(add.getByLabel(copy.form.name)).toHaveValue("tape strips");
+  });
+});
+
+test.describe("a consumable's record", () => {
+  test("changes each value where it reads, sending only that one", async ({ page }) => {
+    await open(page, { "POST /api/consumables/{code}": json(CONSUMABLES) });
+    const record = await recordOf(page, "Tape strips");
+
+    await change(record, copy.rows.name).click();
+    const name = record.getByRole("textbox", { name: copy.rows.name });
+    await name.fill("Contour tape");
+    let sent = posted(page, "/api/consumables/tape_strips");
+    await name.press("Enter");
+    expect((await sent).postDataJSON()).toEqual({ name: "Contour tape" });
+
+    await change(record, copy.rows.cost).click();
+    const cost = record.getByRole("textbox", { name: copy.rows.cost });
+    await expect(cost).toHaveValue("12.5");
+    await cost.fill("15");
+    sent = posted(page, "/api/consumables/tape_strips");
+    await cost.press("Enter");
+    expect((await sent).postDataJSON()).toEqual({ unit_cost: 1500 });
+  });
+
+  test("takes an emptied level as none, and says why a level that is not whole stays", async ({ page }) => {
+    await open(page, { "POST /api/consumables/{code}": json(CONSUMABLES) });
+    const record = await recordOf(page, "Bonding glue");
+
+    await change(record, copy.rows.kit).click();
+    const kit = record.getByRole("textbox", { name: copy.rows.kit });
+    await kit.fill("2.5");
+    await kit.press("Enter");
+    await expect(record.getByRole("alert")).toHaveText(copy.errors.reorder_kit);
+
+    await kit.fill("");
+    const sent = posted(page, "/api/consumables/bonding_glue");
+    await kit.press("Enter");
+    expect((await sent).postDataJSON()).toEqual({ reorder_kit: null });
   });
 
   test("retires one from a day, after saying what that does and what it does not", async ({ page }) => {
     await open(page, { "POST /api/consumables/{code}/retire": json(CONSUMABLES) });
-    await page.getByRole("button", { name: "Retire Bonding glue" }).click();
-    await page.getByLabel(settingsCopy.consumables.retiring.from).fill("2027-10-15");
-    await page.getByRole("group", { name: "Retire Bonding glue" }).getByRole("button", { name: review.next }).click();
+    const record = await recordOf(page, "Bonding glue");
+    await record.getByRole("button", { name: copy.retireLabel("Bonding glue") }).click();
+    const asking = record.getByRole("form", { name: copy.retireLabel("Bonding glue") });
+    await asking.getByLabel(copy.retiring.from).fill("2027-10-15");
+    await expect(asking).toContainText("can’t log Bonding glue from 15 Oct 2027");
+    await expect(asking).toContainText("Past jobs keep it.");
 
-    const check = page.getByRole("group", { name: review.title });
-    await expect(check).toContainText("can’t log Bonding glue from 15 Oct 2027");
-    await expect(check).toContainText("Past jobs keep it.");
     const sent = posted(page, "/api/consumables/bonding_glue/retire");
-    await check.getByRole("button", { name: review.send }).click();
+    await asking.getByRole("button", { name: copy.retire, exact: true }).click();
     expect((await sent).postDataJSON()).toEqual({ from: "2027-10-15" });
   });
-});
 
-test.describe("deleting one", () => {
   test("deletes one added by mistake, once asked", async ({ page }) => {
     const left = {
       ...CONSUMABLES,
       consumables: CONSUMABLES.consumables.filter((each) => each.code !== "bonding_glue"),
     };
     await open(page, { "POST /api/consumables/{code}/delete": json(left) });
-    await page.getByRole("button", { name: "Delete Bonding glue" }).click();
-    await expect(page.getByText("Delete Bonding glue? This can’t be undone.")).toBeVisible();
+    const record = await recordOf(page, "Bonding glue");
+    await record.getByRole("button", { name: deleting.label("Bonding glue") }).click();
+    await expect(record.getByText(deleting.warning("Bonding glue"))).toBeVisible();
 
     const sent = posted(page, "/api/consumables/bonding_glue/delete");
-    await page.getByRole("button", { name: settingsCopy.discountCodes.delete, exact: true }).click();
+    await record.getByRole("button", { name: deleting.confirm, exact: true }).click();
     await sent;
-    await expect(page.getByRole("status").filter({ hasText: settingsCopy.discountCodes.deleted })).toBeVisible();
-    await expect(page.getByRole("rowheader", { name: /^Bonding glue/ })).toHaveCount(0);
+    await expect(page.getByRole("status").filter({ hasText: copy.deleted })).toBeVisible();
+    await expect(record).toBeHidden();
+    await expect(row(page, "Bonding glue")).toHaveCount(0);
   });
 
   test("says to retire instead one whose stock has moved", async ({ page }) => {
     await open(page, { "POST /api/consumables/{code}/delete": fails(409, "in_use") });
-    await page.getByRole("button", { name: "Delete Bonding glue" }).click();
-    await page.getByRole("button", { name: settingsCopy.discountCodes.delete, exact: true }).click();
+    const record = await recordOf(page, "Bonding glue");
+    await record.getByRole("button", { name: deleting.label("Bonding glue") }).click();
+    await record.getByRole("button", { name: deleting.confirm, exact: true }).click();
 
-    await expect(page.getByRole("alert")).toHaveText(settingsCopy.consumables.inUse);
-    await page.getByRole("button", { name: review.cancel }).click();
-    await expect(page.getByRole("alert")).toHaveCount(0);
+    await expect(record.getByRole("alert")).toHaveText(copy.inUse);
   });
 });
 
 test.describe("what each service uses", () => {
-  test("shows the chosen service’s figures, and the change old beside new before it is sent", async ({ page }) => {
+  test("shows the chosen service’s figures, each changed where it reads, the list sent whole", async ({ page }) => {
     await open(page, { "POST /api/service-usage": json(CONSUMABLES) });
-    const uses = page.getByRole("region", { name: settingsCopy.consumables.usage.title });
+    const uses = page.getByRole("region", { name: copy.usage.title });
+    const service = uses.getByLabel(copy.usage.service);
     // Each service by its name, a kind at a time; a retired one is still there, marked, for a visit sold before.
-    await expect(uses.getByLabel(settingsCopy.discountCodes.coverShort.service).locator("optgroup")).toHaveCount(4);
-    await expect(uses.getByLabel(settingsCopy.discountCodes.coverShort.service).locator("option")).toHaveText([
-      dispatch.typeNames.consultation,
-      settingsCopy.discountCodes.coverShort.first_fit,
-      "Premium first fit, retired from 1 Oct 2027",
-      dispatch.typeNames.service,
-      settingsCopy.discountCodes.coverShort.replacement,
-    ]);
-    await uses.getByLabel(settingsCopy.discountCodes.coverShort.service).selectOption({ label: "Service visit" });
+    await expect(service.locator("optgroup")).toHaveCount(4);
+    await service.selectOption({ label: "Service visit" });
 
-    await expect(uses.getByLabel("Tape strips, strip per visit")).toHaveValue("4");
-    await expect(uses.getByLabel("Solvent, ml per visit")).toHaveValue("10");
-    await expect(uses.getByLabel("Bonding glue, ml per visit")).toHaveValue("");
+    await expect(change(uses, "Tape strips")).toContainText("4 strips");
+    await expect(change(uses, "Solvent")).toContainText("10 ml");
+    await expect(change(uses, "Bonding glue")).toContainText(copy.usage.none);
     // Retired, and expected by no service: nothing to set.
-    await expect(uses.getByLabel("Shampoo sachet, sachet per visit")).toHaveCount(0);
+    await expect(change(uses, "Shampoo sachet")).toHaveCount(0);
 
-    await uses.getByLabel("Tape strips, strip per visit").fill("6");
-    await uses.getByLabel("Solvent, ml per visit").fill("");
-    await uses.getByLabel("Bonding glue, ml per visit").fill("3");
-    await uses.getByRole("button", { name: review.next }).click();
-
-    const check = uses.getByRole("group", { name: review.title });
-    await expect(check).toContainText("Bonding glue: none → 3 ml");
-    await expect(check).toContainText("Solvent: 10 ml → none");
-    await expect(check).toContainText("Tape strips: 4 strips → 6 strips");
+    await change(uses, "Tape strips").click();
+    const tape = uses.getByRole("textbox", { name: "Tape strips" });
+    await expect(tape).toHaveValue("4");
+    await tape.fill("6");
     const sent = posted(page, "/api/service-usage");
-    await check.getByRole("button", { name: review.send }).click();
+    await tape.press("Enter");
     expect((await sent).postDataJSON()).toEqual({
       visit_type: "service",
       tier: "standard",
       items: [
-        { code: "bonding_glue", quantity: 3 },
+        { code: "solvent", quantity: 10 },
         { code: "tape_strips", quantity: 6 },
       ],
     });
   });
 });
 
-test("meets WCAG 2.2 AA, a box to a line, with a change being checked as well", async ({ page }) => {
+test("meets WCAG 2.2 AA, with a record open and a value being changed", async ({ page }) => {
   await open(page);
   expect(await axeViolations(page)).toEqual([]);
 
-  await page.getByRole("button", { name: "Change Tape strips" }).click();
-  await expectOneBoxALine(page, "Change Tape strips");
-  await page
-    .getByRole("group", { name: "Change Tape strips" })
-    .getByLabel(settingsCopy.consumables.form.unit)
-    .fill("strips");
-  await page.getByRole("group", { name: "Change Tape strips" }).getByRole("button", { name: review.next }).click();
-  await expect(page.getByRole("group", { name: review.title })).toBeVisible();
+  const record = await recordOf(page, "Tape strips");
+  await change(record, copy.rows.unit).click();
+  await expect(record.getByRole("textbox", { name: copy.rows.unit })).toBeFocused();
   expect(await axeViolations(page)).toEqual([]);
 });

@@ -4,20 +4,19 @@
 
 import { Badge } from "@maneman/ui/Badge";
 import { Button } from "@maneman/ui/Button";
-import { EditableRow } from "@maneman/ui/EditableRow";
 import { EmptyState } from "@maneman/ui/EmptyState";
 import { Field, NumberInput, Select } from "@maneman/ui/Field";
 import { Table } from "@maneman/ui/Table";
 import { TextButton } from "@maneman/ui/TextLink";
 import { useOneAtATime } from "@maneman/ui/useOneAtATime";
-import { paiseFromRupees, rupees, rupeesTyped } from "@maneman/web-kit/money";
+import { paiseFromRupees, rupees } from "@maneman/web-kit/money";
 import { errorText } from "@maneman/web-kit/refusal";
 import { useState } from "react";
 import { DeleteAction } from "../components/DeleteAction.tsx";
 import { PriceRow, priceText } from "../components/PriceRow.tsx";
+import { MoneyRow } from "../components/RecordRows.tsx";
 import { Refusal } from "../components/Refusal.tsx";
 import { RowHead } from "../components/RowHead.tsx";
-import { EDITING } from "../content/common.ts";
 import { packagesCopy } from "../content/packages.ts";
 import { itemsApi } from "../items/index.ts";
 import { useAccess } from "../lib/access.ts";
@@ -166,31 +165,17 @@ function AddHairSystem(props: {
 function Cost(props: { readonly piece: PackageHairSystem; readonly refresh: () => Promise<void> }) {
   const { piece } = props;
   return (
-    <EditableRow<string>
+    <MoneyRow
       label={copy.columns.cost}
-      words={EDITING}
+      paise={piece.unit_cost}
       mayChange={useAccess().mayCall("POST /api/consumables/{code}")}
-      value={rupees(piece.unit_cost)}
-      start={() => rupeesTyped(piece.unit_cost)}
       save={async (typed) => {
         const answer = await itemsApi.changeConsumable(piece.code, { unit_cost: paiseFromRupees(typed) });
         if (!answer.ok) return errorText(errors, answer);
         await props.refresh();
         return null;
       }}
-    >
-      {(control, typed, type) => (
-        <NumberInput
-          {...control}
-          width="amount"
-          inputMode="decimal"
-          value={typed}
-          onChange={(event) => {
-            type(event.target.value);
-          }}
-        />
-      )}
-    </EditableRow>
+    />
   );
 }
 

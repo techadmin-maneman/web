@@ -182,3 +182,18 @@
 .once {
   margin-top: var(--sp-16);
 }
+
+/* A record's values, a line each, changed where they read (components/RecordRows.tsx). */
+.record {
+  margin-top: var(--sp-8);
+  border-top: var(--hairline) solid var(--ui-line);
+}
+
+/* Retiring, restoring and deleting, on one line beneath a record's values, each asking in place. */
+.recordFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-8);
+  margin-top: var(--sp-16);
+}
