@@ -389,15 +389,14 @@ export const settings = {
     everyCity: "Every city",
     reason: "Reason",
     formTitle: "Close days",
-    /** The check's line: "Tue 20 Oct to Thu 22 Oct · Gurgaon · Diwali". */
-    closing: (period: string, city: string, reason: string) => `${period} · ${city} · ${reason}`,
+    add: "Close",
+    cancel: "Cancel",
     /** What closing the days leaves to move, said before they are closed. */
     stranded: (visits: number) =>
       `${String(visits)} ${visits === 1 ? "visit is" : "visits are"} booked on these days. Move ${
         visits === 1 ? "it" : "them"
       } on the dispatch board.`,
     uncounted: "Booked visits couldn’t be counted. Check the dispatch board.",
-    added: "Closed.",
     none: "No closed days.",
     /** "Tue 20 Oct to Thu 22 Oct", and "Tue 20 Oct" for one day. */
     period: (from: string, to: string) => (from === to ? from : `${from} to ${to}`),
@@ -410,10 +409,15 @@ export const settings = {
     show: "Show on board",
     /** The link's whole name, since the list holds many and each link says the same. */
     showLabel: (period: string) => `Show on board: ${period}`,
-    remove: "Reopen",
-    /** The button's whole name, since the list holds many and each button says the same. */
-    removeLabel: (period: string) => `Reopen ${period}`,
-    reopen: (period: string) => `Reopen ${period}?`,
+    reopening: {
+      open: "Reopen",
+      /** The button's whole name, since the list holds many and each button says the same. */
+      label: (period: string) => `Reopen ${period}`,
+      warning: (period: string) => `Reopen ${period}?`,
+      confirm: "Reopen",
+      sending: "Reopening…",
+      cancel: "Cancel",
+    },
     errors: {
       not_permitted: NOT_PERMITTED,
       from: "The first day can’t be in the past.",

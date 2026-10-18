@@ -257,14 +257,11 @@ test.describe("the blackout days", () => {
     const added = { ...BLACKOUTS, blackouts: [...BLACKOUTS.blackouts, christmas] };
     await open(page, "/settings/closed-days", { "POST /api/blackouts": json(added) });
     const form = await closeDays(page);
-    const add = form.getByRole("button", { name: review.next });
-    await expect(add).toBeDisabled();
     await form.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2027-12-24");
     await form.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2027-12-24");
     await form.getByLabel(settingsCopy.blackouts.reason).fill("  Christmas ");
     const request = posted(page, "/api/blackouts");
-    await add.click();
-    await form.getByRole("button", { name: review.send }).click();
+    await form.getByRole("button", { name: settingsCopy.blackouts.add, exact: true }).click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-12-24", to: "2027-12-24", reason: "Christmas" });
     await expect(form).toHaveCount(0);
     await expect(page.getByRole("listitem").filter({ hasText: "Fri 24 Dec · Every city · Christmas" })).toBeVisible();
@@ -288,8 +285,7 @@ test.describe("the blackout days", () => {
     await form.getByLabel(opsCopy.areas.add.city).selectOption("Gurgaon");
     await form.getByLabel(settingsCopy.blackouts.reason).fill("Holi");
     const request = posted(page, "/api/blackouts");
-    await form.getByRole("button", { name: review.next }).click();
-    await form.getByRole("button", { name: review.send }).click();
+    await form.getByRole("button", { name: settingsCopy.blackouts.add, exact: true }).click();
     expect((await request).postDataJSON()).toEqual({
       from: "2028-03-10",
       to: "2028-03-10",
@@ -299,14 +295,22 @@ test.describe("the blackout days", () => {
     await expect(page.getByRole("listitem").filter({ hasText: "Fri 10 Mar · Gurgaon · Holi" })).toBeVisible();
   });
 
+  test("counts the visits the days would strand beneath the boxes, before they are closed", async ({ page }) => {
+    await open(page, "/settings/closed-days", { "GET /api/blackouts/booked": json({ booked: 2 }) });
+    const form = await closeDays(page);
+    await form.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2027-10-29");
+    await expect(form.getByText(settingsCopy.blackouts.stranded(2))).toHaveCount(0);
+    await form.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2027-10-30");
+    await expect(form.getByText(settingsCopy.blackouts.stranded(2))).toBeVisible();
+  });
+
   test("says why the API refused the days, of the box it refused", async ({ page }) => {
     await open(page, "/settings/closed-days", { "POST /api/blackouts": fails(400, "invalid_request", ["to"]) });
     const form = await closeDays(page);
     await form.getByLabel(settingsCopy.blackouts.from, { exact: true }).fill("2027-10-01");
     await form.getByLabel(settingsCopy.blackouts.to, { exact: true }).fill("2027-12-01");
     await form.getByLabel(settingsCopy.blackouts.reason).fill("Too long");
-    await form.getByRole("button", { name: review.next }).click();
-    await form.getByRole("button", { name: review.send }).click();
+    await form.getByRole("button", { name: settingsCopy.blackouts.add, exact: true }).click();
     await expect(form.getByRole("alert")).toHaveText(settingsCopy.blackouts.errors.to);
   });
 
@@ -338,8 +342,8 @@ test.describe("the blackout days", () => {
     await open(page, "/settings/closed-days", { "POST /api/blackouts/remove": json(left) });
     const request = posted(page, "/api/blackouts/remove");
     await page.getByRole("button", { name: "Reopen Fri 29 Oct to Sat 30 Oct" }).click();
-    const asked = page.getByRole("group", { name: "Reopen Fri 29 Oct to Sat 30 Oct?" });
-    await asked.getByRole("button", { name: review.send }).click();
+    await expect(page.getByText("Reopen Fri 29 Oct to Sat 30 Oct?")).toBeVisible();
+    await page.getByRole("button", { name: settingsCopy.blackouts.reopening.confirm, exact: true }).click();
     expect((await request).postDataJSON()).toEqual({ from: "2027-10-29", to: "2027-10-30" });
     await expect(page.getByRole("listitem").filter({ hasText: "Diwali" })).toHaveCount(0);
     await expect(page.getByRole("listitem").filter({ hasText: "Staff training" })).toBeVisible();
