@@ -42,10 +42,12 @@ type Located = { readonly lat: number | null; readonly lng: number | null };
 const pinOf = (row: Located): Pin | null =>
   row.lat === null || row.lng === null ? null : { lat: row.lat, lng: row.lng };
 
-/** Where a client is: their current address's pin, else the centre of the pincode `pincode` names. */
-const WHERE = (person: string, pincode: string) => `
-  LEFT JOIN addresses d ON d.person_id = ${person} AND d.replaced_at IS NULL
-  LEFT JOIN serviceable_pincodes sp ON sp.pincode = COALESCE(${pincode}, d.pincode)`;
+/** Where a visit's client is: their current address's pin, else the centre of the pincode it is booked at. */
+const VISIT_PLACE = `LEFT JOIN addresses d ON d.person_id = a.person_id AND d.replaced_at IS NULL
+  LEFT JOIN serviceable_pincodes sp ON sp.pincode = COALESCE(a.service_pincode, d.pincode)`;
+/** Where a hold's client is, as VISIT_PLACE. */
+const HOLD_PLACE = `LEFT JOIN addresses d ON d.person_id = h.person_id AND d.replaced_at IS NULL
+  LEFT JOIN serviceable_pincodes sp ON sp.pincode = COALESCE(h.pincode, d.pincode)`;
 const PIN = "COALESCE(d.lat, sp.centre_lat) AS lat, COALESCE(d.lng, sp.centre_lng) AS lng";
 
 interface VisitRow extends Located {
@@ -102,7 +104,7 @@ function statements(
       .prepare(
         `SELECT a.technician_id, a.type, a.window_start, a.window_end, s.minutes AS service_minutes, ${PIN}
          FROM appointments a
-         LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")} ${WHERE("a.person_id", "a.service_pincode")}
+         LEFT JOIN services s ON s.kind = a.type AND s.tier = ${tierOf("a.tier")} ${VISIT_PLACE}
          WHERE a.deleted_at IS NULL AND a.technician_id IN (SELECT value FROM json_each(?1))
            AND ${statusIn("a.status", VISIT_LIVE)} AND a.window_start >= ?2 AND a.window_start < ?3 AND a.id IS NOT ?4`,
       )
@@ -115,7 +117,7 @@ function statements(
     db
       .prepare(
         `SELECT h.technician_id, h.date, h.type, h.minutes, h.start_unit, h.starts_at, ${PIN}
-         FROM slot_holds h ${WHERE("h.person_id", "h.pincode")}
+         FROM slot_holds h ${HOLD_PLACE}
          WHERE h.date BETWEEN ?2 AND ?3 AND h.technician_id IN (SELECT value FROM json_each(?1))
            AND ${keepingItsTime("h", "?4")} AND h.id IS NOT ?5 AND NOT (?6 IS NOT NULL AND ${ownUnpaid("h", "?6")})
            AND NOT (?7 IS NOT NULL AND ${ownAtCheckout("h", { person: "?7", type: "?8", tier: "?9", now: "?4" })})`,

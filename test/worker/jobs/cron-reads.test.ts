@@ -139,6 +139,9 @@ const HISTORY = [
    SELECT 's-' || i, 'client', 'p-' || i, '${AGO}', '${AGO}', '${IN_TWO_MONTHS}' FROM n`,
   `INSERT OR IGNORE INTO technicians (id, fsm_id, name, initials, active, updated_at)
    SELECT 't-history', 'resource-history', 'A Technician', 'AT', 1, '${AGO}' FROM n LIMIT 1`,
+  // Their week: a row a day at the most, however long the history.
+  `INSERT OR IGNORE INTO technician_hours (technician_id, weekday, starts, ends, set_by, set_at)
+   SELECT 't-history', i % 7, '09:00', '18:00', 'ops', '${AGO}' FROM n`,
   `INSERT INTO slot_holds (id, person_id, type, date, window_label, technician_id, start_unit, amount, amount_ex_gst,
      gst_percent, state, appointment_id, expires_at, created_at, updated_at, confirmed_at, queued_at, fsm_held_at,
      fsm_refusal)

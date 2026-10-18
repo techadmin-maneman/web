@@ -54,14 +54,19 @@ export interface DayStarts {
   readonly starts: readonly StartOffer[];
 }
 
+/** The pincode a visit is at: the one it is booked at, else its client's current address's. */
+const PINCODE = `COALESCE(?2, (SELECT d.pincode FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL))`;
+
 /** Where the visit is: its client's current pin, else the centre of the pincode it is booked at or the client's. */
 export async function pinOfVisit(db: D1Database, placing: Pick<StartPlacing, "personId" | "pincode">): Promise<Pin | null> {
   const row = await db
     .prepare(
-      `SELECT COALESCE(d.lat, sp.centre_lat) AS lat, COALESCE(d.lng, sp.centre_lng) AS lng
-       FROM (SELECT ?1 AS person, ?2 AS pincode) w
-       LEFT JOIN addresses d ON d.person_id = w.person AND d.replaced_at IS NULL
-       LEFT JOIN serviceable_pincodes sp ON sp.pincode = COALESCE(w.pincode, d.pincode)`,
+      `SELECT COALESCE(
+           (SELECT d.lat FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL AND d.lng IS NOT NULL),
+           (SELECT sp.centre_lat FROM serviceable_pincodes sp WHERE sp.pincode = ${PINCODE})) AS lat,
+         COALESCE(
+           (SELECT d.lng FROM addresses d WHERE d.person_id = ?1 AND d.replaced_at IS NULL AND d.lat IS NOT NULL),
+           (SELECT sp.centre_lng FROM serviceable_pincodes sp WHERE sp.pincode = ${PINCODE})) AS lng`,
     )
     .bind(placing.personId, placing.pincode ?? null)
     .first<{ lat: number | null; lng: number | null }>();
